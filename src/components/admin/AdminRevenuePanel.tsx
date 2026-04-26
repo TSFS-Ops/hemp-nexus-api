@@ -1,18 +1,35 @@
 /**
  * AdminRevenuePanel
  * ─────────────────────────────────────────────────────────────────────
- * HQ → Revenue dashboard. Reads `public.token_ledger` rows that represent
- * paid credit purchases (endpoint = 'payment:*' OR action_type = 'credit_purchase'
- * with metadata.price_zar present) and joins them against organisation names.
+ * HQ → Revenue dashboard.
  *
- * Surfaces:
- *   • Totals strip — revenue ZAR, credits sold, purchases, unique buyers.
- *   • Time-series — daily and monthly revenue (selectable window).
- *   • Top buyers — leaderboard with totals and last purchase.
- *   • Per-org timeline — pick an org, see every purchase ever.
+ * SOURCE OF TRUTH (revised April 2026)
+ * ────────────────────────────────────
+ * Revenue is sourced primarily from `public.audit_logs` rows where
+ * `action = 'credits.purchased'`. This is the canonical, server-authored
+ * settlement event written by the Paystack webhook handler. It is NOT
+ * dependent on whether the corresponding `token_ledger` row was tagged
+ * with `action_type = 'credit_purchase'` — historically (e.g. Talia
+ * Pillay's R100 grant on 2026-04-26) the ledger row was written with the
+ * generic `credit` path while the credits clearly landed in the wallet.
  *
- * RLS: token_ledger has "Admins can view all token ledger entries" so this
- * panel only returns data when the current user is platform_admin.
+ * As a safety-net we also pull `token_ledger` rows with
+ * `action_type = 'credit_purchase'` and merge by `payment_reference`,
+ * so any manual reconciliation (which writes to the ledger but not to
+ * audit_logs) still surfaces. Audit-log rows always win on conflict.
+ *
+ * PAPER-CUT VISIBILITY
+ * ────────────────────
+ * `credits.purchase_initiated` rows without a matching `credits.purchased`
+ * are surfaced in a dedicated "Pending settlement" panel so any future
+ * webhook silently failing to write the settlement row is immediately
+ * visible to the operations team.
+ *
+ * RLS
+ * ───
+ * `audit_logs` and `token_ledger` both restrict reads to platform_admin /
+ * auditor; the panel sits behind /hq's admin guard and returns nothing
+ * for non-admin sessions.
  */
 
 import { useMemo, useState } from "react";
@@ -51,31 +68,61 @@ import {
   Users,
   Receipt,
   Download,
+  AlertTriangle,
 } from "lucide-react";
 import { format, formatDistanceToNow, subDays } from "date-fns";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface PurchaseRow {
+interface PurchaseEnriched {
+  id: string;                    // synthetic: prefer audit_log id, fallback ledger id
+  org_id: string | null;
+  org_name: string;
+  credits: number;               // positive integer of credits granted
+  amount_zar: number;            // gross revenue in ZAR
+  package_id: string | null;
+  payment_reference: string | null;
+  created_at: string;
+  source: "audit_log" | "ledger" | "ledger:manual";
+  backfilled: boolean;
+  // raw rows for the detail dialog / CSV export
+  audit_log_id: string | null;
+  ledger_id: string | null;
+  request_id: string | null;
+  raw_metadata: Record<string, any> | null;
+}
+
+interface PendingSettlement {
+  id: string;
+  reference: string;
+  actor_user_id: string | null;
+  org_id: string | null;
+  org_name: string;
+  amount_zar: number;
+  credits: number;
+  package_id: string | null;
+  initiated_at: string;
+}
+
+interface AuditLogRow {
+  id: string;
+  org_id: string | null;
+  entity_id: string | null;
+  actor_user_id: string | null;
+  action: string;
+  metadata: Record<string, any> | null;
+  created_at: string;
+}
+
+interface LedgerRow {
   id: string;
   org_id: string | null;
   endpoint: string | null;
   action_type: string;
   tokens_burned: number;
-  remaining_balance: number | null;
   metadata: Record<string, any> | null;
   created_at: string;
   request_id: string | null;
-}
-
-interface PurchaseEnriched extends PurchaseRow {
-  org_name: string;
-  credits: number;       // positive integer of credits granted
-  amount_zar: number;    // gross revenue in ZAR
-  package_id: string | null;
-  payment_reference: string | null;
-  customer_email: string | null;
-  source: string;        // payment:paystack, payment:paystack:manual, etc.
 }
 
 // ─── Window options ──────────────────────────────────────────────────────────
@@ -100,63 +147,94 @@ const ZAR = new Intl.NumberFormat("en-ZA", {
 
 const NUM = new Intl.NumberFormat("en-ZA");
 
-/**
- * A real revenue row in `token_ledger` is identified by:
- *   • action_type = 'credit_purchase'  — the canonical, server-authored marker
- *     written by the Paystack webhook + manual reconciliation paths, AND
- *   • metadata.price_zar present and > 0 — guarantees an amount was paid
- *     (filters out promotional credits, system grants, and reconciliation
- *     adjustments that share the action_type).
- *
- * We deliberately do NOT filter on endpoint LIKE 'payment:%' because that
- * pattern also matches non-revenue rows (e.g. action_type='credit' with
- * endpoint='credit_purchase' is a free grant, not a sale).
- *
- * Credits granted are read from metadata.credits when present; otherwise
- * we fall back to abs(tokens_burned) (Paystack writes a negative burn to
- * represent a credit grant in the ledger).
- */
-function enrichPurchase(
-  row: PurchaseRow,
-  orgNameById: Map<string, string>,
-): PurchaseEnriched {
-  const meta = row.metadata ?? {};
-  const credits =
-    typeof meta.credits === "number"
-      ? meta.credits
-      : Math.abs(row.tokens_burned || 0);
-  const amount_zar =
-    typeof meta.price_zar === "number" ? meta.price_zar : 0;
-
-  return {
-    ...row,
-    org_name: row.org_id ? orgNameById.get(row.org_id) ?? row.org_id.slice(0, 8) + "…" : "—",
-    credits,
-    amount_zar,
-    package_id: typeof meta.package_id === "string" ? meta.package_id : null,
-    payment_reference: typeof meta.payment_reference === "string" ? meta.payment_reference : null,
-    customer_email: typeof meta.customer_email === "string" ? meta.customer_email : null,
-    source: row.endpoint ?? row.action_type,
-  };
-}
-
-/**
- * Server-side filter: `action_type = 'credit_purchase'`.
- * Client-side filter: `metadata.price_zar` > 0 (PostgREST cannot reliably
- * compare jsonb numerics without a typed view, so we narrow in JS).
- */
-function isRevenueRow(row: PurchaseRow): boolean {
-  if (row.action_type !== "credit_purchase") return false;
-  const price = row.metadata?.price_zar;
-  return typeof price === "number" && price > 0;
-}
-
 function bucketKey(iso: string, granularity: "day" | "month"): string {
   const d = new Date(iso);
   if (granularity === "month") {
     return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
   }
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+function num(x: unknown): number {
+  if (typeof x === "number") return x;
+  if (typeof x === "string") {
+    const n = Number(x);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+
+function str(x: unknown): string | null {
+  return typeof x === "string" && x.length > 0 ? x : null;
+}
+
+function resolveOrgName(id: string | null, orgNameById: Map<string, string>): string {
+  if (!id) return "—";
+  return orgNameById.get(id) ?? id.slice(0, 8) + "…";
+}
+
+/**
+ * Convert a `credits.purchased` audit log row into a normalised purchase.
+ * Only counts when `price_zar` is present and > 0 — defends against any
+ * future audit-log rows written with zero price (promotional / test grants).
+ */
+function purchaseFromAuditLog(
+  row: AuditLogRow,
+  orgNameById: Map<string, string>,
+): PurchaseEnriched | null {
+  const meta = row.metadata ?? {};
+  const amount_zar = num(meta.price_zar);
+  if (amount_zar <= 0) return null;
+  const credits = num(meta.credits_added) || num(meta.credits);
+  const orgId = row.org_id ?? row.entity_id ?? null;
+  return {
+    id: `audit:${row.id}`,
+    org_id: orgId,
+    org_name: resolveOrgName(orgId, orgNameById),
+    credits,
+    amount_zar,
+    package_id: str(meta.package_id),
+    payment_reference: str(meta.payment_reference) ?? str(meta.reference),
+    created_at: row.created_at,
+    source: "audit_log",
+    backfilled: meta.backfilled === true,
+    audit_log_id: row.id,
+    ledger_id: str(meta.source_ledger_id),
+    request_id: null,
+    raw_metadata: meta,
+  };
+}
+
+/**
+ * Convert a `credit_purchase` ledger row into a normalised purchase. Used as
+ * a safety-net for manual reconciliations that bypass the webhook + audit
+ * log path (e.g. endpoint = 'payment:paystack:manual').
+ */
+function purchaseFromLedger(
+  row: LedgerRow,
+  orgNameById: Map<string, string>,
+): PurchaseEnriched | null {
+  const meta = row.metadata ?? {};
+  const amount_zar = num(meta.price_zar);
+  if (amount_zar <= 0) return null;
+  const credits = num(meta.credits) || Math.abs(row.tokens_burned || 0);
+  const isManual = (row.endpoint ?? "").includes("manual");
+  return {
+    id: `ledger:${row.id}`,
+    org_id: row.org_id,
+    org_name: resolveOrgName(row.org_id, orgNameById),
+    credits,
+    amount_zar,
+    package_id: str(meta.package_id),
+    payment_reference: str(meta.payment_reference),
+    created_at: row.created_at,
+    source: isManual ? "ledger:manual" : "ledger",
+    backfilled: false,
+    audit_log_id: null,
+    ledger_id: row.id,
+    request_id: row.request_id,
+    raw_metadata: meta,
+  };
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -175,35 +253,58 @@ export function AdminRevenuePanel() {
   const { data, isLoading, isFetching, refetch, isError, error } = useQuery({
     queryKey: ["admin-revenue", timeWindow],
     queryFn: async () => {
-      // 1) Pull canonical credit-purchase rows. action_type='credit_purchase'
-      //    is the only marker the Paystack webhook + manual reconciliation
-      //    write; we then narrow client-side to rows that actually carry a
-      //    paid amount (metadata.price_zar > 0) so promotional grants and
-      //    reconciliation adjustments never inflate revenue totals.
-      let q = supabase
+      // ── 1) Canonical settled revenue from audit_logs ─────────────────────
+      let auditQ = supabase
+        .from("audit_logs")
+        .select("id, org_id, entity_id, actor_user_id, action, metadata, created_at")
+        .eq("action", "credits.purchased")
+        .order("created_at", { ascending: false })
+        .limit(2000);
+      if (sinceIso) auditQ = auditQ.gte("created_at", sinceIso);
+      const { data: auditRows, error: auditErr } = await auditQ;
+      if (auditErr) throw auditErr;
+
+      // ── 2) Safety-net: ledger rows tagged as credit_purchase (manual recon) ─
+      let ledgerQ = supabase
         .from("token_ledger")
-        .select("id, org_id, endpoint, action_type, tokens_burned, remaining_balance, metadata, created_at, request_id")
+        .select("id, org_id, endpoint, action_type, tokens_burned, metadata, created_at, request_id")
         .eq("action_type", "credit_purchase")
         .order("created_at", { ascending: false })
         .limit(2000);
-
-      if (sinceIso) q = q.gte("created_at", sinceIso);
-
-      const { data: ledger, error: ledgerErr } = await q;
+      if (sinceIso) ledgerQ = ledgerQ.gte("created_at", sinceIso);
+      const { data: ledgerRows, error: ledgerErr } = await ledgerQ;
       if (ledgerErr) throw ledgerErr;
 
-      const rows = ((ledger ?? []) as PurchaseRow[]).filter(isRevenueRow);
-      const orgIds = Array.from(
-        new Set(rows.map((r) => r.org_id).filter((x): x is string => !!x)),
-      );
+      // ── 3) Initiations (for the paper-cut panel) ─────────────────────────
+      let initQ = supabase
+        .from("audit_logs")
+        .select("id, org_id, entity_id, actor_user_id, action, metadata, created_at")
+        .eq("action", "credits.purchase_initiated")
+        .order("created_at", { ascending: false })
+        .limit(2000);
+      if (sinceIso) initQ = initQ.gte("created_at", sinceIso);
+      const { data: initRows, error: initErr } = await initQ;
+      if (initErr) throw initErr;
 
-      // 2) Resolve org names in one round-trip.
-      let orgNameById = new Map<string, string>();
-      if (orgIds.length > 0) {
+      // ── 4) Resolve org names in one round-trip ───────────────────────────
+      const orgIds = new Set<string>();
+      for (const r of (auditRows ?? []) as AuditLogRow[]) {
+        const id = r.org_id ?? r.entity_id;
+        if (id) orgIds.add(id);
+      }
+      for (const r of (ledgerRows ?? []) as LedgerRow[]) {
+        if (r.org_id) orgIds.add(r.org_id);
+      }
+      for (const r of (initRows ?? []) as AuditLogRow[]) {
+        const id = r.org_id ?? r.entity_id;
+        if (id) orgIds.add(id);
+      }
+      const orgNameById = new Map<string, string>();
+      if (orgIds.size > 0) {
         const { data: orgs, error: orgErr } = await supabase
           .from("organizations")
           .select("id, name, legal_name, trading_name")
-          .in("id", orgIds);
+          .in("id", Array.from(orgIds));
         if (orgErr) throw orgErr;
         for (const o of orgs ?? []) {
           const display =
@@ -215,13 +316,59 @@ export function AdminRevenuePanel() {
         }
       }
 
-      const enriched = rows.map((r) => enrichPurchase(r, orgNameById));
-      return { rows: enriched, orgNameById };
+      // ── 5) Normalise + dedup. Audit-log rows always win on payment_reference.
+      const byRef = new Map<string, PurchaseEnriched>();
+      const noRef: PurchaseEnriched[] = [];
+      for (const r of (auditRows ?? []) as AuditLogRow[]) {
+        const p = purchaseFromAuditLog(r, orgNameById);
+        if (!p) continue;
+        if (p.payment_reference) byRef.set(p.payment_reference, p);
+        else noRef.push(p);
+      }
+      for (const r of (ledgerRows ?? []) as LedgerRow[]) {
+        const p = purchaseFromLedger(r, orgNameById);
+        if (!p) continue;
+        if (p.payment_reference) {
+          if (!byRef.has(p.payment_reference)) byRef.set(p.payment_reference, p);
+          // else: audit_log row already counts this revenue, skip ledger duplicate.
+        } else {
+          noRef.push(p);
+        }
+      }
+      const purchases = [...byRef.values(), ...noRef].sort(
+        (a, b) => (a.created_at < b.created_at ? 1 : -1),
+      );
+
+      // ── 6) Pending settlements: initiated but no matching purchased row.
+      const settledRefs = new Set(
+        purchases.map((p) => p.payment_reference).filter((x): x is string => !!x),
+      );
+      const pending: PendingSettlement[] = [];
+      for (const r of (initRows ?? []) as AuditLogRow[]) {
+        const meta = r.metadata ?? {};
+        const ref = str(meta.reference) ?? str(meta.payment_reference);
+        if (!ref || settledRefs.has(ref)) continue;
+        const orgId = r.org_id ?? r.entity_id ?? null;
+        pending.push({
+          id: r.id,
+          reference: ref,
+          actor_user_id: r.actor_user_id,
+          org_id: orgId,
+          org_name: resolveOrgName(orgId, orgNameById),
+          amount_zar: num(meta.amount_zar),
+          credits: num(meta.credits),
+          package_id: str(meta.package_id),
+          initiated_at: r.created_at,
+        });
+      }
+
+      return { rows: purchases, pending };
     },
     staleTime: 30_000,
   });
 
   const rows = data?.rows ?? [];
+  const pending = data?.pending ?? [];
 
   // ─── Aggregations ─────────────────────────────────────────────────────────
 
