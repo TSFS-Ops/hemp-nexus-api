@@ -168,7 +168,8 @@ Deno.serve(async (req) => {
     .update({
       status: "pending_deletion",
       deletion_requested_at: new Date().toISOString(),
-      deletion_reason: (body.reason ?? "").slice(0, 500) || null,
+      deletion_reason: reasonText.slice(0, 500),
+      deletion_category: categoryRaw,
       full_name: null,
       full_name_previous: null,
       email: placeholderEmail,
@@ -190,7 +191,8 @@ Deno.serve(async (req) => {
     target_id: user.id,
     details: {
       org_id: profile.org_id,
-      reason: body.reason ?? null,
+      reason: reasonText,
+      category: categoryRaw,
       grace_period_days: 30,
     },
     ip_address: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
