@@ -132,7 +132,15 @@ export function AdminEngagementForensicsPanel() {
 
       {rows.length > 0 && (
         <Card>
-          <CardContent className="pt-5">
+          <CardContent className="pt-5 space-y-3">
+            {forensicsTruncated && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                <span className="font-semibold">Results capped.</span>
+                <span>
+                  Showing the most recent {FORENSICS_LIMIT} engagements that match these filters. Older matches are not displayed — narrow by Match ID, email, org or status to surface them.
+                </span>
+              </div>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
