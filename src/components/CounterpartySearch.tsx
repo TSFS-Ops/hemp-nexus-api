@@ -137,6 +137,38 @@ export default function CounterpartySearch() {
 
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
 
+  // ── Session-expiry preservation ──────────────────────────────────────
+  // The selection set + tradeContext represent real work the user typed
+  // before clicking Create Draft Match. Without this, an expiry between
+  // selecting and confirming silently throws their picks away. The draft
+  // is rehydrated on mount; cleared after a successful create.
+  const draftSelection = useDraftPersistence<{
+    query: string;
+    selected: string[];
+    tradeContext: typeof tradeContext;
+  }>("counterparty-search-selection", () => ({
+    query,
+    selected: Array.from(selectedResults),
+    tradeContext,
+  }));
+
+  useEffect(() => {
+    const restored = draftSelection.restoreDraft();
+    if (!restored) return;
+    if (restored.query && !query) setQuery(restored.query);
+    if (restored.tradeContext) setTradeContext(restored.tradeContext);
+    if (restored.selected?.length) {
+      // Selection IDs are search-result IDs; they will only re-bind once the
+      // user re-runs the search. Tell them clearly so they don't think the
+      // picks vanished.
+      toast.info(
+        `Your ${restored.selected.length} previous selection${restored.selected.length > 1 ? "s were" : " was"} saved. Re-run the search to continue.`
+      );
+    }
+    // Run only on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Restore pre-auth state on mount (when returning from auth flow)
   useEffect(() => {
     if (authLoading) return;
