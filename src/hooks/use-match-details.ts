@@ -310,7 +310,27 @@ export function useMatchDetails(matchId: string | undefined) {
           throw err;
         }
         dispatchEligibilityFailed(match.id, err);
-        handleApiError(err);
+        // Re-shape the server error into a user-friendly Error that still
+        // carries the backend `requestId` so the toast can show the trace id.
+        let rethrown: unknown = err;
+        try {
+          handleApiError(err);
+        } catch (shaped) {
+          rethrown = shaped;
+        }
+        // For POI generation we toast HERE (with the explicit traceContext
+        // "POI generation") so the trace id is labelled correctly. We then
+        // mark the error so the outer canonical handler skips it.
+        if (actionPath === "generate-poi") {
+          toastApiError(rethrown, {
+            traceContext: "POI generation",
+            errorMessage: "POI generation failed. Please try again.",
+          });
+          if (rethrown && typeof rethrown === "object") {
+            (rethrown as { __alreadyToasted?: boolean }).__alreadyToasted = true;
+          }
+        }
+        throw rethrown;
       }
 
       if (!updated || !updated.id) {
