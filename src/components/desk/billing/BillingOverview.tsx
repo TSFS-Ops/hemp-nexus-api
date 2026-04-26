@@ -72,6 +72,7 @@ export function BillingOverview() {
       setLoading(false);
       return;
     }
+    setOrgId(profile.org_id);
     const [walletRes, ledgerRes] = await Promise.all([
       supabase
         .from("token_wallets")
