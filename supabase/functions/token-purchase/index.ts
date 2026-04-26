@@ -41,8 +41,14 @@ const verifySchema = z.object({
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  // Permissive list — the supabase-js client adds several `x-supabase-*`
+  // headers (api-version, client-platform, client-runtime, etc.) that
+  // must be allow-listed or the browser fails the CORS preflight before
+  // the request ever reaches this function. We accept everything to
+  // avoid silent drift the next time the SDK adds a new header.
+  'Access-Control-Allow-Headers': '*, authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, idempotency-key',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 // ==============================================
