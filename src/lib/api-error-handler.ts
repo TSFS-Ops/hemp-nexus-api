@@ -86,6 +86,16 @@ export function handleApiError(
   options: ApiErrorOptions = {}
 ): void {
   if (options.silent) return;
+  // Allow inner catch blocks to pre-toast with their own context (e.g.
+  // traceContext) and mark the error so the outer canonical handler does
+  // not double-toast the same failure.
+  if (
+    error &&
+    typeof error === "object" &&
+    (error as { __alreadyToasted?: boolean }).__alreadyToasted === true
+  ) {
+    return;
+  }
 
   const requestId = extractRequestId(error);
   const traceOpts = withTraceOptions(requestId, options.traceContext);
