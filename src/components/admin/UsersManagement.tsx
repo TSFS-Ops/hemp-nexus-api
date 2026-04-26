@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2, Search, Mail, RefreshCw, Shield, CheckCircle, XCircle, Download, UserX, UserCheck } from "lucide-react";
+import { Loader2, Search, Mail, RefreshCw, Shield, CheckCircle, XCircle, Download, UserX, UserCheck, Eye } from "lucide-react";
+import UserDetailDrawer from "./UserDetailDrawer";
 import {
   Select,
   SelectContent,
@@ -67,6 +68,7 @@ export default function UsersManagement() {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [journeyUserId, setJourneyUserId] = useState<string | null>(null);
   
 
   useEffect(() => {
@@ -364,6 +366,9 @@ export default function UsersManagement() {
                       </Select>
                     )}
                     <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 touch-target" onClick={() => setJourneyUserId(user.id)} aria-label="View user journey">
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 touch-target" onClick={() => { setSelectedUser(user); setShowResetDialog(true); }}>
                         <Mail className="h-4 w-4" />
                       </Button>
@@ -485,6 +490,14 @@ export default function UsersManagement() {
                           <div className="flex gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
+                                <Button variant="ghost" size="sm" onClick={() => setJourneyUserId(user.id)} aria-label="View user journey">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>View user journey</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
                                 <Button variant="ghost" size="sm" onClick={() => { setSelectedUser(user); setShowResetDialog(true); }}>
                                   <Mail className="h-4 w-4" />
                                 </Button>
@@ -533,6 +546,12 @@ export default function UsersManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UserDetailDrawer
+        userId={journeyUserId}
+        open={journeyUserId !== null}
+        onOpenChange={(open) => { if (!open) setJourneyUserId(null); }}
+      />
     </Card>
   );
 }
