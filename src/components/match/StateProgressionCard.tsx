@@ -636,7 +636,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       </CardContent>
 
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90dvh] sm:max-h-[85vh] flex flex-col overflow-hidden sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>{nextLabel?.replace(/ - .*/, "") || "Confirm action"}?</AlertDialogTitle>
             <AlertDialogDescription asChild>
