@@ -299,6 +299,47 @@ Deno.serve(async (req) => {
         },
       });
 
+      // Revenue notification → support@izenzo.co.za. Idempotency key uses
+      // the Paystack reference, so if the webhook path also fires for the
+      // same payment the email queue dedupes — support gets exactly one
+      // notification per real charge.
+      try {
+        const { data: orgRow } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .maybeSingle();
+        const orgName = (orgRow?.name as string) || `Org ${orgId.slice(0, 8)}`;
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "revenue-event-notify",
+            recipientEmail: "support@izenzo.co.za",
+            idempotencyKey: `revenue-credits-purchased-${reference}`,
+            templateData: {
+              eventType: "credits_purchased",
+              headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
+              orgName,
+              orgId,
+              contactEmail: profile?.email || null,
+              details: {
+                "Credits added": credits,
+                "Amount (ZAR)": meta.price_zar ?? "—",
+                "Package ID": meta.package_id ?? "—",
+                "New balance": newBalance,
+                "Payment reference": reference,
+                Source: "verify-fallback",
+              },
+              consoleUrl: `https://compliance-matching.lovable.app/admin/billing`,
+              consoleLabel: "Open billing console",
+              occurredAt: new Date().toISOString(),
+              referenceId: reference,
+            },
+          },
+        });
+      } catch (notifErr) {
+        console.error(`[Verify] Revenue notify (credits_purchased) failed for ${reference}:`, notifErr);
+      }
+
       console.log(`[Verify] Credited ${credits} credits to org ${orgId} (atomic). New balance: ${newBalance}`);
 
       return new Response(
