@@ -129,7 +129,7 @@ export function CreditProvisioningPanel({
                   return (
                     <button
                       key={tier.id}
-                      onClick={() => setSelected(tier.id)}
+                      onClick={() => handleSelect(tier.id)}
                       className={`w-full text-left rounded-sm border p-4 transition-colors ${
                         active
                           ? "border-slate-900 bg-muted"
