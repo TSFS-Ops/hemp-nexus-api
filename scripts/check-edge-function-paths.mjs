@@ -81,7 +81,7 @@ for (const file of walk(SRC_DIR)) {
 
 if (issues.length === 0) {
   console.log(
-    `✓ check:edge-paths — all ${seen.size} fetchEdgeFunction call sites map to existing functions (${validFunctions.size} functions deployed)`,
+    `✓ check:edge-paths — ${seen.size} unique edge-function call sites verified against ${validFunctions.size} deployed functions`,
   );
   process.exit(0);
 }
