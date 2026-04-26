@@ -1010,7 +1010,7 @@ function DealDocumentCard({
         <p className="text-[11px] text-muted-foreground leading-snug truncate flex items-center gap-1.5 flex-wrap">
           <span className="truncate">with <span className="text-muted-foreground">{deal.counterparty}</span></span>
           <span className="text-muted-foreground/50">·</span>
-          <span className="font-mono text-muted-foreground/70">{ageLabel}</span>
+          <span className="font-mono text-muted-foreground/70 cursor-help" title={ageTooltip}>{ageLabel}</span>
           {deadlineLabel && (
             <>
               <span className="text-muted-foreground/50">·</span>
