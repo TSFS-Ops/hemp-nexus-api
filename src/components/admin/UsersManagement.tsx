@@ -546,6 +546,12 @@ export default function UsersManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UserDetailDrawer
+        userId={journeyUserId}
+        open={journeyUserId !== null}
+        onOpenChange={(open) => { if (!open) setJourneyUserId(null); }}
+      />
     </Card>
   );
 }
