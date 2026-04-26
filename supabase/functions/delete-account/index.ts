@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   const user = userData.user;
 
   // Parse confirmation payload.
-  let body: { confirmation?: string; reason?: string } = {};
+  let body: { confirmation?: string; reason?: string; category?: string } = {};
   try {
     body = await req.json();
   } catch {
@@ -60,6 +60,37 @@ Deno.serve(async (req) => {
   if (!body.confirmation || body.confirmation.trim().toLowerCase() !== (user.email ?? "").toLowerCase()) {
     return json(
       { error: "confirmation_mismatch", message: "Type your email exactly to confirm." },
+      400,
+    );
+  }
+
+  // Reason is now MANDATORY so platform admins can see why users leave.
+  const ALLOWED_CATEGORIES = new Set([
+    "no_longer_needed",
+    "switched_provider",
+    "privacy_concerns",
+    "missing_features",
+    "too_complex",
+    "cost",
+    "other",
+  ]);
+  const reasonText = (body.reason ?? "").trim();
+  const categoryRaw = (body.category ?? "").trim();
+  if (reasonText.length < 5) {
+    return json(
+      {
+        error: "reason_required",
+        message: "Tell us why you're leaving (at least 5 characters). This helps us improve.",
+      },
+      400,
+    );
+  }
+  if (!ALLOWED_CATEGORIES.has(categoryRaw)) {
+    return json(
+      {
+        error: "category_required",
+        message: "Pick a reason category before deleting your account.",
+      },
       400,
     );
   }
