@@ -58,6 +58,15 @@ export function WaiverPacketDownloadButton({
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
       toast.success("Waiver packet downloaded");
     } catch (err) {
+      // When the session is dead, the global SessionExpiredModal already
+      // takes over the screen with a clear "Sign in again" CTA. Showing a
+      // redundant corner toast (and the "Failed to fetch waiver packet"
+      // wording) just confuses users — they keep clicking the toast away
+      // and trying again. Suppress the toast in that case.
+      if (isSessionExpiredError(err)) {
+        console.warn("[WaiverPacketDownload] session expired — modal will handle re-auth");
+        return;
+      }
       const msg = describeEdgeError(err, "Failed to fetch waiver packet");
       console.error("[WaiverPacketDownload] failed", err);
       toast.error(msg, { duration: 8000 });
