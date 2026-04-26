@@ -29,7 +29,7 @@ export function DashboardLayout({ children, isAdmin }: DashboardLayoutProps) {
               <div className="flex items-center gap-1 sm:gap-2" />
             </div>
           </header>
-          <div className="flex-1 py-4 sm:py-6 px-3 xs:px-4 sm:px-6 lg:px-8 pb-20 md:pb-6">
+          <div className="flex-1 py-4 sm:py-6 px-3 xs:px-4 sm:px-6 lg:px-8 pb-mobile-nav">
             <PageContainer padY={false} size="wide">
               <DashboardBreadcrumbs />
               {children}
