@@ -18,6 +18,7 @@ import { template as poiSupportDeskNotify } from './poi-support-desk-notify.tsx'
 import { template as outreachIntentToTrade } from './outreach-intent-to-trade.tsx'
 import { template as outreachSlaDigest } from './outreach-sla-digest.tsx'
 import { template as acceptanceReceipt } from './acceptance-receipt.tsx'
+import { template as revenueEventNotify } from './revenue-event-notify.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'match-notification': matchNotification,
@@ -29,4 +30,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'outreach-intent-to-trade': outreachIntentToTrade,
   'outreach-sla-digest': outreachSlaDigest,
   'acceptance-receipt': acceptanceReceipt,
+  'revenue-event-notify': revenueEventNotify,
 }

@@ -719,6 +719,49 @@ Deno.serve(async (req) => {
               }
             }
           }
+
+          // ── Revenue notification (Route B: clean bilateral on-platform mint) ──
+          // Routes A and C already email support@izenzo.co.za via the
+          // facilitation/support-desk template above. Route B was previously
+          // silent to admins/finance — this restores parity so support sees
+          // every revenue-bearing POI mint exactly once.
+          if (!isUnilateral && hasCounterpartyOnPlatform) {
+            const counterpartyName = match.buyer_org_id === creatorOrgId
+              ? (match.seller_name || match.seller_id || 'Unknown')
+              : (match.buyer_name || match.buyer_id || 'Unknown');
+            await supabase.functions.invoke('send-transactional-email', {
+              body: {
+                templateName: 'revenue-event-notify',
+                recipientEmail: 'support@izenzo.co.za',
+                idempotencyKey: `revenue-poi-mint-${matchId}`,
+                templateData: {
+                  eventType: 'poi_minted',
+                  headline: `POI minted by ${creatorOrgName} — ${match.commodity || 'Trade'}`,
+                  orgName: creatorOrgName,
+                  orgId: creatorOrgId,
+                  contactEmail: creatorEmail,
+                  details: {
+                    Commodity: match.commodity || '—',
+                    Counterparty: counterpartyName,
+                    Quantity: match.quantity_amount
+                      ? `${match.quantity_amount} ${match.quantity_unit || ''}`.trim()
+                      : '—',
+                    Price: match.price_amount
+                      ? `${match.price_currency || ''} ${match.price_amount}`.trim()
+                      : '—',
+                    'Credits burned': 1,
+                    Route: 'Bilateral (both parties on platform)',
+                  },
+                  consoleUrl: `https://compliance-matching.lovable.app/desk/match/${matchId}`,
+                  consoleLabel: 'Open match',
+                  occurredAt: now,
+                  referenceId: matchId,
+                },
+              },
+            }).catch((err: any) =>
+              console.error(`[${requestId}] Revenue notify (poi_minted) failed:`, err)
+            );
+          }
         } catch (notifErr) {
           // Never fail the POI response because notifications failed
           console.error(`[${requestId}] POI notification dispatch error:`, notifErr);
