@@ -290,7 +290,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const notesCount = evidenceCounts?.notesCount ?? 0;
   const waiverRequired = isPoiAction && documentCount === 0 && notesCount === 0;
   const trimmedReason = waiverReason.trim();
-  const waiverReasonValid = !waiverRequired || trimmedReason.length >= 10;
+  const waiverReasonValid = !waiverRequired || trimmedReason.length > 0;
   const waiverCategoryValid = !waiverRequired || WAIVER_CATEGORIES.some(c => c.value === waiverCategory);
   const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid && waiverCategoryValid));
 
