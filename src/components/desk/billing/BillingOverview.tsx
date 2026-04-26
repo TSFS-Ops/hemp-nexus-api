@@ -47,40 +47,103 @@ export function BillingOverview() {
   const [balance, setBalance] = useState<number | null>(null);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
+
+  // Stable refresh that re-reads the wallet + recent ledger so we can
+  // call it both on mount and after a successful Paystack verify.
+  const refresh = async () => {
+    if (!user) return;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profile?.org_id) {
+      setLoading(false);
+      return;
+    }
+    const [walletRes, ledgerRes] = await Promise.all([
+      supabase
+        .from("token_wallets")
+        .select("balance")
+        .eq("org_id", profile.org_id)
+        .maybeSingle(),
+      supabase
+        .from("token_ledger")
+        .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at")
+        .eq("org_id", profile.org_id)
+        .order("created_at", { ascending: false })
+        .limit(40),
+    ]);
+    setBalance(Number(walletRes.data?.balance ?? 0));
+    setLedger((ledgerRes.data ?? []) as unknown as LedgerEntry[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (!profile?.org_id) {
-        setLoading(false);
-        return;
-      }
-      const [walletRes, ledgerRes] = await Promise.all([
-        supabase
-          .from("token_wallets")
-          .select("balance")
-          .eq("org_id", profile.org_id)
-          .maybeSingle(),
-        supabase
-          .from("token_ledger")
-          .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at")
-          .eq("org_id", profile.org_id)
-          .order("created_at", { ascending: false })
-          .limit(40),
-      ]);
-      setBalance(Number(walletRes.data?.balance ?? 0));
-      setLedger((ledgerRes.data ?? []) as unknown as LedgerEntry[]);
-      setLoading(false);
-    })();
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const handlePurchase = (credits: number) => {
-    toast.info(`${credits} credits: checkout coming online soon.`);
+  // Handle the redirect-back from Paystack: ?status=success&reference=…
+  // Verify with the backend (idempotent), surface a toast, then strip
+  // the query params so a refresh doesn't re-toast.
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    const reference =
+      params.get("reference") || params.get("trxref") || params.get("tx_ref");
+    if (!reference) return;
+
+    (async () => {
+      try {
+        if (status === "cancelled") {
+          toast.info("Payment cancelled. No credits were charged.");
+        } else {
+          const result = await verifyCreditCheckout(reference);
+          if (result.success) {
+            if (result.alreadyCredited) {
+              toast.success("Credits already applied to your wallet.");
+            } else {
+              toast.success(
+                `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "—"}.`
+              );
+            }
+            await refresh();
+          } else {
+            toast.error(result.message ?? "Payment was not successful.");
+          }
+        }
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Could not verify payment. Contact support@izenzo.co.za."
+        );
+      } finally {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("status");
+        url.searchParams.delete("reference");
+        url.searchParams.delete("trxref");
+        url.searchParams.delete("tx_ref");
+        window.history.replaceState({}, "", url.toString());
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const handlePurchase = async (pack: { id: CreditPackageId; credits: number }) => {
+    if (purchasing) return;
+    setPurchasing(pack.id);
+    try {
+      const { checkoutUrl } = await startCreditCheckout(pack.id);
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Could not start checkout. Please try again."
+      );
+      setPurchasing(null);
+    }
   };
 
   const displayBalance = balance ?? 0;
