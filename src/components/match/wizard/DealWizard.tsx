@@ -82,12 +82,13 @@ export function DealWizard({
   const { data: evidenceCounts } = useQuery({
     queryKey: ["match-evidence-counts", match.id],
     queryFn: async () => {
-      const [docsRes, notesRes] = await Promise.all([
+      const [docsRes, govDocsRes, notesRes] = await Promise.all([
         supabase.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", match.id),
+        supabase.from("governance_documents").select("id", { count: "exact", head: true }).eq("deal_reference_id", match.id),
         supabase.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", match.id),
       ]);
       return {
-        documentCount: docsRes.count ?? 0,
+        documentCount: (docsRes.count ?? 0) + (govDocsRes.count ?? 0),
         notesCount: notesRes.count ?? 0,
       };
     },
