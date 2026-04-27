@@ -35,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { VerificationWalkthroughCard } from "./VerificationWalkthroughCard";
 
 type Kind = "idv" | "org" | "both";
 type Status = "pending" | "in_progress" | "completed" | "cancelled";
@@ -234,6 +235,7 @@ export function AdminVerificationQueuePanel() {
 
   return (
     <div className="space-y-4">
+      <VerificationWalkthroughCard />
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className="text-[10px]">Open: {counts.open}</Badge>
