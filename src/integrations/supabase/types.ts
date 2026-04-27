@@ -4072,6 +4072,7 @@ export type Database = {
           responded_at: string | null
           sla_reminder_count: number
           sla_reminder_sent_at: string | null
+          source: string
           support_notes: string | null
           support_notes_updated_at: string | null
           support_notes_updated_by: string | null
@@ -4094,6 +4095,7 @@ export type Database = {
           responded_at?: string | null
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
+          source?: string
           support_notes?: string | null
           support_notes_updated_at?: string | null
           support_notes_updated_by?: string | null
@@ -4116,6 +4118,7 @@ export type Database = {
           responded_at?: string | null
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
+          source?: string
           support_notes?: string | null
           support_notes_updated_at?: string | null
           support_notes_updated_by?: string | null
