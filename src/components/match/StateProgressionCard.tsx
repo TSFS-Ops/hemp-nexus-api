@@ -69,35 +69,38 @@ function getFieldChecklist(match: Match): FieldCheck[] {
   ];
 
   if (!isUnilateral) {
+    // Names are sufficient to UNLOCK the Generate POI button. A missing
+    // verified identifier (buyer_id / seller_id) will still be caught
+    // server-side, which routes the deal into Pending Engagements and
+    // triggers the trading-partner invite flow — that is the intended
+    // on-ramp, not a failure. The inline panel below the button explains
+    // this *before* the click so users aren't surprised.
     fields.push(
       {
         label: "Buyer identified",
-        // Server-side eligibility requires BOTH a buyer_id and buyer_name.
-        // A name on its own (e.g. an unverified discovered counterparty)
-        // will fail POI generation with "Missing required field: Buyer Identifier".
-        filled: !!(match as any).buyer_id && !!match.buyer_name,
+        filled: !!match.buyer_name,
         required: true,
         hint: !!match.buyer_name && !(match as any).buyer_id
-          ? "Buyer name is set but no verified identifier — invite or link a registered counterparty"
-          : "Add a verified buyer via the Terms tab or match creation",
+          ? "Buyer name is set — clicking Generate POI will route this to Pending Engagements and send an invite if no verified identifier is linked yet"
+          : "Add a buyer via the Terms tab or match creation",
       },
       {
         label: "Seller identified",
-        filled: !!(match as any).seller_id && !!match.seller_name,
+        filled: !!match.seller_name,
         required: true,
         hint: !!match.seller_name && !(match as any).seller_id
-          ? "Seller name is set but no verified identifier — invite or link a registered counterparty"
-          : "Add a verified seller via the Terms tab or match creation",
+          ? "Seller name is set — clicking Generate POI will route this to Pending Engagements and send an invite if no verified identifier is linked yet"
+          : "Add a seller via the Terms tab or match creation",
       }
     );
   } else {
-    const hasBuyer = !!(match as any).buyer_id && !!match.buyer_name;
-    const hasSeller = !!(match as any).seller_id && !!match.seller_name;
+    const hasBuyer = !!match.buyer_name;
+    const hasSeller = !!match.seller_name;
     fields.push({
       label: "Declaring party",
       filled: hasBuyer || hasSeller,
       required: true,
-      hint: "At least one identified party (buyer or seller) is required",
+      hint: "At least one named party (buyer or seller) is required",
     });
   }
 
@@ -676,63 +679,50 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </button>
             )}
 
-            {/* ── Server-aligned eligibility error panel ──
-                When the disabled button is for Generate POI, surface the EXACT
-                missing-identifier reasons the server's evaluateEligibility() will
-                return ("Missing required field: Buyer Identifier" / "Seller
-                Identifier"), so users see the same wording as the eventual API
-                denial — and a precise next step (invite or link a registered
-                counterparty) — without having to click and burn the round-trip. */}
-            {isPoiAction && !allRequiredFilled && !showInlineWaiver && (() => {
+            {/* ── Counterparty-not-yet-registered heads-up ──
+                When names are present but verified platform identifiers
+                aren't, clicking Generate POI will route the deal into
+                Pending Engagements and trigger the trading-partner invite
+                flow (this is the intended on-ramp for off-platform
+                counterparties). The panel below explains that BEFORE the
+                click so users aren't surprised by the routing — but the
+                button stays clickable and no credits are charged until
+                the POI actually mints. */}
+            {isPoiAction && !showInlineWaiver && (() => {
               const missingBuyerId =
-                !isUnilateral && !(match as any).buyer_id;
+                !isUnilateral && !!match.buyer_name && !(match as any).buyer_id;
               const missingSellerId =
-                !isUnilateral && !(match as any).seller_id;
-              const hasBuyerName = !!match.buyer_name;
-              const hasSellerName = !!match.seller_name;
+                !isUnilateral && !!match.seller_name && !(match as any).seller_id;
 
               if (!missingBuyerId && !missingSellerId) return null;
 
               return (
-                <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
-                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                  <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                   <div className="space-y-2 text-left w-full">
                     <p className="text-sm font-semibold text-foreground">
-                      Cannot generate POI — missing verified identifier
+                      Counterparty not yet on the platform
                     </p>
                     <ul className="space-y-1 text-xs text-muted-foreground">
                       {missingBuyerId && (
                         <li>
-                          <span className="font-mono text-destructive">
-                            Missing required field: Buyer Identifier
-                          </span>
-                          {hasBuyerName && (
-                            <span className="block text-[11px] mt-0.5">
-                              Buyer name <strong>“{match.buyer_name}”</strong> is set,
-                              but no verified <code>buyer_id</code> is linked yet.
-                            </span>
-                          )}
+                          Buyer <strong>“{match.buyer_name}”</strong> is named
+                          but not yet a registered organisation.
                         </li>
                       )}
                       {missingSellerId && (
                         <li>
-                          <span className="font-mono text-destructive">
-                            Missing required field: Seller Identifier
-                          </span>
-                          {hasSellerName && (
-                            <span className="block text-[11px] mt-0.5">
-                              Seller name <strong>“{match.seller_name}”</strong> is set,
-                              but no verified <code>seller_id</code> is linked yet.
-                            </span>
-                          )}
+                          Seller <strong>“{match.seller_name}”</strong> is named
+                          but not yet a registered organisation.
                         </li>
                       )}
                     </ul>
-                    <p className="text-[11px] text-muted-foreground border-t border-destructive/20 pt-2">
-                      Resolve by inviting the counterparty via the trading-partner
-                      invite flow (they register and receive an identifier), or by
-                      linking the match to an existing registered organisation in
-                      the <strong>Terms</strong> tab. No credits will be charged.
+                    <p className="text-[11px] text-muted-foreground border-t border-amber-500/20 pt-2">
+                      Clicking <strong>{nextLabel}</strong> will add this deal
+                      to <strong>Pending Engagements</strong> and send an
+                      invite if an email is on file. The POI mints
+                      automatically once they accept. <strong>No credits are
+                      charged</strong> until that happens.
                     </p>
                   </div>
                 </div>
