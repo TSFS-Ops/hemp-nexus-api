@@ -69,35 +69,38 @@ function getFieldChecklist(match: Match): FieldCheck[] {
   ];
 
   if (!isUnilateral) {
+    // Names are sufficient to UNLOCK the Generate POI button. A missing
+    // verified identifier (buyer_id / seller_id) will still be caught
+    // server-side, which routes the deal into Pending Engagements and
+    // triggers the trading-partner invite flow — that is the intended
+    // on-ramp, not a failure. The inline panel below the button explains
+    // this *before* the click so users aren't surprised.
     fields.push(
       {
         label: "Buyer identified",
-        // Server-side eligibility requires BOTH a buyer_id and buyer_name.
-        // A name on its own (e.g. an unverified discovered counterparty)
-        // will fail POI generation with "Missing required field: Buyer Identifier".
-        filled: !!(match as any).buyer_id && !!match.buyer_name,
+        filled: !!match.buyer_name,
         required: true,
         hint: !!match.buyer_name && !(match as any).buyer_id
-          ? "Buyer name is set but no verified identifier — invite or link a registered counterparty"
-          : "Add a verified buyer via the Terms tab or match creation",
+          ? "Buyer name is set — clicking Generate POI will route this to Pending Engagements and send an invite if no verified identifier is linked yet"
+          : "Add a buyer via the Terms tab or match creation",
       },
       {
         label: "Seller identified",
-        filled: !!(match as any).seller_id && !!match.seller_name,
+        filled: !!match.seller_name,
         required: true,
         hint: !!match.seller_name && !(match as any).seller_id
-          ? "Seller name is set but no verified identifier — invite or link a registered counterparty"
-          : "Add a verified seller via the Terms tab or match creation",
+          ? "Seller name is set — clicking Generate POI will route this to Pending Engagements and send an invite if no verified identifier is linked yet"
+          : "Add a seller via the Terms tab or match creation",
       }
     );
   } else {
-    const hasBuyer = !!(match as any).buyer_id && !!match.buyer_name;
-    const hasSeller = !!(match as any).seller_id && !!match.seller_name;
+    const hasBuyer = !!match.buyer_name;
+    const hasSeller = !!match.seller_name;
     fields.push({
       label: "Declaring party",
       filled: hasBuyer || hasSeller,
       required: true,
-      hint: "At least one identified party (buyer or seller) is required",
+      hint: "At least one named party (buyer or seller) is required",
     });
   }
 
