@@ -82,6 +82,35 @@ export function evaluateSoftRoute(
     };
   }
 
+  // Reason-code gate (runs BEFORE field-name gate). The eligibility
+  // evaluator can record `SAME_COUNTERPARTY` against the buyer_id /
+  // seller_id field names — those names are inside the soft-routable
+  // set, but the underlying failure is a hard semantic conflict
+  // (the same entity on both sides). Inspect codes, not just names,
+  // so we never soft-route a same-counterparty match.
+  const errorCodes = new Set(
+    (result.reasons ?? [])
+      .filter((r) => r.severity === "error")
+      .map((r) => r.code),
+  );
+  const HARD_FAIL_CODES = new Set([
+    "SAME_COUNTERPARTY",
+    "INVALID_NUMBER",
+    "INVALID_VALUE",
+    "INVALID_CURRENCY",
+  ]);
+  for (const code of errorCodes) {
+    if (HARD_FAIL_CODES.has(code)) {
+      return {
+        eligible: false,
+        missingBuyerId: false,
+        missingSellerId: false,
+        failedFields,
+        reason: `non_soft_routable_code:${code}`,
+      };
+    }
+  }
+
   // Hard-fail: any failure outside the id-only set means the match is
   // commercially incomplete. Soft routing here would create misleading
   // engagement rows. The caller MUST re-throw the 422.
