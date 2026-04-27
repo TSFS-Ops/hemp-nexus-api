@@ -32,6 +32,7 @@ import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
 import { AdminTradeApprovalsPanel } from "@/components/admin/AdminTradeApprovalsPanel";
 import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
+import { AdminVerificationQueuePanel } from "@/components/admin/AdminVerificationQueuePanel";
 import { AdminEngagementForensicsPanel } from "@/components/admin/AdminEngagementForensicsPanel";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { AdminApprovalThresholdsPanel } from "@/components/admin/AdminApprovalThresholdsPanel";
