@@ -1,31 +1,24 @@
-// Unit + integration tests for the POI mint soft-route flow.
+// Pure unit tests for the POI mint soft-route flow.
 //
-// Two layers:
+//   1. `evaluateSoftRoute` — policy that decides whether an
+//      `ELIGIBILITY_FAILED` outcome is safe to soft-route into a Pending
+//      Engagement. Rules we MUST not regress: any non-id failure must
+//      hard-fail; unilateral matches must hard-fail; ids missing without
+//      corresponding names must hard-fail.
 //
-//   1. Pure unit tests on `evaluateSoftRoute` — the policy that decides
-//      whether an `ELIGIBILITY_FAILED` outcome is safe to soft-route into
-//      a Pending Engagement. These are the rules we MUST not regress:
-//      any non-id failure must hard-fail; unilateral matches must hard-fail;
-//      ids missing without corresponding names must hard-fail.
+//   2. `resolveCounterpartyBinding` — email→org lookup over a fake
+//      supabase client. Confirms the four binding states stay stable.
 //
-//   2. Live integration tests that hit the deployed `match` edge function
-//      against the real database. Skipped if SUPABASE_URL /
-//      SUPABASE_SERVICE_ROLE_KEY env vars aren't present.
+// The full authenticated 422 → 202 contract lives in
+// `e2e_soft_route_test.ts` and runs in the dedicated `e2e-soft-route`
+// CI job (which provides the service-role key).
 //
-// Run all:    deno test supabase/functions/match/index_test.ts --allow-net --allow-env
-// Run unit:   deno test supabase/functions/match/index_test.ts --allow-net --allow-env --filter "soft-route policy"
+// Run:    deno test supabase/functions/match/index_test.ts --allow-net --allow-env
+// Filter: --filter "soft-route policy"
 
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
-import {
-  assert,
-  assertEquals,
-  assertExists,
-  assertNotEquals,
-} from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import {
-  evaluateEligibility,
-} from "../_shared/eligibility.ts";
+import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { evaluateEligibility } from "../_shared/eligibility.ts";
 import { evaluateSoftRoute, resolveCounterpartyBinding } from "../_shared/soft-route.ts";
 
 // ────────────────────────────────────────────────────────────────────────
