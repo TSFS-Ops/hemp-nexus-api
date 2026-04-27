@@ -69,32 +69,29 @@ function getFieldChecklist(match: Match): FieldCheck[] {
   ];
 
   if (!isUnilateral) {
-    // POI mint requires BOTH a name AND a verified registered identifier
-    // (buyer_id / seller_id) on each side. The server-side eligibility check
-    // in supabase/functions/_shared/eligibility.ts rejects the request with
-    // 422 ELIGIBILITY_FAILED if either id is missing, so the button must
-    // stay disabled until the counterparty is a registered organisation on
-    // the platform. The inline panel below the button explains how to
-    // resolve this.
+    // PRODUCT DIRECTIVE (2026-04-27): no hard verification before POI.
+    // POI mint requires only that each side has a NAME. Registered platform
+    // identifiers are no longer required pre-POI; KYB/IDV remain mandatory
+    // pre-WaD via the 9-gate engine.
     fields.push(
       {
-        label: "Buyer registered on platform",
-        filled: !!match.buyer_name && !!(match as any).buyer_id,
+        label: "Buyer named",
+        filled: !!match.buyer_name,
         required: true,
         hint: !match.buyer_name
-          ? "Add a buyer via the Terms tab or match creation"
+          ? "Add a buyer name in the Terms tab"
           : !(match as any).buyer_id
-            ? `Buyer “${match.buyer_name}” is named but is not yet a registered organisation. Invite them, or link an existing registered organisation in the Terms tab, before generating POI.`
+            ? `Buyer “${match.buyer_name}” is named (not yet a registered organisation). POI can still be generated; full verification will be required at WaD.`
             : "Buyer is a registered organisation on the platform",
       },
       {
-        label: "Seller registered on platform",
-        filled: !!match.seller_name && !!(match as any).seller_id,
+        label: "Seller named",
+        filled: !!match.seller_name,
         required: true,
         hint: !match.seller_name
-          ? "Add a seller via the Terms tab or match creation"
+          ? "Add a seller name in the Terms tab"
           : !(match as any).seller_id
-            ? `Seller “${match.seller_name}” is named but is not yet a registered organisation. Invite them, or link an existing registered organisation in the Terms tab, before generating POI.`
+            ? `Seller “${match.seller_name}” is named (not yet a registered organisation). POI can still be generated; full verification will be required at WaD.`
             : "Seller is a registered organisation on the platform",
       }
     );

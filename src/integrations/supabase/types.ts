@@ -2911,6 +2911,75 @@ export type Database = {
           },
         ]
       }
+      match_counterparty_intel: {
+        Row: {
+          counterparty_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          linkedin_url: string | null
+          match_id: string
+          notes: string | null
+          org_id: string
+          other_social_urls: Json
+          presence_confirmed: boolean
+          presence_confirmed_at: string | null
+          presence_confirmed_by: string | null
+          side: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          counterparty_name: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          linkedin_url?: string | null
+          match_id: string
+          notes?: string | null
+          org_id: string
+          other_social_urls?: Json
+          presence_confirmed?: boolean
+          presence_confirmed_at?: string | null
+          presence_confirmed_by?: string | null
+          side: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          counterparty_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          linkedin_url?: string | null
+          match_id?: string
+          notes?: string | null
+          org_id?: string
+          other_social_urls?: Json
+          presence_confirmed?: boolean
+          presence_confirmed_at?: string | null
+          presence_confirmed_by?: string | null
+          side?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_counterparty_intel_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_counterparty_intel_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_documents: {
         Row: {
           change_notes: string | null
@@ -3547,6 +3616,75 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operator_verification_requests: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          kind: string
+          match_id: string | null
+          org_id: string | null
+          outcome: string | null
+          raised_by: string
+          reason: string | null
+          reviewer_notes: string | null
+          status: string
+          subject_name: string
+          subject_org_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          match_id?: string | null
+          org_id?: string | null
+          outcome?: string | null
+          raised_by: string
+          reason?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          subject_name: string
+          subject_org_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          match_id?: string | null
+          org_id?: string | null
+          outcome?: string | null
+          raised_by?: string
+          reason?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          subject_name?: string
+          subject_org_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operator_verification_requests_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "operator_verification_requests_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
             referencedColumns: ["id"]
           },
         ]

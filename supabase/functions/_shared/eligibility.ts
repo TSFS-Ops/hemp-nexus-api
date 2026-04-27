@@ -9,11 +9,16 @@ import { ApiException } from "./errors.ts";
  * Unilateral intents have relaxed requirements: only one party is needed.
  */
 
-// Required fields for bilateral Confirm Intent
+// Required fields for bilateral Confirm Intent.
+//
+// PRODUCT DIRECTIVE (2026-04-27, Daniel Davies):
+// "No hard verification before POI. Light public-source checks only."
+// → buyer_id / seller_id are NO LONGER required at POI mint. A NAMED
+//   counterparty is sufficient. Hard verification (KYB/IDV/UBO) remains
+//   mandatory at WaD via the 9-gate engine — not here.
+// See admin_settings.poi_pre_verification_policy for the canonical record.
 const BILATERAL_REQUIRED_FIELDS = [
-  { field: "buyer_id", label: "Buyer Identifier", type: "string" },
   { field: "buyer_name", label: "Buyer Name", type: "string" },
-  { field: "seller_id", label: "Seller Identifier", type: "string" },
   { field: "seller_name", label: "Seller Name", type: "string" },
   { field: "commodity", label: "Commodity", type: "string" },
   { field: "quantity_amount", label: "Quantity Amount", type: "positive_number" },
@@ -159,16 +164,34 @@ export function evaluateEligibility(match: Record<string, unknown>): Eligibility
     }
   }
 
-  // Validate buyer/seller are not the same (only for bilateral)
-  if (!isUnilateral && match.buyer_id === match.seller_id && match.buyer_id) {
-    reasons.push({
-      code: "SAME_COUNTERPARTY",
-      field: "buyer_id,seller_id",
-      message: "Buyer and seller cannot be the same entity",
-      severity: "error",
-    });
-    if (!failedFields.includes("buyer_id")) failedFields.push("buyer_id");
-    if (!failedFields.includes("seller_id")) failedFields.push("seller_id");
+  // Validate buyer/seller are not the same (only for bilateral).
+  // Compare on registered ids when both sides are registered, otherwise fall
+  // back to a name comparison so we still catch the trivial "buyer = seller"
+  // mistake when the counterparty is named-only (post-2026-04-27 directive).
+  if (!isUnilateral) {
+    const sameById =
+      match.buyer_id != null &&
+      match.seller_id != null &&
+      match.buyer_id === match.seller_id;
+    const buyerNameNorm =
+      typeof match.buyer_name === "string" ? match.buyer_name.trim().toLowerCase() : "";
+    const sellerNameNorm =
+      typeof match.seller_name === "string" ? match.seller_name.trim().toLowerCase() : "";
+    const sameByName =
+      buyerNameNorm.length > 0 &&
+      sellerNameNorm.length > 0 &&
+      buyerNameNorm === sellerNameNorm;
+
+    if (sameById || sameByName) {
+      reasons.push({
+        code: "SAME_COUNTERPARTY",
+        field: "buyer_name,seller_name",
+        message: "Buyer and seller cannot be the same entity",
+        severity: "error",
+      });
+      if (!failedFields.includes("buyer_name")) failedFields.push("buyer_name");
+      if (!failedFields.includes("seller_name")) failedFields.push("seller_name");
+    }
   }
 
   // Check if already settled (warning only - doesn't block)
