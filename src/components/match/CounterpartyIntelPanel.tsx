@@ -305,7 +305,7 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
         .select("*")
         .eq("match_id", match.id);
       if (error) throw error;
-      return (data ?? []) as IntelRow[];
+      return (data ?? []) as unknown as IntelRow[];
     },
     refetchOnWindowFocus: false,
   });
