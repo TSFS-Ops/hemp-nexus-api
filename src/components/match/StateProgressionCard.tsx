@@ -69,28 +69,33 @@ function getFieldChecklist(match: Match): FieldCheck[] {
   ];
 
   if (!isUnilateral) {
-    // Names are sufficient to UNLOCK the Generate POI button. A missing
-    // verified identifier (buyer_id / seller_id) will still be caught
-    // server-side, which routes the deal into Pending Engagements and
-    // triggers the trading-partner invite flow — that is the intended
-    // on-ramp, not a failure. The inline panel below the button explains
-    // this *before* the click so users aren't surprised.
+    // POI mint requires BOTH a name AND a verified registered identifier
+    // (buyer_id / seller_id) on each side. The server-side eligibility check
+    // in supabase/functions/_shared/eligibility.ts rejects the request with
+    // 422 ELIGIBILITY_FAILED if either id is missing, so the button must
+    // stay disabled until the counterparty is a registered organisation on
+    // the platform. The inline panel below the button explains how to
+    // resolve this.
     fields.push(
       {
-        label: "Buyer identified",
-        filled: !!match.buyer_name,
+        label: "Buyer registered on platform",
+        filled: !!match.buyer_name && !!(match as any).buyer_id,
         required: true,
-        hint: !!match.buyer_name && !(match as any).buyer_id
-          ? "Buyer name is set — clicking Generate POI will route this to Pending Engagements and send an invite if no verified identifier is linked yet"
-          : "Add a buyer via the Terms tab or match creation",
+        hint: !match.buyer_name
+          ? "Add a buyer via the Terms tab or match creation"
+          : !(match as any).buyer_id
+            ? `Buyer “${match.buyer_name}” is named but is not yet a registered organisation. Invite them, or link an existing registered organisation in the Terms tab, before generating POI.`
+            : "Buyer is a registered organisation on the platform",
       },
       {
-        label: "Seller identified",
-        filled: !!match.seller_name,
+        label: "Seller registered on platform",
+        filled: !!match.seller_name && !!(match as any).seller_id,
         required: true,
-        hint: !!match.seller_name && !(match as any).seller_id
-          ? "Seller name is set — clicking Generate POI will route this to Pending Engagements and send an invite if no verified identifier is linked yet"
-          : "Add a seller via the Terms tab or match creation",
+        hint: !match.seller_name
+          ? "Add a seller via the Terms tab or match creation"
+          : !(match as any).seller_id
+            ? `Seller “${match.seller_name}” is named but is not yet a registered organisation. Invite them, or link an existing registered organisation in the Terms tab, before generating POI.`
+            : "Seller is a registered organisation on the platform",
       }
     );
   } else {
