@@ -329,33 +329,47 @@ Deno.serve(async (req) => {
         );
       }
 
-      // ── PARSE OPTIONAL WAIVER PAYLOAD FROM REQUEST BODY ──
-      // The waiver record is now written *inside* the same DB transaction as
-      // the credit burn and the state transition (atomic_generate_poi_v2).
-      // This eliminates the orphan-waiver class of bugs entirely: if the mint
-      // fails for any reason, the waiver row is rolled back automatically.
+
+      // ── PARSE OPTIONAL REQUEST BODY ──
+      // Two optional payloads can ride on the generate-poi POST body:
+      //   • evidence_waiver — written atomically inside atomic_generate_poi_v2
+      //     so a failed mint never leaves an orphan waiver row.
+      //   • counterparty_email — only consumed by the soft-route branch
+      //     below. Lets the caller supply an email for an unregistered
+      //     counterparty so we can resolve a binding immediately. Lower-cased
+      //     and trimmed; never required.
       let waiverPayload: { category: string; reason: string; actor_roles: string[] } | null = null;
+      let counterpartyEmail: string | null = null;
       try {
         const contentType = req.headers.get("content-type") || "";
         if (contentType.includes("application/json")) {
           const rawBody = await req.text();
           if (rawBody && rawBody.trim().length > 0) {
             const parsed = JSON.parse(rawBody);
-            if (parsed && typeof parsed === "object" && parsed.evidence_waiver && typeof parsed.evidence_waiver === "object") {
-              const w = parsed.evidence_waiver;
-              if (typeof w.category === "string" && typeof w.reason === "string") {
-                waiverPayload = {
-                  category: w.category,
-                  reason: w.reason,
-                  actor_roles: Array.isArray(w.actor_roles) ? w.actor_roles.filter((r: unknown) => typeof r === "string") : [],
-                };
+            if (parsed && typeof parsed === "object") {
+              if (parsed.evidence_waiver && typeof parsed.evidence_waiver === "object") {
+                const w = parsed.evidence_waiver;
+                if (typeof w.category === "string" && typeof w.reason === "string") {
+                  waiverPayload = {
+                    category: w.category,
+                    reason: w.reason,
+                    actor_roles: Array.isArray(w.actor_roles) ? w.actor_roles.filter((r: unknown) => typeof r === "string") : [],
+                  };
+                }
+              }
+              if (typeof parsed.counterparty_email === "string") {
+                const trimmed = parsed.counterparty_email.trim().toLowerCase();
+                // Loose email shape check; the binding lookup will be the real authority.
+                if (trimmed.length > 0 && trimmed.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+                  counterpartyEmail = trimmed;
+                }
               }
             }
           }
         }
       } catch (bodyErr) {
-        console.warn(`[${requestId}] Could not parse request body for waiver payload:`, bodyErr);
-        // Non-fatal: server-side gate will block if waiver is required.
+        console.warn(`[${requestId}] Could not parse request body:`, bodyErr);
+        // Non-fatal: server-side gates will still enforce.
       }
 
       // ELIGIBILITY CHECK
@@ -364,6 +378,146 @@ Deno.serve(async (req) => {
       } catch (eligibilityError) {
         const eligResult = evaluateEligibility(match);
         console.error(`[${requestId}] SENTRY_BREADCRUMB: ELIGIBILITY_FAILED match_id=${matchId} org_id=${authCtx.orgId} match_type=${match.match_type || 'search'} failed_fields=${eligResult.failedFields.join(',')}`);
+
+        // ── SOFT-ROUTE BRANCH ──
+        // If the failure is exclusively "counterparty named but not yet a
+        // registered organisation" (buyer_id / seller_id missing while the
+        // corresponding NAME is set), create a Pending Engagement row
+        // instead of returning 422. This is gated tightly: any other
+        // eligibility failure (price, commodity, same-counterparty, etc.)
+        // still hard-fails as 422. NO credit is charged on the 202 branch
+        // — the engagement guard at the top of this handler will block any
+        // subsequent generate-poi until the engagement is `accepted`, at
+        // which point the normal mint path (with credit burn) runs.
+        const softRoute = evaluateSoftRoute(match, eligResult);
+
+        if (softRoute.eligible) {
+          console.log(`[${requestId}] SOFT_ROUTE eligible match_id=${matchId} failed_fields=${softRoute.failedFields.join(',')}`);
+
+          // Resolve binding (best-effort; never fatal).
+          const binding: BindingHint = await resolveCounterpartyBinding(
+            supabase,
+            counterpartyEmail,
+            requestId,
+          );
+          const boundOrgId = binding.status === "bound" ? binding.org_id : null;
+
+          // UNIQUE(match_id) on poi_engagements is our idempotency
+          // guarantee: a second soft-route attempt for the same match
+          // either finds the existing row (and returns it) or hits the
+          // unique violation (and we recover by re-fetching).
+          const insertPayload = {
+            match_id: matchId,
+            org_id: match.org_id,
+            counterparty_org_id: boundOrgId,
+            counterparty_type: boundOrgId ? "known" : "unknown",
+            counterparty_email: counterpartyEmail,
+            engagement_status: boundOrgId ? "notification_sent" : "pending",
+            source: "eligibility_soft_route",
+          } as Record<string, unknown>;
+
+          let engagementRow: Record<string, unknown> | null = null;
+          const { data: insertedRow, error: insertErr } = await supabase
+            .from("poi_engagements")
+            .insert(insertPayload)
+            .select("*")
+            .maybeSingle();
+
+          if (insertErr) {
+            // 23505 = unique_violation → an engagement already exists for
+            // this match. Re-fetch and return it (idempotent replay).
+            // Postgrest surfaces the SQLSTATE in `.code`.
+            const code = (insertErr as { code?: string }).code ?? "";
+            if (code === "23505") {
+              const { data: existing, error: refetchErr } = await supabase
+                .from("poi_engagements")
+                .select("*")
+                .eq("match_id", matchId)
+                .maybeSingle();
+              if (refetchErr || !existing) {
+                console.error(`[${requestId}] SOFT_ROUTE conflict but re-fetch failed:`, refetchErr);
+                // Fall through to the original 422 — at least we don't lie.
+                throw eligibilityError;
+              }
+              engagementRow = existing;
+              console.log(`[${requestId}] SOFT_ROUTE idempotent replay — existing engagement ${existing.id}`);
+            } else {
+              console.error(`[${requestId}] SOFT_ROUTE insert failed:`, insertErr);
+              // Non-recoverable insert failure: keep the strict 422 contract
+              // rather than silently dropping the user into limbo.
+              throw eligibilityError;
+            }
+          } else {
+            engagementRow = insertedRow;
+            console.log(`[${requestId}] SOFT_ROUTE engagement created ${insertedRow?.id} binding=${binding.status}`);
+          }
+
+          // Audit (separate row from intent.denied — soft route is NOT a denial).
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: match.org_id,
+              actor_user_id: actorUserId,
+              actor_api_key_id: actorApiKeyId,
+              action: "match.poi.soft_routed",
+              entity_type: "match",
+              entity_id: matchId,
+              metadata: {
+                request_id: requestId,
+                engagement_id: engagementRow?.id,
+                failed_fields: softRoute.failedFields,
+                missing_buyer_id: softRoute.missingBuyerId,
+                missing_seller_id: softRoute.missingSellerId,
+                binding_status: binding.status,
+                binding_org_id: binding.status === "bound" ? binding.org_id : null,
+                counterparty_email_supplied: counterpartyEmail !== null,
+                idempotent_replay: insertErr ? true : false,
+              },
+            });
+          } catch (auditErr) {
+            console.warn(`[${requestId}] SOFT_ROUTE audit write failed (non-fatal):`, auditErr);
+          }
+
+          const responseBody = {
+            soft_route: {
+              status: "queued",
+              failed_fields: softRoute.failedFields,
+              message:
+                "Counterparty is named but not yet a registered organisation. The deal is queued in Pending Engagements; POI mint will resume once the counterparty registers and accepts.",
+            },
+            engagement: engagementRow,
+            binding,
+          };
+
+          // Cache the 202 under the supplied Idempotency-Key so a network
+          // retry sees the same body. The match handler's idempotency
+          // ledger already short-circuits at the top; this just stores
+          // the result for the next attempt.
+          try {
+            await storeIdempotentResponse({
+              supabase,
+              orgId: authCtx.orgId,
+              endpoint: idemEndpointLabel,
+              idempotencyKey,
+              status: 202,
+              body: responseBody,
+              requestId,
+            });
+          } catch (cacheErr) {
+            console.warn(`[${requestId}] SOFT_ROUTE idempotency cache write failed (non-fatal):`, cacheErr);
+          }
+
+          await logApiRequest({
+            supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+            endpoint: endpointLabel, method: "POST", statusCode: 202,
+          });
+
+          return new Response(JSON.stringify(responseBody), {
+            status: 202,
+            headers: { ...headers, "Content-Type": "application/json" },
+          });
+        }
+
+        // ── HARD-FAIL BRANCH (unchanged) ──
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
           actor_user_id: actorUserId,
@@ -377,10 +531,13 @@ Deno.serve(async (req) => {
             match_type: match.match_type || "search",
             error: eligibilityError instanceof ApiException ? eligibilityError.message : "Unknown error",
             eligibility: formatEligibilityResponse(eligResult),
+            soft_route_evaluated: true,
+            soft_route_reason: softRoute.reason,
           }
         });
         throw eligibilityError;
       }
+
 
       // --- FULLY ATOMIC: waiver write + token burn + state transition in ONE DB transaction ---
       // atomic_generate_poi_v2 enforces the evidence-waiver gate under the same
