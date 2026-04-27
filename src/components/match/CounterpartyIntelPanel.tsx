@@ -60,8 +60,25 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
   const [saving, setSaving] = useState(false);
   const { session } = useAuth();
 
+  // ── URL validation ──
+  // Mirror the database CHECK constraints so the user sees a clean inline
+  // error instead of a Postgres rejection. Empty input is allowed.
+  const websiteTrim = website.trim();
+  const linkedinTrim = linkedin.trim();
+  const websiteValid =
+    websiteTrim === "" ||
+    /^https?:\/\/[^\s]+\.[^\s]+$/i.test(websiteTrim);
+  const linkedinValid =
+    linkedinTrim === "" ||
+    /^https?:\/\/([a-z0-9-]+\.)*linkedin\.com\/.+$/i.test(linkedinTrim);
+  const formValid = websiteValid && linkedinValid;
+
   const handleSave = async () => {
     if (!session) return;
+    if (!formValid) {
+      toast.error("Fix the highlighted URL fields before saving.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -69,8 +86,8 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
         org_id: (match as any).org_id,
         side,
         counterparty_name: counterpartyName,
-        website_url: website.trim() || null,
-        linkedin_url: linkedin.trim() || null,
+        website_url: websiteTrim || null,
+        linkedin_url: linkedinTrim || null,
         notes: notes.trim() || null,
         presence_confirmed: presence,
         presence_confirmed_at: presence ? new Date().toISOString() : null,
