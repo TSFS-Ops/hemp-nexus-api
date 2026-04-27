@@ -64,16 +64,20 @@ Deno.test("eligibility: missing buyer name → hard-fails (need somebody on each
   assert(elig.failedFields.includes("buyer_name"));
 });
 
-Deno.test("eligibility: same buyer / seller name → SAME_COUNTERPARTY hard-fails", () => {
+Deno.test("eligibility: same buyer / seller name (name-only) → WARNING, still eligible", () => {
+  // Post-2026-04-27 strictness pass: name-only collision is a WARNING, not an
+  // error, so two distinct legal entities sharing a trading name across
+  // jurisdictions are not falsely blocked. The warning still surfaces in
+  // `reasons` so reviewers see it before sealing.
   const m = {
     ...NAMED_BILATERAL,
     buyer_name: "Same Co",
     seller_name: "  same co  ", // case + whitespace insensitive
   } as Record<string, unknown>;
   const elig = evaluateEligibility(m);
-  assertEquals(elig.eligible, false);
-  const codes = elig.reasons.map((r) => r.code);
-  assert(codes.includes("SAME_COUNTERPARTY"), `codes=${codes.join(",")}`);
+  assertEquals(elig.eligible, true, `expected eligible (warning only), got reasons=${JSON.stringify(elig.reasons)}`);
+  const warningCodes = elig.reasons.filter(r => r.severity === "warning").map(r => r.code);
+  assert(warningCodes.includes("SAME_COUNTERPARTY_NAME"), `warningCodes=${warningCodes.join(",")}`);
 });
 
 Deno.test("eligibility: same buyer_id / seller_id (registered) → SAME_COUNTERPARTY hard-fails", () => {
