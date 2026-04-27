@@ -2913,6 +2913,10 @@ export type Database = {
       }
       match_counterparty_intel: {
         Row: {
+          auto_generated_at: string | null
+          auto_sources: Json
+          auto_status: string
+          auto_summary: string | null
           counterparty_name: string
           created_at: string
           created_by: string | null
@@ -2930,6 +2934,10 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          auto_generated_at?: string | null
+          auto_sources?: Json
+          auto_status?: string
+          auto_summary?: string | null
           counterparty_name: string
           created_at?: string
           created_by?: string | null
@@ -2947,6 +2955,10 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          auto_generated_at?: string | null
+          auto_sources?: Json
+          auto_status?: string
+          auto_summary?: string | null
           counterparty_name?: string
           created_at?: string
           created_by?: string | null
