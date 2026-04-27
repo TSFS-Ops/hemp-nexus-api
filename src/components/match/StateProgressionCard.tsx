@@ -71,24 +71,33 @@ function getFieldChecklist(match: Match): FieldCheck[] {
   if (!isUnilateral) {
     fields.push(
       {
-        label: "Buyer name",
-        filled: !!match.buyer_name,
+        label: "Buyer identified",
+        // Server-side eligibility requires BOTH a buyer_id and buyer_name.
+        // A name on its own (e.g. an unverified discovered counterparty)
+        // will fail POI generation with "Missing required field: Buyer Identifier".
+        filled: !!(match as any).buyer_id && !!match.buyer_name,
         required: true,
-        hint: "Add via the Terms tab or match creation",
+        hint: !!match.buyer_name && !(match as any).buyer_id
+          ? "Buyer name is set but no verified identifier — invite or link a registered counterparty"
+          : "Add a verified buyer via the Terms tab or match creation",
       },
       {
-        label: "Seller name",
-        filled: !!match.seller_name,
+        label: "Seller identified",
+        filled: !!(match as any).seller_id && !!match.seller_name,
         required: true,
-        hint: "Add via the Terms tab or match creation",
+        hint: !!match.seller_name && !(match as any).seller_id
+          ? "Seller name is set but no verified identifier — invite or link a registered counterparty"
+          : "Add a verified seller via the Terms tab or match creation",
       }
     );
   } else {
+    const hasBuyer = !!(match as any).buyer_id && !!match.buyer_name;
+    const hasSeller = !!(match as any).seller_id && !!match.seller_name;
     fields.push({
       label: "Declaring party",
-      filled: !!match.buyer_name || !!match.seller_name,
+      filled: hasBuyer || hasSeller,
       required: true,
-      hint: "Set when creating the intent",
+      hint: "At least one identified party (buyer or seller) is required",
     });
   }
 
