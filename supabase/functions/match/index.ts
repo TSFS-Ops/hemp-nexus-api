@@ -493,15 +493,16 @@ Deno.serve(async (req) => {
           // ledger already short-circuits at the top; this just stores
           // the result for the next attempt.
           try {
-            await storeIdempotentResponse({
-              supabase,
-              orgId: authCtx.orgId,
-              endpoint: idemEndpointLabel,
-              idempotencyKey,
-              status: 202,
-              body: responseBody,
-              requestId,
-            });
+            await storeIdempotentResponse(
+              {
+                supabase,
+                orgId: authCtx.orgId,
+                endpoint: idemEndpointLabel,
+                idempotencyKey,
+                requestId,
+              },
+              { status: 202, body: responseBody },
+            );
           } catch (cacheErr) {
             console.warn(`[${requestId}] SOFT_ROUTE idempotency cache write failed (non-fatal):`, cacheErr);
           }
