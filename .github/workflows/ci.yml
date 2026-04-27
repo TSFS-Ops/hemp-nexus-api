@@ -95,6 +95,76 @@ jobs:
       - name: Run drift check
         run: bun run check:drift
 
+  e2e-soft-route:
+    # Authenticated end-to-end proof for the POI mint soft-route.
+    #
+    # Drives the real, deployed `match/{id}/generate-poi` edge function
+    # with a real user JWT (minted via the service-role generate-link →
+    # verifyOtp flow) against a controlled fixture match whose ONLY
+    # eligibility failure is a missing buyer_id. Asserts the full
+    # 422 → 202 contract: source stamping, engagement guard (409),
+    # idempotency replay, and zero-credit burn.
+    #
+    # Requires three repository secrets:
+    #   - VITE_SUPABASE_URL
+    #   - VITE_SUPABASE_PUBLISHABLE_KEY
+    #   - SUPABASE_SERVICE_ROLE_KEY  ← keep tightly scoped, CI only
+    #
+    # If the service-role key is absent the Deno test self-skips with a
+    # WARN — we hard-fail the job in that case so a missing secret is
+    # never silently green.
+    name: E2E — POI mint soft-route (422 → 202)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Don't run on PRs from forks: forks can't see secrets, so the test
+    # would always skip-then-fail. Trusted internal PRs (same-repo) and
+    # pushes to main get the full check.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Verify required secrets are present
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          missing=0
+          for v in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Required secret $v is not configured on this repo."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::Aborting: the e2e soft-route test cannot run without all three secrets."
+            exit 1
+          fi
+
+      - name: Run authenticated soft-route e2e test
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        # --no-check: this file imports the deployed function over HTTP,
+        # not local TS — type-checking other functions here is noise.
+        # --fail-fast: stop on first contract violation so logs stay
+        # short.
+        run: |
+          deno test \
+            --allow-net \
+            --allow-env \
+            --no-check \
+            --fail-fast \
+            supabase/functions/match/e2e_soft_route_test.ts
+
   dependency-audit:
     # Fails the build on HIGH or CRITICAL CVEs in production deps.
     # Dev-only vulnerabilities are surfaced in logs but do not block.
