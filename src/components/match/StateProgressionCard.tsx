@@ -684,15 +684,15 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </button>
             )}
 
-            {/* ── Counterparty-not-yet-registered heads-up ──
-                When names are present but verified platform identifiers
-                aren't, clicking Generate POI will route the deal into
-                Pending Engagements and trigger the trading-partner invite
-                flow (this is the intended on-ramp for off-platform
-                counterparties). The panel below explains that BEFORE the
-                click so users aren't surprised by the routing — but the
-                button stays clickable and no credits are charged until
-                the POI actually mints. */}
+            {/* ── Counterparty-not-yet-registered block ──
+                When a name is on file but the counterparty has no verified
+                platform identifier (buyer_id / seller_id), the server-side
+                eligibility check will reject POI mint with 422
+                ELIGIBILITY_FAILED. The button is disabled above; this panel
+                explains the exact remediation: invite the counterparty (or
+                link an existing registered organisation) via the Terms tab.
+                No "soft routing" exists on the server today, so we must not
+                imply that clicking will queue or invite anything. */}
             {isPoiAction && !showInlineWaiver && (() => {
               const missingBuyerId =
                 !isUnilateral && !!match.buyer_name && !(match as any).buyer_id;
@@ -702,32 +702,33 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               if (!missingBuyerId && !missingSellerId) return null;
 
               return (
-                <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
-                  <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+                  <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                   <div className="space-y-2 text-left w-full">
                     <p className="text-sm font-semibold text-foreground">
-                      Counterparty not yet on the platform
+                      Counterparty must be a registered organisation before POI can be generated
                     </p>
                     <ul className="space-y-1 text-xs text-muted-foreground">
                       {missingBuyerId && (
                         <li>
                           Buyer <strong>“{match.buyer_name}”</strong> is named
-                          but not yet a registered organisation.
+                          but is not yet a registered organisation on the platform.
                         </li>
                       )}
                       {missingSellerId && (
                         <li>
                           Seller <strong>“{match.seller_name}”</strong> is named
-                          but not yet a registered organisation.
+                          but is not yet a registered organisation on the platform.
                         </li>
                       )}
                     </ul>
-                    <p className="text-[11px] text-muted-foreground border-t border-amber-500/20 pt-2">
-                      Clicking <strong>{nextLabel}</strong> will add this deal
-                      to <strong>Pending Engagements</strong> and send an
-                      invite if an email is on file. The POI mints
-                      automatically once they accept. <strong>No credits are
-                      charged</strong> until that happens.
+                    <p className="text-[11px] text-muted-foreground border-t border-destructive/20 pt-2">
+                      To proceed, open the <strong>Terms</strong> tab and either
+                      invite the counterparty by email (they’ll receive a
+                      registration link) or link an existing registered
+                      organisation. Once they are registered and linked,
+                      <strong> Generate POI</strong> will unlock automatically.
+                      No credits are charged until POI mint succeeds.
                     </p>
                   </div>
                 </div>
