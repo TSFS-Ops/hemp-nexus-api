@@ -1,20 +1,20 @@
-// Pure unit tests for the POI mint soft-route flow.
+// Pure unit tests for POI mint eligibility under the post-2026-04-27 policy:
 //
-//   1. `evaluateSoftRoute` — policy that decides whether an
-//      `ELIGIBILITY_FAILED` outcome is safe to soft-route into a Pending
-//      Engagement. Rules we MUST not regress: any non-id failure must
-//      hard-fail; unilateral matches must hard-fail; ids missing without
-//      corresponding names must hard-fail.
+//   "No hard verification before POI. Name-only counterparties are accepted.
+//    Hard verification (KYB/IDV/UBO) remains mandatory at WaD."
 //
-//   2. `resolveCounterpartyBinding` — email→org lookup over a fake
-//      supabase client. Confirms the four binding states stay stable.
-//
-// The full authenticated 422 → 202 contract lives in
-// `e2e_soft_route_test.ts` and runs in the dedicated `e2e-soft-route`
-// CI job (which provides the service-role key).
+// What this file proves:
+//   1. `evaluateEligibility` accepts a bilateral match with NAMED-but-not-
+//      registered counterparties (no buyer_id / seller_id) when commercial
+//      terms are present.
+//   2. Real commercial gaps (missing price, missing commodity, same buyer
+//      and seller) still hard-fail.
+//   3. The legacy `evaluateSoftRoute` and `resolveCounterpartyBinding`
+//      helpers stay correct so audit-trail behaviour does not regress
+//      for any historical 422 still in flight.
 //
 // Run:    deno test supabase/functions/match/index_test.ts --allow-net --allow-env
-// Filter: --filter "soft-route policy"
+// Filter: --filter "eligibility"
 
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
@@ -22,15 +22,14 @@ import { evaluateEligibility } from "../_shared/eligibility.ts";
 import { evaluateSoftRoute, resolveCounterpartyBinding } from "../_shared/soft-route.ts";
 
 // ────────────────────────────────────────────────────────────────────────
-// 1. Pure unit tests — soft-route policy
+// 1. Eligibility under the new "name-only" policy
 // ────────────────────────────────────────────────────────────────────────
 
-const VALID_BILATERAL_EXCEPT_BUYER_ID = {
+const NAMED_BILATERAL = {
   match_type: "bilateral",
   buyer_name: "Clarkson Grain Company",
-  // buyer_id intentionally missing
-  seller_id: "seller-org-123",
   seller_name: "Izenzo",
+  // No buyer_id / seller_id — neither side is registered yet.
   commodity: "wheat",
   quantity_amount: 8000,
   quantity_unit: "MT",
@@ -38,129 +37,98 @@ const VALID_BILATERAL_EXCEPT_BUYER_ID = {
   price_currency: "USD",
 } as Record<string, unknown>;
 
-Deno.test("soft-route policy: bilateral with only buyer_id missing → eligible", () => {
-  const elig = evaluateEligibility(VALID_BILATERAL_EXCEPT_BUYER_ID);
-  assertEquals(elig.eligible, false, "sanity: eligibility should fail");
-  assertEquals(elig.failedFields, ["buyer_id"]);
-
-  const route = evaluateSoftRoute(VALID_BILATERAL_EXCEPT_BUYER_ID, elig);
-  assertEquals(route.eligible, true);
-  assertEquals(route.missingBuyerId, true);
-  assertEquals(route.missingSellerId, false);
-  assertEquals(route.failedFields, ["buyer_id"]);
+Deno.test("eligibility: named-but-unregistered bilateral match → eligible", () => {
+  const elig = evaluateEligibility(NAMED_BILATERAL);
+  assertEquals(elig.eligible, true, `expected eligible, got reasons=${JSON.stringify(elig.reasons)}`);
+  assertEquals(elig.failedFields, []);
 });
 
-Deno.test("soft-route policy: bilateral with only seller_id missing → eligible", () => {
-  const m = {
-    ...VALID_BILATERAL_EXCEPT_BUYER_ID,
-    buyer_id: "buyer-org-1",
-    seller_id: undefined,
-  } as Record<string, unknown>;
+Deno.test("eligibility: missing price → still hard-fails", () => {
+  const m = { ...NAMED_BILATERAL, price_amount: undefined } as Record<string, unknown>;
   const elig = evaluateEligibility(m);
-  assertEquals(elig.failedFields, ["seller_id"]);
-  const route = evaluateSoftRoute(m, elig);
-  assertEquals(route.eligible, true);
-  assertEquals(route.missingSellerId, true);
-});
-
-Deno.test("soft-route policy: both ids missing but both names present → eligible", () => {
-  const m = {
-    ...VALID_BILATERAL_EXCEPT_BUYER_ID,
-    seller_id: undefined,
-  } as Record<string, unknown>;
-  const elig = evaluateEligibility(m);
-  assertEquals(elig.failedFields.sort(), ["buyer_id", "seller_id"].sort());
-  const route = evaluateSoftRoute(m, elig);
-  assertEquals(route.eligible, true);
-  assertEquals(route.missingBuyerId, true);
-  assertEquals(route.missingSellerId, true);
-});
-
-Deno.test("soft-route policy: missing price → MUST NOT soft-route", () => {
-  const m = {
-    ...VALID_BILATERAL_EXCEPT_BUYER_ID,
-    buyer_id: "buyer-org-1",
-    price_amount: undefined,
-  } as Record<string, unknown>;
-  const elig = evaluateEligibility(m);
+  assertEquals(elig.eligible, false);
   assert(elig.failedFields.includes("price_amount"));
+});
+
+Deno.test("eligibility: missing commodity → still hard-fails", () => {
+  const m = { ...NAMED_BILATERAL, commodity: undefined } as Record<string, unknown>;
+  const elig = evaluateEligibility(m);
+  assertEquals(elig.eligible, false);
+  assert(elig.failedFields.includes("commodity"));
+});
+
+Deno.test("eligibility: missing buyer name → hard-fails (need somebody on each side)", () => {
+  const m = { ...NAMED_BILATERAL, buyer_name: undefined } as Record<string, unknown>;
+  const elig = evaluateEligibility(m);
+  assertEquals(elig.eligible, false);
+  assert(elig.failedFields.includes("buyer_name"));
+});
+
+Deno.test("eligibility: same buyer / seller name → SAME_COUNTERPARTY hard-fails", () => {
+  const m = {
+    ...NAMED_BILATERAL,
+    buyer_name: "Same Co",
+    seller_name: "  same co  ", // case + whitespace insensitive
+  } as Record<string, unknown>;
+  const elig = evaluateEligibility(m);
+  assertEquals(elig.eligible, false);
+  const codes = elig.reasons.map((r) => r.code);
+  assert(codes.includes("SAME_COUNTERPARTY"), `codes=${codes.join(",")}`);
+});
+
+Deno.test("eligibility: same buyer_id / seller_id (registered) → SAME_COUNTERPARTY hard-fails", () => {
+  const m = {
+    ...NAMED_BILATERAL,
+    buyer_id: "org-x",
+    seller_id: "org-x",
+    buyer_name: "Foo",
+    seller_name: "Bar",
+  } as Record<string, unknown>;
+  const elig = evaluateEligibility(m);
+  assertEquals(elig.eligible, false);
+  const codes = elig.reasons.map((r) => r.code);
+  assert(codes.includes("SAME_COUNTERPARTY"), `codes=${codes.join(",")}`);
+});
+
+Deno.test("eligibility: unilateral with declaring party + commercial terms → eligible", () => {
+  const m = {
+    match_type: "unilateral",
+    buyer_id: "org-1",
+    buyer_name: "Buyer A",
+    commodity: "wheat",
+    quantity_amount: 10,
+    quantity_unit: "MT",
+    price_amount: 50,
+    price_currency: "USD",
+  } as Record<string, unknown>;
+  const elig = evaluateEligibility(m);
+  assertEquals(elig.eligible, true, `reasons=${JSON.stringify(elig.reasons)}`);
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// 2. Soft-route helper still correct (defensive — fires only for residual
+//    422s; under the new policy these are rare).
+// ────────────────────────────────────────────────────────────────────────
+
+Deno.test("soft-route: missing price still NOT soft-routable", () => {
+  const m = { ...NAMED_BILATERAL, price_amount: undefined } as Record<string, unknown>;
+  const elig = evaluateEligibility(m);
   const route = evaluateSoftRoute(m, elig);
   assertEquals(route.eligible, false);
   assertEquals(route.reason, "non_soft_routable_field:price_amount");
 });
 
-Deno.test("soft-route policy: missing commodity → MUST NOT soft-route", () => {
-  const m = {
-    ...VALID_BILATERAL_EXCEPT_BUYER_ID,
-    buyer_id: "buyer-org-1",
-    commodity: undefined,
-  } as Record<string, unknown>;
-  const elig = evaluateEligibility(m);
-  const route = evaluateSoftRoute(m, elig);
-  assertEquals(route.eligible, false);
-  assert(route.reason?.startsWith("non_soft_routable_field:commodity"));
-});
-
-Deno.test("soft-route policy: id missing AND price missing → MUST NOT soft-route", () => {
-  const m = {
-    ...VALID_BILATERAL_EXCEPT_BUYER_ID,
-    price_amount: undefined,
-  } as Record<string, unknown>;
-  const elig = evaluateEligibility(m);
-  const route = evaluateSoftRoute(m, elig);
-  assertEquals(route.eligible, false);
-  // Either price_amount or buyer_id can come first; both block.
-  assert(route.reason?.startsWith("non_soft_routable_field:"));
-});
-
-Deno.test("soft-route policy: same buyer/seller (SAME_COUNTERPARTY) → MUST NOT soft-route", () => {
-  const m = {
-    ...VALID_BILATERAL_EXCEPT_BUYER_ID,
-    buyer_id: "same-id",
-    seller_id: "same-id",
-  } as Record<string, unknown>;
-  const elig = evaluateEligibility(m);
-  const route = evaluateSoftRoute(m, elig);
-  assertEquals(route.eligible, false);
-});
-
-Deno.test("soft-route policy: unilateral match → MUST NOT soft-route", () => {
-  const m = {
-    match_type: "unilateral",
-    commodity: "wheat",
-    quantity_amount: 100,
-    quantity_unit: "MT",
-    price_amount: 50,
-    price_currency: "USD",
-    // declaring party missing entirely
-  } as Record<string, unknown>;
+Deno.test("soft-route: unilateral never soft-routable", () => {
+  const m = { match_type: "unilateral", commodity: "wheat" } as Record<string, unknown>;
   const elig = evaluateEligibility(m);
   const route = evaluateSoftRoute(m, elig);
   assertEquals(route.eligible, false);
   assertEquals(route.reason, "soft_route_not_supported_for_unilateral");
 });
 
-Deno.test("soft-route policy: buyer_id missing AND buyer_name missing → MUST NOT soft-route", () => {
-  // No name on the missing side — there is nothing to engage with.
-  const m = {
-    ...VALID_BILATERAL_EXCEPT_BUYER_ID,
-    buyer_name: undefined,
-  } as Record<string, unknown>;
-  const elig = evaluateEligibility(m);
-  const route = evaluateSoftRoute(m, elig);
-  assertEquals(route.eligible, false);
-  // Either reason is acceptable: the policy may catch the missing
-  // buyer_name field first OR the missing buyer_id+name pair second.
-  // Both are hard-fails for the right reason.
-  assert(
-    route.reason === "buyer_id_missing_and_no_buyer_name" ||
-      route.reason?.startsWith("non_soft_routable_field:buyer_name"),
-    `unexpected reason: ${route.reason}`,
-  );
-});
-
 // ────────────────────────────────────────────────────────────────────────
-// 2. Pure unit tests — binding resolver (mocked supabase)
+// 3. Binding resolver — used by both the soft-route legacy path and by
+//    the poi-engagements PATCH contract.
 // ────────────────────────────────────────────────────────────────────────
 
 function makeFakeSupabase(behaviour: "match" | "no_match" | "error") {
@@ -202,15 +170,3 @@ Deno.test("binding resolver: lookup error → lookup_error", async () => {
   const r = await resolveCounterpartyBinding(makeFakeSupabase("error"), "user@example.com", "rid");
   assertEquals(r.status, "lookup_error");
 });
-
-// ────────────────────────────────────────────────────────────────────────
-// 3. LIVE INTEGRATION
-//
-// The full authenticated 422 → 202 contract test (real user JWT against
-// the deployed function, idempotency replay, engagement guard, and
-// zero-credit-burn assertion) lives in `e2e_soft_route_test.ts` and is
-// run by the dedicated `e2e-soft-route` GitHub Actions job. Keeping it
-// in a separate file means this `index_test.ts` stays a fast, hermetic
-// pure-unit suite that CI can always run without secrets.
-// ────────────────────────────────────────────────────────────────────────
-
