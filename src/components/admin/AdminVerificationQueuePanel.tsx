@@ -194,7 +194,7 @@ export function AdminVerificationQueuePanel() {
                 .maybeSingle()).data?.org_id;
 
       if (auditOrg) {
-        const { error: auditErr } = await supabase.from("audit_logs").insert({
+        const { error: auditErr } = await supabase.from("audit_logs").insert([{
           org_id: auditOrg,
           actor_user_id: session.user.id,
           action: `verification.${actionStatus}`,
@@ -206,7 +206,7 @@ export function AdminVerificationQueuePanel() {
             outcome: patch.outcome ?? null,
             reviewer_notes_len: (reviewerNotes.trim() || "").length,
           },
-        });
+        }]);
         if (auditErr) console.warn("[verification-queue] audit insert failed", auditErr);
       } else {
         console.warn("[verification-queue] no org context — skipping audit insert");
