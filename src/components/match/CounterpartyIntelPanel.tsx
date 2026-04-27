@@ -195,7 +195,7 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
             Public presence confirmed
           </span>
         </label>
-        <Button size="sm" onClick={handleSave} disabled={saving} variant="outline">
+        <Button size="sm" onClick={handleSave} disabled={saving || !formValid} variant="outline">
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
           Save
         </Button>
