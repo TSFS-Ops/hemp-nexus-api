@@ -676,6 +676,69 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </button>
             )}
 
+            {/* ── Server-aligned eligibility error panel ──
+                When the disabled button is for Generate POI, surface the EXACT
+                missing-identifier reasons the server's evaluateEligibility() will
+                return ("Missing required field: Buyer Identifier" / "Seller
+                Identifier"), so users see the same wording as the eventual API
+                denial — and a precise next step (invite or link a registered
+                counterparty) — without having to click and burn the round-trip. */}
+            {isPoiAction && !allRequiredFilled && !showInlineWaiver && (() => {
+              const missingBuyerId =
+                !isUnilateral && !(match as any).buyer_id;
+              const missingSellerId =
+                !isUnilateral && !(match as any).seller_id;
+              const hasBuyerName = !!match.buyer_name;
+              const hasSellerName = !!match.seller_name;
+
+              if (!missingBuyerId && !missingSellerId) return null;
+
+              return (
+                <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <div className="space-y-2 text-left w-full">
+                    <p className="text-sm font-semibold text-foreground">
+                      Cannot generate POI — missing verified identifier
+                    </p>
+                    <ul className="space-y-1 text-xs text-muted-foreground">
+                      {missingBuyerId && (
+                        <li>
+                          <span className="font-mono text-destructive">
+                            Missing required field: Buyer Identifier
+                          </span>
+                          {hasBuyerName && (
+                            <span className="block text-[11px] mt-0.5">
+                              Buyer name <strong>“{match.buyer_name}”</strong> is set,
+                              but no verified <code>buyer_id</code> is linked yet.
+                            </span>
+                          )}
+                        </li>
+                      )}
+                      {missingSellerId && (
+                        <li>
+                          <span className="font-mono text-destructive">
+                            Missing required field: Seller Identifier
+                          </span>
+                          {hasSellerName && (
+                            <span className="block text-[11px] mt-0.5">
+                              Seller name <strong>“{match.seller_name}”</strong> is set,
+                              but no verified <code>seller_id</code> is linked yet.
+                            </span>
+                          )}
+                        </li>
+                      )}
+                    </ul>
+                    <p className="text-[11px] text-muted-foreground border-t border-destructive/20 pt-2">
+                      Resolve by inviting the counterparty via the trading-partner
+                      invite flow (they register and receive an identifier), or by
+                      linking the match to an existing registered organisation in
+                      the <strong>Terms</strong> tab. No credits will be charged.
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+
             {showInlineWaiver && waiverRequired && (
               <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 space-y-4">
                 <div className="flex items-start gap-3">
