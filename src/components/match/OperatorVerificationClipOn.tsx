@@ -139,7 +139,12 @@ export function OperatorVerificationClipOn({ match }: { match: Match }) {
       setReason("");
       refetch();
     } catch (e: any) {
-      toast.error(`Could not raise request: ${e.message ?? "unknown error"}`);
+      const code = (e && (e.code as string)) || "";
+      if (code === "23505") {
+        toast.error("An open verification request for this subject and kind already exists. Action that one before raising another.");
+      } else {
+        toast.error(`Could not raise request: ${e.message ?? "unknown error"}`);
+      }
     } finally {
       setSubmitting(false);
     }

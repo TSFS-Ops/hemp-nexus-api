@@ -165,9 +165,19 @@ export function evaluateEligibility(match: Record<string, unknown>): Eligibility
   }
 
   // Validate buyer/seller are not the same (only for bilateral).
-  // Compare on registered ids when both sides are registered, otherwise fall
-  // back to a name comparison so we still catch the trivial "buyer = seller"
-  // mistake when the counterparty is named-only (post-2026-04-27 directive).
+  //
+  // Identifier-based collision is always a hard ERROR — registered ids are
+  // unambiguous and cannot legitimately be on both sides.
+  //
+  // Name-only collision is downgraded to a WARNING:
+  //   - Two distinct legal entities can share a trading name across
+  //     jurisdictions ("Acme (Pty) Ltd" vs "Acme LLC"), and we no longer
+  //     have a registered id to discriminate them post-2026-04-27.
+  //   - Hard-blocking would create false positives that the user cannot
+  //     resolve without registering a counterparty (which is exactly the
+  //     gate Daniel asked us to drop).
+  // The warning still surfaces in the eligibility response so the user
+  // sees it before sealing a POI.
   if (!isUnilateral) {
     const sameById =
       match.buyer_id != null &&
@@ -182,15 +192,23 @@ export function evaluateEligibility(match: Record<string, unknown>): Eligibility
       sellerNameNorm.length > 0 &&
       buyerNameNorm === sellerNameNorm;
 
-    if (sameById || sameByName) {
+    if (sameById) {
       reasons.push({
         code: "SAME_COUNTERPARTY",
         field: "buyer_name,seller_name",
-        message: "Buyer and seller cannot be the same entity",
+        message: "Buyer and seller cannot be the same registered entity",
         severity: "error",
       });
       if (!failedFields.includes("buyer_name")) failedFields.push("buyer_name");
       if (!failedFields.includes("seller_name")) failedFields.push("seller_name");
+    } else if (sameByName) {
+      reasons.push({
+        code: "SAME_COUNTERPARTY_NAME",
+        field: "buyer_name,seller_name",
+        message:
+          "Buyer and seller share the same name. If they are distinct legal entities (e.g. across jurisdictions), continue. If not, correct one side before sealing the Proof of Intent.",
+        severity: "warning",
+      });
     }
   }
 

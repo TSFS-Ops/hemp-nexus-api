@@ -32,6 +32,7 @@ import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
 import { AdminTradeApprovalsPanel } from "@/components/admin/AdminTradeApprovalsPanel";
 import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
+import { AdminVerificationQueuePanel } from "@/components/admin/AdminVerificationQueuePanel";
 import { AdminEngagementForensicsPanel } from "@/components/admin/AdminEngagementForensicsPanel";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { AdminApprovalThresholdsPanel } from "@/components/admin/AdminApprovalThresholdsPanel";
@@ -265,14 +266,15 @@ function EngagementsTab() {
     </>;
 }
 function DisputesTab() {
-  // Sub-tabs: Disputes · Trade Approvals
-  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "approvals"]);
+  // Sub-tabs: Disputes · Trade Approvals · Verification Queue (clip-on)
+  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "approvals", "verification"]);
   return <>
       <TabHeader id="disputes" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-card border border-border rounded-sm">
           <TabsTrigger value="disputes">Active Disputes</TabsTrigger>
           <TabsTrigger value="approvals">Trade Approvals</TabsTrigger>
+          <TabsTrigger value="verification">Verification Queue</TabsTrigger>
         </TabsList>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
@@ -282,6 +284,11 @@ function DisputesTab() {
         <TabsContent value="approvals">
           <Surface label="Trade approvals awaiting platform review · public.dd_approval_requests">
             <AdminTradeApprovalsPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="verification">
+          <Surface label="Operator verification clip-on · public.operator_verification_requests · optional pre-POI; informational, not a gate">
+            <AdminVerificationQueuePanel />
           </Surface>
         </TabsContent>
       </Tabs>

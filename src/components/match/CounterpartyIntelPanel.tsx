@@ -60,8 +60,25 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
   const [saving, setSaving] = useState(false);
   const { session } = useAuth();
 
+  // ── URL validation ──
+  // Mirror the database CHECK constraints so the user sees a clean inline
+  // error instead of a Postgres rejection. Empty input is allowed.
+  const websiteTrim = website.trim();
+  const linkedinTrim = linkedin.trim();
+  const websiteValid =
+    websiteTrim === "" ||
+    /^https?:\/\/[^\s]+\.[^\s]+$/i.test(websiteTrim);
+  const linkedinValid =
+    linkedinTrim === "" ||
+    /^https?:\/\/([a-z0-9-]+\.)*linkedin\.com\/.+$/i.test(linkedinTrim);
+  const formValid = websiteValid && linkedinValid;
+
   const handleSave = async () => {
     if (!session) return;
+    if (!formValid) {
+      toast.error("Fix the highlighted URL fields before saving.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -69,8 +86,8 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
         org_id: (match as any).org_id,
         side,
         counterparty_name: counterpartyName,
-        website_url: website.trim() || null,
-        linkedin_url: linkedin.trim() || null,
+        website_url: websiteTrim || null,
+        linkedin_url: linkedinTrim || null,
         notes: notes.trim() || null,
         presence_confirmed: presence,
         presence_confirmed_at: presence ? new Date().toISOString() : null,
@@ -120,8 +137,14 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
             placeholder="https://example.com"
-            className="h-9 text-sm"
+            className={`h-9 text-sm ${!websiteValid ? "border-destructive focus-visible:ring-destructive" : ""}`}
+            aria-invalid={!websiteValid}
           />
+          {!websiteValid && (
+            <p className="text-[11px] text-destructive">
+              Enter a full URL starting with http:// or https://
+            </p>
+          )}
         </div>
         <div className="space-y-1">
           <Label htmlFor={`li-${side}`} className="text-xs flex items-center gap-1.5">
@@ -132,8 +155,14 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
             value={linkedin}
             onChange={(e) => setLinkedin(e.target.value)}
             placeholder="https://linkedin.com/company/…"
-            className="h-9 text-sm"
+            className={`h-9 text-sm ${!linkedinValid ? "border-destructive focus-visible:ring-destructive" : ""}`}
+            aria-invalid={!linkedinValid}
           />
+          {!linkedinValid && (
+            <p className="text-[11px] text-destructive">
+              Must be a linkedin.com URL (e.g. https://linkedin.com/company/acme)
+            </p>
+          )}
         </div>
       </div>
 
@@ -166,7 +195,7 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
             Public presence confirmed
           </span>
         </label>
-        <Button size="sm" onClick={handleSave} disabled={saving} variant="outline">
+        <Button size="sm" onClick={handleSave} disabled={saving || !formValid} variant="outline">
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
           Save
         </Button>
