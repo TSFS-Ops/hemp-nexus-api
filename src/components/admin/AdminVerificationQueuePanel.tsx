@@ -182,21 +182,35 @@ export function AdminVerificationQueuePanel() {
 
       // Audit trail entry so a closed verification is visible in the
       // immutable audit log surface that compliance reviewers already use.
-      await supabase.from("audit_logs").insert({
-        org_id: acting.org_id,
-        actor_user_id: session.user.id,
-        action: `verification.${actionStatus}`,
-        entity_type: "operator_verification_request",
-        entity_id: acting.id,
-        metadata: {
-          subject_name: acting.subject_name,
-          kind: acting.kind,
-          outcome: patch.outcome ?? null,
-          reviewer_notes_len: (reviewerNotes.trim() || "").length,
-        },
-      }).then(({ error: auditErr }) => {
+      // org_id is non-null on audit_logs — fall back to the acting admin's
+      // own org if the request was not bound to one (admin-raised cross-org).
+      const auditOrg =
+        acting.org_id
+          ?? acting.subject_org_id
+          ?? (await supabase
+                .from("profiles")
+                .select("org_id")
+                .eq("id", session.user.id)
+                .maybeSingle()).data?.org_id;
+
+      if (auditOrg) {
+        const { error: auditErr } = await supabase.from("audit_logs").insert({
+          org_id: auditOrg,
+          actor_user_id: session.user.id,
+          action: `verification.${actionStatus}`,
+          entity_type: "operator_verification_request",
+          entity_id: acting.id,
+          metadata: {
+            subject_name: acting.subject_name,
+            kind: acting.kind,
+            outcome: patch.outcome ?? null,
+            reviewer_notes_len: (reviewerNotes.trim() || "").length,
+          },
+        });
         if (auditErr) console.warn("[verification-queue] audit insert failed", auditErr);
-      });
+      } else {
+        console.warn("[verification-queue] no org context — skipping audit insert");
+      }
 
       toast.success(`Request marked ${actionStatus.replace("_", " ")}`);
       setActing(null);
