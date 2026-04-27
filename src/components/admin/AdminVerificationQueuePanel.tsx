@@ -203,7 +203,7 @@ export function AdminVerificationQueuePanel() {
           metadata: {
             subject_name: acting.subject_name,
             kind: acting.kind,
-            outcome: patch.outcome ?? null,
+            outcome: (patch.outcome as string | null) ?? null,
             reviewer_notes_len: (reviewerNotes.trim() || "").length,
           },
         }]);
