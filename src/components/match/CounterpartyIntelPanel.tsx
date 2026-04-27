@@ -137,8 +137,14 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
             placeholder="https://example.com"
-            className="h-9 text-sm"
+            className={`h-9 text-sm ${!websiteValid ? "border-destructive focus-visible:ring-destructive" : ""}`}
+            aria-invalid={!websiteValid}
           />
+          {!websiteValid && (
+            <p className="text-[11px] text-destructive">
+              Enter a full URL starting with http:// or https://
+            </p>
+          )}
         </div>
         <div className="space-y-1">
           <Label htmlFor={`li-${side}`} className="text-xs flex items-center gap-1.5">
@@ -149,8 +155,14 @@ function SideEditor({ match, side, counterpartyName, isRegistered, existing, onS
             value={linkedin}
             onChange={(e) => setLinkedin(e.target.value)}
             placeholder="https://linkedin.com/company/…"
-            className="h-9 text-sm"
+            className={`h-9 text-sm ${!linkedinValid ? "border-destructive focus-visible:ring-destructive" : ""}`}
+            aria-invalid={!linkedinValid}
           />
+          {!linkedinValid && (
+            <p className="text-[11px] text-destructive">
+              Must be a linkedin.com URL (e.g. https://linkedin.com/company/acme)
+            </p>
+          )}
         </div>
       </div>
 
