@@ -301,8 +301,10 @@ function SidePanel({
 // ────────────────────────────────────────────────────────────────────────
 export function CounterpartyIntelPanel({ match }: { match: Match }) {
   const queryClient = useQueryClient();
+  const { isLoading: authLoading, isAuthenticated } = useAuth();
   const matchType = (match as any).match_type;
   const isUnilateral = matchType === "unilateral";
+  const canRunIntel = !authLoading && isAuthenticated;
 
   const { data: rows = [], refetch, isLoading } = useQuery({
     queryKey: ["counterparty-intel", match.id],
@@ -314,6 +316,7 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
       if (error) throw error;
       return (data ?? []) as unknown as IntelRow[];
     },
+    enabled: canRunIntel,
     refetchOnWindowFocus: false,
   });
 
@@ -356,7 +359,8 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
             isRegistered={!!(match as any).buyer_id}
             intel={buyerIntel}
             onRefreshed={handleRefreshed}
-            autoRunIfMissing={!isLoading}
+            canRunIntel={canRunIntel}
+            autoRunIfMissing={canRunIntel && !isLoading}
           />
         )}
         {!isUnilateral && match.seller_name && (
@@ -367,7 +371,8 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
             isRegistered={!!(match as any).seller_id}
             intel={sellerIntel}
             onRefreshed={handleRefreshed}
-            autoRunIfMissing={!isLoading}
+            canRunIntel={canRunIntel}
+            autoRunIfMissing={canRunIntel && !isLoading}
           />
         )}
         {isUnilateral && (
