@@ -24,7 +24,7 @@ import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
 import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard";
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
-import { OperatorVerificationClipOn } from "@/components/match/OperatorVerificationClipOn";
+import { RequestEnhancedVerificationButton } from "@/components/match/RequestEnhancedVerificationButton";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
@@ -179,7 +179,7 @@ function MatchDetailsContent() {
       {matchId && <EngagementTracker matchId={matchId} match={match} />}
 
       <CounterpartyIntelPanel match={match} />
-      <OperatorVerificationClipOn match={match} />
+      <RequestEnhancedVerificationButton match={match} />
 
       <DealWizard
         match={match}
