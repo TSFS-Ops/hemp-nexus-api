@@ -165,7 +165,7 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
 
   const handleSubmit = async () => {
     if (!session) return;
-    if (!acknowledged) {
+    if (!alwaysOn && !acknowledged) {
       toast.error("Please confirm you accept the additional charge.");
       return;
     }
