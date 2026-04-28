@@ -12,6 +12,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { recordPaystackAttempt } from "@/components/desk/billing/PaymentReferenceStatus";
+import { generateIdempotencyKey } from "@/lib/api-client";
 
 export type CreditPackageId = "single" | "pack_10" | "pack_50" | "pack_200";
 
@@ -46,6 +47,7 @@ export async function startCreditCheckout(
 
   const { data, error } = await supabase.functions.invoke("token-purchase", {
     body: { packageId, callbackUrl, cancelUrl },
+    headers: { "Idempotency-Key": generateIdempotencyKey(`credit_purchase_${packageId}`) },
   });
 
   if (error) {
