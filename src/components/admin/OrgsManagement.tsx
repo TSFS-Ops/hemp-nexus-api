@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Search, CheckCircle2, XCircle, RefreshCw, Building2 } from "lucide-react";
+import { Loader2, Search, CheckCircle2, XCircle, RefreshCw, Building2, ShieldCheck } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,8 @@ interface Organisation {
   status: string;
   created_at: string;
   sandbox_enabled: boolean;
+  clip_on_always_on: boolean;
+  clip_on_subscription_started_at: string | null;
   _count?: {
     profiles: number;
     api_keys: number;
@@ -109,6 +112,36 @@ export default function OrgsManagement() {
       fetchOrgs();
     } catch (error) {
       toast.error("Failed to update organisation status");
+    }
+  };
+
+  const handleToggleClipOn = async (orgId: string, next: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .update({
+          clip_on_always_on: next,
+          clip_on_subscription_started_at: next ? new Date().toISOString() : null,
+        })
+        .eq("id", orgId);
+      if (error) throw error;
+
+      await supabase.from("audit_logs").insert([{
+        org_id: orgId,
+        action: next ? "clip_on.subscription_enabled" : "clip_on.subscription_disabled",
+        entity_type: "organization",
+        entity_id: orgId,
+        metadata: { changed_at: new Date().toISOString() },
+      }]);
+
+      toast.success(
+        next
+          ? "Clip-on switched on permanently. Monthly billing starts at the next cron run."
+          : "Clip-on permanent plan switched off. Per-request charges resume.",
+      );
+      fetchOrgs();
+    } catch (e: any) {
+      toast.error(`Failed to update clip-on plan: ${e?.message ?? "unknown error"}`);
     }
   };
 
@@ -210,6 +243,7 @@ export default function OrgsManagement() {
                     <TableHead>Users</TableHead>
                     <TableHead>API Keys</TableHead>
                     <TableHead>Sandbox</TableHead>
+                    <TableHead>Clip-on plan</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                   </TableRow>
@@ -239,6 +273,23 @@ export default function OrgsManagement() {
                             Disabled
                           </Badge>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={!!org.clip_on_always_on}
+                            onCheckedChange={(v) => handleToggleClipOn(org.id, v)}
+                            aria-label="Toggle permanent clip-on plan"
+                          />
+                          {org.clip_on_always_on ? (
+                            <Badge variant="default" className="flex items-center gap-1 w-fit text-[10px]">
+                              <ShieldCheck className="h-3 w-3" />
+                              Always-on
+                            </Badge>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground">Per-request</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Select
