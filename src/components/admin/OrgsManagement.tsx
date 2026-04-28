@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Search, CheckCircle2, XCircle, RefreshCw, Building2 } from "lucide-react";
+import { Loader2, Search, CheckCircle2, XCircle, RefreshCw, Building2, ShieldCheck } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,8 @@ interface Organisation {
   status: string;
   created_at: string;
   sandbox_enabled: boolean;
+  clip_on_always_on: boolean;
+  clip_on_subscription_started_at: string | null;
   _count?: {
     profiles: number;
     api_keys: number;
