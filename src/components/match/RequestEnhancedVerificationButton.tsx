@@ -133,6 +133,36 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
     pricing.permanent_integration_monthly_zar *
     (1 + pricing.permanent_integration_margin_pct / 100);
 
+  // Credits the DB will burn at pickup: max(1, ceil(priced_total_zar / 10)).
+  // Mirrors bill_clip_on_request so the pre-warn is exact, not approximate.
+  const creditsRequired = Math.max(1, Math.ceil(totalPerRequest / 10));
+
+  // Pull the org's live wallet balance so we can pre-warn before the user
+  // accepts the charge. Skipped for always-on orgs (subscription path —
+  // no per-request burn). Re-fetched whenever the dialog opens.
+  const { data: balanceRow } = useQuery({
+    queryKey: ["org-credit-balance-for-clip-on", session?.user.id, open],
+    enabled: !!session && !alwaysOn && open,
+    queryFn: async () => {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session!.user.id)
+        .maybeSingle();
+      if (!prof?.org_id) return { balance: null as number | null };
+      const { data: bal } = await supabase
+        .from("token_balances")
+        .select("balance")
+        .eq("org_id", prof.org_id)
+        .maybeSingle();
+      return { balance: (bal?.balance as number | undefined) ?? 0 };
+    },
+    staleTime: 30 * 1000,
+  });
+  const currentBalance = balanceRow?.balance ?? null;
+  const insufficient =
+    !alwaysOn && currentBalance !== null && currentBalance < creditsRequired;
+
   const { data: ownRows = [] } = useQuery({
     queryKey: ["own-verification-requests", match.id, session?.user.id],
     enabled: !!session,
@@ -325,6 +355,39 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
                   instead ({formatMoney(totalPermanentMonthly, pricing.currency)}/month).
                 </p>
               </div>
+
+              {/* Pre-warn: live wallet check before the user accepts the
+                  charge. Mirrors the DB-side check in bill_clip_on_request,
+                  so what the user sees here matches what gets enforced
+                  when a reviewer picks the case up. */}
+              {!alwaysOn && currentBalance !== null && (
+                <div
+                  className={
+                    "rounded-md border p-3 text-xs " +
+                    (insufficient
+                      ? "border-destructive/40 bg-destructive/5 text-destructive"
+                      : "border-border bg-muted/30 text-muted-foreground")
+                  }
+                  data-testid="clip-on-balance-prewarn"
+                >
+                  <div className="flex justify-between">
+                    <span>Credits required</span>
+                    <span className="font-mono">{creditsRequired}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Your current balance</span>
+                    <span className="font-mono">{currentBalance}</span>
+                  </div>
+                  {insufficient && (
+                    <p className="pt-2 leading-snug">
+                      Your wallet does not have enough credits for this request.
+                      You can still send it, but a reviewer will not be able
+                      to pick it up until your balance reaches {creditsRequired}.
+                      Top up in <span className="font-medium">Settings → Billing</span>.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <Label className="text-xs">Why are you asking? (optional)</Label>
