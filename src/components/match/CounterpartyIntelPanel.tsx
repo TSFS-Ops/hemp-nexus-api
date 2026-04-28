@@ -44,6 +44,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Match } from "@/hooks/use-match-details";
+import { supabase } from "@/integrations/supabase/client";
 
 type Side = "buyer" | "seller";
 type AutoStatus = "pending" | "ready" | "failed" | "unavailable";
@@ -124,9 +125,14 @@ function SidePanel({
     if (running) return;
     setRunning(true);
     try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
+      }
       await fetchEdgeFunction("counterparty-intel-auto", {
         method: "POST",
         body: { match_id: match.id, side },
+        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
         label: "auto-generate counterparty intel",
       });
       toast.success(`${side === "buyer" ? "Buyer" : "Seller"} intel refreshed`);
