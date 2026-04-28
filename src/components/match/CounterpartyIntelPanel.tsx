@@ -44,7 +44,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Match } from "@/hooks/use-match-details";
-import { supabase } from "@/integrations/supabase/client";
 
 type Side = "buyer" | "seller";
 type AutoStatus = "pending" | "ready" | "failed" | "unavailable";
