@@ -138,6 +138,59 @@ export function AdminVerificationQueuePanel() {
   // admin doesn't think there are no more open requests.
   const truncated = rows.length === 500;
 
+  // Distinct counterparty orgs across the open queue — we only fetch
+  // balances for orgs that have an unbilled, actionable request, so the
+  // pickup decision is informed by the live wallet position.
+  const openOrgIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) {
+      if (
+        r.org_id &&
+        !r.clip_on_billed_at &&
+        (r.status === "pending" || r.status === "in_progress")
+      ) {
+        set.add(r.org_id);
+      }
+    }
+    return Array.from(set).sort();
+  }, [rows]);
+
+  const { data: balanceMap = new Map<string, number>() } = useQuery({
+    queryKey: ["admin-verification-queue-org-balances", openOrgIds.join(",")],
+    enabled: isAdmin === true && openOrgIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("token_balances")
+        .select("org_id, balance")
+        .in("org_id", openOrgIds);
+      if (error) throw error;
+      const m = new Map<string, number>();
+      for (const r of (data ?? []) as Array<{ org_id: string; balance: number }>) {
+        m.set(r.org_id, r.balance ?? 0);
+      }
+      return m;
+    },
+    staleTime: 30 * 1000,
+  });
+
+  // Mirror the DB-side credit calculation in bill_clip_on_request:
+  //   credits_required = max(1, ceil(priced_total_zar / 10))
+  // Used both for the inline warning badge and to disable pickup when
+  // we already know the burn would fail.
+  const creditsRequiredFor = (r: VerificationRow): number => {
+    const total = Number(r.priced_total_zar ?? 0);
+    return Math.max(1, Math.ceil(total / 10));
+  };
+  const insufficientFor = (r: VerificationRow): { required: number; balance: number } | null => {
+    if (!r.org_id || r.clip_on_billed_at) return null;
+    if (r.status !== "pending" && r.status !== "in_progress") return null;
+    const required = creditsRequiredFor(r);
+    const balance = balanceMap.get(r.org_id);
+    if (balance === undefined) return null; // not loaded yet
+    if (balance < required) return { required, balance };
+    return null;
+  };
+
   const counts = useMemo(() => {
     const c = { open: 0, pending: 0, in_progress: 0, completed: 0, cancelled: 0 } as Record<string, number>;
     for (const r of rows) {
