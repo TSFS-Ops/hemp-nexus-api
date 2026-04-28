@@ -318,6 +318,10 @@ export function BillingOverview() {
           </p>
         </div>
 
+        <div className="mb-3">
+          <TruncationBanner data={ledger} totalCount={ledgerTotalCount ?? undefined} limit={40} />
+        </div>
+
         <div className="overflow-x-auto bg-card border border-border rounded-sm">
           <table className="w-full">
             <thead>
