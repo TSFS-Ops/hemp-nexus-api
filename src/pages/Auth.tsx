@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { hasPreAuthState } from "@/lib/pre-auth-state";
 import { getSafeReturnTo } from "@/lib/safe-redirect";
+import { AUTH_REDIRECT_NOTICE_KEY } from "@/components/AuthRedirectNoticeBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +99,12 @@ export default function Auth() {
       const safe = getSafeReturnTo(returnTo);
       if (safe && safe !== "/dashboard") {
         const final = `${safe}${safe.includes("?") ? "&" : "?"}resume=1`;
+        try {
+          sessionStorage.setItem(
+            AUTH_REDIRECT_NOTICE_KEY,
+            JSON.stringify({ destination: safe, reason: searchParams.get("expired") === "1" ? "expired" : "returnTo", at: Date.now() })
+          );
+        } catch { /* storage unavailable — redirect still works */ }
         console.info("[Auth] resolved → returnTo", final);
         return final;
       }
