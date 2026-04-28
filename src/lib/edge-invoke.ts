@@ -32,6 +32,8 @@ import {
 const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
 const SERVER_UNAUTHORIZED_MESSAGE =
   "We could not verify your access for this action. Please refresh the page and try again.";
+const SESSION_EXPIRED_MESSAGE =
+  "Your session has expired. Please sign out and sign back in, then try again.";
 
 // ── Public error type ──────────────────────────────────────────────────────
 export class EdgeInvokeError extends Error {
@@ -205,7 +207,7 @@ async function ensureFreshAccessToken(opts: {
   if (!session) {
     if (opts.requireSession) {
       throw new EdgeInvokeError(
-        "Your session has expired. Please sign out and sign back in, then try again.",
+        SESSION_EXPIRED_MESSAGE,
         { status: 401, code: "NO_SESSION", context: opts.context }
       );
     }
@@ -238,7 +240,7 @@ async function ensureFreshAccessToken(opts: {
     }
     if (refreshErr || !refreshedSession) {
       throw new EdgeInvokeError(
-        "Your session has expired. Please sign out and sign back in, then try again.",
+        SESSION_EXPIRED_MESSAGE,
         { status: 401, code: "REFRESH_FAILED", context: opts.context }
       );
     }
