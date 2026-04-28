@@ -134,6 +134,7 @@ function SidePanel({
       await fetchEdgeFunction("counterparty-intel-auto", {
         method: "POST",
         body: { match_id: match.id, side },
+        requireSession: false,
         label: "auto-generate counterparty intel",
       });
       toast.success(`${side === "buyer" ? "Buyer" : "Seller"} intel refreshed`);

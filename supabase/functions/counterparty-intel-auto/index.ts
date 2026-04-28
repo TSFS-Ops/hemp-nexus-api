@@ -174,18 +174,21 @@ Deno.serve(async (req) => {
     return json(405, { error: "Method not allowed" }, origin);
   }
 
-  // Caller authentication — RLS scoped to their org via their JWT.
+  // Caller authentication — validate JWT claims locally. `getUser()` performs
+  // a network round-trip to the auth service and has produced false "Invalid
+  // session" failures during auth-worker restarts even while /user returns 200.
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return json(401, { error: "Missing Authorization header" }, origin);
+  if (!authHeader?.startsWith("Bearer ")) return json(401, { error: "Unauthorized" }, origin);
 
   const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp?.user) {
-    return json(401, { error: "Invalid session" }, origin);
+  const token = authHeader.replace("Bearer ", "");
+  const { data: claimsResp, error: claimsErr } = await userClient.auth.getClaims(token);
+  if (claimsErr || !claimsResp?.claims?.sub) {
+    return json(401, { error: "Unauthorized" }, origin);
   }
-  const userId = userResp.user.id;
+  const userId = claimsResp.claims.sub;
 
   let body: RunBody;
   try {
