@@ -11,6 +11,7 @@ import { ROUTES } from "@/lib/constants";
 import { FullPageLoader } from "@/components/ui/full-page-loader";
 import { LegacyRedirect } from "@/components/LegacyRedirect";
 import { LegacyRedirectBanner } from "@/components/LegacyRedirectBanner";
+import { AuthRedirectNoticeBanner } from "@/components/AuthRedirectNoticeBanner";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TestModeBanner } from "@/components/TestModeBanner";
 import { MaintenanceBanner } from "@/components/MaintenanceBanner";
@@ -102,6 +103,7 @@ function App() {
               <MaintenanceBanner />
               <TestModeBanner />
               <LegacyRedirectBanner />
+              <AuthRedirectNoticeBanner />
               <RouteErrorBoundary>
                 <Suspense fallback={<FullPageLoader />}>
                 <Routes>

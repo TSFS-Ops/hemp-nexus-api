@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, generateIdempotencyKey } from "@/lib/api-client";
 import { handleApiError } from "@/lib/api-error-handler";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -235,14 +235,14 @@ function BillingContent() {
   const { data: recentTransactions } = useQuery({
     queryKey: ["recent-credit-transactions", billingProfile?.org_id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("token_ledger")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("org_id", billingProfile!.org_id)
         .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw error;
-      return data;
+      return { rows: data ?? [], totalCount: count ?? data?.length ?? 0 };
     },
     enabled: !!session && !!billingProfile?.org_id,
   });
@@ -262,6 +262,7 @@ function BillingContent() {
     try {
       const data = await apiFetch<any>("token-purchase", {
         method: "POST",
+        idempotencyKey: generateIdempotencyKey(`credit_purchase_${packageId}`),
         body: JSON.stringify({ 
           packageId,
           callbackUrl: `${window.location.origin}/billing?status=success`,
@@ -548,10 +549,10 @@ function BillingContent() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <TruncationBanner data={recentTransactions ?? undefined} limit={10} />
-            {recentTransactions && recentTransactions.length > 0 ? (
+            <TruncationBanner data={recentTransactions?.rows ?? undefined} totalCount={recentTransactions?.totalCount} limit={10} />
+            {recentTransactions?.rows && recentTransactions.rows.length > 0 ? (
               <div className="space-y-2">
-                {recentTransactions.map((tx) => (
+                {recentTransactions.rows.map((tx) => (
                   <div 
                     key={tx.id} 
                     className="flex items-center justify-between py-2 border-b last:border-0"

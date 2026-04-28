@@ -23,6 +23,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
+import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_shared/idempotency.ts";
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -433,6 +434,58 @@ Deno.serve(async (req) => {
     }
     const { packageId, callbackUrl, cancelUrl } = parsed.data;
     const pkg = TOKEN_PACKAGES[packageId]!;
+    const idempotencyKey = assertIdempotencyKey(req);
+    const idempotencyEndpoint = "POST /token-purchase";
+    const requestHash = await sha256Hex(JSON.stringify({ packageId, callbackUrl: callbackUrl ?? null, cancelUrl: cancelUrl ?? null }));
+
+    const { data: existingIdempotency, error: idempotencyLookupError } = await supabase
+      .from("idempotency_keys")
+      .select("request_hash, response_data, response_status_code")
+      .eq("org_id", profile.org_id)
+      .eq("idempotency_key", idempotencyKey)
+      .eq("endpoint", idempotencyEndpoint)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    if (idempotencyLookupError) throw idempotencyLookupError;
+    const processingResponse = {
+      error: "Payment initialisation is already processing. Please wait before trying again.",
+      code: "IDEMPOTENCY_REQUEST_IN_PROGRESS",
+    };
+    if (existingIdempotency) {
+      if (existingIdempotency.request_hash !== requestHash) {
+        return new Response(
+          JSON.stringify({ error: "Idempotency-Key was reused with a different purchase request", code: "IDEMPOTENCY_KEY_REUSED" }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (existingIdempotency.response_status_code === 202) {
+        return new Response(JSON.stringify(processingResponse), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return cachedResponseToHttp(
+        { status: existingIdempotency.response_status_code, body: existingIdempotency.response_data },
+        corsHeaders,
+      );
+    }
+
+    const { error: idempotencyReserveError } = await supabase.from("idempotency_keys").insert({
+      org_id: profile.org_id,
+      idempotency_key: idempotencyKey,
+      endpoint: idempotencyEndpoint,
+      request_hash: requestHash,
+      response_data: { status: "processing" },
+      response_status_code: 202,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+    if (idempotencyReserveError?.code === "23505") {
+      return new Response(JSON.stringify(processingResponse), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (idempotencyReserveError) throw idempotencyReserveError;
 
     // Get client IP for audit
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
@@ -497,8 +550,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    return new Response(
-      JSON.stringify({
+    const responseBody = {
         success: true,
         checkoutUrl: paystackData.data.authorization_url,
         reference: paystackData.data.reference,
@@ -508,11 +560,29 @@ Deno.serve(async (req) => {
           priceZar: pkg.price_zar,
         },
         entity: CHARGING_ENTITY,
-      }),
+      };
+
+    const { error: idempotencyStoreError } = await supabase.from("idempotency_keys").update({
+      response_data: responseBody,
+      response_status_code: 200,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    }).eq("org_id", profile.org_id).eq("idempotency_key", idempotencyKey).eq("endpoint", idempotencyEndpoint);
+    if (idempotencyStoreError) throw idempotencyStoreError;
+
+    return new Response(
+      JSON.stringify(responseBody),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Token purchase error:", error);
+    const status = (error as { statusCode?: number })?.statusCode;
+    const code = (error as { code?: string })?.code;
+    if (status && status >= 400 && status < 500) {
+      return new Response(
+        JSON.stringify({ error: error instanceof Error ? error.message : "Invalid request", code }),
+        { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
