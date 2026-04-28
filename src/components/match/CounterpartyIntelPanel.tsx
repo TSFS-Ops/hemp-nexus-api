@@ -128,7 +128,11 @@ function SidePanel({
       const { data: sessionData, error: sessionError } = refreshed.session
         ? { data: refreshed, error: null }
         : await supabase.auth.getSession();
-      if (refreshError || sessionError || !sessionData.session) {
+      if (sessionError || !sessionData.session) {
+        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
+      }
+      const expiresAtMs = (sessionData.session.expires_at ?? 0) * 1000;
+      if (refreshError && expiresAtMs <= Date.now()) {
         throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
       }
       await fetchEdgeFunction("counterparty-intel-auto", {
