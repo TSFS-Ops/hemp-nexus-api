@@ -135,6 +135,10 @@ function SidePanel({
       if (refreshError && expiresAtMs <= Date.now()) {
         throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
       }
+      const { data: userData, error: userError } = await supabase.auth.getUser(sessionData.session.access_token);
+      if (userError || !userData.user) {
+        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
+      }
       await fetchEdgeFunction("counterparty-intel-auto", {
         method: "POST",
         body: { match_id: match.id, side },
