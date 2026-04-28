@@ -25,10 +25,12 @@
  *   surfaces the friendly copy.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { EdgeInvokeError } from "@/lib/edge-invoke";
+import { EdgeInvokeError, refreshSessionOnce } from "@/lib/edge-invoke";
 
 const REFRESH_SKEW_MS = 30_000;
 const UUID_FUNCTION_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/|$)/i;
+const SERVER_UNAUTHORIZED_MESSAGE =
+  "We could not verify your access for this action. Please refresh the page and try again.";
 
 let installed = false;
 
@@ -47,7 +49,7 @@ export function installEdgeInvokeShim(): void {
     const exp = data.session.expires_at;
     if (!exp) return;
     if (exp * 1000 - Date.now() < REFRESH_SKEW_MS) {
-      await supabase.auth.refreshSession();
+      await refreshSessionOnce();
     }
   };
 
@@ -66,7 +68,7 @@ export function installEdgeInvokeShim(): void {
 
     if (status === 401 || /unauthorized/i.test(serverMsg) || /unauthorized/i.test(body)) {
       return new EdgeInvokeError(
-        "Your session has expired. Please sign out and sign back in, then try again.",
+        SERVER_UNAUTHORIZED_MESSAGE,
         { status, code: "UNAUTHORIZED", serverBody: body },
       );
     }

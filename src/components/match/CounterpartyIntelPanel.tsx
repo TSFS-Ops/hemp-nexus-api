@@ -27,7 +27,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchEdgeFunction } from "@/lib/edge-invoke";
+import { EdgeInvokeError, fetchEdgeFunction } from "@/lib/edge-invoke";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
@@ -139,6 +139,10 @@ function SidePanel({
       toast.success(`${side === "buyer" ? "Buyer" : "Seller"} intel refreshed`);
       onRefreshed();
     } catch (e: any) {
+      if (e instanceof EdgeInvokeError && ["NO_SESSION", "REFRESH_FAILED", "UNAUTHORIZED"].includes(e.code ?? "")) {
+        toast.error("Could not refresh intel: Please refresh the page and try again.");
+        return;
+      }
       toast.error(`Could not refresh intel: ${e?.message ?? "unknown error"}`);
     } finally {
       setRunning(false);

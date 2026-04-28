@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { setSentryUser, clearSentryUser } from "@/lib/sentry";
 import { notifySessionExpired } from "@/lib/session-expiry-bus";
 import { recordSessionFailure } from "@/lib/session-failure-metrics";
+import { refreshSessionOnce } from "@/lib/edge-invoke";
 
 interface AuthContextType {
   user: User | null;
@@ -262,7 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const expiresAtMs = (currentSession.expires_at ?? 0) * 1000;
         const needsRefresh = expiresAtMs - Date.now() < REFRESH_SKEW_MS;
         if (needsRefresh) {
-          const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+          const { data: refreshed, error: refreshErr } = await refreshSessionOnce();
           if (refreshErr || !refreshed.session) {
             triggerExpiry("REFRESH_FAILED");
             return;

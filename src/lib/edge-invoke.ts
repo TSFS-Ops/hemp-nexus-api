@@ -30,6 +30,10 @@ import {
 
 /** Codes that should trigger the global SessionExpiredModal. */
 const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
+const SERVER_UNAUTHORIZED_MESSAGE =
+  "We could not verify your access for this action. Please refresh the page and try again.";
+const SESSION_EXPIRED_MESSAGE =
+  "Your session has expired. Please sign out and sign back in, then try again.";
 
 // ── Public error type ──────────────────────────────────────────────────────
 export class EdgeInvokeError extends Error {
@@ -171,6 +175,17 @@ export function describeEdgeError(err: unknown, fallback = "Something went wrong
 
 // ── Token freshness ────────────────────────────────────────────────────────
 const REFRESH_SKEW_MS = 30_000; // refresh if <30s remain on access token
+type RefreshResponse = Awaited<ReturnType<typeof supabase.auth.refreshSession>>;
+let sharedRefreshPromise: Promise<RefreshResponse> | null = null;
+
+export function refreshSessionOnce(): Promise<RefreshResponse> {
+  if (!sharedRefreshPromise) {
+    sharedRefreshPromise = supabase.auth.refreshSession().finally(() => {
+      sharedRefreshPromise = null;
+    });
+  }
+  return sharedRefreshPromise;
+}
 
 async function ensureFreshAccessToken(opts: {
   requireSession: boolean;
@@ -192,7 +207,7 @@ async function ensureFreshAccessToken(opts: {
   if (!session) {
     if (opts.requireSession) {
       throw new EdgeInvokeError(
-        "Your session has expired. Please sign out and sign back in, then try again.",
+        SESSION_EXPIRED_MESSAGE,
         { status: 401, code: "NO_SESSION", context: opts.context }
       );
     }
@@ -200,36 +215,32 @@ async function ensureFreshAccessToken(opts: {
   }
 
   if (isExpired(session)) {
-    // Try refresh up to 2 times. Supabase's refresh endpoint occasionally
-    // returns a transient 400/500 when two tabs race to refresh the same
-    // refresh token — the second attempt typically succeeds because by
-    // then the new tokens have been written to storage by the winning tab.
-    // Without this retry, users see a "session expired" modal even though
-    // their refresh token is still perfectly valid.
+    // Try refresh up to 3 times, guarded by a module-level promise so two
+    // concurrent intel panels don't rotate the same refresh token in parallel.
+    // Without this lock, the losing request can surface a false "session
+    // expired" toast while the browser still has a perfectly valid session.
     let refreshErr: { message?: string } | null = null;
     let refreshedSession: typeof session = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const { data: refreshed, error } = await supabase.auth.refreshSession();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data: refreshed, error } = await refreshSessionOnce();
       if (!error && refreshed.session) {
         refreshedSession = refreshed.session;
         refreshErr = null;
         break;
       }
       refreshErr = error;
-      if (attempt === 0) {
-        await new Promise((r) => setTimeout(r, 250));
-        // Re-read storage in case another tab just refreshed for us.
-        const { data: latest } = await supabase.auth.getSession();
-        if (latest.session && !isExpired(latest.session)) {
-          refreshedSession = latest.session;
-          refreshErr = null;
-          break;
-        }
+      await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+      // Re-read storage in case another tab/request just refreshed for us.
+      const { data: latest } = await supabase.auth.getSession();
+      if (latest.session && !isExpired(latest.session)) {
+        refreshedSession = latest.session;
+        refreshErr = null;
+        break;
       }
     }
     if (refreshErr || !refreshedSession) {
       throw new EdgeInvokeError(
-        "Your session has expired. Please sign out and sign back in, then try again.",
+        SESSION_EXPIRED_MESSAGE,
         { status: 401, code: "REFRESH_FAILED", context: opts.context }
       );
     }
@@ -265,7 +276,7 @@ function translateError(
     // is still valid. `verifyAndNotifySessionExpired()` performs a server
     // getUser() check first; only that confirmed-dead path signs out locally.
     return new EdgeInvokeError(
-      "Your session has expired. Please sign out and sign back in, then try again.",
+      SERVER_UNAUTHORIZED_MESSAGE,
       { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid, context }
     );
   }
