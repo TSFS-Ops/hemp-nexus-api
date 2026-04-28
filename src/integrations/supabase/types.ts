@@ -3642,6 +3642,11 @@ export type Database = {
           match_id: string | null
           org_id: string | null
           outcome: string | null
+          priced_cost_zar: number | null
+          priced_currency: string | null
+          priced_margin_pct: number | null
+          priced_total_zar: number | null
+          pricing_mode: string | null
           raised_by: string
           reason: string | null
           reviewer_notes: string | null
@@ -3659,6 +3664,11 @@ export type Database = {
           match_id?: string | null
           org_id?: string | null
           outcome?: string | null
+          priced_cost_zar?: number | null
+          priced_currency?: string | null
+          priced_margin_pct?: number | null
+          priced_total_zar?: number | null
+          pricing_mode?: string | null
           raised_by: string
           reason?: string | null
           reviewer_notes?: string | null
@@ -3676,6 +3686,11 @@ export type Database = {
           match_id?: string | null
           org_id?: string | null
           outcome?: string | null
+          priced_cost_zar?: number | null
+          priced_currency?: string | null
+          priced_margin_pct?: number | null
+          priced_total_zar?: number | null
+          pricing_mode?: string | null
           raised_by?: string
           reason?: string | null
           reviewer_notes?: string | null
