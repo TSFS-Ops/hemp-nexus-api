@@ -104,9 +104,9 @@ export function SessionExpiredModal() {
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
           <p className="font-medium mb-1">Your work is being preserved.</p>
           <p>
-            Form fields you were editing — deal terms, deal notes, document
-            details, governance submissions, new-trade form — are saved in this
-            browser tab and will reappear after you sign in again.
+            Trade form fields that support draft recovery — new-trade search,
+            deal terms, deal notes, and document title/notes/visibility — are
+            saved in this browser tab and will reappear after you sign in again.
           </p>
           <p className="mt-1">
             <span className="font-medium">File uploads in progress will not complete:</span>{" "}
