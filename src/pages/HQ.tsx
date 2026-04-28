@@ -41,6 +41,7 @@ import { AdminSigningKeysPanel } from "@/components/admin/AdminSigningKeysPanel"
 import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
 import { AdminGovernancePosturePanel } from "@/components/admin/AdminGovernancePosturePanel";
+import { AdminRedirectOriginBanner } from "@/components/admin/AdminRedirectOriginBanner";
 // ── Audit & Health (compliance / observability) ─────────────────────
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminEvidenceWaiversPanel } from "@/components/admin/AdminEvidenceWaiversPanel";
@@ -469,7 +470,8 @@ function HQLayout() {
           </div>
         </div>
 
-        <main className="px-3 sm:px-6 lg:px-10 py-6 sm:py-8 max-w-[1600px] mx-auto">
+        <main className="px-3 sm:px-6 lg:px-10 py-6 sm:py-8 max-w-[1600px] mx-auto space-y-4">
+          <AdminRedirectOriginBanner />
           <TabsContent value="users" className="mt-0 animate-section-enter"><UsersTab /></TabsContent>
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>

@@ -60,6 +60,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/error-state";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
 import {
   Loader2,
   RefreshCw,
@@ -362,7 +363,13 @@ export function AdminRevenuePanel() {
         });
       }
 
-      return { rows: purchases, pending };
+      return {
+        rows: purchases,
+        pending,
+        auditCount: (auditRows ?? []).length,
+        ledgerCount: (ledgerRows ?? []).length,
+        initCount: (initRows ?? []).length,
+      };
     },
     staleTime: 30_000,
   });
@@ -548,6 +555,16 @@ export function AdminRevenuePanel() {
               </Button>
             </div>
           </div>
+
+          {/* Truncation disclosure — three source queries each cap at 2000 rows.
+              If any returned exactly 2000 rows the totals shown above understate
+              true revenue and an admin must narrow the time window. */}
+          {(data?.auditCount === 2000 || data?.ledgerCount === 2000 || data?.initCount === 2000) && (
+            <TruncationBanner
+              data={Array(2000).fill(null)}
+              limit={2000}
+            />
+          )}
 
           {/* Totals strip */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -67,6 +67,17 @@ export default function Auth() {
         if (requestedReturn) {
           // Sanitise before echoing back into the toast - never render raw user input.
           const safeRequested = getSafeReturnTo(requestedReturn, "");
+          // Persist the original deep-link so HQ can show a non-dismissable
+          // banner until the admin acknowledges or opens it. A 10s toast was
+          // routinely missed (client incident, see chain).
+          if (safeRequested) {
+            try {
+              sessionStorage.setItem(
+                "izenzo_admin_redirect_origin",
+                JSON.stringify({ link: safeRequested, at: Date.now() })
+              );
+            } catch { /* storage blocked — fall through to toast only */ }
+          }
           toast.info(
             safeRequested
               ? `Admin session - redirected to HQ. Original link: ${safeRequested}`

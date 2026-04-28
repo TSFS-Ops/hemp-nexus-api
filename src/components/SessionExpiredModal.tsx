@@ -102,11 +102,18 @@ export function SessionExpiredModal() {
           <AlertDialogDescription>{REASON_COPY[reason]}</AlertDialogDescription>
         </AlertDialogHeader>
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
-          Form fields you were editing (deal terms, deal notes, document
-          details, governance submission, new-trade form) have been saved to
-          this browser and will be restored after you sign in again. You may
-          need to re-select any attached files, since browsers do not allow
-          file selections to be saved automatically.
+          <p className="font-medium mb-1">Your work is being preserved.</p>
+          <p>
+            Form fields you were editing — deal terms, deal notes, document
+            details, governance submissions, new-trade form — are saved in this
+            browser tab and will reappear after you sign in again.
+          </p>
+          <p className="mt-1">
+            <span className="font-medium">File uploads in progress will not complete:</span>{" "}
+            browsers do not allow file selections to be saved across page reloads
+            for security reasons. If you were attaching a document, you will need
+            to re-select it after signing in.
+          </p>
         </div>
         {requestId && (
           <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs">

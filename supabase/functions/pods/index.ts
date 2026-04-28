@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -193,6 +194,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Complete Milestone ──
     if (req.method === "POST" && action === "complete-milestone") {
+      assertIdempotencyKey(req);
       const body = await req.json();
       const parsed = MilestoneCompleteSchema.parse(body);
 
@@ -267,6 +269,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Record Breach ──
     if (req.method === "POST" && action === "breach") {
+      assertIdempotencyKey(req);
       const body = await req.json();
       const parsed = BreachRecordSchema.parse(body);
 
@@ -350,6 +353,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Finalise PoD ──
     if (req.method === "POST" && action === "finalise") {
+      assertIdempotencyKey(req);
       const body = await req.json();
       const parsed = PodFinaliseSchema.parse(body);
 

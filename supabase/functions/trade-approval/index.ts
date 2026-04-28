@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -105,6 +106,7 @@ Deno.serve(async (req: Request) => {
     // ── POST /trade-approval/revoke ── Revoke approval
     if (req.method === "POST" && subAction === "revoke") {
       requireRole(authCtx, "admin");
+      assertIdempotencyKey(req);
       const body = await req.json();
       const { org_id: targetOrgId, reason } = RevokeSchema.parse(body);
 
@@ -159,6 +161,7 @@ Deno.serve(async (req: Request) => {
     // ── POST /trade-approval/renew ── Extend validity
     if (req.method === "POST" && subAction === "renew") {
       requireRole(authCtx, "admin");
+      assertIdempotencyKey(req);
       const body = await req.json();
       const { org_id: targetOrgId, extend_days } = RenewSchema.parse(body);
 

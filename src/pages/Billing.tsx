@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TokenBalanceDisplay } from "@/components/TokenBalanceDisplay";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { cn } from "@/lib/utils";
 
 // ==============================================
@@ -547,6 +548,7 @@ function BillingContent() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <TruncationBanner data={recentTransactions ?? undefined} limit={10} />
             {recentTransactions && recentTransactions.length > 0 ? (
               <div className="space-y-2">
                 {recentTransactions.map((tx) => (
