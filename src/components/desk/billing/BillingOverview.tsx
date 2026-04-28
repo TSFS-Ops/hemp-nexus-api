@@ -17,6 +17,7 @@ import {
 } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "./CheckoutErrorNotice";
 import { PaymentReferenceStatus } from "./PaymentReferenceStatus";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
 
 interface LedgerEntry {
   id: string;
@@ -48,6 +49,7 @@ export function BillingOverview() {
   const { user } = useAuth();
   const [balance, setBalance] = useState<number | null>(null);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [ledgerTotalCount, setLedgerTotalCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
@@ -85,13 +87,14 @@ export function BillingOverview() {
         .maybeSingle(),
       supabase
         .from("token_ledger")
-        .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at")
+        .select("id, endpoint, action_type, outcome, tokens_burned, remaining_balance, created_at", { count: "exact" })
         .eq("org_id", profile.org_id)
         .order("created_at", { ascending: false })
         .limit(40),
     ]);
     setBalance(Number(walletRes.data?.balance ?? 0));
     setLedger((ledgerRes.data ?? []) as unknown as LedgerEntry[]);
+    setLedgerTotalCount(ledgerRes.count ?? ledgerRes.data?.length ?? 0);
     setLoading(false);
   };
 
