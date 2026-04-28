@@ -30,6 +30,8 @@ import {
 
 /** Codes that should trigger the global SessionExpiredModal. */
 const SESSION_DEAD_CODES = new Set(["UNAUTHORIZED", "NO_SESSION", "REFRESH_FAILED"]);
+const SERVER_UNAUTHORIZED_MESSAGE =
+  "We could not verify your access for this action. Please refresh the page and try again.";
 
 // ── Public error type ──────────────────────────────────────────────────────
 export class EdgeInvokeError extends Error {
@@ -272,7 +274,7 @@ function translateError(
     // is still valid. `verifyAndNotifySessionExpired()` performs a server
     // getUser() check first; only that confirmed-dead path signs out locally.
     return new EdgeInvokeError(
-      "Your session has expired. Please sign out and sign back in, then try again.",
+      SERVER_UNAUTHORIZED_MESSAGE,
       { status, code: "UNAUTHORIZED", serverBody: body, requestId: rid, context }
     );
   }
