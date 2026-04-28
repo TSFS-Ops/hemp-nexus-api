@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
   // if they have no access to it.
   const { data: match, error: matchErr } = await userClient
     .from("matches")
-    .select("id, org_id, buyer_name, seller_name, commodity, country, match_type")
+    .select("id, org_id, buyer_name, seller_name, commodity, origin_country, destination_country, match_type")
     .eq("id", body.match_id)
     .maybeSingle();
 
@@ -226,7 +226,8 @@ Deno.serve(async (req) => {
 
   const contextHint = [
     match.commodity ? `Commodity: ${match.commodity}` : null,
-    match.country ? `Region: ${match.country}` : null,
+    match.origin_country ? `Origin: ${match.origin_country}` : null,
+    match.destination_country ? `Destination: ${match.destination_country}` : null,
     `Side: ${body.side}`,
   ].filter(Boolean).join("; ");
 
