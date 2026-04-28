@@ -447,6 +447,10 @@ Deno.serve(async (req) => {
       .gt("expires_at", new Date().toISOString())
       .maybeSingle();
     if (idempotencyLookupError) throw idempotencyLookupError;
+    const processingResponse = {
+      error: "Payment initialisation is already processing. Please wait before trying again.",
+      code: "IDEMPOTENCY_REQUEST_IN_PROGRESS",
+    };
     if (existingIdempotency) {
       if (existingIdempotency.request_hash !== requestHash) {
         return new Response(
@@ -454,11 +458,34 @@ Deno.serve(async (req) => {
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+      if (existingIdempotency.response_status_code === 202) {
+        return new Response(JSON.stringify(processingResponse), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       return cachedResponseToHttp(
         { status: existingIdempotency.response_status_code, body: existingIdempotency.response_data },
         corsHeaders,
       );
     }
+
+    const { error: idempotencyReserveError } = await supabase.from("idempotency_keys").insert({
+      org_id: profile.org_id,
+      idempotency_key: idempotencyKey,
+      endpoint: idempotencyEndpoint,
+      request_hash: requestHash,
+      response_data: { status: "processing" },
+      response_status_code: 202,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+    if (idempotencyReserveError?.code === "23505") {
+      return new Response(JSON.stringify(processingResponse), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (idempotencyReserveError) throw idempotencyReserveError;
 
     // Get client IP for audit
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
@@ -535,16 +562,12 @@ Deno.serve(async (req) => {
         entity: CHARGING_ENTITY,
       };
 
-    const { error: idempotencyStoreError } = await supabase.from("idempotency_keys").insert({
-      org_id: profile.org_id,
-      idempotency_key: idempotencyKey,
-      endpoint: idempotencyEndpoint,
-      request_hash: requestHash,
+    const { error: idempotencyStoreError } = await supabase.from("idempotency_keys").update({
       response_data: responseBody,
       response_status_code: 200,
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    });
-    if (idempotencyStoreError && idempotencyStoreError.code !== "23505") throw idempotencyStoreError;
+    }).eq("org_id", profile.org_id).eq("idempotency_key", idempotencyKey).eq("endpoint", idempotencyEndpoint);
+    if (idempotencyStoreError) throw idempotencyStoreError;
 
     return new Response(
       JSON.stringify(responseBody),
