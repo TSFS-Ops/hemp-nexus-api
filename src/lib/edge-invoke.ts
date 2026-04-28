@@ -173,7 +173,7 @@ export function describeEdgeError(err: unknown, fallback = "Something went wrong
 const REFRESH_SKEW_MS = 30_000; // refresh if <30s remain on access token
 let sharedRefreshPromise: Promise<ReturnType<typeof supabase.auth.refreshSession>> | null = null;
 
-async function refreshSessionOnce(): ReturnType<typeof supabase.auth.refreshSession> {
+function refreshSessionOnce(): ReturnType<typeof supabase.auth.refreshSession> {
   if (!sharedRefreshPromise) {
     sharedRefreshPromise = supabase.auth.refreshSession().finally(() => {
       sharedRefreshPromise = null;
