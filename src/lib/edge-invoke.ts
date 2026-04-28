@@ -178,7 +178,7 @@ const REFRESH_SKEW_MS = 30_000; // refresh if <30s remain on access token
 type RefreshResponse = Awaited<ReturnType<typeof supabase.auth.refreshSession>>;
 let sharedRefreshPromise: Promise<RefreshResponse> | null = null;
 
-function refreshSessionOnce(): Promise<RefreshResponse> {
+export function refreshSessionOnce(): Promise<RefreshResponse> {
   if (!sharedRefreshPromise) {
     sharedRefreshPromise = supabase.auth.refreshSession().finally(() => {
       sharedRefreshPromise = null;
