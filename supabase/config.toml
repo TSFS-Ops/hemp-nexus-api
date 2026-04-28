@@ -40,6 +40,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.consents]
     verify_jwt = false
+  [functions.counterparty-intel-auto]
+    verify_jwt = false
   [functions.data-retention]
     verify_jwt = false
   [functions.data-sources]

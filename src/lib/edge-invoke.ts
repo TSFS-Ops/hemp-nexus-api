@@ -484,6 +484,16 @@ export async function fetchEdgeFunction<T = unknown>(
   if (accessToken && !finalHeaders.Authorization && !finalHeaders.authorization) {
     finalHeaders.Authorization = `Bearer ${accessToken}`;
   }
+  // Always send the Supabase publishable/anon key as `apikey`. The Supabase
+  // gateway requires this header on every /functions/v1/* request — without
+  // it, a function with verify_jwt=true (the default) returns 401 at the
+  // gateway, which the client surfaces as a misleading "session expired"
+  // error. Sending it unconditionally is safe and matches what the JS SDK's
+  // `supabase.functions.invoke` does under the hood.
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (anonKey && !finalHeaders.apikey && !finalHeaders.ApiKey) {
+    finalHeaders.apikey = anonKey;
+  }
 
   let serialisedBody: BodyInit | undefined;
   if (body !== undefined && body !== null) {
