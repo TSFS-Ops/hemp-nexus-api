@@ -28,6 +28,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
   Globe,
@@ -104,6 +105,7 @@ interface SidePanelProps {
   isRegistered: boolean;
   intel: IntelRow | undefined;
   onRefreshed: () => void;
+  canRunIntel: boolean;
   // Trigger an automatic first-run if the row is absent.
   autoRunIfMissing: boolean;
 }
@@ -115,6 +117,7 @@ function SidePanel({
   isRegistered,
   intel,
   onRefreshed,
+  canRunIntel,
   autoRunIfMissing,
 }: SidePanelProps) {
   const [running, setRunning] = useState(false);
@@ -122,27 +125,15 @@ function SidePanel({
 
   const runIntel = async () => {
     if (running) return;
+    if (!canRunIntel) {
+      toast.error("Please wait for your sign-in session to finish loading, then retry Refresh.");
+      return;
+    }
     setRunning(true);
     try {
-      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
-      const { data: sessionData, error: sessionError } = refreshed.session
-        ? { data: refreshed, error: null }
-        : await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
-      }
-      const expiresAtMs = (sessionData.session.expires_at ?? 0) * 1000;
-      if (refreshError && expiresAtMs <= Date.now()) {
-        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
-      }
-      const { data: userData, error: userError } = await supabase.auth.getUser(sessionData.session.access_token);
-      if (userError || !userData.user) {
-        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
-      }
       await fetchEdgeFunction("counterparty-intel-auto", {
         method: "POST",
         body: { match_id: match.id, side },
-        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
         label: "auto-generate counterparty intel",
       });
       toast.success(`${side === "buyer" ? "Buyer" : "Seller"} intel refreshed`);
@@ -195,7 +186,7 @@ function SidePanel({
             size="sm"
             variant="ghost"
             onClick={runIntel}
-            disabled={running}
+            disabled={running || !canRunIntel}
             className="h-7 px-2 text-xs"
             title="Re-run automatic public-source sketch"
           >
@@ -310,8 +301,10 @@ function SidePanel({
 // ────────────────────────────────────────────────────────────────────────
 export function CounterpartyIntelPanel({ match }: { match: Match }) {
   const queryClient = useQueryClient();
+  const { isLoading: authLoading, isAuthenticated } = useAuth();
   const matchType = (match as any).match_type;
   const isUnilateral = matchType === "unilateral";
+  const canRunIntel = !authLoading && isAuthenticated;
 
   const { data: rows = [], refetch, isLoading } = useQuery({
     queryKey: ["counterparty-intel", match.id],
@@ -323,6 +316,7 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
       if (error) throw error;
       return (data ?? []) as unknown as IntelRow[];
     },
+    enabled: canRunIntel,
     refetchOnWindowFocus: false,
   });
 
@@ -365,7 +359,8 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
             isRegistered={!!(match as any).buyer_id}
             intel={buyerIntel}
             onRefreshed={handleRefreshed}
-            autoRunIfMissing={!isLoading}
+            canRunIntel={canRunIntel}
+            autoRunIfMissing={canRunIntel && !isLoading}
           />
         )}
         {!isUnilateral && match.seller_name && (
@@ -376,7 +371,8 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
             isRegistered={!!(match as any).seller_id}
             intel={sellerIntel}
             onRefreshed={handleRefreshed}
-            autoRunIfMissing={!isLoading}
+            canRunIntel={canRunIntel}
+            autoRunIfMissing={canRunIntel && !isLoading}
           />
         )}
         {isUnilateral && (
