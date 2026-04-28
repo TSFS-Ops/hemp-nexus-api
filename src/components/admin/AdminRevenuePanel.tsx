@@ -363,7 +363,13 @@ export function AdminRevenuePanel() {
         });
       }
 
-      return { rows: purchases, pending };
+      return {
+        rows: purchases,
+        pending,
+        auditCount: (auditRows ?? []).length,
+        ledgerCount: (ledgerRows ?? []).length,
+        initCount: (initRows ?? []).length,
+      };
     },
     staleTime: 30_000,
   });
