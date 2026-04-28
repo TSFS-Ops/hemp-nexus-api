@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, generateIdempotencyKey } from "@/lib/api-client";
 import { handleApiError } from "@/lib/api-error-handler";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -262,6 +262,7 @@ function BillingContent() {
     try {
       const data = await apiFetch<any>("token-purchase", {
         method: "POST",
+        idempotencyKey: generateIdempotencyKey(`credit_purchase_${packageId}`),
         body: JSON.stringify({ 
           packageId,
           callbackUrl: `${window.location.origin}/billing?status=success`,
