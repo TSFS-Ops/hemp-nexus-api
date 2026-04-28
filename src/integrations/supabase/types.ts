@@ -953,6 +953,39 @@ export type Database = {
           },
         ]
       }
+      clip_on_billing_failures: {
+        Row: {
+          created_at: string
+          credits_required: number | null
+          current_balance: number | null
+          id: string
+          org_id: string
+          priced_total_zar: number | null
+          reason: Json | null
+          request_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_required?: number | null
+          current_balance?: number | null
+          id?: string
+          org_id: string
+          priced_total_zar?: number | null
+          reason?: Json | null
+          request_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_required?: number | null
+          current_balance?: number | null
+          id?: string
+          org_id?: string
+          priced_total_zar?: number | null
+          reason?: Json | null
+          request_id?: string
+        }
+        Relationships: []
+      }
       clip_on_subscription_charges: {
         Row: {
           charged_at: string
@@ -6822,6 +6855,21 @@ export type Database = {
           },
         ]
       }
+      v_clip_on_reconciliation: {
+        Row: {
+          charged_audits: number | null
+          clip_on_billed_at: string | null
+          finding: string | null
+          included_audits: number | null
+          ledger_rows: number | null
+          org_id: string | null
+          priced_total_zar: number | null
+          pricing_mode: string | null
+          request_id: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
       webhook_endpoints_safe: {
         Row: {
           created_at: string | null
@@ -7212,6 +7260,10 @@ export type Database = {
           total_burned: number
           total_credited: number
         }[]
+      }
+      record_clip_on_billing_failure: {
+        Args: { p_reason: Json; p_request_id: string }
+        Returns: undefined
       }
       refund_tokens_on_conflict: {
         Args: {
