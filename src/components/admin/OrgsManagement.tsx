@@ -275,6 +275,23 @@ export default function OrgsManagement() {
                         )}
                       </TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={!!org.clip_on_always_on}
+                            onCheckedChange={(v) => handleToggleClipOn(org.id, v)}
+                            aria-label="Toggle permanent clip-on plan"
+                          />
+                          {org.clip_on_always_on ? (
+                            <Badge variant="default" className="flex items-center gap-1 w-fit text-[10px]">
+                              <ShieldCheck className="h-3 w-3" />
+                              Always-on
+                            </Badge>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground">Per-request</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <Select
                           value={org.status}
                           onValueChange={(value) => handleUpdateStatus(org.id, value)}
