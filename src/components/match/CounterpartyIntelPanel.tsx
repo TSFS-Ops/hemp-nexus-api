@@ -124,9 +124,25 @@ function SidePanel({
     if (running) return;
     setRunning(true);
     try {
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      const { data: sessionData, error: sessionError } = refreshed.session
+        ? { data: refreshed, error: null }
+        : await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
+      }
+      const expiresAtMs = (sessionData.session.expires_at ?? 0) * 1000;
+      if (refreshError && expiresAtMs <= Date.now()) {
+        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
+      }
+      const { data: userData, error: userError } = await supabase.auth.getUser(sessionData.session.access_token);
+      if (userError || !userData.user) {
+        throw new Error("No active sign-in session. Please sign in again, then retry Refresh.");
+      }
       await fetchEdgeFunction("counterparty-intel-auto", {
         method: "POST",
         body: { match_id: match.id, side },
+        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
         label: "auto-generate counterparty intel",
       });
       toast.success(`${side === "buyer" ? "Buyer" : "Seller"} intel refreshed`);
