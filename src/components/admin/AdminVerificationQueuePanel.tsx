@@ -408,11 +408,22 @@ export function AdminVerificationQueuePanel() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {rows.map((r) => {
+                const insuf = insufficientFor(r);
+                return (
                 <tr key={r.id} className="border-t border-border align-top">
                   <td className="px-3 py-2">
                     <div className="font-medium">{r.subject_name}</div>
                     {r.reason && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.reason}</div>}
+                    {insuf && (
+                      <div
+                        className="mt-1 inline-flex items-center gap-1 rounded-sm border border-destructive/30 bg-destructive/5 px-1.5 py-0.5 text-[10px] text-destructive"
+                        title={`Counterparty wallet has ${insuf.balance} credit(s); ${insuf.required} required. Pickup will be rejected by the billing function until top-up.`}
+                      >
+                        <ShieldAlert className="h-3 w-3" />
+                        Insufficient credits ({insuf.balance}/{insuf.required})
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <Badge variant="secondary" className="text-[10px]">{KIND_LABELS[r.kind]}</Badge>
@@ -448,14 +459,21 @@ export function AdminVerificationQueuePanel() {
                     {r.status === "completed" || r.status === "cancelled" ? (
                       <span className="text-xs text-muted-foreground">Closed</span>
                     ) : (
-                      <Button size="sm" variant="outline" onClick={() => openActionDialog(r)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!!insuf}
+                        title={insuf ? "Pickup blocked — counterparty has insufficient credits" : undefined}
+                        onClick={() => openActionDialog(r)}
+                      >
                         <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
                         Action
                       </Button>
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
