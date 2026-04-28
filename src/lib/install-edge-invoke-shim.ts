@@ -25,7 +25,7 @@
  *   surfaces the friendly copy.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { EdgeInvokeError } from "@/lib/edge-invoke";
+import { EdgeInvokeError, refreshSessionOnce } from "@/lib/edge-invoke";
 
 const REFRESH_SKEW_MS = 30_000;
 const UUID_FUNCTION_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\/|$)/i;
@@ -47,7 +47,7 @@ export function installEdgeInvokeShim(): void {
     const exp = data.session.expires_at;
     if (!exp) return;
     if (exp * 1000 - Date.now() < REFRESH_SKEW_MS) {
-      await supabase.auth.refreshSession();
+      await refreshSessionOnce();
     }
   };
 
