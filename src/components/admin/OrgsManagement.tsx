@@ -115,6 +115,36 @@ export default function OrgsManagement() {
     }
   };
 
+  const handleToggleClipOn = async (orgId: string, next: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .update({
+          clip_on_always_on: next,
+          clip_on_subscription_started_at: next ? new Date().toISOString() : null,
+        })
+        .eq("id", orgId);
+      if (error) throw error;
+
+      await supabase.from("audit_logs").insert([{
+        org_id: orgId,
+        action: next ? "clip_on.subscription_enabled" : "clip_on.subscription_disabled",
+        entity_type: "organization",
+        entity_id: orgId,
+        metadata: { changed_at: new Date().toISOString() },
+      }]);
+
+      toast.success(
+        next
+          ? "Clip-on switched on permanently. Monthly billing starts at the next cron run."
+          : "Clip-on permanent plan switched off. Per-request charges resume.",
+      );
+      fetchOrgs();
+    } catch (e: any) {
+      toast.error(`Failed to update clip-on plan: ${e?.message ?? "unknown error"}`);
+    }
+  };
+
   const filteredOrgs = orgs.filter((org) =>
     org.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
