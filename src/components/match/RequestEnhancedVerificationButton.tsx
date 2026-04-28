@@ -106,6 +106,27 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Is the requesting user's org on the permanent (always-on) plan?
+  const { data: orgPlan } = useQuery({
+    queryKey: ["org-clip-on-plan", session?.user.id],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session!.user.id)
+        .maybeSingle();
+      if (!prof?.org_id) return { always_on: false };
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("clip_on_always_on")
+        .eq("id", prof.org_id)
+        .maybeSingle();
+      return { always_on: !!org?.clip_on_always_on };
+    },
+  });
+  const alwaysOn = !!orgPlan?.always_on;
+
   const totalPerRequest =
     pricing.cost_per_request_zar * (1 + pricing.margin_pct / 100);
   const totalPermanentMonthly =
