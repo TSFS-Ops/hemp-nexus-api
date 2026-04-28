@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
+import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -184,6 +185,7 @@ Deno.serve(async (req: Request) => {
     // ── POST /entities/screen ── Screening stub (admin only)
     if (req.method === "POST" && pathParts[pathParts.length - 1] === "screen") {
       requireRole(authCtx, "admin");
+      assertIdempotencyKey(req);
 
       const body = await req.json();
       const parsed = ScreeningResultSchema.parse(body);
