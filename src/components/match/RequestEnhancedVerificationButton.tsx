@@ -133,6 +133,36 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
     pricing.permanent_integration_monthly_zar *
     (1 + pricing.permanent_integration_margin_pct / 100);
 
+  // Credits the DB will burn at pickup: max(1, ceil(priced_total_zar / 10)).
+  // Mirrors bill_clip_on_request so the pre-warn is exact, not approximate.
+  const creditsRequired = Math.max(1, Math.ceil(totalPerRequest / 10));
+
+  // Pull the org's live wallet balance so we can pre-warn before the user
+  // accepts the charge. Skipped for always-on orgs (subscription path —
+  // no per-request burn). Re-fetched whenever the dialog opens.
+  const { data: balanceRow } = useQuery({
+    queryKey: ["org-credit-balance-for-clip-on", session?.user.id, open],
+    enabled: !!session && !alwaysOn && open,
+    queryFn: async () => {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", session!.user.id)
+        .maybeSingle();
+      if (!prof?.org_id) return { balance: null as number | null };
+      const { data: bal } = await supabase
+        .from("token_balances")
+        .select("balance")
+        .eq("org_id", prof.org_id)
+        .maybeSingle();
+      return { balance: (bal?.balance as number | undefined) ?? 0 };
+    },
+    staleTime: 30 * 1000,
+  });
+  const currentBalance = balanceRow?.balance ?? null;
+  const insufficient =
+    !alwaysOn && currentBalance !== null && currentBalance < creditsRequired;
+
   const { data: ownRows = [] } = useQuery({
     queryKey: ["own-verification-requests", match.id, session?.user.id],
     enabled: !!session,
