@@ -953,6 +953,44 @@ export type Database = {
           },
         ]
       }
+      clip_on_subscription_charges: {
+        Row: {
+          charged_at: string
+          credits_burned: number
+          id: string
+          metadata: Json
+          org_id: string
+          period_month: string
+          price_zar: number
+        }
+        Insert: {
+          charged_at?: string
+          credits_burned: number
+          id?: string
+          metadata?: Json
+          org_id: string
+          period_month: string
+          price_zar: number
+        }
+        Update: {
+          charged_at?: string
+          credits_burned?: number
+          id?: string
+          metadata?: Json
+          org_id?: string
+          period_month?: string
+          price_zar?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clip_on_subscription_charges_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collapse_ledger: {
         Row: {
           actor_user_id: string | null
@@ -3635,6 +3673,7 @@ export type Database = {
       operator_verification_requests: {
         Row: {
           assigned_to: string | null
+          clip_on_billed_at: string | null
           completed_at: string | null
           created_at: string
           id: string
@@ -3657,6 +3696,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          clip_on_billed_at?: string | null
           completed_at?: string | null
           created_at?: string
           id?: string
@@ -3679,6 +3719,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          clip_on_billed_at?: string | null
           completed_at?: string | null
           created_at?: string
           id?: string
@@ -3875,6 +3916,8 @@ export type Database = {
         Row: {
           address: Json | null
           authorised_signatory: string | null
+          clip_on_always_on: boolean
+          clip_on_subscription_started_at: string | null
           created_at: string
           cross_border_consent: boolean
           data_region: string
@@ -3902,6 +3945,8 @@ export type Database = {
         Insert: {
           address?: Json | null
           authorised_signatory?: string | null
+          clip_on_always_on?: boolean
+          clip_on_subscription_started_at?: string | null
           created_at?: string
           cross_border_consent?: boolean
           data_region?: string
@@ -3929,6 +3974,8 @@ export type Database = {
         Update: {
           address?: Json | null
           authorised_signatory?: string | null
+          clip_on_always_on?: boolean
+          clip_on_subscription_started_at?: string | null
           created_at?: string
           cross_border_consent?: boolean
           data_region?: string
@@ -6941,6 +6988,8 @@ export type Database = {
         }
         Returns: Json
       }
+      bill_clip_on_request: { Args: { p_request_id: string }; Returns: Json }
+      bill_clip_on_subscriptions_monthly: { Args: never; Returns: Json }
       change_org_member_role: {
         Args: {
           p_new_role: string
