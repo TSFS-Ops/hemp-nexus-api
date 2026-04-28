@@ -243,6 +243,7 @@ export default function OrgsManagement() {
                     <TableHead>Users</TableHead>
                     <TableHead>API Keys</TableHead>
                     <TableHead>Sandbox</TableHead>
+                    <TableHead>Clip-on plan</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                   </TableRow>
