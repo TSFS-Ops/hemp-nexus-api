@@ -179,7 +179,72 @@ export function AdminVerificationQueuePanel() {
         .from("operator_verification_requests")
         .update(patch)
         .eq("id", acting.id);
-      if (error) throw error;
+      if (error) {
+        // Detect billing rejection raised by bill_clip_on_request /
+        // tg_clip_on_block_unbilled_revert. The DB raises P0541
+        // (CLIP_ON_INSUFFICIENT_CREDITS) or P0542 (status revert blocked)
+        // and PostgREST surfaces the message verbatim. Capture the
+        // failure durably via the service-role edge function so the
+        // attempt is auditable, then show the operator a precise toast
+        // and abort — the request stays in its prior status (atomic
+        // rollback already handled by Postgres).
+        const msg = String(error.message || "");
+        const code = (error as any).code as string | undefined;
+        const isInsufficient =
+          code === "P0541" || /CLIP_ON_INSUFFICIENT_CREDITS/i.test(msg);
+        const isRevertBlocked =
+          code === "P0542" || /CLIP_ON_BILLED_NO_REVERT/i.test(msg);
+
+        if (isInsufficient || isRevertBlocked) {
+          // Best-effort durable capture. We do not throw on failure of
+          // the recorder — the primary signal (rolled-back update) is
+          // already correct; the recorder is for the audit ledger.
+          try {
+            const { error: recErr } = await supabase.functions.invoke(
+              "clip-on-record-billing-failure",
+              {
+                body: {
+                  request_id: acting.id,
+                  reason: {
+                    code: isInsufficient
+                      ? "CLIP_ON_INSUFFICIENT_CREDITS"
+                      : "CLIP_ON_BILLED_NO_REVERT",
+                    message: msg,
+                    pg_code: code ?? null,
+                    attempted_status: actionStatus,
+                    subject_name: acting.subject_name,
+                    kind: acting.kind,
+                  },
+                },
+              },
+            );
+            if (recErr) {
+              console.warn(
+                "[verification-queue] failure-recorder errored",
+                recErr,
+              );
+            }
+          } catch (recCatch) {
+            console.warn(
+              "[verification-queue] failure-recorder threw",
+              recCatch,
+            );
+          }
+
+          toast.error(
+            isInsufficient
+              ? "Cannot pick up — counterparty has insufficient credits. The attempt has been logged for billing follow-up."
+              : "Cannot revert — request is already billed. Issue a refund first.",
+          );
+          // Refresh so the status reverts to its true (rolled-back) value
+          // in the UI and counters re-derive.
+          queryClient.invalidateQueries({ queryKey: ["admin-verification-queue"] });
+          refetch();
+          return;
+        }
+
+        throw error;
+      }
 
       // Audit trail entry so a closed verification is visible in the
       // immutable audit log surface that compliance reviewers already use.
