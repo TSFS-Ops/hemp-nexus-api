@@ -2858,6 +2858,60 @@ export type Database = {
           },
         ]
       }
+      ledger_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          match_id: string | null
+          occurred_at: string
+          org_id: string
+          payload: Json
+          payload_hash: string
+          prev_hash: string | null
+          sequence_number: number
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          match_id?: string | null
+          occurred_at?: string
+          org_id: string
+          payload?: Json
+          payload_hash: string
+          prev_hash?: string | null
+          sequence_number?: number
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          match_id?: string | null
+          occurred_at?: string
+          org_id?: string
+          payload?: Json
+          payload_hash?: string
+          prev_hash?: string | null
+          sequence_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "ledger_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licences: {
         Row: {
           amount_usd: number
