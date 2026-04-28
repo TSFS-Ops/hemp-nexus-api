@@ -356,6 +356,39 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
                 </p>
               </div>
 
+              {/* Pre-warn: live wallet check before the user accepts the
+                  charge. Mirrors the DB-side check in bill_clip_on_request,
+                  so what the user sees here matches what gets enforced
+                  when a reviewer picks the case up. */}
+              {!alwaysOn && currentBalance !== null && (
+                <div
+                  className={
+                    "rounded-md border p-3 text-xs " +
+                    (insufficient
+                      ? "border-destructive/40 bg-destructive/5 text-destructive"
+                      : "border-border bg-muted/30 text-muted-foreground")
+                  }
+                  data-testid="clip-on-balance-prewarn"
+                >
+                  <div className="flex justify-between">
+                    <span>Credits required</span>
+                    <span className="font-mono">{creditsRequired}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Your current balance</span>
+                    <span className="font-mono">{currentBalance}</span>
+                  </div>
+                  {insufficient && (
+                    <p className="pt-2 leading-snug">
+                      Your wallet does not have enough credits for this request.
+                      You can still send it, but a reviewer will not be able
+                      to pick it up until your balance reaches {creditsRequired}.
+                      Top up in <span className="font-medium">Settings → Billing</span>.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <Label className="text-xs">Why are you asking? (optional)</Label>
                 <Textarea
