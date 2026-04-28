@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { ShieldCheck, ShieldAlert, History, Search, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -217,6 +218,11 @@ export function AdminGovernancePosturePanel() {
           previous posture is retained for forensic audit memory and never overwritten.
         </AlertDescription>
       </Alert>
+
+      {/* Truncation disclosure — orgs list caps at 500. Without this banner an
+          admin filtering on a name that sorts late alphabetically may believe
+          the org does not exist when it is simply beyond the cap. */}
+      <TruncationBanner data={orgs} limit={500} />
 
       <Card>
         <CardHeader>
