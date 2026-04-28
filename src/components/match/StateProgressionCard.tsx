@@ -681,15 +681,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               </button>
             )}
 
-            {/* ── Counterparty-not-yet-registered block ──
-                When a name is on file but the counterparty has no verified
-                platform identifier (buyer_id / seller_id), the server-side
-                eligibility check will reject POI mint with 422
-                ELIGIBILITY_FAILED. The button is disabled above; this panel
-                explains the exact remediation: invite the counterparty (or
-                link an existing registered organisation) via the Terms tab.
-                No "soft routing" exists on the server today, so we must not
-                imply that clicking will queue or invite anything. */}
+            {/* ── Counterparty-not-yet-registered NOTICE (informational only) ──
+                Per product directive (2026-04-27): a POI may be issued and the
+                credit burned regardless of whether the counterparty is
+                registered on the platform. A named (but unregistered)
+                counterparty is sufficient for POI mint; hard verification
+                (KYB/IDV/UBO) is enforced later at WaD via the 9-gate engine.
+                We surface a calm, non-blocking notice so the issuer knows
+                outreach to the counterparty will be required to progress to
+                acceptance and ultimately to WaD — but POI generation itself
+                proceeds normally. */}
             {isPoiAction && !showInlineWaiver && (() => {
               const missingBuyerId =
                 !isUnilateral && !!match.buyer_name && !(match as any).buyer_id;
@@ -699,33 +700,33 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               if (!missingBuyerId && !missingSellerId) return null;
 
               return (
-                <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
-                  <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/40">
+                  <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div className="space-y-2 text-left w-full">
                     <p className="text-sm font-semibold text-foreground">
-                      Counterparty must be a registered organisation before POI can be generated
+                      Counterparty is not yet registered — POI will still be issued
                     </p>
                     <ul className="space-y-1 text-xs text-muted-foreground">
                       {missingBuyerId && (
                         <li>
                           Buyer <strong>“{match.buyer_name}”</strong> is named
-                          but is not yet a registered organisation on the platform.
+                          but not yet a registered organisation.
                         </li>
                       )}
                       {missingSellerId && (
                         <li>
                           Seller <strong>“{match.seller_name}”</strong> is named
-                          but is not yet a registered organisation on the platform.
+                          but not yet a registered organisation.
                         </li>
                       )}
                     </ul>
-                    <p className="text-[11px] text-muted-foreground border-t border-destructive/20 pt-2">
-                      To proceed, open the <strong>Terms</strong> tab and either
-                      invite the counterparty by email (they’ll receive a
-                      registration link) or link an existing registered
-                      organisation. Once they are registered and linked,
-                      <strong> Generate POI</strong> will unlock automatically.
-                      No credits are charged until POI mint succeeds.
+                    <p className="text-[11px] text-muted-foreground border-t border-border pt-2">
+                      You can proceed with <strong>Generate POI</strong> now —
+                      the credit will be burned and the Proof of Intent sealed
+                      on the audit ledger. To progress beyond POI to a Written
+                      Agreement of Deal, the counterparty will need to register
+                      and accept (you can invite them from the <strong>Terms</strong> tab).
+                      Hard verification (KYB/IDV/UBO) is enforced at WaD, not at POI.
                     </p>
                   </div>
                 </div>
