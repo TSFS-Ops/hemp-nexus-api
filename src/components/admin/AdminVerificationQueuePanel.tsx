@@ -56,6 +56,8 @@ interface VerificationRow {
   assigned_to: string | null;
   completed_at: string | null;
   created_at: string;
+  priced_total_zar: number | null;
+  clip_on_billed_at: string | null;
 }
 
 const KIND_LABELS: Record<Kind, string> = {
