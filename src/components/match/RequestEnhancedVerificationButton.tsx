@@ -16,7 +16,7 @@
  * everything from HQ → Verification Queue.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,37 +55,17 @@ const STATUS_VARIANT: Record<Status, "default" | "secondary" | "outline" | "dest
 };
 
 export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
-  const { session } = useAuth();
+  const { session, isPlatformAdmin } = useAuth();
   const qc = useQueryClient();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [reason, setReason] = useState("");
-
-  // Hide the button from admins — they manage cases from HQ.
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "platform_admin")
-        .maybeSingle();
-      if (cancelled) return;
-      setIsAdmin(!error && !!data);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
 
   // Show the user the status of any case THEY raised on this match
   // (RLS hides notes/outcome owned by other users).
   const { data: ownRows = [] } = useQuery({
     queryKey: ["own-verification-requests", match.id, session?.user.id],
-    enabled: !!session && isAdmin === false,
+    enabled: !!session,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("operator_verification_requests")
@@ -99,14 +79,17 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
     },
   });
 
-  if (isAdmin !== false) return null; // wait until role resolved; admins see HQ instead
+  if (!session) return null;
 
-  const userOrgQuery = async (): Promise<string | null> => {
-    const { data } = await supabase
+  const requestOrgQuery = async (): Promise<string | null> => {
+    const { data, error } = await supabase
       .from("profiles")
       .select("org_id")
       .eq("id", session!.user.id)
       .maybeSingle();
+    if (error) throw error;
+    if (data?.org_id) return data.org_id as string;
+    if (isPlatformAdmin && (match as any).org_id) return (match as any).org_id as string;
     return (data?.org_id as string | null) ?? null;
   };
 
@@ -114,7 +97,7 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
     if (!session) return;
     setSubmitting(true);
     try {
-      const orgId = await userOrgQuery();
+      const orgId = await requestOrgQuery();
       if (!orgId) {
         toast.error("Your profile is not linked to an organisation.");
         return;
