@@ -60,6 +60,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/error-state";
+import { TruncationBanner } from "@/components/ui/truncation-banner";
 import {
   Loader2,
   RefreshCw,
