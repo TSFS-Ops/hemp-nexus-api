@@ -158,11 +158,6 @@ export function OperatorVerificationClipOn({ match }: { match: Match }) {
           Operator verification clip-on
           <Badge variant="outline" className="text-[10px]">Admin only</Badge>
         </CardTitle>
-        <p className="text-xs text-muted-foreground mt-1.5">
-          Optional. Use this when circumstances call for ID or organisation
-          verification (e.g. the Orca conversation). Not a gate on POI.
-          Hard verification still runs at WaD via the 9-gate engine.
-        </p>
       </CardHeader>
       <CardContent className="space-y-3">
         {rows.length === 0 ? (
