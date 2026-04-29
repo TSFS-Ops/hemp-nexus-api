@@ -191,6 +191,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
       // Acceptable failures: insufficient tokens, wrong state, evidence waiver required
       expect([
         "INSUFFICIENT_TOKENS",
+        "INSUFFICIENT_TOKEN_BALANCE",
         "INVALID_STATE",
         "insufficient_tokens",
         "EVIDENCE_WAIVER_REQUIRED",
