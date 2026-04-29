@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, generateIdempotencyKey } from "@/lib/api-client";
 
 interface RegistryEntry {
   id: string;
@@ -185,9 +185,13 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
 
       if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
-      // 2. Register governance doc via apiFetch (proper error surfacing)
+      // 2. Register governance doc via apiFetch (proper error surfacing).
+      // The governance-docs edge function hard-enforces Idempotency-Key on
+      // mutating requests via assertIdempotencyKey — generate one per submit
+      // so retries from the user clicking twice are safely deduplicated.
       await apiFetch("governance-docs", {
         method: "POST",
+        idempotencyKey: generateIdempotencyKey("gov_doc"),
         body: JSON.stringify({
           registry_id: selectedRegistryId,
           deal_reference_id: matchId,
