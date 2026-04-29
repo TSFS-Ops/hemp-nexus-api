@@ -222,6 +222,15 @@ function Surface({
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab content, each panel is the legacy admin component, restyled by Surface.
 // ─────────────────────────────────────────────────────────────────────────────
+function SpineTab() {
+  return <>
+      <TabHeader id="spine" />
+      <Surface label="Live spine · matches × p3_wads × pods × pod_milestones × breaches">
+        <AdminCanonicalSpinePanel />
+      </Surface>
+    </>;
+}
+
 function UsersTab() {
   return <>
       <TabHeader id="users" />
