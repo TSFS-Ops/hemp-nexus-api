@@ -314,6 +314,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         "X-API-Key": ctx.buyer.apiKey,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-collapse-missing-${TS}`,
       },
       body: JSON.stringify({ org_id: ctx.buyer.orgId }),
     });
@@ -330,6 +331,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         "X-API-Key": ctx.buyer.apiKey,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-collapse-mismatch-${TS}`,
       },
       body: JSON.stringify({
         org_id: ctx.seller.orgId, // WRONG - doesn't match API key
@@ -355,6 +357,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         "X-API-Key": ctx.buyer.apiKey,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-collapse-selftrade-${TS}`,
       },
       body: JSON.stringify({
         org_id: ctx.buyer.orgId,
@@ -392,6 +395,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         "X-API-Key": ctx.buyer.apiKey,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-collapse-noapproval-${TS}`,
       },
       body: JSON.stringify({
         org_id: ctx.buyer.orgId,
