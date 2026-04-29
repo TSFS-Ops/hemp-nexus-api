@@ -784,6 +784,7 @@ export function AdminPendingEngagementsPanel() {
         `poi-engagements/${outreachDialog.id}/send-outreach`,
         {
           method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
           body: {
             subject: outreachSubject.trim(),
             custom_message: outreachMessage.trim() || undefined,
