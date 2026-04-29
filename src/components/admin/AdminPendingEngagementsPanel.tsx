@@ -590,6 +590,7 @@ export function AdminPendingEngagementsPanel() {
         `poi-engagements/${eng.id}`,
         {
           method: "PATCH",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
           body: { engagement_status: "notification_sent" },
         }
       );
