@@ -111,13 +111,17 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         Authorization: `Bearer ${ctx.buyer.token}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-apikey-buyer-${TS}`,
       },
       body: JSON.stringify({
         name: `UAT Buyer Key ${TS}`,
         scopes: ["search", "match", "evidence", "collapse"],
       }),
     });
-    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`api-keys POST failed: ${res.status} ${errBody}`);
+    }
     const body = await res.json();
     expect(body.key).toBeTruthy();
     ctx.buyer.apiKey = body.key;
@@ -129,13 +133,17 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         Authorization: `Bearer ${ctx.seller.token}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-apikey-seller-${TS}`,
       },
       body: JSON.stringify({
         name: `UAT Seller Key ${TS}`,
         scopes: ["search", "match", "evidence", "collapse"],
       }),
     });
-    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`api-keys POST failed: ${res.status} ${errBody}`);
+    }
     const body = await res.json();
     ctx.seller.apiKey = body.key;
   });
@@ -240,7 +248,10 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
   it("5.1 - Buyer confirms intent (burns 500 tokens)", async () => {
     const res = await fetch(`${BASE}/functions/v1/match/${ctx.matchId}/settle`, {
       method: "POST",
-      headers: { "X-API-Key": ctx.buyer.apiKey },
+      headers: {
+        "X-API-Key": ctx.buyer.apiKey,
+        "Idempotency-Key": `uat-settle-${TS}`,
+      },
     });
 
     const body = await res.json();
@@ -251,7 +262,12 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       ).toBe(true);
     } else {
       // Acceptable: insufficient tokens (new org starts with 1000, match creation burns some)
-      expect(["INSUFFICIENT_TOKENS", "insufficient_tokens"]).toContain(body.code);
+      // Acceptable terminal codes: token shortfall OR mandatory evidence-waiver gate
+      expect([
+        "INSUFFICIENT_TOKENS",
+        "insufficient_tokens",
+        "EVIDENCE_WAIVER_REQUIRED",
+      ]).toContain(body.code);
       console.warn(`[UAT 5.1] Settle failed: ${body.code} - ${body.message}`);
     }
   }, 15_000);
@@ -259,7 +275,10 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
   it("5.2 - Repeat settle is idempotent (no double-burn)", async () => {
     const res = await fetch(`${BASE}/functions/v1/match/${ctx.matchId}/settle`, {
       method: "POST",
-      headers: { "X-API-Key": ctx.buyer.apiKey },
+      headers: {
+        "X-API-Key": ctx.buyer.apiKey,
+        "Idempotency-Key": `uat-settle-${TS}`,
+      },
     });
 
     const body = await res.json();
@@ -306,6 +325,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         "X-API-Key": ctx.buyer.apiKey,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-collapse-missing-${TS}`,
       },
       body: JSON.stringify({ org_id: ctx.buyer.orgId }),
     });
@@ -322,6 +342,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         "X-API-Key": ctx.buyer.apiKey,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-collapse-mismatch-${TS}`,
       },
       body: JSON.stringify({
         org_id: ctx.seller.orgId, // WRONG - doesn't match API key
@@ -347,6 +368,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         "X-API-Key": ctx.buyer.apiKey,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-collapse-selftrade-${TS}`,
       },
       body: JSON.stringify({
         org_id: ctx.buyer.orgId,
@@ -384,6 +406,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         "X-API-Key": ctx.buyer.apiKey,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-collapse-noapproval-${TS}`,
       },
       body: JSON.stringify({
         org_id: ctx.buyer.orgId,
