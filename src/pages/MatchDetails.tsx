@@ -26,6 +26,7 @@ import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpart
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
 import { RequestEnhancedVerificationButton } from "@/components/match/RequestEnhancedVerificationButton";
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
+import { SpineTimeline } from "@/components/match/SpineTimeline";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
@@ -181,6 +182,8 @@ function MatchDetailsContent() {
 
       <CounterpartyIntelPanel match={match} />
       <RequestEnhancedVerificationButton match={match} />
+
+      {matchId && <SpineTimeline matchId={matchId} />}
 
       <DealWizard
         match={match}
