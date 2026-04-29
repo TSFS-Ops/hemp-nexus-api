@@ -219,6 +219,11 @@ export function isCompleted(state: string): boolean {
   return state === "completed";
 }
 
+/** Light/enhanced counterparty verification belongs only before POI generation. */
+export function isPrePoi(stateOrStatus: string | null | undefined): boolean {
+  return stateOrStatus === "discovery" || stateOrStatus === MATCH_STATUS.MATCHED;
+}
+
 /** Human-readable label for a match state or status */
 export function statusLabel(statusOrState: string): string {
   if (STATE_LABELS[statusOrState]) return STATE_LABELS[statusOrState];

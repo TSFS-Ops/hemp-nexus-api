@@ -152,6 +152,7 @@ function MatchDetailsContent() {
   }
 
   const isSettled = MatchState.isSettled(match.status);
+  const showPrePoiVerification = MatchState.isPrePoi(match.state || match.status);
 
   return (
     <div className="space-y-6">
@@ -180,8 +181,8 @@ function MatchDetailsContent() {
 
       {matchId && <EngagementTracker matchId={matchId} match={match} />}
 
-      <CounterpartyIntelPanel match={match} />
-      <RequestEnhancedVerificationButton match={match} />
+      {showPrePoiVerification && <CounterpartyIntelPanel match={match} />}
+      {showPrePoiVerification && <RequestEnhancedVerificationButton match={match} />}
 
       {matchId && <SpineTimeline matchId={matchId} />}
 
