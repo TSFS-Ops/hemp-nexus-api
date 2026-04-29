@@ -73,9 +73,15 @@ Deno.serve(async (req) => {
     }
 
     if (existingId) {
+      // Always (re)confirm. Only reset the password if the caller explicitly
+      // asks — avoids tripping HIBP on every idempotent call.
+      const update: Record<string, unknown> = { email_confirm: true };
+      if (user_metadata?.reset_password === true) {
+        update.password = password;
+      }
       const { error: updErr } = await admin.auth.admin.updateUserById(
         existingId,
-        { password, email_confirm: true },
+        update,
       );
       if (updErr) return json({ error: updErr.message }, 500);
       return json({ user_id: existingId, created: false });
