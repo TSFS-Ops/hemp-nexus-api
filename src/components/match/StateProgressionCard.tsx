@@ -316,6 +316,29 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const { data: legitimacy, isLoading: legitimacyLoading } = useOrgLegitimacy();
   const legitimacyBlocksPoi = isPoiAction && !legitimacyLoading && legitimacy?.allowed === false;
 
+  // ── COMPLETE-TRADE GATE: require a sealed WaD bundle ──
+  // The /match/:id/complete edge function rejects with WAD_NOT_SEALED (422)
+  // when no sealed WaD exists. Mirror that gate in the UI so the button is
+  // visibly disabled with clear guidance instead of producing a misleading
+  // server error after click.
+  const isCompleteAction = actionPath === "complete";
+  const { data: sealedWad, isLoading: wadLoading } = useQuery({
+    queryKey: ["wad-sealed-state", match.id],
+    enabled: isCompleteAction && !!match.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("wads")
+        .select("id, status")
+        .eq("poi_id", match.id)
+        .eq("status", "sealed")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 15_000,
+  });
+  const wadGateBlocksComplete = isCompleteAction && !wadLoading && !sealedWad;
+
   const handleConfirmClick = async () => {
     if (loading || recheckingBalance) return;
 
