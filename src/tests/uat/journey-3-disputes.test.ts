@@ -88,7 +88,10 @@ describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
 
     const res = await fetch(`${BASE_URL}/functions/v1/match/${matchId}/settle`, {
       method: "POST",
-      headers: { "X-API-Key": apiKey },
+      headers: {
+        "X-API-Key": apiKey,
+        "Idempotency-Key": `uat-j3-settle-${Date.now()}`,
+      },
     });
 
     expect(res.ok).toBe(false);
