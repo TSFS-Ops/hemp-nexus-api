@@ -64,11 +64,15 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-j1-apikey-${Date.now()}`,
       },
       body: JSON.stringify({ name: "Standard Access", scopes: ["search", "match", "evidence"] }),
     });
 
-    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`api-keys POST failed: ${res.status} ${errBody}`);
+    }
     const body = await res.json();
     expect(body.key).toBeTruthy();
     apiKeyPlaintext = body.key;
