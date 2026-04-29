@@ -262,7 +262,12 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       ).toBe(true);
     } else {
       // Acceptable: insufficient tokens (new org starts with 1000, match creation burns some)
-      expect(["INSUFFICIENT_TOKENS", "insufficient_tokens"]).toContain(body.code);
+      // Acceptable terminal codes: token shortfall OR mandatory evidence-waiver gate
+      expect([
+        "INSUFFICIENT_TOKENS",
+        "insufficient_tokens",
+        "EVIDENCE_WAIVER_REQUIRED",
+      ]).toContain(body.code);
       console.warn(`[UAT 5.1] Settle failed: ${body.code} - ${body.message}`);
     }
   }, 15_000);
