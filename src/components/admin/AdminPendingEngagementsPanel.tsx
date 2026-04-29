@@ -720,6 +720,7 @@ export function AdminPendingEngagementsPanel() {
           `poi-engagements/${eng.id}`,
           {
             method: "PATCH",
+            headers: { "Idempotency-Key": crypto.randomUUID() },
             body: { counterparty_email: contactDetail.trim() },
           },
         );
@@ -738,7 +739,11 @@ export function AdminPendingEngagementsPanel() {
 
       const { data, error } = await supabase.functions.invoke(
         `poi-engagements/${eng.id}/preview-outreach`,
-        { method: "POST", body: {} }
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: {},
+        }
       );
       if (error) throw error;
 
@@ -756,7 +761,8 @@ export function AdminPendingEngagementsPanel() {
       });
     } catch (err: any) {
       console.error("Preview outreach error:", err);
-      toast.error(err?.message || "Could not load email preview");
+      const msg = await extractEdgeError(err, "Could not load email preview");
+      toast.error(msg);
       setOutreachDialog(null);
     } finally {
       setOutreachLoading(false);
