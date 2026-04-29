@@ -95,8 +95,36 @@ Deno.serve(async (req: Request) => {
         throw new ApiException("FORBIDDEN", "Not authorised to create WaD for this intent", 403);
       }
 
-      // ── Run 7 Hard-Gates ──
+      // ── Run Hard-Gates ──
       const gates: HardGateResult[] = [];
+      const carryForwardLog: Array<{ gate: string; entity_id: string; snapshot_id: string; signal: string }> = [];
+
+      // ── Discovery Eligibility carry-forward pre-fetch ──
+      // If a Discovery eligibility snapshot exists for an entity, is PASS, and is
+      // unexpired, its signals can satisfy the equivalent WaD gate without
+      // forcing duplicate evidence (David's Item 8: "no duplication of checks").
+      // We fetch once, here, then consult below in each gate.
+      const fetchValidSnap = async (entityId: string | null) => {
+        if (!entityId) return null;
+        const { data } = await admin
+          .from("discovery_eligibility_snapshots")
+          .select("id, eligibility_status, expires_at, signals, created_at")
+          .eq("entity_id", entityId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!data) return null;
+        if (data.eligibility_status !== "PASS") return null;
+        if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
+        return data;
+      };
+      const [buyerDiscSnap, sellerDiscSnap] = await Promise.all([
+        fetchValidSnap(poi.buyer_entity_id),
+        fetchValidSnap(poi.seller_entity_id),
+      ]);
+      const recordCarry = (gate: string, entityId: string, snapId: string, signal: string) => {
+        carryForwardLog.push({ gate, entity_id: entityId, snapshot_id: snapId, signal });
+      };
 
       // Gate 1: Intent state must be COMPLETED
       gates.push({
@@ -108,6 +136,8 @@ Deno.serve(async (req: Request) => {
       });
 
       // Gate 2: Both entities must be ACTIVE or VERIFIED
+      // Carry-forward: a valid Discovery snapshot with id_verified === true
+      // satisfies entity activation for that party.
       const [buyerRes, sellerRes] = await Promise.all([
         admin.from("entities").select("id, status, entity_type").eq("id", poi.buyer_entity_id).maybeSingle(),
         admin.from("entities").select("id, status, entity_type").eq("id", poi.seller_entity_id).maybeSingle(),
