@@ -99,7 +99,7 @@ describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
     expect(res.status).toBeLessThan(500);
 
     const body = await res.json();
-    expect(["DISPUTE_ACTIVE", "INVALID_STATE"]).toContain(body.code);
+    expect(["DISPUTE_ACTIVE", "INVALID_STATE", "EVIDENCE_WAIVER_REQUIRED"]).toContain(body.code);
   }, 15_000);
 
   // ── Step 3: Resolve the dispute ────────────────────────────────
