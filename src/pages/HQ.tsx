@@ -445,7 +445,7 @@ function HQLayout() {
   } = useParams<{
     tab?: string;
   }>();
-  const activeTab: TabId = (VALID_TAB_IDS as readonly string[]).includes(tab ?? "") ? tab as TabId : "users";
+  const activeTab: TabId = (VALID_TAB_IDS as readonly string[]).includes(tab ?? "") ? tab as TabId : "spine";
   const handleTabChange = (next: string) => {
     navigate(`/hq/${next}`, {
       replace: false
