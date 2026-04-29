@@ -111,13 +111,17 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         Authorization: `Bearer ${ctx.buyer.token}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-apikey-buyer-${TS}`,
       },
       body: JSON.stringify({
         name: `UAT Buyer Key ${TS}`,
         scopes: ["search", "match", "evidence", "collapse"],
       }),
     });
-    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`api-keys POST failed: ${res.status} ${errBody}`);
+    }
     const body = await res.json();
     expect(body.key).toBeTruthy();
     ctx.buyer.apiKey = body.key;
@@ -129,13 +133,17 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
       headers: {
         Authorization: `Bearer ${ctx.seller.token}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-apikey-seller-${TS}`,
       },
       body: JSON.stringify({
         name: `UAT Seller Key ${TS}`,
         scopes: ["search", "match", "evidence", "collapse"],
       }),
     });
-    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`api-keys POST failed: ${res.status} ${errBody}`);
+    }
     const body = await res.json();
     ctx.seller.apiKey = body.key;
   });
