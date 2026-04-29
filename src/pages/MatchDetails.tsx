@@ -25,6 +25,7 @@ import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard"
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
 import { RequestEnhancedVerificationButton } from "@/components/match/RequestEnhancedVerificationButton";
+import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
@@ -193,6 +194,8 @@ function MatchDetailsContent() {
       />
 
       <MatchHeroCard match={match} isSettled={isSettled} />
+
+      {matchId && <ExecutionSection matchId={matchId} />}
     </div>
   );
 }
