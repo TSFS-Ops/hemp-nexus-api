@@ -30,7 +30,7 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
   }, 15_000);
 
   // ── Step 1: Check initial balance ──────────────────────────────
-  it("4.2 - initial token balance is default (1000 from org trigger)", async () => {
+  it("4.2 - initial token balance is seeded by org trigger", async () => {
     const { data, error } = await supabase
       .from("token_balances")
       .select("balance")
@@ -39,8 +39,8 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
 
     expect(error).toBeNull();
     const balance = data?.balance ?? 0;
-    // initialize_org_token_balance trigger gives 1000
-    expect(balance).toBe(1000);
+    // initialize_org_token_balance trigger seeds balance=0; orgs purchase credits to top up
+    expect(balance).toBe(0);
     console.info(`[UAT 4.2] Initial balance: ${balance}`);
   });
 
