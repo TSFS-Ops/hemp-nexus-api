@@ -186,6 +186,7 @@ export function AdminPendingEngagementsPanel() {
     try {
       const { error } = await supabase.functions.invoke(`poi-engagements/${e.id}`, {
         method: "PATCH",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
         body: { support_notes: trimmed },
       });
       if (error) throw error;
