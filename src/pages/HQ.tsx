@@ -487,6 +487,7 @@ function HQLayout() {
 
         <main className="px-3 sm:px-6 lg:px-10 py-6 sm:py-8 max-w-[1600px] mx-auto space-y-4">
           <AdminRedirectOriginBanner />
+          <TabsContent value="spine" className="mt-0 animate-section-enter"><SpineTab /></TabsContent>
           <TabsContent value="users" className="mt-0 animate-section-enter"><UsersTab /></TabsContent>
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
