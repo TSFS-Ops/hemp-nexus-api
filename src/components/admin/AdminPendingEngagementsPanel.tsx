@@ -4,7 +4,7 @@
  * The dedicated admin queue for POI hold-point engagements.
  *
  * Surfaces every POI engagement awaiting outreach or response, with controls to:
- *   • Send the counterparty notification email (via notification-dispatch)
+ *   • Send the counterparty notification email (via poi-engagements outreach)
  *   • Mark as "contacted" (mandatory contact_method + contact_detail)
  *   • Mark as "declined" or "expired"
  *   • View the immutable outreach log per engagement
