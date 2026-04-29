@@ -95,8 +95,36 @@ Deno.serve(async (req: Request) => {
         throw new ApiException("FORBIDDEN", "Not authorised to create WaD for this intent", 403);
       }
 
-      // ── Run 7 Hard-Gates ──
+      // ── Run Hard-Gates ──
       const gates: HardGateResult[] = [];
+      const carryForwardLog: Array<{ gate: string; entity_id: string; snapshot_id: string; signal: string }> = [];
+
+      // ── Discovery Eligibility carry-forward pre-fetch ──
+      // If a Discovery eligibility snapshot exists for an entity, is PASS, and is
+      // unexpired, its signals can satisfy the equivalent WaD gate without
+      // forcing duplicate evidence (David's Item 8: "no duplication of checks").
+      // We fetch once, here, then consult below in each gate.
+      const fetchValidSnap = async (entityId: string | null) => {
+        if (!entityId) return null;
+        const { data } = await admin
+          .from("discovery_eligibility_snapshots")
+          .select("id, eligibility_status, expires_at, signals, created_at")
+          .eq("entity_id", entityId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!data) return null;
+        if (data.eligibility_status !== "PASS") return null;
+        if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
+        return data;
+      };
+      const [buyerDiscSnap, sellerDiscSnap] = await Promise.all([
+        fetchValidSnap(poi.buyer_entity_id),
+        fetchValidSnap(poi.seller_entity_id),
+      ]);
+      const recordCarry = (gate: string, entityId: string, snapId: string, signal: string) => {
+        carryForwardLog.push({ gate, entity_id: entityId, snapshot_id: snapId, signal });
+      };
 
       // Gate 1: Intent state must be COMPLETED
       gates.push({
@@ -108,22 +136,35 @@ Deno.serve(async (req: Request) => {
       });
 
       // Gate 2: Both entities must be ACTIVE or VERIFIED
+      // Carry-forward: a valid Discovery snapshot with id_verified === true
+      // satisfies entity activation for that party.
       const [buyerRes, sellerRes] = await Promise.all([
         admin.from("entities").select("id, status, entity_type").eq("id", poi.buyer_entity_id).maybeSingle(),
         admin.from("entities").select("id, status, entity_type").eq("id", poi.seller_entity_id).maybeSingle(),
       ]);
       const validStatuses = ["active", "ACTIVE", "verified", "VERIFIED"];
-      const buyerActive = buyerRes.data && validStatuses.includes(buyerRes.data.status);
-      const sellerActive = sellerRes.data && validStatuses.includes(sellerRes.data.status);
+      const buyerSigs = (buyerDiscSnap?.signals || {}) as any;
+      const sellerSigs = (sellerDiscSnap?.signals || {}) as any;
+      const buyerActive =
+        (buyerRes.data && validStatuses.includes(buyerRes.data.status)) ||
+        (buyerDiscSnap && buyerSigs?.id_verified === true);
+      const sellerActive =
+        (sellerRes.data && validStatuses.includes(sellerRes.data.status)) ||
+        (sellerDiscSnap && sellerSigs?.id_verified === true);
+      if (buyerDiscSnap && buyerSigs?.id_verified === true) recordCarry("ENTITY_STATUS", poi.buyer_entity_id, buyerDiscSnap.id, "id_verified");
+      if (sellerDiscSnap && sellerSigs?.id_verified === true) recordCarry("ENTITY_STATUS", poi.seller_entity_id, sellerDiscSnap.id, "id_verified");
       gates.push({
         gate: "ENTITY_STATUS",
         passed: !!(buyerActive && sellerActive),
         reason: buyerActive && sellerActive
-          ? "Both buyer and seller entities are active/verified"
+          ? "Both buyer and seller entities are active/verified (carry-forward where applicable)"
           : `Buyer: ${buyerRes.data?.status || "NOT_FOUND"}, Seller: ${sellerRes.data?.status || "NOT_FOUND"}`,
       });
 
       // Gate 3: UBO ownership 100% for both entities (company type)
+      // Carry-forward: a valid Discovery snapshot with company_exists === true and
+      // operating_footprint_score >= 5 satisfies UBO completeness for that party,
+      // because Discovery already cleared structural KYB to issue PASS.
       const [buyerUbo, sellerUbo] = await Promise.all([
         admin.from("ubo_links").select("ownership_percentage, status").eq("company_entity_id", poi.buyer_entity_id),
         admin.from("ubo_links").select("ownership_percentage, status").eq("company_entity_id", poi.seller_entity_id),
@@ -132,31 +173,43 @@ Deno.serve(async (req: Request) => {
       const sellerUboTotal = (sellerUbo.data || []).reduce((sum: number, o: any) => sum + Number(o.ownership_percentage || 0), 0);
       const buyerUboAllVerified = (buyerUbo.data || []).length > 0 && (buyerUbo.data || []).every((o: any) => o.status === "verified");
       const sellerUboAllVerified = (sellerUbo.data || []).length > 0 && (sellerUbo.data || []).every((o: any) => o.status === "verified");
-      // If no UBO links exist for individual entities, pass by default
       const buyerIsIndividual = buyerRes.data && (!buyerUbo.data || buyerUbo.data.length === 0);
       const sellerIsIndividual = sellerRes.data && (!sellerUbo.data || sellerUbo.data.length === 0);
-      const uboPass = (buyerIsIndividual || (buyerUboTotal >= 100 && buyerUboAllVerified)) && 
-                       (sellerIsIndividual || (sellerUboTotal >= 100 && sellerUboAllVerified));
+      const buyerUboCarry =
+        !!buyerDiscSnap && buyerSigs?.company_exists === true && Number(buyerSigs?.operating_footprint_score || 0) >= 5;
+      const sellerUboCarry =
+        !!sellerDiscSnap && sellerSigs?.company_exists === true && Number(sellerSigs?.operating_footprint_score || 0) >= 5;
+      if (buyerUboCarry) recordCarry("UBO_COMPLETENESS", poi.buyer_entity_id, buyerDiscSnap!.id, "company_exists+footprint");
+      if (sellerUboCarry) recordCarry("UBO_COMPLETENESS", poi.seller_entity_id, sellerDiscSnap!.id, "company_exists+footprint");
+      const uboPass =
+        (buyerIsIndividual || buyerUboCarry || (buyerUboTotal >= 100 && buyerUboAllVerified)) &&
+        (sellerIsIndividual || sellerUboCarry || (sellerUboTotal >= 100 && sellerUboAllVerified));
       gates.push({
         gate: "UBO_COMPLETENESS",
         passed: uboPass,
         reason: uboPass
-          ? "UBO ownership verified at 100% for both parties (all links verified)"
+          ? "UBO ownership verified (direct evidence or Discovery carry-forward) for both parties"
           : `Buyer UBO: ${buyerIsIndividual ? "N/A (individual)" : buyerUboTotal + "%" + (buyerUboAllVerified ? " ✓" : " (unverified links)")}, Seller UBO: ${sellerIsIndividual ? "N/A (individual)" : sellerUboTotal + "%" + (sellerUboAllVerified ? " ✓" : " (unverified links)")}`,
       });
 
       // Gate 4: Authority-to-Bind verified for both
+      // Carry-forward: a valid Discovery snapshot with authority_document_present === true
+      // satisfies ATB for that party.
       const [buyerAtb, sellerAtb] = await Promise.all([
         admin.from("authority_records").select("id, status").eq("company_entity_id", poi.buyer_entity_id).eq("status", "verified").limit(1),
         admin.from("authority_records").select("id, status").eq("company_entity_id", poi.seller_entity_id).eq("status", "verified").limit(1),
       ]);
-      const buyerAtbOk = buyerIsIndividual || (buyerAtb.data && buyerAtb.data.length > 0);
-      const sellerAtbOk = sellerIsIndividual || (sellerAtb.data && sellerAtb.data.length > 0);
+      const buyerAtbCarry = !!buyerDiscSnap && buyerSigs?.authority_document_present === true;
+      const sellerAtbCarry = !!sellerDiscSnap && sellerSigs?.authority_document_present === true;
+      if (buyerAtbCarry) recordCarry("AUTHORITY_TO_BIND", poi.buyer_entity_id, buyerDiscSnap!.id, "authority_document_present");
+      if (sellerAtbCarry) recordCarry("AUTHORITY_TO_BIND", poi.seller_entity_id, sellerDiscSnap!.id, "authority_document_present");
+      const buyerAtbOk = buyerIsIndividual || buyerAtbCarry || (buyerAtb.data && buyerAtb.data.length > 0);
+      const sellerAtbOk = sellerIsIndividual || sellerAtbCarry || (sellerAtb.data && sellerAtb.data.length > 0);
       gates.push({
         gate: "AUTHORITY_TO_BIND",
         passed: !!(buyerAtbOk && sellerAtbOk),
         reason: buyerAtbOk && sellerAtbOk
-          ? "Authority-to-Bind verified for both parties"
+          ? "Authority-to-Bind verified (direct evidence or Discovery carry-forward) for both parties"
           : `Buyer ATB: ${buyerAtbOk ? "verified" : "missing"}, Seller ATB: ${sellerAtbOk ? "verified" : "missing"}`,
       });
 
@@ -398,7 +451,7 @@ Deno.serve(async (req: Request) => {
         event_type: "trust.wad.issued",
         actor_id: authCtx.isApiKey ? null : authCtx.userId,
         actor_role: authCtx.roles?.[0] || null,
-        payload: { poi_id: parsed.poi_id, gates_passed: gates.length },
+        payload: { poi_id: parsed.poi_id, gates_passed: gates.length, carry_forward: carryForwardLog },
         event_hash: await computeHash(JSON.stringify({ wad_id: wad.id })),
       });
 
@@ -409,6 +462,7 @@ Deno.serve(async (req: Request) => {
           state: wad.state,
           issued_at: wad.issued_at,
           hard_gates: gates,
+          carry_forward: carryForwardLog,
         },
         correlationId
       );
