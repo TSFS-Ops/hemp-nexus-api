@@ -82,8 +82,7 @@ function newKey() {
   return crypto.randomUUID();
 }
 
-export function ExecutionPanel({ wadId, matchId }: Props) {
-  const { toast } = useToast();
+export function ExecutionPanel({ wadId, matchId: _matchId }: Props) {
   const queryClient = useQueryClient();
 
   // Look up the existing PoD for this WaD (if any).
