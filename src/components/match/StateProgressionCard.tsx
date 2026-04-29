@@ -657,6 +657,24 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   </p>
                 </div>
               </div>
+            ) : wadGateBlocksComplete ? (
+              <div
+                role="alert"
+                className="flex items-start gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
+              >
+                <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    Signed Deal (WaD) bundle must be sealed before completing this trade
+                  </p>
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    Proof of Intent is sealed and your trading partner has accepted, but the regulatory
+                    Signed Deal evidence bundle has not yet been sealed. Open the <strong>Signed Deal</strong>
+                    step to attest both sides and run the 9-gate compliance validation, then return here to
+                    complete the trade. No credits will be charged until completion succeeds.
+                  </p>
+                </div>
+              </div>
             ) : null}
 
             {isPoiAction && (
