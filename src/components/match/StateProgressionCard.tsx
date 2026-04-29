@@ -695,7 +695,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && !showInlineWaiver && (
               <button
                 onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
-                disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled}
+                disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled || wadGateBlocksComplete || (isCompleteAction && wadLoading)}
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
@@ -712,6 +712,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <>
                     <AlertTriangle className="h-4 w-4" />
                     Complete required fields first
+                  </>
+                ) : isCompleteAction && wadLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Checking Signed Deal status…
+                  </>
+                ) : wadGateBlocksComplete ? (
+                  <>
+                    <ShieldAlert className="h-4 w-4" />
+                    Seal Signed Deal first
                   </>
                 ) : (
                   <>
