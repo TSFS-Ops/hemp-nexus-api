@@ -59,13 +59,18 @@ import { AdminCanonicalSpinePanel } from "@/components/admin/AdminCanonicalSpine
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "users" | "organisations" | "engagements" | "disputes" | "revenue" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
   icon: typeof Users;
   blurb: string;
 }[] = [{
+  id: "spine",
+  label: "Canonical Spine",
+  icon: GitBranch,
+  blurb: "Unified live view of every match across Search → Match → POI → WaD → Execution."
+}, {
   id: "users",
   label: "User Management",
   icon: Users,
