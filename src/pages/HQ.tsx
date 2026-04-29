@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -54,17 +54,23 @@ import { AdminRevenueNotificationsPanel } from "@/components/admin/AdminRevenueN
 import { AdminRevenuePanel } from "@/components/admin/AdminRevenuePanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
+import { AdminCanonicalSpinePanel } from "@/components/admin/AdminCanonicalSpinePanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "users" | "organisations" | "engagements" | "disputes" | "revenue" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
   icon: typeof Users;
   blurb: string;
 }[] = [{
+  id: "spine",
+  label: "Canonical Spine",
+  icon: GitBranch,
+  blurb: "Unified live view of every match across Search → Match → POI → WaD → Execution."
+}, {
   id: "users",
   label: "User Management",
   icon: Users,
@@ -216,6 +222,15 @@ function Surface({
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab content, each panel is the legacy admin component, restyled by Surface.
 // ─────────────────────────────────────────────────────────────────────────────
+function SpineTab() {
+  return <>
+      <TabHeader id="spine" />
+      <Surface label="Live spine · matches × p3_wads × pods × pod_milestones × breaches">
+        <AdminCanonicalSpinePanel />
+      </Surface>
+    </>;
+}
+
 function UsersTab() {
   return <>
       <TabHeader id="users" />
@@ -430,7 +445,7 @@ function HQLayout() {
   } = useParams<{
     tab?: string;
   }>();
-  const activeTab: TabId = (VALID_TAB_IDS as readonly string[]).includes(tab ?? "") ? tab as TabId : "users";
+  const activeTab: TabId = (VALID_TAB_IDS as readonly string[]).includes(tab ?? "") ? tab as TabId : "spine";
   const handleTabChange = (next: string) => {
     navigate(`/hq/${next}`, {
       replace: false
@@ -472,6 +487,7 @@ function HQLayout() {
 
         <main className="px-3 sm:px-6 lg:px-10 py-6 sm:py-8 max-w-[1600px] mx-auto space-y-4">
           <AdminRedirectOriginBanner />
+          <TabsContent value="spine" className="mt-0 animate-section-enter"><SpineTab /></TabsContent>
           <TabsContent value="users" className="mt-0 animate-section-enter"><UsersTab /></TabsContent>
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
