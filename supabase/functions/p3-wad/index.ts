@@ -462,6 +462,7 @@ Deno.serve(async (req: Request) => {
           state: wad.state,
           issued_at: wad.issued_at,
           hard_gates: gates,
+          carry_forward: carryForwardLog,
         },
         correlationId
       );
