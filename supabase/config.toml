@@ -72,6 +72,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.provision-test-user]
+    verify_jwt = false
   [functions.run-tests]
     verify_jwt = false
   [functions.search]

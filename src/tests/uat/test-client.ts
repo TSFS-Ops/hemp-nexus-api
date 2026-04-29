@@ -30,35 +30,38 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
 export const BASE_URL = SUPABASE_URL;
 
 /**
- * Signs up a test user and auto-confirms their email via the confirm-test-user edge function.
- * Returns the sign-in session data (userId, accessToken, orgId).
+ * Provisions a confirmed test user server-side (bypasses GoTrue email rate limit),
+ * signs them in, and returns the session + org_id.
+ *
+ * Uses the `provision-test-user` edge function which calls
+ * `auth.admin.createUser({ email_confirm: true })` — no confirmation email is
+ * ever sent, so the per-hour signup quota is not consumed.
+ *
+ * Idempotent: if the email already exists, the password is reset and reused.
  */
 export async function signUpTestUser(
   client: any,
   email: string,
   password: string
 ): Promise<{ userId: string; accessToken: string; orgId: string }> {
-  // Step 1: Sign up
-  const { data: signupData, error: signupErr } = await client.auth.signUp({ email, password });
-  if (signupErr) throw signupErr;
-  if (!signupData.user) throw new Error("Signup returned no user");
-  const userId = signupData.user.id;
-
-  // Step 2: Confirm email via edge function
-  const confirmRes = await fetch(`${SUPABASE_URL}/functions/v1/confirm-test-user`, {
+  // Step 1: Provision (or reuse) a confirmed user via service-role edge function
+  const provisionRes = await fetch(`${SUPABASE_URL}/functions/v1/provision-test-user`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "apikey": SUPABASE_KEY,
     },
-    body: JSON.stringify({ user_id: userId }),
+    body: JSON.stringify({ email, password }),
   });
-  if (!confirmRes.ok) {
-    const body = await confirmRes.text();
-    throw new Error(`Failed to confirm test user: ${confirmRes.status} ${body}`);
+  if (!provisionRes.ok) {
+    const body = await provisionRes.text();
+    throw new Error(`Failed to provision test user: ${provisionRes.status} ${body}`);
   }
+  const { user_id: userId } = await provisionRes.json();
+  if (!userId) throw new Error("provision-test-user returned no user_id");
 
-  // Step 3: Sign in (now confirmed)
+  // Step 2: Sign in (already confirmed)
   const { data: signInData, error: signInErr } = await client.auth.signInWithPassword({ email, password });
   if (signInErr) throw signInErr;
   if (!signInData.session) throw new Error("Sign-in returned no session");
