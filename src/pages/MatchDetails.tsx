@@ -183,6 +183,8 @@ function MatchDetailsContent() {
       <CounterpartyIntelPanel match={match} />
       <RequestEnhancedVerificationButton match={match} />
 
+      {matchId && <SpineTimeline matchId={matchId} />}
+
       <DealWizard
         match={match}
         canConfirm={MatchState.canDo(match.state || "discovery", "confirm_intent")}
