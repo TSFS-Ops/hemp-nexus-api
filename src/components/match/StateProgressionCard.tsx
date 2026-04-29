@@ -316,6 +316,29 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const { data: legitimacy, isLoading: legitimacyLoading } = useOrgLegitimacy();
   const legitimacyBlocksPoi = isPoiAction && !legitimacyLoading && legitimacy?.allowed === false;
 
+  // ── COMPLETE-TRADE GATE: require a sealed WaD bundle ──
+  // The /match/:id/complete edge function rejects with WAD_NOT_SEALED (422)
+  // when no sealed WaD exists. Mirror that gate in the UI so the button is
+  // visibly disabled with clear guidance instead of producing a misleading
+  // server error after click.
+  const isCompleteAction = actionPath === "complete";
+  const { data: sealedWad, isLoading: wadLoading } = useQuery({
+    queryKey: ["wad-sealed-state", match.id],
+    enabled: isCompleteAction && !!match.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("wads")
+        .select("id, status")
+        .eq("poi_id", match.id)
+        .eq("status", "sealed")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 15_000,
+  });
+  const wadGateBlocksComplete = isCompleteAction && !wadLoading && !sealedWad;
+
   const handleConfirmClick = async () => {
     if (loading || recheckingBalance) return;
 
@@ -634,6 +657,24 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   </p>
                 </div>
               </div>
+            ) : wadGateBlocksComplete ? (
+              <div
+                role="alert"
+                className="flex items-start gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
+              >
+                <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    Signed Deal (WaD) bundle must be sealed before completing this trade
+                  </p>
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    Proof of Intent is sealed and your trading partner has accepted, but the regulatory
+                    Signed Deal evidence bundle has not yet been sealed. Open the <strong>Signed Deal</strong>
+                    step to attest both sides and run the 9-gate compliance validation, then return here to
+                    complete the trade. No credits will be charged until completion succeeds.
+                  </p>
+                </div>
+              </div>
             ) : null}
 
             {isPoiAction && (
@@ -654,7 +695,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && !showInlineWaiver && (
               <button
                 onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
-                disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled}
+                disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled || wadGateBlocksComplete || (isCompleteAction && wadLoading)}
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
@@ -671,6 +712,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <>
                     <AlertTriangle className="h-4 w-4" />
                     Complete required fields first
+                  </>
+                ) : isCompleteAction && wadLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Checking Signed Deal status…
+                  </>
+                ) : wadGateBlocksComplete ? (
+                  <>
+                    <ShieldAlert className="h-4 w-4" />
+                    Seal Signed Deal first
                   </>
                 ) : (
                   <>
