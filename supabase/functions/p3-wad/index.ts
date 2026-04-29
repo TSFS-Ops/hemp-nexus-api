@@ -451,7 +451,7 @@ Deno.serve(async (req: Request) => {
         event_type: "trust.wad.issued",
         actor_id: authCtx.isApiKey ? null : authCtx.userId,
         actor_role: authCtx.roles?.[0] || null,
-        payload: { poi_id: parsed.poi_id, gates_passed: gates.length },
+        payload: { poi_id: parsed.poi_id, gates_passed: gates.length, carry_forward: carryForwardLog },
         event_hash: await computeHash(JSON.stringify({ wad_id: wad.id })),
       });
 
