@@ -334,7 +334,7 @@ export function useMatchDetails(matchId: string | undefined) {
         // carries the backend `requestId` so the toast can show the trace id.
         let rethrown: unknown = err;
         try {
-          handleApiError(err);
+          handleApiError(err, actionPath);
         } catch (shaped) {
           rethrown = shaped;
         }
