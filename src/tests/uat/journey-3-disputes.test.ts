@@ -31,9 +31,14 @@ describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-j3-apikey-${Date.now()}`,
       },
       body: JSON.stringify({ name: "Production Key", scopes: ["search", "match"] }),
     });
+    if (!keyRes.ok) {
+      const errBody = await keyRes.text();
+      throw new Error(`api-keys POST failed: ${keyRes.status} ${errBody}`);
+    }
     const keyBody = await keyRes.json();
     apiKey = keyBody.key;
     expect(apiKey).toBeTruthy();
