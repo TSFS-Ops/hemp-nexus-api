@@ -5,14 +5,20 @@
  * SECURITY:
  *   - Only accepts emails matching *@test.izenzo.co.za
  *   - Uses service_role to call auth.admin.createUser({ email_confirm: true })
- *   - Idempotent: if the user already exists, returns the existing id
+ *   - Idempotent: if the user already exists, password is reset and email confirmed
  *   - Never sends a confirmation email (no GoTrue email quota consumed)
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import { corsHeaders } from "../_shared/cors.ts";
 
 const TEST_EMAIL_SUFFIX = "@test.izenzo.co.za";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -48,8 +54,7 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } },
     );
 
-    // Idempotency: if a user with this email already exists, reuse it.
-    // GoTrue admin API doesn't expose a direct lookup-by-email, so we page.
+    // Idempotency: page through users and reuse if email already exists.
     let existingId: string | null = null;
     for (let page = 1; page <= 5; page++) {
       const { data, error } = await admin.auth.admin.listUsers({
@@ -68,7 +73,6 @@ Deno.serve(async (req) => {
     }
 
     if (existingId) {
-      // Make sure the password matches what the caller expects, and confirm.
       const { error: updErr } = await admin.auth.admin.updateUserById(
         existingId,
         { password, email_confirm: true },
