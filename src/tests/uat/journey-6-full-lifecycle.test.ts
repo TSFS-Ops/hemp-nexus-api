@@ -248,7 +248,10 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
   it("5.1 - Buyer confirms intent (burns 500 tokens)", async () => {
     const res = await fetch(`${BASE}/functions/v1/match/${ctx.matchId}/settle`, {
       method: "POST",
-      headers: { "X-API-Key": ctx.buyer.apiKey },
+      headers: {
+        "X-API-Key": ctx.buyer.apiKey,
+        "Idempotency-Key": `uat-settle-${TS}`,
+      },
     });
 
     const body = await res.json();
@@ -267,7 +270,10 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
   it("5.2 - Repeat settle is idempotent (no double-burn)", async () => {
     const res = await fetch(`${BASE}/functions/v1/match/${ctx.matchId}/settle`, {
       method: "POST",
-      headers: { "X-API-Key": ctx.buyer.apiKey },
+      headers: {
+        "X-API-Key": ctx.buyer.apiKey,
+        "Idempotency-Key": `uat-settle-${TS}`,
+      },
     });
 
     const body = await res.json();
