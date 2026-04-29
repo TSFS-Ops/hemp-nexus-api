@@ -194,6 +194,8 @@ function MatchDetailsContent() {
       />
 
       <MatchHeroCard match={match} isSettled={isSettled} />
+
+      {matchId && <ExecutionSection matchId={matchId} />}
     </div>
   );
 }
