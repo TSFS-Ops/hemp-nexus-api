@@ -567,7 +567,7 @@ export function AdminPendingEngagementsPanel() {
     };
   }, [engagements]);
 
-  // ── Send notification via the existing notification-dispatch path ──
+  // ── Send counterparty notification via the engagement outreach endpoint ──
   const sendNotification = async (eng: Engagement) => {
     if (!eng.counterparty_email) {
       toast.error("No counterparty email on file. Add one before sending.");
@@ -575,32 +575,39 @@ export function AdminPendingEngagementsPanel() {
     }
     setActionLoadingId(eng.id);
     try {
-      const { error: dispatchErr } = await supabase.functions.invoke("notification-dispatch", {
-        body: {
-          template: "poi-counterparty-notify",
-          recipient: eng.counterparty_email,
-          match_id: eng.match_id,
-          engagement_id: eng.id,
-        },
-      });
-      if (dispatchErr) throw dispatchErr;
-
-      // Update status to notification_sent
-      const { error: updateErr } = await supabase.functions.invoke(
-        `poi-engagements/${eng.id}`,
+      const { data: preview, error: previewErr } = await supabase.functions.invoke(
+        `poi-engagements/${eng.id}/preview-outreach`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Idempotency-Key": crypto.randomUUID() },
-          body: { engagement_status: "notification_sent" },
+          body: {},
         }
       );
-      if (updateErr) throw updateErr;
+      if (previewErr) throw previewErr;
+      if (preview?.suppressed) {
+        toast.error("This address is on the suppression list. Use Mark contacted to record non-email outreach.");
+        return;
+      }
 
-      toast.success(`Notification sent to ${eng.counterparty_email}`);
+      const { data, error } = await supabase.functions.invoke(
+        `poi-engagements/${eng.id}/send-outreach`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: {
+            subject: preview?.subject || `Trade interest from a verified Izenzo counterparty [${eng.id.slice(0, 8)}]`,
+            custom_message: preview?.template_data?.customMessage || undefined,
+          },
+        }
+      );
+      if (error) throw error;
+
+      toast.success(`Notification sent to ${data?.sent_to ?? eng.counterparty_email}`);
       fetchEngagements();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Send notification error:", err);
-      toast.error("Failed to send notification");
+      const msg = await extractEdgeError(err, "Failed to send notification");
+      toast.error(msg);
     } finally {
       setActionLoadingId(null);
     }
