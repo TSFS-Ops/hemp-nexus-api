@@ -102,12 +102,32 @@ function rethrowWithTrace(message: string, requestId: string | null): never {
   throw err;
 }
 
-function handleApiError(err: unknown): never {
+function handleApiError(err: unknown, actionPath?: string): never {
   // Prefer structured ApiError details so we can surface the real reason
   if (err instanceof ApiError) {
     const trace = err.requestId ?? null;
-    if (err.code === "ELIGIBILITY_FAILED" || err.status === 422) {
+    // Specific 422 codes get bespoke messages (don't pretend every 422 is a POI eligibility failure)
+    if (err.code === "WAD_NOT_SEALED") {
+      rethrowWithTrace(
+        "A sealed Signed Deal (WaD) evidence bundle is required before completing this trade. Open the Signed Deal step to attest and seal the bundle, then return here to complete.",
+        trace,
+      );
+    }
+    if (err.code === "ELIGIBILITY_FAILED") {
       rethrowWithTrace(formatEligibilityMessage(err.details), trace);
+    }
+    // Only treat a generic 422 as a POI eligibility failure when we are
+    // actually performing POI generation. Otherwise surface the server's
+    // own message so users aren't told to "fix the Terms tab" for an
+    // unrelated step (e.g. Complete Trade hitting WAD_NOT_SEALED).
+    if (err.status === 422) {
+      if (actionPath === "generate-poi") {
+        rethrowWithTrace(formatEligibilityMessage(err.details), trace);
+      }
+      rethrowWithTrace(
+        `${err.message} If this persists, contact support@izenzo.co.za.`,
+        trace,
+      );
     }
     if (err.code === "INSUFFICIENT_TOKENS" || /insufficient/i.test(err.message)) {
       rethrowWithTrace("Insufficient credits. Purchase more credits from the Billing page.", trace);
