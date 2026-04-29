@@ -605,10 +605,15 @@ export function AdminPendingEngagementsPanel() {
   };
 
   // ── Open the "Mark as contacted" dialog ──
+  // If the engagement has no counterparty email on file, default the method
+  // to "phone" so the admin doesn't have to manually switch off the empty
+  // email picker (and so we don't push them into a flow that requires data
+  // we don't have).
   const openContactDialog = (eng: Engagement) => {
     setContactDialog(eng);
-    setContactMethod("email");
-    setContactDetail(eng.counterparty_email ?? "");
+    const hasEmail = !!(eng.counterparty_email && eng.counterparty_email.trim());
+    setContactMethod(hasEmail ? "email" : "phone");
+    setContactDetail(hasEmail ? eng.counterparty_email! : "");
     setContactNotes("");
   };
 
@@ -632,6 +637,24 @@ export function AdminPendingEngagementsPanel() {
     other:     { label: "Contact reference",   placeholder: "Describe how the counterparty was reached" },
   };
 
+  // Try to extract the real error message from a Supabase functions.invoke
+  // failure. The SDK throws a generic "Edge Function returned a non-2xx status
+  // code" — the useful detail lives on `error.context.body` (a Response).
+  const extractEdgeError = async (err: any, fallback: string): Promise<string> => {
+    try {
+      const ctxBody = err?.context?.body;
+      if (ctxBody && typeof ctxBody.json === "function") {
+        const parsed = await ctxBody.json();
+        if (parsed?.message) return String(parsed.message);
+      }
+      if (typeof err?.message === "string" && err.message.length > 0) {
+        // Skip the unhelpful generic SDK string
+        if (!err.message.includes("non-2xx status code")) return err.message;
+      }
+    } catch { /* fall through */ }
+    return fallback;
+  };
+
   const submitContact = async () => {
     if (!contactDialog) return;
     if (!contactDetail.trim()) {
@@ -644,6 +667,7 @@ export function AdminPendingEngagementsPanel() {
         `poi-engagements/${contactDialog.id}`,
         {
           method: "PATCH",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
           body: {
             engagement_status: "contacted",
             contact_method: contactMethod,
@@ -658,7 +682,8 @@ export function AdminPendingEngagementsPanel() {
       fetchEngagements();
     } catch (err) {
       console.error("Mark contacted error:", err);
-      toast.error("Failed to mark as contacted");
+      const msg = await extractEdgeError(err, "Failed to mark as contacted");
+      toast.error(msg);
     } finally {
       setActionLoadingId(null);
     }
