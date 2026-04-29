@@ -45,6 +45,7 @@ describe("Journey 2: Team Admin invites user → role assigned → member acts w
       headers: {
         Authorization: `Bearer ${adminToken}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-j2-invite-${Date.now()}`,
       },
       body: JSON.stringify({
         to_email: MEMBER_EMAIL,

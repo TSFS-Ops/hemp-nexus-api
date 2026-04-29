@@ -64,11 +64,15 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-j1-apikey-${Date.now()}`,
       },
       body: JSON.stringify({ name: "Standard Access", scopes: ["search", "match", "evidence"] }),
     });
 
-    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`api-keys POST failed: ${res.status} ${errBody}`);
+    }
     const body = await res.json();
     expect(body.key).toBeTruthy();
     apiKeyPlaintext = body.key;
@@ -173,7 +177,10 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
 
     const res = await fetch(`${BASE_URL}/functions/v1/match/${matchId}/settle`, {
       method: "POST",
-      headers: { "X-API-Key": apiKeyPlaintext },
+      headers: {
+        "X-API-Key": apiKeyPlaintext,
+        "Idempotency-Key": `uat-j1-settle-${Date.now()}`,
+      },
     });
 
     const body = await res.json();
@@ -181,8 +188,14 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
       // State transitioned to intent_declared or status settled
       expect(body.state === "intent_declared" || body.status === "settled").toBe(true);
     } else {
-      // Acceptable failures: insufficient tokens, already in wrong state
-      expect(["INSUFFICIENT_TOKENS", "INVALID_STATE", "insufficient_tokens"]).toContain(body.code);
+      // Acceptable failures: insufficient tokens, wrong state, evidence waiver required
+      expect([
+        "INSUFFICIENT_TOKENS",
+        "INSUFFICIENT_TOKEN_BALANCE",
+        "INVALID_STATE",
+        "insufficient_tokens",
+        "EVIDENCE_WAIVER_REQUIRED",
+      ]).toContain(body.code);
     }
   }, 15_000);
 

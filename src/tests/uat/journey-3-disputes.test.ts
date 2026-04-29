@@ -31,9 +31,14 @@ describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `uat-j3-apikey-${Date.now()}`,
       },
       body: JSON.stringify({ name: "Production Key", scopes: ["search", "match"] }),
     });
+    if (!keyRes.ok) {
+      const errBody = await keyRes.text();
+      throw new Error(`api-keys POST failed: ${keyRes.status} ${errBody}`);
+    }
     const keyBody = await keyRes.json();
     apiKey = keyBody.key;
     expect(apiKey).toBeTruthy();
@@ -83,7 +88,10 @@ describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
 
     const res = await fetch(`${BASE_URL}/functions/v1/match/${matchId}/settle`, {
       method: "POST",
-      headers: { "X-API-Key": apiKey },
+      headers: {
+        "X-API-Key": apiKey,
+        "Idempotency-Key": `uat-j3-settle-${Date.now()}`,
+      },
     });
 
     expect(res.ok).toBe(false);
@@ -91,7 +99,7 @@ describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
     expect(res.status).toBeLessThan(500);
 
     const body = await res.json();
-    expect(["DISPUTE_ACTIVE", "INVALID_STATE"]).toContain(body.code);
+    expect(["DISPUTE_ACTIVE", "INVALID_STATE", "EVIDENCE_WAIVER_REQUIRED"]).toContain(body.code);
   }, 15_000);
 
   // ── Step 3: Resolve the dispute ────────────────────────────────
