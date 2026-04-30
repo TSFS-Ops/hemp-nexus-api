@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     const { data: match, error: matchError } = await admin
       .from("matches")
-      .select("id, org_id, buyer_org_id, seller_org_id")
+      .select("id, org_id, buyer_org_id, seller_org_id, match_type")
       .eq("id", matchId)
       .single();
 
@@ -66,20 +66,38 @@ Deno.serve(async (req) => {
       throw new ApiException("FORBIDDEN", "You do not have access to this intent", 403);
     }
 
-    const [matchDocs, govDocs, notes] = await Promise.all([
+    // Per-side document counts (for the 1-doc-per-side POI gate). Counted by
+    // uploader org_id matching the side's organisation.
+    const [matchDocsAll, buyerDocs, sellerDocs, govDocs, notes] = await Promise.all([
       admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId),
+      match.buyer_org_id
+        ? admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId).eq("org_id", match.buyer_org_id)
+        : Promise.resolve({ count: 0, error: null } as any),
+      match.seller_org_id
+        ? admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId).eq("org_id", match.seller_org_id)
+        : Promise.resolve({ count: 0, error: null } as any),
       admin.from("governance_documents").select("id", { count: "exact", head: true }).eq("deal_reference_id", matchId),
       admin.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", matchId),
     ]);
 
-    if (matchDocs.error) handleDatabaseError(matchDocs.error, requestId);
+    if (matchDocsAll.error) handleDatabaseError(matchDocsAll.error, requestId);
+    if (buyerDocs.error) handleDatabaseError(buyerDocs.error, requestId);
+    if (sellerDocs.error) handleDatabaseError(sellerDocs.error, requestId);
     if (govDocs.error) handleDatabaseError(govDocs.error, requestId);
     if (notes.error) handleDatabaseError(notes.error, requestId);
 
-    const matchDocumentsCount = matchDocs.count ?? 0;
+    const matchDocumentsCount = matchDocsAll.count ?? 0;
+    const buyerDocumentsCount = buyerDocs.count ?? 0;
+    const sellerDocumentsCount = sellerDocs.count ?? 0;
     const governanceDocumentsCount = govDocs.count ?? 0;
     const notesCount = notes.count ?? 0;
     const documentCount = matchDocumentsCount + governanceDocumentsCount;
+    const isUnilateral = match.match_type === "unilateral";
+
+    // Per-side gate (1 doc per side, bilateral only). Unilateral always passes.
+    const buyerSideOk = isUnilateral || !match.buyer_org_id || buyerDocumentsCount > 0;
+    const sellerSideOk = isUnilateral || !match.seller_org_id || sellerDocumentsCount > 0;
+    const minBundleSatisfied = buyerSideOk && sellerSideOk;
 
     return new Response(
       JSON.stringify({
@@ -87,11 +105,19 @@ Deno.serve(async (req) => {
         data: {
           match_id: matchId,
           match_documents_count: matchDocumentsCount,
+          buyer_documents_count: buyerDocumentsCount,
+          seller_documents_count: sellerDocumentsCount,
           governance_documents_count: governanceDocumentsCount,
           document_count: documentCount,
           notes_count: notesCount,
           has_supporting_evidence: documentCount > 0 || notesCount > 0,
-          waiver_required: documentCount === 0 && notesCount === 0,
+          is_unilateral: isUnilateral,
+          min_bundle_satisfied: minBundleSatisfied,
+          buyer_side_satisfied: buyerSideOk,
+          seller_side_satisfied: sellerSideOk,
+          // Retained for backwards compat. The waiver gate has been removed
+          // (2026-04-30); waiver_required is now always false.
+          waiver_required: false,
         },
       }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } },

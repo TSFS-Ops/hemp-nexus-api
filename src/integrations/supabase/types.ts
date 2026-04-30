@@ -7041,11 +7041,11 @@ export type Database = {
       }
       atomic_generate_poi_v2: {
         Args: {
+          p_acks?: Json
           p_actor_user_id?: string
           p_match_id: string
           p_org_id: string
           p_settled_at: string
-          p_waiver?: Json
         }
         Returns: Json
       }

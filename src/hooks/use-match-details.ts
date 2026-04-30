@@ -366,7 +366,7 @@ export function useMatchDetails(matchId: string | undefined) {
         queryClient.invalidateQueries({ queryKey: ["evidence-waiver-latest", match.id] });
 
         const labels: Record<string, string> = {
-          "generate-poi": "POI generated. 1 credit deducted.",
+          "generate-poi": "POI sealed. 1 credit deducted. Execution-readiness checks (Signed Deal / WaD) still pending.",
           "reveal-counterparty": "Counterparty revealed.",
           "commit": "Deal committed.",
           "complete": "Transaction completed. Evidence record sealed.",

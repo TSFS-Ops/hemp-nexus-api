@@ -133,23 +133,24 @@ function getFieldChecklist(match: Match): FieldCheck[] {
 const CREDITS_PER_ACTION = 1;
 
 /**
- * Structured taxonomy for evidence-waiver reasons. Captured alongside the
- * free-text reason so audit reviewers can group, filter, and trend waiver
- * justifications without parsing prose.
+ * Exact declaration sentence required by Daniel (2026-04-30 final POI scope).
+ * Surfaced on EVERY POI mint, EVERY time. Both this acknowledgement and the
+ * Authority-to-Bind tickbox below are sealed into the immutable POI ledger
+ * payload + a `poi.acknowledgements_recorded` audit row.
  */
-const WAIVER_CATEGORIES = [
-  { value: "verbal_agreement", label: "Verbal agreement with long-standing partner" },
-  { value: "documentation_pending", label: "Documentation pending (will follow within 48h)" },
-  { value: "internal_compliance_review", label: "Internal compliance review on file" },
-  { value: "off_platform_evidence", label: "Evidence held off-platform (e.g. signed PDF, email)" },
-  { value: "regulatory_exemption", label: "Regulatory or programme-specific exemption" },
-  { value: "other", label: "Other (explain in reason)" },
-] as const;
+const DECLARATION_SENTENCE =
+  "I confirm that I am authorised to submit this Proof of Intention on behalf of the named organisation, and that the information provided is true, accurate, and complete to the best of my knowledge.";
+
+const ATB_SENTENCE =
+  "I confirm I have the authority to bind my organisation to this Proof of Intention.";
+
+const FALSE_DECLARATION_WARNING =
+  "Submitting a false Proof of Intent may result in account suspension, removal from the platform, and referral to the relevant authorities.";
 
 interface StateProgressionCardProps {
   match: Match;
   /** Receives the action path and an optional JSON body (used to forward the
-   *  evidence-waiver payload so it can be written atomically server-side). */
+   *  always-on declaration + authority-to-bind acknowledgements). */
   onAction: (action: string, body?: Record<string, unknown>) => Promise<void>;
   loading: boolean;
   engagementStatus?: "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
@@ -157,13 +158,9 @@ interface StateProgressionCardProps {
 
 export function StateProgressionCard({ match, onAction, loading, engagementStatus }: StateProgressionCardProps) {
   const [showDialog, setShowDialog] = useState(false);
-  const [showInlineWaiver, setShowInlineWaiver] = useState(false);
   const [recheckingBalance, setRecheckingBalance] = useState(false);
-  const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
-  const [waiverReason, setWaiverReason] = useState("");
-  const [waiverCategory, setWaiverCategory] = useState<string>("");
-  const [waiverSubmitting, setWaiverSubmitting] = useState(false);
-  const [serverWaiverRequired, setServerWaiverRequired] = useState(false);
+  const [declarationAck, setDeclarationAck] = useState(false);
+  const [atbAck, setAtbAck] = useState(false);
   const { session, roles } = useAuth();
 
   const matchType = (match as any).match_type || "search";
@@ -281,13 +278,14 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     !!balanceError;
   const showInsufficientBalance = hasVerifiedBalance && currentBalance < CREDITS_PER_ACTION;
 
-  // ── STRICT EVIDENCE WAIVER GATE (POI generation only) ──
-  // Block POI mint behind an explicit, audited acknowledgement when the deal
-  // has zero supporting documents AND zero notes. Any present evidence skips
-  // the waiver. Documents and notes remain non-mandatory by platform policy
-  // (memory: evidence-strength-indicator) — but the *absence* must itself be
-  // a recorded, attributed decision before a credit-burning, irreversible
-  // POI is sealed on the ledger.
+  // ── PER-SIDE MINIMUM EVIDENCE GATE (POI generation only) ──
+  // Per the 2026-04-30 final POI scope: bilateral POI mint requires at least
+  // one supporting document attached by EACH side (buyer and seller). The
+  // evidence-waiver path has been removed entirely. Unilateral POIs remain
+  // document-optional because there is no counterparty to protect yet.
+  // The DB function (atomic_generate_poi_v2) is the source of truth; this
+  // pre-flight gate just disables the button so users see the requirement
+  // before the click rather than after a 409 MIN_EVIDENCE_PER_SIDE.
   const isPoiAction = actionPath === "generate-poi";
   const {
     data: evidenceCounts,
@@ -303,11 +301,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   });
   const documentCount = evidenceCounts?.documentCount ?? 0;
   const notesCount = evidenceCounts?.notesCount ?? 0;
-  const waiverRequired = isPoiAction && (serverWaiverRequired || evidenceCounts?.waiverRequired === true);
-  const trimmedReason = waiverReason.trim();
-  const waiverReasonValid = !waiverRequired || trimmedReason.length > 0;
-  const waiverCategoryValid = !waiverRequired || WAIVER_CATEGORIES.some(c => c.value === waiverCategory);
-  const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid && waiverCategoryValid));
+  const buyerDocsCount = evidenceCounts?.buyerDocumentCount ?? 0;
+  const sellerDocsCount = evidenceCounts?.sellerDocumentCount ?? 0;
+  const minBundleSatisfied = !isPoiAction || (evidenceCounts?.minBundleSatisfied ?? false);
+  const minBundleBlocksPoi = isPoiAction && !!evidenceCounts && !minBundleSatisfied;
+
+  // Confirmation dialog requires BOTH always-on acknowledgements before the
+  // mint button can be pressed. These are sent on every POI mint, every time.
+  // For non-POI actions (e.g. complete), no acks are required.
+  const canConfirmDialog =
+    !loading && (!isPoiAction || (declarationAck && atbAck));
 
   // ── LEGITIMACY GATE (UX mirror of supabase/functions/_shared/legitimacy.ts) ──
   // Disable the POI mint button pre-flight when the org is not approved to
@@ -343,7 +346,6 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     if (loading || recheckingBalance) return;
 
     setRecheckingBalance(true);
-
     try {
       if (canQueryBalance) {
         const result = await refetch();
@@ -352,30 +354,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         }
       }
 
-      // Reset waiver state every time the dialog opens.
-      setWaiverAcknowledged(false);
-      setWaiverReason("");
-      setWaiverCategory("");
+      // Reset acknowledgements every time the dialog opens. Both must be
+      // re-affirmed on EVERY mint, EVERY time (2026-04-30 final POI scope).
+      setDeclarationAck(false);
+      setAtbAck(false);
 
-      // Stale-evidence guard at OPEN time: re-fetch the combined evidence
-      // count (match_documents + governance_documents + match_notes) so the
-      // red waiver banner is never shown when a doc was just attached.
-      let openWaiverRequired = waiverRequired;
+      // Refresh per-side evidence counts so the gate decision is fresh.
       if (isPoiAction) {
-        const fresh = await refetchEvidence();
-        if (fresh.data) {
-          setServerWaiverRequired(false);
-          openWaiverRequired = fresh.data.waiverRequired;
-        } else {
-          openWaiverRequired = false;
-        }
+        await refetchEvidence();
       }
 
-      if (openWaiverRequired) {
-        setShowDialog(false);
-        setShowInlineWaiver(true);
-        return;
-      }
       setShowDialog(true);
     } finally {
       setRecheckingBalance(false);
@@ -384,97 +372,57 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
 
   const handleDialogConfirm = async () => {
     if (!actionPath) return;
-    if (loading || waiverSubmitting) return;
+    if (loading) return;
 
-    // Stale-evidence guard: re-check counts immediately before submit. If a
-    // doc/note was added in another tab between dialog-open and confirm, the
-    // waiver is no longer applicable — skip the waiver payload entirely so
-    // the server doesn't reject with WAIVER_NOT_APPLICABLE.
     let payload: Record<string, unknown> | undefined = undefined;
-    if (waiverRequired) {
-      if (!waiverAcknowledged || !waiverReasonValid || !waiverCategoryValid) return;
+
+    if (isPoiAction) {
+      // Always-on acknowledgements — never bypassable.
+      if (!declarationAck || !atbAck) return;
+
+      // Stale-evidence guard: re-check counts immediately before submit.
       const fresh = await refetchEvidence();
-      const freshDocs = fresh.data?.documentCount ?? 0;
-      const freshNotes = fresh.data?.notesCount ?? 0;
-      if (freshDocs === 0 && freshNotes === 0) {
-        // Still zero → submit waiver in the body. Server writes it atomically.
-        payload = {
-          evidence_waiver: {
-            category: waiverCategory,
-            reason: trimmedReason,
-            actor_roles: roles ?? [],
-          },
-        };
-      } else {
-        // Evidence appeared mid-flight: skip waiver, let mint proceed normally.
-        setServerWaiverRequired(false);
-        toast.info("Supporting evidence was added — proceeding without waiver.");
+      if (fresh.data && !fresh.data.minBundleSatisfied) {
+        toast.error(
+          fresh.data.buyerSideSatisfied
+            ? "Seller has no supporting documents attached. At least one document per side is required to seal a Proof of Intent."
+            : "Buyer has no supporting documents attached. At least one document per side is required to seal a Proof of Intent.",
+        );
+        return;
       }
+
+      payload = {
+        acks: {
+          declaration_ack: true,
+          atb_ack: true,
+          actor_roles: roles ?? [],
+          ack_timestamp: new Date().toISOString(),
+        },
+      };
     }
 
     setShowDialog(false);
-    setShowInlineWaiver(false);
     try {
       await onAction(actionPath, payload);
-      setServerWaiverRequired(false);
     } catch (err) {
-      // Race recovery: server returned 409 EVIDENCE_WAIVER_REQUIRED (e.g. our
-      // counts were stale and showed evidence that no longer exists at mint
-      // time). Force-refresh and reopen the dialog so the user can complete
-      // the acknowledgement and retry without losing their place.
       const message = err instanceof Error ? err.message : String(err ?? "");
-      if (/EVIDENCE_WAIVER_REQUIRED/i.test(message)) {
+      if (/MIN_EVIDENCE_PER_SIDE/i.test(message)) {
         toast.error(
-          "Supporting documents and notes were removed before this Proof of Intent could be sealed. Please record an evidence waiver to continue.",
+          "At least one supporting document per side is required to seal this Proof of Intent. Please attach a document on the missing side and try again.",
         );
         await refetchEvidence();
-        setServerWaiverRequired(true);
-        setWaiverAcknowledged(false);
-        setWaiverReason("");
-        setWaiverCategory("");
-        setShowDialog(false);
-        setShowInlineWaiver(true);
         return;
       }
-      if (/WAIVER_NOT_APPLICABLE/i.test(message)) {
-        toast.success("Supporting evidence was added in time — POI mint will retry without a waiver.");
-        await refetchEvidence();
-        setServerWaiverRequired(false);
-        setShowInlineWaiver(false);
+      if (/DECLARATION_ACK_REQUIRED|ATB_ACK_REQUIRED|ACKNOWLEDGEMENTS_REQUIRED/i.test(message)) {
+        toast.error("Both the truthfulness declaration and authority-to-bind acknowledgement are required. Please tick both and try again.");
         return;
       }
       throw err;
     }
   };
 
-  // Cancel-waiver telemetry: when the user opens the dialog while a waiver is
-  // required and then dismisses without confirming, log a non-blocking signal
-  // so we can measure waiver friction. Best-effort; never blocks the UX.
-  const handleDialogCancel = async () => {
-    if (waiverRequired && session?.user?.id && match.org_id) {
-      try {
-        await supabase.from("audit_logs").insert({
-          org_id: match.org_id,
-          actor_user_id: session.user.id,
-          action: "poi.evidence_waiver_dismissed",
-          entity_type: "match",
-          entity_id: match.id,
-          metadata: {
-            document_count: documentCount,
-            notes_count: notesCount,
-            had_acknowledgement: waiverAcknowledged,
-            had_category: !!waiverCategory,
-            reason_length: trimmedReason.length,
-            dismissed_at: new Date().toISOString(),
-          },
-        });
-      } catch (e) {
-        // Telemetry only — never surface to the user.
-        console.warn("[StateProgressionCard] waiver dismissal telemetry failed:", e);
-      }
-    }
+  const handleDialogCancel = () => {
     setShowDialog(false);
-    setShowInlineWaiver(false);
   };
 
   return (
@@ -685,17 +633,44 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 isFetching={evidenceFetching}
                 error={evidenceError}
                 onRefetch={() => { void refetchEvidence(); }}
-                effectiveWaiverRequired={waiverRequired}
+                effectiveWaiverRequired={false}
               />
             )}
 
-            {/* Button always renders when balance/credits are OK. The legitimacy
-                gate is enforced server-side and now honours admin test-mode bypass,
-                so we never silently hide the action — the warning above is advisory. */}
-            {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && !showInlineWaiver && (
+            {/* ── PER-SIDE EVIDENCE GATE (POI mint, bilateral only) ──
+                Pre-flight mirror of the DB MIN_EVIDENCE_PER_SIDE check. The
+                button below is disabled when this banner is shown. */}
+            {minBundleBlocksPoi && (
+              <div role="alert" className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
+                <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">
+                    At least one supporting document per side is required
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Each side of a Proof of Intent must have at least one
+                    supporting document of any type attached. Currently:
+                    buyer = <strong>{buyerDocsCount}</strong>,
+                    seller = <strong>{sellerDocsCount}</strong>.
+                    Open the <strong>Documents</strong> tab to attach a file
+                    on the missing side, then return here to seal the POI.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Button always renders when balance/credits are OK. */}
+            {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && (
               <button
                 onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
-                disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled || wadGateBlocksComplete || (isCompleteAction && wadLoading)}
+                disabled={
+                  loading ||
+                  (!isFreeAction && recheckingBalance) ||
+                  !allRequiredFilled ||
+                  wadGateBlocksComplete ||
+                  (isCompleteAction && wadLoading) ||
+                  minBundleBlocksPoi
+                }
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
@@ -712,6 +687,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <>
                     <AlertTriangle className="h-4 w-4" />
                     Complete required fields first
+                  </>
+                ) : minBundleBlocksPoi ? (
+                  <>
+                    <ShieldAlert className="h-4 w-4" />
+                    Attach 1 document per side first
                   </>
                 ) : isCompleteAction && wadLoading ? (
                   <>
@@ -735,14 +715,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             {/* ── Counterparty-not-yet-registered NOTICE (informational only) ──
                 Per product directive (2026-04-27): a POI may be issued and the
                 credit burned regardless of whether the counterparty is
-                registered on the platform. A named (but unregistered)
-                counterparty is sufficient for POI mint; hard verification
-                (KYB/IDV/UBO) is enforced later at WaD via the 9-gate engine.
-                We surface a calm, non-blocking notice so the issuer knows
-                outreach to the counterparty will be required to progress to
-                acceptance and ultimately to WaD — but POI generation itself
-                proceeds normally. */}
-            {isPoiAction && !showInlineWaiver && (() => {
+                registered on the platform. Hard verification (KYB/IDV/UBO) is
+                enforced later at WaD via the 9-gate engine. */}
+            {isPoiAction && (() => {
               const missingBuyerId =
                 !isUnilateral && !!match.buyer_name && !(match as any).buyer_id;
               const missingSellerId =
@@ -774,93 +749,15 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     <p className="text-[11px] text-muted-foreground border-t border-border pt-2">
                       You can proceed with <strong>Generate POI</strong> now —
                       the credit will be burned and the Proof of Intent sealed
-                      on the audit ledger. To progress beyond POI to a Written
-                      Agreement of Deal, the counterparty will need to register
-                      and accept (you can invite them from the <strong>Terms</strong> tab).
+                      on the audit ledger. To progress beyond POI to a Signed
+                      Deal (WaD), the counterparty will need to register and
+                      accept (you can invite them from the <strong>Terms</strong> tab).
                       Hard verification (KYB/IDV/UBO) is enforced at WaD, not at POI.
                     </p>
                   </div>
                 </div>
               );
             })()}
-
-            {showInlineWaiver && waiverRequired && (
-              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 space-y-4">
-                <div className="flex items-start gap-3">
-                  <ShieldAlert className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-                  <div className="space-y-1 text-left">
-                    <p className="text-sm font-semibold text-foreground">No supporting evidence attached</p>
-                    <p className="text-xs text-muted-foreground">
-                      This Proof of Intent will be sealed on the audit ledger with <strong>0 supporting documents</strong> and <strong>0 deal notes</strong>. To proceed, record a reason and acknowledge the waiver below.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="inline-waiver-category" className="text-xs font-medium text-foreground">
-                    Reason category <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={waiverCategory} onValueChange={setWaiverCategory}>
-                    <SelectTrigger id="inline-waiver-category" className="text-sm">
-                      <SelectValue placeholder="Select a category…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {WAIVER_CATEGORIES.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="inline-waiver-reason" className="text-xs font-medium text-foreground">
-                    Reason for proceeding without supporting evidence <span className="text-destructive">*</span>
-                  </Label>
-                  <Textarea
-                    id="inline-waiver-reason"
-                    value={waiverReason}
-                    onChange={(e) => setWaiverReason(e.target.value)}
-                    placeholder="e.g. Verbal agreement with long-standing partner; documentation to follow within 48h."
-                    rows={4}
-                    className="text-sm"
-                    maxLength={500}
-                  />
-                  <p className="text-[11px] text-muted-foreground">Reason required. {trimmedReason.length}/500.</p>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <Checkbox
-                    id="inline-waiver-ack"
-                    checked={waiverAcknowledged}
-                    onCheckedChange={(v) => setWaiverAcknowledged(v === true)}
-                    className="mt-0.5"
-                  />
-                  <Label htmlFor="inline-waiver-ack" className="text-xs leading-relaxed text-foreground cursor-pointer">
-                    I confirm I am authorised by my organisation to seal this Proof of Intent without supporting documents or notes. My current platform roles ({roles.length > 0 ? roles.join(", ") : "none"}) and the time of this acknowledgement will be recorded on the immutable audit trail and may be reviewed by compliance.
-                  </Label>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                  <button
-                    type="button"
-                    disabled={loading || waiverSubmitting}
-                    onClick={handleDialogCancel}
-                    className="h-11 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDialogConfirm}
-                    disabled={!canConfirmDialog}
-                    className="h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-                  >
-                    {waiverSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Coins className="h-4 w-4" />}
-                    {waiverSubmitting ? "Recording waiver…" : "Confirm - R10 ZAR"}
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
 
@@ -921,96 +818,54 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <strong>Irreversible.</strong> This action cannot be undone.{!isFreeAction && " Credits will not be refunded."}
                 </p>
 
-                {/* ── STRICT EVIDENCE WAIVER (POI mint with no docs and no notes) ── */}
-                {waiverRequired && (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-3">
+                {/* ── ALWAYS-ON ACKNOWLEDGEMENTS (POI mint, every time) ── */}
+                {isPoiAction && (
+                  <div className="rounded-md border border-border bg-muted/40 p-3 space-y-3">
                     <div className="flex items-start gap-2">
                       <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-foreground">
-                          No supporting evidence attached
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          This Proof of Intent will be sealed on the audit ledger with{" "}
-                          <strong>0 supporting documents</strong> and{" "}
-                          <strong>0 deal notes</strong>. To proceed, you must explicitly
-                          acknowledge this and record a reason. Both your acknowledgement
-                          and reason will be permanently logged against your user account
-                          and this match record.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="waiver-category" className="text-xs font-medium text-foreground">
-                        Reason category <span className="text-destructive">*</span>
-                      </Label>
-                      <Select value={waiverCategory} onValueChange={setWaiverCategory}>
-                        <SelectTrigger id="waiver-category" className="text-sm">
-                          <SelectValue placeholder="Select a category…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WAIVER_CATEGORIES.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="waiver-reason" className="text-xs font-medium text-foreground">
-                        Reason for proceeding without supporting evidence{" "}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Textarea
-                        id="waiver-reason"
-                        value={waiverReason}
-                        onChange={(e) => setWaiverReason(e.target.value)}
-                        placeholder="e.g. Verbal agreement with long-standing partner; documentation to follow within 48h."
-                        rows={3}
-                        className="text-sm"
-                        maxLength={500}
-                      />
-                      <p className="text-[11px] text-muted-foreground">
-                        Reason required. {trimmedReason.length}/500.
+                      <p className="text-xs text-foreground">
+                        <strong>{FALSE_DECLARATION_WARNING}</strong>
                       </p>
                     </div>
 
                     <div className="flex items-start gap-2">
                       <Checkbox
-                        id="waiver-ack"
-                        checked={waiverAcknowledged}
-                        onCheckedChange={(v) => setWaiverAcknowledged(v === true)}
+                        id="declaration-ack"
+                        checked={declarationAck}
+                        onCheckedChange={(v) => setDeclarationAck(v === true)}
                         className="mt-0.5"
                       />
-                      <Label
-                        htmlFor="waiver-ack"
-                        className="text-xs leading-relaxed text-foreground cursor-pointer"
-                      >
-                        I confirm I am authorised by my organisation to seal
-                        this Proof of Intent without supporting documents or
-                        notes. My current platform roles
-                        ({roles.length > 0 ? roles.join(", ") : "none"}) and
-                        the time of this acknowledgement will be recorded on
-                        the immutable audit trail and may be reviewed by
-                        compliance.
+                      <Label htmlFor="declaration-ack" className="text-xs leading-relaxed text-foreground cursor-pointer">
+                        {DECLARATION_SENTENCE}
                       </Label>
                     </div>
+
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="atb-ack"
+                        checked={atbAck}
+                        onCheckedChange={(v) => setAtbAck(v === true)}
+                        className="mt-0.5"
+                      />
+                      <Label htmlFor="atb-ack" className="text-xs leading-relaxed text-foreground cursor-pointer">
+                        {ATB_SENTENCE} My current platform roles ({roles.length > 0 ? roles.join(", ") : "none"}) and the time of this acknowledgement will be recorded on the immutable audit trail.
+                      </Label>
+                    </div>
+
+                    <p className="text-[11px] text-muted-foreground border-t border-border pt-2">
+                      Sealing this POI does not satisfy execution-readiness checks.
+                      The Signed Deal (WaD) 9-gate compliance review is still pending.
+                    </p>
                   </div>
                 )}
         </ScrollableAlertDialogBody>
         <ScrollableAlertDialogFooter>
-          <AlertDialogCancel disabled={loading || waiverSubmitting} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDialogConfirm}
             disabled={!canConfirmDialog}
           >
-            {waiverSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Recording waiver…
-              </>
-            ) : isFreeAction ? (
+            {isFreeAction ? (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Confirm
