@@ -44,7 +44,7 @@ import { AdminGovernancePosturePanel } from "@/components/admin/AdminGovernanceP
 import { AdminRedirectOriginBanner } from "@/components/admin/AdminRedirectOriginBanner";
 // ── Audit & Health (compliance / observability) ─────────────────────
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
-import { AdminEvidenceWaiversPanel } from "@/components/admin/AdminEvidenceWaiversPanel";
+
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { EmailRetentionHealth } from "@/components/admin/EmailRetentionHealth";
 import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
@@ -320,7 +320,7 @@ function RevenueTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "revenue-notifications", "evidence-waivers", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "revenue-notifications", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -329,7 +329,7 @@ function AuditTab() {
           <TabsTrigger value="rating-appeals">Rating Appeals</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
           <TabsTrigger value="revenue-notifications">Revenue Notifications</TabsTrigger>
-          <TabsTrigger value="evidence-waivers">Evidence Waivers</TabsTrigger>
+          
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="event-store">Event Store</TabsTrigger>
           <TabsTrigger value="analytics">System Analytics</TabsTrigger>
@@ -352,11 +352,6 @@ function AuditTab() {
         <TabsContent value="revenue-notifications">
           <Surface label="Revenue email attempts · public.revenue_notification_audit · support@izenzo.co.za">
             <AdminRevenueNotificationsPanel />
-          </Surface>
-        </TabsContent>
-        <TabsContent value="evidence-waivers">
-          <Surface label="POI evidence waivers · poi.evidence_waiver_acknowledged">
-            <AdminEvidenceWaiversPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="health">

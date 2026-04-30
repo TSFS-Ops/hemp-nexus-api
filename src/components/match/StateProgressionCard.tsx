@@ -46,7 +46,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
-import { WaiverPacketDownloadButton } from "@/components/match/WaiverPacketDownloadButton";
+
 import { useOrgLegitimacy } from "@/hooks/use-org-legitimacy";
 
 interface FieldCheck {
@@ -248,26 +248,6 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     staleTime: 15_000,
   });
 
-  // Surface the most recent evidence-waiver acknowledgement (if any) so users
-  // and admins can download the audit packet PDF directly from the POI step.
-  const { data: latestWaiver } = useQuery({
-    queryKey: ["evidence-waiver-latest", match.id],
-    enabled: !!match.id,
-    staleTime: 30_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("audit_logs")
-        .select("id, created_at, metadata")
-        .eq("entity_id", match.id)
-        .eq("action", "poi.evidence_waiver_acknowledged")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data as { id: string; created_at: string; metadata: Record<string, unknown> | null } | null;
-    },
-  });
-
   const hasVerifiedBalance = typeof balance === "number";
   const currentBalance = hasVerifiedBalance ? balance : null;
   const isBalancePending =
@@ -446,24 +426,6 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 ? "The engagement invitation has expired without a response. You may re-use the trade details to try again or invite a different partner."
                 : MatchState.STATE_DESCRIPTIONS[currentState]}
         </p>
-
-        {latestWaiver && (
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800">
-            <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0 space-y-1">
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                Evidence waiver on record
-              </p>
-              <p className="text-xs text-amber-800 dark:text-amber-200">
-                A POI on this match was minted without supporting documents or notes. The signed
-                waiver and full audit timeline are available as a downloadable packet.
-              </p>
-              <div className="pt-1">
-                <WaiverPacketDownloadButton waiverId={latestWaiver.id} />
-              </div>
-            </div>
-          </div>
-        )}
 
         {!isTerminal && nextLabel && (
           <div className="rounded-lg border border-border p-4 space-y-3">
