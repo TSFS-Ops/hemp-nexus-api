@@ -354,11 +354,6 @@ function AuditTab() {
             <AdminRevenueNotificationsPanel />
           </Surface>
         </TabsContent>
-        <TabsContent value="evidence-waivers">
-          <Surface label="POI evidence waivers · poi.evidence_waiver_acknowledged">
-            <AdminEvidenceWaiversPanel />
-          </Surface>
-        </TabsContent>
         <TabsContent value="health">
           <Surface label="Live subsystem health · /healthz · 30s polling">
             <div className="space-y-4">
