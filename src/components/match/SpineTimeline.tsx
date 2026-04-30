@@ -228,7 +228,7 @@ export function SpineTimeline({ matchId }: Props) {
         },
         {
           key: "wad",
-          title: "Warrant of Diligence",
+          title: "Without a Doubt",
           Icon: ShieldCheck,
           ...stages.wad,
           timestamp: data.wad?.issued_at ?? data.wad?.created_at,
