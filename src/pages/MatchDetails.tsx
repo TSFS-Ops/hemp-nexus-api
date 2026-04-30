@@ -155,7 +155,7 @@ function MatchDetailsContent() {
   const showPrePoiVerification = MatchState.isPrePoi(match.state || match.status);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center flex-wrap gap-2 min-w-0">
           <Breadcrumbs items={breadcrumbs} />
