@@ -278,13 +278,14 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     !!balanceError;
   const showInsufficientBalance = hasVerifiedBalance && currentBalance < CREDITS_PER_ACTION;
 
-  // ── STRICT EVIDENCE WAIVER GATE (POI generation only) ──
-  // Block POI mint behind an explicit, audited acknowledgement when the deal
-  // has zero supporting documents AND zero notes. Any present evidence skips
-  // the waiver. Documents and notes remain non-mandatory by platform policy
-  // (memory: evidence-strength-indicator) — but the *absence* must itself be
-  // a recorded, attributed decision before a credit-burning, irreversible
-  // POI is sealed on the ledger.
+  // ── PER-SIDE MINIMUM EVIDENCE GATE (POI generation only) ──
+  // Per the 2026-04-30 final POI scope: bilateral POI mint requires at least
+  // one supporting document attached by EACH side (buyer and seller). The
+  // evidence-waiver path has been removed entirely. Unilateral POIs remain
+  // document-optional because there is no counterparty to protect yet.
+  // The DB function (atomic_generate_poi_v2) is the source of truth; this
+  // pre-flight gate just disables the button so users see the requirement
+  // before the click rather than after a 409 MIN_EVIDENCE_PER_SIDE.
   const isPoiAction = actionPath === "generate-poi";
   const {
     data: evidenceCounts,
@@ -300,11 +301,21 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   });
   const documentCount = evidenceCounts?.documentCount ?? 0;
   const notesCount = evidenceCounts?.notesCount ?? 0;
-  const waiverRequired = isPoiAction && (serverWaiverRequired || evidenceCounts?.waiverRequired === true);
-  const trimmedReason = waiverReason.trim();
-  const waiverReasonValid = !waiverRequired || trimmedReason.length > 0;
-  const waiverCategoryValid = !waiverRequired || WAIVER_CATEGORIES.some(c => c.value === waiverCategory);
-  const canConfirmDialog = !loading && !waiverSubmitting && (!waiverRequired || (waiverAcknowledged && waiverReasonValid && waiverCategoryValid));
+  const buyerDocsCount = evidenceCounts?.buyerDocumentCount ?? 0;
+  const sellerDocsCount = evidenceCounts?.sellerDocumentCount ?? 0;
+  const minBundleSatisfied = !isPoiAction || (evidenceCounts?.minBundleSatisfied ?? false);
+  const minBundleBlocksPoi = isPoiAction && !!evidenceCounts && !minBundleSatisfied;
+
+  // Confirmation dialog requires BOTH always-on acknowledgements before the
+  // mint button can be pressed. These are sent on every POI mint, every time.
+  const canConfirmDialog =
+    !loading &&
+    (isFreeActionPlaceholder()
+      ? true
+      : !isPoiAction || (declarationAck && atbAck));
+  // Helper hoisted: isFreeAction is defined earlier; use a thunk so we can
+  // reference it without TDZ issues during the initial pass.
+  function isFreeActionPlaceholder() { return isFreeAction; }
 
   // ── LEGITIMACY GATE (UX mirror of supabase/functions/_shared/legitimacy.ts) ──
   // Disable the POI mint button pre-flight when the org is not approved to
