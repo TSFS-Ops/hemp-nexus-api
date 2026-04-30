@@ -123,7 +123,7 @@ export function SealedEngagement() {
       duration: 0.4,
       ease: "easeOut"
     }} className="w-1/2 overflow-y-auto border-r border-border bg-card">
-        <div className="px-16 pt-12 pb-24 max-w-2xl">
+        <div className="px-6 md:px-16 pt-8 md:pt-12 pb-16 md:pb-24 max-w-2xl">
           <Link to="/desk" className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-12">
             <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Back to Pipeline
