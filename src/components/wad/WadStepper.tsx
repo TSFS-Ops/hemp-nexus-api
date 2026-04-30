@@ -36,6 +36,7 @@ import {
   CLIENT_ANALYTICS_EVENT_NAMES,
   type CopyRefSurface,
 } from "@/lib/client-analytics";
+import { generateIdempotencyKey } from "@/lib/api-client";
 
 type Match = Tables<"matches">;
 
@@ -64,6 +65,12 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
+  const attestationAttemptRef = useRef<{
+    key: string;
+    wadId: string;
+    attestedName: string;
+    role: "buyer_signatory" | "seller_signatory" | "witness";
+  } | null>(null);
   type AttestErrorState = {
     message: string;
     requestId?: string;
@@ -149,14 +156,26 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
       return;
     }
 
+    const normalizedName = attestedName.trim();
     setAttesting(true);
     setAttestError(null);
     const role = resolveAttestationRole(userOrgId, wad.buyer_org_id, wad.seller_org_id);
-    const result = await submitAttestation(wad.id, attestedName, role);
+    const existingAttempt = attestationAttemptRef.current;
+    const idempotencyKey =
+      existingAttempt &&
+      existingAttempt.wadId === wad.id &&
+      existingAttempt.attestedName === normalizedName &&
+      existingAttempt.role === role
+        ? existingAttempt.key
+        : generateIdempotencyKey(`wad_attest_${wad.id}`);
+
+    attestationAttemptRef.current = { key: idempotencyKey, wadId: wad.id, attestedName: normalizedName, role };
+    const result = await submitAttestation(wad.id, normalizedName, role, idempotencyKey);
     setAttesting(false);
 
     if (result.success) {
       toast.success("Attestation recorded");
+      attestationAttemptRef.current = null;
       setAttestError(null);
       onUpdate();
     } else {
