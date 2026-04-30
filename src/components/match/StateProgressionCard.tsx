@@ -642,13 +642,40 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               />
             )}
 
-            {/* Button always renders when balance/credits are OK. The legitimacy
-                gate is enforced server-side and now honours admin test-mode bypass,
-                so we never silently hide the action — the warning above is advisory. */}
-            {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && !showInlineWaiver && (
+            {/* ── PER-SIDE EVIDENCE GATE (POI mint, bilateral only) ──
+                Pre-flight mirror of the DB MIN_EVIDENCE_PER_SIDE check. The
+                button below is disabled when this banner is shown. */}
+            {minBundleBlocksPoi && (
+              <div role="alert" className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
+                <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">
+                    At least one supporting document per side is required
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Each side of a Proof of Intent must have at least one
+                    supporting document of any type attached. Currently:
+                    buyer = <strong>{buyerDocsCount}</strong>,
+                    seller = <strong>{sellerDocsCount}</strong>.
+                    Open the <strong>Documents</strong> tab to attach a file
+                    on the missing side, then return here to seal the POI.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Button always renders when balance/credits are OK. */}
+            {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && (
               <button
                 onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
-                disabled={loading || (!isFreeAction && recheckingBalance) || !allRequiredFilled || wadGateBlocksComplete || (isCompleteAction && wadLoading)}
+                disabled={
+                  loading ||
+                  (!isFreeAction && recheckingBalance) ||
+                  !allRequiredFilled ||
+                  wadGateBlocksComplete ||
+                  (isCompleteAction && wadLoading) ||
+                  minBundleBlocksPoi
+                }
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
@@ -665,6 +692,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <>
                     <AlertTriangle className="h-4 w-4" />
                     Complete required fields first
+                  </>
+                ) : minBundleBlocksPoi ? (
+                  <>
+                    <ShieldAlert className="h-4 w-4" />
+                    Attach 1 document per side first
                   </>
                 ) : isCompleteAction && wadLoading ? (
                   <>
@@ -688,14 +720,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             {/* ── Counterparty-not-yet-registered NOTICE (informational only) ──
                 Per product directive (2026-04-27): a POI may be issued and the
                 credit burned regardless of whether the counterparty is
-                registered on the platform. A named (but unregistered)
-                counterparty is sufficient for POI mint; hard verification
-                (KYB/IDV/UBO) is enforced later at WaD via the 9-gate engine.
-                We surface a calm, non-blocking notice so the issuer knows
-                outreach to the counterparty will be required to progress to
-                acceptance and ultimately to WaD — but POI generation itself
-                proceeds normally. */}
-            {isPoiAction && !showInlineWaiver && (() => {
+                registered on the platform. Hard verification (KYB/IDV/UBO) is
+                enforced later at WaD via the 9-gate engine. */}
+            {isPoiAction && (() => {
               const missingBuyerId =
                 !isUnilateral && !!match.buyer_name && !(match as any).buyer_id;
               const missingSellerId =
@@ -727,93 +754,15 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     <p className="text-[11px] text-muted-foreground border-t border-border pt-2">
                       You can proceed with <strong>Generate POI</strong> now —
                       the credit will be burned and the Proof of Intent sealed
-                      on the audit ledger. To progress beyond POI to a Written
-                      Agreement of Deal, the counterparty will need to register
-                      and accept (you can invite them from the <strong>Terms</strong> tab).
+                      on the audit ledger. To progress beyond POI to a Signed
+                      Deal (WaD), the counterparty will need to register and
+                      accept (you can invite them from the <strong>Terms</strong> tab).
                       Hard verification (KYB/IDV/UBO) is enforced at WaD, not at POI.
                     </p>
                   </div>
                 </div>
               );
             })()}
-
-            {showInlineWaiver && waiverRequired && (
-              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 space-y-4">
-                <div className="flex items-start gap-3">
-                  <ShieldAlert className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-                  <div className="space-y-1 text-left">
-                    <p className="text-sm font-semibold text-foreground">No supporting evidence attached</p>
-                    <p className="text-xs text-muted-foreground">
-                      This Proof of Intent will be sealed on the audit ledger with <strong>0 supporting documents</strong> and <strong>0 deal notes</strong>. To proceed, record a reason and acknowledge the waiver below.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="inline-waiver-category" className="text-xs font-medium text-foreground">
-                    Reason category <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={waiverCategory} onValueChange={setWaiverCategory}>
-                    <SelectTrigger id="inline-waiver-category" className="text-sm">
-                      <SelectValue placeholder="Select a category…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {WAIVER_CATEGORIES.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="inline-waiver-reason" className="text-xs font-medium text-foreground">
-                    Reason for proceeding without supporting evidence <span className="text-destructive">*</span>
-                  </Label>
-                  <Textarea
-                    id="inline-waiver-reason"
-                    value={waiverReason}
-                    onChange={(e) => setWaiverReason(e.target.value)}
-                    placeholder="e.g. Verbal agreement with long-standing partner; documentation to follow within 48h."
-                    rows={4}
-                    className="text-sm"
-                    maxLength={500}
-                  />
-                  <p className="text-[11px] text-muted-foreground">Reason required. {trimmedReason.length}/500.</p>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <Checkbox
-                    id="inline-waiver-ack"
-                    checked={waiverAcknowledged}
-                    onCheckedChange={(v) => setWaiverAcknowledged(v === true)}
-                    className="mt-0.5"
-                  />
-                  <Label htmlFor="inline-waiver-ack" className="text-xs leading-relaxed text-foreground cursor-pointer">
-                    I confirm I am authorised by my organisation to seal this Proof of Intent without supporting documents or notes. My current platform roles ({roles.length > 0 ? roles.join(", ") : "none"}) and the time of this acknowledgement will be recorded on the immutable audit trail and may be reviewed by compliance.
-                  </Label>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                  <button
-                    type="button"
-                    disabled={loading || waiverSubmitting}
-                    onClick={handleDialogCancel}
-                    className="h-11 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDialogConfirm}
-                    disabled={!canConfirmDialog}
-                    className="h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-                  >
-                    {waiverSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Coins className="h-4 w-4" />}
-                    {waiverSubmitting ? "Recording waiver…" : "Confirm - R10 ZAR"}
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
 
