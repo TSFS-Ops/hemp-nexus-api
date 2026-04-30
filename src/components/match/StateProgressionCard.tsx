@@ -133,23 +133,24 @@ function getFieldChecklist(match: Match): FieldCheck[] {
 const CREDITS_PER_ACTION = 1;
 
 /**
- * Structured taxonomy for evidence-waiver reasons. Captured alongside the
- * free-text reason so audit reviewers can group, filter, and trend waiver
- * justifications without parsing prose.
+ * Exact declaration sentence required by Daniel (2026-04-30 final POI scope).
+ * Surfaced on EVERY POI mint, EVERY time. Both this acknowledgement and the
+ * Authority-to-Bind tickbox below are sealed into the immutable POI ledger
+ * payload + a `poi.acknowledgements_recorded` audit row.
  */
-const WAIVER_CATEGORIES = [
-  { value: "verbal_agreement", label: "Verbal agreement with long-standing partner" },
-  { value: "documentation_pending", label: "Documentation pending (will follow within 48h)" },
-  { value: "internal_compliance_review", label: "Internal compliance review on file" },
-  { value: "off_platform_evidence", label: "Evidence held off-platform (e.g. signed PDF, email)" },
-  { value: "regulatory_exemption", label: "Regulatory or programme-specific exemption" },
-  { value: "other", label: "Other (explain in reason)" },
-] as const;
+const DECLARATION_SENTENCE =
+  "I confirm that I am authorised to submit this Proof of Intention on behalf of the named organisation, and that the information provided is true, accurate, and complete to the best of my knowledge.";
+
+const ATB_SENTENCE =
+  "I confirm I have the authority to bind my organisation to this Proof of Intention.";
+
+const FALSE_DECLARATION_WARNING =
+  "Submitting a false Proof of Intent may result in account suspension, removal from the platform, and referral to the relevant authorities.";
 
 interface StateProgressionCardProps {
   match: Match;
   /** Receives the action path and an optional JSON body (used to forward the
-   *  evidence-waiver payload so it can be written atomically server-side). */
+   *  always-on declaration + authority-to-bind acknowledgements). */
   onAction: (action: string, body?: Record<string, unknown>) => Promise<void>;
   loading: boolean;
   engagementStatus?: "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
@@ -157,13 +158,9 @@ interface StateProgressionCardProps {
 
 export function StateProgressionCard({ match, onAction, loading, engagementStatus }: StateProgressionCardProps) {
   const [showDialog, setShowDialog] = useState(false);
-  const [showInlineWaiver, setShowInlineWaiver] = useState(false);
   const [recheckingBalance, setRecheckingBalance] = useState(false);
-  const [waiverAcknowledged, setWaiverAcknowledged] = useState(false);
-  const [waiverReason, setWaiverReason] = useState("");
-  const [waiverCategory, setWaiverCategory] = useState<string>("");
-  const [waiverSubmitting, setWaiverSubmitting] = useState(false);
-  const [serverWaiverRequired, setServerWaiverRequired] = useState(false);
+  const [declarationAck, setDeclarationAck] = useState(false);
+  const [atbAck, setAtbAck] = useState(false);
   const { session, roles } = useAuth();
 
   const matchType = (match as any).match_type || "search";
