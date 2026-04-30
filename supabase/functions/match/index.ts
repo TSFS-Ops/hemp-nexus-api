@@ -676,6 +676,13 @@ Deno.serve(async (req) => {
             // historical mint was permitted (e.g. wad_only deferred posture).
             gate_position: legitimacy.gatePosition,
             governance_profile_id: governanceProfile.profileId,
+            // ── 2026-04-30 final POI scope: declaration + ATB acks recorded
+            // on every mint, plus per-side evidence counts at mint time.
+            declaration_ack: acksPayload?.declaration_ack ?? null,
+            atb_ack: acksPayload?.atb_ack ?? null,
+            actor_roles: acksPayload?.actor_roles ?? [],
+            ack_timestamp: acksPayload?.ack_timestamp ?? null,
+            evidence_counts: transitionResult?.evidence_counts ?? null,
             note: "POI generated - single credit charge. Discovery → Committed in one step."
           }
         });
