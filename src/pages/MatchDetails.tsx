@@ -25,7 +25,6 @@ import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
 import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard";
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
-import { RequestEnhancedVerificationButton } from "@/components/match/RequestEnhancedVerificationButton";
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { SpineTimeline } from "@/components/match/SpineTimeline";
 import { ROUTES } from "@/lib/constants";
@@ -183,7 +182,13 @@ function MatchDetailsContent() {
       {matchId && <EngagementTracker matchId={matchId} match={match} />}
 
       {showPrePoiVerification && <CounterpartyIntelPanel match={match} />}
-      {showPrePoiVerification && <RequestEnhancedVerificationButton match={match} />}
+      {/*
+        Per Daniel Davies (2026-04-29): the user-facing "Request Enhanced
+        Verification" affordance is removed from the Match page until the
+        proper pre-POI hard-check module is built. The admin clip-on
+        (HQ → Verification Queue) remains available for operator-led cases,
+        but no priced light-check option is shown to traders here.
+      */}
 
       {matchId && <SpineTimeline matchId={matchId} />}
 
