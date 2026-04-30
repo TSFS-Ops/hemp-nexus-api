@@ -68,5 +68,6 @@ export async function getMatchEvidenceCounts(matchId: string): Promise<MatchEvid
     buyerSideSatisfied: payload.data.buyer_side_satisfied ?? true,
     sellerSideSatisfied: payload.data.seller_side_satisfied ?? true,
     waiverRequired: false,
+    fetchedAt: new Date().toISOString(),
   };
 }
