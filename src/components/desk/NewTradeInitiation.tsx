@@ -193,7 +193,7 @@ export function NewTradeInitiation() {
       setSubmitting(false);
     }
   }
-  return <>
+  return <PageContainer size="wide">
       <header className="mb-12">
         <div className="mb-4">
           <ActiveOrgIndicator />
@@ -277,5 +277,5 @@ export function NewTradeInitiation() {
           </Button>
         </div>
       </form>
-    </>;
+    </PageContainer>;
 }
