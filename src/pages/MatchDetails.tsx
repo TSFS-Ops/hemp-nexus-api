@@ -135,7 +135,7 @@ function MatchDetailsContent() {
             <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="Back to Matches" />
           </div>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
@@ -148,7 +148,7 @@ function MatchDetailsContent() {
           <p className="text-sm mt-1">It may have been deleted or you don't have access.</p>
           <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="Back to Matches" className="mt-4" />
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
