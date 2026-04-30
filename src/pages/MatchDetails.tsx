@@ -25,7 +25,6 @@ import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
 import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard";
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
-import { RequestEnhancedVerificationButton } from "@/components/match/RequestEnhancedVerificationButton";
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { SpineTimeline } from "@/components/match/SpineTimeline";
 import { ROUTES } from "@/lib/constants";
