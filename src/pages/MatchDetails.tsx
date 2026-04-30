@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { PageContainer } from "@/components/ui/page-container";
 import * as MatchState from "@/lib/match-state";
 import { useMatchDetails } from "@/hooks/use-match-details";
 import { MatchHeroCard } from "@/components/match/MatchHeroCard";
