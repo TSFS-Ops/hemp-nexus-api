@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { PageContainer } from "@/components/ui/page-container";
 
 // ─────────────────────────────────────────────────────────────
 // 9-Step Progress Bar
@@ -126,8 +127,8 @@ export default function TradeDealWizard() {
           <ProgressBar />
 
           {/* Main interface */}
-          <main className="flex-1 px-4 md:px-8 py-6 md:py-8">
-            <div className="max-w-4xl mx-auto">
+          <main className="flex-1">
+            <PageContainer size="narrow">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold tracking-tight">
                   Generate Proof of Intent
@@ -240,7 +241,7 @@ export default function TradeDealWizard() {
                   </div>
                 </div>
               </div>
-            </div>
+            </PageContainer>
           </main>
         </SidebarInset>
       </div>

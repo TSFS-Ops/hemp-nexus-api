@@ -26,6 +26,7 @@ import { sha256Hex, canonicalTermsPayload } from "@/lib/crypto";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { ActiveOrgIndicator } from "@/components/desk/ActiveOrgIndicator";
+import { PageContainer } from "@/components/ui/page-container";
 const initiationSchema = z.object({
   commodity: z.string().trim().min(2, "Select or enter a commodity").max(120),
   side: z.enum(["buyer", "seller"]),
@@ -192,7 +193,7 @@ export function NewTradeInitiation() {
       setSubmitting(false);
     }
   }
-  return <>
+  return <PageContainer size="wide">
       <header className="mb-12">
         <div className="mb-4">
           <ActiveOrgIndicator />
@@ -276,5 +277,5 @@ export function NewTradeInitiation() {
           </Button>
         </div>
       </form>
-    </>;
+    </PageContainer>;
 }
