@@ -8,7 +8,7 @@
  * - Async orchestration (API calls) lives here
  */
 
-import { apiFetch, ApiError, AuthRequiredError } from "@/lib/api-client";
+import { apiFetch, ApiError, AuthRequiredError, generateIdempotencyKey } from "@/lib/api-client";
 import * as WadState from "@/lib/wad-state";
 
 // Re-export all pure logic and types
@@ -96,6 +96,7 @@ export async function submitAttestation(
   try {
     await apiFetch(`wad/${wadId}/attest`, {
       method: "POST",
+      idempotencyKey: generateIdempotencyKey(`wad_attest_${wadId}`),
       body: JSON.stringify({ attested_name: attestedName, role }),
     });
     return { success: true };
