@@ -571,6 +571,7 @@ button:focus-visible,
   [data-hover="navigation"] {
     position: relative;
     isolation: isolate;
+    overflow: hidden;
   }
   [data-hover="navigation"]::after {
     content: "";
