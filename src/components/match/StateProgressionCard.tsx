@@ -308,14 +308,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
 
   // Confirmation dialog requires BOTH always-on acknowledgements before the
   // mint button can be pressed. These are sent on every POI mint, every time.
+  // For non-POI actions (e.g. complete), no acks are required.
   const canConfirmDialog =
-    !loading &&
-    (isFreeActionPlaceholder()
-      ? true
-      : !isPoiAction || (declarationAck && atbAck));
-  // Helper hoisted: isFreeAction is defined earlier; use a thunk so we can
-  // reference it without TDZ issues during the initial pass.
-  function isFreeActionPlaceholder() { return isFreeAction; }
+    !loading && (!isPoiAction || (declarationAck && atbAck));
 
   // ── LEGITIMACY GATE (UX mirror of supabase/functions/_shared/legitimacy.ts) ──
   // Disable the POI mint button pre-flight when the org is not approved to
