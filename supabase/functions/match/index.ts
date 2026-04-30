@@ -332,13 +332,18 @@ Deno.serve(async (req) => {
 
       // ── PARSE OPTIONAL REQUEST BODY ──
       // Two optional payloads can ride on the generate-poi POST body:
-      //   • evidence_waiver — written atomically inside atomic_generate_poi_v2
-      //     so a failed mint never leaves an orphan waiver row.
+      //   • acks — REQUIRED. Always-on truthfulness declaration + authority-
+      //     to-bind acknowledgements (per 2026-04-30 final POI scope). Both
+      //     must be true on every mint; the DB function rejects with
+      //     ACKNOWLEDGEMENTS_REQUIRED / DECLARATION_ACK_REQUIRED /
+      //     ATB_ACK_REQUIRED if either is missing.
       //   • counterparty_email — only consumed by the soft-route branch
       //     below. Lets the caller supply an email for an unregistered
       //     counterparty so we can resolve a binding immediately. Lower-cased
       //     and trimmed; never required.
-      let waiverPayload: { category: string; reason: string; actor_roles: string[] } | null = null;
+      let acksPayload:
+        | { declaration_ack: boolean; atb_ack: boolean; actor_roles: string[]; ack_timestamp: string }
+        | null = null;
       let counterpartyEmail: string | null = null;
       try {
         const contentType = req.headers.get("content-type") || "";
@@ -347,15 +352,19 @@ Deno.serve(async (req) => {
           if (rawBody && rawBody.trim().length > 0) {
             const parsed = JSON.parse(rawBody);
             if (parsed && typeof parsed === "object") {
-              if (parsed.evidence_waiver && typeof parsed.evidence_waiver === "object") {
-                const w = parsed.evidence_waiver;
-                if (typeof w.category === "string" && typeof w.reason === "string") {
-                  waiverPayload = {
-                    category: w.category,
-                    reason: w.reason,
-                    actor_roles: Array.isArray(w.actor_roles) ? w.actor_roles.filter((r: unknown) => typeof r === "string") : [],
-                  };
-                }
+              if (parsed.acks && typeof parsed.acks === "object") {
+                const a = parsed.acks;
+                acksPayload = {
+                  declaration_ack: a.declaration_ack === true,
+                  atb_ack: a.atb_ack === true,
+                  actor_roles: Array.isArray(a.actor_roles)
+                    ? a.actor_roles.filter((r: unknown) => typeof r === "string")
+                    : [],
+                  ack_timestamp:
+                    typeof a.ack_timestamp === "string" && a.ack_timestamp.length > 0
+                      ? a.ack_timestamp
+                      : new Date().toISOString(),
+                };
               }
               if (typeof parsed.counterparty_email === "string") {
                 const trimmed = parsed.counterparty_email.trim().toLowerCase();
