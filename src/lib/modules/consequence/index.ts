@@ -8,7 +8,7 @@
  * - Async orchestration (API calls) lives here
  */
 
-import { apiFetch, ApiError, AuthRequiredError } from "@/lib/api-client";
+import { apiFetch, ApiError, AuthRequiredError, generateIdempotencyKey } from "@/lib/api-client";
 import * as WadState from "@/lib/wad-state";
 
 // Re-export all pure logic and types
@@ -87,7 +87,8 @@ export async function createWad(matchId: string): Promise<ConsequenceResult<WadR
 export async function submitAttestation(
   wadId: string,
   attestedName: string,
-  role: "buyer_signatory" | "seller_signatory" | "witness"
+  role: "buyer_signatory" | "seller_signatory" | "witness",
+  idempotencyKey = generateIdempotencyKey(`wad_attest_${wadId}`),
 ): Promise<ConsequenceResult<void>> {
   if (!attestedName.trim()) {
     return { success: false, error: "Signatory name is required." };
@@ -96,6 +97,7 @@ export async function submitAttestation(
   try {
     await apiFetch(`wad/${wadId}/attest`, {
       method: "POST",
+      idempotencyKey,
       body: JSON.stringify({ attested_name: attestedName, role }),
     });
     return { success: true };

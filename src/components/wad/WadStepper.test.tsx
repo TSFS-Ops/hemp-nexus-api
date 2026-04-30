@@ -187,6 +187,7 @@ describe("WadStepper attest keyboard shortcut", () => {
       "wad-1",
       "Jane Doe",
       "buyer_signatory",
+      expect.stringMatching(/^wad_attest_wad-1_/),
     );
   });
 
@@ -224,6 +225,7 @@ describe("WadStepper attest keyboard shortcut", () => {
     fireEvent.keyDown(btn, { key: "Enter" });
 
     await waitFor(() => expect(submitAttestationMock).toHaveBeenCalledTimes(2));
+    expect(submitAttestationMock.mock.calls[1][3]).toBe(submitAttestationMock.mock.calls[0][3]);
   });
 
   it("does NOT trigger when the keystroke originates on the stepper navigation", () => {
