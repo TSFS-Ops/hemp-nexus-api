@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { InlineLoader } from "@/components/ui/inline-loader";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { PageContainer } from "@/components/ui/page-container";
 import * as MatchState from "@/lib/match-state";
 import { useMatchDetails } from "@/hooks/use-match-details";
 import { MatchHeroCard } from "@/components/match/MatchHeroCard";
@@ -101,16 +102,16 @@ function MatchDetailsContent() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <PageContainer size="wide" className="space-y-6">
         <Breadcrumbs items={breadcrumbs} />
         <InlineLoader message="Loading match details…" />
-      </div>
+      </PageContainer>
     );
   }
 
   if (fetchError || !isValidMatchId) {
     return (
-      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <PageContainer size="wide" className="space-y-6">
         <Breadcrumbs items={breadcrumbs} />
         <div className="text-center py-16 text-muted-foreground">
           <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-destructive" />
@@ -134,20 +135,20 @@ function MatchDetailsContent() {
             <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="Back to Matches" />
           </div>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   if (!match) {
     return (
-      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <PageContainer size="wide" className="space-y-6">
         <Breadcrumbs items={breadcrumbs} />
         <div className="text-center py-16 text-muted-foreground">
           <p className="font-medium">Match not found</p>
           <p className="text-sm mt-1">It may have been deleted or you don't have access.</p>
           <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="Back to Matches" className="mt-4" />
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
@@ -155,7 +156,7 @@ function MatchDetailsContent() {
   const showPrePoiVerification = MatchState.isPrePoi(match.state || match.status);
 
   return (
-    <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <PageContainer size="wide" className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center flex-wrap gap-2 min-w-0">
           <Breadcrumbs items={breadcrumbs} />
@@ -200,7 +201,7 @@ function MatchDetailsContent() {
       <MatchHeroCard match={match} isSettled={isSettled} />
 
       {matchId && <ExecutionSection matchId={matchId} />}
-    </div>
+    </PageContainer>
   );
 }
 
