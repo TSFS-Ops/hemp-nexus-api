@@ -101,7 +101,7 @@ function MatchDetailsContent() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <Breadcrumbs items={breadcrumbs} />
         <InlineLoader message="Loading match details…" />
       </div>
@@ -110,7 +110,7 @@ function MatchDetailsContent() {
 
   if (fetchError || !isValidMatchId) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <Breadcrumbs items={breadcrumbs} />
         <div className="text-center py-16 text-muted-foreground">
           <ShieldAlert className="h-10 w-10 mx-auto mb-3 text-destructive" />
@@ -140,7 +140,7 @@ function MatchDetailsContent() {
 
   if (!match) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <Breadcrumbs items={breadcrumbs} />
         <div className="text-center py-16 text-muted-foreground">
           <p className="font-medium">Match not found</p>
@@ -155,7 +155,7 @@ function MatchDetailsContent() {
   const showPrePoiVerification = MatchState.isPrePoi(match.state || match.status);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center flex-wrap gap-2 min-w-0">
           <Breadcrumbs items={breadcrumbs} />
