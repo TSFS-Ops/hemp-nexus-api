@@ -283,7 +283,7 @@ export function useMatchDetails(matchId: string | undefined) {
         queryClient.invalidateQueries({ queryKey: ["token-balance"] });
         queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
         queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
-        toast.success("POI generated. 1 credit deducted.");
+        toast.success("POI sealed. 1 credit deducted. Execution-readiness checks (Signed Deal / WaD) still pending.");
       }
     },
     {
