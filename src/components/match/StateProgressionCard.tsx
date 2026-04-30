@@ -823,96 +823,54 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <strong>Irreversible.</strong> This action cannot be undone.{!isFreeAction && " Credits will not be refunded."}
                 </p>
 
-                {/* ── STRICT EVIDENCE WAIVER (POI mint with no docs and no notes) ── */}
-                {waiverRequired && (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-3">
+                {/* ── ALWAYS-ON ACKNOWLEDGEMENTS (POI mint, every time) ── */}
+                {isPoiAction && (
+                  <div className="rounded-md border border-border bg-muted/40 p-3 space-y-3">
                     <div className="flex items-start gap-2">
                       <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-foreground">
-                          No supporting evidence attached
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          This Proof of Intent will be sealed on the audit ledger with{" "}
-                          <strong>0 supporting documents</strong> and{" "}
-                          <strong>0 deal notes</strong>. To proceed, you must explicitly
-                          acknowledge this and record a reason. Both your acknowledgement
-                          and reason will be permanently logged against your user account
-                          and this match record.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="waiver-category" className="text-xs font-medium text-foreground">
-                        Reason category <span className="text-destructive">*</span>
-                      </Label>
-                      <Select value={waiverCategory} onValueChange={setWaiverCategory}>
-                        <SelectTrigger id="waiver-category" className="text-sm">
-                          <SelectValue placeholder="Select a category…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WAIVER_CATEGORIES.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="waiver-reason" className="text-xs font-medium text-foreground">
-                        Reason for proceeding without supporting evidence{" "}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Textarea
-                        id="waiver-reason"
-                        value={waiverReason}
-                        onChange={(e) => setWaiverReason(e.target.value)}
-                        placeholder="e.g. Verbal agreement with long-standing partner; documentation to follow within 48h."
-                        rows={3}
-                        className="text-sm"
-                        maxLength={500}
-                      />
-                      <p className="text-[11px] text-muted-foreground">
-                        Reason required. {trimmedReason.length}/500.
+                      <p className="text-xs text-foreground">
+                        <strong>{FALSE_DECLARATION_WARNING}</strong>
                       </p>
                     </div>
 
                     <div className="flex items-start gap-2">
                       <Checkbox
-                        id="waiver-ack"
-                        checked={waiverAcknowledged}
-                        onCheckedChange={(v) => setWaiverAcknowledged(v === true)}
+                        id="declaration-ack"
+                        checked={declarationAck}
+                        onCheckedChange={(v) => setDeclarationAck(v === true)}
                         className="mt-0.5"
                       />
-                      <Label
-                        htmlFor="waiver-ack"
-                        className="text-xs leading-relaxed text-foreground cursor-pointer"
-                      >
-                        I confirm I am authorised by my organisation to seal
-                        this Proof of Intent without supporting documents or
-                        notes. My current platform roles
-                        ({roles.length > 0 ? roles.join(", ") : "none"}) and
-                        the time of this acknowledgement will be recorded on
-                        the immutable audit trail and may be reviewed by
-                        compliance.
+                      <Label htmlFor="declaration-ack" className="text-xs leading-relaxed text-foreground cursor-pointer">
+                        {DECLARATION_SENTENCE}
                       </Label>
                     </div>
+
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="atb-ack"
+                        checked={atbAck}
+                        onCheckedChange={(v) => setAtbAck(v === true)}
+                        className="mt-0.5"
+                      />
+                      <Label htmlFor="atb-ack" className="text-xs leading-relaxed text-foreground cursor-pointer">
+                        {ATB_SENTENCE} My current platform roles ({roles.length > 0 ? roles.join(", ") : "none"}) and the time of this acknowledgement will be recorded on the immutable audit trail.
+                      </Label>
+                    </div>
+
+                    <p className="text-[11px] text-muted-foreground border-t border-border pt-2">
+                      Sealing this POI does not satisfy execution-readiness checks.
+                      The Signed Deal (WaD) 9-gate compliance review is still pending.
+                    </p>
                   </div>
                 )}
         </ScrollableAlertDialogBody>
         <ScrollableAlertDialogFooter>
-          <AlertDialogCancel disabled={loading || waiverSubmitting} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading} onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDialogConfirm}
             disabled={!canConfirmDialog}
           >
-            {waiverSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Recording waiver…
-              </>
-            ) : isFreeAction ? (
+            {isFreeAction ? (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Confirm
