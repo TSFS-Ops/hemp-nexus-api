@@ -549,15 +549,16 @@ Deno.serve(async (req) => {
       }
 
 
-      // --- FULLY ATOMIC: waiver write + token burn + state transition in ONE DB transaction ---
-      // atomic_generate_poi_v2 enforces the evidence-waiver gate under the same
-      // row lock as the burn, so:
-      //   • If no waiver is supplied AND no prior waiver exists AND there is no
-      //     evidence → 409 EVIDENCE_WAIVER_REQUIRED (no burn, no audit row).
-      //   • If a waiver IS supplied but evidence has been added since the dialog
-      //     opened → 409 WAIVER_NOT_APPLICABLE (no burn, no false waiver row).
-      //   • If everything passes → waiver row, burn, state change all commit
-      //     together; if any later step fails, all rollback together.
+      // --- FULLY ATOMIC: ack validation + token burn + state transition in ONE DB transaction ---
+      // atomic_generate_poi_v2 enforces the always-on declaration + ATB
+      // acknowledgements and the per-side minimum-evidence gate (1 doc per
+      // side on bilateral) under the same row lock as the burn:
+      //   • ACKNOWLEDGEMENTS_REQUIRED / DECLARATION_ACK_REQUIRED /
+      //     ATB_ACK_REQUIRED → 400 (no burn).
+      //   • MIN_EVIDENCE_PER_SIDE → 409 (no burn). Payload includes the
+      //     offending side and per-side counts.
+      //   • If everything passes → ledger row, burn, audit, state change all
+      //     commit together; if any later step fails, all rollback together.
       const now = new Date().toISOString();
       const { data: transitionResult, error: transitionError } = await supabase.rpc(
         'atomic_generate_poi_v2',
@@ -566,7 +567,7 @@ Deno.serve(async (req) => {
           p_org_id: authCtx.orgId,
           p_settled_at: now,
           p_actor_user_id: actorUserId,
-          p_waiver: waiverPayload as any,
+          p_acks: acksPayload as any,
         }
       );
 
@@ -586,16 +587,23 @@ Deno.serve(async (req) => {
         const statusCode =
           errCode === 'INSUFFICIENT_TOKEN_BALANCE' ? 402 :
           errCode === 'STATE_CONFLICT' ? 409 :
-          errCode === 'EVIDENCE_WAIVER_REQUIRED' ? 409 :
-          errCode === 'WAIVER_NOT_APPLICABLE' ? 409 :
-          errCode === 'WAIVER_INVALID' ? 400 :
+          errCode === 'MIN_EVIDENCE_PER_SIDE' ? 409 :
+          errCode === 'ACKNOWLEDGEMENTS_REQUIRED' ? 400 :
+          errCode === 'DECLARATION_ACK_REQUIRED' ? 400 :
+          errCode === 'ATB_ACK_REQUIRED' ? 400 :
+          errCode === 'ACTOR_REQUIRED' ? 400 :
           errCode === 'NOT_FOUND' ? 404 :
           errCode === 'FORBIDDEN' ? 403 : 400;
 
-        // Server-side breadcrumb for waiver gate decisions (so admins can trace
+        // Server-side breadcrumb for POI gate decisions (so admins can trace
         // why a mint was blocked from edge logs alone, without DB queries).
-        if (errCode === 'EVIDENCE_WAIVER_REQUIRED' || errCode === 'WAIVER_NOT_APPLICABLE' || errCode === 'WAIVER_INVALID') {
-          console.warn(`[${requestId}] WAIVER_GATE_BLOCKED code=${errCode} match_id=${matchId} org_id=${authCtx.orgId}`);
+        if (
+          errCode === 'MIN_EVIDENCE_PER_SIDE' ||
+          errCode === 'ACKNOWLEDGEMENTS_REQUIRED' ||
+          errCode === 'DECLARATION_ACK_REQUIRED' ||
+          errCode === 'ATB_ACK_REQUIRED'
+        ) {
+          console.warn(`[${requestId}] POI_GATE_BLOCKED code=${errCode} match_id=${matchId} org_id=${authCtx.orgId}`);
           try {
             await supabase.from("audit_logs").insert({
               org_id: match.org_id,
@@ -607,7 +615,12 @@ Deno.serve(async (req) => {
               metadata: {
                 request_id: requestId,
                 reason: errCode.toLowerCase(),
-                waiver_supplied: waiverPayload !== null,
+                acks_supplied: acksPayload !== null,
+                declaration_ack: acksPayload?.declaration_ack ?? null,
+                atb_ack: acksPayload?.atb_ack ?? null,
+                blocked_side: transitionResult?.side ?? null,
+                buyer_documents_count: transitionResult?.buyer_documents_count ?? null,
+                seller_documents_count: transitionResult?.seller_documents_count ?? null,
               },
             });
           } catch (e) {
@@ -616,7 +629,13 @@ Deno.serve(async (req) => {
         }
 
         // No refund needed — burn and transition are in one transaction; both rolled back on failure
-        throw new ApiException(errCode, errMsg, statusCode);
+        const errorPayload: Record<string, unknown> = { code: errCode, message: errMsg };
+        if (errCode === 'MIN_EVIDENCE_PER_SIDE') {
+          errorPayload.side = transitionResult?.side;
+          errorPayload.buyer_documents_count = transitionResult?.buyer_documents_count;
+          errorPayload.seller_documents_count = transitionResult?.seller_documents_count;
+        }
+        throw new ApiException(errCode, errMsg, statusCode, errorPayload);
       }
 
       // Fetch the final state of the match after all transitions
