@@ -638,7 +638,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 isFetching={evidenceFetching}
                 error={evidenceError}
                 onRefetch={() => { void refetchEvidence(); }}
-                effectiveWaiverRequired={waiverRequired}
+                effectiveWaiverRequired={false}
               />
             )}
 
