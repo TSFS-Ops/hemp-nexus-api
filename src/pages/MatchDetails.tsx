@@ -105,7 +105,7 @@ function MatchDetailsContent() {
       <PageContainer size="wide" className="space-y-6">
         <Breadcrumbs items={breadcrumbs} />
         <InlineLoader message="Loading match details…" />
-      </div>
+      </PageContainer>
     );
   }
 
