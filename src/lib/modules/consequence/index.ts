@@ -87,7 +87,8 @@ export async function createWad(matchId: string): Promise<ConsequenceResult<WadR
 export async function submitAttestation(
   wadId: string,
   attestedName: string,
-  role: "buyer_signatory" | "seller_signatory" | "witness"
+  role: "buyer_signatory" | "seller_signatory" | "witness",
+  idempotencyKey = generateIdempotencyKey(`wad_attest_${wadId}`),
 ): Promise<ConsequenceResult<void>> {
   if (!attestedName.trim()) {
     return { success: false, error: "Signatory name is required." };
@@ -96,7 +97,7 @@ export async function submitAttestation(
   try {
     await apiFetch(`wad/${wadId}/attest`, {
       method: "POST",
-      idempotencyKey: generateIdempotencyKey(`wad_attest_${wadId}`),
+      idempotencyKey,
       body: JSON.stringify({ attested_name: attestedName, role }),
     });
     return { success: true };
