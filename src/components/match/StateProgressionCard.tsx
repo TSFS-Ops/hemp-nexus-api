@@ -351,7 +351,6 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     if (loading || recheckingBalance) return;
 
     setRecheckingBalance(true);
-
     try {
       if (canQueryBalance) {
         const result = await refetch();
@@ -360,30 +359,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         }
       }
 
-      // Reset waiver state every time the dialog opens.
-      setWaiverAcknowledged(false);
-      setWaiverReason("");
-      setWaiverCategory("");
+      // Reset acknowledgements every time the dialog opens. Both must be
+      // re-affirmed on EVERY mint, EVERY time (2026-04-30 final POI scope).
+      setDeclarationAck(false);
+      setAtbAck(false);
 
-      // Stale-evidence guard at OPEN time: re-fetch the combined evidence
-      // count (match_documents + governance_documents + match_notes) so the
-      // red waiver banner is never shown when a doc was just attached.
-      let openWaiverRequired = waiverRequired;
+      // Refresh per-side evidence counts so the gate decision is fresh.
       if (isPoiAction) {
-        const fresh = await refetchEvidence();
-        if (fresh.data) {
-          setServerWaiverRequired(false);
-          openWaiverRequired = fresh.data.waiverRequired;
-        } else {
-          openWaiverRequired = false;
-        }
+        await refetchEvidence();
       }
 
-      if (openWaiverRequired) {
-        setShowDialog(false);
-        setShowInlineWaiver(true);
-        return;
-      }
       setShowDialog(true);
     } finally {
       setRecheckingBalance(false);
@@ -392,97 +377,57 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
 
   const handleDialogConfirm = async () => {
     if (!actionPath) return;
-    if (loading || waiverSubmitting) return;
+    if (loading) return;
 
-    // Stale-evidence guard: re-check counts immediately before submit. If a
-    // doc/note was added in another tab between dialog-open and confirm, the
-    // waiver is no longer applicable — skip the waiver payload entirely so
-    // the server doesn't reject with WAIVER_NOT_APPLICABLE.
     let payload: Record<string, unknown> | undefined = undefined;
-    if (waiverRequired) {
-      if (!waiverAcknowledged || !waiverReasonValid || !waiverCategoryValid) return;
+
+    if (isPoiAction) {
+      // Always-on acknowledgements — never bypassable.
+      if (!declarationAck || !atbAck) return;
+
+      // Stale-evidence guard: re-check counts immediately before submit.
       const fresh = await refetchEvidence();
-      const freshDocs = fresh.data?.documentCount ?? 0;
-      const freshNotes = fresh.data?.notesCount ?? 0;
-      if (freshDocs === 0 && freshNotes === 0) {
-        // Still zero → submit waiver in the body. Server writes it atomically.
-        payload = {
-          evidence_waiver: {
-            category: waiverCategory,
-            reason: trimmedReason,
-            actor_roles: roles ?? [],
-          },
-        };
-      } else {
-        // Evidence appeared mid-flight: skip waiver, let mint proceed normally.
-        setServerWaiverRequired(false);
-        toast.info("Supporting evidence was added — proceeding without waiver.");
+      if (fresh.data && !fresh.data.minBundleSatisfied) {
+        toast.error(
+          fresh.data.buyerSideSatisfied
+            ? "Seller has no supporting documents attached. At least one document per side is required to seal a Proof of Intent."
+            : "Buyer has no supporting documents attached. At least one document per side is required to seal a Proof of Intent.",
+        );
+        return;
       }
+
+      payload = {
+        acks: {
+          declaration_ack: true,
+          atb_ack: true,
+          actor_roles: roles ?? [],
+          ack_timestamp: new Date().toISOString(),
+        },
+      };
     }
 
     setShowDialog(false);
-    setShowInlineWaiver(false);
     try {
       await onAction(actionPath, payload);
-      setServerWaiverRequired(false);
     } catch (err) {
-      // Race recovery: server returned 409 EVIDENCE_WAIVER_REQUIRED (e.g. our
-      // counts were stale and showed evidence that no longer exists at mint
-      // time). Force-refresh and reopen the dialog so the user can complete
-      // the acknowledgement and retry without losing their place.
       const message = err instanceof Error ? err.message : String(err ?? "");
-      if (/EVIDENCE_WAIVER_REQUIRED/i.test(message)) {
+      if (/MIN_EVIDENCE_PER_SIDE/i.test(message)) {
         toast.error(
-          "Supporting documents and notes were removed before this Proof of Intent could be sealed. Please record an evidence waiver to continue.",
+          "At least one supporting document per side is required to seal this Proof of Intent. Please attach a document on the missing side and try again.",
         );
         await refetchEvidence();
-        setServerWaiverRequired(true);
-        setWaiverAcknowledged(false);
-        setWaiverReason("");
-        setWaiverCategory("");
-        setShowDialog(false);
-        setShowInlineWaiver(true);
         return;
       }
-      if (/WAIVER_NOT_APPLICABLE/i.test(message)) {
-        toast.success("Supporting evidence was added in time — POI mint will retry without a waiver.");
-        await refetchEvidence();
-        setServerWaiverRequired(false);
-        setShowInlineWaiver(false);
+      if (/DECLARATION_ACK_REQUIRED|ATB_ACK_REQUIRED|ACKNOWLEDGEMENTS_REQUIRED/i.test(message)) {
+        toast.error("Both the truthfulness declaration and authority-to-bind acknowledgement are required. Please tick both and try again.");
         return;
       }
       throw err;
     }
   };
 
-  // Cancel-waiver telemetry: when the user opens the dialog while a waiver is
-  // required and then dismisses without confirming, log a non-blocking signal
-  // so we can measure waiver friction. Best-effort; never blocks the UX.
-  const handleDialogCancel = async () => {
-    if (waiverRequired && session?.user?.id && match.org_id) {
-      try {
-        await supabase.from("audit_logs").insert({
-          org_id: match.org_id,
-          actor_user_id: session.user.id,
-          action: "poi.evidence_waiver_dismissed",
-          entity_type: "match",
-          entity_id: match.id,
-          metadata: {
-            document_count: documentCount,
-            notes_count: notesCount,
-            had_acknowledgement: waiverAcknowledged,
-            had_category: !!waiverCategory,
-            reason_length: trimmedReason.length,
-            dismissed_at: new Date().toISOString(),
-          },
-        });
-      } catch (e) {
-        // Telemetry only — never surface to the user.
-        console.warn("[StateProgressionCard] waiver dismissal telemetry failed:", e);
-      }
-    }
+  const handleDialogCancel = () => {
     setShowDialog(false);
-    setShowInlineWaiver(false);
   };
 
   return (
