@@ -17,7 +17,7 @@ type Tier = {
 // the checkout to charge a different amount than the UI advertises.
 //
 // USD-native settlement (cutover 2026-05-01): Paystack charges in
-// USD directly. No FX conversion is performed at display or checkout.
+// USD directly. Prices are displayed and charged in USD only.
 const TIERS: Tier[] = [
   { id: "pack_10", credits: 10, priceUsd: 10, label: "10 credits · $1.00 / credit" },
   { id: "pack_50", credits: 50, priceUsd: 45, label: "50 credits · $0.90 / credit · 10% saving", recommended: true },
