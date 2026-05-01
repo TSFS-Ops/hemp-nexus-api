@@ -24,6 +24,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_shared/idempotency.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
@@ -43,17 +44,16 @@ const verifySchema = z.object({
   reference: z.string().min(1, "Missing reference"),
 });
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  // Permissive list — the supabase-js client adds several `x-supabase-*`
-  // headers (api-version, client-platform, client-runtime, etc.) that
-  // must be allow-listed or the browser fails the CORS preflight before
-  // the request ever reaches this function. We accept everything to
-  // avoid silent drift the next time the SDK adds a new header.
-  'Access-Control-Allow-Headers': '*, authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, idempotency-key',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-};
+// Stage 2A CORS hardening (2026-05-01): the local wildcard `corsHeaders`
+// constant has been removed in favour of the shared `_shared/cors.ts`
+// helper (`handleCorsPreflight` + `withCors`). The shared helper falls
+// back to the production allow-list when ALLOWED_ORIGINS is unset and
+// echoes Lovable preview hosts. Browser-facing responses below all go
+// through `wrap(...)` (a tiny `withCors(req, ...)` shim). The Paystack
+// webhook path is intentionally NOT wrapped: it is a server-to-server
+// callback that never sets an Origin and must keep its existing
+// signature-validated bare responses.
+const corsHeaders = { 'Content-Type': 'application/json' } as Record<string, string>;
 
 // ==============================================
 // CHARGING ENTITY (for invoices)
@@ -122,10 +122,19 @@ const REFUND_POLICY = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  // Stage 2A: shared CORS preflight handler (production-origin allow-list,
+  // Lovable preview hosts, 403 on disallowed origins).
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+
+  const _url0 = new URL(req.url);
+  const _path0 = _url0.pathname.split("/").pop();
+  const _isWebhook0 = _path0 === "webhook";
+  const _wrap = (resp: Response): Response => (_isWebhook0 ? resp : withCors(req, resp));
+  return _wrap(await _serve(req));
+});
+
+async function _serve(req: Request): Promise<Response> {
 
   const url = new URL(req.url);
   const path = url.pathname.split("/").pop();
@@ -657,7 +666,7 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}
 
 // ==============================================
 // GET /packages - List available packages

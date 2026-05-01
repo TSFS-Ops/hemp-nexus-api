@@ -6,17 +6,19 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
+// with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
+const corsHeaders = { "Content-Type": "application/json" } as Record<string, string>;
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+  return withCors(req, await _serve(req));
+});
+
+async function _serve(req: Request): Promise<Response> {
 
   try {
     const { rawText } = await req.json();
@@ -193,4 +195,4 @@ Rules:
       },
     );
   }
-});
+}

@@ -3,16 +3,17 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
+// with the shared `_shared/cors.ts` helper. This stub keeps the existing
+// `{ ...corsHeaders, "Content-Type": "application/json" }` spreads producing
+// a valid Content-Type header; CORS headers are attached at the wrapper.
+const corsHeaders = { "Content-Type": "application/json" } as Record<string, string>;
 
 const inviteEmailSchema = z.object({
   email: z.string().email().max(255),
@@ -40,9 +41,12 @@ function checkRateLimit(email: string): boolean {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+  return withCors(req, await _serve(req));
+});
+
+async function _serve(req: Request): Promise<Response> {
 
   try {
     if (req.method === "POST") {
@@ -263,7 +267,7 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}
 
 function escapeHtml(str: string): string {
   return str
