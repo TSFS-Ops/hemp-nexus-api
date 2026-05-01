@@ -34,15 +34,33 @@ export type BypassGate =
   | "screening_recentness"; // bypass the 30-day staleness check on screening_results
 
 /**
- * Production lockout: even if an admin fat-fingers the master switch on in the
- * live environment, bypasses physically cannot fire. Set ENVIRONMENT_TIER=production
- * on the live edge runtime to engage. Anything else (staging/preview/unset) is
- * treated as non-production and bypasses are honoured per the admin toggles.
+ * Production lockout (RBAC Stage 3G).
+ *
+ * Test-mode bypass is a SANDBOX/TEST tool only. It must NEVER fire in
+ * production. Two layers enforce this:
+ *
+ *   1. Edge layer  — `isProductionTier()` reads ENVIRONMENT_TIER from the
+ *                    edge runtime. If "production" / "live" / "prod", every
+ *                    bypass call short-circuits with `decision: "real"` and
+ *                    a `production_tier_lockout` reason, AND writes a
+ *                    `test_mode.production_lockout_denied` audit row.
+ *   2. DB layer    — `is_test_mode_bypass_enabled(_gate)` checks
+ *                    `is_production_environment()` (admin_settings.environment.tier)
+ *                    and returns false in production no matter what flags say.
+ *
+ * Production override is NOT test-mode bypass. It must use the future
+ * break-glass / second-approval workflow (see Stage 3 plan).
+ *
+ * Exported so call-sites and tests can detect the lockout uniformly.
  */
-function isProductionTier(): boolean {
+export function isProductionTier(): boolean {
   const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
   return tier === "production" || tier === "live" || tier === "prod";
 }
+
+/** Stable error reason returned to callers when production lockout fires. */
+export const PRODUCTION_LOCKOUT_REASON =
+  "test_mode_bypass_locked_in_production: use the break-glass / second-approval workflow instead";
 
 export interface BypassAuditContext {
   gate: BypassGate;
@@ -112,7 +130,23 @@ export async function isBypassEnabled(
       decision: "real",
       requestId,
       reason: "production_tier_lockout",
+      details: { hint: PRODUCTION_LOCKOUT_REASON },
     });
+    // Best-effort audit write — never block the request if the audit fails.
+    try {
+      await client.from("admin_audit_logs").insert({
+        action: "test_mode.production_lockout_denied",
+        target_type: "compliance_gate",
+        details: {
+          gate,
+          source,
+          request_id: requestId ?? null,
+          reason: PRODUCTION_LOCKOUT_REASON,
+        },
+      });
+    } catch (_err) {
+      // Audit failure must not break callers; the decision log above is the source of truth.
+    }
     return false;
   }
 
