@@ -24,7 +24,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_shared/idempotency.ts";
-import { getUsdZarRate, usdToZarCents } from "../_shared/fx.ts";
+// USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
+// directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
+// purchase flow and intentionally NOT imported here.
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -66,18 +68,15 @@ const CHARGING_ENTITY = {
 };
 
 // ==============================================
-// TOKEN PACKAGES — USD-denominated commercial pricing.
+// TOKEN PACKAGES — USD-native settlement (cutover 2026-05-01).
 //
-// Decision (Daniel Davies, 2026-04-30; James Davies confirmation
-// 2026-04-30): the platform displays prices in USD but Paystack South
-// Africa settles in ZAR. The USD price is the commercial reference
-// price; the ZAR amount actually charged is computed at checkout time
-// from the live USD→ZAR rate (see _shared/fx.ts) and persisted in the
-// audit trail alongside the FX basis.
+// Paystack now charges Izenzo customers directly in USD. There is no
+// FX conversion at checkout; `amount` is sent to Paystack as USD cents
+// and the ledger / audit row records `currency='USD'` and
+// `fx_basis='native_usd'`. Legacy ZAR fields are no longer written.
 //
-// `single` ($1) is retained for in-app one-credit top-ups; `pack_10`,
-// `pack_50`, `pack_200` are the headline tiers that match Daniel's
-// pricing email.
+// `single` ($1) is the in-app one-credit top-up; `pack_10`, `pack_50`,
+// `pack_200` are the headline tiers (1 credit = $1.00 USD).
 // ==============================================
 const TOKEN_PACKAGES: Record<string, {
   credits: number;
