@@ -41,9 +41,12 @@ function checkRateLimit(email: string): boolean {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+  return withCors(req, await _serve(req));
+});
+
+async function _serve(req: Request): Promise<Response> {
 
   try {
     if (req.method === "POST") {
