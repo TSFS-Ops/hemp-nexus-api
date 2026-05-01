@@ -66,46 +66,50 @@ const CHARGING_ENTITY = {
 };
 
 // ==============================================
-// TOKEN PACKAGES (ZAR pricing)
-// Pack pricing is the single source of truth — UIs read from
-// GET /token-purchase/packages so they cannot drift.
+// TOKEN PACKAGES — USD-denominated commercial pricing.
+//
+// Decision (Daniel Davies, 2026-04-30; James Davies confirmation
+// 2026-04-30): the platform displays prices in USD but Paystack South
+// Africa settles in ZAR. The USD price is the commercial reference
+// price; the ZAR amount actually charged is computed at checkout time
+// from the live USD→ZAR rate (see _shared/fx.ts) and persisted in the
+// audit trail alongside the FX basis.
+//
+// `single` ($1) is retained for in-app one-credit top-ups; `pack_10`,
+// `pack_50`, `pack_200` are the headline tiers that match Daniel's
+// pricing email.
 // ==============================================
 const TOKEN_PACKAGES: Record<string, {
   credits: number;
-  price_zar: number;
-  price_cents: number;
+  price_usd: number;
   label: string;
   pricePerCredit: string;
   saving?: string;
 }> = {
   single: {
     credits: 1,
-    price_zar: 10,
-    price_cents: 1000,
+    price_usd: 1,
     label: "Single Credit",
-    pricePerCredit: "10.00",
+    pricePerCredit: "1.00",
   },
   pack_10: {
     credits: 10,
-    price_zar: 100,
-    price_cents: 10000,
+    price_usd: 10,
     label: "10 Credits",
-    pricePerCredit: "10.00",
+    pricePerCredit: "1.00",
   },
   pack_50: {
     credits: 50,
-    price_zar: 450,
-    price_cents: 45000,
+    price_usd: 45,
     label: "50 Credits",
-    pricePerCredit: "9.00",
+    pricePerCredit: "0.90",
     saving: "10% saving",
   },
   pack_200: {
     credits: 200,
-    price_zar: 1600,
-    price_cents: 160000,
+    price_usd: 160,
     label: "200 Credits",
-    pricePerCredit: "8.00",
+    pricePerCredit: "0.80",
     saving: "20% saving",
   },
 };
