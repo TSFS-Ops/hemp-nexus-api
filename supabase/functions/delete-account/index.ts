@@ -18,18 +18,18 @@
 //     to cancel deletion (hard-delete sweep handled by future scheduled job).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, idempotency-key, x-request-id",
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
+const json = (req: Request, body: unknown, status = 200) =>
+  withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 
 const withRequestId = (req: Request, body: Record<string, unknown>) => ({
   ...body,
@@ -37,8 +37,8 @@ const withRequestId = (req: Request, body: Record<string, unknown>) => ({
 });
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json(withRequestId(req, { error: "method_not_allowed" }), 405);
+  const __pf = handleCorsPreflight(req); if (__pf) return __pf;
+  if (req.method !== "POST") return json(req, withRequestId(req, { error: "method_not_allowed" }), 405);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return json(withRequestId(req, { error: "unauthorized" }), 401);
+  if (userErr || !userData?.user) return json(req, withRequestId(req, { error: "unauthorized" }), 401);
   const user = userData.user;
 
   // Parse confirmation payload.
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     /* allow empty body */
   }
   if (!body.confirmation || body.confirmation.trim().toLowerCase() !== (user.email ?? "").toLowerCase()) {
-    return json(
+    return json(req, 
       withRequestId(req, { error: "confirmation_mismatch", message: "Type your email exactly to confirm." }),
       400,
     );
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
   const reasonText = (body.reason ?? "").trim();
   const categoryRaw = (body.category ?? "").trim();
   if (reasonText.length < 5) {
-    return json(
+    return json(req, 
       withRequestId(req, {
         error: "reason_required",
         message: "Tell us why you're leaving (at least 5 characters). This helps us improve.",
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     );
   }
   if (!ALLOWED_CATEGORIES.has(categoryRaw)) {
-    return json(
+    return json(req, 
       withRequestId(req, {
         error: "category_required",
         message: "Pick a reason category before deleting your account.",
@@ -108,9 +108,9 @@ Deno.serve(async (req) => {
     .select("id, org_id, status")
     .eq("id", user.id)
     .maybeSingle();
-  if (profileErr || !profile) return json(withRequestId(req, { error: "profile_not_found" }), 404);
+  if (profileErr || !profile) return json(req, withRequestId(req, { error: "profile_not_found" }), 404);
   if (profile.status === "pending_deletion") {
-    return json(withRequestId(req, { error: "already_pending_deletion" }), 409);
+    return json(req, withRequestId(req, { error: "already_pending_deletion" }), 409);
   }
 
   // 3. Sole-admin guard.
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
         .eq("role", "org_admin")
         .in("user_id", memberIds);
       if ((otherAdmins ?? []).length === 0) {
-        return json(
+        return json(req, 
           withRequestId(req, {
             error: "sole_org_admin",
             message:
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
     .in("state", ["PENDING_APPROVAL", "ELIGIBLE", "COMPLETION_REQUESTED"]);
 
   if ((activePoiCount ?? 0) > 0) {
-    return json(
+    return json(req, 
       withRequestId(req, {
         error: "active_obligations",
         message: `Your organisation has ${activePoiCount} live trade(s) in progress. Resolve or cancel them before deleting your account.`,
@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
     .eq("id", user.id);
   if (updateErr) {
     console.error("[delete-account] profile update failed", updateErr);
-    return json(withRequestId(req, { error: "update_failed" }), 500);
+    return json(req, withRequestId(req, { error: "update_failed" }), 500);
   }
 
   // 6. Revoke all roles.
@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
     console.warn("[delete-account] signOut warning", e);
   }
 
-  return json({
+  return json(req, {
     ok: true,
     grace_period_days: 30,
     message:

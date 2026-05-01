@@ -50,31 +50,30 @@ import {
   checkOrgLegitimacy,
   getActiveGovernanceProfile,
 } from "../_shared/legitimacy.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body, null, 2), {
+function jsonResponse(req: Request, body: unknown, status = 200) {
+  return withCors(req, new Response(JSON.stringify(body, null, 2), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 }
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
 
   if (req.method !== "GET") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return jsonResponse(req, { error: "Method not allowed" }, 405);
   }
 
   try {
@@ -88,28 +87,27 @@ Deno.serve(async (req) => {
     const authHeader =
       req.headers.get("Authorization") ?? req.headers.get("authorisation");
     if (!authHeader) {
-      return jsonResponse({ error: "Unauthorised" }, 401);
+      return jsonResponse(req, { error: "Unauthorised" }, 401);
     }
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller }, error: authError } =
       await admin.auth.getUser(token);
     if (authError || !caller) {
-      return jsonResponse({ error: "Invalid token" }, 401);
+      return jsonResponse(req, { error: "Invalid token" }, 401);
     }
 
     const { data: isAdmin } = await admin.rpc("is_admin", {
       user_id: caller.id,
     });
     if (!isAdmin) {
-      return jsonResponse({ error: "Admin access required" }, 403);
+      return jsonResponse(req, { error: "Admin access required" }, 403);
     }
 
     // ── Validate the org_id query param ────────────────────────────────
     const url = new URL(req.url);
     const orgId = url.searchParams.get("org_id");
     if (!orgId || !UUID_RE.test(orgId)) {
-      return jsonResponse(
-        { error: "Missing or malformed org_id query parameter (expected UUID)" },
+      return jsonResponse(req, { error: "Missing or malformed org_id query parameter (expected UUID)" },
         400,
       );
     }
@@ -190,13 +188,12 @@ Deno.serve(async (req) => {
     ]);
 
     if (orgResult.error) {
-      return jsonResponse(
-        { error: "Failed to load organisation", detail: orgResult.error.message },
+      return jsonResponse(req, { error: "Failed to load organisation", detail: orgResult.error.message },
         500,
       );
     }
     if (!orgResult.data) {
-      return jsonResponse({ error: "Org not found", org_id: orgId }, 404);
+      return jsonResponse(req, { error: "Org not found", org_id: orgId }, 404);
     }
 
     const org = orgResult.data;
@@ -341,7 +338,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Compose response ───────────────────────────────────────────────
-    return jsonResponse({
+    return jsonResponse(req, {
       generated_at: new Date().toISOString(),
       org_id: orgId,
       org: {
@@ -369,7 +366,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("[admin-org-reconciliation] failure:", err);
-    return jsonResponse({ error: "Internal server error" }, 500);
+    return jsonResponse(req, { error: "Internal server error" }, 500);
   }
 });
 

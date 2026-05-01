@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 /**
  * validate-upload - Server-side magic-byte validation for any uploaded file.
@@ -13,21 +14,20 @@ import { authenticateRequest } from "../_shared/auth.ts";
  */
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
 
   const headers = { ...corsHeaders, "Content-Type": "application/json" };
+  const wrap = (r: Response) => withCors(req, r);
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ blocked: false, error: "No auth" }), { status: 401, headers });
+      return wrap(new Response(JSON.stringify({ blocked: false, error: "No auth" }), { status: 401, headers }));
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     try {
       authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
     } catch {
-      return new Response(JSON.stringify({ blocked: false, error: "Unauthorised" }), { status: 401, headers });
+      return wrap(new Response(JSON.stringify({ blocked: false, error: "Unauthorised" }), { status: 401, headers }));
     }
     const admin = createClient(supabaseUrl, serviceKey);
 
@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
     const { bucket, storage_path, client_mime, file_size } = body;
 
     if (!bucket || !storage_path) {
-      return new Response(JSON.stringify({ blocked: false, error: "bucket and storage_path required" }), { status: 400, headers });
+      return wrap(new Response(JSON.stringify({ blocked: false, error: "bucket and storage_path required" }), { status: 400, headers }));
     }
 
     // Allowlist of buckets that may be validated through this endpoint.
@@ -52,10 +52,10 @@ Deno.serve(async (req: Request) => {
     // service-role admin client (which bypasses storage RLS).
     const ALLOWED_BUCKETS = ["match-documents", "kyc-documents", "governance-documents", "vault-documents"];
     if (!ALLOWED_BUCKETS.includes(bucket)) {
-      return new Response(JSON.stringify({
+      return wrap(new Response(JSON.stringify({
         blocked: true,
         reason: "Invalid bucket",
-      }), { status: 400, headers });
+      }), { status: 400, headers }));
     }
 
     const filePath = storage_path.startsWith(bucket + "/") ? storage_path.slice(bucket.length + 1) : storage_path;
@@ -63,10 +63,10 @@ Deno.serve(async (req: Request) => {
     if (bucket === "match-documents") {
       const [pathOrgId, pathMatchId] = filePath.split("/");
       if (!pathOrgId || !pathMatchId || pathOrgId !== authCtx.orgId) {
-        return new Response(JSON.stringify({
+        return wrap(new Response(JSON.stringify({
           blocked: true,
           reason: "Caller does not have access to this file",
-        }), { status: 403, headers });
+        }), { status: 403, headers }));
       }
 
       const { data: match, error: matchError } = await admin
@@ -76,10 +76,10 @@ Deno.serve(async (req: Request) => {
         .single();
       const isPartyOrg = match && [match.org_id, match.buyer_org_id, match.seller_org_id].includes(authCtx.orgId);
       if (matchError || !isPartyOrg) {
-        return new Response(JSON.stringify({
+        return wrap(new Response(JSON.stringify({
           blocked: true,
           reason: "Caller does not have access to this file",
-        }), { status: 403, headers });
+        }), { status: 403, headers }));
       }
     }
 
@@ -88,10 +88,10 @@ Deno.serve(async (req: Request) => {
 
     if (dlError || !fileData) {
       // Fail-closed: cannot read file → report blocked
-      return new Response(JSON.stringify({
+      return wrap(new Response(JSON.stringify({
         blocked: true,
         reason: "Could not verify file integrity - upload validation failed",
-      }), { status: 200, headers });
+      }), { status: 200, headers }));
     }
 
     const headerBytes = new Uint8Array(await fileData.slice(0, 16).arrayBuffer());
@@ -117,18 +117,18 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return new Response(JSON.stringify({
+    return wrap(new Response(JSON.stringify({
       blocked: result.blocked,
       reason: result.blockReason || null,
       detected_mime: result.detectedMime || null,
       client_mime_match: result.clientMimeMatch,
-    }), { status: 200, headers });
+    }), { status: 200, headers }));
 
   } catch (err) {
     console.error("[validate-upload] Error:", err);
-    return new Response(JSON.stringify({
+    return wrap(new Response(JSON.stringify({
       blocked: true,
       reason: "Server validation error",
-    }), { status: 200, headers });
+    }), { status: 200, headers }));
   }
 });
