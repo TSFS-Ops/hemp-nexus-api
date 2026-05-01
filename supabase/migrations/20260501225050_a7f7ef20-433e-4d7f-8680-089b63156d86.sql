@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public._diag_vault_cron_key_fingerprint() TO authenticated, anon;
