@@ -458,6 +458,11 @@ function BillingContent() {
           <p className="text-sm text-muted-foreground mb-4">
             All prices in USD. Charged in USD at checkout via Paystack.
           </p>
+          {!billingAvailability.enabled && (
+            <div className="mb-4">
+              <BillingUnavailableNotice message={billingAvailability.message} />
+            </div>
+          )}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {CREDIT_PACKAGES.map((pkg) => {
               return (
@@ -496,9 +501,12 @@ function BillingContent() {
                     className="w-full"
                     variant={pkg.popular ? "default" : "outline"}
                     onClick={() => handlePurchase(pkg.id)}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !billingAvailability.enabled}
+                    data-testid={`billing-buy-now-${pkg.id}`}
                   >
-                    {isProcessing && selectedPackage === pkg.id ? (
+                    {!billingAvailability.enabled ? (
+                      <>Unavailable</>
+                    ) : isProcessing && selectedPackage === pkg.id ? (
                       <>
                         <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                         Redirecting to payment…
