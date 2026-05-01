@@ -1,10 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
+// with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
+const corsHeaders = { "Content-Type": "application/json" } as Record<string, string>;
 
 // ── Sanctions screening placeholder ──
 // Real sanctions screening requires IDV/SAN provider integration (excluded scope: IDV-001, SAN-001/002).
