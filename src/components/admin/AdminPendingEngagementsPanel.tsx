@@ -759,7 +759,10 @@ export function AdminPendingEngagementsPanel() {
       const td = data?.template_data ?? {};
       setOutreachRecipient(data?.recipient ?? "");
       setOutreachSuppressed(!!data?.suppressed);
-      setOutreachSubject(data?.subject ?? "");
+      // Defensive client-side clamp — server contract is 200 chars. The server
+      // already truncates safely, but if an older deployment returns a longer
+      // subject we clamp here so the field never exceeds the limit on prefill.
+      setOutreachSubject((data?.subject ?? "").slice(0, 200));
       setOutreachMessage(td.customMessage ?? "");
       setOutreachContext({
         commodity: td.commodity ?? null,
