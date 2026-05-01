@@ -3,15 +3,18 @@
  * ─────────────────────────────────────────────────────────────────────
  * HQ → Revenue dashboard.
  *
- * SOURCE OF TRUTH (revised April 2026)
- * ────────────────────────────────────
+ * SOURCE OF TRUTH (USD-native, cutover 2026-05-01)
+ * ────────────────────────────────────────────────
  * Revenue is sourced primarily from `public.audit_logs` rows where
  * `action = 'credits.purchased'`. This is the canonical, server-authored
- * settlement event written by the Paystack webhook handler. It is NOT
- * dependent on whether the corresponding `token_ledger` row was tagged
- * with `action_type = 'credit_purchase'` — historically (e.g. Talia
- * Pillay's R100 grant on 2026-04-26) the ledger row was written with the
- * generic `credit` path while the credits clearly landed in the wallet.
+ * settlement event written by the Paystack webhook handler.
+ *
+ * As of the 2026-05-01 cutover, Paystack charges customers natively in
+ * USD. The dashboard reads `metadata.price_usd` as the canonical
+ * settlement amount and renders all totals in USD. Pre-cutover rows
+ * that only carry the legacy `price_zar` field are still surfaced (so
+ * historical totals remain reconcilable) but flagged as legacy ZAR in
+ * the per-org timeline.
  *
  * As a safety-net we also pull `token_ledger` rows with
  * `action_type = 'credit_purchase'` and merge by `payment_reference`,
@@ -80,16 +83,14 @@ interface PurchaseEnriched {
   org_id: string | null;
   org_name: string;
   credits: number;               // positive integer of credits granted
-  amount_zar: number;            // gross revenue in ZAR (settlement currency)
-  // Dual-currency audit fields stamped at checkout-init and propagated
-  // through the verify + webhook settlement paths into the credits.purchased
-  // audit_log + token_ledger.metadata. Used by the "Order details" view for
-  // customer support investigations ("why was R{x} charged for $Y?").
-  price_usd: number | null;
-  fx_rate: number | null;
-  fx_basis: string | null;       // e.g. "live" | "cached"
-  fx_source: string | null;      // e.g. "exchangerate.host"
-  fx_fetched_at: string | null;
+  amount_usd: number;            // gross revenue in USD (canonical, post-cutover)
+  // Settlement currency for this row: "USD" (post-cutover, native) or
+  // "ZAR" (pre-cutover legacy). Drives the badge in the per-org timeline.
+  settlement_currency: "USD" | "ZAR";
+  // Pre-cutover ZAR settlement preserved verbatim for historical
+  // reconciliation. Null for native-USD rows.
+  legacy_amount_zar: number | null;
+  legacy_fx_rate: number | null;
   package_id: string | null;
   payment_reference: string | null;
   created_at: string;
@@ -108,7 +109,7 @@ interface PendingSettlement {
   actor_user_id: string | null;
   org_id: string | null;
   org_name: string;
-  amount_zar: number;
+  amount_usd: number;
   credits: number;
   package_id: string | null;
   initiated_at: string;
