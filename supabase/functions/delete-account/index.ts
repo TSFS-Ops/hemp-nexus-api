@@ -25,11 +25,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, idempotency-key, x-request-id",
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
+const json = (req: Request, body: unknown, status = 200) =>
+  withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 
 const withRequestId = (req: Request, body: Record<string, unknown>) => ({
   ...body,
