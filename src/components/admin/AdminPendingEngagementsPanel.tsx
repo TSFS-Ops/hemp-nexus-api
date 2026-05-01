@@ -1556,11 +1556,23 @@ export function AdminPendingEngagementsPanel() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subj">Subject</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="subj">Subject</Label>
+                  <span
+                    className={
+                      "text-[11px] tabular-nums " +
+                      (outreachSubject.length > 190
+                        ? "text-destructive font-medium"
+                        : "text-muted-foreground")
+                    }
+                  >
+                    {outreachSubject.length}/200
+                  </span>
+                </div>
                 <Input
                   id="subj"
                   value={outreachSubject}
-                  onChange={(e) => setOutreachSubject(e.target.value)}
+                  onChange={(e) => setOutreachSubject(e.target.value.slice(0, 200))}
                   maxLength={200}
                 />
               </div>
