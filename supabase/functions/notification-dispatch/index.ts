@@ -171,6 +171,8 @@ Deno.serve(async (req) => {
         event_type,
         channels: dispatched,
         subject,
+        subject_length: subject != null ? subject.length : null,
+        defensive_truncation_fired: defensiveTruncationFired,
         timestamp: new Date().toISOString(),
       },
     });
