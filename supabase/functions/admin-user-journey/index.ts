@@ -30,11 +30,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
+const json = (req: Request, body: unknown, status = 200) =>
+  withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
