@@ -872,7 +872,7 @@ export function AdminRevenuePanel() {
                         {p.credits > 0 ? NUM.format(p.credits) : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {p.amount_zar > 0 ? ZAR.format(p.amount_zar) : "—"}
+                        {p.amount_usd > 0 ? USD.format(p.amount_usd) : "—"}
                       </TableCell>
                       <TableCell className="font-mono text-[11px]">
                         {p.reference}
