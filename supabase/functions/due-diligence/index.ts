@@ -51,9 +51,12 @@ async function hashIdNumber(idNumber: string | null | undefined): Promise<string
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+  return withCors(req, await _serve(req));
+});
+
+async function _serve(req: Request): Promise<Response> {
 
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
