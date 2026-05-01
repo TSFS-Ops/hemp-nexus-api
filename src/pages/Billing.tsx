@@ -93,6 +93,11 @@ function BillingContent() {
   // backend uses to charge the customer, so the displayed "≈ R{x}"
   // estimate matches what hits the card. Null until first fetch.
   const [fxRate, setFxRate] = useState<number | null>(null);
+  // FX provenance — surfaced beside the ≈ ZAR estimate so users can
+  // see whether the rate was just fetched from the live FX API or
+  // served from the cached fallback in admin_settings.
+  const [fxBasis, setFxBasis] = useState<string | null>(null);
+  const [fxFetchedAt, setFxFetchedAt] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
@@ -105,9 +110,16 @@ function BillingContent() {
     (async () => {
       try {
         const { data } = await supabase.functions.invoke("token-purchase/packages");
-        const apiRate = (data as { fxRate?: number } | null)?.fxRate;
+        const payload = data as {
+          fxRate?: number;
+          fxBasis?: string | null;
+          fxFetchedAt?: string | null;
+        } | null;
+        const apiRate = payload?.fxRate;
         if (!cancelled && typeof apiRate === "number" && apiRate > 0) {
           setFxRate(apiRate);
+          setFxBasis(payload?.fxBasis ?? null);
+          setFxFetchedAt(payload?.fxFetchedAt ?? null);
         }
       } catch {
         /* non-essential */
