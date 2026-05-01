@@ -24,6 +24,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_shared/idempotency.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
