@@ -15,8 +15,9 @@ const SENDER_DOMAIN = "notify.izenzo.co.za"
 // even though actual sending uses the subdomain above.
 const FROM_DOMAIN = "izenzo.co.za"
 
+import { handleCorsPreflight, withCors } from '../_shared/cors.ts'
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
     'authorization, x-client-info, apikey, content-type',
 }
@@ -35,10 +36,9 @@ function generateToken(): string {
 // reaches this code. No in-function auth check is needed.
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
+  const wrap = (r: Response) => withCors(req, r);
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
