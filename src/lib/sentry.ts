@@ -11,7 +11,12 @@
 
 import * as Sentry from "@sentry/react";
 
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+// Sentry DSN is a publishable key (safe to commit, like the Supabase anon key).
+// Hardcoded so it works in production without requiring a workspace build secret;
+// can still be overridden per-environment via VITE_SENTRY_DSN if needed.
+const SENTRY_DSN =
+  import.meta.env.VITE_SENTRY_DSN ||
+  "https://797a43cb1ba3a179eae429dccbe99cca@o4511315484147712.ingest.de.sentry.io/4511315497320528";
 
 export function initSentry() {
   if (!SENTRY_DSN) {
