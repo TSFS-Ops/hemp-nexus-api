@@ -24,6 +24,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_shared/idempotency.ts";
+import { getUsdZarRate, usdToZarCents } from "../_shared/fx.ts";
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
