@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, supabaseKey);
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    const isAdmin = authCtx.roles.includes("platform_admin") || authCtx.roles.includes("admin");
+    const isAdmin = authCtx.roles.includes("platform_admin");
 
     const { data: match, error: matchError } = await admin
       .from("matches")
