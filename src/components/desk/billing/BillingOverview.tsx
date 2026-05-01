@@ -17,6 +17,8 @@ import {
 } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "./CheckoutErrorNotice";
 import { PaymentReferenceStatus } from "./PaymentReferenceStatus";
+import { BillingUnavailableNotice } from "./BillingUnavailableNotice";
+import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 
 interface LedgerEntry {
@@ -65,6 +67,7 @@ export function BillingOverview() {
   // surface the backend's reason inline beside the failing Purchase
   // button (with a Retry control), instead of just a transient toast.
   const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
+  const { availability: billingAvailability } = useBillingAvailability();
 
   // Stable refresh that re-reads the wallet + recent ledger so we can
   // call it both on mount and after a successful Paystack verify.
@@ -153,6 +156,9 @@ export function BillingOverview() {
 
   const handlePurchase = async (pack: { id: CreditPackageId }) => {
     if (purchasing) return;
+    // Defence-in-depth: even if the disabled button is bypassed, never
+    // call the token-purchase edge function while billing is unavailable.
+    if (!billingAvailability.enabled) return;
     setPurchasing(pack.id);
     // Clear any prior error for this pack on a fresh attempt so the
     // user sees the spinner state rather than the stale message.
@@ -236,6 +242,12 @@ export function BillingOverview() {
           </p>
         </div>
 
+        {!billingAvailability.enabled && (
+          <div className="mb-6">
+            <BillingUnavailableNotice message={billingAvailability.message} />
+          </div>
+        )}
+
         <div className="space-y-3">
           {PACKS.map((pack) => {
             const error = packErrors[pack.id];
@@ -281,18 +293,26 @@ export function BillingOverview() {
                     <button
                       type="button"
                       onClick={() => handlePurchase(pack)}
-                      disabled={purchasing !== null}
+                      disabled={purchasing !== null || !billingAvailability.enabled}
                       aria-describedby={error ? `pack-error-${pack.id}` : undefined}
+                      data-testid={`billing-overview-purchase-${pack.id}`}
                       className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{ backgroundColor: INK_GREEN }}
                       onMouseEnter={(e) => {
-                        if (purchasing === null) e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
+                        if (purchasing === null && billingAvailability.enabled)
+                          e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = INK_GREEN;
                       }}
                     >
-                      {isPending ? "Redirecting…" : error ? "Try again" : "Purchase"}
+                      {!billingAvailability.enabled
+                        ? "Unavailable"
+                        : isPending
+                          ? "Redirecting…"
+                          : error
+                            ? "Try again"
+                            : "Purchase"}
                     </button>
                   </div>
                 </div>

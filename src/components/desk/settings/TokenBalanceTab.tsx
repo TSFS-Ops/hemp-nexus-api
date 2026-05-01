@@ -8,6 +8,8 @@ import {
   type CreditPackageId,
 } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
+import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
+import { useBillingAvailability } from "@/hooks/use-billing-availability";
 
 interface LedgerEntry {
   id: string;
@@ -70,6 +72,7 @@ export function TokenBalanceTab() {
   // Per-pack initiation error — surfaced inline beside the failing
   // Purchase button (with Retry) instead of a transient toast.
   const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
+  const { availability: billingAvailability } = useBillingAvailability();
 
   const refresh = async () => {
     if (!user) return;
@@ -151,6 +154,7 @@ export function TokenBalanceTab() {
 
   const handlePurchase = async (pack: { id: CreditPackageId; name: string }) => {
     if (purchasing) return;
+    if (!billingAvailability.enabled) return;
     setPurchasing(pack.id);
     setPackErrors((prev) => {
       if (!prev[pack.id]) return prev;
@@ -199,6 +203,11 @@ export function TokenBalanceTab() {
         <h3 className="text-sm font-medium tracking-wider uppercase text-muted-foreground mb-6">
           Top Up
         </h3>
+        {!billingAvailability.enabled && (
+          <div className="mb-6">
+            <BillingUnavailableNotice message={billingAvailability.message} />
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {PACKS.map((pack) => {
             const error = packErrors[pack.id];
@@ -222,8 +231,9 @@ export function TokenBalanceTab() {
                 </p>
                 <button
                   onClick={() => handlePurchase(pack)}
-                  disabled={purchasing !== null}
+                  disabled={purchasing !== null || !billingAvailability.enabled}
                   aria-describedby={error ? `tbt-pack-error-${pack.id}` : undefined}
+                  data-testid={`token-balance-purchase-${pack.id}`}
                   className={[
                     "w-full py-3 rounded-md text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
                     pack.highlight
@@ -231,7 +241,13 @@ export function TokenBalanceTab() {
                       : "border border-border text-foreground hover:border-slate-900",
                   ].join(" ")}
                 >
-                  {isPending ? "Redirecting…" : error ? "Try again" : pack.cta}
+                  {!billingAvailability.enabled
+                    ? "Unavailable"
+                    : isPending
+                      ? "Redirecting…"
+                      : error
+                        ? "Try again"
+                        : pack.cta}
                 </button>
                 {error && (
                   <div id={`tbt-pack-error-${pack.id}`} className="mt-4">

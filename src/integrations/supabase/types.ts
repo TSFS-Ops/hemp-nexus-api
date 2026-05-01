@@ -7230,6 +7230,7 @@ export type Database = {
         Args: { event_data: Json; event_type: string; previous_hash: string }
         Returns: string
       }
+      get_billing_availability: { Args: never; Returns: Json }
       get_email_retention_health: { Args: never; Returns: Json }
       get_match_evidence: {
         Args: { p_match_id: string; p_org_id: string }
