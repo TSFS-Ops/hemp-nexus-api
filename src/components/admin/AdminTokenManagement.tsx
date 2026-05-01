@@ -78,10 +78,18 @@ export function AdminTokenManagement() {
   });
 
   /**
-   * CRITICAL FIX: Token top-up uses atomic SQL to prevent race conditions.
-   * Previous implementation did `balance + amount` client-side, which could
-   * lose concurrent burns (e.g., API call burns 50 tokens while admin adds 1000,
-   * the client overwrites with stale balance + 1000, losing the 50-token debit).
+   * Admin manual top-up.
+   *
+   * As of Stage C (2026-05-01), atomic_token_credit is service-role-only.
+   * The admin top-up flow now goes through the admin-credit-org edge function,
+   * which:
+   *   1. Verifies the caller is platform_admin (server-side, via has_role).
+   *   2. Caps credits at 10,000 per call.
+   *   3. Calls atomic_token_credit under service-role.
+   *   4. Writes admin_audit_logs for every attempt (success and failure).
+   *
+   * The client therefore no longer writes to token_ledger or admin_audit_logs
+   * directly — the edge function and atomic_token_credit own those writes.
    */
   const handleTopUp = async () => {
     if (!selectedOrg || !topUpAmount) return;
@@ -91,54 +99,32 @@ export function AdminTokenManagement() {
       toast.error("Please enter a valid positive amount");
       return;
     }
+    if (amount > 10_000) {
+      toast.error("Per-call cap is 10,000 credits. Split into multiple top-ups.");
+      return;
+    }
 
     try {
       setSubmitting(true);
 
-      // Atomic credit via dedicated RPC (no negative-burn hack)
-      const { data: creditResult, error: creditError } = await supabase
-        .rpc("atomic_token_credit", {
-          p_org_id: selectedOrg.org_id,
-          p_amount: amount,
-          p_reason: "admin_top_up",
-          p_reference_id: `admin-topup-${Date.now()}`,
-        });
-
-      if (creditError) throw creditError;
-      const result = creditResult as Record<string, unknown> | null;
-      if (result && !result.success) {
-        throw new Error((result.error as string) || "Credit operation failed");
-      }
-
-      // Create a ledger entry for the top-up
-      await supabase
-        .from("token_ledger")
-        .insert({
+      const { data, error } = await supabase.functions.invoke("admin-credit-org", {
+        body: {
           org_id: selectedOrg.org_id,
-          endpoint: "admin-top-up",
-          tokens_burned: -amount,
-          remaining_balance: selectedOrg.balance + amount, // approximate - ledger is the record of truth
-          outcome: "credit",
-          action_type: "administrative_adjustment",
-          metadata: {
-            type: "admin_top_up",
-            amount,
-          },
-        });
+          credits: amount,
+          reason: "admin_top_up",
+          reference_id: `admin-topup-${Date.now()}`,
+        },
+      });
 
-      // Create admin audit log
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await supabase.from("admin_audit_logs").insert({
-          admin_user_id: session.user.id,
-          action: "token_top_up",
-          target_type: "organisation",
-          target_id: selectedOrg.org_id,
-          details: { amount },
-        });
+      if (error) throw error;
+      const result = data as { success?: boolean; error?: string } | null;
+      if (!result?.success) {
+        throw new Error(result?.error || "Credit operation failed");
       }
 
-      toast.success(`Added ${amount.toLocaleString()} tokens to ${selectedOrg.organisation?.name || 'organisation'}`);
+      toast.success(
+        `Added ${amount.toLocaleString()} credits to ${selectedOrg.organisation?.name || 'organisation'}`,
+      );
       setIsDialogOpen(false);
       setTopUpAmount("");
       setSelectedOrg(null);
@@ -147,7 +133,9 @@ export function AdminTokenManagement() {
       queryClient.invalidateQueries({ queryKey: ["token-balance"] });
     } catch (error) {
       console.error("[AdminTokenManagement] top-up failed:", error);
-      toast.error("Failed to add credits");
+      const message =
+        error instanceof Error ? error.message : "Failed to add credits";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
