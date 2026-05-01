@@ -304,6 +304,16 @@ Deno.serve(async (req) => {
           error: errorMsg,
         })
 
+        // Stamp subject_length on every failure row too — if a future
+        // failure is caused by an over-length subject, the audit trail
+        // pinpoints it without replaying the send.
+        const failSubjectLen =
+          typeof payload.subject === 'string' ? payload.subject.length : null
+        const failSubjectMeta = {
+          subject_length: failSubjectLen,
+          subject_over_limit: failSubjectLen != null && failSubjectLen > 200,
+        }
+
         if (isRateLimited(error)) {
           await supabase.from('email_send_log').insert({
             message_id: payload.message_id,
@@ -311,6 +321,7 @@ Deno.serve(async (req) => {
             recipient_email: payload.to,
             status: 'rate_limited',
             error_message: errorMsg.slice(0, 1000),
+            metadata: failSubjectMeta,
           })
 
           const retryAfterSecs = getRetryAfterSeconds(error)
@@ -348,6 +359,7 @@ Deno.serve(async (req) => {
           recipient_email: payload.to,
           status: 'failed',
           error_message: errorMsg.slice(0, 1000),
+          metadata: failSubjectMeta,
         })
         if (payload?.message_id && typeof payload.message_id === 'string') {
           failedAttemptsByMessageId.set(payload.message_id, failedAttempts + 1)
