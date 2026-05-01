@@ -153,7 +153,7 @@ async function handleListUsers(supabaseAdmin: any) {
     };
   });
 
-  return jsonResponse({ users: enrichedUsers });
+  return wrap(jsonResponse({ users: enrichedUsers }));
 }
 
 // ── Lookup Profiles ───────────────────────────────────────────────────────
