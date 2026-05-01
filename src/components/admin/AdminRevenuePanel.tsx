@@ -80,7 +80,16 @@ interface PurchaseEnriched {
   org_id: string | null;
   org_name: string;
   credits: number;               // positive integer of credits granted
-  amount_zar: number;            // gross revenue in ZAR
+  amount_zar: number;            // gross revenue in ZAR (settlement currency)
+  // Dual-currency audit fields stamped at checkout-init and propagated
+  // through the verify + webhook settlement paths into the credits.purchased
+  // audit_log + token_ledger.metadata. Used by the "Order details" view for
+  // customer support investigations ("why was R{x} charged for $Y?").
+  price_usd: number | null;
+  fx_rate: number | null;
+  fx_basis: string | null;       // e.g. "live" | "cached"
+  fx_source: string | null;      // e.g. "exchangerate.host"
+  fx_fetched_at: string | null;
   package_id: string | null;
   payment_reference: string | null;
   created_at: string;
@@ -146,6 +155,13 @@ const ZAR = new Intl.NumberFormat("en-ZA", {
   maximumFractionDigits: 0,
 });
 
+const USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const NUM = new Intl.NumberFormat("en-ZA");
 
 function bucketKey(iso: string, granularity: "day" | "month"): string {
@@ -184,16 +200,24 @@ function purchaseFromAuditLog(
   orgNameById: Map<string, string>,
 ): PurchaseEnriched | null {
   const meta = row.metadata ?? {};
-  const amount_zar = num(meta.price_zar);
+  // Prefer the explicit ZAR settlement field; fall back to the legacy price_zar.
+  const amount_zar = num(meta.zar_amount_charged) || num(meta.price_zar);
   if (amount_zar <= 0) return null;
   const credits = num(meta.credits_added) || num(meta.credits);
   const orgId = row.org_id ?? row.entity_id ?? null;
+  const price_usd = typeof meta.price_usd === "number" ? meta.price_usd : null;
+  const fx_rate = typeof meta.fx_rate === "number" ? meta.fx_rate : null;
   return {
     id: `audit:${row.id}`,
     org_id: orgId,
     org_name: resolveOrgName(orgId, orgNameById),
     credits,
     amount_zar,
+    price_usd,
+    fx_rate,
+    fx_basis: str(meta.fx_basis),
+    fx_source: str(meta.fx_source),
+    fx_fetched_at: str(meta.fx_fetched_at),
     package_id: str(meta.package_id),
     payment_reference: str(meta.payment_reference) ?? str(meta.reference),
     created_at: row.created_at,
@@ -216,16 +240,23 @@ function purchaseFromLedger(
   orgNameById: Map<string, string>,
 ): PurchaseEnriched | null {
   const meta = row.metadata ?? {};
-  const amount_zar = num(meta.price_zar);
+  const amount_zar = num(meta.zar_amount_charged) || num(meta.price_zar);
   if (amount_zar <= 0) return null;
   const credits = num(meta.credits) || Math.abs(row.tokens_burned || 0);
   const isManual = (row.endpoint ?? "").includes("manual");
+  const price_usd = typeof meta.price_usd === "number" ? meta.price_usd : null;
+  const fx_rate = typeof meta.fx_rate === "number" ? meta.fx_rate : null;
   return {
     id: `ledger:${row.id}`,
     org_id: row.org_id,
     org_name: resolveOrgName(row.org_id, orgNameById),
     credits,
     amount_zar,
+    price_usd,
+    fx_rate,
+    fx_basis: str(meta.fx_basis),
+    fx_source: str(meta.fx_source),
+    fx_fetched_at: str(meta.fx_fetched_at),
     package_id: str(meta.package_id),
     payment_reference: str(meta.payment_reference),
     created_at: row.created_at,
@@ -461,7 +492,12 @@ export function AdminRevenuePanel() {
       "org_id",
       "org_name",
       "credits",
+      "price_usd",
       "amount_zar",
+      "fx_rate",
+      "fx_basis",
+      "fx_source",
+      "fx_fetched_at",
       "package_id",
       "payment_reference",
       "source",
@@ -476,7 +512,12 @@ export function AdminRevenuePanel() {
         r.org_id ?? "",
         `"${(r.org_name ?? "").replace(/"/g, '""')}"`,
         String(r.credits),
+        r.price_usd != null ? String(r.price_usd) : "",
         String(r.amount_zar),
+        r.fx_rate != null ? String(r.fx_rate) : "",
+        r.fx_basis ?? "",
+        r.fx_source ?? "",
+        r.fx_fetched_at ?? "",
         r.package_id ?? "",
         r.payment_reference ?? "",
         r.source,
@@ -720,7 +761,10 @@ export function AdminRevenuePanel() {
                     <TableHead>Source</TableHead>
                     <TableHead>Package</TableHead>
                     <TableHead className="text-right">Credits</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">USD</TableHead>
+                    <TableHead className="text-right">ZAR settled</TableHead>
+                    <TableHead className="text-right">FX (USD→ZAR)</TableHead>
+                    <TableHead>FX basis</TableHead>
                     <TableHead>Reference</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -748,7 +792,32 @@ export function AdminRevenuePanel() {
                         {NUM.format(r.credits)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
+                        {r.price_usd != null ? USD.format(r.price_usd) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
                         {r.amount_zar > 0 ? ZAR.format(r.amount_zar) : "—"}
+                      </TableCell>
+                      <TableCell
+                        className="text-right font-mono text-[11px]"
+                        title={
+                          r.fx_source || r.fx_fetched_at
+                            ? `Source: ${r.fx_source ?? "—"}${r.fx_fetched_at ? ` · fetched ${r.fx_fetched_at}` : ""}`
+                            : "No FX basis recorded for this charge"
+                        }
+                      >
+                        {r.fx_rate != null ? r.fx_rate.toFixed(4) : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {r.fx_basis ? (
+                          <Badge
+                            variant={r.fx_basis === "live" ? "secondary" : "outline"}
+                            className="font-mono text-[10px] w-fit"
+                          >
+                            {r.fx_basis}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="font-mono text-[11px] max-w-[180px] truncate">
                         {r.payment_reference ?? "—"}
