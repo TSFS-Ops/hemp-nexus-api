@@ -23,7 +23,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 const FUNCTIONS_DIR = path.join(ROOT, "supabase", "functions");
 const SSOT_FILE = path.join(FUNCTIONS_DIR, "_shared", "email-subject.ts");
