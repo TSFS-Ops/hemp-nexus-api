@@ -261,28 +261,15 @@ Deno.serve(async (req) => {
       const initiatorOrgName = (eng.initiator_org as any)?.name ?? null;
       const commodity = m?.commodity ?? null;
       const ref = String(engagementId).slice(0, 8);
-      // Subject must respect the 200-char server contract enforced below by Zod.
-      // `commodity` is free-text user input and can be arbitrarily long, so we
-      // truncate the commodity fragment safely while preserving the trailing
-      // `[ref]` trace marker (required for inbound reply correlation).
-      const SUBJECT_MAX = 200;
+      // Subject is built from `base` (+ optional commodity fragment) and is
+      // clamped through the shared `clampSubject` helper so the trailing
+      // `[ref]` trace marker (required for inbound reply correlation) is
+      // always preserved verbatim. This is the single source of truth for
+      // the platform's 200-char subject contract.
       const base = "Trade interest from a verified Izenzo counterparty";
       const tail = ` [${ref}]`;
-      let subject = `${base}${tail}`;
-      if (commodity) {
-        const sep = " — ";
-        const budget = SUBJECT_MAX - base.length - sep.length - tail.length;
-        if (budget > 1) {
-          const trimmedCommodity = String(commodity).trim().replace(/\s+/g, " ");
-          const commodityFragment =
-            trimmedCommodity.length > budget
-              ? trimmedCommodity.slice(0, Math.max(1, budget - 1)).trimEnd() + "…"
-              : trimmedCommodity;
-          subject = `${base}${sep}${commodityFragment}${tail}`;
-        }
-      }
-      // Defensive final clamp — never exceed the contract regardless of edge cases.
-      if (subject.length > SUBJECT_MAX) subject = subject.slice(0, SUBJECT_MAX - 1) + "…";
+      const middle = commodity ? ` — ${String(commodity).trim().replace(/\s+/g, " ")}` : "";
+      const subject = clampSubject(`${base}${middle}`, tail);
       const defaultMessage =
         `We understand from public records that your organisation may be active in this commodity ` +
         `and region. We would welcome a brief introductory conversation to share further context.`;
