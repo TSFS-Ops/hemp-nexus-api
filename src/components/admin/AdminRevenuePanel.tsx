@@ -193,32 +193,36 @@ function resolveOrgName(id: string | null, orgNameById: Map<string, string>): st
 
 /**
  * Convert a `credits.purchased` audit log row into a normalised purchase.
- * Only counts when `price_zar` is present and > 0 — defends against any
- * future audit-log rows written with zero price (promotional / test grants).
+ *
+ * USD-native (post-cutover 2026-05-01): prefer `metadata.price_usd`.
+ * Pre-cutover rows that only carry `price_zar` / `zar_amount_charged`
+ * are surfaced with `settlement_currency: "ZAR"` so historical totals
+ * remain reconcilable. We never invent a USD figure for legacy ZAR
+ * rows — `amount_usd` is left at 0 in that case to avoid double-counting
+ * against the new native-USD totals.
  */
 function purchaseFromAuditLog(
   row: AuditLogRow,
   orgNameById: Map<string, string>,
 ): PurchaseEnriched | null {
   const meta = row.metadata ?? {};
-  // Prefer the explicit ZAR settlement field; fall back to the legacy price_zar.
-  const amount_zar = num(meta.zar_amount_charged) || num(meta.price_zar);
-  if (amount_zar <= 0) return null;
+  const price_usd = num(meta.price_usd);
+  const legacy_zar = num(meta.zar_amount_charged) || num(meta.price_zar) || num(meta.legacy_price_zar);
+  if (price_usd <= 0 && legacy_zar <= 0) return null;
   const credits = num(meta.credits_added) || num(meta.credits);
   const orgId = row.org_id ?? row.entity_id ?? null;
-  const price_usd = typeof meta.price_usd === "number" ? meta.price_usd : null;
-  const fx_rate = typeof meta.fx_rate === "number" ? meta.fx_rate : null;
+  const isNativeUsd = price_usd > 0 && (
+    meta.currency === "USD" || meta.fx_basis === "native_usd" || legacy_zar === 0
+  );
   return {
     id: `audit:${row.id}`,
     org_id: orgId,
     org_name: resolveOrgName(orgId, orgNameById),
     credits,
-    amount_zar,
-    price_usd,
-    fx_rate,
-    fx_basis: str(meta.fx_basis),
-    fx_source: str(meta.fx_source),
-    fx_fetched_at: str(meta.fx_fetched_at),
+    amount_usd: isNativeUsd ? price_usd : 0,
+    settlement_currency: isNativeUsd ? "USD" : "ZAR",
+    legacy_amount_zar: legacy_zar > 0 ? legacy_zar : null,
+    legacy_fx_rate: typeof meta.fx_rate === "number" ? meta.fx_rate : (typeof meta.legacy_fx_rate === "number" ? meta.legacy_fx_rate : null),
     package_id: str(meta.package_id),
     payment_reference: str(meta.payment_reference) ?? str(meta.reference),
     created_at: row.created_at,
@@ -241,23 +245,23 @@ function purchaseFromLedger(
   orgNameById: Map<string, string>,
 ): PurchaseEnriched | null {
   const meta = row.metadata ?? {};
-  const amount_zar = num(meta.zar_amount_charged) || num(meta.price_zar);
-  if (amount_zar <= 0) return null;
+  const price_usd = num(meta.price_usd);
+  const legacy_zar = num(meta.zar_amount_charged) || num(meta.price_zar) || num(meta.legacy_price_zar);
+  if (price_usd <= 0 && legacy_zar <= 0) return null;
   const credits = num(meta.credits) || Math.abs(row.tokens_burned || 0);
   const isManual = (row.endpoint ?? "").includes("manual");
-  const price_usd = typeof meta.price_usd === "number" ? meta.price_usd : null;
-  const fx_rate = typeof meta.fx_rate === "number" ? meta.fx_rate : null;
+  const isNativeUsd = price_usd > 0 && (
+    meta.currency === "USD" || meta.fx_basis === "native_usd" || legacy_zar === 0
+  );
   return {
     id: `ledger:${row.id}`,
     org_id: row.org_id,
     org_name: resolveOrgName(row.org_id, orgNameById),
     credits,
-    amount_zar,
-    price_usd,
-    fx_rate,
-    fx_basis: str(meta.fx_basis),
-    fx_source: str(meta.fx_source),
-    fx_fetched_at: str(meta.fx_fetched_at),
+    amount_usd: isNativeUsd ? price_usd : 0,
+    settlement_currency: isNativeUsd ? "USD" : "ZAR",
+    legacy_amount_zar: legacy_zar > 0 ? legacy_zar : null,
+    legacy_fx_rate: typeof meta.fx_rate === "number" ? meta.fx_rate : (typeof meta.legacy_fx_rate === "number" ? meta.legacy_fx_rate : null),
     package_id: str(meta.package_id),
     payment_reference: str(meta.payment_reference),
     created_at: row.created_at,
