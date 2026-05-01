@@ -1,9 +1,9 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { handleCorsPreflight, withCors } from '../_shared/cors.ts'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, content-type',
 }
 
@@ -11,9 +11,9 @@ const corsHeaders = {
 // Gated by LOVABLE_API_KEY - only the Go API calls this.
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
+  const wrap = (r: Response) => withCors(req, r);
 
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
   if (!apiKey) {
