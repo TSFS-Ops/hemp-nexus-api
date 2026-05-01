@@ -7,12 +7,11 @@ import {
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { isActorLegalNameMissing } from "./legal-name-guard.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
+// with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
+const corsHeaders = { "Content-Type": "application/json" } as Record<string, string>;
 
 // ── Single source of truth: valid transitions ──
 const VALID_TRANSITIONS: Record<string, string[]> = {
