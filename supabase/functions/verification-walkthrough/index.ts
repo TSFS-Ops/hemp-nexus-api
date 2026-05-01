@@ -48,6 +48,7 @@ const NON_OPEN_STATUSES = [...NON_OPEN_STATES, "settled"];
 interface AuthCtx {
   userId: string;
   service: SupabaseClient;
+  req: Request;
 }
 
 async function authenticate(req: Request): Promise<AuthCtx | Response> {
