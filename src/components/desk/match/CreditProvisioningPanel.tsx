@@ -162,7 +162,8 @@ export function CreditProvisioningPanel({
               <div className="space-y-3">
                 {TIERS.map((tier) => {
                   const active = selected === tier.id;
-                  const perCredit = tier.priceZAR / tier.credits;
+                  const perCredit = tier.priceUsd / tier.credits;
+                  const zarEstimate = fxRate ? tier.priceUsd * fxRate : null;
                   return (
                     <button
                       key={tier.id}
@@ -187,13 +188,18 @@ export function CreditProvisioningPanel({
                           </div>
                           <p className="mt-1 font-mono text-[11px] text-muted-foreground">
                             {tier.credits} {tier.credits === 1 ? "Credit" : "Credits"} ·
-                            {" "}R{perCredit.toFixed(perCredit % 1 === 0 ? 0 : 2)} per Credit
+                            {" "}${perCredit.toFixed(perCredit % 1 === 0 ? 0 : 2)} per Credit
                           </p>
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-mono text-base text-foreground tabular-nums">
-                            R{tier.priceZAR.toLocaleString("en-ZA")}
+                            ${tier.priceUsd.toLocaleString("en-US")}
                           </p>
+                          {zarEstimate !== null && (
+                            <p className="mt-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
+                              ≈ R{zarEstimate.toLocaleString("en-ZA", { maximumFractionDigits: 0 })}
+                            </p>
+                          )}
                         </div>
                       </div>
                       {active && (
