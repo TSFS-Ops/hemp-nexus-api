@@ -67,7 +67,7 @@ const startCreditCheckoutSpy = vi.fn(async () => ({
 }));
 vi.mock("@/lib/credit-checkout", async () => {
   return {
-    startCreditCheckout: (...args: unknown[]) => startCreditCheckoutSpy(...args),
+    startCreditCheckout: (...args: unknown[]) => (startCreditCheckoutSpy as unknown as (...a: unknown[]) => unknown)(...args),
     verifyCreditCheckout: vi.fn(async () => ({ success: true })),
   };
 });
@@ -178,8 +178,7 @@ describe("Billing availability guard — billing enabled (reversibility)", () =>
       );
       expect(startCreditCheckoutSpy).toHaveBeenCalledWith("pack_50");
     } finally {
-      // @ts-expect-error — restore
-      window.location = originalLocation;
+      Object.defineProperty(window, "location", { value: originalLocation, writable: true });
     }
   });
 });
