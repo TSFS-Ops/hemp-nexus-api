@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TokenBalanceDisplay } from "@/components/TokenBalanceDisplay";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
+import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
+import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { cn } from "@/lib/utils";
 
 // ==============================================
@@ -85,6 +87,7 @@ function BillingContent() {
   const { session, isAdmin } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { availability: billingAvailability } = useBillingAvailability();
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
   const [paymentCancelled, setPaymentCancelled] = useState(false);
   const queryClient = useQueryClient();
@@ -286,6 +289,16 @@ function BillingContent() {
   const handlePurchase = async (packageId: string) => {
     if (!session) {
       toast.error("Please sign in to purchase credits.");
+      return;
+    }
+
+    // Defence-in-depth: never invoke the token-purchase edge function
+    // while billing is platform-disabled.
+    if (!billingAvailability.enabled) {
+      toast.error(
+        billingAvailability.message ||
+          "Credit purchases are temporarily unavailable."
+      );
       return;
     }
 
