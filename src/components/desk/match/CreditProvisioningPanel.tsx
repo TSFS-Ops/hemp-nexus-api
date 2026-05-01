@@ -148,7 +148,8 @@ export function CreditProvisioningPanel({
                 Your current balance is{" "}
                 <span className="font-mono text-foreground">{currentBalance} Credits</span>.
                 Generating a Proof of Intent requires{" "}
-                <span className="font-mono text-foreground">1 Credit (R10 ZAR)</span>.
+                <span className="font-mono text-foreground">1 Credit ($1.00 USD)</span>.
+                Charged in ZAR at checkout.
               </p>
             </header>
 
