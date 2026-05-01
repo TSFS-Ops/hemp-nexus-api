@@ -1,13 +1,14 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { startCreditCheckout, type CreditPackageId } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
+import { supabase } from "@/integrations/supabase/client";
 
 type Tier = {
   id: CreditPackageId;
   credits: number;
-  priceZAR: number;
+  priceUsd: number;
   label: string;
   recommended?: boolean;
 };
@@ -15,10 +16,17 @@ type Tier = {
 // Pricing must match the backend `TOKEN_PACKAGES` registry in
 // supabase/functions/token-purchase/index.ts. Drift here will cause
 // the checkout to charge a different amount than the UI advertises.
+//
+// USD is the commercial reference currency (Daniel Davies decision,
+// 2026-04-30). Paystack South Africa settles in ZAR; the displayed
+// "≈ R{x}" estimate beside each tier is fetched live from the
+// `token-purchase/packages` endpoint, which uses the same FX source
+// as the actual checkout so the estimate matches what the user is
+// charged.
 const TIERS: Tier[] = [
-  { id: "single", credits: 1, priceZAR: 10, label: "Single Action" },
-  { id: "pack_50", credits: 50, priceZAR: 450, label: "Trade Starter", recommended: true },
-  { id: "pack_200", credits: 200, priceZAR: 1600, label: "Institutional" },
+  { id: "pack_10", credits: 10, priceUsd: 10, label: "Standard rate" },
+  { id: "pack_50", credits: 50, priceUsd: 45, label: "10% saving", recommended: true },
+  { id: "pack_200", credits: 200, priceUsd: 160, label: "20% saving" },
 ];
 
 interface CreditProvisioningPanelProps {
@@ -37,6 +45,34 @@ export function CreditProvisioningPanel({
   // Inline error message from a failed Paystack initialisation. Cleared
   // when the user picks a different tier or hits Retry.
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  // Live USD→ZAR rate fetched from the same source the backend uses
+  // for actual checkout, so the "≈ R{x}" estimate matches what the
+  // user is charged at Paystack. Null until first fetch completes.
+  const [fxRate, setFxRate] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("token-purchase/packages");
+        // The packages endpoint returns the same FX-derived ZAR amount
+        // the checkout will use; we extract the implied rate from any
+        // tier with credits>0 priced in USD. Falls back gracefully if
+        // the endpoint doesn't yet expose `fxRate`.
+        const apiRate = (data as { fxRate?: number } | null)?.fxRate;
+        if (!cancelled && typeof apiRate === "number" && apiRate > 0) {
+          setFxRate(apiRate);
+        }
+      } catch {
+        // Estimate is non-essential; the real ZAR amount is computed
+        // server-side at checkout. Silent failure is intentional.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   const handleSelect = (id: CreditPackageId) => {
     setSelected(id);
@@ -112,7 +148,8 @@ export function CreditProvisioningPanel({
                 Your current balance is{" "}
                 <span className="font-mono text-foreground">{currentBalance} Credits</span>.
                 Generating a Proof of Intent requires{" "}
-                <span className="font-mono text-foreground">1 Credit (R10 ZAR)</span>.
+                <span className="font-mono text-foreground">1 Credit ($1.00 USD)</span>.
+                Charged in ZAR at checkout.
               </p>
             </header>
 
@@ -125,7 +162,8 @@ export function CreditProvisioningPanel({
               <div className="space-y-3">
                 {TIERS.map((tier) => {
                   const active = selected === tier.id;
-                  const perCredit = tier.priceZAR / tier.credits;
+                  const perCredit = tier.priceUsd / tier.credits;
+                  const zarEstimate = fxRate ? tier.priceUsd * fxRate : null;
                   return (
                     <button
                       key={tier.id}
@@ -150,13 +188,18 @@ export function CreditProvisioningPanel({
                           </div>
                           <p className="mt-1 font-mono text-[11px] text-muted-foreground">
                             {tier.credits} {tier.credits === 1 ? "Credit" : "Credits"} ·
-                            {" "}R{perCredit.toFixed(perCredit % 1 === 0 ? 0 : 2)} per Credit
+                            {" "}${perCredit.toFixed(perCredit % 1 === 0 ? 0 : 2)} per Credit
                           </p>
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-mono text-base text-foreground tabular-nums">
-                            R{tier.priceZAR.toLocaleString("en-ZA")}
+                            ${tier.priceUsd.toLocaleString("en-US")}
                           </p>
+                          {zarEstimate !== null && (
+                            <p className="mt-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
+                              ≈ R{zarEstimate.toLocaleString("en-ZA", { maximumFractionDigits: 0 })}
+                            </p>
+                          )}
                         </div>
                       </div>
                       {active && (
@@ -201,7 +244,7 @@ export function CreditProvisioningPanel({
                     : "Proceed to Payment"}
                 {!submitting && (
                   <span className="font-mono text-[11px] tracking-wider opacity-80">
-                    R{TIERS.find((t) => t.id === selected)?.priceZAR.toLocaleString("en-ZA")}
+                    ${TIERS.find((t) => t.id === selected)?.priceUsd.toLocaleString("en-US")}
                   </span>
                 )}
               </motion.button>

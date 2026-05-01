@@ -24,6 +24,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_shared/idempotency.ts";
+import { getUsdZarRate, usdToZarCents } from "../_shared/fx.ts";
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -65,46 +66,50 @@ const CHARGING_ENTITY = {
 };
 
 // ==============================================
-// TOKEN PACKAGES (ZAR pricing)
-// Pack pricing is the single source of truth — UIs read from
-// GET /token-purchase/packages so they cannot drift.
+// TOKEN PACKAGES — USD-denominated commercial pricing.
+//
+// Decision (Daniel Davies, 2026-04-30; James Davies confirmation
+// 2026-04-30): the platform displays prices in USD but Paystack South
+// Africa settles in ZAR. The USD price is the commercial reference
+// price; the ZAR amount actually charged is computed at checkout time
+// from the live USD→ZAR rate (see _shared/fx.ts) and persisted in the
+// audit trail alongside the FX basis.
+//
+// `single` ($1) is retained for in-app one-credit top-ups; `pack_10`,
+// `pack_50`, `pack_200` are the headline tiers that match Daniel's
+// pricing email.
 // ==============================================
 const TOKEN_PACKAGES: Record<string, {
   credits: number;
-  price_zar: number;
-  price_cents: number;
+  price_usd: number;
   label: string;
   pricePerCredit: string;
   saving?: string;
 }> = {
   single: {
     credits: 1,
-    price_zar: 10,
-    price_cents: 1000,
+    price_usd: 1,
     label: "Single Credit",
-    pricePerCredit: "10.00",
+    pricePerCredit: "1.00",
   },
   pack_10: {
     credits: 10,
-    price_zar: 100,
-    price_cents: 10000,
+    price_usd: 10,
     label: "10 Credits",
-    pricePerCredit: "10.00",
+    pricePerCredit: "1.00",
   },
   pack_50: {
     credits: 50,
-    price_zar: 450,
-    price_cents: 45000,
+    price_usd: 45,
     label: "50 Credits",
-    pricePerCredit: "9.00",
+    pricePerCredit: "0.90",
     saving: "10% saving",
   },
   pack_200: {
     credits: 200,
-    price_zar: 1600,
-    price_cents: 160000,
+    price_usd: 160,
     label: "200 Credits",
-    pricePerCredit: "8.00",
+    pricePerCredit: "0.80",
     saving: "20% saving",
   },
 };
@@ -490,7 +495,27 @@ Deno.serve(async (req) => {
     // Get client IP for audit
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
 
-    // Create Paystack transaction (ZAR currency)
+    // Convert the USD package price into ZAR cents at checkout time.
+    // Paystack South Africa settles in ZAR, so the displayed USD price
+    // and the ZAR amount actually charged must both be persisted in
+    // the audit trail (James Davies decision, 2026-04-30).
+    let fx;
+    try {
+      fx = await getUsdZarRate(supabase);
+    } catch (e) {
+      console.error("[token-purchase] FX rate unavailable", e);
+      return new Response(
+        JSON.stringify({
+          error: "Exchange rate temporarily unavailable. Please try again in a moment.",
+          code: "FX_UNAVAILABLE",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const zarCents = usdToZarCents(pkg.price_usd, fx.rate);
+    const zarAmount = zarCents / 100;
+
+    // Create Paystack transaction (ZAR currency — converted from USD)
     const callbackBase = callbackUrl?.replace(/\?.*$/, '') || `${req.headers.get("origin")}/billing`;
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -500,7 +525,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         email: profile.email || userData.user.email,
-        amount: pkg.price_cents, // Paystack uses cents
+        amount: zarCents,
         currency: "ZAR",
         callback_url: `${callbackBase}?status=success`,
         metadata: {
@@ -508,12 +533,26 @@ Deno.serve(async (req) => {
           user_id: userData.user.id,
           package_id: packageId,
           credits: pkg.credits,
-          price_zar: pkg.price_zar,
+          // Dual-currency audit fields — these flow through to the
+          // webhook + verify handlers and end up on every ledger and
+          // audit row tied to this payment reference.
+          price_usd: pkg.price_usd,
+          zar_amount_charged: zarAmount,
+          fx_rate: fx.rate,
+          fx_basis: fx.basis,
+          fx_fetched_at: fx.fetched_at,
+          fx_source: fx.source,
+          // Legacy field preserved so the existing webhook + revenue
+          // dashboard code keeps working until the HQ Revenue panel
+          // is updated to read price_usd directly.
+          price_zar: zarAmount,
           client_ip: clientIp,
           timestamp: new Date().toISOString(),
           custom_fields: [
             { display_name: "Package", variable_name: "package", value: pkg.label },
             { display_name: "Credits", variable_name: "credits", value: pkg.credits.toString() },
+            { display_name: "USD Price", variable_name: "usd_price", value: `$${pkg.price_usd.toFixed(2)}` },
+            { display_name: "FX (USD→ZAR)", variable_name: "fx_rate", value: fx.rate.toFixed(4) },
             { display_name: "Entity", variable_name: "entity", value: CHARGING_ENTITY.name },
           ],
         },
@@ -544,7 +583,14 @@ Deno.serve(async (req) => {
       metadata: {
         package_id: packageId,
         credits: pkg.credits,
-        amount_zar: pkg.price_zar,
+        price_usd: pkg.price_usd,
+        zar_amount_charged: zarAmount,
+        fx_rate: fx.rate,
+        fx_basis: fx.basis,
+        fx_fetched_at: fx.fetched_at,
+        fx_source: fx.source,
+        // legacy field, retained for HQ Revenue dashboard
+        amount_zar: zarAmount,
         reference: paystackData.data.reference,
         client_ip: clientIp,
       },
@@ -557,7 +603,13 @@ Deno.serve(async (req) => {
         package: {
           name: pkg.label,
           credits: pkg.credits,
-          priceZar: pkg.price_zar,
+          priceUsd: pkg.price_usd,
+          // Reflects the ZAR amount that will actually be charged at
+          // the current rate. Useful for the UI's "you will be
+          // charged R{x}" disclosure beside the Pay button.
+          zarAmountCharged: zarAmount,
+          fxRate: fx.rate,
+          fxBasis: fx.basis,
         },
         entity: CHARGING_ENTITY,
       };
@@ -598,15 +650,18 @@ function handleGetPackages(): Response {
     id,
     name: pkg.label,
     credits: pkg.credits,
-    priceZar: pkg.price_zar,
+    priceUsd: pkg.price_usd,
     pricePerCredit: pkg.pricePerCredit,
     saving: pkg.saving ?? null,
   }));
 
   return new Response(
-    JSON.stringify({ 
+    JSON.stringify({
       packages,
-      currency: "ZAR",
+      // Display currency is USD; Paystack settles in ZAR — see
+      // _shared/fx.ts for the conversion path.
+      currency: "USD",
+      settlementCurrency: "ZAR",
       entity: CHARGING_ENTITY,
       refundPolicy: REFUND_POLICY,
     }),
