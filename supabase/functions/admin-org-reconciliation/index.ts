@@ -58,7 +58,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
-function jsonResponse(req, req: Request, body: unknown, status = 200) {
+function jsonResponse(req: Request, body: unknown, status = 200) {
   return withCors(req, new Response(JSON.stringify(body, null, 2), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
   if (__pf) return __pf;
 
   if (req.method !== "GET") {
-    return jsonResponse(req, req, { error: "Method not allowed" }, 405);
+    return jsonResponse(req, { error: "Method not allowed" }, 405);
   }
 
   try {
