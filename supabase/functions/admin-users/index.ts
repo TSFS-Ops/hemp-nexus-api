@@ -39,26 +39,26 @@ Deno.serve(async (req) => {
     // ── Auth ─────────────────────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorisation');
     if (!authHeader) {
-      return jsonResponse({ error: 'Unauthorised' }, 401);
+      return jsonResponse(req, { error: 'Unauthorised' }, 401);
     }
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !caller) {
-      return jsonResponse({ error: 'Invalid token' }, 401);
+      return jsonResponse(req, { error: 'Invalid token' }, 401);
     }
 
     const { data: isAdmin } = await supabaseAdmin.rpc('is_admin', { user_id: caller.id });
     if (!isAdmin) {
-      return jsonResponse({ error: 'Admin access required' }, 403);
+      return jsonResponse(req, { error: 'Admin access required' }, 403);
     }
 
     // ── Route by method ──────────────────────────────────────────────────
 
     // POST: lookup_profiles action OR default list
     if (req.method === 'POST') {
-      try { assertIdempotencyKey(req); } catch (e: any) { return jsonResponse({ error: e.message, code: e.code }, e.statusCode || 400); }
+      try { assertIdempotencyKey(req); } catch (e: any) { return jsonResponse(req, { error: e.message, code: e.code }, e.statusCode || 400); }
       let body: Record<string, unknown> = {};
       const contentType = req.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
@@ -68,28 +68,28 @@ Deno.serve(async (req) => {
             body = JSON.parse(text);
           }
         } catch {
-          return jsonResponse({ error: 'Invalid request body' }, 400);
+          return jsonResponse(req, { error: 'Invalid request body' }, 400);
         }
       }
 
       if (body.action === 'lookup_profiles') {
-        return await handleLookupProfiles(supabaseAdmin, caller.id, body);
+        return await handleLookupProfiles(req, supabaseAdmin, caller.id, body);
       }
       // fallthrough: treat as list users (backward compat)
     }
 
     // GET (or POST without action): list all users
-    return await handleListUsers(supabaseAdmin);
+    return await handleListUsers(req, supabaseAdmin);
   } catch (error) {
     // Log full error server-side for debugging, but never leak details to caller
     console.error('Error:', error);
-    return jsonResponse({ error: 'Internal server error' }, 500);
+    return jsonResponse(req, { error: 'Internal server error' }, 500);
   }
 });
 
 // ── List Users ────────────────────────────────────────────────────────────
 
-async function handleListUsers(supabaseAdmin: any) {
+async function handleListUsers(req: Request, supabaseAdmin: any) {
   // GoTrue paginated fetch - loop until we get a partial page
   const allUsers: any[] = [];
   const perPage = 1000;
@@ -152,12 +152,13 @@ async function handleListUsers(supabaseAdmin: any) {
     };
   });
 
-  return wrap(jsonResponse({ users: enrichedUsers }));
+  return jsonResponse(req, { users: enrichedUsers });
 }
 
 // ── Lookup Profiles ───────────────────────────────────────────────────────
 
 async function handleLookupProfiles(
+  req: Request,
   supabaseAdmin: any,
   adminUserId: string,
   body: Record<string, unknown>,
@@ -165,16 +166,16 @@ async function handleLookupProfiles(
   const userIds = body.user_ids;
 
   if (!Array.isArray(userIds) || userIds.length === 0) {
-    return jsonResponse({ error: 'user_ids must be a non-empty array' }, 400);
+    return jsonResponse(req, { error: 'user_ids must be a non-empty array' }, 400);
   }
   if (userIds.length > 100) {
-    return jsonResponse({ error: 'Maximum 100 user_ids per request' }, 400);
+    return jsonResponse(req, { error: 'Maximum 100 user_ids per request' }, 400);
   }
 
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const invalidIds = userIds.filter((id: string) => !uuidRegex.test(id));
   if (invalidIds.length > 0) {
-    return jsonResponse({ error: 'Invalid UUID format in user_ids' }, 400);
+    return jsonResponse(req, { error: 'Invalid UUID format in user_ids' }, 400);
   }
 
   const { data: profiles, error: profilesError } = await supabaseAdmin
@@ -184,7 +185,7 @@ async function handleLookupProfiles(
 
   if (profilesError) {
     console.error('Error fetching profiles:', profilesError);
-    return jsonResponse({ error: 'Failed to fetch profiles' }, 500);
+    return jsonResponse(req, { error: 'Failed to fetch profiles' }, 500);
   }
 
   const orgIds = [...new Set(profiles?.map((p: any) => p.org_id) ?? [])];
@@ -211,5 +212,5 @@ async function handleLookupProfiles(
     details: { user_ids_count: userIds.length },
   });
 
-  return jsonResponse({ profiles: results });
+  return jsonResponse(req, { profiles: results });
 }
