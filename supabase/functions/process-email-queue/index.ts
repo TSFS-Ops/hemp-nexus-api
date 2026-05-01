@@ -270,12 +270,19 @@ Deno.serve(async (req) => {
           { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
         )
 
-        // Log success
+        // Log success. Persist subject_length so the 200-char platform
+        // contract is forensically auditable from email_send_log alone.
+        const subjectLen =
+          typeof payload.subject === 'string' ? payload.subject.length : null
         await supabase.from('email_send_log').insert({
           message_id: payload.message_id,
           template_name: payload.label || queue,
           recipient_email: payload.to,
           status: 'sent',
+          metadata: {
+            subject_length: subjectLen,
+            subject_over_limit: subjectLen != null && subjectLen > 200,
+          },
         })
 
         // Delete from queue
