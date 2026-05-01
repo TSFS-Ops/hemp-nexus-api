@@ -20,8 +20,8 @@
  *   - Raise the per-call cap without product approval.
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { z } from 'https://esm.sh/zod@3.23.8';
+import { createClient } from 'npm:@supabase/supabase-js@2.39.3';
+import { z } from 'npm:zod@3.23.8';
 import { handleCorsPreflight, withCors } from '../_shared/cors.ts';
 
 const corsHeaders = {
