@@ -12,6 +12,7 @@ import {
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { clampSubject } from "../_shared/email-subject.ts";
 
 const EngagementStatusSchema = z.enum([
   "pending",
