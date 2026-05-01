@@ -23,16 +23,13 @@ import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { cn } from "@/lib/utils";
 
 // ==============================================
-// CREDIT PACKAGES — USD display, ZAR settlement
+// CREDIT PACKAGES — USD-native settlement (cutover 2026-05-01)
 // ==============================================
-// Pricing is the commercial source of truth in USD ($1 / credit) per
-// Daniel Davies' 2026-04-30 decision. Paystack South Africa settles
-// in ZAR; the live USD→ZAR rate used here comes from the same
-// `token-purchase/packages` endpoint the backend uses to charge the
-// customer, so the displayed "≈ R{x}" estimate matches what hits the
-// card. Drift between this list and `TOKEN_PACKAGES` in
-// `supabase/functions/token-purchase/index.ts` will cause the
-// checkout to charge a different amount than the UI advertises.
+// Paystack charges Izenzo customers directly in USD. There is no FX
+// conversion at checkout. 1 credit = $1.00 USD. Drift between this
+// list and `TOKEN_PACKAGES` in
+// `supabase/functions/token-purchase/index.ts` will charge the wrong
+// amount.
 const CREDIT_PACKAGES = [
   {
     id: 'single',
@@ -90,46 +87,11 @@ function BillingContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
   const [paymentCancelled, setPaymentCancelled] = useState(false);
-  // Live USD→ZAR rate from `token-purchase/packages` — same source the
-  // backend uses to charge the customer, so the displayed "≈ R{x}"
-  // estimate matches what hits the card. Null until first fetch.
-  const [fxRate, setFxRate] = useState<number | null>(null);
-  // FX provenance — surfaced beside the ≈ ZAR estimate so users can
-  // see whether the rate was just fetched from the live FX API or
-  // served from the cached fallback in admin_settings.
-  const [fxBasis, setFxBasis] = useState<string | null>(null);
-  const [fxFetchedAt, setFxFetchedAt] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
-  // Fetch live FX rate so the ZAR estimate beside each USD price is
-  // accurate. Non-essential — silent failure is intentional; the real
-  // ZAR amount is computed server-side at checkout.
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase.functions.invoke("token-purchase/packages");
-        const payload = data as {
-          fxRate?: number;
-          fxBasis?: string | null;
-          fxFetchedAt?: string | null;
-        } | null;
-        const apiRate = payload?.fxRate;
-        if (!cancelled && typeof apiRate === "number" && apiRate > 0) {
-          setFxRate(apiRate);
-          setFxBasis(payload?.fxBasis ?? null);
-          setFxFetchedAt(payload?.fxFetchedAt ?? null);
-        }
-      } catch {
-        /* non-essential */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
+  // (USD-native cutover 2026-05-01) — FX rate fetch removed. Paystack
+  // charges the customer in USD directly; no ZAR estimate to display.
 
   // Auto-verify payment when returning from Paystack checkout
   useEffect(() => {
