@@ -8,7 +8,7 @@ const phases = [{
   steps: ["Create buyer and seller organisations", "Register entities, UBO ownership, and ATB records", "Upload KYC documents", "Run sanctions/PEP screening", "Compute risk scores", "Complete approval workflow", "Issue Approved-to-Trade certification"]
 }, {
   title: "Phase 2 - Discovery & Matching (~1.5 min)",
-  steps: ["Create buyer and seller signals", "Run match discovery", "Send invite", "Send trade request (1 credit burn at R10/credit)"]
+  steps: ["Create buyer and seller signals", "Run match discovery", "Send invite", "Send trade request (1 credit burn at $1.00 USD/credit)"]
 }, {
   title: "Phase 3 - Intent Lifecycle & Collapse (~2 min)",
   steps: ["Run pre-flight checks", "Compute intent completion probability (must be ≥ 50.1%)", "Execute signed intent collapse"]

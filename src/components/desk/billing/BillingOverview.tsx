@@ -36,9 +36,15 @@ const PACKS: Array<{
   unit: string;
   saving?: string;
 }> = [
-  { id: "pack_10", credits: 10, price: "R100", unit: "R10.00 / credit" },
-  { id: "pack_50", credits: 50, price: "R450", unit: "R9.00 / credit", saving: "10% saving" },
-  { id: "pack_200", credits: 200, price: "R1,600", unit: "R8.00 / credit", saving: "20% saving" },
+  // Pricing is set in USD ($1 / credit) per Daniel Davies' 2026-04-30
+  // decision; Paystack South Africa settles in ZAR via a live FX
+  // conversion at checkout (see supabase/functions/_shared/fx.ts).
+  // Display only USD here — drift between this list and the backend
+  // `TOKEN_PACKAGES` registry will charge the wrong amount.
+  { id: "single", credits: 1, price: "$1", unit: "$1.00 / credit" },
+  { id: "pack_10", credits: 10, price: "$10", unit: "$1.00 / credit" },
+  { id: "pack_50", credits: 50, price: "$45", unit: "$0.90 / credit", saving: "10% saving" },
+  { id: "pack_200", credits: 200, price: "$160", unit: "$0.80 / credit", saving: "20% saving" },
 ];
 
 // Dark institutional green, matches the "Sealed" tone used in compliance.
@@ -176,7 +182,11 @@ export function BillingOverview() {
   };
 
   const displayBalance = balance ?? 0;
-  const zarValue = (displayBalance * 10).toLocaleString("en-ZA", {
+  // 1 credit = $1 USD (canonical commercial reference). The settled
+  // ZAR amount is computed at Paystack checkout time using the live
+  // FX rate — we don't display a stale ZAR equivalent here because
+  // it would drift from what users were actually charged.
+  const usdValue = displayBalance.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -205,9 +215,9 @@ export function BillingOverview() {
           <span className="text-2xl text-muted-foreground/70 font-light">Credits</span>
         </div>
         <p className="mt-6 font-mono text-sm text-muted-foreground max-w-2xl">
-          R{zarValue} ZAR equivalent.
+          ${usdValue} USD equivalent.
           <span className="text-muted-foreground">
-            {" "}Credits are consumed atomically upon POI generation.
+            {" "}Credits are consumed atomically upon POI generation. 1 credit = $1.00 USD, charged in ZAR at checkout.
           </span>
         </p>
       </section>
@@ -226,7 +236,7 @@ export function BillingOverview() {
             Provisioning
           </h2>
           <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70">
-            ZAR · VAT Inclusive
+            USD · Settled in ZAR
           </p>
         </div>
 

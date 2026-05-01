@@ -235,8 +235,8 @@ export default function TradeDealWizard() {
                     </Button>
                     <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
                       Generating this Proof of Intent will atomically consume 1 Credit
-                      (R10 ZAR) and generate a tamper-proof hash of this payload.
-                      This action cannot be undone.
+                      ($1.00 USD, charged in ZAR at checkout) and generate a
+                      tamper-proof hash of this payload. This action cannot be undone.
                     </p>
                   </div>
                 </div>

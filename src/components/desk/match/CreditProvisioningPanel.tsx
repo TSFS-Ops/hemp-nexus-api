@@ -24,9 +24,9 @@ type Tier = {
 // as the actual checkout so the estimate matches what the user is
 // charged.
 const TIERS: Tier[] = [
-  { id: "pack_10", credits: 10, priceUsd: 10, label: "Standard rate" },
-  { id: "pack_50", credits: 50, priceUsd: 45, label: "10% saving", recommended: true },
-  { id: "pack_200", credits: 200, priceUsd: 160, label: "20% saving" },
+  { id: "pack_10", credits: 10, priceUsd: 10, label: "10 credits · $1.00 / credit" },
+  { id: "pack_50", credits: 50, priceUsd: 45, label: "50 credits · $0.90 / credit · 10% saving", recommended: true },
+  { id: "pack_200", credits: 200, priceUsd: 160, label: "200 credits · $0.80 / credit · 20% saving" },
 ];
 
 interface CreditProvisioningPanelProps {
@@ -266,7 +266,7 @@ export function CreditProvisioningPanel({
                 </span>
               </div>
               <p className="mt-4 text-center text-[11px] text-muted-foreground leading-relaxed">
-                ZAR funds are held in escrow and applied to your Token balance on confirmation.
+                ZAR funds are held in escrow and applied to your Credit balance on confirmation. 1 credit = $1.00 USD.
               </p>
             </footer>
           </motion.aside>

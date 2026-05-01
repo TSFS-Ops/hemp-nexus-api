@@ -3,7 +3,7 @@
  *
  * Displays a horizontal stepper (Discovery → POI Generated → Completed)
  * with the next action button that triggers the appropriate backend endpoint.
- * POI generation costs 1 credit (R10). Completion is free.
+ * POI generation costs 1 credit ($1.00 USD, charged in ZAR). Completion is free.
  */
 
 import { useMemo, useState } from "react";
@@ -549,7 +549,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Insufficient credits</p>
                   <p className="text-xs text-muted-foreground">
-                    You need {CREDITS_PER_ACTION} credit (R10 ZAR) to proceed. Balance: {currentBalance}.
+                    You need {CREDITS_PER_ACTION} credit ($1.00 USD) to proceed. Balance: {currentBalance}.
                   </p>
                   <a href="/billing" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
                     <Coins className="h-3 w-3" />
@@ -748,7 +748,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <div className="rounded-md border border-border p-3 space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Cost</span>
-                      <span className="font-medium text-foreground">{CREDITS_PER_ACTION} credit (R10 ZAR)</span>
+                      <span className="font-medium text-foreground">{CREDITS_PER_ACTION} credit ($1.00 USD)</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Your balance</span>
@@ -835,7 +835,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             ) : (
               <>
                 <Coins className="h-4 w-4 mr-2" />
-                Confirm - R10 ZAR
+                Confirm - $1.00
               </>
             )}
           </AlertDialogAction>

@@ -30,7 +30,7 @@ const GROUPS: { name: string; endpoints: Endpoint[] }[] = [
     endpoints: [
       {
         method: "POST", path: "/v1/poi.generate",
-        summary: "Generate a Proof of Intent (R10 ZNZO burn)",
+        summary: "Generate a Proof of Intent (1 credit / $1.00 USD burn)",
         request: `{\n  "match_id": "mch_77f4a219",\n  "side": "buy"\n}`,
         response: `{\n  "poi_id": "poi_3a21bc",\n  "state": "issued",\n  "burn_tx": "0xabc…123",\n  "issued_at": "2026-04-17T12:45:48Z"\n}`,
       },
