@@ -3,7 +3,7 @@
  *
  * Displays a horizontal stepper (Discovery → POI Generated → Completed)
  * with the next action button that triggers the appropriate backend endpoint.
- * POI generation costs 1 credit ($1.00 USD, charged in ZAR). Completion is free.
+ * POI generation costs 1 credit ($1.00 USD). Completion is free.
  */
 
 import { useMemo, useState } from "react";
