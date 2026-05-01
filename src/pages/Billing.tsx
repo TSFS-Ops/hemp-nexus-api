@@ -89,8 +89,34 @@ function BillingContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
   const [paymentCancelled, setPaymentCancelled] = useState(false);
+  // Live USD→ZAR rate from `token-purchase/packages` — same source the
+  // backend uses to charge the customer, so the displayed "≈ R{x}"
+  // estimate matches what hits the card. Null until first fetch.
+  const [fxRate, setFxRate] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
+
+  // Fetch live FX rate so the ZAR estimate beside each USD price is
+  // accurate. Non-essential — silent failure is intentional; the real
+  // ZAR amount is computed server-side at checkout.
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("token-purchase/packages");
+        const apiRate = (data as { fxRate?: number } | null)?.fxRate;
+        if (!cancelled && typeof apiRate === "number" && apiRate > 0) {
+          setFxRate(apiRate);
+        }
+      } catch {
+        /* non-essential */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   // Auto-verify payment when returning from Paystack checkout
   useEffect(() => {
