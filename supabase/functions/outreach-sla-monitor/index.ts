@@ -14,12 +14,11 @@
 // and updates `sla_reminder_sent_at`.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { webhookCorsHeaders } from "../_shared/cors.ts";
 
+// Cron-triggered server-to-server SLA monitor. Emit only Vary: Origin.
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  ...webhookCorsHeaders(),
 };
 
 const DEFAULT_THRESHOLD_HOURS = 48;
