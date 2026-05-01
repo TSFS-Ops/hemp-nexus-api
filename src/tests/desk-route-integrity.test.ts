@@ -258,10 +258,16 @@ describe("Desk route integrity", () => {
     );
     expect(alertIdx).toBeGreaterThan(-1);
 
-    // Search forward from the heading for the next `to="..."` literal.
+    // Search forward from the heading for the next link target. The
+    // alert can use either a string-literal href (`to="/desk/..."`) or
+    // the `routeTo("/desk/...", { query: ... })` helper, so we accept
+    // both forms — the contract being pinned is the resolved Desk path,
+    // not the call-site syntax.
     const tail = card.slice(alertIdx, alertIdx + 1500);
-    const linkMatch = tail.match(/\bto=["']([^"']+)["']/);
-    expect(linkMatch, "no <Link to=...> found near the legitimacy alert").not.toBeNull();
+    const literalMatch = tail.match(/\bto=["']([^"']+)["']/);
+    const routeToMatch = tail.match(/routeTo\(\s*["']([^"']+)["']/);
+    const linkMatch = literalMatch ?? routeToMatch;
+    expect(linkMatch, "no <Link to=...> or routeTo(...) found near the legitimacy alert").not.toBeNull();
 
     const target = linkMatch![1];
     const normalised = normalisePath(target);
