@@ -613,7 +613,7 @@ export function AdminRevenuePanel() {
             <Stat
               icon={TrendingUp}
               label="Revenue"
-              value={ZAR.format(totals.revenue)}
+              value={USD.format(totals.revenue)}
               hint={`${totals.paid} paid · ${totals.manual} manual${totals.backfilled > 0 ? ` · ${totals.backfilled} backfilled` : ""}`}
               tone="success"
             />
@@ -691,7 +691,7 @@ export function AdminRevenuePanel() {
                       </TableCell>
                       <TableCell className="font-medium">{b.org_name}</TableCell>
                       <TableCell className="text-right font-mono">
-                        {ZAR.format(b.revenue)}
+                        {USD.format(b.revenue)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {NUM.format(b.credits)}
