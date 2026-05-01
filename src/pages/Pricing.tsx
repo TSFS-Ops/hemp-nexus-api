@@ -263,9 +263,9 @@ export default function Pricing() {
 
           {/* Footnote */}
           <p className="mt-10 text-center text-xs text-muted-foreground">
-            All prices in ZAR. Pay-as-you-go billed per successful Proof of
-            Intent. Institutional contracts include volume commitments and
-            dedicated SLAs.
+            Prices in USD; charged in ZAR at checkout via Paystack at the live
+            exchange rate. Pay-as-you-go billed per successful Proof of Intent.
+            Institutional contracts include volume commitments and dedicated SLAs.
           </p>
         </div>
       </section>
