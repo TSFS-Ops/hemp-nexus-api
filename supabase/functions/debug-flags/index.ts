@@ -8,15 +8,15 @@
  *
  * Access control:
  *   - Requires a valid JWT.
- *   - Caller must hold either `platform_admin` or `admin` role
- *     (checked via the `has_role` SECURITY DEFINER RPC).
+ *   - Caller must hold the `platform_admin` role (RBAC Stage 1/2:
+ *     legacy `admin` is deprecated and no longer accepted here).
  *   - Anything else → 403 FORBIDDEN.
  *
  * Response shape (stable; safe to share in tickets):
  *   {
  *     requestId,
  *     timestamp,
- *     caller: { userId, email, roles, isPlatformAdmin, isAdmin },
+ *     caller: { userId, email, roles, isPlatformAdmin },
  *     maintenance: { enabled, raw },
  *     testMode: {
  *       masterEnabled,
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     const callerId = authCtx.userId;
     const callerEmail = (authCtx as { email?: string }).email ?? null;
 
-    // ── AuthZ: must be platform_admin or admin ────────────────────────────
+    // ── AuthZ: must be platform_admin (RBAC Stage 1/2 — legacy admin removed)
     const { data: roleRows, error: rolesErr } = await adminClient
       .from("user_roles")
       .select("role")
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       });
       throw new ApiException(
         "FORBIDDEN",
-        "debug-flags requires platform_admin or admin role",
+        "debug-flags requires the platform_admin role",
         403,
       );
     }
@@ -157,7 +157,6 @@ Deno.serve(async (req) => {
         email: callerEmail,
         roles,
         isPlatformAdmin,
-        isAdmin,
       },
       maintenance: {
         enabled: generalRaw.maintenanceMode === true,
