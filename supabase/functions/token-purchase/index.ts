@@ -122,10 +122,19 @@ const REFUND_POLICY = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  // Stage 2A: shared CORS preflight handler (production-origin allow-list,
+  // Lovable preview hosts, 403 on disallowed origins).
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+
+  const _url0 = new URL(req.url);
+  const _path0 = _url0.pathname.split("/").pop();
+  const _isWebhook0 = _path0 === "webhook";
+  const _wrap = (resp: Response): Response => (_isWebhook0 ? resp : withCors(req, resp));
+  return _wrap(await _serve(req));
+});
+
+async function _serve(req: Request): Promise<Response> {
 
   const url = new URL(req.url);
   const path = url.pathname.split("/").pop();
