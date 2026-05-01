@@ -267,7 +267,7 @@ async function _serve(req: Request): Promise<Response> {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}
 
 function escapeHtml(str: string): string {
   return str
