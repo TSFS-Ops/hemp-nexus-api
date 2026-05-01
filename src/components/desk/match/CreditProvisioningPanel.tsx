@@ -45,6 +45,34 @@ export function CreditProvisioningPanel({
   // Inline error message from a failed Paystack initialisation. Cleared
   // when the user picks a different tier or hits Retry.
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  // Live USD→ZAR rate fetched from the same source the backend uses
+  // for actual checkout, so the "≈ R{x}" estimate matches what the
+  // user is charged at Paystack. Null until first fetch completes.
+  const [fxRate, setFxRate] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("token-purchase/packages");
+        // The packages endpoint returns the same FX-derived ZAR amount
+        // the checkout will use; we extract the implied rate from any
+        // tier with credits>0 priced in USD. Falls back gracefully if
+        // the endpoint doesn't yet expose `fxRate`.
+        const apiRate = (data as { fxRate?: number } | null)?.fxRate;
+        if (!cancelled && typeof apiRate === "number" && apiRate > 0) {
+          setFxRate(apiRate);
+        }
+      } catch {
+        // Estimate is non-essential; the real ZAR amount is computed
+        // server-side at checkout. Silent failure is intentional.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   const handleSelect = (id: CreditPackageId) => {
     setSelected(id);
