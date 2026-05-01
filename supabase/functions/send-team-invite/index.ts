@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: "izenzo <noreply@izenzo.co.za>",
         to: [email],
-        subject: `${inviterDisplay} invited you to join ${org_name} on izenzo`,
+        subject: clampSubject(`${inviterDisplay} invited you to join ${org_name} on izenzo`),
         html: htmlContent,
       }),
     });
