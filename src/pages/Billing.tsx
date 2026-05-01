@@ -466,9 +466,14 @@ function BillingContent() {
 
         {/* Credit Packages */}
         <div>
-          <h2 className="text-lg font-semibold mb-4">Purchase Credits</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            {CREDIT_PACKAGES.map((pkg) => (
+          <h2 className="text-lg font-semibold mb-1">Purchase Credits</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Prices in USD. Charged in ZAR at checkout via Paystack at the live exchange rate.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {CREDIT_PACKAGES.map((pkg) => {
+              const zarEstimate = fxRate ? pkg.priceUsd * fxRate : null;
+              return (
               <Card 
                 key={pkg.id}
                 className={cn(
@@ -486,48 +491,26 @@ function BillingContent() {
                   <CardDescription>{pkg.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold">R{pkg.priceZar.toLocaleString()}</span>
-                    <span className="text-muted-foreground"> ZAR</span>
+                  <div className="mb-1">
+                    <span className="text-4xl font-bold">${pkg.priceUsd.toLocaleString("en-US")}</span>
+                    <span className="text-muted-foreground"> USD</span>
                   </div>
+                  {zarEstimate !== null && (
+                    <p className="mb-4 text-xs text-muted-foreground tabular-nums">
+                      ≈ R{zarEstimate.toLocaleString("en-ZA", { maximumFractionDigits: 0 })} ZAR at checkout
+                    </p>
+                  )}
+                  {zarEstimate === null && <div className="mb-4 h-4" />}
                   <div className="space-y-2 text-sm text-muted-foreground mb-6">
                     <div className="flex items-center justify-center gap-2">
                       <Coins className="h-4 w-4 text-primary" />
-                      <span>{pkg.credits} credits</span>
+                      <span>{pkg.credits} {pkg.credits === 1 ? 'credit' : 'credits'}</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <Check className="h-4 w-4 text-green-500" />
-                      <span>R{pkg.pricePerCredit} per credit</span>
+                      <span>${pkg.pricePerCredit} per credit</span>
                     </div>
                   </div>
-                  <Button 
-                    className="w-full" 
-                    variant={pkg.popular ? "default" : "outline"}
-                    onClick={() => handlePurchase(pkg.id)}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing && selectedPackage === pkg.id ? (
-                      <>
-                        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Redirecting to payment…
-                      </>
-                    ) : isProcessing ? (
-                      <>
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Buy Now
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Buy Now
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
 
         {/* Payment troubleshooting */}
         <Card className="border-border">
