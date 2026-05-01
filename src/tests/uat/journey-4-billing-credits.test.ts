@@ -83,38 +83,50 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
     console.info(`[UAT 4.4] Token ledger entries for org: ${(ledger ?? []).length}`);
   });
 
-  // ── Step 4: Burn tokens (atomic_token_burn RPC) ────────────────
-  it("4.5 - atomic_token_burn deducts tokens correctly", async () => {
-    const { data: before } = await supabase
-      .from("token_balances")
-      .select("balance")
-      .eq("org_id", orgId)
-      .single();
-    const balanceBefore = before!.balance;
-
+  // ── Step 4: Security boundary — atomic_token_burn is service-role only ───
+  // SECDEF Stage D1 hardening (2026-05-01): direct authenticated-user RPC to
+  // `atomic_token_burn` is forbidden. The only valid mutation paths are
+  // service-role edge functions (e.g. token-metering inside `match` and other
+  // metered actions). This test asserts the security boundary; happy-path
+  // burn semantics are covered by service-role integration tests for the
+  // owning edge functions, not at the user-JWT layer.
+  it("4.5 - atomic_token_burn rejects authenticated direct RPC (service-role only)", async () => {
     const { data, error } = await supabase.rpc("atomic_token_burn", {
       p_org_id: orgId,
-      p_amount: 100,
-      p_reason: "action:system_adjustment",
+      p_amount: 1,
+      p_reason: "uat:secdef_d1_boundary_check",
     });
 
-    expect(error).toBeNull();
-    const result = data as Record<string, unknown>;
-    expect(result.success).toBe(true);
-    expect(result.balance_after).toBe(balanceBefore - 100);
+    // After Stage D1, EXECUTE is revoked from `authenticated`. The Supabase
+    // PostgREST surface returns either a Postgres permission-denied error
+    // (code 42501) or a 404 "function not found in schema cache" — both are
+    // acceptable proofs that direct user-JWT execution is blocked.
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+    const code = (error as { code?: string } | null)?.code ?? "";
+    const message = (error as { message?: string } | null)?.message ?? "";
+    const blocked =
+      code === "42501" ||
+      code === "PGRST202" ||
+      /permission denied|not (?:exist|found)|schema cache/i.test(message);
+    expect(blocked).toBe(true);
   });
 
-  // ── Step 5: Overdraft prevention ───────────────────────────────
-  it("4.6 - atomic_token_burn rejects overdraft", async () => {
-    const { data, error } = await supabase.rpc("atomic_token_burn", {
-      p_org_id: orgId,
-      p_amount: 999999,
-      p_reason: "UAT overdraft test",
-    });
+  // ── Step 5: Token ledger remains service-role-owned ─────────────
+  it("4.6 - token_ledger INSERT is denied for authenticated users (RLS)", async () => {
+    const { data, error } = await supabase
+      .from("token_ledger")
+      .insert({
+        org_id: orgId,
+        action_type: "credit_burn",
+        amount: -1,
+        reason: "uat:should_be_denied",
+      } as never)
+      .select();
 
-    expect(error).toBeNull();
-    const result = data as Record<string, unknown>;
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("INSUFFICIENT_TOKENS");
+    // RLS on token_ledger restricts INSERT to service_role. A user-JWT
+    // INSERT must fail (either RLS rejection or permission-denied).
+    expect(data === null || (Array.isArray(data) && data.length === 0)).toBe(true);
+    expect(error).not.toBeNull();
   });
 });
