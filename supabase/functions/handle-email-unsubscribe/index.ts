@@ -18,14 +18,14 @@ Deno.serve(async (req) => {
   if (__pf) return __pf;
 
   if (req.method !== 'GET' && req.method !== 'POST') {
-    return jsonResponse({ error: 'Method not allowed' }, 405)
+    return jsonResponse(req, { error: 'Method not allowed' }, 405)
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    return jsonResponse({ error: 'Server configuration error' }, 500)
+    return jsonResponse(req, { error: 'Server configuration error' }, 500)
   }
 
   // Extract token from query params (GET) or body (POST)
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
   }
 
   if (!token) {
-    return jsonResponse({ error: 'Token is required' }, 400)
+    return jsonResponse(req, { error: 'Token is required' }, 400)
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -75,22 +75,22 @@ Deno.serve(async (req) => {
     .maybeSingle()
 
   if (lookupError || !tokenRecord) {
-    return jsonResponse({ error: 'Invalid or expired token' }, 404)
+    return jsonResponse(req, { error: 'Invalid or expired token' }, 404)
   }
 
   if (tokenRecord.used_at) {
-    return jsonResponse({ valid: false, reason: 'already_unsubscribed' })
+    return jsonResponse(req, { valid: false, reason: 'already_unsubscribed' })
   }
 
   // Enforce 30-day TTL. Stale tokens are rejected even if never used —
   // protects against long-lived inbox compromise replaying old links.
   if (tokenRecord.expires_at && new Date(tokenRecord.expires_at).getTime() < Date.now()) {
-    return jsonResponse({ valid: false, reason: 'token_expired' }, 410)
+    return jsonResponse(req, { valid: false, reason: 'token_expired' }, 410)
   }
 
   // GET: Validate token (the app's unsubscribe page calls this on load)
   if (req.method === 'GET') {
-    return jsonResponse({ valid: true })
+    return jsonResponse(req, { valid: true })
   }
 
   // POST: Process the unsubscribe
@@ -105,11 +105,11 @@ Deno.serve(async (req) => {
 
   if (updateError) {
     console.error('Failed to mark token as used', { error: updateError, token })
-    return jsonResponse({ error: 'Failed to process unsubscribe' }, 500)
+    return jsonResponse(req, { error: 'Failed to process unsubscribe' }, 500)
   }
 
   if (!updated) {
-    return jsonResponse({ success: false, reason: 'already_unsubscribed' })
+    return jsonResponse(req, { success: false, reason: 'already_unsubscribed' })
   }
 
   // Add email to suppressed list (upsert to handle duplicates)
@@ -125,10 +125,10 @@ Deno.serve(async (req) => {
       error: suppressError,
       email: tokenRecord.email,
     })
-    return jsonResponse({ error: 'Failed to process unsubscribe' }, 500)
+    return jsonResponse(req, { error: 'Failed to process unsubscribe' }, 500)
   }
 
   console.log('Email unsubscribed', { email: tokenRecord.email })
 
-  return jsonResponse({ success: true })
+  return jsonResponse(req, { success: true })
 })
