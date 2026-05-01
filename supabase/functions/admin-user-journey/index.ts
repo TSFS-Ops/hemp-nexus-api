@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       userId = new URL(req.url).searchParams.get("user_id");
     } else {
       try {
-        const body = await req.json(req, );
+        const body = await req.json();
         userId = body.user_id ?? null;
       } catch { /* allow */ }
     }
