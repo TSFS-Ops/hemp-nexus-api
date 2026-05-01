@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,6 +94,11 @@ function BillingContent() {
   // backend uses to charge the customer, so the displayed "≈ R{x}"
   // estimate matches what hits the card. Null until first fetch.
   const [fxRate, setFxRate] = useState<number | null>(null);
+  // FX provenance — surfaced beside the ≈ ZAR estimate so users can
+  // see whether the rate was just fetched from the live FX API or
+  // served from the cached fallback in admin_settings.
+  const [fxBasis, setFxBasis] = useState<string | null>(null);
+  const [fxFetchedAt, setFxFetchedAt] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
@@ -105,9 +111,16 @@ function BillingContent() {
     (async () => {
       try {
         const { data } = await supabase.functions.invoke("token-purchase/packages");
-        const apiRate = (data as { fxRate?: number } | null)?.fxRate;
+        const payload = data as {
+          fxRate?: number;
+          fxBasis?: string | null;
+          fxFetchedAt?: string | null;
+        } | null;
+        const apiRate = payload?.fxRate;
         if (!cancelled && typeof apiRate === "number" && apiRate > 0) {
           setFxRate(apiRate);
+          setFxBasis(payload?.fxBasis ?? null);
+          setFxFetchedAt(payload?.fxFetchedAt ?? null);
         }
       } catch {
         /* non-essential */
@@ -467,9 +480,35 @@ function BillingContent() {
         {/* Credit Packages */}
         <div>
           <h2 className="text-lg font-semibold mb-1">Purchase Credits</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-1">
             Prices in USD. Charged in ZAR at checkout via Paystack at the live exchange rate.
           </p>
+          {fxRate !== null && (
+            <p className="text-xs text-muted-foreground mb-4 tabular-nums">
+              FX rate: 1 USD ≈ R{fxRate.toLocaleString("en-ZA", { maximumFractionDigits: 4 })}
+              {fxBasis && (
+                <>
+                  {" · "}
+                  <span className={cn(fxBasis === "live" ? "text-foreground" : "text-amber-600")}>
+                    {fxBasis === "live"
+                      ? "live from exchangerate.host"
+                      : fxBasis === "cached"
+                        ? "cached fallback"
+                        : fxBasis}
+                  </span>
+                </>
+              )}
+              {fxFetchedAt && (
+                <>
+                  {" · fetched "}
+                  <time dateTime={fxFetchedAt} title={fxFetchedAt}>
+                    {formatDistanceToNow(new Date(fxFetchedAt), { addSuffix: true })}
+                  </time>
+                </>
+              )}
+            </p>
+          )}
+          {fxRate === null && <div className="mb-4 h-4" />}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {CREDIT_PACKAGES.map((pkg) => {
               const zarEstimate = fxRate ? pkg.priceUsd * fxRate : null;
