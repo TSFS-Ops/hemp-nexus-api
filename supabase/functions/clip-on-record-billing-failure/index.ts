@@ -19,9 +19,9 @@
 // invoke it multiple times for the same request_id; each call appends a
 // new row to clip_on_billing_failures (an append-only failure ledger).
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -31,11 +31,11 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-function json(status: number, body: Record<string, unknown>) {
-  return new Response(JSON.stringify(body), {
+function json(req: Request, status: number, body: Record<string, unknown>) {
+  return withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 }
 
 function isUuid(v: unknown): v is string {
@@ -44,8 +44,9 @@ function isUuid(v: unknown): v is string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
+  if (req.method !== "POST") return json(req, 405, { error: "method_not_allowed" });
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.toLowerCase().startsWith("bearer ")) {
