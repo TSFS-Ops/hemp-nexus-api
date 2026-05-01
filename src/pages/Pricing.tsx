@@ -162,13 +162,18 @@ export default function Pricing() {
 
               <div className="mt-10 flex items-baseline gap-2">
                 <span className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tighter text-foreground">
-                  R10.00
+                  $1.00
                 </span>
                 <span className="rounded-md border border-[hsl(var(--emerald)/0.2)] bg-[hsl(var(--emerald-muted))] px-2 py-0.5 text-[11px] font-mono uppercase tracking-wider text-[hsl(var(--emerald))]">
-                  ZAR
+                  USD
                 </span>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">per Trade Request</p>
+              <p className="mt-2 text-sm text-muted-foreground">per credit · 1 credit = 1 Trade Request</p>
+              <ul className="mt-4 space-y-1 text-xs text-muted-foreground font-mono">
+                <li>10 credits — $10 (standard)</li>
+                <li>50 credits — $45 <span className="text-[hsl(var(--emerald))]">(10% saving)</span></li>
+                <li>200 credits — $160 <span className="text-[hsl(var(--emerald))]">(20% saving)</span></li>
+              </ul>
 
               <Link
                 to="/auth"
