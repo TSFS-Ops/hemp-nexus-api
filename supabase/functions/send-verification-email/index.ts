@@ -64,23 +64,23 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     if (req.method === "POST") {
       try { assertIdempotencyKey(req); } catch (e: any) {
-        return new Response(JSON.stringify({ success: false, error: e.message, code: e.code }), {
+        return wrap(new Response(JSON.stringify({ success: false, error: e.message, code: e.code }), {
           status: e.statusCode || 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
+        }));
       }
     }
     // Verify authentication - require valid JWT
     const authHeader = req.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       console.error("Missing or invalid authorization header");
-      return new Response(
+      return wrap(new Response(
         JSON.stringify({ success: false, error: "Unauthorised" }),
         {
           status: 401,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
-      );
+      ));
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -90,13 +90,13 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       console.error("Invalid JWT token:", authError?.message);
-      return new Response(
+      return wrap(new Response(
         JSON.stringify({ success: false, error: "Unauthorised" }),
         {
           status: 401,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
-      );
+      ));
     }
 
     // Parse and validate input
@@ -105,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (!parseResult.success) {
       console.error("Validation error:", parseResult.error.errors);
-      return new Response(
+      return wrap(new Response(
         JSON.stringify({ 
           success: false, 
           error: "Invalid input",
@@ -115,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
-      );
+      ));
     }
 
     const { email, verificationUrl, userName }: VerificationEmailRequest = parseResult.data;
@@ -123,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Check rate limit for this email
     if (!checkEmailRateLimit(email)) {
       console.warn(`Rate limit exceeded for email: ${email}`);
-      return new Response(
+      return wrap(new Response(
         JSON.stringify({ success: false, error: "Too many requests. Please try again later." }),
         {
           status: 429,
@@ -133,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
             ...corsHeaders 
           },
         }
-      );
+      ));
     }
 
     // Sanitize display name to prevent XSS in email
@@ -238,30 +238,30 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!res.ok) {
       console.error("Resend API error:", data);
-      return new Response(
+      return wrap(new Response(
         JSON.stringify({ success: false, error: "Failed to send email" }),
         {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
-      );
+      ));
     }
 
     console.log("Verification email sent successfully to:", email);
 
-    return new Response(JSON.stringify({ success: true }), {
+    return wrap(new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    }));
   } catch (error: any) {
     console.error("Error sending verification email:", error);
-    return new Response(
+    return wrap(new Response(
       JSON.stringify({ success: false, error: "An error occurred" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
-    );
+    ));
   }
 };
 
