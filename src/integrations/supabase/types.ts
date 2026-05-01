@@ -7357,17 +7357,6 @@ export type Database = {
       set_org_data_residency: { Args: { _region: string }; Returns: Json }
       touch_match_view: { Args: { _match_id: string }; Returns: string }
       try_lifecycle_lock: { Args: never; Returns: boolean }
-      vault_read_internal_cron_key_fingerprint: {
-        Args: never
-        Returns: {
-          len: number
-          sha8: string
-        }[]
-      }
-      vault_upsert_internal_cron_key: {
-        Args: { p_value: string }
-        Returns: undefined
-      }
       verify_acceptance_receipt: {
         Args: { p_receipt_id: string }
         Returns: Json
