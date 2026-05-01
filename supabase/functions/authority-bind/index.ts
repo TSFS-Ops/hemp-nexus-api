@@ -244,7 +244,7 @@ Deno.serve(async (req: Request) => {
 
     // ── PATCH /authority-bind?id=<uuid>&type=<atb|ubo> ── Update status
     if (req.method === "PATCH") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
       const recordId = url.searchParams.get("id");
       const recordType = url.searchParams.get("type") || "atb";
       if (!recordId) throw new ApiException("VALIDATION_ERROR", "id parameter required", 400);

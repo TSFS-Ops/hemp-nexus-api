@@ -184,7 +184,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST /entities/screen ── Screening stub (admin only)
     if (req.method === "POST" && pathParts[pathParts.length - 1] === "screen") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
       assertIdempotencyKey(req);
 
       const body = await req.json();
@@ -283,7 +283,7 @@ Deno.serve(async (req: Request) => {
 
     // ── PATCH /entities?entity_id=<uuid> ── Update entity (admin only)
     if (req.method === "PATCH") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
       const entityId = url.searchParams.get("entity_id");
       if (!entityId) throw new ApiException("VALIDATION_ERROR", "entity_id parameter required", 400);
 
@@ -320,7 +320,7 @@ Deno.serve(async (req: Request) => {
 
     // ── DELETE /entities?entity_id=<uuid> ── Soft-delete (admin only)
     if (req.method === "DELETE") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
       const entityId = url.searchParams.get("entity_id");
       if (!entityId) throw new ApiException("VALIDATION_ERROR", "entity_id parameter required", 400);
 
