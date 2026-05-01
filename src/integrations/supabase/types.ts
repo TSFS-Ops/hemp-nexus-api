@@ -14,33 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _diag_secret_fingerprints: {
-        Row: {
-          captured_at: string
-          exists_flag: boolean
-          id: number
-          secret_length: number
-          sha256_prefix: string
-          source: string
-        }
-        Insert: {
-          captured_at?: string
-          exists_flag: boolean
-          id?: number
-          secret_length: number
-          sha256_prefix: string
-          source: string
-        }
-        Update: {
-          captured_at?: string
-          exists_flag?: boolean
-          id?: number
-          secret_length?: number
-          sha256_prefix?: string
-          source?: string
-        }
-        Relationships: []
-      }
       _proof_results: {
         Row: {
           created_at: string
@@ -6994,14 +6967,6 @@ export type Database = {
       }
     }
     Functions: {
-      _diag_vault_cron_key_fingerprint: {
-        Args: never
-        Returns: {
-          exists_in_vault: boolean
-          secret_length: number
-          sha256_prefix: string
-        }[]
-      }
       _provision_user: {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }
         Returns: Json
