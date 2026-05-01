@@ -97,9 +97,6 @@ export function MaintenancePage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-[#64748B] mt-6">
-          Izenzo · Civilisation OS for institutional trade
-        </p>
       </div>
     </div>
   );
