@@ -293,6 +293,10 @@ Deno.serve(async (req) => {
 
       // Insert ledger entry - unique index on request_id is the hard idempotency guard.
       // If webhook already inserted this reference, this INSERT fails and we return alreadyCredited.
+      // Dual-currency audit fields (price_usd, zar_amount_charged, fx_rate, fx_basis,
+      // fx_fetched_at, fx_source) are propagated from the Paystack `metadata` blob
+      // captured at checkout-init so customer support can reconstruct the exact
+      // FX basis used for any settled charge.
       const { error: ledgerError } = await supabase.from("token_ledger").insert({
         org_id: orgId,
         endpoint: "payment:paystack:verify",
@@ -304,7 +308,14 @@ Deno.serve(async (req) => {
         metadata: {
           payment_reference: reference,
           package_id: meta.package_id,
-          price_zar: meta.price_zar,
+          price_usd: meta.price_usd ?? null,
+          zar_amount_charged: meta.zar_amount_charged ?? meta.price_zar ?? null,
+          fx_rate: meta.fx_rate ?? null,
+          fx_basis: meta.fx_basis ?? null,
+          fx_fetched_at: meta.fx_fetched_at ?? null,
+          fx_source: meta.fx_source ?? null,
+          // Legacy field retained for HQ Revenue dashboard back-compat.
+          price_zar: meta.price_zar ?? meta.zar_amount_charged ?? null,
           verification_fallback: true,
         },
       });
@@ -352,6 +363,16 @@ Deno.serve(async (req) => {
           new_balance: newBalance,
           payment_reference: reference,
           package_id: meta.package_id,
+          // Dual-currency settlement record — exposed in the HQ Revenue
+          // "Order details" surface for customer support investigations.
+          price_usd: meta.price_usd ?? null,
+          zar_amount_charged: meta.zar_amount_charged ?? meta.price_zar ?? null,
+          fx_rate: meta.fx_rate ?? null,
+          fx_basis: meta.fx_basis ?? null,
+          fx_fetched_at: meta.fx_fetched_at ?? null,
+          fx_source: meta.fx_source ?? null,
+          // Legacy field retained for the existing revenue aggregation.
+          price_zar: meta.price_zar ?? meta.zar_amount_charged ?? null,
           verification_fallback: true,
         },
       });
@@ -778,6 +799,15 @@ async function handleChargeSuccess(
       package_id?: string;
       credits?: number;
       price_zar?: number;
+      // Dual-currency audit fields stamped at checkout-init. Propagated
+      // here into both the token_ledger row and the credits.purchased
+      // audit_log so support can reconstruct FX basis for any charge.
+      price_usd?: number;
+      zar_amount_charged?: number;
+      fx_rate?: number;
+      fx_basis?: string;
+      fx_fetched_at?: string;
+      fx_source?: string;
       client_ip?: string;
     };
     customer?: { email?: string };
@@ -836,7 +866,17 @@ async function handleChargeSuccess(
     metadata: {
       payment_reference: reference,
       package_id: metadata.package_id,
-      price_zar: metadata.price_zar,
+      // Dual-currency audit fields — captured at checkout-init and
+      // mirrored here so the ledger row alone is enough for support to
+      // explain "why R{x} for $Y" without joining to audit_logs.
+      price_usd: metadata.price_usd ?? null,
+      zar_amount_charged: metadata.zar_amount_charged ?? metadata.price_zar ?? null,
+      fx_rate: metadata.fx_rate ?? null,
+      fx_basis: metadata.fx_basis ?? null,
+      fx_fetched_at: metadata.fx_fetched_at ?? null,
+      fx_source: metadata.fx_source ?? null,
+      // Legacy field retained for HQ Revenue dashboard back-compat.
+      price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
       customer_email: customer?.email,
       paid_at,
       client_ip: metadata.client_ip,
@@ -865,7 +905,8 @@ async function handleChargeSuccess(
     });
   }
 
-  // Audit log
+  // Audit log — dual-currency settlement record for the HQ Revenue
+  // "Order details" surface used by customer support.
   await supabase.from("audit_logs").insert({
     org_id: orgId,
     actor_user_id: userId || null,
@@ -876,8 +917,17 @@ async function handleChargeSuccess(
       credits_added: credits,
       new_balance: newBalance,
       payment_reference: reference,
-      price_zar: metadata.price_zar,
       package_id: metadata.package_id,
+      price_usd: metadata.price_usd ?? null,
+      zar_amount_charged: metadata.zar_amount_charged ?? metadata.price_zar ?? null,
+      fx_rate: metadata.fx_rate ?? null,
+      fx_basis: metadata.fx_basis ?? null,
+      fx_fetched_at: metadata.fx_fetched_at ?? null,
+      fx_source: metadata.fx_source ?? null,
+      // Legacy — keep until HQ Revenue is migrated to read price_usd directly.
+      price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      paid_at,
+      customer_email: customer?.email ?? null,
     },
   });
 
