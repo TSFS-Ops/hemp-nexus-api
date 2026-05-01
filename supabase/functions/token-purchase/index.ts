@@ -44,17 +44,16 @@ const verifySchema = z.object({
   reference: z.string().min(1, "Missing reference"),
 });
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  // Permissive list — the supabase-js client adds several `x-supabase-*`
-  // headers (api-version, client-platform, client-runtime, etc.) that
-  // must be allow-listed or the browser fails the CORS preflight before
-  // the request ever reaches this function. We accept everything to
-  // avoid silent drift the next time the SDK adds a new header.
-  'Access-Control-Allow-Headers': '*, authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, idempotency-key',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-};
+// Stage 2A CORS hardening (2026-05-01): the local wildcard `corsHeaders`
+// constant has been removed in favour of the shared `_shared/cors.ts`
+// helper (`handleCorsPreflight` + `withCors`). The shared helper falls
+// back to the production allow-list when ALLOWED_ORIGINS is unset and
+// echoes Lovable preview hosts. Browser-facing responses below all go
+// through `wrap(...)` (a tiny `withCors(req, ...)` shim). The Paystack
+// webhook path is intentionally NOT wrapped: it is a server-to-server
+// callback that never sets an Origin and must keep its existing
+// signature-validated bare responses.
+const corsHeaders = { 'Content-Type': 'application/json' } as Record<string, string>;
 
 // ==============================================
 // CHARGING ENTITY (for invoices)
