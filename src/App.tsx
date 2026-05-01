@@ -95,6 +95,9 @@ function RedirectDashboardMatch() {
 }
 
 function App() {
+  if (MAINTENANCE_MODE) {
+    return <MaintenancePage />;
+  }
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
