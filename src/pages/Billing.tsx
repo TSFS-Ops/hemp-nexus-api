@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { formatDistanceToNow } from "date-fns";
+// formatDistanceToNow no longer used after USD-native cutover (FX rate display removed).
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -650,7 +650,7 @@ function BillingContent() {
 
         {/* Payment Security Note */}
         <p className="text-center text-xs text-muted-foreground">
-          Payments processed securely by Paystack. Prices shown in USD; settled in ZAR at the live exchange rate.
+          Payments processed securely by Paystack. All prices shown and charged in USD.
         </p>
       </div>
     </>
