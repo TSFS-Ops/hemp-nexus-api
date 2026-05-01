@@ -1,7 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
-import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 /**
  * validate-upload - Server-side magic-byte validation for any uploaded file.
@@ -14,12 +13,13 @@ import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
  */
 
 const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return withCors(req, new Response(null, { headers: corsHeaders }));
+    return new Response(null, { headers: corsHeaders });
   }
 
   const headers = { ...corsHeaders, "Content-Type": "application/json" };
