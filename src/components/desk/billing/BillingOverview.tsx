@@ -156,6 +156,9 @@ export function BillingOverview() {
 
   const handlePurchase = async (pack: { id: CreditPackageId }) => {
     if (purchasing) return;
+    // Defence-in-depth: even if the disabled button is bypassed, never
+    // call the token-purchase edge function while billing is unavailable.
+    if (!billingAvailability.enabled) return;
     setPurchasing(pack.id);
     // Clear any prior error for this pack on a fresh attempt so the
     // user sees the spinner state rather than the stale message.
