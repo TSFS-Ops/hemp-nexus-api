@@ -130,7 +130,23 @@ export async function isBypassEnabled(
       decision: "real",
       requestId,
       reason: "production_tier_lockout",
+      details: { hint: PRODUCTION_LOCKOUT_REASON },
     });
+    // Best-effort audit write — never block the request if the audit fails.
+    try {
+      await client.from("admin_audit_logs").insert({
+        action: "test_mode.production_lockout_denied",
+        target_type: "compliance_gate",
+        details: {
+          gate,
+          source,
+          request_id: requestId ?? null,
+          reason: PRODUCTION_LOCKOUT_REASON,
+        },
+      });
+    } catch (_err) {
+      // Audit failure must not break callers; the decision log above is the source of truth.
+    }
     return false;
   }
 
