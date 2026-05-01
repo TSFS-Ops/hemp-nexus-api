@@ -71,10 +71,11 @@ describe("token-purchase server-side billing availability guard", () => {
     expect(webhookSlice).not.toContain("get_billing_availability");
 
     const verifyIdx = SOURCE.indexOf('path === "verify"');
-    const idempotencyIdx = SOURCE.indexOf('.from("idempotency_keys")');
+    const verifyEndMarker = "// All other endpoints require authentication";
+    const verifyEndIdx = SOURCE.indexOf(verifyEndMarker, verifyIdx);
     expect(verifyIdx).toBeGreaterThan(0);
-    expect(idempotencyIdx).toBeGreaterThan(verifyIdx);
-    const verifySlice = SOURCE.slice(verifyIdx, idempotencyIdx);
+    expect(verifyEndIdx).toBeGreaterThan(verifyIdx);
+    const verifySlice = SOURCE.slice(verifyIdx, verifyEndIdx);
     expect(verifySlice).not.toContain("get_billing_availability");
   });
 
