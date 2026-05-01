@@ -416,7 +416,7 @@ Deno.serve(async (req) => {
       if (!uuidRe.test(body.orgId)) {
         throw new ApiException("VALIDATION_ERROR", "Invalid orgId format", 400);
       }
-      const isPlatformAdmin = auth.roles.includes("admin");
+      const isPlatformAdmin = auth.roles.includes("platform_admin");
       const isOwnOrg = auth.orgId === body.orgId;
       if (!isPlatformAdmin && !isOwnOrg) {
         throw new ApiException("FORBIDDEN", "Cannot recompute another org's rating", 403);
@@ -428,8 +428,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Bulk mode — admin only
-    if (!auth.roles.includes("admin")) {
+    // Bulk mode — platform admin only
+    if (!auth.roles.includes("platform_admin")) {
       throw new ApiException("FORBIDDEN", "Bulk recompute requires platform admin", 403);
     }
 

@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
 
     // ── GET /poi-engagements — List engagements (admin only) ──
     if (req.method === "GET" && !engagementId) {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
 
       await checkRateLimit(supabase, authCtx.orgId, null, "poi-engagements", "admin:engagements");
 
@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
 
     // ── GET /poi-engagements/:id/outreach-log — Immutable outreach history ──
     if (req.method === "GET" && engagementId && parts[1] === "outreach-log") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(engagementId)) {
@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
     // for admin review BEFORE sending. Returns subject, suggested body parts, and
     // recipient + suppression status. Does NOT send and does NOT mutate state. ──
     if (req.method === "POST" && engagementId && parts[1] === "preview-outreach") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(engagementId)) {
@@ -295,7 +295,7 @@ Deno.serve(async (req) => {
     // atomically transition state to 'contacted' with a full snapshot in the
     // immutable outreach log. ──
     if (req.method === "POST" && engagementId && parts[1] === "send-outreach") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(engagementId)) {
@@ -688,7 +688,7 @@ Deno.serve(async (req) => {
 
     // ── PATCH /poi-engagements/:id — Update engagement (admin only) ──
     if (req.method === "PATCH" && engagementId) {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(engagementId)) {

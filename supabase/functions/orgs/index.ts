@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    requireRole(authCtx, 'admin'); // Only admins can manage orgs
+    requireRole(authCtx, 'platform_admin'); // Only admins can manage orgs
     requireScope(authCtx, 'orgs');
 
     const url = new URL(req.url);

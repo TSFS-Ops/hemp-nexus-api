@@ -105,7 +105,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST /trade-approval/revoke ── Revoke approval
     if (req.method === "POST" && subAction === "revoke") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
       assertIdempotencyKey(req);
       const body = await req.json();
       const { org_id: targetOrgId, reason } = RevokeSchema.parse(body);
@@ -160,7 +160,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST /trade-approval/renew ── Extend validity
     if (req.method === "POST" && subAction === "renew") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
       assertIdempotencyKey(req);
       const body = await req.json();
       const { org_id: targetOrgId, extend_days } = RenewSchema.parse(body);
@@ -213,7 +213,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST /trade-approval ── Issue new approval
     if (req.method === "POST") {
-      requireRole(authCtx, "admin");
+      requireRole(authCtx, "platform_admin");
       const idempotencyKey = req.headers.get("Idempotency-Key");
       if (!idempotencyKey) throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header required", 400);
 

@@ -79,10 +79,10 @@ Deno.serve(async (req) => {
     const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
     const isPlatformAdmin = roles.includes("platform_admin");
     // Tightened: only platform-wide admin roles. `org_admin` is org-scoped
-    // and must NOT see platform-wide flags.
-    const isAdmin = roles.includes("admin");
+    // and must NOT see platform-wide flags. Legacy 'admin' role is deprecated
+    // (RBAC Stage 1/2) — `platform_admin` is now the only canonical super-admin.
 
-    if (!isPlatformAdmin && !isAdmin) {
+    if (!isPlatformAdmin) {
       logDecision("maintenance", {
         source: "debug-flags",
         decision: "block",

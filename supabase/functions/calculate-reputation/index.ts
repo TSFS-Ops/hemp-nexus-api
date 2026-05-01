@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
     // SECURITY: Authenticate request - only admins can trigger reputation recalculation
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
-    requireRole(authCtx, 'admin');
+    requireRole(authCtx, 'platform_admin');
 
     // SECURITY: Rate limit admin endpoint to prevent abuse
     // Uses the admin user's org_id for rate limiting
