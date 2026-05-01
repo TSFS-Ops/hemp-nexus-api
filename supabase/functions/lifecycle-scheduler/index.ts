@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { cacheHeaders } from "../_shared/cache.ts";
+import { clampSubject } from "../_shared/email-subject.ts";
 
 /**
  * Lifecycle Scheduler - handles periodic tasks:
@@ -361,7 +362,7 @@ Deno.serve(async (req: Request) => {
           await admin.functions.invoke("notification-dispatch", {
             body: {
               event_type: "unilateral.stale",
-              subject: `Stale unilateral intent: ${intent.commodity}`,
+              subject: clampSubject(`Stale unilateral intent: ${intent.commodity}`),
               message: `Unilateral intent for "${intent.commodity}" has been waiting ${ageDays} days with no trading partner. Consider following up or expiring.`,
               metadata: {
                 org_id: intent.org_id,
