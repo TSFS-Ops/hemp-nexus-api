@@ -150,13 +150,15 @@ describe("Billing availability guard — billing enabled (reversibility)", () =>
   });
 
   it("CreditProvisioningPanel: Proceed-to-Payment becomes active and invokes checkout exactly once", async () => {
-    // jsdom doesn't implement window.location.href assignment cleanly;
-    // stub it so the spy can complete without navigating.
-    const originalLocation = window.location;
-    // @ts-expect-error — overriding read-only for the test
-    delete window.location;
-    // @ts-expect-error — minimal fake
-    window.location = { href: "" } as Location;
+    // jsdom doesn't implement navigation; capture the assignment so the
+    // spy can complete without leaving jsdom.
+    const originalHref = window.location.href;
+    const hrefSetter = vi.fn();
+    Object.defineProperty(window.location, "href", {
+      configurable: true,
+      get: () => originalHref,
+      set: hrefSetter,
+    });
 
     try {
       render(
@@ -177,8 +179,13 @@ describe("Billing availability guard — billing enabled (reversibility)", () =>
         expect(startCreditCheckoutSpy).toHaveBeenCalledTimes(1)
       );
       expect(startCreditCheckoutSpy).toHaveBeenCalledWith("pack_50");
+      expect(hrefSetter).toHaveBeenCalledWith("https://paystack.test/checkout");
     } finally {
-      Object.defineProperty(window, "location", { value: originalLocation, writable: true });
+      Object.defineProperty(window.location, "href", {
+        configurable: true,
+        writable: true,
+        value: originalHref,
+      });
     }
   });
 });
