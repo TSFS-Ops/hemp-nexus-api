@@ -165,9 +165,11 @@ Deno.serve(async (req) => {
       return await handleWebhook(req);
     }
 
-    // GET /packages - public endpoint
-    if (req.method === "GET" && path === "packages") {
-      return handleGetPackages();
+    // GET or POST /packages — public endpoint. Accepts POST so the
+    // browser SDK's `supabase.functions.invoke('token-purchase/packages')`
+    // (which always issues POST) can reach it without a 405.
+    if ((req.method === "GET" || req.method === "POST") && path === "packages") {
+      return await handleGetPackages();
     }
 
     // GET /entity - public endpoint
