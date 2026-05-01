@@ -145,7 +145,10 @@ export function TestModeBypassPanel() {
         <div className="flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
           <div>
-            <CardTitle>Test-mode compliance bypass</CardTitle>
+            <CardTitle>
+              Test-mode compliance bypass{" "}
+              <span className="text-xs font-normal text-muted-foreground">(sandbox / test only)</span>
+            </CardTitle>
             <CardDescription className="mt-1">
               Temporarily skip compliance gates so the rest of the platform can be tested while
               real integrations are still being wired. Two layers: <strong>upstream provider gates</strong>
@@ -153,11 +156,33 @@ export function TestModeBypassPanel() {
               recentness / risk scoring / webhook connectivity). All bypass usage is written to the
               admin audit log, every WaD issued under bypass is permanently stamped, and a global
               TEST MODE banner is shown to every user while any flag is active.
+              <br />
+              <strong className="text-foreground">Test-mode bypass is not a production override.</strong>{" "}
+              In production, every flag below is ignored at both the database and edge layers.
+              Production overrides must use the future break-glass / second-approval workflow.
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {productionLocked && (
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive p-4 space-y-1"
+            data-testid="test-mode-production-lockout-banner"
+          >
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              Production lockout active — test-mode bypass is disabled
+            </div>
+            <p className="text-xs opacity-90">
+              This deployment's environment tier is <code className="font-mono">{tier}</code>. Toggles
+              below can still be saved for documentation, but every gate check returns the real
+              result. To override a compliance gate in production, use the break-glass /
+              second-approval workflow (Stage 3 plan) — not test-mode bypass.
+            </p>
+          </div>
+        )}
         <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div>
