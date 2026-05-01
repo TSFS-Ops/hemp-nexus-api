@@ -480,9 +480,35 @@ function BillingContent() {
         {/* Credit Packages */}
         <div>
           <h2 className="text-lg font-semibold mb-1">Purchase Credits</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-1">
             Prices in USD. Charged in ZAR at checkout via Paystack at the live exchange rate.
           </p>
+          {fxRate !== null && (
+            <p className="text-xs text-muted-foreground mb-4 tabular-nums">
+              FX rate: 1 USD ≈ R{fxRate.toLocaleString("en-ZA", { maximumFractionDigits: 4 })}
+              {fxBasis && (
+                <>
+                  {" · "}
+                  <span className={cn(fxBasis === "live" ? "text-foreground" : "text-amber-600")}>
+                    {fxBasis === "live"
+                      ? "live from exchangerate.host"
+                      : fxBasis === "cached"
+                        ? "cached fallback"
+                        : fxBasis}
+                  </span>
+                </>
+              )}
+              {fxFetchedAt && (
+                <>
+                  {" · fetched "}
+                  <time dateTime={fxFetchedAt} title={fxFetchedAt}>
+                    {formatDistanceToNow(new Date(fxFetchedAt), { addSuffix: true })}
+                  </time>
+                </>
+              )}
+            </p>
+          )}
+          {fxRate === null && <div className="mb-4 h-4" />}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {CREDIT_PACKAGES.map((pkg) => {
               const zarEstimate = fxRate ? pkg.priceUsd * fxRate : null;
