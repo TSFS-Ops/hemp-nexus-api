@@ -3,6 +3,8 @@ import { X, Check } from "lucide-react";
 import { useState } from "react";
 import { startCreditCheckout, type CreditPackageId } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
+import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
+import { useBillingAvailability } from "@/hooks/use-billing-availability";
 
 type Tier = {
   id: CreditPackageId;
@@ -40,6 +42,7 @@ export function CreditProvisioningPanel({
   // Inline error message from a failed Paystack initialisation. Cleared
   // when the user picks a different tier or hits Retry.
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const { availability: billingAvailability } = useBillingAvailability();
 
   const handleSelect = (id: CreditPackageId) => {
     setSelected(id);
@@ -48,6 +51,7 @@ export function CreditProvisioningPanel({
 
   const handleProceed = async () => {
     if (submitting) return;
+    if (!billingAvailability.enabled) return;
     setSubmitting(true);
     setCheckoutError(null);
     try {
@@ -179,6 +183,14 @@ export function CreditProvisioningPanel({
 
             {/* Footer · Payment */}
             <footer className="px-8 pt-5 pb-8 border-t border-border bg-card">
+              {!billingAvailability.enabled && (
+                <div className="mb-4">
+                  <BillingUnavailableNotice
+                    message={billingAvailability.message}
+                    compact
+                  />
+                </div>
+              )}
               {checkoutError && (
                 <div className="mb-4">
                   <CheckoutErrorNotice
@@ -192,18 +204,21 @@ export function CreditProvisioningPanel({
               <motion.button
                 type="button"
                 onClick={handleProceed}
-                disabled={submitting}
-                whileHover={submitting ? undefined : { scale: 0.99 }}
-                whileTap={submitting ? undefined : { scale: 0.985 }}
+                disabled={submitting || !billingAvailability.enabled}
+                data-testid="credit-provisioning-proceed"
+                whileHover={submitting || !billingAvailability.enabled ? undefined : { scale: 0.99 }}
+                whileTap={submitting || !billingAvailability.enabled ? undefined : { scale: 0.985 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submitting
-                  ? "Redirecting to Paystack…"
-                  : checkoutError
-                    ? "Try again"
-                    : "Proceed to Payment"}
-                {!submitting && (
+                {!billingAvailability.enabled
+                  ? "Purchases temporarily unavailable"
+                  : submitting
+                    ? "Redirecting to Paystack…"
+                    : checkoutError
+                      ? "Try again"
+                      : "Proceed to Payment"}
+                {!submitting && billingAvailability.enabled && (
                   <span className="font-mono text-[11px] tracking-wider opacity-80">
                     ${TIERS.find((t) => t.id === selected)?.priceUsd.toLocaleString("en-US")}
                   </span>
