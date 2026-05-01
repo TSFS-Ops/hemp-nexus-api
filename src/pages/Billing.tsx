@@ -22,16 +22,51 @@ import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { cn } from "@/lib/utils";
 
 // ==============================================
-// CREDIT PACKAGES (ZAR pricing)
+// CREDIT PACKAGES — USD display, ZAR settlement
 // ==============================================
+// Pricing is the commercial source of truth in USD ($1 / credit) per
+// Daniel Davies' 2026-04-30 decision. Paystack South Africa settles
+// in ZAR; the live USD→ZAR rate used here comes from the same
+// `token-purchase/packages` endpoint the backend uses to charge the
+// customer, so the displayed "≈ R{x}" estimate matches what hits the
+// card. Drift between this list and `TOKEN_PACKAGES` in
+// `supabase/functions/token-purchase/index.ts` will cause the
+// checkout to charge a different amount than the UI advertises.
 const CREDIT_PACKAGES = [
-  { 
+  {
     id: 'single',
-    credits: 1, 
-    priceZar: 10,
-    label: 'Trade Request',
-    pricePerCredit: '10.00',
-    description: 'R10 ZAR per action - pay as you go',
+    credits: 1,
+    priceUsd: 1,
+    label: 'Single Credit',
+    pricePerCredit: '1.00',
+    description: 'One credit — pay as you go',
+    popular: false,
+  },
+  {
+    id: 'pack_10',
+    credits: 10,
+    priceUsd: 10,
+    label: '10 Credits',
+    pricePerCredit: '1.00',
+    description: 'Standard rate',
+    popular: false,
+  },
+  {
+    id: 'pack_50',
+    credits: 50,
+    priceUsd: 45,
+    label: '50 Credits',
+    pricePerCredit: '0.90',
+    description: '10% saving vs standard',
+    popular: true,
+  },
+  {
+    id: 'pack_200',
+    credits: 200,
+    priceUsd: 160,
+    label: '200 Credits',
+    pricePerCredit: '0.80',
+    description: '20% saving vs standard',
     popular: false,
   },
 ];
