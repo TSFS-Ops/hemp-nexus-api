@@ -195,9 +195,11 @@ function App() {
                   {/* Legacy /trade/wizard → consolidated under the Trade Desk shell */}
                   <Route path="/trade/wizard" element={<LegacyRedirect to="/desk/wizard" label="Trade Wizard" />} />
                   {/* Admin Dashboard, Izenzo Platform Administration.
-                      Two routes: bare /hq lands on default tab; /hq/:tab deep-links. */}
-                  <Route path="/hq" element={<HQ />} />
-                  <Route path="/hq/:tab" element={<HQ />} />
+                      Two routes: bare /hq lands on default tab; /hq/:tab deep-links.
+                      Defence-in-depth: route-level RequireAuth(platform_admin) AND
+                      page-level guard inside HQ.tsx (ForbiddenHQ screen). */}
+                  <Route path="/hq" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><HQ /></RequireAuth>} />
+                  <Route path="/hq/:tab" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><HQ /></RequireAuth>} />
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
