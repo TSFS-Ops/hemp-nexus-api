@@ -392,7 +392,7 @@ export function AdminRevenuePanel() {
           actor_user_id: r.actor_user_id,
           org_id: orgId,
           org_name: resolveOrgName(orgId, orgNameById),
-          amount_zar: num(meta.amount_zar),
+          amount_usd: num(meta.amount_usd) || num(meta.price_usd),
           credits: num(meta.credits),
           package_id: str(meta.package_id),
           initiated_at: r.created_at,
@@ -426,7 +426,7 @@ export function AdminRevenuePanel() {
       backfilled: 0,   // reconstructed from evidence; flagged for auditors
     };
     for (const r of rows) {
-      out.revenue += r.amount_zar;
+      out.revenue += r.amount_usd;
       out.credits += r.credits;
       if (r.org_id) out.buyers.add(r.org_id);
       if (r.source === "ledger:manual") out.manual += 1;
@@ -441,7 +441,7 @@ export function AdminRevenuePanel() {
     for (const r of rows) {
       const k = bucketKey(r.created_at, granularity);
       const cur = byBucket.get(k) ?? { revenue: 0, credits: 0, count: 0 };
-      cur.revenue += r.amount_zar;
+      cur.revenue += r.amount_usd;
       cur.credits += r.credits;
       cur.count += 1;
       byBucket.set(k, cur);
@@ -467,7 +467,7 @@ export function AdminRevenuePanel() {
         count: 0,
         last: r.created_at,
       };
-      cur.revenue += r.amount_zar;
+      cur.revenue += r.amount_usd;
       cur.credits += r.credits;
       cur.count += 1;
       if (r.created_at > cur.last) cur.last = r.created_at;
