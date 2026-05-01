@@ -187,7 +187,7 @@ export function ClipOnBillingFailuresPanel() {
                   <td className="px-3 py-2">
                     {req?.match_id ? (
                       <Link
-                        to={`/desk/matches/${req.match_id}`}
+                        to={`/desk/match/${req.match_id}`}
                         className="inline-flex items-center gap-1 text-primary hover:underline"
                       >
                         Match <ExternalLink className="h-3 w-3" />

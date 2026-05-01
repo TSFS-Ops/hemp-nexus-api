@@ -249,14 +249,25 @@ describe("Desk route integrity", () => {
     // Find the link inside the legitimacy-blocked alert. We anchor on the
     // user-visible heading copy so a future copy change forces a re-check.
     const alertIdx = card.indexOf(
-      "Verification required before issuing a Proof of Intent",
+      // Copy was intentionally softened from "Verification required" to
+      // "Company Identity (KYB) verification recommended" — KYB is now
+      // recommended pre-POI and only hard-enforced at WaD. We anchor on
+      // the stable substring that still asserts the alert renders for
+      // the legitimacy-blocked POI flow.
+      "Company Identity (KYB) verification recommended before issuing a Proof of Intent",
     );
     expect(alertIdx).toBeGreaterThan(-1);
 
-    // Search forward from the heading for the next `to="..."` literal.
+    // Search forward from the heading for the next link target. The
+    // alert can use either a string-literal href (`to="/desk/..."`) or
+    // the `routeTo("/desk/...", { query: ... })` helper, so we accept
+    // both forms — the contract being pinned is the resolved Desk path,
+    // not the call-site syntax.
     const tail = card.slice(alertIdx, alertIdx + 1500);
-    const linkMatch = tail.match(/\bto=["']([^"']+)["']/);
-    expect(linkMatch, "no <Link to=...> found near the legitimacy alert").not.toBeNull();
+    const literalMatch = tail.match(/\bto=["']([^"']+)["']/);
+    const routeToMatch = tail.match(/routeTo\(\s*["']([^"']+)["']/);
+    const linkMatch = literalMatch ?? routeToMatch;
+    expect(linkMatch, "no <Link to=...> or routeTo(...) found near the legitimacy alert").not.toBeNull();
 
     const target = linkMatch![1];
     const normalised = normalisePath(target);
