@@ -7249,6 +7249,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["gate_position"]
       }
       get_test_mode_bypass_state: { Args: never; Returns: Json }
+      get_test_mode_lockout_state: { Args: never; Returns: Json }
       get_user_email: { Args: { target_user_id: string }; Returns: string }
       has_dd_role: {
         Args: { _org_id: string; _role: string; _user_id: string }
@@ -7274,6 +7275,7 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      is_production_environment: { Args: never; Returns: boolean }
       is_same_org: {
         Args: { _target_id: string; _viewer_id: string }
         Returns: boolean
