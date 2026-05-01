@@ -511,6 +511,30 @@ function BillingContent() {
                       <span>${pkg.pricePerCredit} per credit</span>
                     </div>
                   </div>
+                  <Button
+                    className="w-full"
+                    variant={pkg.popular ? "default" : "outline"}
+                    onClick={() => handlePurchase(pkg.id)}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing && selectedPackage === pkg.id ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        Redirecting to payment…
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Buy Now
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Payment troubleshooting */}
         <Card className="border-border">
