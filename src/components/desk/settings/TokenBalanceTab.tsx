@@ -8,6 +8,8 @@ import {
   type CreditPackageId,
 } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
+import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
+import { useBillingAvailability } from "@/hooks/use-billing-availability";
 
 interface LedgerEntry {
   id: string;
@@ -70,6 +72,7 @@ export function TokenBalanceTab() {
   // Per-pack initiation error — surfaced inline beside the failing
   // Purchase button (with Retry) instead of a transient toast.
   const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
+  const { availability: billingAvailability } = useBillingAvailability();
 
   const refresh = async () => {
     if (!user) return;
