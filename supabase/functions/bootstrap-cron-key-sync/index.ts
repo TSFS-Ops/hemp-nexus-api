@@ -18,20 +18,23 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const adminKey = req.headers.get("x-bootstrap-admin");
-    const expected = Deno.env.get("LOVABLE_BOOTSTRAP_ADMIN_KEY") || Deno.env.get("INTERNAL_CRON_KEY");
-    if (!adminKey || adminKey !== expected) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const newVal = Deno.env.get("__NEW_INTERNAL_CRON_KEY");
     const edgeVal = Deno.env.get("INTERNAL_CRON_KEY");
-    if (!newVal) {
-      return new Response(JSON.stringify({ error: "__NEW_INTERNAL_CRON_KEY not set" }), {
+    if (!newVal || !edgeVal) {
+      return new Response(JSON.stringify({ error: "missing env vars", new_present: !!newVal, edge_present: !!edgeVal }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    // Self-gate: only proceed if the user pasted the SAME value into both secrets.
+    if (newVal !== edgeVal) {
+      return new Response(JSON.stringify({
+        error: "mismatch_between_new_and_edge",
+        message: "__NEW_INTERNAL_CRON_KEY must equal INTERNAL_CRON_KEY (paste the same value into both)",
+        new_len: newVal.length,
+        edge_len: edgeVal.length,
+        new_sha8: await sha8(newVal),
+        edge_sha8: await sha8(edgeVal),
+      }), { status: 412, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const sb = createClient(
