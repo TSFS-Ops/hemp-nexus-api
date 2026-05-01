@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      _diag_secret_fingerprints: {
+        Row: {
+          captured_at: string
+          exists_flag: boolean
+          id: number
+          secret_length: number
+          sha256_prefix: string
+          source: string
+        }
+        Insert: {
+          captured_at?: string
+          exists_flag: boolean
+          id?: number
+          secret_length: number
+          sha256_prefix: string
+          source: string
+        }
+        Update: {
+          captured_at?: string
+          exists_flag?: boolean
+          id?: number
+          secret_length?: number
+          sha256_prefix?: string
+          source?: string
+        }
+        Relationships: []
+      }
       _proof_results: {
         Row: {
           created_at: string
