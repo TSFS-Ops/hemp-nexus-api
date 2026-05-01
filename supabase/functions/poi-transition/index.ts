@@ -28,9 +28,12 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 const IMMUTABLE_STATES = ["COMPLETED", "ANNULLED", "EXPIRED", "REJECTED"];
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+  return withCors(req, await _serve(req));
+});
+
+async function _serve(req: Request): Promise<Response> {
 
   if (req.method !== "POST") {
     return new Response(
