@@ -191,13 +191,13 @@ export function getNextActionLabel(currentState: string, matchType?: string): st
 export function getNextActionDescription(currentState: string, matchType?: string): string | null {
   if (matchType === "unilateral") {
     const descriptions: Record<string, string> = {
-      discovery: "Generates a Proof of Intent record for this trade. 1 credit (R10) will be charged. Non-binding.",
+      discovery: "Generates a Proof of Intent record for this trade. 1 credit ($1.00 USD) will be charged. Non-binding.",
       intent_declared: "This unilateral intent is awaiting a trading partner.",
     };
     return descriptions[currentState] ?? null;
   }
   const descriptions: Record<string, string> = {
-    discovery: "Generates a Proof of Intent (POI) record for this trade. 1 credit (R10) will be charged. Non-binding.",
+    discovery: "Generates a Proof of Intent (POI) record for this trade. 1 credit ($1.00 USD) will be charged. Non-binding.",
     committed: "Marks this trade as completed and seals the evidence record. This action is irreversible.",
   };
   return descriptions[currentState] ?? null;

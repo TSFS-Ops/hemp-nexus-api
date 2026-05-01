@@ -29,10 +29,12 @@ const PACKS: Array<{
   cta: string;
   highlight?: boolean;
 }> = [
+  // Prices in USD ($1 / credit canonical). Paystack settles in ZAR
+  // via live FX at checkout — see supabase/functions/_shared/fx.ts.
   {
     id: "single",
     name: "Pay-as-you-go",
-    price: "R10",
+    price: "$1",
     unit: "per credit",
     credits: 1,
     description: "Buy a single credit on demand. No commitment, no expiry.",
@@ -41,7 +43,7 @@ const PACKS: Array<{
   {
     id: "pack_50",
     name: "Starter Pack",
-    price: "R450",
+    price: "$45",
     unit: "50 credits · 10% saving",
     credits: 50,
     description: "For desks running multiple trades each week.",
@@ -51,7 +53,7 @@ const PACKS: Array<{
   {
     id: "pack_200",
     name: "Professional Pack",
-    price: "R1,600",
+    price: "$160",
     unit: "200 credits · 20% saving",
     credits: 200,
     description: "For high-volume institutional desks.",
@@ -188,7 +190,7 @@ export function TokenBalanceTab() {
           <span className="text-base text-muted-foreground">credits</span>
         </div>
         <p className="mt-3 md:mt-4 text-sm text-muted-foreground leading-relaxed max-w-md">
-          Each Proof of Intent costs <span className="font-mono text-foreground">1 credit (R10)</span>. Credits never expire.
+          Each Proof of Intent costs <span className="font-mono text-foreground">1 credit ($1.00 USD)</span>, charged in ZAR at checkout. Credits never expire.
         </p>
       </div>
 

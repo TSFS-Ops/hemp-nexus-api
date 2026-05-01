@@ -138,7 +138,7 @@ export function DealWizard({
   }, {
     id: "poi",
     label: "Proof of Intent",
-    description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement, the process is paused here." : "Generate a Trade Request: 1 credit (R10). Non-binding, irreversible, fully audited.",
+    description: poiHoldActive ? "Trade request generated. Awaiting trading partner engagement, the process is paused here." : "Generate a Trade Request: 1 credit ($1.00 USD). Non-binding, irreversible, fully audited.",
     complete: poiComplete && engagementAccepted,
     locked: !commercialTermsComplete,
     lockedReason: !commercialTermsComplete ? "Complete the required commercial terms (commodity, parties, quantity, price) on the Match step before generating Proof of Intent." : undefined,
@@ -246,7 +246,7 @@ export function DealWizard({
           ? "Commercial terms complete — proceed to Proof of Intent"
           : "Complete the commercial terms",
         description: commercialTermsComplete
-          ? "Buyer, seller, commodity, quantity and price are all set. You can now generate a Proof of Intent (1 credit, R10)."
+          ? "Buyer, seller, commodity, quantity and price are all set. You can now generate a Proof of Intent (1 credit, $1.00 USD)."
           : "Set the buyer, seller, commodity, quantity and price on the Terms tab before you can generate a Proof of Intent.",
         helpText: "All five commercial terms are required by the POI gate. Documents and notes are optional but improve your evidence score.",
       };
@@ -268,7 +268,7 @@ export function DealWizard({
         tone: "action",
         eyebrow: "Your turn",
         title: "Generate a Proof of Intent",
-        description: "Mint a Proof of Intent on the audit ledger to formally signal commercial intent to your trading partner. Costs 1 credit (R10), irreversible, fully audited.",
+        description: "Mint a Proof of Intent on the audit ledger to formally signal commercial intent to your trading partner. Costs 1 credit ($1.00 USD), irreversible, fully audited.",
         helpText: "POI generation is the platform's hold-point. Once minted, your trading partner is notified and you cannot edit the commercial terms.",
       };
     }

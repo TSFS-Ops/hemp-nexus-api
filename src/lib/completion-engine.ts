@@ -231,7 +231,7 @@ function derivePoi(input: CompletionInput): StageState {
   actions.push({
     id: "poi-confirm-intent",
     label: "Generate POI",
-    description: "Generate a Proof of Intent for this match. This burns 1 credit (R10 ZAR).",
+    description: "Generate a Proof of Intent for this match. This burns 1 credit ($1.00 USD, charged in ZAR).",
     type: "confirm_intent",
     targetTab: "details",
     allowed: canConfirm && !isDisputed,

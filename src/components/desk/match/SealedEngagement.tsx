@@ -167,7 +167,7 @@ export function SealedEngagement() {
               <TimelineNode state="completed" title="Proof of Intent Sealed" timestamp={sealedAt} detail={<div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <span className="font-mono">−1 CREDIT</span>
                     <span className="text-muted-foreground/50">·</span>
-                    <span>R10.00 burn receipt</span>
+                    <span>$1.00 USD burn receipt</span>
                     <span className="text-muted-foreground/50">·</span>
                     <span className="font-mono">{matchRef}</span>
                   </div>} />
