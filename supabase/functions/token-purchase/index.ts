@@ -728,14 +728,15 @@ async function handleChargeSuccess(
       user_id?: string;
       package_id?: string;
       credits?: number;
-      price_zar?: number;
-      // Dual-currency audit fields stamped at checkout-init. Propagated
-      // here into both the token_ledger row and the credits.purchased
-      // audit_log so support can reconstruct FX basis for any charge.
+      // USD-native audit fields stamped at checkout-init.
       price_usd?: number;
+      currency?: string;
+      fx_basis?: string;
+      // Legacy ZAR fields tolerated on inbound reads only — preserved
+      // so a webhook for a pre-cutover transaction still parses cleanly.
+      price_zar?: number;
       zar_amount_charged?: number;
       fx_rate?: number;
-      fx_basis?: string;
       fx_fetched_at?: string;
       fx_source?: string;
       client_ip?: string;
@@ -796,17 +797,14 @@ async function handleChargeSuccess(
     metadata: {
       payment_reference: reference,
       package_id: metadata.package_id,
-      // Dual-currency audit fields — captured at checkout-init and
-      // mirrored here so the ledger row alone is enough for support to
-      // explain "why R{x} for $Y" without joining to audit_logs.
+      // USD-native audit fields. For pre-cutover webhooks that still
+      // carry legacy ZAR metadata we preserve those values verbatim
+      // alongside (read-only history; never written for new charges).
       price_usd: metadata.price_usd ?? null,
-      zar_amount_charged: metadata.zar_amount_charged ?? metadata.price_zar ?? null,
-      fx_rate: metadata.fx_rate ?? null,
-      fx_basis: metadata.fx_basis ?? null,
-      fx_fetched_at: metadata.fx_fetched_at ?? null,
-      fx_source: metadata.fx_source ?? null,
-      // Legacy field retained for HQ Revenue dashboard back-compat.
-      price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      currency: metadata.currency ?? "USD",
+      fx_basis: metadata.fx_basis ?? "native_usd",
+      legacy_price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      legacy_fx_rate: metadata.fx_rate ?? null,
       customer_email: customer?.email,
       paid_at,
       client_ip: metadata.client_ip,
@@ -835,8 +833,7 @@ async function handleChargeSuccess(
     });
   }
 
-  // Audit log — dual-currency settlement record for the HQ Revenue
-  // "Order details" surface used by customer support.
+  // Audit log — USD-native settlement record for HQ Revenue.
   await supabase.from("audit_logs").insert({
     org_id: orgId,
     actor_user_id: userId || null,
@@ -849,13 +846,11 @@ async function handleChargeSuccess(
       payment_reference: reference,
       package_id: metadata.package_id,
       price_usd: metadata.price_usd ?? null,
-      zar_amount_charged: metadata.zar_amount_charged ?? metadata.price_zar ?? null,
-      fx_rate: metadata.fx_rate ?? null,
-      fx_basis: metadata.fx_basis ?? null,
-      fx_fetched_at: metadata.fx_fetched_at ?? null,
-      fx_source: metadata.fx_source ?? null,
-      // Legacy — keep until HQ Revenue is migrated to read price_usd directly.
-      price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      currency: metadata.currency ?? "USD",
+      fx_basis: metadata.fx_basis ?? "native_usd",
+      // Legacy ZAR fields preserved when received (pre-cutover replays).
+      legacy_price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      legacy_fx_rate: metadata.fx_rate ?? null,
       paid_at,
       customer_email: customer?.email ?? null,
     },
@@ -882,7 +877,7 @@ async function handleChargeSuccess(
       headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
       details: {
         "Credits added": credits,
-        "Amount (ZAR)": metadata.price_zar ?? "—",
+        "Amount (USD)": metadata.price_usd != null ? `$${Number(metadata.price_usd).toFixed(2)}` : "—",
         "Package ID": metadata.package_id ?? "—",
         "New balance": newBalance,
         "Payment reference": reference,
