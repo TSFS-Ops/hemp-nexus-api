@@ -27,9 +27,9 @@
  */
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -53,7 +53,7 @@ interface AuthCtx {
 async function authenticate(req: Request): Promise<AuthCtx | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return json({ error: "missing_bearer_token" }, 401);
+    return json(req, { error: "missing_bearer_token" }, 401);
   }
   const token = authHeader.slice("Bearer ".length);
 
@@ -63,7 +63,7 @@ async function authenticate(req: Request): Promise<AuthCtx | Response> {
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData?.user) {
-    return json({ error: "invalid_token" }, 401);
+    return json(req, { error: "invalid_token" }, 401);
   }
   const userId = userData.user.id;
 
@@ -77,17 +77,17 @@ async function authenticate(req: Request): Promise<AuthCtx | Response> {
     _role: "platform_admin",
   });
   if (roleErr || hasRole !== true) {
-    return json({ error: "platform_admin_required" }, 403);
+    return json(req, { error: "platform_admin_required" }, 403);
   }
 
   return { userId, service };
 }
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+function json(req: Request, body: unknown, status = 200) {
+  return withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 }
 
 async function actionSeed(ctx: AuthCtx) {
@@ -101,7 +101,7 @@ async function actionSeed(ctx: AuthCtx) {
     .eq("id", userId)
     .maybeSingle();
   if (profileErr || !profile?.org_id) {
-    return json({ error: "no_org_context", detail: profileErr?.message ?? null }, 400);
+    return json(req, { error: "no_org_context", detail: profileErr?.message ?? null }, 400);
   }
   const orgId = profile.org_id as string;
 
@@ -130,7 +130,7 @@ async function actionSeed(ctx: AuthCtx) {
     })
     .select("id")
     .single();
-  if (matchErr) return json({ error: "seed_match_failed", detail: matchErr.message }, 500);
+  if (matchErr) return json(req, { error: "seed_match_failed", detail: matchErr.message }, 500);
 
   const matchId = matchRow.id as string;
 
@@ -153,7 +153,7 @@ async function actionSeed(ctx: AuthCtx) {
   if (intelErr) {
     // Roll back the match so we don't leave orphans on a partial failure.
     await service.from("matches").delete().eq("id", matchId);
-    return json({ error: "seed_intel_failed", detail: intelErr.message }, 500);
+    return json(req, { error: "seed_intel_failed", detail: intelErr.message }, 500);
   }
 
   // 3) Pending operator_verification_request. This is what the admin will
@@ -175,10 +175,10 @@ async function actionSeed(ctx: AuthCtx) {
   if (ovrErr) {
     await service.from("match_counterparty_intel").delete().eq("id", intelRow.id);
     await service.from("matches").delete().eq("id", matchId);
-    return json({ error: "seed_ovr_failed", detail: ovrErr.message }, 500);
+    return json(req, { error: "seed_ovr_failed", detail: ovrErr.message }, 500);
   }
 
-  return json({
+  return json(req, {
     ok: true,
     fixture: FIXTURE_TAG,
     match_id: matchId,
@@ -218,7 +218,7 @@ async function actionInvariants(ctx: AuthCtx) {
       ].join(","),
     )
     .limit(5000);
-  if (nonOpenErr) return json({ error: "non_open_query_failed", detail: nonOpenErr.message }, 500);
+  if (nonOpenErr) return json(req, { error: "non_open_query_failed", detail: nonOpenErr.message }, 500);
   const nonOpenIds = (nonOpenMatches ?? []).map((r) => r.id as string);
 
   // INV-B: pending OVRs whose parent match is non-open.
@@ -229,7 +229,7 @@ async function actionInvariants(ctx: AuthCtx) {
       .select("*", { count: "exact", head: true })
       .eq("status", "pending")
       .in("match_id", nonOpenIds);
-    if (error) return json({ error: "inv_b_failed", detail: error.message }, 500);
+    if (error) return json(req, { error: "inv_b_failed", detail: error.message }, 500);
     invBViolations = count ?? 0;
   }
 
@@ -240,7 +240,7 @@ async function actionInvariants(ctx: AuthCtx) {
       .from("match_counterparty_intel")
       .select("*", { count: "exact", head: true })
       .in("match_id", nonOpenIds);
-    if (error) return json({ error: "inv_d_failed", detail: error.message }, 500);
+    if (error) return json(req, { error: "inv_d_failed", detail: error.message }, 500);
     invDViolations = count ?? 0;
   }
 
@@ -253,7 +253,7 @@ async function actionInvariants(ctx: AuthCtx) {
     .select("id")
     .in("status", ["completed", "cancelled"])
     .limit(5000);
-  if (closedErr) return json({ error: "inv_g_query_failed", detail: closedErr.message }, 500);
+  if (closedErr) return json(req, { error: "inv_g_query_failed", detail: closedErr.message }, 500);
   const closedIds = (closedOvrs ?? []).map((r) => r.id as string);
   if (closedIds.length > 0) {
     const { data: audited, error: audErr } = await service
@@ -261,14 +261,14 @@ async function actionInvariants(ctx: AuthCtx) {
       .select("entity_id")
       .eq("entity_type", "operator_verification_request")
       .in("entity_id", closedIds);
-    if (audErr) return json({ error: "inv_g_audit_failed", detail: audErr.message }, 500);
+    if (audErr) return json(req, { error: "inv_g_audit_failed", detail: audErr.message }, 500);
     const auditedSet = new Set((audited ?? []).map((r) => r.entity_id as string));
     const missing = closedIds.filter((id) => !auditedSet.has(id));
     invGViolations = missing.length;
     invGSampleMissing = missing.slice(0, 5);
   }
 
-  return json({
+  return json(req, {
     ok: true,
     universe: {
       ovr_total: ovrTotal ?? 0,
@@ -308,11 +308,11 @@ async function actionCleanup(ctx: AuthCtx) {
     .select("id")
     .eq("created_by", userId)
     .eq("commodity", "WALKTHROUGH_FIXTURE");
-  if (findErr) return json({ error: "cleanup_find_failed", detail: findErr.message }, 500);
+  if (findErr) return json(req, { error: "cleanup_find_failed", detail: findErr.message }, 500);
 
   const matchIds = (fixtureMatches ?? []).map((r) => r.id as string);
   if (matchIds.length === 0) {
-    return json({ ok: true, deleted: { matches: 0, intel: 0, requests: 0, audits: 0 } });
+    return json(req, { ok: true, deleted: { matches: 0, intel: 0, requests: 0, audits: 0 } });
   }
 
   // Find OVR ids before deletion so we can sweep their audit_logs entries.
@@ -329,7 +329,7 @@ async function actionCleanup(ctx: AuthCtx) {
       .delete({ count: "exact" })
       .eq("entity_type", "operator_verification_request")
       .in("entity_id", ovrIds);
-    if (auditDelErr) return json({ error: "cleanup_audit_failed", detail: auditDelErr.message }, 500);
+    if (auditDelErr) return json(req, { error: "cleanup_audit_failed", detail: auditDelErr.message }, 500);
     auditDeleted = count ?? 0;
   }
 
@@ -337,21 +337,21 @@ async function actionCleanup(ctx: AuthCtx) {
     .from("operator_verification_requests")
     .delete({ count: "exact" })
     .in("match_id", matchIds);
-  if (ovrDelErr) return json({ error: "cleanup_ovr_failed", detail: ovrDelErr.message }, 500);
+  if (ovrDelErr) return json(req, { error: "cleanup_ovr_failed", detail: ovrDelErr.message }, 500);
 
   const { error: intelDelErr, count: intelCount } = await service
     .from("match_counterparty_intel")
     .delete({ count: "exact" })
     .in("match_id", matchIds);
-  if (intelDelErr) return json({ error: "cleanup_intel_failed", detail: intelDelErr.message }, 500);
+  if (intelDelErr) return json(req, { error: "cleanup_intel_failed", detail: intelDelErr.message }, 500);
 
   const { error: matchDelErr, count: matchCount } = await service
     .from("matches")
     .delete({ count: "exact" })
     .in("id", matchIds);
-  if (matchDelErr) return json({ error: "cleanup_match_failed", detail: matchDelErr.message }, 500);
+  if (matchDelErr) return json(req, { error: "cleanup_match_failed", detail: matchDelErr.message }, 500);
 
-  return json({
+  return json(req, {
     ok: true,
     deleted: {
       matches: matchCount ?? 0,
@@ -363,17 +363,17 @@ async function actionCleanup(ctx: AuthCtx) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  const __pf = handleCorsPreflight(req); if (__pf) return __pf;
+  if (req.method !== "POST") return json(req, { error: "method_not_allowed" }, 405);
 
   const auth = await authenticate(req);
   if (auth instanceof Response) return auth;
 
   let body: { action?: string };
   try {
-    body = await req.json();
+    body = await req.json(req, );
   } catch {
-    return json({ error: "invalid_json" }, 400);
+    return json(req, { error: "invalid_json" }, 400);
   }
 
   switch (body.action) {
@@ -384,6 +384,6 @@ Deno.serve(async (req) => {
     case "cleanup":
       return await actionCleanup(auth);
     default:
-      return json({ error: "unknown_action", allowed: ["seed", "invariants", "cleanup"] }, 400);
+      return json(req, { error: "unknown_action", allowed: ["seed", "invariants", "cleanup"] }, 400);
   }
 });

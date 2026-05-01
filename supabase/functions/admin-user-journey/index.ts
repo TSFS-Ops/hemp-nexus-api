@@ -23,9 +23,9 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
@@ -39,7 +39,7 @@ const json = (body: unknown, status = 200) =>
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __pf = handleCorsPreflight(req); if (__pf) return __pf;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -50,12 +50,12 @@ Deno.serve(async (req) => {
 
     // ── Auth ─────────────────────────────────────────────────────────────
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader) return json({ error: "Unauthorised" }, 401);
+    if (!authHeader) return json(req, { error: "Unauthorised" }, 401);
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller }, error: authErr } = await admin.auth.getUser(token);
-    if (authErr || !caller) return json({ error: "Invalid token" }, 401);
+    if (authErr || !caller) return json(req, { error: "Invalid token" }, 401);
     const { data: isAdmin } = await admin.rpc("is_admin", { user_id: caller.id });
-    if (!isAdmin) return json({ error: "Admin access required" }, 403);
+    if (!isAdmin) return json(req, { error: "Admin access required" }, 403);
 
     // ── Parse target user_id ─────────────────────────────────────────────
     let userId: string | null = null;
@@ -63,12 +63,12 @@ Deno.serve(async (req) => {
       userId = new URL(req.url).searchParams.get("user_id");
     } else {
       try {
-        const body = await req.json();
+        const body = await req.json(req, );
         userId = body.user_id ?? null;
       } catch { /* allow */ }
     }
     if (!userId || !UUID_RE.test(userId)) {
-      return json({ error: "Valid user_id (UUID) required" }, 400);
+      return json(req, { error: "Valid user_id (UUID) required" }, 400);
     }
 
     // ── Load profile ─────────────────────────────────────────────────────
@@ -79,8 +79,8 @@ Deno.serve(async (req) => {
       )
       .eq("id", userId)
       .maybeSingle();
-    if (profileErr) return json({ error: profileErr.message }, 500);
-    if (!profile) return json({ error: "Profile not found" }, 404);
+    if (profileErr) return json(req, { error: profileErr.message }, 500);
+    if (!profile) return json(req, { error: "Profile not found" }, 404);
 
     // ── Auth user (last sign-in, confirmation) ───────────────────────────
     let authUserSummary: Record<string, unknown> = {};
@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
       ip_address: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
     });
 
-    return json({
+    return json(req, {
       profile: {
         ...profile,
         ...authUserSummary,
@@ -254,6 +254,6 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("[admin-user-journey] error", error);
-    return json({ error: "Internal server error" }, 500);
+    return json(req, { error: "Internal server error" }, 500);
   }
 });
