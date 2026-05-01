@@ -50,31 +50,30 @@ import {
   checkOrgLegitimacy,
   getActiveGovernanceProfile,
 } from "../_shared/legitimacy.ts";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body, null, 2), {
+function jsonResponse(req: Request, body: unknown, status = 200) {
+  return withCors(req, new Response(JSON.stringify(body, null, 2), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 }
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
 
   if (req.method !== "GET") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return jsonResponse(req, { error: "Method not allowed" }, 405);
   }
 
   try {
