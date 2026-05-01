@@ -244,7 +244,7 @@ export function CreditProvisioningPanel({
                     : "Proceed to Payment"}
                 {!submitting && (
                   <span className="font-mono text-[11px] tracking-wider opacity-80">
-                    R{TIERS.find((t) => t.id === selected)?.priceZAR.toLocaleString("en-ZA")}
+                    ${TIERS.find((t) => t.id === selected)?.priceUsd.toLocaleString("en-US")}
                   </span>
                 )}
               </motion.button>
