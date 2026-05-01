@@ -29,8 +29,8 @@ const PACKS: Array<{
   cta: string;
   highlight?: boolean;
 }> = [
-  // Prices in USD ($1 / credit canonical). Paystack settles in ZAR
-  // via live FX at checkout — see supabase/functions/_shared/fx.ts.
+  // Prices in USD ($1 / credit canonical). Paystack settles natively
+  // in USD as of cutover 2026-05-01 — no FX conversion at checkout.
   {
     id: "single",
     name: "Pay-as-you-go",
@@ -190,7 +190,7 @@ export function TokenBalanceTab() {
           <span className="text-base text-muted-foreground">credits</span>
         </div>
         <p className="mt-3 md:mt-4 text-sm text-muted-foreground leading-relaxed max-w-md">
-          Each Proof of Intent costs <span className="font-mono text-foreground">1 credit ($1.00 USD)</span>, charged in ZAR at checkout. Credits never expire.
+          Each Proof of Intent costs <span className="font-mono text-foreground">1 credit ($1.00 USD)</span>, charged in USD at checkout. Credits never expire.
         </p>
       </div>
 

@@ -36,9 +36,8 @@ const PACKS: Array<{
   unit: string;
   saving?: string;
 }> = [
-  // Pricing is set in USD ($1 / credit) per Daniel Davies' 2026-04-30
-  // decision; Paystack South Africa settles in ZAR via a live FX
-  // conversion at checkout (see supabase/functions/_shared/fx.ts).
+  // USD-native settlement (cutover 2026-05-01). Paystack charges
+  // Izenzo customers directly in USD — no FX conversion at checkout.
   // Display only USD here — drift between this list and the backend
   // `TOKEN_PACKAGES` registry will charge the wrong amount.
   { id: "single", credits: 1, price: "$1", unit: "$1.00 / credit" },
@@ -182,10 +181,7 @@ export function BillingOverview() {
   };
 
   const displayBalance = balance ?? 0;
-  // 1 credit = $1 USD (canonical commercial reference). The settled
-  // ZAR amount is computed at Paystack checkout time using the live
-  // FX rate — we don't display a stale ZAR equivalent here because
-  // it would drift from what users were actually charged.
+  // 1 credit = $1 USD. Paystack charges natively in USD (cutover 2026-05-01).
   const usdValue = displayBalance.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -217,7 +213,7 @@ export function BillingOverview() {
         <p className="mt-6 font-mono text-sm text-muted-foreground max-w-2xl">
           ${usdValue} USD equivalent.
           <span className="text-muted-foreground">
-            {" "}Credits are consumed atomically upon POI generation. 1 credit = $1.00 USD, charged in ZAR at checkout.
+            {" "}Credits are consumed atomically upon POI generation. 1 credit = $1.00 USD, charged in USD at checkout.
           </span>
         </p>
       </section>
@@ -236,7 +232,7 @@ export function BillingOverview() {
             Provisioning
           </h2>
           <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70">
-            USD · Settled in ZAR
+            USD · Native settlement
           </p>
         </div>
 
