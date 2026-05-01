@@ -57,9 +57,9 @@ function checkEmailRateLimit(email: string): boolean {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
+  const wrap = (r: Response) => withCors(req, r);
 
   try {
     if (req.method === "POST") {
