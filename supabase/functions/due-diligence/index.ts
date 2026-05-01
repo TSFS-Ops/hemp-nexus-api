@@ -856,4 +856,4 @@ async function _serve(req: Request): Promise<Response> {
     console.error("Due diligence error:", err);
     return json({ error: "Internal server error" }, 500);
   }
-});
+}
