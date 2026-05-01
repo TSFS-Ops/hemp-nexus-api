@@ -80,46 +80,95 @@ Deno.test('admin-credit-org rejects malformed bearer with 401', async () => {
 // These tests sign up a fresh non-admin user, then call the function with
 // that user's token. Expect 403.
 
+// Service-role admin client is used to (a) create + force-confirm a fresh
+// non-admin user and (b) clean up after the test. Email confirmation cannot
+// be relied on at sign-up time even for @test.izenzo.co.za in all environments,
+// so we explicitly admin-confirm via GoTrue admin API. The user is NEVER
+// granted platform_admin — that's the whole point of this test.
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
 const TEST_EMAIL = `cred-org-non-admin-${Date.now()}@test.izenzo.co.za`;
 const TEST_PASSWORD = 'NonAdm1n!Test2026';
 let nonAdminToken: string | null = null;
+let nonAdminUserId: string | null = null;
 
-async function signUpNonAdmin(): Promise<string> {
+async function provisionConfirmedNonAdmin(): Promise<string> {
   if (nonAdminToken) return nonAdminToken;
-  const supabase = createClient(SUPABASE_URL, ANON_KEY, {
+  if (!SERVICE_ROLE_KEY) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY is required to provision a confirmed non-admin test user',
+    );
+  }
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: signUp, error: signUpErr } = await supabase.auth.signUp({
+
+  // Create + force-confirm in one step via GoTrue admin API.
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
+    email_confirm: true,
+  });
+  if (createErr || !created.user) {
+    throw createErr ?? new Error('admin.createUser returned no user');
+  }
+  nonAdminUserId = created.user.id;
+
+  // Defensive sanity check: this user must NOT have platform_admin.
+  const { data: roleRows, error: roleErr } = await admin
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', nonAdminUserId);
+  if (roleErr) throw roleErr;
+  if ((roleRows ?? []).some((r: { role: string }) => r.role === 'platform_admin')) {
+    throw new Error('test setup invariant violated: fresh user has platform_admin');
+  }
+
+  // Sign in as the confirmed non-admin user via the public anon client.
+  const anon = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: signIn, error: signInErr } = await anon.auth.signInWithPassword({
     email: TEST_EMAIL,
     password: TEST_PASSWORD,
   });
-  if (signUpErr) throw signUpErr;
-
-  // @test.izenzo.co.za is auto-verified per Enterprise UAT framework.
-  const { data: signIn, error: signInErr } =
-    await supabase.auth.signInWithPassword({
-      email: TEST_EMAIL,
-      password: TEST_PASSWORD,
-    });
   if (signInErr || !signIn.session) {
-    throw signInErr ?? new Error('no session');
+    throw signInErr ?? new Error('no session for confirmed non-admin user');
   }
   nonAdminToken = signIn.session.access_token;
   return nonAdminToken;
 }
 
+async function cleanupNonAdmin(): Promise<void> {
+  if (!nonAdminUserId || !SERVICE_ROLE_KEY) return;
+  try {
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    await admin.auth.admin.deleteUser(nonAdminUserId);
+  } catch (err) {
+    // Cleanup is best-effort; don't fail the run on it.
+    console.warn('[admin-credit-org test] cleanup failed:', err);
+  }
+}
+
 Deno.test('admin-credit-org rejects non-admin caller with 403', async () => {
-  const token = await signUpNonAdmin();
-  const { status, json } = await call(
-    {
-      org_id: '00000000-0000-0000-0000-000000000000',
-      credits: 100,
-      reason: 'unauthorised attempt',
-    },
-    `Bearer ${token}`,
-  );
-  assertEquals(status, 403);
-  assertEquals(json.error, 'Platform admin access required');
+  try {
+    const token = await provisionConfirmedNonAdmin();
+    const { status, json } = await call(
+      {
+        org_id: '00000000-0000-0000-0000-000000000000',
+        credits: 100,
+        reason: 'unauthorised attempt',
+      },
+      `Bearer ${token}`,
+    );
+    assertEquals(status, 403);
+    assertEquals(json.error, 'Platform admin access required');
+  } finally {
+    await cleanupNonAdmin();
+  }
 });
 
 // ── Validation paths (still hit RBAC first; these run as non-admin so they
