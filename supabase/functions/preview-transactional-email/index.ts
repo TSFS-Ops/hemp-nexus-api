@@ -17,23 +17,23 @@ Deno.serve(async (req) => {
 
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
   if (!apiKey) {
-    return new Response(
+    return wrap(new Response(
       JSON.stringify({ error: 'Server configuration error' }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    )
+    ))
   }
 
   // Verify the caller is authorised with LOVABLE_API_KEY
   const authHeader = req.headers.get('Authorisation')
   const token = authHeader?.replace(/^Bearer\s+/i, '')
   if (token !== apiKey) {
-    return new Response(JSON.stringify({ error: 'Unauthorised' }), {
+    return wrap(new Response(JSON.stringify({ error: 'Unauthorised' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    }))
   }
 
   const templateNames = Object.keys(TEMPLATES)
@@ -93,8 +93,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ templates: results }), {
+  return wrap(new Response(JSON.stringify({ templates: results }), {
     status: 200,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+  }))
 })
