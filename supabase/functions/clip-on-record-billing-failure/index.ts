@@ -19,9 +19,9 @@
 // invoke it multiple times for the same request_id; each call appends a
 // new row to clip_on_billing_failures (an append-only failure ledger).
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -31,11 +31,11 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-function json(status: number, body: Record<string, unknown>) {
-  return new Response(JSON.stringify(body), {
+function json(req: Request, status: number, body: Record<string, unknown>) {
+  return withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 }
 
 function isUuid(v: unknown): v is string {
@@ -44,12 +44,13 @@ function isUuid(v: unknown): v is string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
+  if (req.method !== "POST") return json(req, 405, { error: "method_not_allowed" });
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.toLowerCase().startsWith("bearer ")) {
-    return json(401, { error: "missing_bearer_token" });
+    return json(req, 401, { error: "missing_bearer_token" });
   }
 
   // Verify the caller and check role using the user's JWT.
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return json(401, { error: "invalid_token" });
+  if (userErr || !userData?.user) return json(req, 401, { error: "invalid_token" });
   const userId = userData.user.id;
 
   const { data: roleRow, error: roleErr } = await userClient
@@ -67,18 +68,18 @@ Deno.serve(async (req) => {
     .eq("user_id", userId)
     .eq("role", "platform_admin")
     .maybeSingle();
-  if (roleErr) return json(500, { error: "role_check_failed" });
-  if (!roleRow) return json(403, { error: "not_platform_admin" });
+  if (roleErr) return json(req, 500, { error: "role_check_failed" });
+  if (!roleRow) return json(req, 403, { error: "not_platform_admin" });
 
   let body: { request_id?: unknown; reason?: unknown };
   try {
     body = await req.json();
   } catch {
-    return json(400, { error: "invalid_json" });
+    return json(req, 400, { error: "invalid_json" });
   }
 
   if (!isUuid(body.request_id)) {
-    return json(400, { error: "invalid_request_id" });
+    return json(req, 400, { error: "invalid_request_id" });
   }
   const reason =
     body.reason && typeof body.reason === "object" && !Array.isArray(body.reason)
@@ -100,7 +101,7 @@ Deno.serve(async (req) => {
   });
   if (rpcErr) {
     console.error("[clip-on-record-billing-failure] rpc failed", rpcErr);
-    return json(500, { error: "record_failed", detail: rpcErr.message });
+    return json(req, 500, { error: "record_failed", detail: rpcErr.message });
   }
 
   // Best-effort: enrich the audit trail with the human actor (the helper
@@ -125,5 +126,5 @@ Deno.serve(async (req) => {
     console.warn("[clip-on-record-billing-failure] actor audit append failed", e);
   }
 
-  return json(200, { ok: true });
+  return json(req, 200, { ok: true });
 });

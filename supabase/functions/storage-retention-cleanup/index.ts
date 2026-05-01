@@ -1,9 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { webhookCorsHeaders } from "../_shared/cors.ts";
 
+// Internal cron endpoint (INTERNAL_CRON_KEY-gated). Server-to-server only.
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-internal-key",
+  ...webhookCorsHeaders(),
 };
 
 Deno.serve(async (req) => {

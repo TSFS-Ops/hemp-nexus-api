@@ -10,11 +10,12 @@ import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
 import { RecoveryEmail } from '../_shared/email-templates/recovery.tsx'
 import { EmailChangeEmail } from '../_shared/email-templates/email-change.tsx'
 import { ReauthenticationEmail } from '../_shared/email-templates/reauthentication.tsx'
+import { handleCorsPreflight, withCors, webhookCorsHeaders } from '../_shared/cors.ts'
 
+// Webhook handler — Supabase Auth posts here with HMAC signature.
+// Browser preflight is not expected; emit only Vary: Origin (no Allow-Origin).
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type, x-lovable-signature, x-lovable-timestamp, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  ...webhookCorsHeaders(),
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
@@ -112,22 +113,21 @@ function buildRecoveryConfirmationUrl(rawUrl: string | undefined, fallbackRedire
 // Preview endpoint handler - returns rendered HTML without sending email
 async function handlePreview(req: Request): Promise<Response> {
   const previewCorsHeaders = {
-    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, content-type',
   }
+  const wrap = (r: Response) => withCors(req, r);
 
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: previewCorsHeaders })
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
 
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
   const authHeader = req.headers.get('Authorisation')
 
   if (!apiKey || authHeader !== `Bearer ${apiKey}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorised' }), {
+    return wrap(new Response(JSON.stringify({ error: 'Unauthorised' }), {
       status: 401,
       headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
-    })
+    }))
   }
 
   let type: string
@@ -135,28 +135,28 @@ async function handlePreview(req: Request): Promise<Response> {
     const body = await req.json()
     type = body.type
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
+    return wrap(new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
       status: 400,
       headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
-    })
+    }))
   }
 
   const EmailTemplate = EMAIL_TEMPLATES[type]
 
   if (!EmailTemplate) {
-    return new Response(JSON.stringify({ error: `Unknown email type: ${type}` }), {
+    return wrap(new Response(JSON.stringify({ error: `Unknown email type: ${type}` }), {
       status: 400,
       headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
-    })
+    }))
   }
 
   const sampleData = SAMPLE_DATA[type] || {}
   const html = await renderAsync(React.createElement(EmailTemplate, sampleData))
 
-  return new Response(html, {
+  return wrap(new Response(html, {
     status: 200,
     headers: { ...previewCorsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
-  })
+  }))
 }
 
 // Webhook handler - verifies signature and sends email

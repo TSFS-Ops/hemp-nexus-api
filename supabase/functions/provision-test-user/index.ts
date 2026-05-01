@@ -10,39 +10,38 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const TEST_EMAIL_SUFFIX = "@test.izenzo.co.za";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+function json(req: Request, body: unknown, status = 200) {
+  return withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
 
   try {
     const { email, password, user_metadata } = await req.json();
 
     if (!email || typeof email !== "string") {
-      return json({ error: "email required" }, 400);
+      return json(req, { error: "email required" }, 400);
     }
     if (!password || typeof password !== "string" || password.length < 8) {
-      return json({ error: "password required (min 8 chars)" }, 400);
+      return json(req, { error: "password required (min 8 chars)" }, 400);
     }
     if (!email.toLowerCase().endsWith(TEST_EMAIL_SUFFIX)) {
-      return json(
+      return json(req, 
         { error: `Only ${TEST_EMAIL_SUFFIX} addresses can be provisioned` },
         403,
       );
@@ -83,8 +82,8 @@ Deno.serve(async (req) => {
         existingId,
         update,
       );
-      if (updErr) return json({ error: updErr.message }, 500);
-      return json({ user_id: existingId, created: false });
+      if (updErr) return json(req, { error: updErr.message }, 500);
+      return json(req, { user_id: existingId, created: false });
     }
 
     const { data: created, error: createErr } = await admin.auth.admin
@@ -96,14 +95,14 @@ Deno.serve(async (req) => {
       });
 
     if (createErr || !created.user) {
-      return json(
+      return json(req, 
         { error: createErr?.message ?? "Failed to create user" },
         500,
       );
     }
 
-    return json({ user_id: created.user.id, created: true });
+    return json(req, { user_id: created.user.id, created: true });
   } catch (err) {
-    return json({ error: (err as Error).message }, 500);
+    return json(req, { error: (err as Error).message }, 500);
   }
 });
