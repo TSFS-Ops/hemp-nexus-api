@@ -682,7 +682,7 @@ function BillingContent() {
 
         {/* Payment Security Note */}
         <p className="text-center text-xs text-muted-foreground">
-          Payments processed securely by Paystack. All amounts in ZAR.
+          Payments processed securely by Paystack. Prices shown in USD; settled in ZAR at the live exchange rate.
         </p>
       </div>
     </>
