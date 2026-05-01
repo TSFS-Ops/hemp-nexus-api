@@ -17,17 +17,16 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+function jsonResponse(req: Request, body: unknown, status = 200) {
+  return withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  }));
 }
 
 Deno.serve(async (req) => {
   const __pf = handleCorsPreflight(req);
   if (__pf) return __pf;
-  const wrap = (r: Response) => withCors(req, r);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
