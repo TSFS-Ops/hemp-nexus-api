@@ -81,7 +81,7 @@ async function authenticate(req: Request): Promise<AuthCtx | Response> {
     return json(req, { error: "platform_admin_required" }, 403);
   }
 
-  return { userId, service };
+  return { userId, service, req };
 }
 
 function json(req: Request, body: unknown, status = 200) {
