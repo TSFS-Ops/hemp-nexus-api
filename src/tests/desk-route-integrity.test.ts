@@ -249,7 +249,12 @@ describe("Desk route integrity", () => {
     // Find the link inside the legitimacy-blocked alert. We anchor on the
     // user-visible heading copy so a future copy change forces a re-check.
     const alertIdx = card.indexOf(
-      "Verification required before issuing a Proof of Intent",
+      // Copy was intentionally softened from "Verification required" to
+      // "Company Identity (KYB) verification recommended" — KYB is now
+      // recommended pre-POI and only hard-enforced at WaD. We anchor on
+      // the stable substring that still asserts the alert renders for
+      // the legitimacy-blocked POI flow.
+      "verification recommended before issuing a Proof of Intent",
     );
     expect(alertIdx).toBeGreaterThan(-1);
 
