@@ -666,7 +666,7 @@ async function _serve(req: Request): Promise<Response> {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}
 
 // ==============================================
 // GET /packages - List available packages
