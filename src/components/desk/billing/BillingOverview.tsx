@@ -67,6 +67,7 @@ export function BillingOverview() {
   // surface the backend's reason inline beside the failing Purchase
   // button (with a Retry control), instead of just a transient toast.
   const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
+  const { availability: billingAvailability } = useBillingAvailability();
 
   // Stable refresh that re-reads the wallet + recent ledger so we can
   // call it both on mount and after a successful Paystack verify.
