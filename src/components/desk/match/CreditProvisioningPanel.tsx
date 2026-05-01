@@ -1,13 +1,14 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { startCreditCheckout, type CreditPackageId } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
+import { supabase } from "@/integrations/supabase/client";
 
 type Tier = {
   id: CreditPackageId;
   credits: number;
-  priceZAR: number;
+  priceUsd: number;
   label: string;
   recommended?: boolean;
 };
@@ -15,10 +16,17 @@ type Tier = {
 // Pricing must match the backend `TOKEN_PACKAGES` registry in
 // supabase/functions/token-purchase/index.ts. Drift here will cause
 // the checkout to charge a different amount than the UI advertises.
+//
+// USD is the commercial reference currency (Daniel Davies decision,
+// 2026-04-30). Paystack South Africa settles in ZAR; the displayed
+// "≈ R{x}" estimate beside each tier is fetched live from the
+// `token-purchase/packages` endpoint, which uses the same FX source
+// as the actual checkout so the estimate matches what the user is
+// charged.
 const TIERS: Tier[] = [
-  { id: "single", credits: 1, priceZAR: 10, label: "Single Action" },
-  { id: "pack_50", credits: 50, priceZAR: 450, label: "Trade Starter", recommended: true },
-  { id: "pack_200", credits: 200, priceZAR: 1600, label: "Institutional" },
+  { id: "pack_10", credits: 10, priceUsd: 10, label: "Standard rate" },
+  { id: "pack_50", credits: 50, priceUsd: 45, label: "10% saving", recommended: true },
+  { id: "pack_200", credits: 200, priceUsd: 160, label: "20% saving" },
 ];
 
 interface CreditProvisioningPanelProps {
