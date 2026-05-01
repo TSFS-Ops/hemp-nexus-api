@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
 
     if (req.method === "GET") {
       // Anyone with admin/director/auditor can view break-glass history
-      const canView = isDirector || userRoles.includes("admin") || userRoles.includes("auditor");
+      const canView = isDirector || userRoles.includes("platform_admin") || userRoles.includes("auditor");
       if (!canView) throw new ApiException("FORBIDDEN", "Insufficient permissions", 403);
 
       const { data: actions, error } = await adminClient
