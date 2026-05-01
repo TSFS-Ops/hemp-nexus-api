@@ -292,10 +292,8 @@ Deno.serve(async (req) => {
 
       // Insert ledger entry - unique index on request_id is the hard idempotency guard.
       // If webhook already inserted this reference, this INSERT fails and we return alreadyCredited.
-      // Dual-currency audit fields (price_usd, zar_amount_charged, fx_rate, fx_basis,
-      // fx_fetched_at, fx_source) are propagated from the Paystack `metadata` blob
-      // captured at checkout-init so customer support can reconstruct the exact
-      // FX basis used for any settled charge.
+      // USD-native audit fields (price_usd, currency, fx_basis='native_usd') are
+      // propagated from the Paystack `metadata` blob captured at checkout-init.
       const { error: ledgerError } = await supabase.from("token_ledger").insert({
         org_id: orgId,
         endpoint: "payment:paystack:verify",
@@ -308,13 +306,8 @@ Deno.serve(async (req) => {
           payment_reference: reference,
           package_id: meta.package_id,
           price_usd: meta.price_usd ?? null,
-          zar_amount_charged: meta.zar_amount_charged ?? meta.price_zar ?? null,
-          fx_rate: meta.fx_rate ?? null,
-          fx_basis: meta.fx_basis ?? null,
-          fx_fetched_at: meta.fx_fetched_at ?? null,
-          fx_source: meta.fx_source ?? null,
-          // Legacy field retained for HQ Revenue dashboard back-compat.
-          price_zar: meta.price_zar ?? meta.zar_amount_charged ?? null,
+          currency: "USD",
+          fx_basis: "native_usd",
           verification_fallback: true,
         },
       });
@@ -362,16 +355,10 @@ Deno.serve(async (req) => {
           new_balance: newBalance,
           payment_reference: reference,
           package_id: meta.package_id,
-          // Dual-currency settlement record — exposed in the HQ Revenue
-          // "Order details" surface for customer support investigations.
+          // USD-native settlement record — exposed in HQ Revenue.
           price_usd: meta.price_usd ?? null,
-          zar_amount_charged: meta.zar_amount_charged ?? meta.price_zar ?? null,
-          fx_rate: meta.fx_rate ?? null,
-          fx_basis: meta.fx_basis ?? null,
-          fx_fetched_at: meta.fx_fetched_at ?? null,
-          fx_source: meta.fx_source ?? null,
-          // Legacy field retained for the existing revenue aggregation.
-          price_zar: meta.price_zar ?? meta.zar_amount_charged ?? null,
+          currency: "USD",
+          fx_basis: "native_usd",
           verification_fallback: true,
         },
       });
@@ -397,7 +384,7 @@ Deno.serve(async (req) => {
           headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
           details: {
             "Credits added": credits,
-            "Amount (ZAR)": meta.price_zar ?? "—",
+            "Amount (USD)": meta.price_usd != null ? `$${Number(meta.price_usd).toFixed(2)}` : "—",
             "Package ID": meta.package_id ?? "—",
             "New balance": newBalance,
             "Payment reference": reference,
