@@ -647,7 +647,7 @@ Deno.serve(async (req) => {
 // ==============================================
 // GET /packages - List available packages
 // ==============================================
-function handleGetPackages(): Response {
+async function handleGetPackages(): Promise<Response> {
   const packages = Object.entries(TOKEN_PACKAGES).map(([id, pkg]) => ({
     id,
     name: pkg.label,
@@ -657,6 +657,24 @@ function handleGetPackages(): Response {
     saving: pkg.saving ?? null,
   }));
 
+  // Best-effort live FX so the UI can render an accurate "≈ R{x}"
+  // estimate beside each USD price. Uses the same source the actual
+  // checkout uses (live exchangerate.host with cached fallback in
+  // admin_settings) so the estimate matches what hits the card. If
+  // the rate is unavailable we omit it — the UI already handles null.
+  let fxRate: number | null = null;
+  let fxBasis: string | null = null;
+  let fxFetchedAt: string | null = null;
+  try {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const fx = await getUsdZarRate(admin);
+    fxRate = fx.rate;
+    fxBasis = fx.basis;
+    fxFetchedAt = fx.fetched_at;
+  } catch (e) {
+    console.warn("[token-purchase/packages] FX rate unavailable", e);
+  }
+
   return new Response(
     JSON.stringify({
       packages,
@@ -664,6 +682,9 @@ function handleGetPackages(): Response {
       // _shared/fx.ts for the conversion path.
       currency: "USD",
       settlementCurrency: "ZAR",
+      fxRate,
+      fxBasis,
+      fxFetchedAt,
       entity: CHARGING_ENTITY,
       refundPolicy: REFUND_POLICY,
     }),
