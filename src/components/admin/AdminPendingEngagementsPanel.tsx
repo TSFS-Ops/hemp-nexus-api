@@ -759,7 +759,10 @@ export function AdminPendingEngagementsPanel() {
       const td = data?.template_data ?? {};
       setOutreachRecipient(data?.recipient ?? "");
       setOutreachSuppressed(!!data?.suppressed);
-      setOutreachSubject(data?.subject ?? "");
+      // Defensive client-side clamp — server contract is 200 chars. The server
+      // already truncates safely, but if an older deployment returns a longer
+      // subject we clamp here so the field never exceeds the limit on prefill.
+      setOutreachSubject((data?.subject ?? "").slice(0, 200));
       setOutreachMessage(td.customMessage ?? "");
       setOutreachContext({
         commodity: td.commodity ?? null,
@@ -1553,11 +1556,23 @@ export function AdminPendingEngagementsPanel() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subj">Subject</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="subj">Subject</Label>
+                  <span
+                    className={
+                      "text-[11px] tabular-nums " +
+                      (outreachSubject.length > 190
+                        ? "text-destructive font-medium"
+                        : "text-muted-foreground")
+                    }
+                  >
+                    {outreachSubject.length}/200
+                  </span>
+                </div>
                 <Input
                   id="subj"
                   value={outreachSubject}
-                  onChange={(e) => setOutreachSubject(e.target.value)}
+                  onChange={(e) => setOutreachSubject(e.target.value.slice(0, 200))}
                   maxLength={200}
                 />
               </div>
