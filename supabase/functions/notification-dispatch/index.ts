@@ -38,7 +38,10 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json();
-    const { event_type, subject, message, metadata } = body;
+    const { event_type, subject: rawSubject, message, metadata } = body;
+    // Defensive clamp — protects every downstream channel (email + Slack)
+    // even if a future caller forgets to pre-clamp a free-text subject.
+    const subject = rawSubject != null ? clampSubject(String(rawSubject)) : undefined;
 
     if (!event_type || !message) {
       return new Response(
