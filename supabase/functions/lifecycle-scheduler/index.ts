@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { cacheHeaders } from "../_shared/cache.ts";
+import { clampSubject } from "../_shared/email-subject.ts";
 
 /**
  * Lifecycle Scheduler - handles periodic tasks:
