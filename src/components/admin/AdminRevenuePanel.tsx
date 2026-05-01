@@ -3,15 +3,18 @@
  * ─────────────────────────────────────────────────────────────────────
  * HQ → Revenue dashboard.
  *
- * SOURCE OF TRUTH (revised April 2026)
- * ────────────────────────────────────
+ * SOURCE OF TRUTH (USD-native, cutover 2026-05-01)
+ * ────────────────────────────────────────────────
  * Revenue is sourced primarily from `public.audit_logs` rows where
  * `action = 'credits.purchased'`. This is the canonical, server-authored
- * settlement event written by the Paystack webhook handler. It is NOT
- * dependent on whether the corresponding `token_ledger` row was tagged
- * with `action_type = 'credit_purchase'` — historically (e.g. Talia
- * Pillay's R100 grant on 2026-04-26) the ledger row was written with the
- * generic `credit` path while the credits clearly landed in the wallet.
+ * settlement event written by the Paystack webhook handler.
+ *
+ * As of the 2026-05-01 cutover, Paystack charges customers natively in
+ * USD. The dashboard reads `metadata.price_usd` as the canonical
+ * settlement amount and renders all totals in USD. Pre-cutover rows
+ * that only carry the legacy `price_zar` field are still surfaced (so
+ * historical totals remain reconcilable) but flagged as legacy ZAR in
+ * the per-org timeline.
  *
  * As a safety-net we also pull `token_ledger` rows with
  * `action_type = 'credit_purchase'` and merge by `payment_reference`,
@@ -80,16 +83,14 @@ interface PurchaseEnriched {
   org_id: string | null;
   org_name: string;
   credits: number;               // positive integer of credits granted
-  amount_zar: number;            // gross revenue in ZAR (settlement currency)
-  // Dual-currency audit fields stamped at checkout-init and propagated
-  // through the verify + webhook settlement paths into the credits.purchased
-  // audit_log + token_ledger.metadata. Used by the "Order details" view for
-  // customer support investigations ("why was R{x} charged for $Y?").
-  price_usd: number | null;
-  fx_rate: number | null;
-  fx_basis: string | null;       // e.g. "live" | "cached"
-  fx_source: string | null;      // e.g. "exchangerate.host"
-  fx_fetched_at: string | null;
+  amount_usd: number;            // gross revenue in USD (canonical, post-cutover)
+  // Settlement currency for this row: "USD" (post-cutover, native) or
+  // "ZAR" (pre-cutover legacy). Drives the badge in the per-org timeline.
+  settlement_currency: "USD" | "ZAR";
+  // Pre-cutover ZAR settlement preserved verbatim for historical
+  // reconciliation. Null for native-USD rows.
+  legacy_amount_zar: number | null;
+  legacy_fx_rate: number | null;
   package_id: string | null;
   payment_reference: string | null;
   created_at: string;
@@ -108,7 +109,7 @@ interface PendingSettlement {
   actor_user_id: string | null;
   org_id: string | null;
   org_name: string;
-  amount_zar: number;
+  amount_usd: number;
   credits: number;
   package_id: string | null;
   initiated_at: string;
@@ -192,32 +193,36 @@ function resolveOrgName(id: string | null, orgNameById: Map<string, string>): st
 
 /**
  * Convert a `credits.purchased` audit log row into a normalised purchase.
- * Only counts when `price_zar` is present and > 0 — defends against any
- * future audit-log rows written with zero price (promotional / test grants).
+ *
+ * USD-native (post-cutover 2026-05-01): prefer `metadata.price_usd`.
+ * Pre-cutover rows that only carry `price_zar` / `zar_amount_charged`
+ * are surfaced with `settlement_currency: "ZAR"` so historical totals
+ * remain reconcilable. We never invent a USD figure for legacy ZAR
+ * rows — `amount_usd` is left at 0 in that case to avoid double-counting
+ * against the new native-USD totals.
  */
 function purchaseFromAuditLog(
   row: AuditLogRow,
   orgNameById: Map<string, string>,
 ): PurchaseEnriched | null {
   const meta = row.metadata ?? {};
-  // Prefer the explicit ZAR settlement field; fall back to the legacy price_zar.
-  const amount_zar = num(meta.zar_amount_charged) || num(meta.price_zar);
-  if (amount_zar <= 0) return null;
+  const price_usd = num(meta.price_usd);
+  const legacy_zar = num(meta.zar_amount_charged) || num(meta.price_zar) || num(meta.legacy_price_zar);
+  if (price_usd <= 0 && legacy_zar <= 0) return null;
   const credits = num(meta.credits_added) || num(meta.credits);
   const orgId = row.org_id ?? row.entity_id ?? null;
-  const price_usd = typeof meta.price_usd === "number" ? meta.price_usd : null;
-  const fx_rate = typeof meta.fx_rate === "number" ? meta.fx_rate : null;
+  const isNativeUsd = price_usd > 0 && (
+    meta.currency === "USD" || meta.fx_basis === "native_usd" || legacy_zar === 0
+  );
   return {
     id: `audit:${row.id}`,
     org_id: orgId,
     org_name: resolveOrgName(orgId, orgNameById),
     credits,
-    amount_zar,
-    price_usd,
-    fx_rate,
-    fx_basis: str(meta.fx_basis),
-    fx_source: str(meta.fx_source),
-    fx_fetched_at: str(meta.fx_fetched_at),
+    amount_usd: isNativeUsd ? price_usd : 0,
+    settlement_currency: isNativeUsd ? "USD" : "ZAR",
+    legacy_amount_zar: legacy_zar > 0 ? legacy_zar : null,
+    legacy_fx_rate: typeof meta.fx_rate === "number" ? meta.fx_rate : (typeof meta.legacy_fx_rate === "number" ? meta.legacy_fx_rate : null),
     package_id: str(meta.package_id),
     payment_reference: str(meta.payment_reference) ?? str(meta.reference),
     created_at: row.created_at,
@@ -240,23 +245,23 @@ function purchaseFromLedger(
   orgNameById: Map<string, string>,
 ): PurchaseEnriched | null {
   const meta = row.metadata ?? {};
-  const amount_zar = num(meta.zar_amount_charged) || num(meta.price_zar);
-  if (amount_zar <= 0) return null;
+  const price_usd = num(meta.price_usd);
+  const legacy_zar = num(meta.zar_amount_charged) || num(meta.price_zar) || num(meta.legacy_price_zar);
+  if (price_usd <= 0 && legacy_zar <= 0) return null;
   const credits = num(meta.credits) || Math.abs(row.tokens_burned || 0);
   const isManual = (row.endpoint ?? "").includes("manual");
-  const price_usd = typeof meta.price_usd === "number" ? meta.price_usd : null;
-  const fx_rate = typeof meta.fx_rate === "number" ? meta.fx_rate : null;
+  const isNativeUsd = price_usd > 0 && (
+    meta.currency === "USD" || meta.fx_basis === "native_usd" || legacy_zar === 0
+  );
   return {
     id: `ledger:${row.id}`,
     org_id: row.org_id,
     org_name: resolveOrgName(row.org_id, orgNameById),
     credits,
-    amount_zar,
-    price_usd,
-    fx_rate,
-    fx_basis: str(meta.fx_basis),
-    fx_source: str(meta.fx_source),
-    fx_fetched_at: str(meta.fx_fetched_at),
+    amount_usd: isNativeUsd ? price_usd : 0,
+    settlement_currency: isNativeUsd ? "USD" : "ZAR",
+    legacy_amount_zar: legacy_zar > 0 ? legacy_zar : null,
+    legacy_fx_rate: typeof meta.fx_rate === "number" ? meta.fx_rate : (typeof meta.legacy_fx_rate === "number" ? meta.legacy_fx_rate : null),
     package_id: str(meta.package_id),
     payment_reference: str(meta.payment_reference),
     created_at: row.created_at,
@@ -387,7 +392,7 @@ export function AdminRevenuePanel() {
           actor_user_id: r.actor_user_id,
           org_id: orgId,
           org_name: resolveOrgName(orgId, orgNameById),
-          amount_zar: num(meta.amount_zar),
+          amount_usd: num(meta.amount_usd) || num(meta.price_usd),
           credits: num(meta.credits),
           package_id: str(meta.package_id),
           initiated_at: r.created_at,
@@ -421,7 +426,7 @@ export function AdminRevenuePanel() {
       backfilled: 0,   // reconstructed from evidence; flagged for auditors
     };
     for (const r of rows) {
-      out.revenue += r.amount_zar;
+      out.revenue += r.amount_usd;
       out.credits += r.credits;
       if (r.org_id) out.buyers.add(r.org_id);
       if (r.source === "ledger:manual") out.manual += 1;
@@ -436,7 +441,7 @@ export function AdminRevenuePanel() {
     for (const r of rows) {
       const k = bucketKey(r.created_at, granularity);
       const cur = byBucket.get(k) ?? { revenue: 0, credits: 0, count: 0 };
-      cur.revenue += r.amount_zar;
+      cur.revenue += r.amount_usd;
       cur.credits += r.credits;
       cur.count += 1;
       byBucket.set(k, cur);
@@ -462,7 +467,7 @@ export function AdminRevenuePanel() {
         count: 0,
         last: r.created_at,
       };
-      cur.revenue += r.amount_zar;
+      cur.revenue += r.amount_usd;
       cur.credits += r.credits;
       cur.count += 1;
       if (r.created_at > cur.last) cur.last = r.created_at;
@@ -492,12 +497,10 @@ export function AdminRevenuePanel() {
       "org_id",
       "org_name",
       "credits",
-      "price_usd",
-      "amount_zar",
-      "fx_rate",
-      "fx_basis",
-      "fx_source",
-      "fx_fetched_at",
+      "amount_usd",
+      "settlement_currency",
+      "legacy_amount_zar",
+      "legacy_fx_rate",
       "package_id",
       "payment_reference",
       "source",
@@ -512,12 +515,10 @@ export function AdminRevenuePanel() {
         r.org_id ?? "",
         `"${(r.org_name ?? "").replace(/"/g, '""')}"`,
         String(r.credits),
-        r.price_usd != null ? String(r.price_usd) : "",
-        String(r.amount_zar),
-        r.fx_rate != null ? String(r.fx_rate) : "",
-        r.fx_basis ?? "",
-        r.fx_source ?? "",
-        r.fx_fetched_at ?? "",
+        String(r.amount_usd),
+        r.settlement_currency,
+        r.legacy_amount_zar != null ? String(r.legacy_amount_zar) : "",
+        r.legacy_fx_rate != null ? String(r.legacy_fx_rate) : "",
         r.package_id ?? "",
         r.payment_reference ?? "",
         r.source,
@@ -612,7 +613,7 @@ export function AdminRevenuePanel() {
             <Stat
               icon={TrendingUp}
               label="Revenue"
-              value={ZAR.format(totals.revenue)}
+              value={USD.format(totals.revenue)}
               hint={`${totals.paid} paid · ${totals.manual} manual${totals.backfilled > 0 ? ` · ${totals.backfilled} backfilled` : ""}`}
               tone="success"
             />
@@ -690,7 +691,7 @@ export function AdminRevenuePanel() {
                       </TableCell>
                       <TableCell className="font-medium">{b.org_name}</TableCell>
                       <TableCell className="text-right font-mono">
-                        {ZAR.format(b.revenue)}
+                        {USD.format(b.revenue)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {NUM.format(b.credits)}
@@ -762,9 +763,9 @@ export function AdminRevenuePanel() {
                     <TableHead>Package</TableHead>
                     <TableHead className="text-right">Credits</TableHead>
                     <TableHead className="text-right">USD</TableHead>
-                    <TableHead className="text-right">ZAR settled</TableHead>
-                    <TableHead className="text-right">FX (USD→ZAR)</TableHead>
-                    <TableHead>FX basis</TableHead>
+                    <TableHead>Currency</TableHead>
+                    <TableHead className="text-right">Legacy ZAR</TableHead>
+                    <TableHead className="text-right">Legacy FX</TableHead>
                     <TableHead>Reference</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -792,32 +793,21 @@ export function AdminRevenuePanel() {
                         {NUM.format(r.credits)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {r.price_usd != null ? USD.format(r.price_usd) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {r.amount_zar > 0 ? ZAR.format(r.amount_zar) : "—"}
-                      </TableCell>
-                      <TableCell
-                        className="text-right font-mono text-[11px]"
-                        title={
-                          r.fx_source || r.fx_fetched_at
-                            ? `Source: ${r.fx_source ?? "—"}${r.fx_fetched_at ? ` · fetched ${r.fx_fetched_at}` : ""}`
-                            : "No FX basis recorded for this charge"
-                        }
-                      >
-                        {r.fx_rate != null ? r.fx_rate.toFixed(4) : "—"}
+                        {r.amount_usd > 0 ? USD.format(r.amount_usd) : "—"}
                       </TableCell>
                       <TableCell>
-                        {r.fx_basis ? (
-                          <Badge
-                            variant={r.fx_basis === "live" ? "secondary" : "outline"}
-                            className="font-mono text-[10px] w-fit"
-                          >
-                            {r.fx_basis}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">—</span>
-                        )}
+                        <Badge
+                          variant={r.settlement_currency === "USD" ? "secondary" : "outline"}
+                          className="font-mono text-[10px] w-fit"
+                        >
+                          {r.settlement_currency}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-[11px] text-muted-foreground">
+                        {r.legacy_amount_zar != null ? ZAR.format(r.legacy_amount_zar) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-[11px] text-muted-foreground">
+                        {r.legacy_fx_rate != null ? r.legacy_fx_rate.toFixed(4) : "—"}
                       </TableCell>
                       <TableCell className="font-mono text-[11px] max-w-[180px] truncate">
                         {r.payment_reference ?? "—"}
@@ -882,7 +872,7 @@ export function AdminRevenuePanel() {
                         {p.credits > 0 ? NUM.format(p.credits) : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {p.amount_zar > 0 ? ZAR.format(p.amount_zar) : "—"}
+                        {p.amount_usd > 0 ? USD.format(p.amount_usd) : "—"}
                       </TableCell>
                       <TableCell className="font-mono text-[11px]">
                         {p.reference}

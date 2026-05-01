@@ -3,7 +3,7 @@
  *
  * Two-track pricing in the same "Emerald & Airy" Stripe aesthetic as the
  * product pages: pay-as-you-go for operators ($1 USD per credit, charged in
- * ZAR at the live exchange rate via Paystack) and a custom Institutional tier
+ * USD natively via Paystack) and a custom Institutional tier
  * for banks, DFIs, and sovereigns.
  * a custom Institutional tier for banks, DFIs, and sovereigns.
  */
@@ -265,8 +265,8 @@ export default function Pricing() {
 
           {/* Footnote */}
           <p className="mt-10 text-center text-xs text-muted-foreground">
-            Prices in USD; charged in ZAR at checkout via Paystack at the live
-            exchange rate. Pay-as-you-go billed per successful Proof of Intent.
+            All prices in USD. Charged in USD at checkout via Paystack.
+            Pay-as-you-go billed per successful Proof of Intent.
             Institutional contracts include volume commitments and dedicated SLAs.
           </p>
         </div>

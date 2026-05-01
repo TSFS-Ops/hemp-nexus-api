@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { formatDistanceToNow } from "date-fns";
+// formatDistanceToNow no longer used after USD-native cutover (FX rate display removed).
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,16 +23,13 @@ import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { cn } from "@/lib/utils";
 
 // ==============================================
-// CREDIT PACKAGES — USD display, ZAR settlement
+// CREDIT PACKAGES — USD-native settlement (cutover 2026-05-01)
 // ==============================================
-// Pricing is the commercial source of truth in USD ($1 / credit) per
-// Daniel Davies' 2026-04-30 decision. Paystack South Africa settles
-// in ZAR; the live USD→ZAR rate used here comes from the same
-// `token-purchase/packages` endpoint the backend uses to charge the
-// customer, so the displayed "≈ R{x}" estimate matches what hits the
-// card. Drift between this list and `TOKEN_PACKAGES` in
-// `supabase/functions/token-purchase/index.ts` will cause the
-// checkout to charge a different amount than the UI advertises.
+// Paystack charges Izenzo customers directly in USD. There is no FX
+// conversion at checkout. 1 credit = $1.00 USD. Drift between this
+// list and `TOKEN_PACKAGES` in
+// `supabase/functions/token-purchase/index.ts` will charge the wrong
+// amount.
 const CREDIT_PACKAGES = [
   {
     id: 'single',
@@ -90,46 +87,11 @@ function BillingContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
   const [paymentCancelled, setPaymentCancelled] = useState(false);
-  // Live USD→ZAR rate from `token-purchase/packages` — same source the
-  // backend uses to charge the customer, so the displayed "≈ R{x}"
-  // estimate matches what hits the card. Null until first fetch.
-  const [fxRate, setFxRate] = useState<number | null>(null);
-  // FX provenance — surfaced beside the ≈ ZAR estimate so users can
-  // see whether the rate was just fetched from the live FX API or
-  // served from the cached fallback in admin_settings.
-  const [fxBasis, setFxBasis] = useState<string | null>(null);
-  const [fxFetchedAt, setFxFetchedAt] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
-  // Fetch live FX rate so the ZAR estimate beside each USD price is
-  // accurate. Non-essential — silent failure is intentional; the real
-  // ZAR amount is computed server-side at checkout.
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase.functions.invoke("token-purchase/packages");
-        const payload = data as {
-          fxRate?: number;
-          fxBasis?: string | null;
-          fxFetchedAt?: string | null;
-        } | null;
-        const apiRate = payload?.fxRate;
-        if (!cancelled && typeof apiRate === "number" && apiRate > 0) {
-          setFxRate(apiRate);
-          setFxBasis(payload?.fxBasis ?? null);
-          setFxFetchedAt(payload?.fxFetchedAt ?? null);
-        }
-      } catch {
-        /* non-essential */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
+  // (USD-native cutover 2026-05-01) — FX rate fetch removed. Paystack
+  // charges the customer in USD directly; no ZAR estimate to display.
 
   // Auto-verify payment when returning from Paystack checkout
   useEffect(() => {
@@ -480,38 +442,11 @@ function BillingContent() {
         {/* Credit Packages */}
         <div>
           <h2 className="text-lg font-semibold mb-1">Purchase Credits</h2>
-          <p className="text-sm text-muted-foreground mb-1">
-            Prices in USD. Charged in ZAR at checkout via Paystack at the live exchange rate.
+          <p className="text-sm text-muted-foreground mb-4">
+            All prices in USD. Charged in USD at checkout via Paystack.
           </p>
-          {fxRate !== null && (
-            <p className="text-xs text-muted-foreground mb-4 tabular-nums">
-              FX rate: 1 USD ≈ R{fxRate.toLocaleString("en-ZA", { maximumFractionDigits: 4 })}
-              {fxBasis && (
-                <>
-                  {" · "}
-                  <span className={cn(fxBasis === "live" ? "text-foreground" : "text-amber-600")}>
-                    {fxBasis === "live"
-                      ? "live from exchangerate.host"
-                      : fxBasis === "cached"
-                        ? "cached fallback"
-                        : fxBasis}
-                  </span>
-                </>
-              )}
-              {fxFetchedAt && (
-                <>
-                  {" · fetched "}
-                  <time dateTime={fxFetchedAt} title={fxFetchedAt}>
-                    {formatDistanceToNow(new Date(fxFetchedAt), { addSuffix: true })}
-                  </time>
-                </>
-              )}
-            </p>
-          )}
-          {fxRate === null && <div className="mb-4 h-4" />}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {CREDIT_PACKAGES.map((pkg) => {
-              const zarEstimate = fxRate ? pkg.priceUsd * fxRate : null;
               return (
               <Card 
                 key={pkg.id}
@@ -530,16 +465,10 @@ function BillingContent() {
                   <CardDescription>{pkg.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="mb-1">
+                  <div className="mb-4">
                     <span className="text-4xl font-bold">${pkg.priceUsd.toLocaleString("en-US")}</span>
                     <span className="text-muted-foreground"> USD</span>
                   </div>
-                  {zarEstimate !== null && (
-                    <p className="mb-4 text-xs text-muted-foreground tabular-nums">
-                      ≈ R{zarEstimate.toLocaleString("en-ZA", { maximumFractionDigits: 0 })} ZAR at checkout
-                    </p>
-                  )}
-                  {zarEstimate === null && <div className="mb-4 h-4" />}
                   <div className="space-y-2 text-sm text-muted-foreground mb-6">
                     <div className="flex items-center justify-center gap-2">
                       <Coins className="h-4 w-4 text-primary" />
@@ -721,7 +650,7 @@ function BillingContent() {
 
         {/* Payment Security Note */}
         <p className="text-center text-xs text-muted-foreground">
-          Payments processed securely by Paystack. Prices shown in USD; settled in ZAR at the live exchange rate.
+          Payments processed securely by Paystack. All prices shown and charged in USD.
         </p>
       </div>
     </>

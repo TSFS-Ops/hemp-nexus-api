@@ -1,19 +1,19 @@
 /**
- * fx.ts — USD→ZAR exchange-rate fetcher used by the dual-currency
- * billing path (USD display, ZAR Paystack settlement).
+ * fx.ts — USD→ZAR exchange-rate fetcher.
  *
- * Decision (James Davies, 2026-04-30): the platform displays prices
- * in USD but Paystack South Africa settles in ZAR, so each checkout
- * must convert the USD package price to ZAR cents at initialisation
- * time and persist the FX basis in the audit trail.
+ * @deprecated for the purchase flow as of 2026-05-01.
+ *
+ * Paystack now charges Izenzo customers natively in USD. The
+ * `token-purchase` edge function no longer imports this module and no
+ * longer performs FX conversion at checkout. The functions below remain
+ * exported only for historical reporting consumers (e.g. backfill /
+ * reconciliation scripts that need to value pre-cutover ZAR ledger rows
+ * at a comparable USD figure). Do NOT call these from any new payment,
+ * invoicing, or settlement code.
  *
  * Source: exchangerate.host — free, no API key, returns mid-market
- * rates. We cache the last successful rate in `admin_settings.
- * fx_rate_usd_zar` so a transient FX-API outage does not block
- * checkout (we fall back to the most recent known rate, audited as
- * `cached_fallback`). If neither the live call nor the cache yields
- * a rate we surface a hard error to the caller — never silently
- * default to a hardcoded number.
+ * rates. The `admin_settings.fx_rate_usd_zar` cache is preserved
+ * read-only so existing reports keep working.
  */
 
 // deno-lint-ignore no-explicit-any

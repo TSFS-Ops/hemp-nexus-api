@@ -24,7 +24,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_shared/idempotency.ts";
-import { getUsdZarRate, usdToZarCents } from "../_shared/fx.ts";
+// USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
+// directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
+// purchase flow and intentionally NOT imported here.
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -66,18 +68,15 @@ const CHARGING_ENTITY = {
 };
 
 // ==============================================
-// TOKEN PACKAGES — USD-denominated commercial pricing.
+// TOKEN PACKAGES — USD-native settlement (cutover 2026-05-01).
 //
-// Decision (Daniel Davies, 2026-04-30; James Davies confirmation
-// 2026-04-30): the platform displays prices in USD but Paystack South
-// Africa settles in ZAR. The USD price is the commercial reference
-// price; the ZAR amount actually charged is computed at checkout time
-// from the live USD→ZAR rate (see _shared/fx.ts) and persisted in the
-// audit trail alongside the FX basis.
+// Paystack now charges Izenzo customers directly in USD. There is no
+// FX conversion at checkout; `amount` is sent to Paystack as USD cents
+// and the ledger / audit row records `currency='USD'` and
+// `fx_basis='native_usd'`. Legacy ZAR fields are no longer written.
 //
-// `single` ($1) is retained for in-app one-credit top-ups; `pack_10`,
-// `pack_50`, `pack_200` are the headline tiers that match Daniel's
-// pricing email.
+// `single` ($1) is the in-app one-credit top-up; `pack_10`, `pack_50`,
+// `pack_200` are the headline tiers (1 credit = $1.00 USD).
 // ==============================================
 const TOKEN_PACKAGES: Record<string, {
   credits: number;
@@ -293,10 +292,8 @@ Deno.serve(async (req) => {
 
       // Insert ledger entry - unique index on request_id is the hard idempotency guard.
       // If webhook already inserted this reference, this INSERT fails and we return alreadyCredited.
-      // Dual-currency audit fields (price_usd, zar_amount_charged, fx_rate, fx_basis,
-      // fx_fetched_at, fx_source) are propagated from the Paystack `metadata` blob
-      // captured at checkout-init so customer support can reconstruct the exact
-      // FX basis used for any settled charge.
+      // USD-native audit fields (price_usd, currency, fx_basis='native_usd') are
+      // propagated from the Paystack `metadata` blob captured at checkout-init.
       const { error: ledgerError } = await supabase.from("token_ledger").insert({
         org_id: orgId,
         endpoint: "payment:paystack:verify",
@@ -309,13 +306,8 @@ Deno.serve(async (req) => {
           payment_reference: reference,
           package_id: meta.package_id,
           price_usd: meta.price_usd ?? null,
-          zar_amount_charged: meta.zar_amount_charged ?? meta.price_zar ?? null,
-          fx_rate: meta.fx_rate ?? null,
-          fx_basis: meta.fx_basis ?? null,
-          fx_fetched_at: meta.fx_fetched_at ?? null,
-          fx_source: meta.fx_source ?? null,
-          // Legacy field retained for HQ Revenue dashboard back-compat.
-          price_zar: meta.price_zar ?? meta.zar_amount_charged ?? null,
+          currency: "USD",
+          fx_basis: "native_usd",
           verification_fallback: true,
         },
       });
@@ -363,16 +355,10 @@ Deno.serve(async (req) => {
           new_balance: newBalance,
           payment_reference: reference,
           package_id: meta.package_id,
-          // Dual-currency settlement record — exposed in the HQ Revenue
-          // "Order details" surface for customer support investigations.
+          // USD-native settlement record — exposed in HQ Revenue.
           price_usd: meta.price_usd ?? null,
-          zar_amount_charged: meta.zar_amount_charged ?? meta.price_zar ?? null,
-          fx_rate: meta.fx_rate ?? null,
-          fx_basis: meta.fx_basis ?? null,
-          fx_fetched_at: meta.fx_fetched_at ?? null,
-          fx_source: meta.fx_source ?? null,
-          // Legacy field retained for the existing revenue aggregation.
-          price_zar: meta.price_zar ?? meta.zar_amount_charged ?? null,
+          currency: "USD",
+          fx_basis: "native_usd",
           verification_fallback: true,
         },
       });
@@ -398,7 +384,7 @@ Deno.serve(async (req) => {
           headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
           details: {
             "Credits added": credits,
-            "Amount (ZAR)": meta.price_zar ?? "—",
+            "Amount (USD)": meta.price_usd != null ? `$${Number(meta.price_usd).toFixed(2)}` : "—",
             "Package ID": meta.package_id ?? "—",
             "New balance": newBalance,
             "Payment reference": reference,
@@ -518,27 +504,11 @@ Deno.serve(async (req) => {
     // Get client IP for audit
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
 
-    // Convert the USD package price into ZAR cents at checkout time.
-    // Paystack South Africa settles in ZAR, so the displayed USD price
-    // and the ZAR amount actually charged must both be persisted in
-    // the audit trail (James Davies decision, 2026-04-30).
-    let fx;
-    try {
-      fx = await getUsdZarRate(supabase);
-    } catch (e) {
-      console.error("[token-purchase] FX rate unavailable", e);
-      return new Response(
-        JSON.stringify({
-          error: "Exchange rate temporarily unavailable. Please try again in a moment.",
-          code: "FX_UNAVAILABLE",
-        }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-    const zarCents = usdToZarCents(pkg.price_usd, fx.rate);
-    const zarAmount = zarCents / 100;
+    // USD-native checkout (cutover 2026-05-01). Paystack now charges
+    // the customer in USD directly — no FX conversion, no ZAR layer.
+    const usdCents = Math.round(pkg.price_usd * 100);
 
-    // Create Paystack transaction (ZAR currency — converted from USD)
+    // Create Paystack transaction (USD currency, native settlement)
     const callbackBase = callbackUrl?.replace(/\?.*$/, '') || `${req.headers.get("origin")}/billing`;
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -548,34 +518,24 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         email: profile.email || userData.user.email,
-        amount: zarCents,
-        currency: "ZAR",
+        amount: usdCents,
+        currency: "USD",
         callback_url: `${callbackBase}?status=success`,
         metadata: {
           org_id: profile.org_id,
           user_id: userData.user.id,
           package_id: packageId,
           credits: pkg.credits,
-          // Dual-currency audit fields — these flow through to the
-          // webhook + verify handlers and end up on every ledger and
-          // audit row tied to this payment reference.
+          // USD-native audit fields — propagated through verify + webhook.
           price_usd: pkg.price_usd,
-          zar_amount_charged: zarAmount,
-          fx_rate: fx.rate,
-          fx_basis: fx.basis,
-          fx_fetched_at: fx.fetched_at,
-          fx_source: fx.source,
-          // Legacy field preserved so the existing webhook + revenue
-          // dashboard code keeps working until the HQ Revenue panel
-          // is updated to read price_usd directly.
-          price_zar: zarAmount,
+          currency: "USD",
+          fx_basis: "native_usd",
           client_ip: clientIp,
           timestamp: new Date().toISOString(),
           custom_fields: [
             { display_name: "Package", variable_name: "package", value: pkg.label },
             { display_name: "Credits", variable_name: "credits", value: pkg.credits.toString() },
             { display_name: "USD Price", variable_name: "usd_price", value: `$${pkg.price_usd.toFixed(2)}` },
-            { display_name: "FX (USD→ZAR)", variable_name: "fx_rate", value: fx.rate.toFixed(4) },
             { display_name: "Entity", variable_name: "entity", value: CHARGING_ENTITY.name },
           ],
         },
@@ -607,13 +567,9 @@ Deno.serve(async (req) => {
         package_id: packageId,
         credits: pkg.credits,
         price_usd: pkg.price_usd,
-        zar_amount_charged: zarAmount,
-        fx_rate: fx.rate,
-        fx_basis: fx.basis,
-        fx_fetched_at: fx.fetched_at,
-        fx_source: fx.source,
-        // legacy field, retained for HQ Revenue dashboard
-        amount_zar: zarAmount,
+        currency: "USD",
+        fx_basis: "native_usd",
+        amount_usd: pkg.price_usd,
         reference: paystackData.data.reference,
         client_ip: clientIp,
       },
@@ -627,12 +583,7 @@ Deno.serve(async (req) => {
           name: pkg.label,
           credits: pkg.credits,
           priceUsd: pkg.price_usd,
-          // Reflects the ZAR amount that will actually be charged at
-          // the current rate. Useful for the UI's "you will be
-          // charged R{x}" disclosure beside the Pay button.
-          zarAmountCharged: zarAmount,
-          fxRate: fx.rate,
-          fxBasis: fx.basis,
+          currency: "USD",
         },
         entity: CHARGING_ENTITY,
       };
@@ -678,34 +629,13 @@ async function handleGetPackages(): Promise<Response> {
     saving: pkg.saving ?? null,
   }));
 
-  // Best-effort live FX so the UI can render an accurate "≈ R{x}"
-  // estimate beside each USD price. Uses the same source the actual
-  // checkout uses (live exchangerate.host with cached fallback in
-  // admin_settings) so the estimate matches what hits the card. If
-  // the rate is unavailable we omit it — the UI already handles null.
-  let fxRate: number | null = null;
-  let fxBasis: string | null = null;
-  let fxFetchedAt: string | null = null;
-  try {
-    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const fx = await getUsdZarRate(admin);
-    fxRate = fx.rate;
-    fxBasis = fx.basis;
-    fxFetchedAt = fx.fetched_at;
-  } catch (e) {
-    console.warn("[token-purchase/packages] FX rate unavailable", e);
-  }
-
   return new Response(
     JSON.stringify({
       packages,
-      // Display currency is USD; Paystack settles in ZAR — see
-      // _shared/fx.ts for the conversion path.
+      // USD-native settlement — Paystack charges in USD directly.
       currency: "USD",
-      settlementCurrency: "ZAR",
-      fxRate,
-      fxBasis,
-      fxFetchedAt,
+      settlementCurrency: "USD",
+      fxBasis: "native_usd",
       entity: CHARGING_ENTITY,
       refundPolicy: REFUND_POLICY,
     }),
@@ -798,14 +728,15 @@ async function handleChargeSuccess(
       user_id?: string;
       package_id?: string;
       credits?: number;
-      price_zar?: number;
-      // Dual-currency audit fields stamped at checkout-init. Propagated
-      // here into both the token_ledger row and the credits.purchased
-      // audit_log so support can reconstruct FX basis for any charge.
+      // USD-native audit fields stamped at checkout-init.
       price_usd?: number;
+      currency?: string;
+      fx_basis?: string;
+      // Legacy ZAR fields tolerated on inbound reads only — preserved
+      // so a webhook for a pre-cutover transaction still parses cleanly.
+      price_zar?: number;
       zar_amount_charged?: number;
       fx_rate?: number;
-      fx_basis?: string;
       fx_fetched_at?: string;
       fx_source?: string;
       client_ip?: string;
@@ -866,17 +797,14 @@ async function handleChargeSuccess(
     metadata: {
       payment_reference: reference,
       package_id: metadata.package_id,
-      // Dual-currency audit fields — captured at checkout-init and
-      // mirrored here so the ledger row alone is enough for support to
-      // explain "why R{x} for $Y" without joining to audit_logs.
+      // USD-native audit fields. For pre-cutover webhooks that still
+      // carry legacy ZAR metadata we preserve those values verbatim
+      // alongside (read-only history; never written for new charges).
       price_usd: metadata.price_usd ?? null,
-      zar_amount_charged: metadata.zar_amount_charged ?? metadata.price_zar ?? null,
-      fx_rate: metadata.fx_rate ?? null,
-      fx_basis: metadata.fx_basis ?? null,
-      fx_fetched_at: metadata.fx_fetched_at ?? null,
-      fx_source: metadata.fx_source ?? null,
-      // Legacy field retained for HQ Revenue dashboard back-compat.
-      price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      currency: metadata.currency ?? "USD",
+      fx_basis: metadata.fx_basis ?? "native_usd",
+      legacy_price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      legacy_fx_rate: metadata.fx_rate ?? null,
       customer_email: customer?.email,
       paid_at,
       client_ip: metadata.client_ip,
@@ -905,8 +833,7 @@ async function handleChargeSuccess(
     });
   }
 
-  // Audit log — dual-currency settlement record for the HQ Revenue
-  // "Order details" surface used by customer support.
+  // Audit log — USD-native settlement record for HQ Revenue.
   await supabase.from("audit_logs").insert({
     org_id: orgId,
     actor_user_id: userId || null,
@@ -919,13 +846,11 @@ async function handleChargeSuccess(
       payment_reference: reference,
       package_id: metadata.package_id,
       price_usd: metadata.price_usd ?? null,
-      zar_amount_charged: metadata.zar_amount_charged ?? metadata.price_zar ?? null,
-      fx_rate: metadata.fx_rate ?? null,
-      fx_basis: metadata.fx_basis ?? null,
-      fx_fetched_at: metadata.fx_fetched_at ?? null,
-      fx_source: metadata.fx_source ?? null,
-      // Legacy — keep until HQ Revenue is migrated to read price_usd directly.
-      price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      currency: metadata.currency ?? "USD",
+      fx_basis: metadata.fx_basis ?? "native_usd",
+      // Legacy ZAR fields preserved when received (pre-cutover replays).
+      legacy_price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+      legacy_fx_rate: metadata.fx_rate ?? null,
       paid_at,
       customer_email: customer?.email ?? null,
     },
@@ -952,7 +877,7 @@ async function handleChargeSuccess(
       headline: `${orgName} purchased ${credits} credit${credits === 1 ? "" : "s"}`,
       details: {
         "Credits added": credits,
-        "Amount (ZAR)": metadata.price_zar ?? "—",
+        "Amount (USD)": metadata.price_usd != null ? `$${Number(metadata.price_usd).toFixed(2)}` : "—",
         "Package ID": metadata.package_id ?? "—",
         "New balance": newBalance,
         "Payment reference": reference,
