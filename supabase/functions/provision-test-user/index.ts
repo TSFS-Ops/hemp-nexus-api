@@ -10,27 +10,26 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 
 const TEST_EMAIL_SUFFIX = "@test.izenzo.co.za";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+function json(req: Request, body: unknown, status = 200) {
+  return withCors(req, new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  }));
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const __pf = handleCorsPreflight(req);
+  if (__pf) return __pf;
 
   try {
     const { email, password, user_metadata } = await req.json();
