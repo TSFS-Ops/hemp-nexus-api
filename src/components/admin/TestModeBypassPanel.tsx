@@ -79,19 +79,27 @@ export function TestModeBypassPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [state, setState] = useState<BypassState>(DEFAULT_STATE);
+  const [productionLocked, setProductionLocked] = useState(false);
+  const [tier, setTier] = useState<string>("sandbox");
 
   useEffect(() => {
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("admin_settings")
-          .select("value")
-          .eq("key", "test_mode_bypass")
-          .maybeSingle();
+        const [{ data, error }, lockoutRes] = await Promise.all([
+          supabase
+            .from("admin_settings")
+            .select("value")
+            .eq("key", "test_mode_bypass")
+            .maybeSingle(),
+          supabase.rpc("get_test_mode_lockout_state"),
+        ]);
         if (error) throw error;
         if (data?.value) {
           setState({ ...DEFAULT_STATE, ...(data.value as unknown as BypassState) });
         }
+        const lockout = (lockoutRes.data ?? {}) as Record<string, unknown>;
+        setProductionLocked(lockout.production_locked === true);
+        setTier(typeof lockout.tier === "string" ? lockout.tier : "sandbox");
       } catch (err) {
         console.error(err);
         toast.error("Failed to load test-mode settings");
