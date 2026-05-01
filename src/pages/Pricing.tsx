@@ -2,7 +2,9 @@
  * Pricing, Institutional infrastructure framing.
  *
  * Two-track pricing in the same "Emerald & Airy" Stripe aesthetic as the
- * product pages: pay-as-you-go for operators (R10 ZAR per Trade Request) and
+ * product pages: pay-as-you-go for operators ($1 USD per credit, charged in
+ * ZAR at the live exchange rate via Paystack) and a custom Institutional tier
+ * for banks, DFIs, and sovereigns.
  * a custom Institutional tier for banks, DFIs, and sovereigns.
  */
 
