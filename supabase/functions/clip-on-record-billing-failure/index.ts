@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.toLowerCase().startsWith("bearer ")) {
-    return json(401, { error: "missing_bearer_token" });
+    return json(req, 401, { error: "missing_bearer_token" });
   }
 
   // Verify the caller and check role using the user's JWT.
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return json(401, { error: "invalid_token" });
+  if (userErr || !userData?.user) return json(req, 401, { error: "invalid_token" });
   const userId = userData.user.id;
 
   const { data: roleRow, error: roleErr } = await userClient
@@ -68,18 +68,18 @@ Deno.serve(async (req) => {
     .eq("user_id", userId)
     .eq("role", "platform_admin")
     .maybeSingle();
-  if (roleErr) return json(500, { error: "role_check_failed" });
-  if (!roleRow) return json(403, { error: "not_platform_admin" });
+  if (roleErr) return json(req, 500, { error: "role_check_failed" });
+  if (!roleRow) return json(req, 403, { error: "not_platform_admin" });
 
   let body: { request_id?: unknown; reason?: unknown };
   try {
     body = await req.json();
   } catch {
-    return json(400, { error: "invalid_json" });
+    return json(req, 400, { error: "invalid_json" });
   }
 
   if (!isUuid(body.request_id)) {
-    return json(400, { error: "invalid_request_id" });
+    return json(req, 400, { error: "invalid_request_id" });
   }
   const reason =
     body.reason && typeof body.reason === "object" && !Array.isArray(body.reason)
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
   });
   if (rpcErr) {
     console.error("[clip-on-record-billing-failure] rpc failed", rpcErr);
-    return json(500, { error: "record_failed", detail: rpcErr.message });
+    return json(req, 500, { error: "record_failed", detail: rpcErr.message });
   }
 
   // Best-effort: enrich the audit trail with the human actor (the helper
@@ -126,5 +126,5 @@ Deno.serve(async (req) => {
     console.warn("[clip-on-record-billing-failure] actor audit append failed", e);
   }
 
-  return json(200, { ok: true });
+  return json(req, 200, { ok: true });
 });
