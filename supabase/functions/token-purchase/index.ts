@@ -495,7 +495,27 @@ Deno.serve(async (req) => {
     // Get client IP for audit
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
 
-    // Create Paystack transaction (ZAR currency)
+    // Convert the USD package price into ZAR cents at checkout time.
+    // Paystack South Africa settles in ZAR, so the displayed USD price
+    // and the ZAR amount actually charged must both be persisted in
+    // the audit trail (James Davies decision, 2026-04-30).
+    let fx;
+    try {
+      fx = await getUsdZarRate(supabase);
+    } catch (e) {
+      console.error("[token-purchase] FX rate unavailable", e);
+      return new Response(
+        JSON.stringify({
+          error: "Exchange rate temporarily unavailable. Please try again in a moment.",
+          code: "FX_UNAVAILABLE",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const zarCents = usdToZarCents(pkg.price_usd, fx.rate);
+    const zarAmount = zarCents / 100;
+
+    // Create Paystack transaction (ZAR currency — converted from USD)
     const callbackBase = callbackUrl?.replace(/\?.*$/, '') || `${req.headers.get("origin")}/billing`;
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -505,7 +525,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         email: profile.email || userData.user.email,
-        amount: pkg.price_cents, // Paystack uses cents
+        amount: zarCents,
         currency: "ZAR",
         callback_url: `${callbackBase}?status=success`,
         metadata: {
@@ -513,12 +533,26 @@ Deno.serve(async (req) => {
           user_id: userData.user.id,
           package_id: packageId,
           credits: pkg.credits,
-          price_zar: pkg.price_zar,
+          // Dual-currency audit fields — these flow through to the
+          // webhook + verify handlers and end up on every ledger and
+          // audit row tied to this payment reference.
+          price_usd: pkg.price_usd,
+          zar_amount_charged: zarAmount,
+          fx_rate: fx.rate,
+          fx_basis: fx.basis,
+          fx_fetched_at: fx.fetched_at,
+          fx_source: fx.source,
+          // Legacy field preserved so the existing webhook + revenue
+          // dashboard code keeps working until the HQ Revenue panel
+          // is updated to read price_usd directly.
+          price_zar: zarAmount,
           client_ip: clientIp,
           timestamp: new Date().toISOString(),
           custom_fields: [
             { display_name: "Package", variable_name: "package", value: pkg.label },
             { display_name: "Credits", variable_name: "credits", value: pkg.credits.toString() },
+            { display_name: "USD Price", variable_name: "usd_price", value: `$${pkg.price_usd.toFixed(2)}` },
+            { display_name: "FX (USD→ZAR)", variable_name: "fx_rate", value: fx.rate.toFixed(4) },
             { display_name: "Entity", variable_name: "entity", value: CHARGING_ENTITY.name },
           ],
         },
@@ -549,7 +583,14 @@ Deno.serve(async (req) => {
       metadata: {
         package_id: packageId,
         credits: pkg.credits,
-        amount_zar: pkg.price_zar,
+        price_usd: pkg.price_usd,
+        zar_amount_charged: zarAmount,
+        fx_rate: fx.rate,
+        fx_basis: fx.basis,
+        fx_fetched_at: fx.fetched_at,
+        fx_source: fx.source,
+        // legacy field, retained for HQ Revenue dashboard
+        amount_zar: zarAmount,
         reference: paystackData.data.reference,
         client_ip: clientIp,
       },
@@ -562,7 +603,13 @@ Deno.serve(async (req) => {
         package: {
           name: pkg.label,
           credits: pkg.credits,
-          priceZar: pkg.price_zar,
+          priceUsd: pkg.price_usd,
+          // Reflects the ZAR amount that will actually be charged at
+          // the current rate. Useful for the UI's "you will be
+          // charged R{x}" disclosure beside the Pay button.
+          zarAmountCharged: zarAmount,
+          fxRate: fx.rate,
+          fxBasis: fx.basis,
         },
         entity: CHARGING_ENTITY,
       };
