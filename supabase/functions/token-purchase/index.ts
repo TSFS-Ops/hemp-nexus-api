@@ -650,15 +650,18 @@ function handleGetPackages(): Response {
     id,
     name: pkg.label,
     credits: pkg.credits,
-    priceZar: pkg.price_zar,
+    priceUsd: pkg.price_usd,
     pricePerCredit: pkg.pricePerCredit,
     saving: pkg.saving ?? null,
   }));
 
   return new Response(
-    JSON.stringify({ 
+    JSON.stringify({
       packages,
-      currency: "ZAR",
+      // Display currency is USD; Paystack settles in ZAR — see
+      // _shared/fx.ts for the conversion path.
+      currency: "USD",
+      settlementCurrency: "ZAR",
       entity: CHARGING_ENTITY,
       refundPolicy: REFUND_POLICY,
     }),
