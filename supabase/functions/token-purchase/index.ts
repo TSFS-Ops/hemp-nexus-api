@@ -438,6 +438,49 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ============================================================
+    // SERVER-SIDE BILLING AVAILABILITY GUARD (defence in depth).
+    //
+    // While Paystack USD settlement is being enabled, the platform-wide
+    // `admin_settings.billing_availability.enabled` flag is `false`.
+    // The frontend already gates every purchase CTA via the
+    // `useBillingAvailability` hook, but a determined client could still
+    // POST directly to this endpoint. We re-check the flag server-side
+    // BEFORE reserving any idempotency key, BEFORE calling Paystack, and
+    // BEFORE writing any audit/ledger row, so a 503 here truly means
+    // "nothing happened" — no balance change, no Paystack transaction,
+    // no credit_purchase ledger row.
+    //
+    // Verify + webhook paths are deliberately untouched so historical
+    // reconciliation of payments made before the flag flipped continues
+    // to work normally.
+    // ============================================================
+    {
+      const { data: availability, error: availabilityError } =
+        await supabase.rpc("get_billing_availability");
+      if (availabilityError) {
+        console.error("[token-purchase] billing availability check failed:", availabilityError);
+        return new Response(
+          JSON.stringify({
+            error: "BILLING_AVAILABILITY_CHECK_FAILED",
+            message: "Could not verify billing availability. Please try again shortly.",
+          }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const enabled = (availability as { enabled?: boolean } | null)?.enabled === true;
+      if (!enabled) {
+        const message =
+          (availability as { message?: string } | null)?.message ??
+          "Credit purchases are temporarily unavailable.";
+        console.log("[token-purchase] checkout blocked: billing_availability.enabled=false");
+        return new Response(
+          JSON.stringify({ error: "BILLING_UNAVAILABLE", message }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const body = await req.json();
     const parsed = purchaseSchema.safeParse(body);
     if (!parsed.success) {
