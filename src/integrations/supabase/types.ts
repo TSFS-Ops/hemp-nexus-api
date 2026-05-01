@@ -6967,6 +6967,14 @@ export type Database = {
       }
     }
     Functions: {
+      _diag_vault_cron_key_fingerprint: {
+        Args: never
+        Returns: {
+          exists_in_vault: boolean
+          secret_length: number
+          sha256_prefix: string
+        }[]
+      }
       _provision_user: {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }
         Returns: Json
