@@ -1,9 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { startCreditCheckout, type CreditPackageId } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
-import { supabase } from "@/integrations/supabase/client";
 
 type Tier = {
   id: CreditPackageId;
@@ -17,12 +16,8 @@ type Tier = {
 // supabase/functions/token-purchase/index.ts. Drift here will cause
 // the checkout to charge a different amount than the UI advertises.
 //
-// USD is the commercial reference currency (Daniel Davies decision,
-// 2026-04-30). Paystack South Africa settles in ZAR; the displayed
-// "≈ R{x}" estimate beside each tier is fetched live from the
-// `token-purchase/packages` endpoint, which uses the same FX source
-// as the actual checkout so the estimate matches what the user is
-// charged.
+// USD-native settlement (cutover 2026-05-01): Paystack charges in
+// USD directly. Prices are displayed and charged in USD only.
 const TIERS: Tier[] = [
   { id: "pack_10", credits: 10, priceUsd: 10, label: "10 credits · $1.00 / credit" },
   { id: "pack_50", credits: 50, priceUsd: 45, label: "50 credits · $0.90 / credit · 10% saving", recommended: true },
@@ -45,34 +40,6 @@ export function CreditProvisioningPanel({
   // Inline error message from a failed Paystack initialisation. Cleared
   // when the user picks a different tier or hits Retry.
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  // Live USD→ZAR rate fetched from the same source the backend uses
-  // for actual checkout, so the "≈ R{x}" estimate matches what the
-  // user is charged at Paystack. Null until first fetch completes.
-  const [fxRate, setFxRate] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase.functions.invoke("token-purchase/packages");
-        // The packages endpoint returns the same FX-derived ZAR amount
-        // the checkout will use; we extract the implied rate from any
-        // tier with credits>0 priced in USD. Falls back gracefully if
-        // the endpoint doesn't yet expose `fxRate`.
-        const apiRate = (data as { fxRate?: number } | null)?.fxRate;
-        if (!cancelled && typeof apiRate === "number" && apiRate > 0) {
-          setFxRate(apiRate);
-        }
-      } catch {
-        // Estimate is non-essential; the real ZAR amount is computed
-        // server-side at checkout. Silent failure is intentional.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
 
   const handleSelect = (id: CreditPackageId) => {
     setSelected(id);
@@ -149,7 +116,6 @@ export function CreditProvisioningPanel({
                 <span className="font-mono text-foreground">{currentBalance} Credits</span>.
                 Generating a Proof of Intent requires{" "}
                 <span className="font-mono text-foreground">1 Credit ($1.00 USD)</span>.
-                Charged in ZAR at checkout.
               </p>
             </header>
 
@@ -163,7 +129,6 @@ export function CreditProvisioningPanel({
                 {TIERS.map((tier) => {
                   const active = selected === tier.id;
                   const perCredit = tier.priceUsd / tier.credits;
-                  const zarEstimate = fxRate ? tier.priceUsd * fxRate : null;
                   return (
                     <button
                       key={tier.id}
@@ -195,11 +160,6 @@ export function CreditProvisioningPanel({
                           <p className="font-mono text-base text-foreground tabular-nums">
                             ${tier.priceUsd.toLocaleString("en-US")}
                           </p>
-                          {zarEstimate !== null && (
-                            <p className="mt-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
-                              ≈ R{zarEstimate.toLocaleString("en-ZA", { maximumFractionDigits: 0 })}
-                            </p>
-                          )}
                         </div>
                       </div>
                       {active && (
@@ -266,7 +226,7 @@ export function CreditProvisioningPanel({
                 </span>
               </div>
               <p className="mt-4 text-center text-[11px] text-muted-foreground leading-relaxed">
-                ZAR funds are held in escrow and applied to your Credit balance on confirmation. 1 credit = $1.00 USD.
+                Funds are held in escrow and applied to your Credit balance on confirmation. 1 credit = $1.00 USD.
               </p>
             </footer>
           </motion.aside>
