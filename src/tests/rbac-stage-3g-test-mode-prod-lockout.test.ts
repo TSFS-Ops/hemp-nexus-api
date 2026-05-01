@@ -71,9 +71,13 @@ describe('RBAC Stage 3G: DB-layer production lockout', () => {
       .reverse();
     for (const f of files) {
       const sql = readFileSync(join(MIGRATIONS_DIR, f), 'utf8');
+      // Stricter heuristic (2026-05-01): require the actual function body to
+      // be defined in this migration, not just a textual mention. Later
+      // migrations (e.g. SECDEF Stage D1 grant lockdown) reference both
+      // function names but do not redefine them.
       if (
-        sql.includes('is_production_environment') &&
-        sql.includes('is_test_mode_bypass_enabled')
+        /CREATE OR REPLACE FUNCTION public\.is_production_environment/.test(sql) &&
+        /CREATE OR REPLACE FUNCTION public\.is_test_mode_bypass_enabled/.test(sql)
       ) {
         return sql;
       }
