@@ -155,6 +155,13 @@ const ZAR = new Intl.NumberFormat("en-ZA", {
   maximumFractionDigits: 0,
 });
 
+const USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const NUM = new Intl.NumberFormat("en-ZA");
 
 function bucketKey(iso: string, granularity: "day" | "month"): string {
@@ -754,7 +761,10 @@ export function AdminRevenuePanel() {
                     <TableHead>Source</TableHead>
                     <TableHead>Package</TableHead>
                     <TableHead className="text-right">Credits</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">USD</TableHead>
+                    <TableHead className="text-right">ZAR settled</TableHead>
+                    <TableHead className="text-right">FX (USD→ZAR)</TableHead>
+                    <TableHead>FX basis</TableHead>
                     <TableHead>Reference</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -782,7 +792,32 @@ export function AdminRevenuePanel() {
                         {NUM.format(r.credits)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
+                        {r.price_usd != null ? USD.format(r.price_usd) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
                         {r.amount_zar > 0 ? ZAR.format(r.amount_zar) : "—"}
+                      </TableCell>
+                      <TableCell
+                        className="text-right font-mono text-[11px]"
+                        title={
+                          r.fx_source || r.fx_fetched_at
+                            ? `Source: ${r.fx_source ?? "—"}${r.fx_fetched_at ? ` · fetched ${r.fx_fetched_at}` : ""}`
+                            : "No FX basis recorded for this charge"
+                        }
+                      >
+                        {r.fx_rate != null ? r.fx_rate.toFixed(4) : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {r.fx_basis ? (
+                          <Badge
+                            variant={r.fx_basis === "live" ? "secondary" : "outline"}
+                            className="font-mono text-[10px] w-fit"
+                          >
+                            {r.fx_basis}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="font-mono text-[11px] max-w-[180px] truncate">
                         {r.payment_reference ?? "—"}
