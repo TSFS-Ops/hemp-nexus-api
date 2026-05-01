@@ -763,9 +763,9 @@ export function AdminRevenuePanel() {
                     <TableHead>Package</TableHead>
                     <TableHead className="text-right">Credits</TableHead>
                     <TableHead className="text-right">USD</TableHead>
-                    <TableHead className="text-right">ZAR settled</TableHead>
-                    <TableHead className="text-right">FX (USD→ZAR)</TableHead>
-                    <TableHead>FX basis</TableHead>
+                    <TableHead>Currency</TableHead>
+                    <TableHead className="text-right">Legacy ZAR</TableHead>
+                    <TableHead className="text-right">Legacy FX</TableHead>
                     <TableHead>Reference</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -793,32 +793,21 @@ export function AdminRevenuePanel() {
                         {NUM.format(r.credits)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {r.price_usd != null ? USD.format(r.price_usd) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {r.amount_zar > 0 ? ZAR.format(r.amount_zar) : "—"}
-                      </TableCell>
-                      <TableCell
-                        className="text-right font-mono text-[11px]"
-                        title={
-                          r.fx_source || r.fx_fetched_at
-                            ? `Source: ${r.fx_source ?? "—"}${r.fx_fetched_at ? ` · fetched ${r.fx_fetched_at}` : ""}`
-                            : "No FX basis recorded for this charge"
-                        }
-                      >
-                        {r.fx_rate != null ? r.fx_rate.toFixed(4) : "—"}
+                        {r.amount_usd > 0 ? USD.format(r.amount_usd) : "—"}
                       </TableCell>
                       <TableCell>
-                        {r.fx_basis ? (
-                          <Badge
-                            variant={r.fx_basis === "live" ? "secondary" : "outline"}
-                            className="font-mono text-[10px] w-fit"
-                          >
-                            {r.fx_basis}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">—</span>
-                        )}
+                        <Badge
+                          variant={r.settlement_currency === "USD" ? "secondary" : "outline"}
+                          className="font-mono text-[10px] w-fit"
+                        >
+                          {r.settlement_currency}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-[11px] text-muted-foreground">
+                        {r.legacy_amount_zar != null ? ZAR.format(r.legacy_amount_zar) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-[11px] text-muted-foreground">
+                        {r.legacy_fx_rate != null ? r.legacy_fx_rate.toFixed(4) : "—"}
                       </TableCell>
                       <TableCell className="font-mono text-[11px] max-w-[180px] truncate">
                         {r.payment_reference ?? "—"}
