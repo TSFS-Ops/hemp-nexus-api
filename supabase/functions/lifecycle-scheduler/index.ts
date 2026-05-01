@@ -361,7 +361,7 @@ Deno.serve(async (req: Request) => {
           await admin.functions.invoke("notification-dispatch", {
             body: {
               event_type: "unilateral.stale",
-              subject: `Stale unilateral intent: ${intent.commodity}`,
+              subject: clampSubject(`Stale unilateral intent: ${intent.commodity}`),
               message: `Unilateral intent for "${intent.commodity}" has been waiting ${ageDays} days with no trading partner. Consider following up or expiring.`,
               metadata: {
                 org_id: intent.org_id,
