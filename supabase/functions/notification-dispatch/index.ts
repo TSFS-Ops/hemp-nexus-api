@@ -41,13 +41,42 @@ Deno.serve(async (req) => {
     const { event_type, subject: rawSubject, message, metadata } = body;
     // Defensive clamp — protects every downstream channel (email + Slack)
     // even if a future caller forgets to pre-clamp a free-text subject.
-    const subject = rawSubject != null ? clampSubject(String(rawSubject)) : undefined;
+    const rawSubjectStr = rawSubject != null ? String(rawSubject) : undefined;
+    const subject = rawSubjectStr != null ? clampSubject(rawSubjectStr) : undefined;
+    const defensiveTruncationFired =
+      rawSubjectStr != null && subject !== undefined && rawSubjectStr !== subject;
 
     if (!event_type || !message) {
       return new Response(
         JSON.stringify({ ok: false, error: "event_type and message are required" }),
         { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
       );
+    }
+
+    // Observability: when the defensive clamp actually changed the subject,
+    // emit a discrete audit row so cross-surface QA (N-7) can detect callers
+    // that bypass the SSOT clampSubject contract. The dispatcher succeeds
+    // either way — this is a drift signal, not an error.
+    if (defensiveTruncationFired) {
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: (metadata?.org_id as string) || "00000000-0000-0000-0000-000000000000",
+          entity_type: "notification",
+          action: "email.subject_defensively_truncated",
+          metadata: {
+            event_type,
+            raw_subject_length: rawSubjectStr.length,
+            clamped_subject_length: subject!.length,
+            // Store only the head/tail to aid forensic correlation without
+            // bloating the audit log with arbitrary free-text payloads.
+            raw_subject_head: rawSubjectStr.slice(0, 80),
+            clamped_subject: subject,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      } catch (auditErr) {
+        console.error("[notification-dispatch] Failed to log defensive truncation:", auditErr);
+      }
     }
 
     // Fetch notification settings
@@ -142,6 +171,8 @@ Deno.serve(async (req) => {
         event_type,
         channels: dispatched,
         subject,
+        subject_length: subject != null ? subject.length : null,
+        defensive_truncation_fired: defensiveTruncationFired,
         timestamp: new Date().toISOString(),
       },
     });

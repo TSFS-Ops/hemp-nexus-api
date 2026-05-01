@@ -300,12 +300,19 @@ Deno.serve(async (req) => {
   // 5. Enqueue the pre-rendered email for async processing by the dispatcher.
   // The dispatcher (process-email-queue) handles sending, retries, and rate-limit backoff.
 
-  // Log pending BEFORE enqueue so we have a record even if enqueue crashes
+  // Log pending BEFORE enqueue so we have a record even if enqueue crashes.
+  // `subject_length` is persisted in metadata so the 200-char contract is
+  // forensically auditable from email_send_log alone (no need to replay
+  // template rendering).
   await supabase.from('email_send_log').insert({
     message_id: messageId,
     template_name: templateName,
     recipient_email: effectiveRecipient,
     status: 'pending',
+    metadata: {
+      subject_length: typeof resolvedSubject === 'string' ? resolvedSubject.length : null,
+      subject_over_limit: typeof resolvedSubject === 'string' && resolvedSubject.length > 200,
+    },
   })
 
   const { error: enqueueError } = await supabase.rpc('enqueue_email', {
