@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
   // Parse confirmation payload.
   let body: { confirmation?: string; reason?: string; category?: string } = {};
   try {
-    body = await req.json(req, );
+    body = await req.json();
   } catch {
     /* allow empty body */
   }
