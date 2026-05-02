@@ -101,38 +101,59 @@ Deno.serve(async (req: Request) => {
     // ────────────────────────────────────────────
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: expiredInvites, error: inviteErr } = await admin
-      .from("invites")
-      .update({ status: "expired" })
-      .eq("status", "accepted")
-      .lt("accepted_at", thirtyDaysAgo)
-      .is("match_id", null)
-      .select("id");
+    // 1a. Expire stale accepted invites
+    const { data: expiredInvites, error: inviteErr } = dryRun
+      ? await admin
+          .from("invites")
+          .select("id")
+          .eq("status", "accepted")
+          .lt("accepted_at", thirtyDaysAgo)
+          .is("match_id", null)
+      : await admin
+          .from("invites")
+          .update({ status: "expired" })
+          .eq("status", "accepted")
+          .lt("accepted_at", thirtyDaysAgo)
+          .is("match_id", null)
+          .select("id");
 
     results.expired_invites = {
       count: (expiredInvites || []).length,
       error: inviteErr?.message || null,
     };
 
-    const { data: expiredSignals, error: signalErr } = await admin
-      .from("signals")
-      .update({ status: "expired" })
-      .eq("status", "active")
-      .lt("created_at", thirtyDaysAgo)
-      .select("id");
+    // 1b. Expire stale active signals
+    const { data: expiredSignals, error: signalErr } = dryRun
+      ? await admin
+          .from("signals")
+          .select("id")
+          .eq("status", "active")
+          .lt("created_at", thirtyDaysAgo)
+      : await admin
+          .from("signals")
+          .update({ status: "expired" })
+          .eq("status", "active")
+          .lt("created_at", thirtyDaysAgo)
+          .select("id");
 
     results.expired_signals = {
       count: (expiredSignals || []).length,
       error: signalErr?.message || null,
     };
 
-    // Expire stale draft matches - only update poi_state (avoid status constraint violation)
-    const { data: expiredMatches, error: matchErr } = await admin
-      .from("matches")
-      .update({ poi_state: "EXPIRED" })
-      .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
-      .lt("created_at", thirtyDaysAgo)
-      .select("id");
+    // 1c. Expire stale draft/pending matches - only update poi_state (avoid status constraint violation)
+    const { data: expiredMatches, error: matchErr } = dryRun
+      ? await admin
+          .from("matches")
+          .select("id")
+          .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
+          .lt("created_at", thirtyDaysAgo)
+      : await admin
+          .from("matches")
+          .update({ poi_state: "EXPIRED" })
+          .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
+          .lt("created_at", thirtyDaysAgo)
+          .select("id");
 
     results.expired_matches = {
       count: (expiredMatches || []).length,
@@ -140,14 +161,20 @@ Deno.serve(async (req: Request) => {
     };
 
     // ────────────────────────────────────────────
-    // 1b. Expire trade_orders past their expires_at
+    // 1d. Expire trade_orders past their expires_at
     // ────────────────────────────────────────────
-    const { data: expiredOrders, error: orderErr } = await admin
-      .from("trade_orders")
-      .update({ status: "expired" })
-      .eq("status", "active")
-      .lt("expires_at", nowIso)
-      .select("id");
+    const { data: expiredOrders, error: orderErr } = dryRun
+      ? await admin
+          .from("trade_orders")
+          .select("id")
+          .eq("status", "active")
+          .lt("expires_at", nowIso)
+      : await admin
+          .from("trade_orders")
+          .update({ status: "expired" })
+          .eq("status", "active")
+          .lt("expires_at", nowIso)
+          .select("id");
 
     results.expired_trade_orders = {
       count: (expiredOrders || []).length,
