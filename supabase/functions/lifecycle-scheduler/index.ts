@@ -364,28 +364,31 @@ Deno.serve(async (req: Request) => {
     // 4. DISPATCH NOTIFICATIONS
     // ────────────────────────────────────────────
     let notificationsSent = 0;
-    for (const notification of notificationQueue) {
-      try {
-        const { error: dispatchErr } = await admin.functions.invoke("notification-dispatch", {
-          body: notification,
-        });
-        if (!dispatchErr) {
-          notificationsSent++;
-          // Mark breach notification_sent_at if it's a breach notification
-          if (notification.metadata.breach_id) {
-            await admin.from("breaches")
-              .update({ notification_sent_at: nowIso })
-              .eq("id", notification.metadata.breach_id as string);
+    if (!dryRun) {
+      for (const notification of notificationQueue) {
+        try {
+          const { error: dispatchErr } = await admin.functions.invoke("notification-dispatch", {
+            body: notification,
+          });
+          if (!dispatchErr) {
+            notificationsSent++;
+            // Mark breach notification_sent_at if it's a breach notification
+            if (notification.metadata.breach_id) {
+              await admin.from("breaches")
+                .update({ notification_sent_at: nowIso })
+                .eq("id", notification.metadata.breach_id as string);
+            }
           }
+        } catch (err) {
+          console.error("[lifecycle-scheduler] Notification dispatch failed:", err);
         }
-      } catch (err) {
-        console.error("[lifecycle-scheduler] Notification dispatch failed:", err);
       }
     }
 
     results.notifications = {
       queued: notificationQueue.length,
       sent: notificationsSent,
+      skipped_dry_run: dryRun ? notificationQueue.length : 0,
     };
 
     // ────────────────────────────────────────────
