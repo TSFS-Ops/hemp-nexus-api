@@ -407,10 +407,20 @@ Deno.serve(async (req: Request) => {
       .limit(200);
 
     let staleAuditCount = 0;
+    let staleNotificationsSkipped = 0;
+    let staleWebhooksSkipped = 0;
     if (staleIntents && staleIntents.length > 0) {
       for (const intent of staleIntents) {
         const ageMs = now.getTime() - new Date(intent.created_at).getTime();
         const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+
+        if (dryRun) {
+          // Count what WOULD happen, do nothing
+          staleAuditCount++;
+          staleNotificationsSkipped++;
+          staleWebhooksSkipped++;
+          continue;
+        }
 
         // Log to admin audit
         await admin.from("admin_audit_logs").insert({
