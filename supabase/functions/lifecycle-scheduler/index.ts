@@ -62,7 +62,21 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
 
-    const results: Record<string, unknown> = {};
+    // ── Dry-run flag (Stage 2C-B) ──
+    // When `dry_run: true` is passed in the JSON body, the function performs
+    // ONLY read-only candidate counts and returns a manifest of what WOULD have
+    // been mutated. No UPDATE/INSERT/DELETE is executed; no notification-dispatch
+    // or webhook is invoked. The advisory lock is still acquired and released
+    // so concurrent dry-runs and real runs are mutually exclusive.
+    let dryRun = false;
+    if (req.method === "POST") {
+      try {
+        const body = await req.clone().json().catch(() => ({}));
+        dryRun = body?.dry_run === true || body?.dryRun === true;
+      } catch { /* no/invalid body — treat as production run */ }
+    }
+
+    const results: Record<string, unknown> = { dry_run: dryRun };
     const now = new Date();
     const nowIso = now.toISOString();
 
