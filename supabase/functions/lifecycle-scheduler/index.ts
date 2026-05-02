@@ -282,7 +282,7 @@ Deno.serve(async (req: Request) => {
 
     if (expiredBreaches && expiredBreaches.length > 0) {
       for (const breach of expiredBreaches) {
-        // Check if milestone was remediated during grace period
+        // Check if milestone was remediated during grace period (read-only — safe in dry-run)
         const { data: milestone } = await admin
           .from("pod_milestones")
           .select("completed_at")
@@ -290,6 +290,10 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (milestone?.completed_at) {
+          if (dryRun) {
+            breachesRemediated++;
+            continue;
+          }
           // Remediated - close breach
           await admin.from("breaches")
             .update({ status: "remediated", resolved_at: nowIso, resolution_note: "Milestone completed during grace period" })
@@ -300,6 +304,23 @@ Deno.serve(async (req: Request) => {
           const escalatedSeverity = breach.severity === "low" ? "medium"
             : breach.severity === "medium" ? "high"
             : "critical";
+
+          if (dryRun) {
+            breachesFinalised++;
+            // Still record what notification WOULD be queued
+            notificationQueue.push({
+              event_type: "delivery.breach.escalated",
+              subject: `Breach escalated - grace period expired`,
+              message: `[DRY-RUN] Would escalate PoD ${breach.pod_id} breach to "${escalatedSeverity}".`,
+              metadata: {
+                org_id: breach.org_id,
+                pod_id: breach.pod_id,
+                breach_id: breach.id,
+                severity: escalatedSeverity,
+              },
+            });
+            continue;
+          }
 
           await admin.from("breaches")
             .update({ status: "finalised", severity: escalatedSeverity, escalated_at: nowIso })
