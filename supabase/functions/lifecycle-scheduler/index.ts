@@ -209,6 +209,12 @@ Deno.serve(async (req: Request) => {
         const severity = computeSeverity(daysOverdue);
         const gracePeriodEnd = new Date(dueDate.getTime() + BREACH_GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
+        if (dryRun) {
+          // Dry-run: count what WOULD become a breach, do not mutate
+          breachesCreated++;
+          continue;
+        }
+
         // Mark breach detected with grace period on milestone
         await admin
           .from("pod_milestones")
