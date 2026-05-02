@@ -105,7 +105,7 @@ export function MaintenancePage() {
 function CountdownCell({ value, label }: { value: number; label: string }) {
   return (
     <div className="text-center">
-      <div className="font-mono text-3xl sm:text-5xl font-semibold tabular-nums text-[#0F172A] tracking-tight">
+      <div className="font-mono text-3xl sm:text-5xl font-semibold tabular-nums text-[#047857] tracking-tight">
         {pad(value)}
       </div>
       <div className="text-[10px] sm:text-xs uppercase tracking-[0.14em] text-[#475569] mt-2">
