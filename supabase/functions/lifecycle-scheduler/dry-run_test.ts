@@ -62,7 +62,8 @@ Deno.test("lifecycle-scheduler: notification-dispatch loop is wrapped in if (!dr
 
 Deno.test("lifecycle-scheduler: stale unilateral loop early-continues in dry-run before any mutation", () => {
   const idx = SOURCE.indexOf("5. STALE UNILATERAL INTENTS");
-  const block = SOURCE.slice(idx, idx + 2500);
+  // Window widened in Stage 2C-D1 to accommodate the tightened-predicate comment block.
+  const block = SOURCE.slice(idx, idx + 4000);
   const guardIdx = block.indexOf("if (dryRun)");
   const auditInsertIdx = block.indexOf('admin.from("admin_audit_logs").insert(');
   const dispatchIdx = block.indexOf('admin.functions.invoke("notification-dispatch"');
