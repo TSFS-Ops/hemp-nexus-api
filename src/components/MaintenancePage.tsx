@@ -106,7 +106,7 @@ export function MaintenancePage() {
           >
             Izenzo is temporarily offline while we complete a scheduled platform
             reboot and data migration. All sign-in, trading, and API surfaces are
-            paused. Service will resume automatically at the time below.
+            paused.
           </p>
 
           {isOver ? (
