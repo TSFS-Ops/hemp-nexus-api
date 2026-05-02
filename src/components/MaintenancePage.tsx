@@ -10,10 +10,10 @@ import { useEffect, useState } from "react";
  * To disable: set MAINTENANCE_MODE = false (single line) or remove <MaintenanceGate>
  * from App.tsx.
  *
- * Target: 2026-05-02 17:00 Africa/Johannesburg (SAST, UTC+2) = 2026-05-02 15:00 UTC.
+ * Target: 2026-05-03 13:00 Africa/Johannesburg (SAST, UTC+2) = 2026-05-03 11:00 UTC.
  */
 export const MAINTENANCE_MODE = true;
-const TARGET_UTC_MS = Date.UTC(2026, 4, 2, 15, 0, 0); // May = month index 4
+const TARGET_UTC_MS = Date.UTC(2026, 4, 3, 11, 0, 0); // May = month index 4
 
 function pad(n: number) {
   return n.toString().padStart(2, "0");
@@ -37,7 +37,7 @@ function useCountdown(targetMs: number) {
 export function MaintenancePage() {
   const { days, hours, minutes, seconds, isOver } = useCountdown(TARGET_UTC_MS);
 
-  const targetSastLabel = "Saturday 2 May 2026 · 17:00 SAST (Johannesburg)";
+  const targetSastLabel = "Sunday 3 May 2026 · 13:00 SAST (Johannesburg)";
 
   return (
     <div className="min-h-screen w-full bg-[#F8FAFC] text-[#0F172A] flex items-center justify-center px-6 py-10 font-sans">
@@ -92,7 +92,7 @@ export function MaintenancePage() {
             </p>
             <p className="text-base font-medium text-[#0F172A]">{targetSastLabel}</p>
             <p className="text-xs text-[#64748B]">
-              Equivalent: 2026-05-02 15:00 UTC
+              Equivalent: 2026-05-03 11:00 UTC
             </p>
           </div>
         </div>
