@@ -42,8 +42,8 @@ export function MaintenancePage() {
   return (
     <div className="min-h-screen w-full bg-[#F8FAFC] text-[#0F172A] flex items-center justify-center px-6 py-10 font-sans">
       <div className="w-full max-w-2xl">
-        <div className="border border-[#E2E8F0] rounded-md bg-white px-8 py-12 sm:px-12 sm:py-16">
-          <div className="flex items-center gap-2 mb-8">
+        <div className="border border-[#E2E8F0] rounded-md bg-white px-8 py-12 sm:px-12 sm:py-16 text-center">
+          <div className="flex items-center justify-center gap-2 mb-8">
             <div className="h-2 w-2 rounded-full bg-[#047857] animate-pulse" />
             <span className="text-xs uppercase tracking-[0.18em] text-[#475569] font-medium">
               System status · Maintenance
@@ -54,21 +54,21 @@ export function MaintenancePage() {
             Reboot &amp; migration underway
           </h1>
 
-          <p className="text-[#475569] text-base leading-relaxed mb-10 max-w-xl">
+          <p className="text-[#475569] text-base leading-relaxed mb-10 max-w-xl mx-auto">
             Izenzo is temporarily offline while we complete a scheduled platform
             reboot and data migration. All sign-in, trading, and API surfaces are
             paused. Service will resume automatically at the time below.
           </p>
 
           {isOver ? (
-            <div className="border border-[#E2E8F0] rounded-md bg-[#F8FAFC] px-6 py-8 mb-8">
+            <div className="border border-[#E2E8F0] rounded-md bg-[#F8FAFC] px-6 py-8 mb-8 text-center">
               <p className="text-sm text-[#475569] mb-2">Scheduled resume time has passed.</p>
               <p className="text-base text-[#0F172A]">
                 Final checks in progress. Please refresh shortly.
               </p>
             </div>
           ) : (
-            <div className="border border-[#E2E8F0] rounded-md bg-[#F8FAFC] px-6 py-8 mb-8">
+            <div className="border border-[#E2E8F0] rounded-md bg-[#F8FAFC] px-6 py-8 mb-8 text-center">
               <p className="text-xs uppercase tracking-[0.16em] text-[#475569] mb-5">
                 Time until resume
               </p>
@@ -86,7 +86,7 @@ export function MaintenancePage() {
             </div>
           )}
 
-          <div className="border-t border-[#E2E8F0] pt-6 space-y-2">
+          <div className="border-t border-[#E2E8F0] pt-6 space-y-2 text-center">
             <p className="text-xs uppercase tracking-[0.16em] text-[#475569]">
               Resume scheduled for
             </p>
