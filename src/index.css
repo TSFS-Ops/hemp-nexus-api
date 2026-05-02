@@ -659,3 +659,16 @@ button:focus-visible,
   }
 }
 
+
+/* MaintenancePage animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes digit-slide {
+  from { opacity: 0; transform: translateY(-60%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="fade-in"], [style*="digit-slide"] { animation: none !important; }
+}
