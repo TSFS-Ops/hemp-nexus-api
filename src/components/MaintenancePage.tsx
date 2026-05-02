@@ -73,7 +73,7 @@ export function MaintenancePage() {
   const targetSastLabel = "Sunday 3 May 2026 · 13:00 SAST (Johannesburg)";
 
   // Progress 0–100 across the assumed 24h window, clamped.
-  const elapsed = Math.max(0, Math.min(WINDOW_MS, now - WINDOW_START_MS));
+  const elapsed = Math.max(0, Math.min(WINDOW_MS, now - MAINTENANCE_START_UTC_MS));
   const progressPct = isOver ? 100 : Math.round((elapsed / WINDOW_MS) * 1000) / 10;
 
   return (
