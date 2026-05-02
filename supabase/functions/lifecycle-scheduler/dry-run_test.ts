@@ -139,7 +139,7 @@ Deno.test("lifecycle-scheduler: every mutation primitive is preceded by a dry-ru
   // Snapshot of expected mutation-primitive counts as of Stage 2C-B.
   // If you add or remove a mutation, update this snapshot AND prove the new
   // call is dry-run-guarded with a dedicated test above.
-  assertEquals(updates, 11, "Unexpected change in .update() call count — re-audit dry-run guards");
+  assertEquals(updates, 10, "Unexpected change in .update() call count — re-audit dry-run guards");
   assertEquals(inserts, 3, "Unexpected change in .insert() call count — re-audit dry-run guards");
   assertEquals(deletes, 0, "No direct .delete() calls expected in lifecycle-scheduler");
   assertEquals(invokes, 2, "Unexpected change in .functions.invoke() call count — re-audit");
