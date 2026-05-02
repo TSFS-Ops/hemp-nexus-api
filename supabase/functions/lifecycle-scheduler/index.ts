@@ -471,31 +471,45 @@ Deno.serve(async (req: Request) => {
     results.stale_unilateral = {
       detected: (staleIntents || []).length,
       audited: staleAuditCount,
+      notifications_skipped_dry_run: staleNotificationsSkipped,
+      webhooks_skipped_dry_run: staleWebhooksSkipped,
       error: staleErr?.message || null,
     };
 
     // ── Webhook replay-guard pruning ──
     // Drops webhook_replay_guard rows older than 24h so the table stays
     // bounded. Safe to call even if there's nothing to prune.
-    try {
-      const { data: prunedCount, error: pruneErr } = await admin.rpc(
-        "prune_webhook_replay_guard",
-      );
-      results.webhook_replay_guard_pruned = {
-        deleted: prunedCount ?? 0,
-        error: pruneErr?.message || null,
-      };
-    } catch (pruneErr) {
+    // SKIPPED in dry-run (DELETE).
+    if (dryRun) {
       results.webhook_replay_guard_pruned = {
         deleted: 0,
-        error: pruneErr instanceof Error ? pruneErr.message : String(pruneErr),
+        skipped_dry_run: true,
+        error: null,
       };
+    } else {
+      try {
+        const { data: prunedCount, error: pruneErr } = await admin.rpc(
+          "prune_webhook_replay_guard",
+        );
+        results.webhook_replay_guard_pruned = {
+          deleted: prunedCount ?? 0,
+          error: pruneErr?.message || null,
+        };
+      } catch (pruneErr) {
+        results.webhook_replay_guard_pruned = {
+          deleted: 0,
+          error: pruneErr instanceof Error ? pruneErr.message : String(pruneErr),
+        };
+      }
     }
 
     // ── Audit ──
+    // In dry-run we still write a single audit row so operators have a record
+    // of the dry-run manifest, but with a distinct action so it cannot be
+    // confused with a production run.
     await admin.from("audit_logs").insert({
       org_id: "00000000-0000-0000-0000-000000000000",
-      action: "lifecycle.scheduler.completed",
+      action: dryRun ? "lifecycle.scheduler.dry_run" : "lifecycle.scheduler.completed",
       entity_type: "system",
       metadata: results,
     }).then(() => {}).catch(() => {});
@@ -505,6 +519,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({
       success: true,
+      dry_run: dryRun,
       timestamp: nowIso,
       results,
     }), { status: 200, headers: { ...headers, ...cacheHeaders("no-cache"), "Content-Type": "application/json" } });
