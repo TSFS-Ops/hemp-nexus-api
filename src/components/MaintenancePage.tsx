@@ -14,9 +14,11 @@ import { useEffect, useRef, useState } from "react";
  */
 export const MAINTENANCE_MODE = true;
 const TARGET_UTC_MS = Date.UTC(2026, 4, 3, 11, 0, 0); // May = month index 4
-// Maintenance window assumed to be 24h leading up to resume — used for progress %.
-const WINDOW_MS = 24 * 60 * 60 * 1000;
-const WINDOW_START_MS = TARGET_UTC_MS - WINDOW_MS;
+// Anchor: the moment MAINTENANCE_MODE was flipped on. Progress % is computed
+// across the real outage window (start -> resume), so the bar reflects how far
+// through the actual outage we are, not an assumed 24h window.
+const MAINTENANCE_START_UTC_MS = Date.UTC(2026, 4, 2, 8, 30, 0);
+const WINDOW_MS = Math.max(1, TARGET_UTC_MS - MAINTENANCE_START_UTC_MS);
 
 const ACTIVITY_LOG: string[] = [
   "Migrating evidence ledger…",
