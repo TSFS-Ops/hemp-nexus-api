@@ -84,11 +84,11 @@ export function MaintenancePage() {
           style={{ animation: "fade-in 0.5s ease-out both" }}
         >
           <div
-            className="flex items-center justify-center gap-2 mb-8"
+            className="flex items-center justify-center gap-2 mb-8 flex-wrap"
             style={{ animation: "fade-in 0.5s ease-out 0.05s both" }}
           >
             <StatusPulseDot />
-            <span className="text-[1.5rem] uppercase tracking-[0.18em] text-[#475569] font-bold">
+            <span className="text-base sm:text-2xl uppercase tracking-[0.14em] sm:tracking-[0.18em] text-[#475569] font-bold whitespace-nowrap">
               System status · Pre-flight
             </span>
           </div>
