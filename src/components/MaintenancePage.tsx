@@ -88,7 +88,7 @@ export function MaintenancePage() {
             style={{ animation: "fade-in 0.5s ease-out 0.05s both" }}
           >
             <StatusPulseDot />
-            <span className="text-sm uppercase tracking-[0.18em] text-[#475569] font-bold">
+            <span className="text-[1.5rem] uppercase tracking-[0.18em] text-[#475569] font-bold">
               System status · Pre-flight
             </span>
           </div>
