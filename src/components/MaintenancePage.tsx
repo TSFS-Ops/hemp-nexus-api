@@ -89,7 +89,7 @@ export function MaintenancePage() {
           >
             <StatusPulseDot />
             <span className="text-xs uppercase tracking-[0.18em] text-[#475569] font-medium">
-              System status · Maintenance
+              System status · Pre-flight
             </span>
           </div>
 
