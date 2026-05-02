@@ -62,7 +62,21 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
 
-    const results: Record<string, unknown> = {};
+    // ── Dry-run flag (Stage 2C-B) ──
+    // When `dry_run: true` is passed in the JSON body, the function performs
+    // ONLY read-only candidate counts and returns a manifest of what WOULD have
+    // been mutated. No UPDATE/INSERT/DELETE is executed; no notification-dispatch
+    // or webhook is invoked. The advisory lock is still acquired and released
+    // so concurrent dry-runs and real runs are mutually exclusive.
+    let dryRun = false;
+    if (req.method === "POST") {
+      try {
+        const body = await req.clone().json().catch(() => ({}));
+        dryRun = body?.dry_run === true || body?.dryRun === true;
+      } catch { /* no/invalid body — treat as production run */ }
+    }
+
+    const results: Record<string, unknown> = { dry_run: dryRun };
     const now = new Date();
     const nowIso = now.toISOString();
 
@@ -87,38 +101,59 @@ Deno.serve(async (req: Request) => {
     // ────────────────────────────────────────────
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: expiredInvites, error: inviteErr } = await admin
-      .from("invites")
-      .update({ status: "expired" })
-      .eq("status", "accepted")
-      .lt("accepted_at", thirtyDaysAgo)
-      .is("match_id", null)
-      .select("id");
+    // 1a. Expire stale accepted invites
+    const { data: expiredInvites, error: inviteErr } = dryRun
+      ? await admin
+          .from("invites")
+          .select("id")
+          .eq("status", "accepted")
+          .lt("accepted_at", thirtyDaysAgo)
+          .is("match_id", null)
+      : await admin
+          .from("invites")
+          .update({ status: "expired" })
+          .eq("status", "accepted")
+          .lt("accepted_at", thirtyDaysAgo)
+          .is("match_id", null)
+          .select("id");
 
     results.expired_invites = {
       count: (expiredInvites || []).length,
       error: inviteErr?.message || null,
     };
 
-    const { data: expiredSignals, error: signalErr } = await admin
-      .from("signals")
-      .update({ status: "expired" })
-      .eq("status", "active")
-      .lt("created_at", thirtyDaysAgo)
-      .select("id");
+    // 1b. Expire stale active signals
+    const { data: expiredSignals, error: signalErr } = dryRun
+      ? await admin
+          .from("signals")
+          .select("id")
+          .eq("status", "active")
+          .lt("created_at", thirtyDaysAgo)
+      : await admin
+          .from("signals")
+          .update({ status: "expired" })
+          .eq("status", "active")
+          .lt("created_at", thirtyDaysAgo)
+          .select("id");
 
     results.expired_signals = {
       count: (expiredSignals || []).length,
       error: signalErr?.message || null,
     };
 
-    // Expire stale draft matches - only update poi_state (avoid status constraint violation)
-    const { data: expiredMatches, error: matchErr } = await admin
-      .from("matches")
-      .update({ poi_state: "EXPIRED" })
-      .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
-      .lt("created_at", thirtyDaysAgo)
-      .select("id");
+    // 1c. Expire stale draft/pending matches - only update poi_state (avoid status constraint violation)
+    const { data: expiredMatches, error: matchErr } = dryRun
+      ? await admin
+          .from("matches")
+          .select("id")
+          .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
+          .lt("created_at", thirtyDaysAgo)
+      : await admin
+          .from("matches")
+          .update({ poi_state: "EXPIRED" })
+          .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
+          .lt("created_at", thirtyDaysAgo)
+          .select("id");
 
     results.expired_matches = {
       count: (expiredMatches || []).length,
@@ -126,14 +161,20 @@ Deno.serve(async (req: Request) => {
     };
 
     // ────────────────────────────────────────────
-    // 1b. Expire trade_orders past their expires_at
+    // 1d. Expire trade_orders past their expires_at
     // ────────────────────────────────────────────
-    const { data: expiredOrders, error: orderErr } = await admin
-      .from("trade_orders")
-      .update({ status: "expired" })
-      .eq("status", "active")
-      .lt("expires_at", nowIso)
-      .select("id");
+    const { data: expiredOrders, error: orderErr } = dryRun
+      ? await admin
+          .from("trade_orders")
+          .select("id")
+          .eq("status", "active")
+          .lt("expires_at", nowIso)
+      : await admin
+          .from("trade_orders")
+          .update({ status: "expired" })
+          .eq("status", "active")
+          .lt("expires_at", nowIso)
+          .select("id");
 
     results.expired_trade_orders = {
       count: (expiredOrders || []).length,
@@ -167,6 +208,12 @@ Deno.serve(async (req: Request) => {
         const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000));
         const severity = computeSeverity(daysOverdue);
         const gracePeriodEnd = new Date(dueDate.getTime() + BREACH_GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+        if (dryRun) {
+          // Dry-run: count what WOULD become a breach, do not mutate
+          breachesCreated++;
+          continue;
+        }
 
         // Mark breach detected with grace period on milestone
         await admin
@@ -235,7 +282,7 @@ Deno.serve(async (req: Request) => {
 
     if (expiredBreaches && expiredBreaches.length > 0) {
       for (const breach of expiredBreaches) {
-        // Check if milestone was remediated during grace period
+        // Check if milestone was remediated during grace period (read-only — safe in dry-run)
         const { data: milestone } = await admin
           .from("pod_milestones")
           .select("completed_at")
@@ -243,6 +290,10 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (milestone?.completed_at) {
+          if (dryRun) {
+            breachesRemediated++;
+            continue;
+          }
           // Remediated - close breach
           await admin.from("breaches")
             .update({ status: "remediated", resolved_at: nowIso, resolution_note: "Milestone completed during grace period" })
@@ -253,6 +304,23 @@ Deno.serve(async (req: Request) => {
           const escalatedSeverity = breach.severity === "low" ? "medium"
             : breach.severity === "medium" ? "high"
             : "critical";
+
+          if (dryRun) {
+            breachesFinalised++;
+            // Still record what notification WOULD be queued
+            notificationQueue.push({
+              event_type: "delivery.breach.escalated",
+              subject: `Breach escalated - grace period expired`,
+              message: `[DRY-RUN] Would escalate PoD ${breach.pod_id} breach to "${escalatedSeverity}".`,
+              metadata: {
+                org_id: breach.org_id,
+                pod_id: breach.pod_id,
+                breach_id: breach.id,
+                severity: escalatedSeverity,
+              },
+            });
+            continue;
+          }
 
           await admin.from("breaches")
             .update({ status: "finalised", severity: escalatedSeverity, escalated_at: nowIso })
@@ -296,28 +364,31 @@ Deno.serve(async (req: Request) => {
     // 4. DISPATCH NOTIFICATIONS
     // ────────────────────────────────────────────
     let notificationsSent = 0;
-    for (const notification of notificationQueue) {
-      try {
-        const { error: dispatchErr } = await admin.functions.invoke("notification-dispatch", {
-          body: notification,
-        });
-        if (!dispatchErr) {
-          notificationsSent++;
-          // Mark breach notification_sent_at if it's a breach notification
-          if (notification.metadata.breach_id) {
-            await admin.from("breaches")
-              .update({ notification_sent_at: nowIso })
-              .eq("id", notification.metadata.breach_id as string);
+    if (!dryRun) {
+      for (const notification of notificationQueue) {
+        try {
+          const { error: dispatchErr } = await admin.functions.invoke("notification-dispatch", {
+            body: notification,
+          });
+          if (!dispatchErr) {
+            notificationsSent++;
+            // Mark breach notification_sent_at if it's a breach notification
+            if (notification.metadata.breach_id) {
+              await admin.from("breaches")
+                .update({ notification_sent_at: nowIso })
+                .eq("id", notification.metadata.breach_id as string);
+            }
           }
+        } catch (err) {
+          console.error("[lifecycle-scheduler] Notification dispatch failed:", err);
         }
-      } catch (err) {
-        console.error("[lifecycle-scheduler] Notification dispatch failed:", err);
       }
     }
 
     results.notifications = {
       queued: notificationQueue.length,
       sent: notificationsSent,
+      skipped_dry_run: dryRun ? notificationQueue.length : 0,
     };
 
     // ────────────────────────────────────────────
@@ -336,10 +407,20 @@ Deno.serve(async (req: Request) => {
       .limit(200);
 
     let staleAuditCount = 0;
+    let staleNotificationsSkipped = 0;
+    let staleWebhooksSkipped = 0;
     if (staleIntents && staleIntents.length > 0) {
       for (const intent of staleIntents) {
         const ageMs = now.getTime() - new Date(intent.created_at).getTime();
         const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+
+        if (dryRun) {
+          // Count what WOULD happen, do nothing
+          staleAuditCount++;
+          staleNotificationsSkipped++;
+          staleWebhooksSkipped++;
+          continue;
+        }
 
         // Log to admin audit
         await admin.from("admin_audit_logs").insert({
@@ -390,40 +471,57 @@ Deno.serve(async (req: Request) => {
     results.stale_unilateral = {
       detected: (staleIntents || []).length,
       audited: staleAuditCount,
+      notifications_skipped_dry_run: staleNotificationsSkipped,
+      webhooks_skipped_dry_run: staleWebhooksSkipped,
       error: staleErr?.message || null,
     };
 
     // ── Webhook replay-guard pruning ──
     // Drops webhook_replay_guard rows older than 24h so the table stays
     // bounded. Safe to call even if there's nothing to prune.
-    try {
-      const { data: prunedCount, error: pruneErr } = await admin.rpc(
-        "prune_webhook_replay_guard",
-      );
-      results.webhook_replay_guard_pruned = {
-        deleted: prunedCount ?? 0,
-        error: pruneErr?.message || null,
-      };
-    } catch (pruneErr) {
+    // SKIPPED in dry-run (DELETE).
+    if (dryRun) {
       results.webhook_replay_guard_pruned = {
         deleted: 0,
-        error: pruneErr instanceof Error ? pruneErr.message : String(pruneErr),
+        skipped_dry_run: true,
+        error: null,
       };
+    } else {
+      try {
+        const { data: prunedCount, error: pruneErr } = await admin.rpc(
+          "prune_webhook_replay_guard",
+        );
+        results.webhook_replay_guard_pruned = {
+          deleted: prunedCount ?? 0,
+          error: pruneErr?.message || null,
+        };
+      } catch (pruneErr) {
+        results.webhook_replay_guard_pruned = {
+          deleted: 0,
+          error: pruneErr instanceof Error ? pruneErr.message : String(pruneErr),
+        };
+      }
     }
 
     // ── Audit ──
-    await admin.from("audit_logs").insert({
-      org_id: "00000000-0000-0000-0000-000000000000",
-      action: "lifecycle.scheduler.completed",
-      entity_type: "system",
-      metadata: results,
-    }).then(() => {}).catch(() => {});
+    // Production runs write a completion row. Dry-runs write NOTHING to the
+    // database (true zero-mutation contract); the manifest is returned in the
+    // HTTP response only.
+    if (!dryRun) {
+      await admin.from("audit_logs").insert({
+        org_id: "00000000-0000-0000-0000-000000000000",
+        action: "lifecycle.scheduler.completed",
+        entity_type: "system",
+        metadata: results,
+      }).then(() => {}).catch(() => {});
+    }
 
     // Release advisory lock
     await releaseLock();
 
     return new Response(JSON.stringify({
       success: true,
+      dry_run: dryRun,
       timestamp: nowIso,
       results,
     }), { status: 200, headers: { ...headers, ...cacheHeaders("no-cache"), "Content-Type": "application/json" } });
