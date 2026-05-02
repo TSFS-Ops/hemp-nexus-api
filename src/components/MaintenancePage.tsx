@@ -93,13 +93,6 @@ export function MaintenancePage() {
             </span>
           </div>
 
-          <h1
-            className="text-3xl sm:text-4xl font-semibold leading-tight mb-4"
-            style={{ animation: "fade-in 0.5s ease-out 0.15s both" }}
-          >
-            Reboot &amp; migration underway
-          </h1>
-
           <p
             className="text-[#475569] text-base leading-relaxed mb-10 max-w-xl mx-auto"
             style={{ animation: "fade-in 0.5s ease-out 0.25s both" }}
