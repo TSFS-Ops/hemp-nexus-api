@@ -396,14 +396,30 @@ Deno.serve(async (req: Request) => {
     // ────────────────────────────────────────────
     const staleCutoff = new Date(Date.now() - STALE_UNILATERAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-    // Find unilateral intents older than threshold with no trading partner attached
+    // Find unilateral intents older than threshold with no trading partner attached.
+    //
+    // Stage 2C-D1: tightened predicate. Excludes records that have already
+    // reached a terminal commercial state (committed/settled/COMPLETED) but
+    // still have a NULL counterparty due to historical unilateral data shape.
+    // Without this, the dry-run flagged completed deals as "stale" and would
+    // emit misleading admin alerts on cron activation.
+    //
+    // Predicate (all must hold):
+    //   match_type = 'unilateral'
+    //   created_at < staleCutoff
+    //   (buyer_id IS NULL OR seller_id IS NULL)
+    //   state NOT IN ('completed','cancelled','committed')
+    //   status NOT IN ('settled','cancelled')
+    //   poi_state IN ('DRAFT','PENDING_APPROVAL','ELIGIBLE')
     const { data: staleIntents, error: staleErr } = await admin
       .from("matches")
-      .select("id, org_id, commodity, state, created_at, buyer_id, seller_id")
+      .select("id, org_id, commodity, state, status, poi_state, created_at, buyer_id, seller_id")
       .eq("match_type", "unilateral")
       .lt("created_at", staleCutoff)
       .or("buyer_id.is.null,seller_id.is.null")
-      .not("state", "in", "(completed,cancelled)")
+      .not("state", "in", "(completed,cancelled,committed)")
+      .not("status", "in", "(settled,cancelled)")
+      .in("poi_state", ["DRAFT", "PENDING_APPROVAL", "ELIGIBLE"])
       .limit(200);
 
     let staleAuditCount = 0;
