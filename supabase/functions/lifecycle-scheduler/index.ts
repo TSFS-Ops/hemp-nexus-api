@@ -504,15 +504,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Audit ──
-    // In dry-run we still write a single audit row so operators have a record
-    // of the dry-run manifest, but with a distinct action so it cannot be
-    // confused with a production run.
-    await admin.from("audit_logs").insert({
-      org_id: "00000000-0000-0000-0000-000000000000",
-      action: dryRun ? "lifecycle.scheduler.dry_run" : "lifecycle.scheduler.completed",
-      entity_type: "system",
-      metadata: results,
-    }).then(() => {}).catch(() => {});
+    // Production runs write a completion row. Dry-runs write NOTHING to the
+    // database (true zero-mutation contract); the manifest is returned in the
+    // HTTP response only.
+    if (!dryRun) {
+      await admin.from("audit_logs").insert({
+        org_id: "00000000-0000-0000-0000-000000000000",
+        action: "lifecycle.scheduler.completed",
+        entity_type: "system",
+        metadata: results,
+      }).then(() => {}).catch(() => {});
+    }
 
     // Release advisory lock
     await releaseLock();
