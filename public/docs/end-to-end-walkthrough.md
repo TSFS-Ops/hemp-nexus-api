@@ -16,7 +16,7 @@ Onboard → Verify → Discover → Engage → Mint POI → Complete → Seal Wa
 
 > **Terminology:** This platform uses **Counterparty**, **Trade Request**, **Proof of Intent (POI)**, and **WaD** (always written "Without a Doubt" — never "Warrant of Diligence"). We never use "Bid/Offer".
 
-> **Billing:** Platform credits are **USD-native** since 2026-05-01. 1 credit = $1.00 USD. Trade-side currencies (ZAR / EUR / etc.) on a Trade Request are commercial terms, not billing claims.
+> **Billing:** Platform credits are **USD-native** since 2026-05-01. 1 credit = $1.00 USD. Trade-side currencies (ZAR / EUR / etc.) on a Trade Request are commercial terms, not billing claims. <!-- zar-billing-allow -->
 
 ---
 
