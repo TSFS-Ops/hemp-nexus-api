@@ -1,18 +1,22 @@
 # End-to-End Happy Path Walkthrough
 
-**Platform**: Trade iZenzo - Compliance Matching API  
-**Version**: V3 (Phase 3)  
-**Duration**: 5–8 minutes  
-**Date**: 2026-03-04  
+**Platform**: Trade iZenzo — Compliance Matching API
+**Version**: V4 (USD-native, Trade Request entity, SECDEF Stage D1)
+**Duration**: 5–8 minutes
+**Last Updated**: 2026-05-03
 
 ---
 
 ## Purpose
 
-This document proves **the system works as a system** - not as isolated features. It walks through the complete lifecycle from zero to a sealed, evidence-backed trade record.
+This document proves **the system works as a system** — not as isolated features. It walks through the complete lifecycle from zero to a sealed, evidence-backed trade record.
 
-**Lifecycle summary**:  
-Onboard → Verify → Discover → Match → Confirm Intent → Collapse → Seal → Export Evidence
+**Lifecycle summary:**
+Onboard → Verify → Discover → Engage → Mint POI → Complete → Seal WaD → Export Evidence
+
+> **Terminology:** This platform uses **Counterparty**, **Trade Request**, **Proof of Intent (POI)**, and **WaD** (always written "Without a Doubt" — never "Warrant of Diligence"). We never use "Bid/Offer".
+
+> **Billing:** Platform credits are **USD-native** since 2026-05-01. 1 credit = $1.00 USD. Trade-side currencies (ZAR / EUR / etc.) on a Trade Request are commercial terms, not billing claims.
 
 ---
 
