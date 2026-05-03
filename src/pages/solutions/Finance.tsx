@@ -46,7 +46,7 @@ export default function FinanceSolutionsPage() {
         <EmeraldWhisper />
 
         <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 pb-32 lg:pt-36 lg:pb-48">
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-start">
             <div>
               <p className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--emerald))]" />

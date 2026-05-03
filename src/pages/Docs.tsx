@@ -101,7 +101,7 @@ export default function Docs() {
                   Record a potential trade match between buyer and seller.
                 </p>
                 <CodeBlock language="bash" code={`curl -X POST "${API_BASE_URL}/match" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "X-API-Key: $IZENZO_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "buyer": { "id": "buyer-123", "name": "Acme Corp" },
@@ -127,7 +127,7 @@ export default function Docs() {
                   When ready, confirm interest to create an immutable evidence record.
                 </p>
                 <CodeBlock language="bash" code={`curl -X POST "${API_BASE_URL}/match/{match_id}/settle" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "X-API-Key: $IZENZO_KEY" \\
   -H "Content-Type: application/json"`} />
                 <Alert className="mt-3 border-primary/20 bg-primary/5">
                   <AlertCircle className="h-4 w-4" />
@@ -152,7 +152,7 @@ export default function Docs() {
                   Retrieve the complete audit trail and hash chain for compliance.
                 </p>
                 <CodeBlock language="bash" code={`curl -X GET "${API_BASE_URL}/evidence-pack/{match_id}" \\
-  -H "Authorization: Bearer YOUR_API_KEY"`} />
+  -H "X-API-Key: $IZENZO_KEY"`} />
               </div>
             </div>
           </CardContent>
@@ -177,13 +177,13 @@ export default function Docs() {
                   Authentication
                 </CardTitle>
                 <CardDescription>
-                  All API requests require Bearer token authentication
+                  All API requests authenticate via the X-API-Key header
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
                   <h4 className="font-semibold mb-2">Header Format</h4>
-                  <CodeBlock code={`Authorization: Bearer YOUR_API_KEY`} />
+                  <CodeBlock code={`X-API-Key: sk_live_...`} />
                 </div>
 
                 <div>
@@ -194,7 +194,7 @@ API_KEY = "your_api_key_here"
 BASE_URL = "${API_BASE_URL}"
 
 headers = {
-    "Authorization": f"Bearer {API_KEY}",
+    "X-API-Key": API_KEY,
     "Content-Type": "application/json"
 }
 
@@ -212,7 +212,7 @@ const BASE_URL = '${API_BASE_URL}';
 async function listMatches() {
   const response = await fetch(\`\${BASE_URL}/match\`, {
     headers: {
-      'Authorization': \`Bearer \${API_KEY}\`,
+      'X-API-Key': API_KEY,
       'Content-Type': 'application/json'
     }
   });
@@ -381,7 +381,7 @@ async function listMatches() {
                 <div>
                   <h4 className="font-semibold mb-2">cURL Example</h4>
                   <CodeBlock code={`curl -X POST "${API_BASE_URL}/match/YOUR_MATCH_ID/settle" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "X-API-Key: $IZENZO_KEY" \\
   -H "Content-Type: application/json"`} />
                 </div>
 
@@ -401,7 +401,7 @@ def send_trade_request(match_id: str, api_key: str):
     response = requests.post(
         f"${API_BASE_URL}/match/{match_id}/settle",
         headers={
-            "Authorization": f"Bearer {api_key}",
+            "X-API-Key": api_key,
             "Content-Type": "application/json"
         }
     )
@@ -434,7 +434,7 @@ match = send_trade_request("your-match-id", "your-api-key")`} />
     {
       method: 'POST',
       headers: {
-        'Authorization': \`Bearer \${apiKey}\`,
+        'X-API-Key': apiKey,
         'Content-Type': 'application/json'
       }
     }
@@ -548,7 +548,7 @@ sendTradeRequest('your-match-id', 'your-api-key')
                     <code className="font-mono text-sm">/webhooks</code>
                   </div>
                   <CodeBlock code={`curl -X POST "${API_BASE_URL}/webhooks" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "X-API-Key: $IZENZO_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "url": "https://your-server.com/webhook",
@@ -646,7 +646,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
                 </div>
 
                 <CodeBlock code={`curl -X GET "${API_BASE_URL}/evidence-pack/YOUR_MATCH_ID" \\
-  -H "Authorization: Bearer YOUR_API_KEY"`} />
+  -H "X-API-Key: $IZENZO_KEY"`} />
 
                 <div>
                   <h4 className="font-semibold mb-2">Response Structure</h4>

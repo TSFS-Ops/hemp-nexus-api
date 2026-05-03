@@ -69,7 +69,7 @@ function TerminalMockup() {
             <div className="flex items-center gap-2 ml-2">
               <Terminal className="h-3.5 w-3.5 text-slate-500" strokeWidth={2} />
               <span className="font-mono text-[11px] text-slate-400">
-                izenzo-api · POST /v1/matches
+                izenzo-api · POST /functions/v1/match
               </span>
             </div>
           </div>
@@ -84,12 +84,12 @@ function TerminalMockup() {
             <span className="text-emerald-400">curl</span>{" "}
             <span className="text-slate-400">-X</span>{" "}
             <span className="text-amber-300">POST</span>{" "}
-            <span className="text-sky-300">https://api.izenzo.co.za/v1/matches</span>{" "}
+            <span className="text-sky-300">https://api.izenzo.co.za/functions/v1/match</span>{" "}
             <span className="text-slate-500">\</span>
             {"\n  "}
             <span className="text-slate-400">-H</span>{" "}
-            <span className="text-emerald-300">"Authorisation: Bearer </span>
-            <span className="text-slate-500">$IZENZO_API_KEY</span>
+            <span className="text-emerald-300">"X-API-Key: </span>
+            <span className="text-slate-500">$IZENZO_KEY</span>
             <span className="text-emerald-300">"</span>{" "}
             <span className="text-slate-500">\</span>
             {"\n  "}

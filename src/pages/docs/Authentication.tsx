@@ -55,17 +55,17 @@ export default function DocsAuthentication() {
           ]}
         />
 
-        <DocH2 id="user-tokens">User bearer tokens</DocH2>
+        <DocH2 id="user-tokens">Dashboard-initiated calls</DocH2>
         <DocP>
-          Endpoints that originate from a signed-in user (for example: provisioning new API keys
-          from the dashboard) accept a Supabase-issued JWT in the standard{" "}
-          <InlineCode>Authorization</InlineCode> header. Token rotation and refresh are handled
-          by the official Supabase client libraries.
+          Endpoints invoked directly from your signed-in dashboard session (for example:
+          provisioning a new API key from the Developer Centre) reuse the same{" "}
+          <InlineCode>X-API-Key</InlineCode> contract. Session rotation and refresh are
+          transparent to integrators.
         </DocP>
         <CodePanel
           title="Header"
           language="http"
-          code={`Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...`}
+          code={`X-API-Key: sk_live_8f3a9c1e4d2b6f7a0c8e5d3b1a4f9e2c8d6b3a7f1e9c5d2b8a4f7e3c1d6b9a2`}
         />
 
         <DocH2 id="rate-limits">Rate limits</DocH2>
