@@ -610,7 +610,11 @@ async function _serve(req: Request): Promise<Response> {
       );
     }
 
-    // Log the pending transaction
+    // Log the pending transaction. We write `payment_reference` as the
+    // CANONICAL key (D-01 fix) and keep `reference` as a legacy alias so
+    // older queries continue to work. The audit row is intentionally never
+    // inserted before Paystack returns the reference, so `payment_reference`
+    // is guaranteed non-null on every initiation row going forward.
     await supabase.from("audit_logs").insert({
       org_id: profile.org_id,
       actor_user_id: userData.user.id,
@@ -623,7 +627,9 @@ async function _serve(req: Request): Promise<Response> {
         currency: "USD",
         fx_basis: "native_usd",
         amount_usd: pkg.price_usd,
-        reference: paystackData.data.reference,
+        payment_reference: paystackData.data.reference, // canonical
+        reference: paystackData.data.reference,         // legacy alias
+        status: "initiated",
         client_ip: clientIp,
       },
     });
