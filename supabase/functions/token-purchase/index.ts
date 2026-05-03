@@ -801,6 +801,7 @@ async function handleChargeSuccess(
   data: {
     reference: string;
     amount: number;
+    currency?: string;
     metadata?: {
       org_id?: string;
       user_id?: string;
@@ -824,9 +825,15 @@ async function handleChargeSuccess(
   }
 ): Promise<void> {
   const { reference, metadata, customer, paid_at } = data;
-  
+
+  // D-01 hard guards: payment_reference must exist; metadata must carry the
+  // org+credits stamped at initiation. Without these we cannot safely credit.
+  if (!reference || reference.trim() === "") {
+    console.error("[Webhook] Rejecting charge.success: missing payment_reference");
+    return;
+  }
   if (!metadata?.org_id || !metadata?.credits) {
-    console.error("[Webhook] Missing metadata in charge.success:", reference);
+    console.error("[Webhook] Rejecting charge.success: missing org_id/credits in metadata", reference);
     return;
   }
 
@@ -835,6 +842,62 @@ async function handleChargeSuccess(
   const userId = metadata.user_id;
 
   console.log(`[Webhook] Processing charge.success: org=${orgId}, credits=${credits}, ref=${reference}`);
+
+  // ── D-01: validate amount/currency/package against the initiation row ──
+  // The initiation audit_log row (`credits.purchase_initiated`) is the
+  // source of truth for what the user agreed to pay. If Paystack returns a
+  // settlement that differs, we refuse to credit and write a failure audit
+  // row + risk item for manual review. This protects against a tampered
+  // metadata blob, a Paystack misconfiguration, or a stale webhook replay
+  // for a different package.
+  const { data: initRow } = await supabase
+    .from("audit_logs")
+    .select("metadata")
+    .eq("action", "credits.purchase_initiated")
+    .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference}`)
+    .maybeSingle();
+
+  if (initRow?.metadata) {
+    const init = initRow.metadata as Record<string, unknown>;
+    const expectedUsd = Number(init.price_usd);
+    const settledUsd = Number(metadata.price_usd ?? data.amount / 100);
+    const expectedCurrency = (init.currency as string) || "USD";
+    const settledCurrency = (data.currency as string) || metadata.currency || "USD";
+    const expectedPackage = init.package_id as string | undefined;
+    const settledPackage = metadata.package_id;
+    const mismatch: string[] = [];
+    if (Number.isFinite(expectedUsd) && Number.isFinite(settledUsd) && Math.abs(expectedUsd - settledUsd) > 0.01) {
+      mismatch.push(`amount expected=${expectedUsd} settled=${settledUsd}`);
+    }
+    if (expectedCurrency.toUpperCase() !== settledCurrency.toUpperCase()) {
+      mismatch.push(`currency expected=${expectedCurrency} settled=${settledCurrency}`);
+    }
+    if (expectedPackage && settledPackage && expectedPackage !== settledPackage) {
+      mismatch.push(`package expected=${expectedPackage} settled=${settledPackage}`);
+    }
+    if (mismatch.length > 0) {
+      console.error(`[Webhook] Rejecting charge.success ${reference}: ${mismatch.join("; ")}`);
+      await supabase.from("audit_logs").insert({
+        org_id: orgId,
+        action: "credits.purchase_rejected",
+        entity_type: "token_balance",
+        metadata: {
+          payment_reference: reference,
+          reason: "initiation_mismatch",
+          mismatches: mismatch,
+        },
+      });
+      await supabase.from("admin_risk_items").insert({
+        title: `Paystack settlement mismatch: ${reference}`,
+        description: mismatch.join("; "),
+        severity: "high",
+        status: "open",
+      });
+      return;
+    }
+  }
+  // If no initiation row was found, we still process (pre-webhook-era
+  // settlements can land legitimately) but flag it via metadata below.
 
   // Soft idempotency check (fast path)
   const { data: existing } = await supabase
