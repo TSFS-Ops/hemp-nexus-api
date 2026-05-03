@@ -810,6 +810,49 @@ export default function CounterpartySearch() {
           </div>
         )}
 
+        {/* D-03 Role-confirmation Dialog: blocks progression when the inferred
+            side conflicts with the user's selected side. */}
+        <AlertDialog
+          open={showRoleConfirmDialog}
+          onOpenChange={(open) => { if (!roleConfirmBusy) setShowRoleConfirmDialog(open); }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm your side</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p>
+                  This trade appears to place your organisation as{" "}
+                  <strong>{inferredUserSide ?? "—"}</strong>.
+                  You currently have <strong>{selectedSide ?? "no side"}</strong> selected.
+                </p>
+                <p>Please confirm or correct your side before continuing.</p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+              <AlertDialogCancel disabled={roleConfirmBusy}>
+                Cancel
+              </AlertDialogCancel>
+              {selectedSide && (
+                <Button
+                  variant="outline"
+                  disabled={roleConfirmBusy}
+                  onClick={() => handleRoleConfirm(selectedSide)}
+                >
+                  Keep {selectedSide}
+                </Button>
+              )}
+              {inferredUserSide && (
+                <Button
+                  disabled={roleConfirmBusy}
+                  onClick={() => handleRoleConfirm(inferredUserSide)}
+                >
+                  Correct to {inferredUserSide}
+                </Button>
+              )}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Draft Match Confirmation Dialog */}
         <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
           <AlertDialogContent>
