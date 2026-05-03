@@ -448,6 +448,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         setAcknowledgedTermsHash(null);
         return;
       }
+      // D-02 follow-up: terms hash missing/blank/malformed (no client snapshot
+      // was sent, or it was tampered with). Force the user back through the
+      // ack dialog so a fresh hash is captured.
+      if (/TERMS_HASH_REQUIRED/i.test(message)) {
+        toast.error(
+          "POI mint requires a terms hash. Please review and acknowledge the trade terms before generating POI.",
+        );
+        setAcknowledgedTermsHash(null);
+        return;
+      }
       throw err;
     }
   };

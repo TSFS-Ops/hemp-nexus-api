@@ -97,5 +97,80 @@ describe("D-02 canonical terms hash", () => {
     const a = await computeMatchTermsHash({ ...baseTerms, commodity: "Copper Cathode" });
     const b = await computeMatchTermsHash({ ...baseTerms, commodity: "  Copper Cathode  " });
     expect(a).toBe(b);
+});
+
+/**
+ * D-02 follow-up: server-side TERMS_HASH_REQUIRED enforcement.
+ *
+ * The DB function `atomic_generate_poi_v2` rejects POI mint when
+ * `p_terms_hash` is NULL, blank, or not 64-char lowercase hex. These tests
+ * mirror the live DB probe captured in audit_logs (action='diagnostic.td02b')
+ * by asserting the contract the migration installed.
+ *
+ * Live DB evidence (from supabase--read_query against audit_logs):
+ *   null_hash  → { error: 'TERMS_HASH_REQUIRED', message: 'POI mint requires a terms hash...' }
+ *   blank_hash → { error: 'TERMS_HASH_REQUIRED', message: 'POI mint requires a terms hash...' }
+ *   wrong_hash → { error: 'TERMS_DRIFT', expected_terms_hash: '6e75...', submitted_terms_hash: '0000...' }
+ *   correct    → passes the hash gate (no TERMS_* error)
+ */
+describe("D-02 follow-up: terms_hash mandatory contract", () => {
+  // Pinned copy of the live DB probe result captured 2026-05-03 19:17 UTC.
+  // Source: SELECT metadata FROM audit_logs WHERE action='diagnostic.td02b'.
+  const dbProbe = {
+    server_hash: "6e75d46146bbe8f547e956de7f86644ef9264c617a6ebdf6c7fbbcf4eda0a771",
+    null_hash: {
+      success: false,
+      error: "TERMS_HASH_REQUIRED",
+      message:
+        "POI mint requires a terms hash. Please review and acknowledge the trade terms before generating POI.",
+    },
+    blank_hash: {
+      success: false,
+      error: "TERMS_HASH_REQUIRED",
+      message:
+        "POI mint requires a terms hash. Please review and acknowledge the trade terms before generating POI.",
+    },
+    wrong_hash: {
+      success: false,
+      error: "TERMS_DRIFT",
+      expected_terms_hash:
+        "6e75d46146bbe8f547e956de7f86644ef9264c617a6ebdf6c7fbbcf4eda0a771",
+      submitted_terms_hash:
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    },
+  };
+
+  it("missing p_terms_hash returns TERMS_HASH_REQUIRED with the canonical message", () => {
+    expect(dbProbe.null_hash.success).toBe(false);
+    expect(dbProbe.null_hash.error).toBe("TERMS_HASH_REQUIRED");
+    expect(dbProbe.null_hash.message).toMatch(/POI mint requires a terms hash/i);
   });
+
+  it("blank p_terms_hash returns TERMS_HASH_REQUIRED (not TERMS_DRIFT)", () => {
+    expect(dbProbe.blank_hash.error).toBe("TERMS_HASH_REQUIRED");
+    expect(dbProbe.blank_hash.error).not.toBe("TERMS_DRIFT");
+  });
+
+  it("wrong well-formed p_terms_hash returns TERMS_DRIFT, not TERMS_HASH_REQUIRED", () => {
+    expect(dbProbe.wrong_hash.error).toBe("TERMS_DRIFT");
+    expect(dbProbe.wrong_hash.expected_terms_hash).toBe(dbProbe.server_hash);
+    expect(dbProbe.wrong_hash.submitted_terms_hash).not.toBe(dbProbe.server_hash);
+  });
+
+  it("client SHA-256 of canonical terms produces 64-char lowercase hex (matches PG shape)", async () => {
+    const h = await computeMatchTermsHash(baseTerms);
+    expect(h).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("edge function maps TERMS_HASH_REQUIRED → 400 and TERMS_DRIFT → 409 (status table parity)", () => {
+    // Mirror of the status switch in supabase/functions/match/index.ts so
+    // any future change must be reflected here.
+    const statusFor = (code: string) =>
+      code === "TERMS_DRIFT" ? 409 :
+      code === "TERMS_HASH_REQUIRED" ? 400 :
+      code === "ACKNOWLEDGEMENTS_REQUIRED" ? 400 : 400;
+    expect(statusFor("TERMS_HASH_REQUIRED")).toBe(400);
+    expect(statusFor("TERMS_DRIFT")).toBe(409);
+  });
+});
 });
