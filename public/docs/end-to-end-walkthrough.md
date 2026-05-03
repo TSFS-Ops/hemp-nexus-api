@@ -313,9 +313,9 @@ Produce a tamper-evident evidence bundle:
 
 ---
 
-### Step 15: Create WaD (Signed Deal) Certificate
+### Step 15: Create WaD (Without a Doubt) Certificate
 
-The WaD layer enforces **7 deterministic hard-gates**:
+The WaD layer enforces **10 deterministic hard-gates**:
 
 | # | Hard-Gate | Check |
 |---|-----------|-------|
@@ -328,6 +328,7 @@ The WaD layer enforces **7 deterministic hard-gates**:
 | 7 | Token balance | Sufficient for burn fees |
 | 8 | Screening recentness | Within 30 days |
 | 9 | Risk band | Not `high` or `critical` |
+| 10 | Webhook connectivity | Neither party's primary webhook endpoint is auto-disabled |
 
 **API**: `POST /functions/v1/wad`
 
