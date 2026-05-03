@@ -91,6 +91,15 @@ const DOC_RULES = [
       "Without a Doubt",
     ],
   },
+  {
+    path: "public/docs/walkthrough.html",
+    requiredSections: [
+      "Trade Request",
+      "Engage Counterparty",
+      "Without a Doubt",
+      "ENGAGEMENT_PENDING",
+    ],
+  },
 ];
 
 // --- date extraction --------------------------------------------------------
