@@ -1426,3 +1426,73 @@ GET /functions/v1/match?limit=50&offset=100
 - **Documentation**: [docs.trade-izenzo.com](https://docs.trade-izenzo.com)
 - **API Status**: Check `/healthz` endpoint
 - **Support**: support@izenzo.co.za
+
+---
+
+## Counterparty Intel (Pre-POI, System-Assisted)
+
+Pre-POI light intel is **system-generated only** — there are no user-typed input fields and no paid third-party APIs are called before POI mint. Hard verification (sanctions, KYB, IDV, UBO ≥100%, ATB) remains the WaD 9-gate set; this endpoint never satisfies those gates.
+
+### POST /functions/v1/counterparty-intel-auto
+
+Triggers (or refreshes) the auto-generated intel summary for a match's counterparty. Backed by the Lovable AI Gateway. Results land in `match_counterparty_intel.auto_summary` / `auto_sources` / `auto_status`.
+
+**Request**:
+```http
+POST /functions/v1/counterparty-intel-auto
+X-API-Key: sk_...
+Content-Type: application/json
+
+{ "match_id": "uuid" }
+```
+
+**Response (200)**:
+```json
+{
+  "match_id": "uuid",
+  "auto_status": "ready",
+  "auto_summary": "…short narrative…",
+  "auto_sources": [{ "title": "…", "url": "…" }],
+  "generated_at": "2026-05-03T10:30:00Z"
+}
+```
+
+`auto_status` values: `pending` (job queued), `ready` (summary available), `failed` (model/source error — surfaced to user, never blocks POI). Optional admin clip-on (`OperatorVerificationClipOn`) may attach manual notes; it never gates POI mint.
+
+---
+
+## Account Self-Deletion
+
+### POST /functions/v1/delete-account
+
+Soft-deletes the calling user. Surfaced in the UI at **Desk → Settings → My Profile → Danger zone**.
+
+**What happens**:
+- `profiles.status` → `pending_deletion`, PII anonymised, all roles in `user_roles` revoked
+- `auth.users` row is **retained for a 30-day grace window** before hard delete
+- Audit event `account.self_deleted` written
+- Active org-admin sessions are signed out
+
+**Guards (returns 409)**:
+- Caller is the **sole `org_admin`** of an organisation with other members
+- Caller has any active POI in `PENDING_APPROVAL`, `ELIGIBLE`, or `COMPLETION_REQUESTED`
+
+**Request**:
+```http
+POST /functions/v1/delete-account
+Authorization: Bearer <user-jwt>
+```
+
+**Response (200)**:
+```json
+{ "status": "pending_deletion", "grace_period_ends_at": "2026-06-02T10:30:00Z" }
+```
+
+**Response (409)**:
+```json
+{ "code": "SOLE_ORG_ADMIN", "message": "Promote another member to org_admin before deleting your account." }
+```
+or
+```json
+{ "code": "ACTIVE_POI", "message": "Resolve open POIs before deleting your account.", "details": { "match_ids": ["…"] } }
+```
