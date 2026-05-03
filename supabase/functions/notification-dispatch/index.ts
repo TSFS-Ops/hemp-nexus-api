@@ -94,6 +94,8 @@ Deno.serve(async (req) => {
     };
 
     const dispatched: string[] = [];
+    const skipped: Array<{ channel: string; reason: string }> = [];
+    const orgIdForAudit = (metadata?.org_id as string) || undefined;
 
     // Email dispatch via Resend (if configured)
     if (settings.emailAlerts) {
@@ -119,11 +121,50 @@ Deno.serve(async (req) => {
             dispatched.push("email");
           } else {
             console.error("[notification-dispatch] Resend error:", await emailRes.text());
+            await recordNotificationSkipped(supabase, {
+              reason: "dispatcher_unavailable",
+              sourceFunction: "notification-dispatch",
+              sourceEventType: event_type,
+              channel: "email",
+              orgId: orgIdForAudit,
+              extra: { http_status: emailRes.status },
+            });
+            skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
           }
         } catch (emailErr) {
           console.error("[notification-dispatch] Email dispatch failed:", emailErr);
+          await recordNotificationSkipped(supabase, {
+            reason: "dispatcher_unavailable",
+            sourceFunction: "notification-dispatch",
+            sourceEventType: event_type,
+            channel: "email",
+            orgId: orgIdForAudit,
+            extra: { error: emailErr instanceof Error ? emailErr.message : String(emailErr) },
+          });
+          skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
         }
+      } else {
+        // No RESEND_API_KEY configured — silent skip without audit before D-07
+        await recordNotificationSkipped(supabase, {
+          reason: "dispatcher_unavailable",
+          sourceFunction: "notification-dispatch",
+          sourceEventType: event_type,
+          channel: "email",
+          orgId: orgIdForAudit,
+          extra: { detail: "RESEND_API_KEY not configured" },
+        });
+        skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
       }
+    } else {
+      // emailAlerts toggle disabled in admin_settings.notifications
+      await recordNotificationSkipped(supabase, {
+        reason: "email_disabled",
+        sourceFunction: "notification-dispatch",
+        sourceEventType: event_type,
+        channel: "email",
+        orgId: orgIdForAudit,
+      });
+      skipped.push({ channel: "email", reason: "email_disabled" });
     }
 
     // Slack dispatch (if webhook configured)
@@ -157,11 +198,40 @@ Deno.serve(async (req) => {
           dispatched.push("slack");
         } else {
           console.error("[notification-dispatch] Slack error:", await slackRes.text());
+          await recordNotificationSkipped(supabase, {
+            reason: "dispatcher_unavailable",
+            sourceFunction: "notification-dispatch",
+            sourceEventType: event_type,
+            channel: "slack",
+            orgId: orgIdForAudit,
+            extra: { http_status: slackRes.status },
+          });
+          skipped.push({ channel: "slack", reason: "dispatcher_unavailable" });
         }
       } catch (slackErr) {
         console.error("[notification-dispatch] Slack dispatch failed:", slackErr);
+        await recordNotificationSkipped(supabase, {
+          reason: "dispatcher_unavailable",
+          sourceFunction: "notification-dispatch",
+          sourceEventType: event_type,
+          channel: "slack",
+          orgId: orgIdForAudit,
+          extra: { error: slackErr instanceof Error ? slackErr.message : String(slackErr) },
+        });
+        skipped.push({ channel: "slack", reason: "dispatcher_unavailable" });
       }
+    } else {
+      // No Slack webhook configured
+      await recordNotificationSkipped(supabase, {
+        reason: "slack_not_configured",
+        sourceFunction: "notification-dispatch",
+        sourceEventType: event_type,
+        channel: "slack",
+        orgId: orgIdForAudit,
+      });
+      skipped.push({ channel: "slack", reason: "slack_not_configured" });
     }
+
 
     // Audit log the dispatch
     await supabase.from("audit_logs").insert({
