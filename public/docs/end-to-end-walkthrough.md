@@ -395,11 +395,13 @@ Download the complete audit log for the trade lifecycle:
 | screening.completed | T+6s | System |
 | risk.computed | T+8s | System |
 | trade.approved | T+10s | Compliance |
-| signal.created | T+12s | Buyer |
+| trade_request.created | T+12s | Buyer |
+| trade_request.created | T+13s | Seller |
 | match.discovered | T+14s | System |
-| intent.declared | T+16s | Buyer |
-| intent.confirmed | T+18s | Seller |
-| poi.completed | T+20s | System |
+| engagement.requested | T+16s | Buyer |
+| engagement.accepted | T+18s | Seller |
+| poi.minted | T+20s | System |
+| token.burned | T+20s | System |
 | wad.created | T+22s | System |
 | wad.attested | T+24s | Buyer |
 | wad.attested | T+26s | Seller |
