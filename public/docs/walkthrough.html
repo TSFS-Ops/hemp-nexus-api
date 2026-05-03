@@ -234,7 +234,7 @@
 </div>
 
 <h1>End-to-End Happy Path Walkthrough</h1>
-<p class="subtitle">Trade iZenzo - Compliance Matching API · V3 (Phase 3)</p>
+<p class="subtitle">Trade iZenzo - Compliance Matching API · V4 (USD-native, Trade Request entity, SECDEF Stage D1)</p>
 
 <div class="meta-grid">
   <div class="meta-item">
@@ -249,11 +249,19 @@
     <div class="label">Phases</div>
     <div class="value">4</div>
   </div>
+  <div class="meta-item">
+    <div class="label">Last Updated</div>
+    <div class="value">2026-05-03</div>
+  </div>
 </div>
 
 <p><strong>Purpose:</strong> This document proves the system works <em>as a system</em> - not as isolated features. It walks through the complete lifecycle from zero to a sealed, evidence-backed trade record.</p>
 
-<p><strong>Lifecycle:</strong> Onboard → Verify → Discover → Match → Confirm Intent → Collapse → Seal → Export Evidence</p>
+<p><strong>Lifecycle:</strong> Onboard → Verify → Discover → Engage → Mint POI → Complete → Seal WaD → Export Evidence</p>
+
+<p><strong>Terminology:</strong> This platform uses <strong>Counterparty</strong>, <strong>Trade Request</strong>, <strong>Proof of Intent (POI)</strong>, and <strong>WaD</strong> (always written "Without a Doubt" — never "Warrant of Diligence"). We never use "Bid/Offer".</p>
+
+<p><strong>Billing:</strong> Platform credits are <strong>USD-native</strong> since 2026-05-01. 1 credit = $1.00 USD. Trade-side currencies on a Trade Request are commercial terms, not billing.</p>
 
 <!-- PHASE 1 -->
 <h2>Phase 1 - Entity Onboarding &amp; Due Diligence (~2 min)</h2>
