@@ -116,7 +116,7 @@ Compliance Matching API is a B2B trade-compliance platform built on **Supabase**
 │  │ signals │ │ match   │ │ webhooks│ │ api-keys │ │  orgs   │ │
 │  └─────────┘ └─────────┘ └─────────┘ └──────────┘ └─────────┘ │
 │  ┌──────────┐ ┌────────────┐ ┌──────────────┐                  │
-│  │  consents│ │data-sources│ │ audit-logs   │  ... (12 total)  │
+│  │  consents│ │data-sources│ │ audit-logs   │  ... (90+ total) │
 │  └──────────┘ └────────────┘ └──────────────┘                  │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -130,7 +130,7 @@ Compliance Matching API is a B2B trade-compliance platform built on **Supabase**
 │  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
 │  │  webhooks    │  │ data_sources │  │ audit_logs   │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
-│                  ... (17 tables total)                           │
+│                  ... (115+ tables total)                         │
 │                                                                   │
 │  RLS Policies: Org-scoped, role-based, security definer funcs   │
 └─────────────────────────────────────────────────────────────────┘
@@ -660,7 +660,7 @@ Tracks data source effectiveness:
 ```
 User → Profile → Organisation
   ↓
-Roles (admin, seller, broker, buyer, auditor)
+Roles (platform_admin, org_admin, org_member, compliance, legal, director, auditor)
   ↓
 API Keys → Scopes (signals:write, match:read, etc.)
   ↓
@@ -753,8 +753,9 @@ RLS Policies → Database Access
 ```
 1. Client → POST /match
    Headers:
-     Authorization: Bearer sk_abc123
-     Idempotency-Key: match-20251120-001
+     X-API-Key: sk_abc123              # API key auth (preferred)
+     # or: Authorization: Bearer <JWT> # User session auth
+     Idempotency-Key: match-20260503-001
    Body: { buyer, seller, commodity, quantity, price }
 
 2. Edge Function → authenticateRequest()
