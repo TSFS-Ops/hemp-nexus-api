@@ -55,6 +55,7 @@ import { AdminRevenuePanel } from "@/components/admin/AdminRevenuePanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
 import { AdminCanonicalSpinePanel } from "@/components/admin/AdminCanonicalSpinePanel";
+import { AdminLifecycleRunPanel } from "@/components/admin/AdminLifecycleRunPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
