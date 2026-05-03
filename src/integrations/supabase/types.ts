@@ -7340,6 +7340,17 @@ export type Database = {
         Args: { p_reason: Json; p_request_id: string }
         Returns: undefined
       }
+      record_role_confirmation: {
+        Args: {
+          p_confirmed_side: string
+          p_draft_id?: string
+          p_inferred_side: string
+          p_match_id?: string
+          p_original_selected_side: string
+          p_source_component?: string
+        }
+        Returns: string
+      }
       refund_tokens_on_conflict: {
         Args: {
           p_actor_user_id?: string
