@@ -377,6 +377,11 @@ Deno.serve(async (req) => {
                   counterpartyEmail = trimmed;
                 }
               }
+              // D-02: optional terms_hash. 64-char lowercase hex (sha256).
+              if (typeof parsed.terms_hash === "string") {
+                const t = parsed.terms_hash.trim().toLowerCase();
+                if (/^[0-9a-f]{64}$/.test(t)) termsHashFromBody = t;
+              }
             }
           }
         }
