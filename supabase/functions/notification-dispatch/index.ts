@@ -241,6 +241,7 @@ Deno.serve(async (req) => {
       metadata: {
         event_type,
         channels: dispatched,
+        skipped,
         subject,
         subject_length: subject != null ? subject.length : null,
         defensive_truncation_fired: defensiveTruncationFired,
@@ -249,7 +250,7 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ ok: true, dispatched, event_type }),
+      JSON.stringify({ ok: true, dispatched, skipped, event_type }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
 
