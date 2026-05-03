@@ -184,6 +184,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const [recheckingBalance, setRecheckingBalance] = useState(false);
   const [declarationAck, setDeclarationAck] = useState(false);
   const [atbAck, setAtbAck] = useState(false);
+  // D-02: hash of the commercial terms the user actually saw and acknowledged.
+  // Captured when the ack dialog opens; re-checked at submit time. If the
+  // server-side hash drifts (someone edited terms in another tab, or the
+  // user navigated back and changed terms), the mint is rejected.
+  const [acknowledgedTermsHash, setAcknowledgedTermsHash] = useState<string | null>(null);
   const { session, roles } = useAuth();
 
   const matchType = (match as any).match_type || "search";
