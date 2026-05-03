@@ -1,6 +1,6 @@
 # Compliance Matching API - Core Positioning
 
-**Last Updated**: 2025-12-06
+**Last Updated**: 2026-05-03 (USD-native examples)
 
 This document clarifies the core positioning, capabilities, and value proposition of the Compliance Matching API. It addresses common questions and corrects any misunderstandings about what the platform does and doesn't do.
 
@@ -53,7 +53,7 @@ const matchData = {
   seller_id: "seller-456",
   commodity: "Medical Supplies",
   quantity: { amount: 1000, unit: "kg" },
-  price: { amount: 85000, currency: "ZAR" },
+  price: { amount: 85000, currency: "USD" },
   timestamp: "2025-11-28T10:30:00Z"
 };
 
@@ -146,7 +146,7 @@ This is the **1-line API** flow-the core value proposition.
        "seller_id": "seller-456",
        "commodity": "Medical Supplies",
        "quantity": {"amount": 1000, "unit": "kg"},
-       "price": {"amount": 85000, "currency": "ZAR"}
+       "price": {"amount": 85000, "currency": "USD"}
      }'
    ```
 

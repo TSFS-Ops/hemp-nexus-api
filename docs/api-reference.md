@@ -2,7 +2,7 @@
 
 **Current Version**: v1.5  
 **Base URL**: `https://api.izenzo.co.za/functions/v1`  
-**Last Updated**: 11 January 2026
+**Last Updated**: 3 May 2026 (USD-native examples)
 
 ---
 
@@ -332,7 +332,7 @@ Content-Type: application/json
     "end": "2025-12-15"
   },
   "budget": 50000,
-  "currency": "ZAR",
+  "currency": "USD",
   "notes": "Urgent order for December"
 }
 ```
@@ -563,7 +563,7 @@ Idempotency-Key: unique-key-123
   },
   "price": {
     "amount": 45000,
-    "currency": "ZAR"
+    "currency": "USD"
   },
   "terms": "Payment within 30 days, FOB Johannesburg",
   "metadata": {
@@ -602,7 +602,7 @@ Idempotency-Key: unique-key-123
   "quantity_amount": 10000,
   "quantity_unit": "units",
   "price_amount": 45000,
-  "price_currency": "ZAR",
+  "price_currency": "USD",
   "terms": "Payment within 30 days, FOB Johannesburg",
   "hash": "a1b2c3d4e5f6789...",
   "status": "matched",
@@ -684,7 +684,7 @@ X-API-Key: sk_your_api_key
   "quantity_amount": 10000,
   "quantity_unit": "units",
   "price_amount": 45000,
-  "price_currency": "ZAR",
+  "price_currency": "USD",
   "hash": "a1b2c3d4...",
   "status": "matched",
   "created_at": "2025-12-02T10:40:00Z",
@@ -817,7 +817,7 @@ X-API-Key: sk_your_api_key
     },
     "commodity": "Industrial Equipment Parts",
     "quantity": { "amount": 10000, "unit": "units" },
-    "price": { "amount": 45000, "currency": "ZAR" },
+    "price": { "amount": 45000, "currency": "USD" },
     "terms": "Payment within 30 days"
   },
   "timeline": {
