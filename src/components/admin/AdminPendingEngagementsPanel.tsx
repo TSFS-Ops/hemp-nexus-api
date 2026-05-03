@@ -1081,7 +1081,7 @@ export function AdminPendingEngagementsPanel() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: "Total", value: stats.total, icon: Inbox },
-          { label: "Pending", value: stats.pending, icon: Clock },
+          { label: "Awaiting action", value: stats.pending, icon: Clock },
           { label: "Awaiting outreach", value: stats.notified, icon: Mail },
           { label: "Contacted", value: stats.contacted, icon: Send },
           { label: "Accepted", value: stats.accepted, icon: CheckCircle2 },
