@@ -533,12 +533,18 @@ export function AdminPendingEngagementsPanel() {
     let base: Engagement[];
     if (filter === "all") base = engagements;
     else if (filter === "active") {
+      // D-05: canonical pre-acceptance set, plus legacy 'pending' defensively.
       base = engagements.filter(
-        (e) =>
-          ["pending", "notification_sent", "contacted"].includes(e.engagement_status) &&
-          !isAutoLinked(e)
+        (e) => isEngagementPending(e.engagement_status) && !isAutoLinked(e)
       );
-    } else if (["pending", "notification_sent"].includes(filter)) {
+    } else if (filter === "pending") {
+      // D-05: the "pending" filter tab is now an alias for the canonical
+      // pending set. A bookmark to ?filter=pending must still surface the
+      // notification_sent + contacted rows that operators expect to see.
+      base = engagements.filter(
+        (e) => isEngagementPending(e.engagement_status) && !isAutoLinked(e)
+      );
+    } else if (filter === "notification_sent") {
       base = engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
     } else {
       base = engagements.filter((e) => e.engagement_status === filter);
