@@ -244,6 +244,58 @@ Deno.serve(async (req) => {
     console.error("Revenue email failure check failed:", err);
   }
 
+  // ── 6. D-06: Email dispatcher heartbeat ──────────────────────────
+  // process-email-queue stamps last_run_at every cron tick (every 5s).
+  // If it hasn't ticked in >120s, the dispatcher is stale — silent failure.
+  try {
+    const { data: hb, error: hbErr } = await supabase
+      .from("email_send_state")
+      .select("last_run_at, last_success_at, last_error, last_error_at")
+      .eq("id", 1)
+      .single();
+
+    if (hbErr) throw hbErr;
+
+    const lastRunAt = hb?.last_run_at ? new Date(hb.last_run_at as string) : null;
+    const staleSecs = lastRunAt
+      ? Math.floor((now.getTime() - lastRunAt.getTime()) / 1000)
+      : null;
+
+    if (lastRunAt === null) {
+      alerts.push({
+        metric: "Email Dispatcher Heartbeat",
+        threshold: "tick within 120s",
+        actual: "never recorded",
+        severity: "critical",
+        details:
+          "email_send_state.last_run_at is NULL. process-email-queue has never recorded a tick. Auth/transactional emails are not being sent.",
+      });
+    } else if (staleSecs !== null && staleSecs > 120) {
+      alerts.push({
+        metric: "Email Dispatcher Heartbeat",
+        threshold: "tick within 120s",
+        actual: `last tick ${staleSecs}s ago`,
+        severity: staleSecs > 600 ? "critical" : "warning",
+        details: `process-email-queue has not ticked in ${staleSecs}s. Last error: ${hb?.last_error ?? "(none)"}.`,
+      });
+    } else if (hb?.last_error_at) {
+      const errAge = Math.floor(
+        (now.getTime() - new Date(hb.last_error_at as string).getTime()) / 1000,
+      );
+      if (errAge < 300) {
+        alerts.push({
+          metric: "Email Dispatcher Recent Error",
+          threshold: "no error in last 5 min",
+          actual: `error ${errAge}s ago`,
+          severity: "warning",
+          details: `process-email-queue logged: ${hb.last_error ?? "(unknown)"}`,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Email dispatcher heartbeat check failed:", err);
+  }
+
   // ── Dispatch alerts ──────────────────────────────────────────────
   if (alerts.length === 0) {
     return new Response(
