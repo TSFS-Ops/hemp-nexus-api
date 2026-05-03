@@ -431,8 +431,8 @@
 </div>
 
 <div class="phase-card">
-  <h3><span class="step-num">15</span> Create Signed Deal Certificate</h3>
-  <p>Signed Deal layer enforces <strong>9 deterministic hard-gates</strong>:</p>
+  <h3><span class="step-num">15</span> Create WaD (Without a Doubt) Certificate</h3>
+  <p>The WaD layer enforces <strong>10 deterministic hard-gates</strong>:</p>
   <table>
     <tr><th>#</th><th>Gate</th><th>Requirement</th></tr>
     <tr><td>1</td><td>Intent state</td><td>COMPLETED</td></tr>
@@ -444,13 +444,14 @@
     <tr><td>7</td><td>Token balance</td><td>Sufficient for burns</td></tr>
     <tr><td>8</td><td>Screening</td><td>Within 30 days</td></tr>
     <tr><td>9</td><td>Risk band</td><td>Not high/critical</td></tr>
+    <tr><td>10</td><td>Webhook connectivity</td><td>Neither party's primary webhook endpoint is auto-disabled</td></tr>
   </table>
   <div class="api-badge">POST /functions/v1/wad</div>
 </div>
 
 <div class="phase-card">
   <h3><span class="step-num">16</span> Attestations (Buyer + Seller)</h3>
-  <p>Both parties sign: <em>"I confirm this is not a contract. No payment. No obligation. This is a record that intent was confirmed."</em></p>
+  <p>WaD enters <code>awaiting_attestations</code>. Both parties sign: <em>"I confirm this is not a contract. No payment. No obligation. This is a record that intent was confirmed."</em></p>
   <div class="api-badge">POST /functions/v1/wad/{wadId}/attest</div>
 </div>
 
