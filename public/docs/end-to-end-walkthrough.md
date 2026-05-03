@@ -178,32 +178,33 @@ The discovery engine pairs buyer and seller signals based on:
 
 ---
 
-### Step 10: Send Invite
+### Step 10: Engage Counterparty (hold-point)
 
-Organisation A (buyer) sends an invite to Organisation B (seller) referencing the match.
+The buyer org initiates an **engagement** with the seller org against the discovered Trade Request.
 
-**Result**: Invite created with `status: "pending"`
+**What happens**:
+- A `match` row is created as a child of the parent `trade_requests` row (linked via `trade_request_id`)
+- Engagement enters `pending` status — the seller must accept before any POI can be minted
+- Until acceptance, all POI mint attempts return `409 / ENGAGEMENT_PENDING`
+- A dual-path notification fires (admin + counterparty user) via Resend, with subjects clamped to 200 chars by `clampSubject()`
 
-**Terminology mapping**: `invite.created` → "Intent Declared" in audit logs
+**API**: `POST /functions/v1/poi-engagements`
 
-**API**: `POST /functions/v1/invites`
+> Trade Requests **persist across counterparty attempts**. If this seller declines or the engagement expires, the parent Trade Request survives and can be re-engaged with a different counterparty without re-keying.
 
 ---
 
-### Step 11: Confirm Intent (Token Burn)
+### Step 11: Counterparty Accepts Engagement
 
-Organisation B accepts the invite, confirming mutual intent.
+The seller org accepts the engagement.
 
 **What happens**:
-- Invite status → `"accepted"`
-- Match status → `"settled"` (confirmed)
-- **500 tokens burned** from the confirming org's balance
-- Audit log records `intent.confirmed`
-- Match hash is computed (SHA-256)
+- `atomic_accept_bind` runs (service-role only, since SECDEF Stage D1)
+- Engagement status → `accepted`
+- Hold-point clears; the buyer can now progress to POI mint
+- Audit log records `engagement.accepted`
 
-**Terminology mapping**: `invite.accepted` → "Intent Confirmed" in audit logs
-
-**API**: `PATCH /functions/v1/invites` (action: `accept`)
+**API**: `POST /functions/v1/poi-engagements` (action: `accept`)
 
 ---
 
