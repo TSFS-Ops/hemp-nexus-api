@@ -403,8 +403,30 @@ Deno.serve(async (req) => {
     }
   }
 
+  // D-06: tick completed (including no-op idle) — stamp success.
+  await supabase
+    .from('email_send_state')
+    .update({ last_success_at: new Date().toISOString() })
+    .eq('id', 1)
+
   return new Response(
     JSON.stringify({ processed: totalProcessed }),
     { headers: { 'Content-Type': 'application/json' } }
   )
+  } catch (err) {
+    // D-06: capture unhandled tick errors so the heartbeat surfaces them.
+    const errMsg = err instanceof Error ? err.message : String(err)
+    console.error('process-email-queue tick failed', { error: errMsg })
+    await supabase
+      .from('email_send_state')
+      .update({
+        last_error: errMsg.slice(0, 1000),
+        last_error_at: new Date().toISOString(),
+      })
+      .eq('id', 1)
+    return new Response(
+      JSON.stringify({ error: 'tick_failed', message: errMsg.slice(0, 500) }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
 })
