@@ -366,10 +366,22 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       // re-affirmed on EVERY mint, EVERY time (2026-04-30 final POI scope).
       setDeclarationAck(false);
       setAtbAck(false);
+      setAcknowledgedTermsHash(null);
 
       // Refresh per-side evidence counts so the gate decision is fresh.
       if (isPoiAction) {
         await refetchEvidence();
+        // D-02: capture the canonical terms hash the user is about to ack.
+        // This snapshot is bound to the click — if terms drift between now
+        // and submit (back-edit, two-tab race), the server rejects mint.
+        try {
+          const hash = await computeMatchTermsHash(matchToCanonicalTerms(match));
+          setAcknowledgedTermsHash(hash);
+        } catch (hashErr) {
+          console.error("Failed to compute terms hash:", hashErr);
+          toast.error("Could not snapshot trade terms. Please refresh and try again.");
+          return;
+        }
       }
 
       setShowDialog(true);
