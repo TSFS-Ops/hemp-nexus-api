@@ -742,6 +742,25 @@ async function handleWebhook(req: Request): Promise<Response> {
       return new Response("Invalid signature", { status: 401 });
     }
 
+    // Body-level replay protection (D-01). Even though the token_ledger
+    // unique index on `request_id` already prevents double-credit, the
+    // platform standard is to also reject the duplicate webhook delivery
+    // BEFORE any processing so audit trails stay clean and we never
+    // emit a second revenue notification email.
+    const replay = await assertNotReplayed(supabase, {
+      source: "paystack_webhook",
+      // Use the HMAC signature itself as the uniqueness fingerprint —
+      // Paystack signs the entire body so identical re-deliveries
+      // produce the identical signature.
+      signature,
+      fnName: "token-purchase/webhook",
+      requestId: req.headers.get("x-request-id") ?? null,
+    });
+    if (!replay.ok) {
+      console.warn("[Webhook] Rejected replay/duplicate delivery");
+      return replay.response;
+    }
+
     const event = JSON.parse(body);
     console.log("[Webhook] Event:", event.event);
 
