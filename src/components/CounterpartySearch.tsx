@@ -133,6 +133,9 @@ export default function CounterpartySearch() {
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [degradation, setDegradation] = useState<DegradationInfo>({ isPartiallyDegraded: false, webDiscoveryDown: false, message: null });
+  // D-03: explicit role-confirmation gate for selected vs inferred side
+  const [showRoleConfirmDialog, setShowRoleConfirmDialog] = useState(false);
+  const [roleConfirmBusy, setRoleConfirmBusy] = useState(false);
 
   // Structured trade interest context from landing page
   const [tradeContext, setTradeContext] = useState<{
