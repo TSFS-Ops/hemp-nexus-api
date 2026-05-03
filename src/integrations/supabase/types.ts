@@ -7050,6 +7050,31 @@ export type Database = {
         }
         Relationships: []
       }
+      v_poi_burn_reconciliation: {
+        Row: {
+          action_type: string | null
+          classification: string | null
+          created_at: string | null
+          endpoint: string | null
+          id: string | null
+          ledger_event_id: string | null
+          match_id: string | null
+          minted_at: string | null
+          org_id: string | null
+          outcome: string | null
+          request_id: string | null
+          tokens_burned: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_ledger_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_endpoints_safe: {
         Row: {
           created_at: string | null
@@ -7093,6 +7118,7 @@ export type Database = {
       }
     }
     Functions: {
+      _is_uuid: { Args: { p_text: string }; Returns: boolean }
       _provision_user: {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }
         Returns: Json
@@ -7433,6 +7459,7 @@ export type Database = {
         }[]
       }
       reconcile_acceptance_notifications: { Args: never; Returns: Json }
+      reconcile_poi_burns: { Args: { p_since?: string }; Returns: Json }
       reconcile_token_balances: {
         Args: never
         Returns: {
