@@ -78,22 +78,28 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 | Document | What It's For | When to Read It |
 |----------|---------------|-----------------|
 | **[Getting Started Guide](./getting-started.md)** | Your first steps with the platform | Before anything else if you're new |
+| **[Core Positioning](./core-positioning.md)** | What the platform does and what it explicitly does *not* do | Aligning expectations with stakeholders |
 | **[Product Guide](./product-guide.md)** | Understanding features and workflows | Learning what the platform can do |
 | **[API Reference](./api-reference.md)** | Technical API documentation | When building your integration |
+| **[End-to-End Walkthrough](../public/docs/end-to-end-walkthrough.md)** | Onboarding → POI mint → sealed WaD in one read | Validating you understand the full lifecycle |
 
 ### Feature-Specific Guides
 
 | Document | What It Explains | Who Needs It |
 |----------|------------------|--------------|
-| **[Webhooks Guide](./webhooks.md)** | Real-time event notifications | Developers building automated systems |
-| **[SAHPRA Verification](./sahpra-verification.md)** | South African licensing verification | South African healthcare/pharma traders |
-| **[Cron Setup Guide](./cron-setup.md)** | Automated background jobs | System administrators |
+| **[Webhooks Guide](./webhooks.md)** | Real-time event notifications, replay protection, subject-clamp contract | Developers building automated systems |
+| **[POI Engagements Binding Contract](./poi-engagements-binding-contract.md)** | Engagement hold-point, `409 / ENGAGEMENT_PENDING`, attestations | Anyone integrating around POI mint |
+| **[How to Test](./how-to-test.md)** | Test-mode bypass flags, test orgs, UAT auto-verification | Anyone running E2E or UAT flows |
+| **[Cron Setup Guide](./cron-setup.md)** | Automated background jobs and `lifecycle-scheduler` | System administrators |
 
 ### Reference Material
 
 | Document | What It Contains | When You Need It |
 |----------|------------------|------------------|
-| **[Technical Architecture](./architecture.md)** | System design and internals | Troubleshooting, scaling, security reviews |
+| **[Technical Architecture](./architecture.md)** | System design, SECDEF Stage D1 lockdowns, atomic functions, `trade_requests` split | Troubleshooting, scaling, security reviews |
+| **[Caching Strategy](./caching-strategy.md)** | Edge cache windows, rate-limit cache, static asset TTLs | Performance tuning |
+| **[Infrastructure Requirements](./infrastructure-requirements.md)** | Resend, Paystack, Supabase, AI Gateway dependencies | Deployment planning |
+| **[Programme Governance Proposal](./programme-governance-proposal.md)** | Government programme SHA-256 ledger model | Public-sector integrations |
 | **[Changelog](../CHANGELOG.md)** | Version history and updates | Checking what changed recently |
 | **[Testing Results](./testing-results.md)** | Test coverage and results | Quality assurance, debugging |
 
