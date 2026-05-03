@@ -39,6 +39,12 @@ import {
   BINDING_HINT_MESSAGES,
   type UpdatePoiEngagementResponse,
 } from "@/types/poi-engagement";
+// Defect D-05 — Pending Engagements enum drift. Canonical pre-acceptance
+// state set lives in one place so filters/counters/badges cannot drift.
+import {
+  ENGAGEMENT_PENDING_STATES,
+  isEngagementPending,
+} from "@/lib/engagement-state";
 
 interface Engagement {
   id: string;
@@ -122,10 +128,14 @@ const STATUS_LABELS: Record<string, string> = {
   expired: "Expired",
 };
 
+// D-05: the "pending" tab is preserved as a value for backwards-compatible
+// links/bookmarks but its label and behaviour now reflect the canonical
+// pre-acceptance set (notification_sent + contacted). The filter logic in
+// `filtered` treats `value === "pending"` as the canonical pending set.
 const FILTER_TABS = [
   { value: "all", label: "All engagements" },
   { value: "active", label: "Active queue (excludes accepted/declined)" },
-  { value: "pending", label: "Pending" },
+  { value: "pending", label: "Awaiting action" },
   { value: "notification_sent", label: "Awaiting outreach" },
   { value: "contacted", label: "Contacted" },
   { value: "accepted", label: "Accepted" },
@@ -523,12 +533,18 @@ export function AdminPendingEngagementsPanel() {
     let base: Engagement[];
     if (filter === "all") base = engagements;
     else if (filter === "active") {
+      // D-05: canonical pre-acceptance set, plus legacy 'pending' defensively.
       base = engagements.filter(
-        (e) =>
-          ["pending", "notification_sent", "contacted"].includes(e.engagement_status) &&
-          !isAutoLinked(e)
+        (e) => isEngagementPending(e.engagement_status) && !isAutoLinked(e)
       );
-    } else if (["pending", "notification_sent"].includes(filter)) {
+    } else if (filter === "pending") {
+      // D-05: the "pending" filter tab is now an alias for the canonical
+      // pending set. A bookmark to ?filter=pending must still surface the
+      // notification_sent + contacted rows that operators expect to see.
+      base = engagements.filter(
+        (e) => isEngagementPending(e.engagement_status) && !isAutoLinked(e)
+      );
+    } else if (filter === "notification_sent") {
       base = engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
     } else {
       base = engagements.filter((e) => e.engagement_status === filter);
@@ -553,17 +569,23 @@ export function AdminPendingEngagementsPanel() {
   }, [engagements, filter, notesFilter, notesFrom, notesTo]);
 
   const stats = useMemo(() => {
-    const awaitingOutreach = engagements.filter(
-      (e) => ["pending", "notification_sent"].includes(e.engagement_status) && !isAutoLinked(e)
+    // D-05: canonical pending set = notification_sent + contacted (legacy
+    // 'pending' included defensively via isEngagementPending). The previous
+    // `pending` counter keyed off the dead 'pending' literal and always
+    // returned 0, hiding all admin-actionable rows.
+    const awaitingAdminAction = engagements.filter(
+      (e) => isEngagementPending(e.engagement_status) && !isAutoLinked(e)
     );
     return {
       total: engagements.length,
-      pending: engagements.filter((e) => e.engagement_status === "pending" && !isAutoLinked(e)).length,
+      // `pending` retained for backwards compatibility with consumers, but
+      // now reflects the canonical pending set rather than the dead literal.
+      pending: awaitingAdminAction.length,
       notified: engagements.filter((e) => e.engagement_status === "notification_sent" && !isAutoLinked(e)).length,
       contacted: engagements.filter((e) => e.engagement_status === "contacted").length,
       accepted: engagements.filter((e) => e.engagement_status === "accepted").length,
       autoLinked: engagements.filter(isAutoLinked).length,
-      awaitingOutreach: awaitingOutreach.length,
+      awaitingOutreach: awaitingAdminAction.length,
     };
   }, [engagements]);
 
@@ -1059,7 +1081,7 @@ export function AdminPendingEngagementsPanel() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: "Total", value: stats.total, icon: Inbox },
-          { label: "Pending", value: stats.pending, icon: Clock },
+          { label: "Awaiting action", value: stats.pending, icon: Clock },
           { label: "Awaiting outreach", value: stats.notified, icon: Mail },
           { label: "Contacted", value: stats.contacted, icon: Send },
           { label: "Accepted", value: stats.accepted, icon: CheckCircle2 },
@@ -1234,7 +1256,7 @@ export function AdminPendingEngagementsPanel() {
                               // SLA badge: only render for non-terminal "awaiting outreach" states
                               // AND only when the counterparty has not been auto-linked.
                               if (isAutoLinked(e)) return null;
-                              if (!["pending", "notification_sent"].includes(e.engagement_status)) return null;
+                              if (!isEngagementPending(e.engagement_status)) return null;
                               const ageHours = (Date.now() - new Date(e.created_at).getTime()) / 3600_000;
                               if (ageHours < slaThresholdHours) return null;
                               const overdueBy = Math.round(ageHours - slaThresholdHours);
@@ -1263,7 +1285,8 @@ export function AdminPendingEngagementsPanel() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
-                            {e.engagement_status === "pending" && (
+                            {/* D-05: Notify is offered for canonical pending states (notification_sent / legacy pending). Once 'contacted', the Mark-contacted action takes over. */}
+                            {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (
                               <Button
                                 size="sm" variant="outline"
                                 onClick={() => sendNotification(e)}
