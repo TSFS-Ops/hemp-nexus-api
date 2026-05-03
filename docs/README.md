@@ -1,8 +1,12 @@
 # Compliance Matching API Documentation
 
-**Last Updated**: 2026-01-24
+**Last updated:** 2026-05-03
 
-Welcome to the Compliance Matching API documentation hub. This guide will help you understand, integrate, and use our API platform effectively-whether you're a developer, business user, or administrator.
+Welcome to the Compliance Matching API documentation hub. This guide will help you understand, integrate, and use our API platform effectively — whether you're a developer, business user, or administrator.
+
+> **Terminology:** We use **Counterparty**, **Trade Request**, **Proof of Intent (POI)**, and **WaD** (always written "Without a Doubt" — never "Warrant of Diligence"). We never use "Bid/Offer".
+
+> **Billing:** Platform credits are **USD-native** since 2026-05-01. 1 credit = $1.00 USD. Tier prices: `single` $1, `pack_10` $10, `pack_50` $45 (-10%), `pack_200` $160 (-20%). Trade-side currencies on a Trade Request are commercial terms, not billing claims. <!-- zar-billing-allow -->
 
 ---
 
