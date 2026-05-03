@@ -39,6 +39,12 @@ import {
   BINDING_HINT_MESSAGES,
   type UpdatePoiEngagementResponse,
 } from "@/types/poi-engagement";
+// Defect D-05 — Pending Engagements enum drift. Canonical pre-acceptance
+// state set lives in one place so filters/counters/badges cannot drift.
+import {
+  ENGAGEMENT_PENDING_STATES,
+  isEngagementPending,
+} from "@/lib/engagement-state";
 
 interface Engagement {
   id: string;
