@@ -577,6 +577,7 @@ Deno.serve(async (req) => {
           p_settled_at: now,
           p_actor_user_id: actorUserId,
           p_acks: acksPayload as any,
+          p_terms_hash: termsHashFromBody,
         }
       );
 
@@ -597,6 +598,7 @@ Deno.serve(async (req) => {
           errCode === 'INSUFFICIENT_TOKEN_BALANCE' ? 402 :
           errCode === 'STATE_CONFLICT' ? 409 :
           errCode === 'MIN_EVIDENCE_PER_SIDE' ? 409 :
+          errCode === 'TERMS_DRIFT' ? 409 :
           errCode === 'ACKNOWLEDGEMENTS_REQUIRED' ? 400 :
           errCode === 'DECLARATION_ACK_REQUIRED' ? 400 :
           errCode === 'ATB_ACK_REQUIRED' ? 400 :
