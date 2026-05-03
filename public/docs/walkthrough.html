@@ -393,27 +393,31 @@
     <tr><td>Intent confirmed</td><td>15%</td><td>1.0</td></tr>
     <tr><td>Compliance clear</td><td>10%</td><td>1.0</td></tr>
   </table>
-  <div class="hardgate"><strong>Hard-gate:</strong> Probability &lt; 50.1% blocks collapse.</div>
+  <div class="hardgate"><strong>Hard-gate:</strong> Probability &lt; 50.1% blocks POI mint.</div>
   <div class="api-badge">POST /functions/v1/preflight</div>
   <div class="api-badge">POST /functions/v1/poi-probability</div>
 </div>
 
 <div class="phase-card">
-  <h3><span class="step-num">13</span> POI Collapse (Binding Event)</h3>
-  <p>The deterministic collapse engine executes the binding trade event.</p>
+  <h3><span class="step-num">13</span> POI Mint (Binding Event)</h3>
+  <p>POI mint runs through <code>atomic_generate_poi_v2</code> — a <code>service_role</code>-only PostgreSQL function (SECDEF Stage D1, 2026-04-22). The browser <strong>never</strong> calls it directly; it goes through the owning edge function.</p>
+  <p><strong>Mandatory request fields:</strong> <code>org_id</code>, <code>counterparty_org_id</code>, <code>trade_request_id</code>, commercial terms (<code>quantity</code>, <code>price</code>, <code>currency</code>, <code>incoterms</code>), <code>idempotency_key</code> (header), and <code>p_acks={declaration_ack:true, atb_ack:true}</code> on every mint.</p>
   <p><strong>Validations enforced:</strong></p>
   <ol>
-    <li>ECDSA P-256 signature verification</li>
+    <li>Engagement is <code>accepted</code> (else <code>409 / ENGAGEMENT_PENDING</code>)</li>
+    <li>No active dispute on the match (else <code>409 / DISPUTE_ACTIVE</code>)</li>
     <li>Both parties "Approved to Trade" with valid approval</li>
-    <li>Dynamic approval tier met (based on trade value)</li>
-    <li>No global or org-level freeze</li>
-    <li>CAP partition health check (consistency first)</li>
-    <li>Idempotency (duplicate → returns original)</li>
-    <li>Intent state is ELIGIBLE or COMPLETION_REQUESTED</li>
+    <li>Dynamic approval tier met (5-factor risk scoring)</li>
+    <li>Intent state is <code>ELIGIBLE</code> or <code>COMPLETION_REQUESTED</code></li>
     <li>POI completion probability ≥ 50.1%</li>
+    <li>Acknowledgements present (<code>declaration_ack</code> + <code>atb_ack</code>)</li>
+    <li>For bilateral matches: <strong>≥1 document per side</strong> (no waivers)</li>
+    <li>PostgreSQL advisory lock acquired (concurrency control)</li>
+    <li>Idempotency (duplicate → returns original record)</li>
   </ol>
-  <p><strong>Recorded:</strong> Append-only ledger entry · SHA-256 hash · NTP drift (hardened ≤1000ms) · Intent state → <code>COMPLETED</code></p>
-  <div class="api-badge">POST /functions/v1/collapse</div>
+  <p><strong>Evidence Strength Indicator:</strong> documents are not individually mandatory beyond the per-side minimum. The UI surfaces a red→amber→green bar — more documents = stronger bundle. The wizard never auto-skips the Match step; the strict audited waiver dialog blocks POI mint when zero docs and zero notes.</p>
+  <p><strong>Recorded:</strong> POI row with state → <code>COMPLETED</code> · <code>atomic_token_burn</code> deducts USD-native cost (<code>exempt_burn</code> for founder/admin) · SHA-256 payload hash · Append-only audit_logs entry</p>
+  <div class="api-badge">POST /functions/v1/poi-mint</div>
 </div>
 
 <!-- PHASE 4 -->
