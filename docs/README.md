@@ -1,8 +1,12 @@
 # Compliance Matching API Documentation
 
-**Last Updated**: 2026-01-24
+**Last updated:** 2026-05-03
 
-Welcome to the Compliance Matching API documentation hub. This guide will help you understand, integrate, and use our API platform effectively-whether you're a developer, business user, or administrator.
+Welcome to the Compliance Matching API documentation hub. This guide will help you understand, integrate, and use our API platform effectively — whether you're a developer, business user, or administrator.
+
+> **Terminology:** We use **Counterparty**, **Trade Request**, **Proof of Intent (POI)**, and **WaD** (always written "Without a Doubt" — never "Warrant of Diligence"). We never use "Bid/Offer".
+
+> **Billing:** Platform credits are **USD-native** since 2026-05-01. 1 credit = $1.00 USD. Tier prices: `single` $1, `pack_10` $10, `pack_50` $45 (-10%), `pack_200` $160 (-20%). Trade-side currencies on a Trade Request are commercial terms, not billing claims. <!-- zar-billing-allow -->
 
 ---
 
@@ -74,22 +78,28 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 | Document | What It's For | When to Read It |
 |----------|---------------|-----------------|
 | **[Getting Started Guide](./getting-started.md)** | Your first steps with the platform | Before anything else if you're new |
+| **[Core Positioning](./core-positioning.md)** | What the platform does and what it explicitly does *not* do | Aligning expectations with stakeholders |
 | **[Product Guide](./product-guide.md)** | Understanding features and workflows | Learning what the platform can do |
 | **[API Reference](./api-reference.md)** | Technical API documentation | When building your integration |
+| **[End-to-End Walkthrough](../public/docs/end-to-end-walkthrough.md)** | Onboarding → POI mint → sealed WaD in one read | Validating you understand the full lifecycle |
 
 ### Feature-Specific Guides
 
 | Document | What It Explains | Who Needs It |
 |----------|------------------|--------------|
-| **[Webhooks Guide](./webhooks.md)** | Real-time event notifications | Developers building automated systems |
-| **[SAHPRA Verification](./sahpra-verification.md)** | South African licensing verification | South African healthcare/pharma traders |
-| **[Cron Setup Guide](./cron-setup.md)** | Automated background jobs | System administrators |
+| **[Webhooks Guide](./webhooks.md)** | Real-time event notifications, replay protection, subject-clamp contract | Developers building automated systems |
+| **[POI Engagements Binding Contract](./poi-engagements-binding-contract.md)** | Engagement hold-point, `409 / ENGAGEMENT_PENDING`, attestations | Anyone integrating around POI mint |
+| **[How to Test](./how-to-test.md)** | Test-mode bypass flags, test orgs, UAT auto-verification | Anyone running E2E or UAT flows |
+| **[Cron Setup Guide](./cron-setup.md)** | Automated background jobs and `lifecycle-scheduler` | System administrators |
 
 ### Reference Material
 
 | Document | What It Contains | When You Need It |
 |----------|------------------|------------------|
-| **[Technical Architecture](./architecture.md)** | System design and internals | Troubleshooting, scaling, security reviews |
+| **[Technical Architecture](./architecture.md)** | System design, SECDEF Stage D1 lockdowns, atomic functions, `trade_requests` split | Troubleshooting, scaling, security reviews |
+| **[Caching Strategy](./caching-strategy.md)** | Edge cache windows, rate-limit cache, static asset TTLs | Performance tuning |
+| **[Infrastructure Requirements](./infrastructure-requirements.md)** | Resend, Paystack, Supabase, AI Gateway dependencies | Deployment planning |
+| **[Programme Governance Proposal](./programme-governance-proposal.md)** | Government programme SHA-256 ledger model | Public-sector integrations |
 | **[Changelog](../CHANGELOG.md)** | Version history and updates | Checking what changed recently |
 | **[Testing Results](./testing-results.md)** | Test coverage and results | Quality assurance, debugging |
 
@@ -106,19 +116,26 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 
 **How to get one**: Sign up → Dashboard → API Keys → Create New Key
 
-### Signals (Expressing Intent)
-**What it is**: A way to tell the system "I want to buy/sell something."
+### Trade Requests (Expressing Intent)
+**What it is**: A persistent record of what you want to trade — buy or sell — independent of any particular counterparty.
 
-**In everyday terms**: Like posting "I need supplies" on a bulletin board. Other systems can see your request and respond with matching options.
+**In everyday terms**: Like a standing brief with your broker. You describe the deal once; the system finds matches and lets you re-engage different counterparties without re-keying.
 
-**Why this matters**: Instead of manually searching for partners, you express your intent once, and the system finds matches automatically.
+**Why this matters**: Trade Requests live in the `trade_requests` table and survive across counterparty attempts. If an engagement is declined or expires, the parent Trade Request remains.
 
-### Matches (Recording Agreements)
-**What it is**: A permanent record of a trade agreement between two parties.
+### Engagements (The Hold-Point)
+**What it is**: A request from one organisation to another to start working towards a POI on a Trade Request.
 
-**In everyday terms**: Like a digital receipt that both parties sign, which can never be altered or deleted.
+**In everyday terms**: A formal "are you in?" before any binding action. Until the counterparty accepts, no POI can be minted — the system returns `409 / ENGAGEMENT_PENDING`.
 
-**Why this matters**: Creates an immutable audit trail for compliance purposes. If anyone asks "Did company A really trade with company B on this date?", the match proves it.
+**Why this matters**: Engagements give the counterparty real choice and produce a clean audit trail (`engagement.requested` → `engagement.accepted`) before any tokens are burned.
+
+### Proof of Intent (POI — the Binding Event)
+**What it is**: An immutable record that two organisations have committed to a specific set of commercial terms.
+
+**In everyday terms**: The handshake itself. POI mint is the binding step in the lifecycle.
+
+**Why this matters**: POI mint runs through `atomic_generate_poi_v2` (a `service_role`-only function under SECDEF Stage D1). It enforces acknowledgements, the 50.1% probability gate, dispute checks, and idempotency in one transaction with `atomic_token_burn`.
 
 ### Webhooks (Automatic Notifications)
 **What it is**: A way for our system to notify your system when something happens.
@@ -142,22 +159,32 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 
 1. **Get Your Key** (2 minutes)
    - Sign up at the dashboard
-   - Create an API key
+   - Create an API key (prefixed `sk_…`)
    - Copy it to your clipboard
 
 2. **Test the Connection** (1 minute)
    ```bash
    curl https://api.izenzo.co.za/functions/v1/healthz \
-     -H "Authorization: Bearer YOUR_API_KEY"
+     -H "X-API-Key: sk_your_api_key_here"
    ```
 
-3. **Create Your First Signal** (2 minutes)
+3. **Create Your First Trade Request** (2 minutes)
    ```bash
-   curl -X POST https://api.izenzo.co.za/functions/v1/signals \
-     -H "Authorization: Bearer YOUR_API_KEY" \
+   curl -X POST https://api.izenzo.co.za/functions/v1/trade-requests \
+     -H "X-API-Key: sk_your_api_key_here" \
      -H "Content-Type: application/json" \
-     -d '{"product":"Test Product","quantity":100,"unit":"units"}'
+     -d '{
+       "side": "buy",
+       "commodity": "Paracetamol API 500mg",
+       "hs_code": "2924.29",
+       "quantity": 1000,
+       "unit": "kg",
+       "origin_jurisdiction": "ZA",
+       "destination_jurisdiction": "ZA"
+     }'
    ```
+
+> Common 409 responses you should handle: `ENGAGEMENT_PENDING` (counterparty hasn't accepted yet), `DISPUTE_ACTIVE` (active dispute on the match), `WEBHOOK_REPLAY` (deterministic replay rejection — safe to treat as success).
 
 ### For Business Users: Understanding Value
 
@@ -180,40 +207,39 @@ Follow this checklist:
 
 ## 💡 Common Use Cases
 
-### Use Case 1: Medical Supply Marketplace
-**Scenario**: You run a platform where hospitals buy medical supplies.
+### Use Case 1: Regulated Goods Marketplace
+**Scenario**: A buyer needs verified, licensed counterparties for a regulated commodity.
 
 **How to use this API**:
-1. **Hospital creates a signal**: "Need 10,000 surgical masks"
-2. **System finds verified suppliers**: Returns only SAHPRA-licensed suppliers
-3. **Hospital selects supplier**: Creates a match record
-4. **Confirm intent**: Signal interest (no legal obligation) so seller can prepare final terms
-5. **For audits**: Provide match records with cryptographic proof
+1. **Buyer creates a Trade Request** describing the commodity, HS code, quantity, jurisdictions, and (optionally) commercial terms.
+2. **Discovery surfaces compatible counterparties** via role-inverted search; contacts stay masked until engagement.
+3. **Buyer engages a counterparty** — the seller must accept the engagement before any POI can be minted (`409 / ENGAGEMENT_PENDING` until they do).
+4. **POI mint** runs through `atomic_generate_poi_v2` once both `declaration_ack` and `atb_ack` are present and the per-side document floor is met.
+5. **WaD** seals the bundle with SHA-256 hash chaining once both parties attest.
 
-**Benefits**: Automated compliance verification, audit trail, faster matching.
+**Benefits**: Automated compliance verification, deterministic audit trail, tamper-evident evidence pack.
 
-### Use Case 2: Industrial Equipment Trading
-**Scenario**: Companies trade heavy machinery and need proof of transactions.
+### Use Case 2: Cross-Border Industrial Trade
+**Scenario**: Two organisations want a recorded, evidence-backed agreement on heavy equipment.
 
 **How to use this API**:
-1. **Buyer signals interest**: "Need 5 excavators in Gauteng region"
-2. **Sellers respond**: System returns matching equipment offers
-3. **Agreement reached**: Record match with all details
-4. **Webhook notification**: Both parties' systems get notified
-5. **Confirm intent**: Signal interest so seller can prepare final terms (no legal obligation)
+1. **Buyer and seller each open a Trade Request** with origin/destination jurisdictions.
+2. **Engagement hold-point** keeps the deal at "exploring" until the counterparty accepts.
+3. **Webhook notifications** fire on `engagement.requested`, `engagement.accepted`, `poi.minted`, `wad.sealed` — all subjects clamped to 200 chars by `clampSubject()`.
+4. **Sealed WaD certificate** can be downloaded for ERP attachment or compliance review.
 
-**Benefits**: Permanent record, instant notifications, easy integration with ERP.
+**Benefits**: Permanent record, real-time webhooks (with replay protection), straightforward ERP integration.
 
 ### Use Case 3: Compliance Reporting
-**Scenario**: Need to prove all trades were with licensed partners.
+**Scenario**: Need to prove all trades passed jurisdiction, sanctions, and authority-to-bind checks.
 
 **How to use this API**:
-1. **Query audit logs**: Get complete history
-2. **Verify hashes**: Prove data integrity
-3. **Export matches**: Generate compliance reports
-4. **Show SAHPRA verification**: Prove licensing compliance
+1. **Query audit logs** for the full lifecycle (Trade Request → engagement → POI → WaD).
+2. **Verify the WaD seal hash** to prove the bundle has not been altered.
+3. **Export evidence packs** for the period under review.
+4. **Reference UBO ≥100% and ATB records** captured during onboarding.
 
-**Benefits**: Automated compliance reports, tamper-proof evidence.
+**Benefits**: Automated compliance reports, deterministic evidence, no manual reconciliation.
 
 ---
 
