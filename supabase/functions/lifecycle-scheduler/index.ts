@@ -64,11 +64,6 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     // ── Dry-run flag (Stage 2C-B) ──
-    // When `dry_run: true` is passed in the JSON body, the function performs
-    // ONLY read-only candidate counts and returns a manifest of what WOULD have
-    // been mutated. No UPDATE/INSERT/DELETE is executed; no notification-dispatch
-    // or webhook is invoked. The advisory lock is still acquired and released
-    // so concurrent dry-runs and real runs are mutually exclusive.
     let dryRun = false;
     if (req.method === "POST") {
       try {
@@ -85,6 +80,14 @@ Deno.serve(async (req: Request) => {
     const { data: lockAcquired, error: lockErr } = await admin.rpc('try_lifecycle_lock');
     if (lockErr || !lockAcquired) {
       console.warn("[lifecycle-scheduler] Another instance is already running. Skipping.");
+      // D-07: audit the silent skip so concurrent no-ops are distinguishable
+      // from successful runs in 24h skip-by-reason rollups.
+      await recordNotificationSkipped(admin, {
+        reason: "concurrent_run_blocked",
+        sourceFunction: "lifecycle-scheduler",
+        lifecycleEventType: "scheduler.run",
+        extra: { lock_error: lockErr?.message ?? null, dry_run: dryRun },
+      });
       return new Response(JSON.stringify({
         success: false,
         reason: "CONCURRENT_RUN_BLOCKED",
