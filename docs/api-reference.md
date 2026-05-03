@@ -207,12 +207,17 @@ All errors follow a consistent format:
 | `FORBIDDEN` | 403 | Insufficient permissions |
 | `NOT_FOUND` | 404 | Resource not found |
 | `CONFLICT` | 409 | Resource already exists |
-| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
+| `ENGAGEMENT_PENDING` | 409 | POI mint blocked — counterparty has not yet accepted the engagement hold-point. Wait for `engagement.accepted` event or surface the hold-point tracker to the user. |
+| `DISPUTE_ACTIVE` | 409 | Commercial mutation blocked — an active dispute exists on the match. Only the raising organisation can resolve the dispute. |
+| `WEBHOOK_REPLAY` | 409 | Inbound webhook (e.g. Resend, auth-email-hook) was rejected as a replay by `assertNotReplayed` against the `webhook_replay_guard` ledger. Stable, deterministic — safe to treat as success on the sender side. |
+| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests. Honour `Retry-After` header. |
 | `INSUFFICIENT_TOKENS` | 402 | Token balance below minimum |
 | `ELIGIBILITY_FAILED` | 422 | Confirm Intent eligibility check failed |
 | `AUDIT_LOG_ERROR` | 500 | Failed to create audit trail |
 | `INTERNAL_ERROR` | 500 | Server error |
 | `DATABASE_ERROR` | 500 | Database operation failed |
+
+> **Subject-line contract:** All outbound email and Slack notifications produced by edge functions (`poi-engagements`, `lifecycle-scheduler`, `send-team-invite`, `notification-dispatch`) pass through `clampSubject()` from `supabase/functions/_shared/email-subject.ts`. Subjects are hard-clamped to **200 characters** while preserving the trailing trace tail (request id / org id). Free-text fields (commodity, organisation name, inviter name) are never concatenated raw into a subject line.
 
 ---
 
@@ -1421,3 +1426,73 @@ GET /functions/v1/match?limit=50&offset=100
 - **Documentation**: [docs.trade-izenzo.com](https://docs.trade-izenzo.com)
 - **API Status**: Check `/healthz` endpoint
 - **Support**: support@izenzo.co.za
+
+---
+
+## Counterparty Intel (Pre-POI, System-Assisted)
+
+Pre-POI light intel is **system-generated only** — there are no user-typed input fields and no paid third-party APIs are called before POI mint. Hard verification (sanctions, KYB, IDV, UBO ≥100%, ATB) remains the WaD 9-gate set; this endpoint never satisfies those gates.
+
+### POST /functions/v1/counterparty-intel-auto
+
+Triggers (or refreshes) the auto-generated intel summary for a match's counterparty. Backed by the Lovable AI Gateway. Results land in `match_counterparty_intel.auto_summary` / `auto_sources` / `auto_status`.
+
+**Request**:
+```http
+POST /functions/v1/counterparty-intel-auto
+X-API-Key: sk_...
+Content-Type: application/json
+
+{ "match_id": "uuid" }
+```
+
+**Response (200)**:
+```json
+{
+  "match_id": "uuid",
+  "auto_status": "ready",
+  "auto_summary": "…short narrative…",
+  "auto_sources": [{ "title": "…", "url": "…" }],
+  "generated_at": "2026-05-03T10:30:00Z"
+}
+```
+
+`auto_status` values: `pending` (job queued), `ready` (summary available), `failed` (model/source error — surfaced to user, never blocks POI). Optional admin clip-on (`OperatorVerificationClipOn`) may attach manual notes; it never gates POI mint.
+
+---
+
+## Account Self-Deletion
+
+### POST /functions/v1/delete-account
+
+Soft-deletes the calling user. Surfaced in the UI at **Desk → Settings → My Profile → Danger zone**.
+
+**What happens**:
+- `profiles.status` → `pending_deletion`, PII anonymised, all roles in `user_roles` revoked
+- `auth.users` row is **retained for a 30-day grace window** before hard delete
+- Audit event `account.self_deleted` written
+- Active org-admin sessions are signed out
+
+**Guards (returns 409)**:
+- Caller is the **sole `org_admin`** of an organisation with other members
+- Caller has any active POI in `PENDING_APPROVAL`, `ELIGIBLE`, or `COMPLETION_REQUESTED`
+
+**Request**:
+```http
+POST /functions/v1/delete-account
+Authorization: Bearer <user-jwt>
+```
+
+**Response (200)**:
+```json
+{ "status": "pending_deletion", "grace_period_ends_at": "2026-06-02T10:30:00Z" }
+```
+
+**Response (409)**:
+```json
+{ "code": "SOLE_ORG_ADMIN", "message": "Promote another member to org_admin before deleting your account." }
+```
+or
+```json
+{ "code": "ACTIVE_POI", "message": "Resolve open POIs before deleting your account.", "details": { "match_ids": ["…"] } }
+```

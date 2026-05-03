@@ -1,5 +1,7 @@
 # Webhooks Documentation
 
+**Last updated:** 2026-05-03
+
 Webhooks allow you to receive real-time notifications when events occur in your organisation.
 
 ## Overview
@@ -217,6 +219,29 @@ def webhook():
     
     return {'received': True}, 200
 ```
+
+## Replay Protection
+
+Inbound webhooks the platform **receives** (e.g. Resend delivery/bounce events into `auth-email-hook` and `handle-email-suppression`, plus any handler that uses `_shared/webhooks.ts`) are de-duplicated by the `webhook_replay_guard` ledger via the `assertNotReplayed` helper.
+
+If the same `(provider, event_id)` is seen twice, the platform returns:
+
+```json
+{
+  "code": "WEBHOOK_REPLAY",
+  "message": "Webhook already processed",
+  "requestId": "…"
+}
+```
+
+with HTTP **409**. This response is **deterministic and stable** — providers (and your own retry logic) should treat it as a successful delivery and stop retrying. The ledger is pruned daily by `lifecycle-scheduler`, so very old event ids may eventually be re-accepted.
+
+For webhooks the platform **sends to your endpoint**, you should mirror this behaviour: de-duplicate on `X-Webhook-Event` + `X-Webhook-Timestamp` (or your own event id field) so retries from our side don't double-process.
+
+## Subject Length Contract
+
+All notification emails and Slack messages emitted alongside webhook events (engagement requests, lifecycle reminders, team invites, dispatch fan-out) pass through `clampSubject()` from `supabase/functions/_shared/email-subject.ts`. Subjects are hard-clamped to **200 characters** and the trailing trace tail (request id / org id) is preserved when truncation is needed. Free-text fields — commodity, organisation name, inviter name — are never concatenated raw into a subject line. If you parse subjects on your side, treat them as bounded but variable-length.
+
 
 ## Best Practices
 

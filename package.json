@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/generate-routes.mjs && node scripts/check-routes.mjs && node scripts/check-edge-function-paths.mjs && node scripts/check-no-inline-subject-truncate.mjs && node scripts/check-docs-no-zar-billing.mjs",
+    "prebuild": "node scripts/generate-routes.mjs && node scripts/check-routes.mjs && node scripts/check-edge-function-paths.mjs && node scripts/check-no-inline-subject-truncate.mjs && node scripts/check-docs-no-zar-billing.mjs && node scripts/check-docs-staleness.mjs",
     "build": "vite build",
     "build:dev": "node scripts/generate-routes.mjs && vite build --mode development",
     "lint": "eslint .",
@@ -15,6 +15,7 @@
     "check:edge-paths": "node scripts/check-edge-function-paths.mjs",
     "check:subject-truncate": "node scripts/check-no-inline-subject-truncate.mjs",
     "check:docs-zar": "node scripts/check-docs-no-zar-billing.mjs",
+    "check:docs-stale": "node scripts/check-docs-staleness.mjs",
     "generate:routes": "node scripts/generate-routes.mjs",
     "test:summary": "node scripts/test-summary.mjs",
     "test:summary:strict": "node scripts/test-summary.mjs --strict"
