@@ -7050,6 +7050,43 @@ export type Database = {
         }
         Relationships: []
       }
+      v_paystack_reconciliation: {
+        Row: {
+          expected_credits: number | null
+          expected_currency: string | null
+          expected_package_id: string | null
+          expected_price_usd: number | null
+          init_backfilled: boolean | null
+          init_org_id: string | null
+          initiated_at: string | null
+          marked_failed: boolean | null
+          payment_reference: string | null
+          purch_backfilled: boolean | null
+          settled_at: string | null
+          settled_credits: number | null
+          settled_currency: string | null
+          settled_org_id: string | null
+          settled_package_id: string | null
+          settled_price_usd: number | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_org_id_fkey"
+            columns: ["settled_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_org_id_fkey"
+            columns: ["init_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_poi_burn_reconciliation: {
         Row: {
           action_type: string | null
@@ -7459,6 +7496,13 @@ export type Database = {
         }[]
       }
       reconcile_acceptance_notifications: { Args: never; Returns: Json }
+      reconcile_paystack_purchases: {
+        Args: { p_window?: string }
+        Returns: {
+          n: number
+          status: string
+        }[]
+      }
       reconcile_poi_burns: { Args: { p_since?: string }; Returns: Json }
       reconcile_token_balances: {
         Args: never
