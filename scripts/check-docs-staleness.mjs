@@ -27,6 +27,16 @@ const MAX_AGE_DAYS = Number.isFinite(Number(process.env.DOCS_MAX_AGE_DAYS))
 /** @type {Array<{ path: string, requiredSections: string[] }>} */
 const DOC_RULES = [
   {
+    path: "docs/README.md",
+    requiredSections: [
+      "Trade Request",
+      "Engagement",
+      "Proof of Intent",
+      "Without a Doubt",
+      "X-API-Key",
+    ],
+  },
+  {
     path: "docs/getting-started.md",
     requiredSections: [
       "X-API-Key",
