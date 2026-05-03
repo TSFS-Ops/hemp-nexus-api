@@ -569,17 +569,23 @@ export function AdminPendingEngagementsPanel() {
   }, [engagements, filter, notesFilter, notesFrom, notesTo]);
 
   const stats = useMemo(() => {
-    const awaitingOutreach = engagements.filter(
-      (e) => ["pending", "notification_sent"].includes(e.engagement_status) && !isAutoLinked(e)
+    // D-05: canonical pending set = notification_sent + contacted (legacy
+    // 'pending' included defensively via isEngagementPending). The previous
+    // `pending` counter keyed off the dead 'pending' literal and always
+    // returned 0, hiding all admin-actionable rows.
+    const awaitingAdminAction = engagements.filter(
+      (e) => isEngagementPending(e.engagement_status) && !isAutoLinked(e)
     );
     return {
       total: engagements.length,
-      pending: engagements.filter((e) => e.engagement_status === "pending" && !isAutoLinked(e)).length,
+      // `pending` retained for backwards compatibility with consumers, but
+      // now reflects the canonical pending set rather than the dead literal.
+      pending: awaitingAdminAction.length,
       notified: engagements.filter((e) => e.engagement_status === "notification_sent" && !isAutoLinked(e)).length,
       contacted: engagements.filter((e) => e.engagement_status === "contacted").length,
       accepted: engagements.filter((e) => e.engagement_status === "accepted").length,
       autoLinked: engagements.filter(isAutoLinked).length,
-      awaitingOutreach: awaitingOutreach.length,
+      awaitingOutreach: awaitingAdminAction.length,
     };
   }, [engagements]);
 
