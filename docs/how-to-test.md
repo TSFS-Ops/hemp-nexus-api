@@ -1,6 +1,6 @@
 # How to Test the Compliance Matching API
 
-**Last Updated**: 2025-12-06
+**Last Updated**: 2026-05-03 (USD-native examples)
 
 This guide covers all testing methods available for the Compliance Matching API, from quick smoke tests to comprehensive integration testing.
 
@@ -199,7 +199,7 @@ curl -X POST "$BASE_URL/signals" \
       "end": "2025-12-31"
     },
     "budget": 25000,
-    "currency": "ZAR"
+    "currency": "USD"
   }'
 ```
 
@@ -216,7 +216,7 @@ curl -X POST "$BASE_URL/match" \
     "seller": {"id": "seller-001", "name": "Supplier Ltd"},
     "commodity": "Industrial Parts",
     "quantity": {"amount": 1000, "unit": "pieces"},
-    "price": {"amount": 50000, "currency": "ZAR"},
+    "price": {"amount": 50000, "currency": "USD"},
     "terms": "Net 30"
   }'
 
@@ -230,7 +230,7 @@ curl -X POST "$BASE_URL/match" \
     "seller": {"id": "seller-001", "name": "Supplier Ltd"},
     "commodity": "Industrial Parts",
     "quantity": {"amount": 1000, "unit": "pieces"},
-    "price": {"amount": 50000, "currency": "ZAR"},
+    "price": {"amount": 50000, "currency": "USD"},
     "terms": "Net 30"
   }'
 # Check for X-Idempotent-Replay: true header
