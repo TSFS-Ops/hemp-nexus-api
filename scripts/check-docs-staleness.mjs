@@ -20,7 +20,9 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-const MAX_AGE_DAYS = Number(process.env.DOCS_MAX_AGE_DAYS) || 120;
+const MAX_AGE_DAYS = Number.isFinite(Number(process.env.DOCS_MAX_AGE_DAYS))
+  ? Number(process.env.DOCS_MAX_AGE_DAYS)
+  : 120;
 
 /** @type {Array<{ path: string, requiredSections: string[] }>} */
 const DOC_RULES = [
