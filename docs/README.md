@@ -159,22 +159,32 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 
 1. **Get Your Key** (2 minutes)
    - Sign up at the dashboard
-   - Create an API key
+   - Create an API key (prefixed `sk_…`)
    - Copy it to your clipboard
 
 2. **Test the Connection** (1 minute)
    ```bash
    curl https://api.izenzo.co.za/functions/v1/healthz \
-     -H "Authorization: Bearer YOUR_API_KEY"
+     -H "X-API-Key: sk_your_api_key_here"
    ```
 
-3. **Create Your First Signal** (2 minutes)
+3. **Create Your First Trade Request** (2 minutes)
    ```bash
-   curl -X POST https://api.izenzo.co.za/functions/v1/signals \
-     -H "Authorization: Bearer YOUR_API_KEY" \
+   curl -X POST https://api.izenzo.co.za/functions/v1/trade-requests \
+     -H "X-API-Key: sk_your_api_key_here" \
      -H "Content-Type: application/json" \
-     -d '{"product":"Test Product","quantity":100,"unit":"units"}'
+     -d '{
+       "side": "buy",
+       "commodity": "Paracetamol API 500mg",
+       "hs_code": "2924.29",
+       "quantity": 1000,
+       "unit": "kg",
+       "origin_jurisdiction": "ZA",
+       "destination_jurisdiction": "ZA"
+     }'
    ```
+
+> Common 409 responses you should handle: `ENGAGEMENT_PENDING` (counterparty hasn't accepted yet), `DISPUTE_ACTIVE` (active dispute on the match), `WEBHOOK_REPLAY` (deterministic replay rejection — safe to treat as success).
 
 ### For Business Users: Understanding Value
 
