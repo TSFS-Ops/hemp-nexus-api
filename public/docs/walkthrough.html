@@ -336,41 +336,48 @@
 <h2>Phase 2 - Discovery &amp; Matching (~1.5 min)</h2>
 
 <div class="phase-card">
-  <h3><span class="step-num">8</span> Create Signals (Buy + Sell Intents)</h3>
-  <p><strong>Buyer signal:</strong> Paracetamol API 500mg, 50,000 kg, Johannesburg, ZAR 750,000</p>
-  <p><strong>Seller signal:</strong> Paracetamol Active Pharmaceutical Ingredient, 100,000 kg, Durban</p>
-  <p>Signals are <strong>non-binding</strong> expressions of commercial intent.</p>
-  <div class="api-badge">POST /functions/v1/signals</div>
+  <h3><span class="step-num">8</span> Create a Trade Request</h3>
+  <p>Each side opens a <strong>Trade Request</strong> — the canonical, persistent record of trade intent. Trade Requests live in the <code>trade_requests</code> table and <strong>survive across counterparty attempts</strong>: if an engagement is declined or expires, the parent Trade Request remains and can be re-engaged with a different counterparty without re-keying.</p>
+  <p><strong>Buyer Trade Request:</strong> Paracetamol API 500mg (HS 2924.29), 50,000 kg, origin ZA → destination ZA, ZAR 15.00/kg DDP <em>(commercial currency, not billing)</em></p>
+  <p><strong>Seller Trade Request:</strong> Paracetamol Active Pharmaceutical Ingredient (HS 2924.29), 100,000 kg, origin ZA</p>
+  <p>Commodity values come from the static commodity taxonomy module (80+ HS-coded items). Trade Requests are <strong>non-binding</strong> — no tokens burned, no commitments made.</p>
+  <div class="api-badge">POST /functions/v1/trade-requests</div>
 </div>
 
 <div class="phase-card">
-  <h3><span class="step-num">9</span> Match Discovery</h3>
-  <p>Discovery engine pairs buyer and seller signals based on product similarity, location proximity, quantity compatibility, and price range overlap.</p>
-  <p><strong>Result:</strong> A match record with <code>status: "matched"</code></p>
+  <h3><span class="step-num">9</span> Discovery (role-inverted search)</h3>
+  <p>The discovery engine surfaces compatible counterparties using <strong>search role inversion</strong>: a buyer's Trade Request searches the seller pool, and vice versa. The 4-layer pipeline runs Internal book → Order book → AI semantic match → ILIKE fallback, with contact details masked until engagement.</p>
+  <p>Candidates are scored on commodity/HS-code similarity, jurisdiction compatibility, quantity overlap, and price-range fit. Search activity is captured in <code>discovery_search_logs</code>.</p>
+  <div class="api-badge">POST /functions/v1/search</div>
   <div class="api-badge">POST /functions/v1/sr-discover</div>
 </div>
 
 <div class="phase-card">
-  <h3><span class="step-num">10</span> Send Invite</h3>
-  <p>Buyer sends an invite to seller referencing the match.</p>
-  <p><strong>Result:</strong> Invite <code>status: "pending"</code> · Audit: <em>"Intent Declared"</em></p>
-  <div class="api-badge">POST /functions/v1/invites</div>
+  <h3><span class="step-num">10</span> Engage Counterparty (hold-point)</h3>
+  <p>The buyer org initiates an <strong>engagement</strong> with the seller org against the discovered Trade Request.</p>
+  <ul>
+    <li>A <code>match</code> row is created as a child of the parent <code>trade_requests</code> row (linked via <code>trade_request_id</code>)</li>
+    <li>Engagement enters <code>pending</code> status — the seller must accept before any POI can be minted</li>
+    <li>Until acceptance, all POI mint attempts return <code>409 / ENGAGEMENT_PENDING</code></li>
+    <li>Dual-path notification fires (admin + counterparty user) via Resend, with subjects clamped to 200 chars by <code>clampSubject()</code></li>
+  </ul>
+  <div class="api-badge">POST /functions/v1/poi-engagements</div>
 </div>
 
 <div class="phase-card">
-  <h3><span class="step-num">11</span> Confirm Intent (Token Burn)</h3>
-  <p>Seller accepts invite → mutual intent confirmed.</p>
+  <h3><span class="step-num">11</span> Counterparty Accepts Engagement</h3>
+  <p>The seller org accepts the engagement.</p>
   <ul>
-    <li>Invite → <code>"accepted"</code> · Match → <code>"settled"</code></li>
-    <li><strong>500 tokens burned</strong> from confirming org</li>
-    <li>Match hash computed (SHA-256)</li>
-    <li>Audit: <em>"Intent Confirmed"</em></li>
+    <li><code>atomic_accept_bind</code> runs (<code>service_role</code>-only, since SECDEF Stage D1)</li>
+    <li>Engagement status → <code>accepted</code></li>
+    <li>Hold-point clears; the buyer can now progress to POI mint</li>
+    <li>Audit log records <code>engagement.accepted</code></li>
   </ul>
-  <div class="api-badge">PATCH /functions/v1/invites (action: accept)</div>
+  <div class="api-badge">POST /functions/v1/poi-engagements (action: accept)</div>
 </div>
 
 <!-- PHASE 3 -->
-<h2>Phase 3 - POI Lifecycle &amp; Collapse (~2 min)</h2>
+<h2>Phase 3 - POI Lifecycle &amp; Mint (~2 min)</h2>
 
 <div class="phase-card">
   <h3><span class="step-num">12</span> Pre-flight Validation + Probability</h3>
