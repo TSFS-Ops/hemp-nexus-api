@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { useEnv } from "./EnvSwitcher";
 const SAMPLE_KEY = {
-  production: "iz_live_77f4••••3a21",
-  sandbox: "iz_test_3lp8••••8e02"
+  production: "sk_live_77f4••••3a21",
+  sandbox: "sk_test_3lp8••••8e02"
 };
 const HOST = {
-  production: "https://api.izenzo.io",
-  sandbox: "https://sandbox.api.izenzo.io"
+  production: "https://api.izenzo.co.za/functions/v1",
+  sandbox: "https://api.izenzo.co.za/functions/v1"
 };
 const ORG_ID = {
   production: "org_4Lp2ZA",
