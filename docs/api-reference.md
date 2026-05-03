@@ -207,12 +207,17 @@ All errors follow a consistent format:
 | `FORBIDDEN` | 403 | Insufficient permissions |
 | `NOT_FOUND` | 404 | Resource not found |
 | `CONFLICT` | 409 | Resource already exists |
-| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
+| `ENGAGEMENT_PENDING` | 409 | POI mint blocked — counterparty has not yet accepted the engagement hold-point. Wait for `engagement.accepted` event or surface the hold-point tracker to the user. |
+| `DISPUTE_ACTIVE` | 409 | Commercial mutation blocked — an active dispute exists on the match. Only the raising organisation can resolve the dispute. |
+| `WEBHOOK_REPLAY` | 409 | Inbound webhook (e.g. Resend, auth-email-hook) was rejected as a replay by `assertNotReplayed` against the `webhook_replay_guard` ledger. Stable, deterministic — safe to treat as success on the sender side. |
+| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests. Honour `Retry-After` header. |
 | `INSUFFICIENT_TOKENS` | 402 | Token balance below minimum |
 | `ELIGIBILITY_FAILED` | 422 | Confirm Intent eligibility check failed |
 | `AUDIT_LOG_ERROR` | 500 | Failed to create audit trail |
 | `INTERNAL_ERROR` | 500 | Server error |
 | `DATABASE_ERROR` | 500 | Database operation failed |
+
+> **Subject-line contract:** All outbound email and Slack notifications produced by edge functions (`poi-engagements`, `lifecycle-scheduler`, `send-team-invite`, `notification-dispatch`) pass through `clampSubject()` from `supabase/functions/_shared/email-subject.ts`. Subjects are hard-clamped to **200 characters** while preserving the trailing trace tail (request id / org id). Free-text fields (commodity, organisation name, inviter name) are never concatenated raw into a subject line.
 
 ---
 
