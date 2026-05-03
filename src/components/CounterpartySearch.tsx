@@ -21,6 +21,13 @@ import { consumePreAuthState } from "@/lib/pre-auth-state";
 import { sanitizeSearchResults, detectDegradation, type DegradationInfo } from "@/lib/sanitize-search-results";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import {
+  ROLE_CONFIRMATION_REQUIRED,
+  inferUserSideFromParsedRole,
+  detectSideConflict,
+  recordRoleConfirmation,
+  type TradeSide,
+} from "@/lib/role-confirmation";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
