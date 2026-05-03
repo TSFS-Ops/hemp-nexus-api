@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { cacheHeaders } from "../_shared/cache.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
+import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
 
 /**
  * Lifecycle Scheduler - handles periodic tasks:
