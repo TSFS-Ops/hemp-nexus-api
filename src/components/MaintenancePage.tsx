@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
  *
  * Target: 2026-05-03 13:00 Africa/Johannesburg (SAST, UTC+2) = 2026-05-03 11:00 UTC.
  */
-export const MAINTENANCE_MODE = true;
+export const MAINTENANCE_MODE = false;
 const TARGET_UTC_MS = Date.UTC(2026, 4, 3, 11, 0, 0); // May = month index 4
 // Anchor: the moment MAINTENANCE_MODE was flipped on. Progress % is computed
 // across the real outage window (start -> resume), so the bar reflects how far
