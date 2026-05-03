@@ -207,40 +207,39 @@ Follow this checklist:
 
 ## 💡 Common Use Cases
 
-### Use Case 1: Medical Supply Marketplace
-**Scenario**: You run a platform where hospitals buy medical supplies.
+### Use Case 1: Regulated Goods Marketplace
+**Scenario**: A buyer needs verified, licensed counterparties for a regulated commodity.
 
 **How to use this API**:
-1. **Hospital creates a signal**: "Need 10,000 surgical masks"
-2. **System finds verified suppliers**: Returns only SAHPRA-licensed suppliers
-3. **Hospital selects supplier**: Creates a match record
-4. **Confirm intent**: Signal interest (no legal obligation) so seller can prepare final terms
-5. **For audits**: Provide match records with cryptographic proof
+1. **Buyer creates a Trade Request** describing the commodity, HS code, quantity, jurisdictions, and (optionally) commercial terms.
+2. **Discovery surfaces compatible counterparties** via role-inverted search; contacts stay masked until engagement.
+3. **Buyer engages a counterparty** — the seller must accept the engagement before any POI can be minted (`409 / ENGAGEMENT_PENDING` until they do).
+4. **POI mint** runs through `atomic_generate_poi_v2` once both `declaration_ack` and `atb_ack` are present and the per-side document floor is met.
+5. **WaD** seals the bundle with SHA-256 hash chaining once both parties attest.
 
-**Benefits**: Automated compliance verification, audit trail, faster matching.
+**Benefits**: Automated compliance verification, deterministic audit trail, tamper-evident evidence pack.
 
-### Use Case 2: Industrial Equipment Trading
-**Scenario**: Companies trade heavy machinery and need proof of transactions.
+### Use Case 2: Cross-Border Industrial Trade
+**Scenario**: Two organisations want a recorded, evidence-backed agreement on heavy equipment.
 
 **How to use this API**:
-1. **Buyer signals interest**: "Need 5 excavators in Gauteng region"
-2. **Sellers respond**: System returns matching equipment offers
-3. **Agreement reached**: Record match with all details
-4. **Webhook notification**: Both parties' systems get notified
-5. **Confirm intent**: Signal interest so seller can prepare final terms (no legal obligation)
+1. **Buyer and seller each open a Trade Request** with origin/destination jurisdictions.
+2. **Engagement hold-point** keeps the deal at "exploring" until the counterparty accepts.
+3. **Webhook notifications** fire on `engagement.requested`, `engagement.accepted`, `poi.minted`, `wad.sealed` — all subjects clamped to 200 chars by `clampSubject()`.
+4. **Sealed WaD certificate** can be downloaded for ERP attachment or compliance review.
 
-**Benefits**: Permanent record, instant notifications, easy integration with ERP.
+**Benefits**: Permanent record, real-time webhooks (with replay protection), straightforward ERP integration.
 
 ### Use Case 3: Compliance Reporting
-**Scenario**: Need to prove all trades were with licensed partners.
+**Scenario**: Need to prove all trades passed jurisdiction, sanctions, and authority-to-bind checks.
 
 **How to use this API**:
-1. **Query audit logs**: Get complete history
-2. **Verify hashes**: Prove data integrity
-3. **Export matches**: Generate compliance reports
-4. **Show SAHPRA verification**: Prove licensing compliance
+1. **Query audit logs** for the full lifecycle (Trade Request → engagement → POI → WaD).
+2. **Verify the WaD seal hash** to prove the bundle has not been altered.
+3. **Export evidence packs** for the period under review.
+4. **Reference UBO ≥100% and ATB records** captured during onboarding.
 
-**Benefits**: Automated compliance reports, tamper-proof evidence.
+**Benefits**: Automated compliance reports, deterministic evidence, no manual reconciliation.
 
 ---
 
