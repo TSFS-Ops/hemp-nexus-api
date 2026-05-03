@@ -307,12 +307,56 @@ export default function CounterpartySearch() {
     });
   };
 
+  const inferredUserSide: TradeSide | null = inferUserSideFromParsedRole(parsedQuery?.role ?? null);
+  const selectedSide: TradeSide | null = (tradeContext.side as TradeSide | undefined) ?? null;
+  const sideConflict = detectSideConflict(selectedSide, inferredUserSide);
+
   const handleCreateMatchClick = () => {
     if (selectedResults.size === 0) {
       toast.error("Please select at least one trading partner");
       return;
     }
+    // D-03: block progression when inferred side conflicts with selected side.
+    // The user must explicitly confirm or correct. Feature flag allows
+    // emergency rollback only; default is the safe (gated) behaviour.
+    if (ROLE_CONFIRMATION_REQUIRED && sideConflict) {
+      setShowRoleConfirmDialog(true);
+      return;
+    }
     setShowDraftDialog(true);
+  };
+
+  // D-03: user explicitly confirmed (kept selected side) or corrected (switched
+  // to inferred side). Either way write the canonical audit row, then continue.
+  const handleRoleConfirm = async (confirmedSide: TradeSide) => {
+    if (roleConfirmBusy) return;
+    setRoleConfirmBusy(true);
+    try {
+      await recordRoleConfirmation({
+        originalSelectedSide: selectedSide,
+        inferredSide: inferredUserSide,
+        confirmedSide,
+        draftId: null,
+        sourceComponent: "CounterpartySearch",
+      });
+      // If user corrected, propagate the new side into tradeContext + URL so
+      // the downstream match payload uses the corrected side.
+      if (confirmedSide !== selectedSide) {
+        setTradeContext((prev) => ({ ...prev, side: confirmedSide }));
+        setSearchParams((prev) => {
+          const updated = new URLSearchParams(prev);
+          updated.set("side", confirmedSide);
+          return updated;
+        }, { replace: true });
+      }
+      setShowRoleConfirmDialog(false);
+      setShowDraftDialog(true);
+    } catch (err) {
+      console.error("Failed to record role confirmation:", err);
+      toast.error("Could not record your side confirmation. Please try again.");
+    } finally {
+      setRoleConfirmBusy(false);
+    }
   };
 
   const handleConfirmDraftCreation = async () => {
