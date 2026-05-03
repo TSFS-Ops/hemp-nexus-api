@@ -6883,6 +6883,16 @@ export type Database = {
           },
         ]
       }
+      notification_skipped_24h_rollup: {
+        Row: {
+          first_seen: string | null
+          last_seen: string | null
+          reason: string | null
+          skip_count: number | null
+          source_function: string | null
+        }
+        Relationships: []
+      }
       profiles_safe: {
         Row: {
           created_at: string | null
