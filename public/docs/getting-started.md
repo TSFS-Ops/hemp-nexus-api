@@ -1,6 +1,6 @@
 # Getting Started with Compliance Matching API
 
-**Last Updated**: 2025-12-06
+**Last Updated**: 2026-05-03 (USD-native pricing)
 
 This guide will walk you through your first steps with the Compliance Matching API, from creating an account to making your first API call. No prior API experience required!
 
@@ -510,7 +510,7 @@ When your signal is created successfully, you'll get a response like this:
       "how_much": 12000,
       "unit": "units",
       "price": 15000,
-      "currency": "ZAR",
+      "currency": "USD",
       "where_location": "Pretoria",
       "when_available": "2025-11-25",
       "score": 95,
@@ -522,7 +522,7 @@ When your signal is created successfully, you'll get a response like this:
       "how_much": 10000,
       "unit": "units",
       "price": 12000,
-      "currency": "ZAR",
+      "currency": "USD",
       "where_location": "Johannesburg",
       "when_available": "2025-12-01",
       "score": 88,
@@ -572,7 +572,7 @@ When your signal is created successfully, you'll get a response like this:
 - `how_much`: Quantity available
 - `unit`: Measurement unit
 - `price`: Total price (or per-unit, check carefully)
-- `currency`: Currency code (ZAR, USD, EUR, etc.)
+- `currency`: ISO 4217 currency code. The platform is USD-native — credits and platform billing are always USD. Trade option prices may be quoted in other currencies (USD, EUR, GBP, ZAR, etc.) depending on the supplier.
 - `where_location`: Where the product is located
 - `when_available`: When it can be delivered
 - `score`: Relevance score (0-100, higher is better)

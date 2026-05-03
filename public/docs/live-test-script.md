@@ -1,6 +1,6 @@
 # Platform Test Pack
 
-Prepared: 13 March 2026
+Prepared: 13 March 2026 (revised 3 May 2026 — USD pricing)
 For: Business stakeholders, operations leads, and anyone responsible for sign-off
 
 ---
@@ -755,8 +755,8 @@ Before you start: Sign in.
 
 Do this:
 1. Go to the Billing page.
-2. You should see a list of credit packages with prices in Rands (ZAR).
-3. Each package should clearly say how many credits you get and what it costs.
+2. You should see a list of credit packages with prices in US Dollars (USD). The standard tiers are: 1 credit for $1, 10 credits for $10, 50 credits for $45 (a 10% saving), and 200 credits for $160 (a 20% saving).
+3. Each package should clearly say how many credits you get and what it costs in USD.
 
 What good looks like: Packages are listed clearly with Buy buttons.
 
