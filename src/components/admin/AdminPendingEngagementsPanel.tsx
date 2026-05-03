@@ -1285,7 +1285,8 @@ export function AdminPendingEngagementsPanel() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
-                            {e.engagement_status === "pending" && (
+                            {/* D-05: Notify is offered for canonical pending states (notification_sent / legacy pending). Once 'contacted', the Mark-contacted action takes over. */}
+                            {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (
                               <Button
                                 size="sm" variant="outline"
                                 onClick={() => sendNotification(e)}
