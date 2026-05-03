@@ -22,12 +22,12 @@ export function QuickStart() {
 export IZENZO_KEY="${SAMPLE_KEY[env]}"
 
 # 2. Verify the ledger is reachable from your network
-curl -X GET ${HOST[env]}/v1/health \\
-  -H "Authorization: Bearer $IZENZO_KEY" \\
+curl -X GET ${HOST[env]}/healthz \\
+  -H "X-API-Key: $IZENZO_KEY" \\
   -H "X-Org-Id: ${ORG_ID[env]}" \\
   -H "Content-Type: application/json"
 
-# Expect: { "status": "ok", "ledger": "synchronized" }`;
+# Expect: { "status": "ok", "ledger": "synchronised" }`;
   const copy = async () => {
     await navigator.clipboard.writeText(cmd);
     setCopied(true);
