@@ -21,6 +21,13 @@ import { consumePreAuthState } from "@/lib/pre-auth-state";
 import { sanitizeSearchResults, detectDegradation, type DegradationInfo } from "@/lib/sanitize-search-results";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import {
+  ROLE_CONFIRMATION_REQUIRED,
+  inferUserSideFromParsedRole,
+  detectSideConflict,
+  recordRoleConfirmation,
+  type TradeSide,
+} from "@/lib/role-confirmation";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -126,6 +133,9 @@ export default function CounterpartySearch() {
   const [hasSearched, setHasSearched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [degradation, setDegradation] = useState<DegradationInfo>({ isPartiallyDegraded: false, webDiscoveryDown: false, message: null });
+  // D-03: explicit role-confirmation gate for selected vs inferred side
+  const [showRoleConfirmDialog, setShowRoleConfirmDialog] = useState(false);
+  const [roleConfirmBusy, setRoleConfirmBusy] = useState(false);
 
   // Structured trade interest context from landing page
   const [tradeContext, setTradeContext] = useState<{
@@ -297,12 +307,56 @@ export default function CounterpartySearch() {
     });
   };
 
+  const inferredUserSide: TradeSide | null = inferUserSideFromParsedRole(parsedQuery?.role ?? null);
+  const selectedSide: TradeSide | null = (tradeContext.side as TradeSide | undefined) ?? null;
+  const sideConflict = detectSideConflict(selectedSide, inferredUserSide);
+
   const handleCreateMatchClick = () => {
     if (selectedResults.size === 0) {
       toast.error("Please select at least one trading partner");
       return;
     }
+    // D-03: block progression when inferred side conflicts with selected side.
+    // The user must explicitly confirm or correct. Feature flag allows
+    // emergency rollback only; default is the safe (gated) behaviour.
+    if (ROLE_CONFIRMATION_REQUIRED && sideConflict) {
+      setShowRoleConfirmDialog(true);
+      return;
+    }
     setShowDraftDialog(true);
+  };
+
+  // D-03: user explicitly confirmed (kept selected side) or corrected (switched
+  // to inferred side). Either way write the canonical audit row, then continue.
+  const handleRoleConfirm = async (confirmedSide: TradeSide) => {
+    if (roleConfirmBusy) return;
+    setRoleConfirmBusy(true);
+    try {
+      await recordRoleConfirmation({
+        originalSelectedSide: selectedSide,
+        inferredSide: inferredUserSide,
+        confirmedSide,
+        draftId: null,
+        sourceComponent: "CounterpartySearch",
+      });
+      // If user corrected, propagate the new side into tradeContext + URL so
+      // the downstream match payload uses the corrected side.
+      if (confirmedSide !== selectedSide) {
+        setTradeContext((prev) => ({ ...prev, side: confirmedSide }));
+        setSearchParams((prev) => {
+          const updated = new URLSearchParams(prev);
+          updated.set("side", confirmedSide);
+          return updated;
+        }, { replace: true });
+      }
+      setShowRoleConfirmDialog(false);
+      setShowDraftDialog(true);
+    } catch (err) {
+      console.error("Failed to record role confirmation:", err);
+      toast.error("Could not record your side confirmation. Please try again.");
+    } finally {
+      setRoleConfirmBusy(false);
+    }
   };
 
   const handleConfirmDraftCreation = async () => {
@@ -755,6 +809,49 @@ export default function CounterpartySearch() {
             </div>
           </div>
         )}
+
+        {/* D-03 Role-confirmation Dialog: blocks progression when the inferred
+            side conflicts with the user's selected side. */}
+        <AlertDialog
+          open={showRoleConfirmDialog}
+          onOpenChange={(open) => { if (!roleConfirmBusy) setShowRoleConfirmDialog(open); }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm your side</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p>
+                  This trade appears to place your organisation as{" "}
+                  <strong>{inferredUserSide ?? "—"}</strong>.
+                  You currently have <strong>{selectedSide ?? "no side"}</strong> selected.
+                </p>
+                <p>Please confirm or correct your side before continuing.</p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
+              <AlertDialogCancel disabled={roleConfirmBusy}>
+                Cancel
+              </AlertDialogCancel>
+              {selectedSide && (
+                <Button
+                  variant="outline"
+                  disabled={roleConfirmBusy}
+                  onClick={() => handleRoleConfirm(selectedSide)}
+                >
+                  Keep {selectedSide}
+                </Button>
+              )}
+              {inferredUserSide && (
+                <Button
+                  disabled={roleConfirmBusy}
+                  onClick={() => handleRoleConfirm(inferredUserSide)}
+                >
+                  Correct to {inferredUserSide}
+                </Button>
+              )}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Draft Match Confirmation Dialog */}
         <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
