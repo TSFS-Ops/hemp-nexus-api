@@ -24,6 +24,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
   shadow_port = 54320
 
 [functions]
+  [functions.account-deletion-sweeper]
+    verify_jwt = false
   [functions.admin-lookup-profiles]
     verify_jwt = false
   [functions.admin-users]
