@@ -247,36 +247,40 @@ Calculate completion probability based on 7 weighted factors:
 
 ---
 
-### Step 13: POI Collapse (Binding Event)
+### Step 13: POI Mint (Binding Event)
 
-The deterministic collapse engine executes the binding trade event.
+The POI mint runs through `atomic_generate_poi_v2` — a `service_role`-only PostgreSQL function (SECDEF Stage D1, 2026-04-22). The browser **never** calls it directly; it goes through the owning edge function.
 
-**Mandatory fields**:
+**Mandatory request fields**:
 - `org_id`, `counterparty_org_id` (UUIDs)
-- `asset_id`, `quantity`, `price`, `currency`
-- `client_timestamp`, `idempotency_key`
-- `signed_payload` (ECDSA P-256 signature)
+- `trade_request_id` (parent Trade Request)
+- `quantity`, `price`, `currency`, `incoterms` (commercial terms — required before mint)
+- `idempotency_key` (header)
+- `p_acks` (object) — **must include `{declaration_ack: true, atb_ack: true}` on every mint**
 
 **What is validated**:
-1. ✅ ECDSA signature verification (P-256, SHA-256)
-2. ✅ Both parties "Approved to Trade" with valid approval
-3. ✅ Dynamic approval tier met (based on trade value)
-4. ✅ No global or org-level freeze
-5. ✅ CAP partition health check (consistency first)
-6. ✅ Idempotency (duplicate → returns original record)
-7. ✅ Intent state is `ELIGIBLE` or `COMPLETION_REQUESTED`
-8. ✅ POI completion probability ≥ 50.1%
+1. ✅ Engagement is `accepted` (else `409 / ENGAGEMENT_PENDING`)
+2. ✅ No active dispute on the match (else `409 / DISPUTE_ACTIVE`)
+3. ✅ Both parties "Approved to Trade" with valid approval
+4. ✅ Dynamic approval tier met (5-factor risk scoring)
+5. ✅ Intent state is `ELIGIBLE` or `COMPLETION_REQUESTED`
+6. ✅ POI completion probability ≥ 50.1%
+7. ✅ Acknowledgements present (`declaration_ack` + `atb_ack`)
+8. ✅ For bilateral matches: **≥1 document per side** (no waivers)
+9. ✅ PostgreSQL advisory lock acquired (concurrency control)
+10. ✅ Idempotency (duplicate → returns original record)
+
+**Evidence Strength Indicator**: documents are not individually mandatory beyond the per-side minimum. The UI surfaces a red→amber→green bar — more documents = stronger bundle. The wizard never auto-skips the Match step; the strict audited waiver dialog blocks POI mint when zero docs and zero notes.
 
 **What is recorded**:
-- Append-only `collapse_ledger` entry
+- POI row with state → `COMPLETED`
+- `atomic_token_burn` deducts the configured cost (USD-native; `exempt_burn` for founder/admin accounts)
 - SHA-256 payload hash
-- NTP drift measurement (hardened if ≤1000ms)
-- Encrypted payload ciphertext (optional)
-- Intent state → `COMPLETED`
+- Append-only audit_logs entry
 
-**Result**: Immutable collapse record with `poi_state: "COMPLETED"`
+**Result**: Immutable POI record with `poi_state: "COMPLETED"`
 
-**API**: `POST /functions/v1/collapse`
+**API**: `POST /functions/v1/poi-mint`
 
 ---
 
