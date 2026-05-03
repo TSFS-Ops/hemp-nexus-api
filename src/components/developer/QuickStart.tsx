@@ -73,9 +73,9 @@ curl -X GET ${HOST[env]}/healthz \\
             <C># 2. Verify the ledger is reachable from your network</C>
           </Line>
           <Line>
-            <K>curl</K> -X <M>GET</M> {HOST[env]}/v1/health \
+            <K>curl</K> -X <M>GET</M> {HOST[env]}/healthz \
           </Line>
-          <Line>{"  "}-H <S>"Authorisation: Bearer $IZENZO_KEY"</S> \</Line>
+          <Line>{"  "}-H <S>"X-API-Key: $IZENZO_KEY"</S> \</Line>
           <Line>
             {"  "}-H <S>"X-Org-Id: {ORG_ID[env]}"</S> \
           </Line>
