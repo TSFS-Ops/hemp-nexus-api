@@ -42,7 +42,7 @@ const PROGRAMME_PULSES = [{
 }, {
   t: "10:41",
   evt: "milestone_verified",
-  amt: "ZAR 8.1M"
+  amt: "USD 8.1M"
 }, {
   t: "10:39",
   evt: "kyb_re_attestation",
