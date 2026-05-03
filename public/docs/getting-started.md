@@ -960,4 +960,3 @@ Content-Type: application/json
 
 ---
 
-**Ready to dive deeper?** Continue to the [API Reference](./api-reference.md) for complete documentation.
