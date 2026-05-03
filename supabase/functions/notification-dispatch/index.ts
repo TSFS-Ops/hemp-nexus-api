@@ -10,6 +10,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
+import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
 
 Deno.serve(async (req) => {
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
