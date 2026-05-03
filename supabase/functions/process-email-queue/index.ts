@@ -354,6 +354,11 @@ Deno.serve(async (req) => {
             .eq('id', 1)
 
           // Stop processing — remaining messages stay in queue (VT expires, retried next cycle)
+          // D-06: rate-limit handling is a normal control path, not a tick failure.
+          await supabase
+            .from('email_send_state')
+            .update({ last_success_at: new Date().toISOString() })
+            .eq('id', 1)
           return new Response(
             JSON.stringify({ processed: totalProcessed, stopped: 'rate_limited' }),
             { headers: { 'Content-Type': 'application/json' } }
@@ -364,6 +369,11 @@ Deno.serve(async (req) => {
         // Move straight to DLQ and stop processing the rest of the batch.
         if (isForbidden(error)) {
           await moveToDlq(supabase, queue, msg, 'Emails disabled for this project')
+          // D-06: emails-disabled is a known terminal control path, not a tick failure.
+          await supabase
+            .from('email_send_state')
+            .update({ last_success_at: new Date().toISOString() })
+            .eq('id', 1)
           return new Response(
             JSON.stringify({ processed: totalProcessed, stopped: 'emails_disabled' }),
             { headers: { 'Content-Type': 'application/json' } }
