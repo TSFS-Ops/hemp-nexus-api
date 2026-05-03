@@ -133,6 +133,11 @@ Deno.serve(async (req) => {
     .single()
 
   if (state?.retry_after_until && new Date(state.retry_after_until) > new Date()) {
+    // D-06: cooldown is still healthy progress — stamp success.
+    await supabase
+      .from('email_send_state')
+      .update({ last_success_at: new Date().toISOString() })
+      .eq('id', 1)
     return new Response(
       JSON.stringify({ skipped: true, reason: 'rate_limited' }),
       { headers: { 'Content-Type': 'application/json' } }
