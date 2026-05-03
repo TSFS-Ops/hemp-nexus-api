@@ -134,45 +134,52 @@ Mark both organisations as **"Approved to Trade"**. This is a one-time certifica
 
 ## Phase 2 - Discovery & Matching (~1.5 min)
 
-### Step 8: Create Signals (Buy + Sell Intents)
+### Step 8: Create a Trade Request
 
-**Buyer signal** (from Acme Pharma):
+Each side opens a **Trade Request** — the canonical, persistent record of trade intent. Trade Requests live in the `trade_requests` table and **survive across counterparty attempts**: if an engagement is declined or expires, the parent Trade Request remains and can be re-engaged with a different counterparty without re-keying.
+
+**Buyer Trade Request** (from Acme Pharma):
 ```json
 {
-  "product": "Paracetamol API 500mg",
+  "side": "buy",
+  "commodity": "Paracetamol API 500mg",
+  "hs_code": "2924.29",
   "quantity": 50000,
   "unit": "kg",
-  "location": "Johannesburg",
-  "budget": 750000,
-  "currency": "ZAR"
+  "origin_jurisdiction": "ZA",
+  "destination_jurisdiction": "ZA",
+  "price": 15.00,
+  "currency": "ZAR",
+  "incoterms": "DDP"
 }
 ```
+<!-- zar-billing-allow -->
 
-**Seller signal** (from MedSupply):
+**Seller Trade Request** (from MedSupply):
 ```json
 {
-  "product": "Paracetamol Active Pharmaceutical Ingredient",
+  "side": "sell",
+  "commodity": "Paracetamol Active Pharmaceutical Ingredient",
+  "hs_code": "2924.29",
   "quantity": 100000,
   "unit": "kg",
-  "location": "Durban"
+  "origin_jurisdiction": "ZA"
 }
 ```
 
-Signals are **non-binding** expressions of commercial intent.
+Commodity values come from the static commodity taxonomy module (80+ HS-coded items via combobox). Trade Requests are **non-binding** — no tokens burned, no commitments made.
 
-**API**: `POST /functions/v1/signals`
+**API**: `POST /functions/v1/trade-requests`
 
 ---
 
-### Step 9: Match Discovery
+### Step 9: Discovery (role-inverted search)
 
-The discovery engine pairs buyer and seller signals based on:
-- Product similarity (semantic matching)
-- Location proximity
-- Quantity compatibility
-- Price range overlap
+The discovery engine surfaces compatible counterparties using **search role inversion**: a buyer's Trade Request searches the seller pool, and vice versa. The 4-layer pipeline runs Internal book → Order book → AI semantic match → ILIKE fallback, with contact details masked until engagement.
 
-**Result**: A `match` record is created with `status: "matched"`, linking both organisations.
+Candidates are scored on commodity/HS-code similarity, jurisdiction compatibility (origin/destination), quantity overlap, and price-range fit. Search activity is captured in `discovery_search_logs` for engagement-quality measurement.
+
+**Result**: A ranked list of candidate counterparties for the buyer's Trade Request.
 
 **API**: `POST /functions/v1/search` or `POST /functions/v1/sr-discover`
 
@@ -388,11 +395,13 @@ Download the complete audit log for the trade lifecycle:
 | screening.completed | T+6s | System |
 | risk.computed | T+8s | System |
 | trade.approved | T+10s | Compliance |
-| signal.created | T+12s | Buyer |
+| trade_request.created | T+12s | Buyer |
+| trade_request.created | T+13s | Seller |
 | match.discovered | T+14s | System |
-| intent.declared | T+16s | Buyer |
-| intent.confirmed | T+18s | Seller |
-| poi.completed | T+20s | System |
+| engagement.requested | T+16s | Buyer |
+| engagement.accepted | T+18s | Seller |
+| poi.minted | T+20s | System |
+| token.burned | T+20s | System |
 | wad.created | T+22s | System |
 | wad.attested | T+24s | Buyer |
 | wad.attested | T+26s | Seller |
@@ -449,17 +458,17 @@ Plus **negative tests** (Steps 15–20) that verify rejection paths:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    LAYER 5: Evidence                     │
-│         Evidence Pack v1 + Signed Deal Certificate               │
+│   Evidence Pack v1 + Sealed WaD Certificate (SHA-256)    │
 ├─────────────────────────────────────────────────────────┤
 │                  LAYER 4: Consequence                    │
-│        Collapse Engine + Append-Only Ledger              │
+│      POI Mint + atomic_token_burn + Append-Only Ledger   │
 ├─────────────────────────────────────────────────────────┤
 │                 LAYER 3: POI Engine                      │
-│     State Machine (DRAFT → COMPLETED → ANNULLED)         │
-│     Probability Calculator (≥50.1% threshold)            │
+│   8-state machine (DRAFT → COMPLETED, terminal states)   │
+│   Probability ≥ 50.1% · Evidence Strength (red→green)    │
 ├─────────────────────────────────────────────────────────┤
 │               LAYER 2: Exploration                       │
-│      Signals + Discovery + Invites (non-binding)         │
+│   Trade Requests + Discovery + Engagement Hold-Points    │
 ├─────────────────────────────────────────────────────────┤
 │              LAYER 1: Due Diligence                      │
 │   Entities + UBO + ATB + Screening + Risk + Approval     │
