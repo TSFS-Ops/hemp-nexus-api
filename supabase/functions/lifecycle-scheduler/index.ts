@@ -382,10 +382,57 @@ Deno.serve(async (req: Request) => {
                 .update({ notification_sent_at: nowIso })
                 .eq("id", notification.metadata.breach_id as string);
             }
+          } else {
+            // D-07: dispatcher invocation returned an error — record skip
+            await recordNotificationSkipped(admin, {
+              reason: "dispatcher_unavailable",
+              sourceFunction: "lifecycle-scheduler",
+              lifecycleEventType: notification.event_type,
+              orgId: (notification.metadata.org_id as string) || null,
+              targetId: (notification.metadata.breach_id as string)
+                || (notification.metadata.milestone_id as string)
+                || null,
+              extra: { dispatch_error: dispatchErr.message ?? String(dispatchErr) },
+            });
           }
         } catch (err) {
           console.error("[lifecycle-scheduler] Notification dispatch failed:", err);
+          await recordNotificationSkipped(admin, {
+            reason: "dispatcher_unavailable",
+            sourceFunction: "lifecycle-scheduler",
+            lifecycleEventType: notification.event_type,
+            orgId: (notification.metadata.org_id as string) || null,
+            targetId: (notification.metadata.breach_id as string)
+              || (notification.metadata.milestone_id as string)
+              || null,
+            extra: { error: err instanceof Error ? err.message : String(err) },
+          });
         }
+      }
+    } else {
+      // D-07: dry-run intentionally suppresses every queued notification.
+      // Audit one row per queued notification so the skip is visible in the
+      // 24h skip-by-reason rollup.
+      for (const notification of notificationQueue) {
+        await recordNotificationSkipped(admin, {
+          reason: "dry_run",
+          sourceFunction: "lifecycle-scheduler",
+          lifecycleEventType: notification.event_type,
+          orgId: (notification.metadata.org_id as string) || null,
+          targetId: (notification.metadata.breach_id as string)
+            || (notification.metadata.milestone_id as string)
+            || null,
+        });
+      }
+      // If there were zero queued notifications during a dry-run, also record
+      // a single lifecycle_noop row so the absence is observable.
+      if (notificationQueue.length === 0) {
+        await recordNotificationSkipped(admin, {
+          reason: "lifecycle_noop",
+          sourceFunction: "lifecycle-scheduler",
+          lifecycleEventType: "scheduler.dry_run.no_queue",
+          extra: { dry_run: true },
+        });
       }
     }
 
