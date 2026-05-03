@@ -7064,6 +7064,7 @@ export type Database = {
           p_match_id: string
           p_org_id: string
           p_settled_at: string
+          p_terms_hash?: string
         }
         Returns: Json
       }
@@ -7230,6 +7231,10 @@ export type Database = {
       compute_behavioral_score: {
         Args: { p_days?: number; p_org_id: string }
         Returns: Json
+      }
+      compute_match_terms_hash: {
+        Args: { p_match_id: string }
+        Returns: string
       }
       delete_email: {
         Args: { message_id: number; queue_name: string }
