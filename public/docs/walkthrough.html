@@ -339,7 +339,7 @@
 <div class="phase-card">
   <h3><span class="step-num">8</span> Create a Trade Request</h3>
   <p>Each side opens a <strong>Trade Request</strong> — the canonical, persistent record of trade intent. Trade Requests live in the <code>trade_requests</code> table and <strong>survive across counterparty attempts</strong>: if an engagement is declined or expires, the parent Trade Request remains and can be re-engaged with a different counterparty without re-keying.</p>
-  <p><strong>Buyer Trade Request:</strong> Paracetamol API 500mg (HS 2924.29), 50,000 kg, origin ZA → destination ZA, ZAR 15.00/kg DDP <em>(commercial currency, not billing)</em></p>
+  <p><strong>Buyer Trade Request:</strong> Paracetamol API 500mg (HS 2924.29), 50,000 kg, origin ZA → destination ZA, ZAR 15.00/kg DDP <em>(commercial currency, not billing)</em></p> <!-- zar-billing-allow -->
   <p><strong>Seller Trade Request:</strong> Paracetamol Active Pharmaceutical Ingredient (HS 2924.29), 100,000 kg, origin ZA</p>
   <p>Commodity values come from the static commodity taxonomy module (80+ HS-coded items). Trade Requests are <strong>non-binding</strong> — no tokens burned, no commitments made.</p>
   <div class="api-badge">POST /functions/v1/trade-requests</div>
