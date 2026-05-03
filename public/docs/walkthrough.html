@@ -477,11 +477,12 @@
     <tr><td>screening.completed</td><td>T+6s</td></tr>
     <tr><td>risk.computed</td><td>T+8s</td></tr>
     <tr><td>trade.approved</td><td>T+10s</td></tr>
-    <tr><td>signal.created</td><td>T+12s</td></tr>
+    <tr><td>trade_request.created (×2)</td><td>T+12s</td></tr>
     <tr><td>match.discovered</td><td>T+14s</td></tr>
-    <tr><td>intent.declared</td><td>T+16s</td></tr>
-    <tr><td>intent.confirmed</td><td>T+18s</td></tr>
-    <tr><td>poi.completed</td><td>T+20s</td></tr>
+    <tr><td>engagement.requested</td><td>T+16s</td></tr>
+    <tr><td>engagement.accepted</td><td>T+18s</td></tr>
+    <tr><td>poi.minted</td><td>T+20s</td></tr>
+    <tr><td>token.burned</td><td>T+20s</td></tr>
     <tr><td>wad.created</td><td>T+22s</td></tr>
     <tr><td>wad.attested (×2)</td><td>T+24s</td></tr>
     <tr><td>wad.sealed</td><td>T+28s</td></tr>
@@ -499,18 +500,19 @@
   <li>Screening results clear and &lt; 30 days old</li>
   <li>Risk bands are low or medium</li>
   <li>Both orgs "Approved to Trade"</li>
-  <li>Signals created (buy + sell)</li>
-  <li>Match discovered and confirmed</li>
-  <li>Intent confirmed (500 tokens burned)</li>
+  <li>Trade Requests created (buyer + seller)</li>
+  <li>Engagement requested and accepted (hold-point cleared)</li>
+  <li>POI minted via <code>atomic_generate_poi_v2</code> (USD-native cost burned)</li>
   <li>POI probability ≥ 50.1%</li>
-  <li>Collapse record in append-only ledger</li>
-  <li>ECDSA signature verified</li>
+  <li>POI record in append-only audit_logs</li>
+  <li>SHA-256 payload hash recorded</li>
   <li>NTP drift ≤ 1000ms (hardened status)</li>
+  <li>WaD passes all 10 hard-gates (incl. webhook connectivity)</li>
+  <li>Both parties attested via <code>awaiting_attestations</code> path</li>
   <li>WaD sealed with SHA-256 hash chain</li>
-  <li>Both parties attested</li>
   <li>Evidence pack exportable</li>
   <li>Audit trail complete (15+ events)</li>
-  <li>Token balance reflects burns</li>
+  <li>Token balance reflects USD-native burns</li>
 </ul>
 
 <!-- ARCHITECTURE -->
