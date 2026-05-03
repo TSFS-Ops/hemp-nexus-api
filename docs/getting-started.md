@@ -1,7 +1,7 @@
 # Getting Started with the Compliance Matching API
 
-**Last Updated**: 2025-12-02  
-**Time Required**: 15-20 minutes
+**Last Updated**: 2026-05-03 (USD-native pricing, Trade Request entity, SECDEF Stage D1)
+**Time Required**: 15–20 minutes
 
 ---
 
@@ -13,7 +13,7 @@ By the end of this guide, you'll be able to:
 - ✅ Generate and securely store API keys
 - ✅ Make your first API request
 - ✅ Understand responses and handle errors
-- ✅ Create a signal and match
+- ✅ Create a Trade Request and progress to a POI
 
 ---
 
@@ -23,11 +23,12 @@ By the end of this guide, you'll be able to:
 2. [Account Setup](#account-setup)
 3. [Creating Your API Key](#creating-your-api-key)
 4. [Your First API Call](#your-first-api-call)
-5. [Creating a Signal](#creating-a-signal)
-6. [Creating a Match](#creating-a-match)
+5. [Creating a Trade Request](#creating-a-trade-request)
+6. [Progressing to a POI](#progressing-to-a-poi)
 7. [Understanding Responses](#understanding-responses)
 8. [Common Errors](#common-errors)
-9. [Next Steps](#next-steps)
+9. [Billing & Credits](#billing--credits)
+10. [Next Steps](#next-steps)
 
 ---
 
@@ -50,7 +51,7 @@ By the end of this guide, you'll be able to:
 ### Step 1: Sign Up
 
 1. Navigate to the signup page
-2. Enter your email and password (minimum 8 characters)
+2. Enter your email and password (minimum 8 characters; HIBP-checked against breached password lists)
 3. Click "Sign Up"
 
 ### Step 2: Verify Your Email
@@ -59,6 +60,8 @@ By the end of this guide, you'll be able to:
 2. Click the verification link
 3. You'll be redirected to log in
 
+> **Email confirmation is mandatory.** There is no auto-confirmation in production. (Test accounts at `@test.izenzo.co.za` are auto-verified for the UAT framework.)
+
 **Troubleshooting**:
 - **Email not received?** Check spam folder, wait 5 minutes
 - **Link expired?** Request a new verification email from the login page
@@ -66,12 +69,13 @@ By the end of this guide, you'll be able to:
 ### Step 3: Log In
 
 1. Enter your verified email and password
-2. You'll see the Dashboard
+2. You'll see the Desk (the trade-user surface) or the Developer Dashboard, depending on your role
 
 **What happens on first login**:
 - An organisation is automatically created for you
-- You're assigned a default role
-- You're ready to create API keys
+- You're assigned `org_admin` + `org_member` roles
+- A jurisdiction is locked in during onboarding (regional data-residency lock — this is permanent)
+- You're ready to create API keys or begin trading
 
 ---
 
@@ -79,7 +83,7 @@ By the end of this guide, you'll be able to:
 
 ### Step 1: Navigate to API Keys
 
-1. From the Dashboard, click **"API Keys"** in the sidebar
+1. From the Developer Dashboard, click **"API Keys"** in the sidebar
 2. Click **"Create API Key"**
 
 ### Step 2: Configure Your Key
@@ -90,18 +94,17 @@ Example: "Development Key" or "Production Key"
 ```
 
 **Expiry** (Required):
-- `Never` - Key doesn't expire (use for testing)
-- `30 days` - Short-term projects
-- `90 days` - Recommended for production
-- `365 days` - Long-term integrations
+- `Never` — Key doesn't expire (use for testing only)
+- `30 days` — Short-term projects
+- `90 days` — Recommended for production
+- `365 days` — Long-term integrations
 
 **Scopes** (Select based on needs):
-- ✅ `signals:read` - View signals
-- ✅ `signals:write` - Create signals
-- ✅ `match:read` - View matches
-- ✅ `match:write` - Create matches
+- ✅ `signals:read` / `signals:write` — Trade Request discovery
+- ✅ `match:read` / `match:write` — POI lifecycle
+- ✅ `webhooks:read` / `webhooks:write` — Event subscriptions
 
-**For getting started, select all four scopes above.**
+**For getting started, select all of the above.**
 
 ### Step 3: Save Your Key
 
@@ -113,7 +116,6 @@ Your key looks like: sk_1a2b3c4d5e6f7g8h9i0j
 
 **This is the only time you'll see the full key.** Store it securely:
 
-**Good practices**:
 ```bash
 # In a .env file (never commit this!)
 API_KEY=sk_1a2b3c4d5e6f7g8h9i0j
@@ -134,45 +136,46 @@ Let's verify your API key works.
 
 **Using cURL** (Terminal):
 ```bash
-curl https://api.izenzo.co.za/functions/v1/healthz
+curl https://api.trade.izenzo.co.za/functions/v1/healthz
 ```
 
 **Expected Response**:
 ```json
 {
   "status": "healthy",
-  "timestamp": "2025-12-02T10:00:00Z"
+  "timestamp": "2026-05-03T10:00:00Z"
 }
 ```
 
 ### Test Authentication
 
+API keys use the `X-API-Key` header. JWT user sessions use `Authorization: Bearer`.
+
 ```bash
-curl https://api.izenzo.co.za/functions/v1/signals \
-  -H "Authorization: Bearer YOUR_API_KEY_HERE"
+curl https://api.trade.izenzo.co.za/functions/v1/signals \
+  -H "X-API-Key: YOUR_API_KEY_HERE"
 ```
 
 **Expected Response** (empty list is normal):
 ```json
-{
-  "data": []
-}
+{ "data": [] }
 ```
 
-If you see this, your API key is working! 🎉
+If you see this, your API key is working. 🎉
 
 ---
 
-## Creating a Signal
+## Creating a Trade Request
 
-A **signal** expresses your intent to buy or sell something.
+A **Trade Request** expresses your intent to buy or sell. Trade Requests persist across counterparty attempts — if a chosen counterparty declines or your engagement expires, the same Trade Request can be re-engaged with a new counterparty without re-keying.
 
-### Create a Buyer Signal
+> **Terminology:** This platform uses **Counterparty**, **Trade Request**, **Proof of Intent (POI)**, and **WaD** ("Without a Doubt"). We never use "Bid/Offer".
 
-**cURL**:
+### Create a Buyer Trade Request
+
 ```bash
-curl -X POST https://api.izenzo.co.za/functions/v1/signals \
-  -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+curl -X POST https://api.trade.izenzo.co.za/functions/v1/signals \
+  -H "X-API-Key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
     "product": "Industrial Equipment Parts",
@@ -184,130 +187,35 @@ curl -X POST https://api.izenzo.co.za/functions/v1/signals \
   }'
 ```
 
-**JavaScript**:
-```javascript
-const response = await fetch(
-  'https://api.izenzo.co.za/functions/v1/signals',
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer YOUR_API_KEY_HERE',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      product: 'Industrial Equipment Parts',
-      quantity: 1000,
-      unit: 'units',
-      location: 'Johannesburg',
-      budget: 50000,
-      currency: 'ZAR'
-    })
-  }
-);
-
-const data = await response.json();
-console.log('Signal ID:', data.signalId);
-```
-
-**Python**:
-```python
-import requests
-
-response = requests.post(
-    'https://api.izenzo.co.za/functions/v1/signals',
-    headers={
-        'Authorization': 'Bearer YOUR_API_KEY_HERE',
-        'Content-Type': 'application/json'
-    },
-    json={
-        'product': 'Industrial Equipment Parts',
-        'quantity': 1000,
-        'unit': 'units',
-        'location': 'Johannesburg',
-        'budget': 50000,
-        'currency': 'ZAR'
-    }
-)
-
-data = response.json()
-print(f"Signal ID: {data['signalId']}")
-```
+> The `currency` field on a **Trade Request** is the *commercial currency of the trade* (ZAR, EUR, USD, etc.) — it is *not* the platform billing currency. **Platform credits are USD-native, $1 per credit.**
 
 **Response**:
 ```json
 {
   "signalId": "550e8400-e29b-41d4-a716-446655440000",
+  "trade_request_id": "trq_abc123",
   "options": []
 }
 ```
 
-### Get Signal with Options
-
-```bash
-curl https://api.izenzo.co.za/functions/v1/signals/YOUR_SIGNAL_ID \
-  -H "Authorization: Bearer YOUR_API_KEY_HERE"
-```
-
 ---
 
-## Creating a Match
+## Progressing to a POI
 
-A **match** records a trade agreement between buyer and seller with cryptographic proof.
+The POI (Proof of Intent) lifecycle is an **8-state machine** managed by `atomic_generate_poi_v2`.
 
-### Create a Match
+The headline gates:
 
-**cURL**:
-```bash
-curl -X POST https://api.izenzo.co.za/functions/v1/match \
-  -H "Authorization: Bearer YOUR_API_KEY_HERE" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: my-unique-order-123" \
-  -d '{
-    "buyer": {
-      "id": "buyer-org-001",
-      "name": "Acme Corporation"
-    },
-    "seller": {
-      "id": "seller-org-002",
-      "name": "Industrial Supplies Ltd"
-    },
-    "commodity": "Industrial Equipment Parts",
-    "quantity": {
-      "amount": 1000,
-      "unit": "units"
-    },
-    "price": {
-      "amount": 45000,
-      "currency": "ZAR"
-    },
-    "terms": "Payment within 30 days, FOB Johannesburg"
-  }'
-```
+1. **Engagement hold-point** — your chosen counterparty must accept the engagement (`409 / ENGAGEMENT_PENDING` until then).
+2. **Mandatory commercial terms** — you must enter price, quantity, currency, and incoterms before the POI can be minted.
+3. **Probability ≥ 50.1%** — bilateral completion probability must clear the threshold.
+4. **Acknowledgements** — every POI mint requires `p_acks={declaration_ack:true, atb_ack:true}`.
+5. **Evidence (bilateral)** — at least one document per side. **No waivers.**
+6. **Evidence Strength Indicator** — a visual red→amber→green bar surfaces how strong the bundle is. Documents are not individually mandatory beyond the per-side minimum, but more docs = stronger.
 
-**Response**:
-```json
-{
-  "id": "match_abc123",
-  "hash": "a1b2c3d4e5f6789...",
-  "status": "matched",
-  "created_at": "2025-12-02T10:45:00Z"
-}
-```
+POIs are minted server-side only. The browser never calls the atomic functions directly — they are `service_role` only since SECDEF Stage D1 (2026-04-22).
 
-### Understanding the Hash
-
-The `hash` field is a SHA-256 hash of the trade details. This creates an **immutable proof** that this exact agreement was recorded.
-
-### Confirm Intent (Settle)
-
-To signal interest in proceeding:
-
-```bash
-curl -X POST https://api.izenzo.co.za/functions/v1/match/YOUR_MATCH_ID/settle \
-  -H "Authorization: Bearer YOUR_API_KEY_HERE"
-```
-
-**Important**: This only signals interest. It does **not** create a legal contract or payment obligation.
+**Endpoint**: `POST /functions/v1/poi-mint`
 
 ---
 
@@ -315,13 +223,11 @@ curl -X POST https://api.izenzo.co.za/functions/v1/match/YOUR_MATCH_ID/settle \
 
 ### Successful Response
 
-All successful responses include relevant data:
-
 ```json
 {
   "id": "resource_id",
   "status": "active",
-  "created_at": "2025-12-02T10:00:00Z"
+  "created_at": "2026-05-03T10:00:00Z"
 }
 ```
 
@@ -341,58 +247,56 @@ All errors follow this format:
 }
 ```
 
-**Always save the `requestId`** when contacting support.
+**Always save the `requestId`** when contacting support. Sentry traces are keyed off it.
 
 ---
 
 ## Common Errors
 
 ### 401 Unauthorised
-
-```json
-{
-  "code": "UNAUTHORIZED",
-  "message": "Invalid or missing API key"
-}
-```
-
-**Fix**: Check your API key is correct and included in the header.
+Invalid or missing API key. Confirm `X-API-Key` (API key) or `Authorization: Bearer` (JWT) is present.
 
 ### 403 Forbidden
-
-```json
-{
-  "code": "FORBIDDEN",
-  "message": "Insufficient permissions"
-}
-```
-
-**Fix**: Your API key doesn't have the required scope. Create a new key with the needed scopes.
+Your API key doesn't have the required scope. Create a new key with the needed scopes.
 
 ### 400 Validation Error
+Check your request body matches the expected Zod schema.
 
-```json
-{
-  "code": "VALIDATION_ERROR",
-  "message": "quantity must be a positive number"
-}
-```
+### 409 Conflict — `ENGAGEMENT_PENDING`
+Your counterparty has not yet accepted the engagement. Poll engagement status or wait for the `engagement.accepted` webhook.
 
-**Fix**: Check your request body matches the expected format.
+### 409 Conflict — `DISPUTE_ACTIVE`
+Commercial mutations are blocked while a dispute is open on the match. Disputes can only be resolved by the raising organisation.
+
+### 409 Conflict — `WEBHOOK_REPLAY`
+The same webhook delivery `id` was already processed. Treat as success and ignore.
 
 ### 429 Rate Limited
-
 ```json
 {
   "code": "RATE_LIMIT_EXCEEDED",
   "message": "Rate limit exceeded",
-  "details": {
-    "retryAfter": 60
-  }
+  "details": { "retryAfter": 60 }
 }
 ```
+Honour the `Retry-After` header.
 
-**Fix**: Wait for the `retryAfter` seconds before retrying.
+---
+
+## Billing & Credits
+
+Platform billing is **USD-native end-to-end**. Paystack settles directly in USD (the FX/ZAR layer was retired on 2026-05-01).
+
+| Tier | Credits | Price (USD) | Saving |
+|------|---------|-------------|--------|
+| `single` | 1 | $1 | — |
+| `pack_10` | 10 | $10 | — |
+| `pack_50` | 50 | $45 | -10% |
+| `pack_200` | 200 | $160 | -20% |
+
+**1 credit = $1.00 USD.** Trade-side currencies (ZAR, EUR, etc.) are commercial terms, not billing claims.
+
+Credit consumption is recorded via `atomic_token_burn`. Founder/admin accounts use `exempt_burn` (zero-cost) within capped limits.
 
 ---
 
@@ -400,25 +304,21 @@ All errors follow this format:
 
 ### Explore More Features
 
-1. **Webhooks**: Get real-time notifications when events occur
-   - See: [Webhooks Guide](./webhooks.md)
-
-2. **Evidence Packs**: Generate compliance proof for matches
-   - See: [API Reference](./api-reference.md#evidence-pack)
-
-3. **Analytics**: View your usage statistics
-   - See: Dashboard → Analytics tab
+1. **Webhooks** — real-time notifications. See [Webhooks Guide](./webhooks.md). All inbound webhook handlers must verify HMAC signatures and use `assertNotReplayed()`.
+2. **Evidence Packs** — generate compliance proof for matches. See [API Reference](./api-reference.md).
+3. **WaD (Without a Doubt) certification** — 9-gate hard verification + SHA-256 seal. See [WaD Certification Rules](./api-reference.md#wad).
 
 ### Read More Documentation
 
-- [Full API Reference](./api-reference.md) - Every endpoint documented
-- [How to Test](./how-to-test.md) - Complete testing guide
-- [Product Guide](./product-guide.md) - Feature deep-dives
-- [Webhooks](./webhooks.md) - Real-time notifications
+- [Full API Reference](./api-reference.md) — every endpoint documented
+- [How to Test](./how-to-test.md) — complete testing guide
+- [Product Guide](./product-guide.md) — feature deep-dives
+- [Webhooks](./webhooks.md) — real-time notifications + replay protection
+- [End-to-End Walkthrough](../public/docs/end-to-end-walkthrough.md) — full happy path
 
 ### Get Help
 
-- **Dashboard Testing**: Use the built-in API Playground
+- **Dashboard Testing**: built-in API Playground
 - **Health Check**: `GET /healthz` for system status
 - **Support**: support@izenzo.co.za
 
@@ -428,13 +328,15 @@ All errors follow this format:
 
 ### Base URL
 ```
-https://api.izenzo.co.za/functions/v1
+https://api.trade.izenzo.co.za/functions/v1
 ```
 
 ### Required Headers
 ```http
-Authorization: Bearer YOUR_API_KEY
+X-API-Key: YOUR_API_KEY              # API key auth
+Authorization: Bearer YOUR_JWT       # User session auth (alternative)
 Content-Type: application/json
+Idempotency-Key: <unique-per-write>  # Required on writes
 ```
 
 ### Key Endpoints
@@ -442,13 +344,16 @@ Content-Type: application/json
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/healthz` | GET | System health (no auth) |
-| `/signals` | POST | Create signal |
-| `/signals` | GET | List signals |
-| `/signals/:id` | GET | Get signal with options |
-| `/match` | POST | Create match |
-| `/match/:id` | GET | Get match |
-| `/match/:id/settle` | POST | Confirm intent |
-| `/evidence-pack/:id` | GET | Generate proof |
+| `/signals` | POST | Create Trade Request |
+| `/signals` | GET | List Trade Requests |
+| `/signals/:id` | GET | Get Trade Request with options |
+| `/poi-mint` | POST | Mint a POI (after engagement accepted) |
+| `/match/:id` | GET | Get match (POI record) |
+| `/wad` | POST | Create WaD certificate |
+| `/wad/:id/attest` | POST | Buyer/seller attestation |
+| `/wad/:id/seal` | POST | Seal sealed deal certificate |
+| `/evidence-pack/:id` | GET | Generate evidence proof |
+| `/audit-logs` | GET | Audit trail |
 
 ### HTTP Status Codes
 
@@ -461,6 +366,8 @@ Content-Type: application/json
 | 401 | Unauthorised |
 | 403 | Forbidden |
 | 404 | Not Found |
+| 409 | Conflict (`ENGAGEMENT_PENDING` / `DISPUTE_ACTIVE` / `WEBHOOK_REPLAY`) |
+| 422 | Unprocessable (gate failure, e.g. probability < 50.1%) |
 | 429 | Rate Limited |
 | 500 | Server Error |
 
