@@ -345,6 +345,10 @@ Deno.serve(async (req) => {
         | { declaration_ack: boolean; atb_ack: boolean; actor_roles: string[]; ack_timestamp: string }
         | null = null;
       let counterpartyEmail: string | null = null;
+      // D-02: terms_hash the user acknowledged. Server recomputes from the
+      // live row and rejects with TERMS_DRIFT on mismatch. Optional for
+      // backwards compatibility (NULL accepted; logged in audit metadata).
+      let termsHashFromBody: string | null = null;
       try {
         const contentType = req.headers.get("content-type") || "";
         if (contentType.includes("application/json")) {
@@ -372,6 +376,11 @@ Deno.serve(async (req) => {
                 if (trimmed.length > 0 && trimmed.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
                   counterpartyEmail = trimmed;
                 }
+              }
+              // D-02: optional terms_hash. 64-char lowercase hex (sha256).
+              if (typeof parsed.terms_hash === "string") {
+                const t = parsed.terms_hash.trim().toLowerCase();
+                if (/^[0-9a-f]{64}$/.test(t)) termsHashFromBody = t;
               }
             }
           }
@@ -568,6 +577,7 @@ Deno.serve(async (req) => {
           p_settled_at: now,
           p_actor_user_id: actorUserId,
           p_acks: acksPayload as any,
+          p_terms_hash: termsHashFromBody,
         }
       );
 
@@ -588,6 +598,7 @@ Deno.serve(async (req) => {
           errCode === 'INSUFFICIENT_TOKEN_BALANCE' ? 402 :
           errCode === 'STATE_CONFLICT' ? 409 :
           errCode === 'MIN_EVIDENCE_PER_SIDE' ? 409 :
+          errCode === 'TERMS_DRIFT' ? 409 :
           errCode === 'ACKNOWLEDGEMENTS_REQUIRED' ? 400 :
           errCode === 'DECLARATION_ACK_REQUIRED' ? 400 :
           errCode === 'ATB_ACK_REQUIRED' ? 400 :

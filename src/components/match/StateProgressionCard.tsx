@@ -48,6 +48,29 @@ import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
 
 import { useOrgLegitimacy } from "@/hooks/use-org-legitimacy";
+import { computeMatchTermsHash, type CanonicalTermsInput } from "@/lib/poi-terms-hash";
+
+/** D-02: derive the canonical hash input from a Match row. */
+function matchToCanonicalTerms(m: Match): CanonicalTermsInput {
+  const a = m as any;
+  return {
+    buyer_id: a.buyer_id ?? null,
+    buyer_name: m.buyer_name ?? null,
+    buyer_org_id: a.buyer_org_id ?? null,
+    commodity: m.commodity ?? null,
+    destination_country: a.destination_country ?? null,
+    match_type: a.match_type ?? null,
+    origin_country: a.origin_country ?? null,
+    price_amount: m.price_amount ?? null,
+    price_currency: m.price_currency ?? null,
+    quantity_amount: m.quantity_amount ?? null,
+    quantity_unit: m.quantity_unit ?? null,
+    seller_id: a.seller_id ?? null,
+    seller_name: m.seller_name ?? null,
+    seller_org_id: a.seller_org_id ?? null,
+    terms: m.terms ?? null,
+  };
+}
 
 interface FieldCheck {
   label: string;
@@ -161,6 +184,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const [recheckingBalance, setRecheckingBalance] = useState(false);
   const [declarationAck, setDeclarationAck] = useState(false);
   const [atbAck, setAtbAck] = useState(false);
+  // D-02: hash of the commercial terms the user actually saw and acknowledged.
+  // Captured when the ack dialog opens; re-checked at submit time. If the
+  // server-side hash drifts (someone edited terms in another tab, or the
+  // user navigated back and changed terms), the mint is rejected.
+  const [acknowledgedTermsHash, setAcknowledgedTermsHash] = useState<string | null>(null);
   const { session, roles } = useAuth();
 
   const matchType = (match as any).match_type || "search";
@@ -338,10 +366,22 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       // re-affirmed on EVERY mint, EVERY time (2026-04-30 final POI scope).
       setDeclarationAck(false);
       setAtbAck(false);
+      setAcknowledgedTermsHash(null);
 
       // Refresh per-side evidence counts so the gate decision is fresh.
       if (isPoiAction) {
         await refetchEvidence();
+        // D-02: capture the canonical terms hash the user is about to ack.
+        // This snapshot is bound to the click — if terms drift between now
+        // and submit (back-edit, two-tab race), the server rejects mint.
+        try {
+          const hash = await computeMatchTermsHash(matchToCanonicalTerms(match));
+          setAcknowledgedTermsHash(hash);
+        } catch (hashErr) {
+          console.error("Failed to compute terms hash:", hashErr);
+          toast.error("Could not snapshot trade terms. Please refresh and try again.");
+          return;
+        }
       }
 
       setShowDialog(true);
@@ -378,6 +418,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           actor_roles: roles ?? [],
           ack_timestamp: new Date().toISOString(),
         },
+        // D-02: bind this mint to the exact terms the user acknowledged.
+        // Server recomputes from the live row and rejects on mismatch.
+        terms_hash: acknowledgedTermsHash,
       };
     }
 
@@ -395,6 +438,14 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       }
       if (/DECLARATION_ACK_REQUIRED|ATB_ACK_REQUIRED|ACKNOWLEDGEMENTS_REQUIRED/i.test(message)) {
         toast.error("Both the truthfulness declaration and authority-to-bind acknowledgement are required. Please tick both and try again.");
+        return;
+      }
+      // D-02: terms drifted between ack and submit (back-edit or two-tab race).
+      if (/TERMS_DRIFT/i.test(message)) {
+        toast.error(
+          "The trade terms changed after you acknowledged them. Please review and confirm the updated terms before generating POI.",
+        );
+        setAcknowledgedTermsHash(null);
         return;
       }
       throw err;
