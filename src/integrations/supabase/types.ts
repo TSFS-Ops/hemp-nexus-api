@@ -7118,15 +7118,6 @@ export type Database = {
       }
     }
     Functions: {
-      _d04_test_force_fail: {
-        Args: {
-          p_acks: Json
-          p_match_id: string
-          p_org_id: string
-          p_terms_hash: string
-        }
-        Returns: Json
-      }
       _is_uuid: { Args: { p_text: string }; Returns: boolean }
       _provision_user: {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }

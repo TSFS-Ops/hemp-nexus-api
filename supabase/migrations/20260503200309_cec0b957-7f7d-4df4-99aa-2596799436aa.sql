@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public._d04_test_force_fail(uuid, uuid, jsonb, text);
