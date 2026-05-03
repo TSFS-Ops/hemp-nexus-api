@@ -458,17 +458,17 @@ Plus **negative tests** (Steps 15–20) that verify rejection paths:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    LAYER 5: Evidence                     │
-│         Evidence Pack v1 + Signed Deal Certificate               │
+│   Evidence Pack v1 + Sealed WaD Certificate (SHA-256)    │
 ├─────────────────────────────────────────────────────────┤
 │                  LAYER 4: Consequence                    │
-│        Collapse Engine + Append-Only Ledger              │
+│      POI Mint + atomic_token_burn + Append-Only Ledger   │
 ├─────────────────────────────────────────────────────────┤
 │                 LAYER 3: POI Engine                      │
-│     State Machine (DRAFT → COMPLETED → ANNULLED)         │
-│     Probability Calculator (≥50.1% threshold)            │
+│   8-state machine (DRAFT → COMPLETED, terminal states)   │
+│   Probability ≥ 50.1% · Evidence Strength (red→green)    │
 ├─────────────────────────────────────────────────────────┤
 │               LAYER 2: Exploration                       │
-│      Signals + Discovery + Invites (non-binding)         │
+│   Trade Requests + Discovery + Engagement Hold-Points    │
 ├─────────────────────────────────────────────────────────┤
 │              LAYER 1: Due Diligence                      │
 │   Entities + UBO + ATB + Screening + Risk + Approval     │
