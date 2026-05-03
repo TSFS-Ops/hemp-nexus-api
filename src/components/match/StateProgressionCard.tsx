@@ -418,6 +418,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
           actor_roles: roles ?? [],
           ack_timestamp: new Date().toISOString(),
         },
+        // D-02: bind this mint to the exact terms the user acknowledged.
+        // Server recomputes from the live row and rejects on mismatch.
+        terms_hash: acknowledgedTermsHash,
       };
     }
 
@@ -435,6 +438,14 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       }
       if (/DECLARATION_ACK_REQUIRED|ATB_ACK_REQUIRED|ACKNOWLEDGEMENTS_REQUIRED/i.test(message)) {
         toast.error("Both the truthfulness declaration and authority-to-bind acknowledgement are required. Please tick both and try again.");
+        return;
+      }
+      // D-02: terms drifted between ack and submit (back-edit or two-tab race).
+      if (/TERMS_DRIFT/i.test(message)) {
+        toast.error(
+          "The trade terms changed after you acknowledged them. Please review and confirm the updated terms before generating POI.",
+        );
+        setAcknowledgedTermsHash(null);
         return;
       }
       throw err;
