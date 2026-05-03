@@ -128,10 +128,14 @@ const STATUS_LABELS: Record<string, string> = {
   expired: "Expired",
 };
 
+// D-05: the "pending" tab is preserved as a value for backwards-compatible
+// links/bookmarks but its label and behaviour now reflect the canonical
+// pre-acceptance set (notification_sent + contacted). The filter logic in
+// `filtered` treats `value === "pending"` as the canonical pending set.
 const FILTER_TABS = [
   { value: "all", label: "All engagements" },
   { value: "active", label: "Active queue (excludes accepted/declined)" },
-  { value: "pending", label: "Pending" },
+  { value: "pending", label: "Awaiting action" },
   { value: "notification_sent", label: "Awaiting outreach" },
   { value: "contacted", label: "Contacted" },
   { value: "accepted", label: "Accepted" },
