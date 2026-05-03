@@ -48,6 +48,29 @@ import * as MatchState from "@/lib/match-state";
 import type { Match } from "@/hooks/use-match-details";
 
 import { useOrgLegitimacy } from "@/hooks/use-org-legitimacy";
+import { computeMatchTermsHash, type CanonicalTermsInput } from "@/lib/poi-terms-hash";
+
+/** D-02: derive the canonical hash input from a Match row. */
+function matchToCanonicalTerms(m: Match): CanonicalTermsInput {
+  const a = m as any;
+  return {
+    buyer_id: a.buyer_id ?? null,
+    buyer_name: m.buyer_name ?? null,
+    buyer_org_id: a.buyer_org_id ?? null,
+    commodity: m.commodity ?? null,
+    destination_country: a.destination_country ?? null,
+    match_type: a.match_type ?? null,
+    origin_country: a.origin_country ?? null,
+    price_amount: m.price_amount ?? null,
+    price_currency: m.price_currency ?? null,
+    quantity_amount: m.quantity_amount ?? null,
+    quantity_unit: m.quantity_unit ?? null,
+    seller_id: a.seller_id ?? null,
+    seller_name: m.seller_name ?? null,
+    seller_org_id: a.seller_org_id ?? null,
+    terms: m.terms ?? null,
+  };
+}
 
 interface FieldCheck {
   label: string;
