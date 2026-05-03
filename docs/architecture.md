@@ -753,8 +753,9 @@ RLS Policies → Database Access
 ```
 1. Client → POST /match
    Headers:
-     Authorization: Bearer sk_abc123
-     Idempotency-Key: match-20251120-001
+     X-API-Key: sk_abc123              # API key auth (preferred)
+     # or: Authorization: Bearer <JWT> # User session auth
+     Idempotency-Key: match-20260503-001
    Body: { buyer, seller, commodity, quantity, price }
 
 2. Edge Function → authenticateRequest()
