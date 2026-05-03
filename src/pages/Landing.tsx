@@ -47,10 +47,16 @@ export default function Landing() {
         />
       </main>
       <footer className="w-full py-8 border-t border-slate-100">
-        <div className="container mx-auto px-4 flex justify-center items-center">
-          <p className="text-[11px] sm:text-xs text-slate-500 tracking-wide text-center">
+        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-[11px] sm:text-xs text-slate-500 tracking-wide text-center sm:text-left">
             Izenzo is the trading name of Starfair162 (Pty) Ltd Reg: 2018 / 331720 / 07.
           </p>
+          <nav aria-label="Footer" className="flex items-center gap-6">
+            <a href="/docs" className="text-[11px] sm:text-xs text-slate-500 hover:text-slate-900 tracking-wide transition-colors">Docs</a>
+            <a href="/status" className="text-[11px] sm:text-xs text-slate-500 hover:text-slate-900 tracking-wide transition-colors">Status</a>
+            <a href="/pricing" className="text-[11px] sm:text-xs text-slate-500 hover:text-slate-900 tracking-wide transition-colors">Pricing</a>
+            <a href="mailto:support@izenzo.co.za" className="text-[11px] sm:text-xs text-slate-500 hover:text-slate-900 tracking-wide transition-colors">Support</a>
+          </nav>
         </div>
       </footer>
     </div>
