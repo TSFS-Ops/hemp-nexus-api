@@ -15,6 +15,7 @@
     "check:edge-paths": "node scripts/check-edge-function-paths.mjs",
     "check:subject-truncate": "node scripts/check-no-inline-subject-truncate.mjs",
     "check:docs-zar": "node scripts/check-docs-no-zar-billing.mjs",
+    "check:docs-stale": "node scripts/check-docs-staleness.mjs",
     "generate:routes": "node scripts/generate-routes.mjs",
     "test:summary": "node scripts/test-summary.mjs",
     "test:summary:strict": "node scripts/test-summary.mjs --strict"
