@@ -599,6 +599,7 @@ Deno.serve(async (req) => {
           errCode === 'STATE_CONFLICT' ? 409 :
           errCode === 'MIN_EVIDENCE_PER_SIDE' ? 409 :
           errCode === 'TERMS_DRIFT' ? 409 :
+          errCode === 'TERMS_HASH_REQUIRED' ? 400 :
           errCode === 'ACKNOWLEDGEMENTS_REQUIRED' ? 400 :
           errCode === 'DECLARATION_ACK_REQUIRED' ? 400 :
           errCode === 'ATB_ACK_REQUIRED' ? 400 :
