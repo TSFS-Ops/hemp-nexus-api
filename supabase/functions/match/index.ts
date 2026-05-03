@@ -345,6 +345,10 @@ Deno.serve(async (req) => {
         | { declaration_ack: boolean; atb_ack: boolean; actor_roles: string[]; ack_timestamp: string }
         | null = null;
       let counterpartyEmail: string | null = null;
+      // D-02: terms_hash the user acknowledged. Server recomputes from the
+      // live row and rejects with TERMS_DRIFT on mismatch. Optional for
+      // backwards compatibility (NULL accepted; logged in audit metadata).
+      let termsHashFromBody: string | null = null;
       try {
         const contentType = req.headers.get("content-type") || "";
         if (contentType.includes("application/json")) {
