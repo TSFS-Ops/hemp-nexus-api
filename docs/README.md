@@ -116,19 +116,26 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 
 **How to get one**: Sign up → Dashboard → API Keys → Create New Key
 
-### Signals (Expressing Intent)
-**What it is**: A way to tell the system "I want to buy/sell something."
+### Trade Requests (Expressing Intent)
+**What it is**: A persistent record of what you want to trade — buy or sell — independent of any particular counterparty.
 
-**In everyday terms**: Like posting "I need supplies" on a bulletin board. Other systems can see your request and respond with matching options.
+**In everyday terms**: Like a standing brief with your broker. You describe the deal once; the system finds matches and lets you re-engage different counterparties without re-keying.
 
-**Why this matters**: Instead of manually searching for partners, you express your intent once, and the system finds matches automatically.
+**Why this matters**: Trade Requests live in the `trade_requests` table and survive across counterparty attempts. If an engagement is declined or expires, the parent Trade Request remains.
 
-### Matches (Recording Agreements)
-**What it is**: A permanent record of a trade agreement between two parties.
+### Engagements (The Hold-Point)
+**What it is**: A request from one organisation to another to start working towards a POI on a Trade Request.
 
-**In everyday terms**: Like a digital receipt that both parties sign, which can never be altered or deleted.
+**In everyday terms**: A formal "are you in?" before any binding action. Until the counterparty accepts, no POI can be minted — the system returns `409 / ENGAGEMENT_PENDING`.
 
-**Why this matters**: Creates an immutable audit trail for compliance purposes. If anyone asks "Did company A really trade with company B on this date?", the match proves it.
+**Why this matters**: Engagements give the counterparty real choice and produce a clean audit trail (`engagement.requested` → `engagement.accepted`) before any tokens are burned.
+
+### Proof of Intent (POI — the Binding Event)
+**What it is**: An immutable record that two organisations have committed to a specific set of commercial terms.
+
+**In everyday terms**: The handshake itself. POI mint is the binding step in the lifecycle.
+
+**Why this matters**: POI mint runs through `atomic_generate_poi_v2` (a `service_role`-only function under SECDEF Stage D1). It enforces acknowledgements, the 50.1% probability gate, dispute checks, and idempotency in one transaction with `atomic_token_burn`.
 
 ### Webhooks (Automatic Notifications)
 **What it is**: A way for our system to notify your system when something happens.
