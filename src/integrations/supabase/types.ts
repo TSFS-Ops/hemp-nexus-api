@@ -1222,6 +1222,13 @@ export type Database = {
             foreignKeyName: "consents_granted_by_fkey"
             columns: ["granted_by"]
             isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "consents_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1524,6 +1531,13 @@ export type Database = {
             foreignKeyName: "data_source_registrations_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "data_source_registrations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1533,6 +1547,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_source_registrations_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "data_source_registrations_submitted_by_fkey"
@@ -3274,6 +3295,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_documents_uploader_user_id_fkey"
+            columns: ["uploader_user_id"]
+            isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "match_documents_uploader_user_id_fkey"
@@ -5441,6 +5469,13 @@ export type Database = {
             foreignKeyName: "selections_selected_by_fkey"
             columns: ["selected_by"]
             isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "selections_selected_by_fkey"
+            columns: ["selected_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -5495,6 +5530,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "signals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "signals_created_by_fkey"
             columns: ["created_by"]
@@ -6293,6 +6335,13 @@ export type Database = {
             foreignKeyName: "wad_attestations_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wad_attestations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6403,6 +6452,13 @@ export type Database = {
             foreignKeyName: "wads_buyer_signatory_user_id_fkey"
             columns: ["buyer_signatory_user_id"]
             isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wads_buyer_signatory_user_id_fkey"
+            columns: ["buyer_signatory_user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6412,6 +6468,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "wads_created_by_fkey"
@@ -6452,6 +6515,13 @@ export type Database = {
             foreignKeyName: "wads_revoked_by_fkey"
             columns: ["revoked_by"]
             isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wads_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6468,6 +6538,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_seller_signatory_user_id_fkey"
+            columns: ["seller_signatory_user_id"]
+            isOneToOne: false
+            referencedRelation: "account_hard_delete_status"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "wads_seller_signatory_user_id_fkey"
@@ -6712,6 +6789,33 @@ export type Database = {
       }
     }
     Views: {
+      account_hard_delete_status: {
+        Row: {
+          days_pending: number | null
+          deletion_category: string | null
+          deletion_reason: string | null
+          deletion_requested_at: string | null
+          has_active_pois: boolean | null
+          has_open_disputes: boolean | null
+          is_platform_admin: boolean | null
+          last_sweep_action: string | null
+          last_sweep_at: string | null
+          last_sweep_details: Json | null
+          org_id: string | null
+          placeholder_email: string | null
+          sweep_state: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys_safe: {
         Row: {
           created_at: string | null
