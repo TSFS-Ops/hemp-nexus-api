@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { useEnv } from "./EnvSwitcher";
 const SAMPLE_KEY = {
-  production: "iz_live_77f4••••3a21",
-  sandbox: "iz_test_3lp8••••8e02"
+  production: "sk_live_77f4••••3a21",
+  sandbox: "sk_test_3lp8••••8e02"
 };
 const HOST = {
-  production: "https://api.izenzo.io",
-  sandbox: "https://sandbox.api.izenzo.io"
+  production: "https://api.izenzo.co.za/functions/v1",
+  sandbox: "https://api.izenzo.co.za/functions/v1"
 };
 const ORG_ID = {
   production: "org_4Lp2ZA",
@@ -22,12 +22,12 @@ export function QuickStart() {
 export IZENZO_KEY="${SAMPLE_KEY[env]}"
 
 # 2. Verify the ledger is reachable from your network
-curl -X GET ${HOST[env]}/v1/health \\
-  -H "Authorization: Bearer $IZENZO_KEY" \\
+curl -X GET ${HOST[env]}/healthz \\
+  -H "X-API-Key: $IZENZO_KEY" \\
   -H "X-Org-Id: ${ORG_ID[env]}" \\
   -H "Content-Type: application/json"
 
-# Expect: { "status": "ok", "ledger": "synchronized" }`;
+# Expect: { "status": "ok", "ledger": "synchronised" }`;
   const copy = async () => {
     await navigator.clipboard.writeText(cmd);
     setCopied(true);
@@ -73,9 +73,9 @@ curl -X GET ${HOST[env]}/v1/health \\
             <C># 2. Verify the ledger is reachable from your network</C>
           </Line>
           <Line>
-            <K>curl</K> -X <M>GET</M> {HOST[env]}/v1/health \
+            <K>curl</K> -X <M>GET</M> {HOST[env]}/healthz \
           </Line>
-          <Line>{"  "}-H <S>"Authorisation: Bearer $IZENZO_KEY"</S> \</Line>
+          <Line>{"  "}-H <S>"X-API-Key: $IZENZO_KEY"</S> \</Line>
           <Line>
             {"  "}-H <S>"X-Org-Id: {ORG_ID[env]}"</S> \
           </Line>

@@ -48,57 +48,22 @@ export default function FinanceSolutionsPage() {
         <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 pb-32 lg:pt-36 lg:pb-48">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             <div>
-              <motion.p initial={{
-              opacity: 0,
-              y: 8
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} transition={{
-              duration: 0.6
-            }} className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
+              <p className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] uppercase text-[hsl(var(--emerald))]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--emerald))]" />
                 For Trade Finance & Insurance
-              </motion.p>
+              </p>
 
-              <motion.h1 initial={{
-              opacity: 0,
-              y: 12
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} transition={{
-              duration: 0.7,
-              delay: 0.05
-            }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-foreground">
+              <h1 className="mt-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-foreground">
                 De-risk capital deployment.
-              </motion.h1>
+              </h1>
 
-              <motion.p initial={{
-              opacity: 0,
-              y: 12
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} transition={{
-              duration: 0.7,
-              delay: 0.1
-            }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
+              <p className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
                 Rely on mathematically provable deal records to underwrite trade
                 finance, issue letters of credit, and insure shipments with
                 zero ambiguity.
-              </motion.p>
+              </p>
 
-              <motion.div initial={{
-              opacity: 0,
-              y: 12
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} transition={{
-              duration: 0.7,
-              delay: 0.18
-            }} className="mt-12 flex flex-wrap items-center gap-4">
+              <div className="mt-12 flex flex-wrap items-center gap-4">
                 <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] hover:shadow-emerald-700/30 transition-all">
                   Request access
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
@@ -107,18 +72,11 @@ export default function FinanceSolutionsPage() {
                   See the ledger
                   <ArrowRight className="h-4 w-4 opacity-60" strokeWidth={2} />
                 </Link>
-              </motion.div>
+              </div>
 
-              <motion.p initial={{
-              opacity: 0
-            }} animate={{
-              opacity: 1
-            }} transition={{
-              duration: 0.7,
-              delay: 0.3
-            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
+              <p className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
                 SHA-256 immutable · Underwriter-grade · Audit-ready
-              </motion.p>
+              </p>
             </div>
 
             {/* Right: floating EvidencePackView (Certificate of Intent) */}
