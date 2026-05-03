@@ -113,6 +113,19 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // D-06: Heartbeat — stamp last_run_at at the start of EVERY tick (even
+  // if rate-limited or empty). If now() - last_run_at > 120s the dispatcher
+  // is stale and infra-alerts will fire. Errors here are non-fatal so we
+  // never block the actual queue work.
+  const tickStartedAt = new Date().toISOString()
+  await supabase
+    .from('email_send_state')
+    .update({ last_run_at: tickStartedAt, updated_at: tickStartedAt })
+    .eq('id', 1)
+
+  // Wrap the rest of the tick so any unhandled error is captured into
+  // last_error / last_error_at before returning a 500.
+  try {
   // 1. Check rate-limit cooldown and read queue config
   const { data: state } = await supabase
     .from('email_send_state')
@@ -120,6 +133,11 @@ Deno.serve(async (req) => {
     .single()
 
   if (state?.retry_after_until && new Date(state.retry_after_until) > new Date()) {
+    // D-06: cooldown is still healthy progress — stamp success.
+    await supabase
+      .from('email_send_state')
+      .update({ last_success_at: new Date().toISOString() })
+      .eq('id', 1)
     return new Response(
       JSON.stringify({ skipped: true, reason: 'rate_limited' }),
       { headers: { 'Content-Type': 'application/json' } }
@@ -336,6 +354,11 @@ Deno.serve(async (req) => {
             .eq('id', 1)
 
           // Stop processing — remaining messages stay in queue (VT expires, retried next cycle)
+          // D-06: rate-limit handling is a normal control path, not a tick failure.
+          await supabase
+            .from('email_send_state')
+            .update({ last_success_at: new Date().toISOString() })
+            .eq('id', 1)
           return new Response(
             JSON.stringify({ processed: totalProcessed, stopped: 'rate_limited' }),
             { headers: { 'Content-Type': 'application/json' } }
@@ -346,6 +369,11 @@ Deno.serve(async (req) => {
         // Move straight to DLQ and stop processing the rest of the batch.
         if (isForbidden(error)) {
           await moveToDlq(supabase, queue, msg, 'Emails disabled for this project')
+          // D-06: emails-disabled is a known terminal control path, not a tick failure.
+          await supabase
+            .from('email_send_state')
+            .update({ last_success_at: new Date().toISOString() })
+            .eq('id', 1)
           return new Response(
             JSON.stringify({ processed: totalProcessed, stopped: 'emails_disabled' }),
             { headers: { 'Content-Type': 'application/json' } }
@@ -375,8 +403,30 @@ Deno.serve(async (req) => {
     }
   }
 
+  // D-06: tick completed (including no-op idle) — stamp success.
+  await supabase
+    .from('email_send_state')
+    .update({ last_success_at: new Date().toISOString() })
+    .eq('id', 1)
+
   return new Response(
     JSON.stringify({ processed: totalProcessed }),
     { headers: { 'Content-Type': 'application/json' } }
   )
+  } catch (err) {
+    // D-06: capture unhandled tick errors so the heartbeat surfaces them.
+    const errMsg = err instanceof Error ? err.message : String(err)
+    console.error('process-email-queue tick failed', { error: errMsg })
+    await supabase
+      .from('email_send_state')
+      .update({
+        last_error: errMsg.slice(0, 1000),
+        last_error_at: new Date().toISOString(),
+      })
+      .eq('id', 1)
+    return new Response(
+      JSON.stringify({ error: 'tick_failed', message: errMsg.slice(0, 500) }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
 })

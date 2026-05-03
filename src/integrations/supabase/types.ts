@@ -2134,6 +2134,10 @@ export type Database = {
           auth_email_ttl_minutes: number
           batch_size: number
           id: number
+          last_error: string | null
+          last_error_at: string | null
+          last_run_at: string | null
+          last_success_at: string | null
           retry_after_until: string | null
           send_delay_ms: number
           transactional_email_ttl_minutes: number
@@ -2143,6 +2147,10 @@ export type Database = {
           auth_email_ttl_minutes?: number
           batch_size?: number
           id?: number
+          last_error?: string | null
+          last_error_at?: string | null
+          last_run_at?: string | null
+          last_success_at?: string | null
           retry_after_until?: string | null
           send_delay_ms?: number
           transactional_email_ttl_minutes?: number
@@ -2152,6 +2160,10 @@ export type Database = {
           auth_email_ttl_minutes?: number
           batch_size?: number
           id?: number
+          last_error?: string | null
+          last_error_at?: string | null
+          last_run_at?: string | null
+          last_success_at?: string | null
           retry_after_until?: string | null
           send_delay_ms?: number
           transactional_email_ttl_minutes?: number
