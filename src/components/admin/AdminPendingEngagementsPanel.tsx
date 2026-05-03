@@ -1256,7 +1256,7 @@ export function AdminPendingEngagementsPanel() {
                               // SLA badge: only render for non-terminal "awaiting outreach" states
                               // AND only when the counterparty has not been auto-linked.
                               if (isAutoLinked(e)) return null;
-                              if (!["pending", "notification_sent"].includes(e.engagement_status)) return null;
+                              if (!isEngagementPending(e.engagement_status)) return null;
                               const ageHours = (Date.now() - new Date(e.created_at).getTime()) / 3600_000;
                               if (ageHours < slaThresholdHours) return null;
                               const overdueBy = Math.round(ageHours - slaThresholdHours);
