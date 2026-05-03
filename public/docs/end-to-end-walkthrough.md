@@ -1,18 +1,22 @@
 # End-to-End Happy Path Walkthrough
 
-**Platform**: Trade iZenzo - Compliance Matching API  
-**Version**: V3 (Phase 3)  
-**Duration**: 5–8 minutes  
-**Date**: 2026-03-04  
+**Platform**: Trade iZenzo — Compliance Matching API
+**Version**: V4 (USD-native, Trade Request entity, SECDEF Stage D1)
+**Duration**: 5–8 minutes
+**Last Updated**: 2026-05-03
 
 ---
 
 ## Purpose
 
-This document proves **the system works as a system** - not as isolated features. It walks through the complete lifecycle from zero to a sealed, evidence-backed trade record.
+This document proves **the system works as a system** — not as isolated features. It walks through the complete lifecycle from zero to a sealed, evidence-backed trade record.
 
-**Lifecycle summary**:  
-Onboard → Verify → Discover → Match → Confirm Intent → Collapse → Seal → Export Evidence
+**Lifecycle summary:**
+Onboard → Verify → Discover → Engage → Mint POI → Complete → Seal WaD → Export Evidence
+
+> **Terminology:** This platform uses **Counterparty**, **Trade Request**, **Proof of Intent (POI)**, and **WaD** (always written "Without a Doubt" — never "Warrant of Diligence"). We never use "Bid/Offer".
+
+> **Billing:** Platform credits are **USD-native** since 2026-05-01. 1 credit = $1.00 USD. Trade-side currencies (ZAR / EUR / etc.) on a Trade Request are commercial terms, not billing claims. <!-- zar-billing-allow -->
 
 ---
 
@@ -174,32 +178,33 @@ The discovery engine pairs buyer and seller signals based on:
 
 ---
 
-### Step 10: Send Invite
+### Step 10: Engage Counterparty (hold-point)
 
-Organisation A (buyer) sends an invite to Organisation B (seller) referencing the match.
+The buyer org initiates an **engagement** with the seller org against the discovered Trade Request.
 
-**Result**: Invite created with `status: "pending"`
+**What happens**:
+- A `match` row is created as a child of the parent `trade_requests` row (linked via `trade_request_id`)
+- Engagement enters `pending` status — the seller must accept before any POI can be minted
+- Until acceptance, all POI mint attempts return `409 / ENGAGEMENT_PENDING`
+- A dual-path notification fires (admin + counterparty user) via Resend, with subjects clamped to 200 chars by `clampSubject()`
 
-**Terminology mapping**: `invite.created` → "Intent Declared" in audit logs
+**API**: `POST /functions/v1/poi-engagements`
 
-**API**: `POST /functions/v1/invites`
+> Trade Requests **persist across counterparty attempts**. If this seller declines or the engagement expires, the parent Trade Request survives and can be re-engaged with a different counterparty without re-keying.
 
 ---
 
-### Step 11: Confirm Intent (Token Burn)
+### Step 11: Counterparty Accepts Engagement
 
-Organisation B accepts the invite, confirming mutual intent.
+The seller org accepts the engagement.
 
 **What happens**:
-- Invite status → `"accepted"`
-- Match status → `"settled"` (confirmed)
-- **500 tokens burned** from the confirming org's balance
-- Audit log records `intent.confirmed`
-- Match hash is computed (SHA-256)
+- `atomic_accept_bind` runs (service-role only, since SECDEF Stage D1)
+- Engagement status → `accepted`
+- Hold-point clears; the buyer can now progress to POI mint
+- Audit log records `engagement.accepted`
 
-**Terminology mapping**: `invite.accepted` → "Intent Confirmed" in audit logs
-
-**API**: `PATCH /functions/v1/invites` (action: `accept`)
+**API**: `POST /functions/v1/poi-engagements` (action: `accept`)
 
 ---
 
@@ -242,36 +247,40 @@ Calculate completion probability based on 7 weighted factors:
 
 ---
 
-### Step 13: POI Collapse (Binding Event)
+### Step 13: POI Mint (Binding Event)
 
-The deterministic collapse engine executes the binding trade event.
+The POI mint runs through `atomic_generate_poi_v2` — a `service_role`-only PostgreSQL function (SECDEF Stage D1, 2026-04-22). The browser **never** calls it directly; it goes through the owning edge function.
 
-**Mandatory fields**:
+**Mandatory request fields**:
 - `org_id`, `counterparty_org_id` (UUIDs)
-- `asset_id`, `quantity`, `price`, `currency`
-- `client_timestamp`, `idempotency_key`
-- `signed_payload` (ECDSA P-256 signature)
+- `trade_request_id` (parent Trade Request)
+- `quantity`, `price`, `currency`, `incoterms` (commercial terms — required before mint)
+- `idempotency_key` (header)
+- `p_acks` (object) — **must include `{declaration_ack: true, atb_ack: true}` on every mint**
 
 **What is validated**:
-1. ✅ ECDSA signature verification (P-256, SHA-256)
-2. ✅ Both parties "Approved to Trade" with valid approval
-3. ✅ Dynamic approval tier met (based on trade value)
-4. ✅ No global or org-level freeze
-5. ✅ CAP partition health check (consistency first)
-6. ✅ Idempotency (duplicate → returns original record)
-7. ✅ Intent state is `ELIGIBLE` or `COMPLETION_REQUESTED`
-8. ✅ POI completion probability ≥ 50.1%
+1. ✅ Engagement is `accepted` (else `409 / ENGAGEMENT_PENDING`)
+2. ✅ No active dispute on the match (else `409 / DISPUTE_ACTIVE`)
+3. ✅ Both parties "Approved to Trade" with valid approval
+4. ✅ Dynamic approval tier met (5-factor risk scoring)
+5. ✅ Intent state is `ELIGIBLE` or `COMPLETION_REQUESTED`
+6. ✅ POI completion probability ≥ 50.1%
+7. ✅ Acknowledgements present (`declaration_ack` + `atb_ack`)
+8. ✅ For bilateral matches: **≥1 document per side** (no waivers)
+9. ✅ PostgreSQL advisory lock acquired (concurrency control)
+10. ✅ Idempotency (duplicate → returns original record)
+
+**Evidence Strength Indicator**: documents are not individually mandatory beyond the per-side minimum. The UI surfaces a red→amber→green bar — more documents = stronger bundle. The wizard never auto-skips the Match step; the strict audited waiver dialog blocks POI mint when zero docs and zero notes.
 
 **What is recorded**:
-- Append-only `collapse_ledger` entry
+- POI row with state → `COMPLETED`
+- `atomic_token_burn` deducts the configured cost (USD-native; `exempt_burn` for founder/admin accounts)
 - SHA-256 payload hash
-- NTP drift measurement (hardened if ≤1000ms)
-- Encrypted payload ciphertext (optional)
-- Intent state → `COMPLETED`
+- Append-only audit_logs entry
 
-**Result**: Immutable collapse record with `poi_state: "COMPLETED"`
+**Result**: Immutable POI record with `poi_state: "COMPLETED"`
 
-**API**: `POST /functions/v1/collapse`
+**API**: `POST /functions/v1/poi-mint`
 
 ---
 
@@ -304,9 +313,9 @@ Produce a tamper-evident evidence bundle:
 
 ---
 
-### Step 15: Create WaD (Signed Deal) Certificate
+### Step 15: Create WaD (Without a Doubt) Certificate
 
-The WaD layer enforces **7 deterministic hard-gates**:
+The WaD layer enforces **10 deterministic hard-gates**:
 
 | # | Hard-Gate | Check |
 |---|-----------|-------|
@@ -319,6 +328,7 @@ The WaD layer enforces **7 deterministic hard-gates**:
 | 7 | Token balance | Sufficient for burn fees |
 | 8 | Screening recentness | Within 30 days |
 | 9 | Risk band | Not `high` or `critical` |
+| 10 | Webhook connectivity | Neither party's primary webhook endpoint is auto-disabled |
 
 **API**: `POST /functions/v1/wad`
 
