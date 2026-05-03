@@ -660,7 +660,7 @@ Tracks data source effectiveness:
 ```
 User → Profile → Organisation
   ↓
-Roles (admin, seller, broker, buyer, auditor)
+Roles (platform_admin, org_admin, org_member, compliance, legal, director, auditor)
   ↓
 API Keys → Scopes (signals:write, match:read, etc.)
   ↓
