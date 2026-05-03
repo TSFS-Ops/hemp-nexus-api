@@ -113,6 +113,19 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // D-06: Heartbeat — stamp last_run_at at the start of EVERY tick (even
+  // if rate-limited or empty). If now() - last_run_at > 120s the dispatcher
+  // is stale and infra-alerts will fire. Errors here are non-fatal so we
+  // never block the actual queue work.
+  const tickStartedAt = new Date().toISOString()
+  await supabase
+    .from('email_send_state')
+    .update({ last_run_at: tickStartedAt, updated_at: tickStartedAt })
+    .eq('id', 1)
+
+  // Wrap the rest of the tick so any unhandled error is captured into
+  // last_error / last_error_at before returning a 500.
+  try {
   // 1. Check rate-limit cooldown and read queue config
   const { data: state } = await supabase
     .from('email_send_state')
