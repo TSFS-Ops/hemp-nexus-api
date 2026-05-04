@@ -173,13 +173,15 @@ export function TestModeBypassPanel() {
           >
             <div className="flex items-center gap-2 font-semibold text-sm">
               <AlertTriangle className="h-4 w-4" />
-              Production lockout active — test-mode bypass is disabled
+              Production lockout active — every control below is inert
             </div>
             <p className="text-xs opacity-90">
-              This deployment's environment tier is <code className="font-mono">{tier}</code>. Toggles
-              below can still be saved for documentation, but every gate check returns the real
-              result. To override a compliance gate in production, use the break-glass /
-              second-approval workflow (Stage 3 plan) — not test-mode bypass.
+              This deployment's environment tier is <code className="font-mono">{tier}</code>.
+              The master switch, "Enable all for demo" preset, and per-gate toggles are disabled
+              here, and <code className="font-mono">is_test_mode_bypass_enabled()</code> at the
+              database layer returns <code className="font-mono">false</code> for every gate
+              regardless of what's saved. To override a compliance gate in production, use the
+              break-glass / second-approval workflow (Stage 3 plan) — not test-mode bypass.
             </p>
           </div>
         )}
@@ -194,6 +196,7 @@ export function TestModeBypassPanel() {
             </div>
             <Switch
               checked={state.enabled}
+              disabled={productionLocked}
               onCheckedChange={(checked) => {
                 if (checked) {
                   setState({
@@ -242,6 +245,7 @@ export function TestModeBypassPanel() {
               <Button
                 size="sm"
                 variant="default"
+                disabled={productionLocked}
                 onClick={() => {
                   const allOn = GATES.reduce((acc, g) => ({ ...acc, [g.key]: true }), {} as Partial<BypassState>);
                   setState({
@@ -260,6 +264,7 @@ export function TestModeBypassPanel() {
               <Button
                 size="sm"
                 variant="outline"
+                disabled={productionLocked}
                 onClick={() => {
                   const allOff = GATES.reduce((acc, g) => ({ ...acc, [g.key]: false }), {} as Partial<BypassState>);
                   setState({ ...state, ...allOff, enabled: false });
@@ -287,7 +292,7 @@ export function TestModeBypassPanel() {
                   </div>
                   <Switch
                     checked={state[gate.key]}
-                    disabled={!state.enabled}
+                    disabled={!state.enabled || productionLocked}
                     onCheckedChange={(checked) => setState({ ...state, [gate.key]: checked })}
                   />
                 </div>
@@ -312,7 +317,7 @@ export function TestModeBypassPanel() {
                   </div>
                   <Switch
                     checked={state[gate.key]}
-                    disabled={!state.enabled}
+                    disabled={!state.enabled || productionLocked}
                     onCheckedChange={(checked) => setState({ ...state, [gate.key]: checked })}
                   />
                 </div>
@@ -339,9 +344,9 @@ export function TestModeBypassPanel() {
           </div>
         )}
 
-        <Button onClick={save} disabled={saving}>
+        <Button onClick={save} disabled={saving || productionLocked}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          Save test-mode settings
+          {productionLocked ? "Saving disabled in production" : "Save test-mode settings"}
         </Button>
       </CardContent>
     </Card>
