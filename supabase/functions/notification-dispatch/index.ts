@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              from: "Compliance Match <notifications@api.trade.izenzo.co.za>",
+              from: "Izenzo Alerts <alerts@notify.izenzo.co.za>",
               to: ["admin@izenzo.co.za"],
               subject: subject || `[Alert] ${event_type}`,
               text: `${message}\n\nEvent: ${event_type}\nTime: ${new Date().toISOString()}\n${
