@@ -1,0 +1,1 @@
+ALTER VIEW public.org_token_balances_v SET (security_invoker = on);
