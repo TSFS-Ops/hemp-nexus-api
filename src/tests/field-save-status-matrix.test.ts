@@ -99,12 +99,12 @@ interface EntitySpec {
    */
   transitionOnlyRpcs: readonly string[];
   /**
-   * A representative body that SHOULD invoke the transition path. Used by
-   * the "explicit transition flips the predicate" probe so we can model
-   * each handler's real trigger shape (some take `status`, some take
-   * `action`, some take `to_state`, etc.).
+   * A representative body that SHOULD invoke the transition path. Optional
+   * — when omitted, the probe falls back to `{ [statusField]: statuses[1] }`.
+   * Specify it explicitly when the handler keys off something other than
+   * the status field (e.g. `action: 'revoke'`, `action: 'validate'`).
    */
-  transitionTriggerBody: Record<string, unknown>;
+  transitionTriggerBody?: Record<string, unknown>;
   /**
    * What audit/log row a field-save is expected to write. `null` means the
    * entity intentionally writes no audit on metadata-only changes (with a
