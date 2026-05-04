@@ -32,7 +32,7 @@ import { SafeSelect } from "@/components/admin/SafeSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye, StickyNote, Save, Download, FileText,
+  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye, StickyNote, Save, Download, FileText, UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -45,6 +45,7 @@ import {
   ENGAGEMENT_PENDING_STATES,
   isEngagementPending,
 } from "@/lib/engagement-state";
+import { AddContactDialog, type AddContactEngagementSummary } from "@/components/admin/AddContactDialog";
 
 interface Engagement {
   id: string;
