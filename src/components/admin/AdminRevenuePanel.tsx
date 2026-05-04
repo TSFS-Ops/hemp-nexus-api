@@ -546,12 +546,27 @@ export function AdminRevenuePanel() {
       {/* Header card with filters */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Revenue & sales</CardTitle>
-          <CardDescription>
-            Paid credit purchases recorded in the token ledger, joined to
-            organisation names. Data is read-only and reflects real bank-cleared
-            revenue (Paystack) plus any auditor-grade manual reconciliations.
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle>Revenue & sales</CardTitle>
+              <CardDescription>
+                Paid credit purchases recorded in the token ledger, joined to
+                organisation names. Data is read-only and reflects real bank-cleared
+                revenue (Paystack) plus any auditor-grade manual reconciliations.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="shrink-0"
+            >
+              <a href="/hq?tab=settings&sub=tokens">
+                <Coins className="h-4 w-4 mr-2" />
+                Issue manual credits
+              </a>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
