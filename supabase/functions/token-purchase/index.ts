@@ -1140,37 +1140,417 @@ async function handleRefundProcessed(
 }
 
 // ==============================================
-// dispute.create handler
+// PAY-009 — Dispute / chargeback lifecycle
 // ==============================================
+//
+// Paystack lifecycle:
+//   1. charge.dispute.create   — bank flagged the charge. We open a soft
+//      hold (no balance change) so the org sees credits "on hold" but we
+//      don't reverse a payment that may yet be won.
+//   2. charge.dispute.remind   — reminder. We mark `reminded_at`. No
+//      balance change.
+//   3. charge.dispute.resolve  — terminal:
+//        - status='won' or 'merchant-won' → release hold (org keeps credits)
+//        - status='lost' or 'merchant-accepted' → convert hold into a real
+//          atomic_token_credit deduction (mirrors refund path).
+//
+// Idempotency: each Paystack delivery is already replay-guarded at the
+// webhook entry point. Per-dispute idempotency at the table level is
+// enforced by `disputed_credit_holds.dispute_reference UNIQUE`.
+//
+// Owner of original purchase is looked up from `token_ledger`
+// (action_type='credit_purchase') by `payment_reference`, falling back to
+// the dispute payload's metadata when present.
+
+interface DisputeData {
+  // Paystack dispute fields. The shape varies slightly between webhook
+  // versions; only the fields we read are typed.
+  id?: number | string;
+  reference?: string;                // some payloads call it this
+  dispute_reference?: string;
+  transaction_reference?: string;    // Paystack: the original charge ref
+  transaction?: { reference?: string };
+  status?: string;                   // 'pending' | 'awaiting-merchant' | 'won' | 'lost' | 'merchant-accepted' | 'resolved'
+  resolution?: string;
+  message?: string;
+  metadata?: { org_id?: string; user_id?: string; credits?: number };
+}
+
+// Resolve the canonical dispute identifier across payload variants.
+function disputeRefOf(d: DisputeData): string {
+  return String(
+    d.dispute_reference ?? d.id ?? d.reference ?? "unknown-dispute",
+  );
+}
+
+// Resolve the original payment reference across payload variants.
+function paymentRefOf(d: DisputeData): string | null {
+  return d.transaction_reference ?? d.transaction?.reference ?? d.reference ?? null;
+}
+
 // deno-lint-ignore no-explicit-any
-async function handleDisputeCreated(
-  supabase: any,
-  data: { 
-    reference: string;
-    transaction_reference?: string;
-    metadata?: { org_id?: string };
+async function lookupPurchase(supabase: any, paymentRef: string | null): Promise<{
+  org_id: string | null;
+  credits: number | null;
+  price_usd: number | null;
+}> {
+  if (!paymentRef) return { org_id: null, credits: null, price_usd: null };
+
+  // 1) Authoritative source: token_ledger row created at credit time.
+  const { data: ledgerRow } = await supabase
+    .from("token_ledger")
+    .select("org_id, tokens_burned, metadata")
+    .eq("request_id", paymentRef)
+    .eq("action_type", "credit_purchase")
+    .maybeSingle();
+
+  if (ledgerRow?.org_id) {
+    return {
+      org_id: ledgerRow.org_id,
+      credits: ledgerRow.tokens_burned ?? null,
+      price_usd: ledgerRow.metadata?.price_usd ?? null,
+    };
   }
+
+  // 2) Fallback to audit_logs (for pre-cutover purchases).
+  const { data: auditRow } = await supabase
+    .from("audit_logs")
+    .select("org_id, metadata")
+    .eq("action", "credits.purchased")
+    .contains("metadata", { payment_reference: paymentRef })
+    .maybeSingle();
+
+  return {
+    org_id: auditRow?.org_id ?? null,
+    credits: auditRow?.metadata?.credits ?? null,
+    price_usd: auditRow?.metadata?.price_usd ?? null,
+  };
+}
+
+// deno-lint-ignore no-explicit-any
+async function notifyOrgBilling(
+  supabase: any,
+  orgId: string,
+  template: "chargeback-opened" | "chargeback-resolved-won" | "chargeback-resolved-lost",
+  idempotencyKey: string,
+  data: Record<string, string | number>,
 ): Promise<void> {
-  console.log(`[Webhook] Dispute created: ${data.reference}`);
-  
-  if (data.metadata?.org_id) {
-    await supabase.from("audit_logs").insert({
-      org_id: data.metadata.org_id,
-      action: "credits.dispute_created",
-      entity_type: "token_balance",
-      metadata: {
-        dispute_reference: data.reference,
-        transaction_reference: data.transaction_reference,
-        requires_review: true,
+  // Best-effort: never throw out of the webhook on email failure.
+  try {
+    // Look up the org's billing contact (first org_admin profile we find).
+    const { data: contact } = await supabase
+      .from("profiles")
+      .select("email, full_name")
+      .eq("org_id", orgId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+
+    if (!contact?.email) {
+      console.warn(`[Dispute] No billing contact found for org ${orgId} — skipping email`);
+      return;
+    }
+
+    await supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: template,
+        recipientEmail: contact.email,
+        idempotencyKey,
+        templateData: { ...data, contactName: contact.full_name ?? "" },
       },
     });
+  } catch (e) {
+    console.error(`[Dispute] notifyOrgBilling failed:`, e);
+  }
+}
 
-    // Create risk item for admin review
+// deno-lint-ignore no-explicit-any
+async function handleDisputeCreated(supabase: any, data: DisputeData): Promise<void> {
+  const disputeRef = disputeRefOf(data);
+  const paymentRef = paymentRefOf(data);
+  console.log(`[Webhook] Dispute opened: dispute=${disputeRef} payment=${paymentRef}`);
+
+  const lookup = await lookupPurchase(supabase, paymentRef);
+  const orgId = lookup.org_id ?? data.metadata?.org_id ?? null;
+  const credits = lookup.credits ?? data.metadata?.credits ?? null;
+
+  if (!orgId) {
+    // Cannot pin the dispute to an org — open admin risk item only.
     await supabase.from("admin_risk_items").insert({
-      title: `Payment Dispute: ${data.reference}`,
-      description: `Dispute created for transaction ${data.transaction_reference || 'unknown'}. Org: ${data.metadata.org_id}`,
+      title: `Unattributed payment dispute: ${disputeRef}`,
+      description: `Paystack opened a dispute for payment ${paymentRef ?? "unknown"} but no org could be matched in token_ledger or audit_logs. Manual investigation required.`,
       severity: "high",
       status: "open",
     });
+    return;
+  }
+
+  // 1) Open admin risk item.
+  const { data: risk } = await supabase
+    .from("admin_risk_items")
+    .insert({
+      title: `Chargeback opened: ${credits ?? "?"} credit(s) on hold`,
+      description: `Paystack dispute ${disputeRef} for payment ${paymentRef ?? "?"} (org ${orgId}). ${credits ?? 0} credits placed on soft hold. Awaiting bank/merchant resolution.`,
+      severity: "high",
+      status: "open",
+    })
+    .select("id")
+    .maybeSingle();
+
+  // 2) Insert the soft hold (idempotent on dispute_reference UNIQUE).
+  // If the row already exists, swallow the conflict — the dispute may
+  // have been re-delivered before the replay guard caught it.
+  if (credits && credits > 0) {
+    const { error: holdErr } = await supabase.from("disputed_credit_holds").insert({
+      org_id: orgId,
+      payment_reference: paymentRef ?? "unknown",
+      dispute_reference: disputeRef,
+      credits_held: credits,
+      price_usd: lookup.price_usd,
+      status: "open",
+      admin_risk_item_id: risk?.id ?? null,
+      metadata: { paystack_message: data.message ?? null },
+    });
+    if (holdErr && !/duplicate key/i.test(holdErr.message ?? "")) {
+      throw new Error(`Hold insert failed: ${holdErr.message}`);
+    }
+  }
+
+  // 3) Audit row (always — even if credits unknown).
+  await supabase.from("audit_logs").insert({
+    org_id: orgId,
+    action: "credits.dispute_opened",
+    entity_type: "token_balance",
+    metadata: {
+      dispute_reference: disputeRef,
+      payment_reference: paymentRef,
+      credits_held: credits,
+      price_usd: lookup.price_usd,
+      requires_review: true,
+    },
+  });
+
+  // 4) Notify org billing contact.
+  await notifyOrgBilling(supabase, orgId, "chargeback-opened", `dispute-open-${disputeRef}`, {
+    disputeReference: disputeRef,
+    paymentReference: paymentRef ?? "—",
+    creditsHeld: credits ?? 0,
+  });
+
+  // 5) Notify support / revenue ops.
+  await emitRevenueNotification(supabase, {
+    eventType: "credits_purchased", // re-uses existing channel; details disambiguate
+    idempotencyKey: `dispute-open-${disputeRef}`,
+    referenceId: disputeRef,
+    orgId,
+    headline: `Chargeback opened — ${credits ?? "?"} credits on hold`,
+    details: {
+      dispute_reference: disputeRef,
+      payment_reference: paymentRef ?? "",
+      credits_held: credits ?? 0,
+      price_usd: lookup.price_usd ?? 0,
+    },
+  });
+}
+
+// deno-lint-ignore no-explicit-any
+async function handleDisputeReminded(supabase: any, data: DisputeData): Promise<void> {
+  const disputeRef = disputeRefOf(data);
+  console.log(`[Webhook] Dispute reminder: ${disputeRef}`);
+
+  // Mark the hold (if it exists) and audit. No balance change.
+  const { data: hold } = await supabase
+    .from("disputed_credit_holds")
+    .update({ status: "reminded", reminded_at: new Date().toISOString() })
+    .eq("dispute_reference", disputeRef)
+    .in("status", ["open", "reminded"])
+    .select("org_id, credits_held")
+    .maybeSingle();
+
+  if (hold?.org_id) {
+    await supabase.from("audit_logs").insert({
+      org_id: hold.org_id,
+      action: "credits.dispute_reminder",
+      entity_type: "token_balance",
+      metadata: { dispute_reference: disputeRef, credits_held: hold.credits_held },
+    });
+  }
+}
+
+// deno-lint-ignore no-explicit-any
+async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<void> {
+  const disputeRef = disputeRefOf(data);
+  const paystackStatus = (data.status ?? "").toLowerCase();
+  console.log(`[Webhook] Dispute resolved: ${disputeRef} status=${paystackStatus}`);
+
+  // Map Paystack outcome → our internal terminal status.
+  // 'won' / 'merchant-won' → merchant kept the funds → org keeps credits.
+  // 'lost' / 'merchant-accepted' → funds reversed → deduct credits.
+  let terminalStatus: "won" | "lost" | "merchant_accepted";
+  if (paystackStatus === "won" || paystackStatus === "merchant-won") {
+    terminalStatus = "won";
+  } else if (paystackStatus === "merchant-accepted") {
+    terminalStatus = "merchant_accepted";
+  } else {
+    terminalStatus = "lost";
+  }
+
+  const { data: hold, error: lookupErr } = await supabase
+    .from("disputed_credit_holds")
+    .select("id, org_id, payment_reference, credits_held, price_usd, admin_risk_item_id, status")
+    .eq("dispute_reference", disputeRef)
+    .maybeSingle();
+
+  if (lookupErr) {
+    console.error(`[Dispute] Lookup failed for ${disputeRef}:`, lookupErr);
+    throw lookupErr;
+  }
+
+  if (!hold) {
+    // We never recorded a hold (e.g. dispute opened before this code shipped).
+    // Still write an audit row so the resolution is captured.
+    await supabase.from("audit_logs").insert({
+      action: terminalStatus === "won"
+        ? "credits.dispute_resolved_won"
+        : "credits.dispute_resolved_lost",
+      entity_type: "token_balance",
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        note: "No prior hold record found",
+      },
+    });
+    return;
+  }
+
+  // Already terminal — idempotent re-delivery.
+  if (["won", "lost", "merchant_accepted"].includes(hold.status)) {
+    console.log(`[Dispute] ${disputeRef} already resolved as ${hold.status}; skipping`);
+    return;
+  }
+
+  if (terminalStatus === "won") {
+    // Release the hold; org keeps credits. No ledger row needed.
+    await supabase
+      .from("disputed_credit_holds")
+      .update({
+        status: "won",
+        resolved_at: new Date().toISOString(),
+        resolution_reason: data.resolution ?? data.message ?? null,
+      })
+      .eq("id", hold.id);
+
+    await supabase.from("audit_logs").insert({
+      org_id: hold.org_id,
+      action: "credits.dispute_resolved_won",
+      entity_type: "token_balance",
+      metadata: {
+        dispute_reference: disputeRef,
+        payment_reference: hold.payment_reference,
+        credits_released: hold.credits_held,
+      },
+    });
+
+    if (hold.admin_risk_item_id) {
+      await supabase
+        .from("admin_risk_items")
+        .update({
+          status: "resolved",
+          resolved_at: new Date().toISOString(),
+        })
+        .eq("id", hold.admin_risk_item_id);
+    }
+
+    await notifyOrgBilling(
+      supabase,
+      hold.org_id,
+      "chargeback-resolved-won",
+      `dispute-won-${disputeRef}`,
+      {
+        disputeReference: disputeRef,
+        paymentReference: hold.payment_reference,
+        creditsReleased: hold.credits_held,
+      },
+    );
+  } else {
+    // LOST or MERCHANT_ACCEPTED → real deduction via atomic_token_credit.
+    const { data: debit, error: debitErr } = await supabase.rpc("atomic_token_credit", {
+      p_org_id: hold.org_id,
+      p_amount: -hold.credits_held,
+      p_reason: "credit_chargeback",
+      p_reference_id: disputeRef,
+    });
+    if (debitErr) {
+      console.error(`[Dispute] Chargeback debit failed for org ${hold.org_id}:`, debitErr);
+      throw new Error(`Chargeback balance update failed: ${debitErr.message}`);
+    }
+
+    const newBalance = Math.max(0, debit?.new_balance ?? 0);
+    if ((debit?.new_balance ?? 0) < 0) {
+      await supabase
+        .from("token_balances")
+        .update({ balance: 0, updated_at: new Date().toISOString() })
+        .eq("org_id", hold.org_id);
+    }
+
+    await supabase.from("token_ledger").insert({
+      org_id: hold.org_id,
+      endpoint: "chargeback:paystack",
+      tokens_burned: hold.credits_held,
+      remaining_balance: newBalance,
+      outcome: "allowed",
+      request_id: `chargeback-${disputeRef}`,
+      action_type: "credit_chargeback",
+      metadata: {
+        original_payment_reference: hold.payment_reference,
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+      },
+    });
+
+    await supabase
+      .from("disputed_credit_holds")
+      .update({
+        status: terminalStatus,
+        resolved_at: new Date().toISOString(),
+        resolution_reason: data.resolution ?? data.message ?? null,
+      })
+      .eq("id", hold.id);
+
+    await supabase.from("audit_logs").insert({
+      org_id: hold.org_id,
+      action: "credits.dispute_resolved_lost",
+      entity_type: "token_balance",
+      metadata: {
+        dispute_reference: disputeRef,
+        payment_reference: hold.payment_reference,
+        credits_deducted: hold.credits_held,
+        new_balance: newBalance,
+        paystack_status: paystackStatus,
+      },
+    });
+
+    if (hold.admin_risk_item_id) {
+      await supabase
+        .from("admin_risk_items")
+        .update({
+          status: "resolved",
+          resolved_at: new Date().toISOString(),
+        })
+        .eq("id", hold.admin_risk_item_id);
+    }
+
+    await notifyOrgBilling(
+      supabase,
+      hold.org_id,
+      "chargeback-resolved-lost",
+      `dispute-lost-${disputeRef}`,
+      {
+        disputeReference: disputeRef,
+        paymentReference: hold.payment_reference,
+        creditsDeducted: hold.credits_held,
+        newBalance,
+      },
+    );
   }
 }
