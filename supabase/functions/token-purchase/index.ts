@@ -771,8 +771,20 @@ async function handleWebhook(req: Request): Promise<Response> {
         await handleRefundProcessed(supabase, event.data);
         break;
 
+      // PAY-009 — Paystack emits the dotted form (`charge.dispute.create`)
+      // in current versions; the legacy `dispute.create` is preserved for
+      // backwards compatibility with any older webhook config.
       case "dispute.create":
+      case "charge.dispute.create":
         await handleDisputeCreated(supabase, event.data);
+        break;
+
+      case "charge.dispute.remind":
+        await handleDisputeReminded(supabase, event.data);
+        break;
+
+      case "charge.dispute.resolve":
+        await handleDisputeResolved(supabase, event.data);
         break;
 
       default:
