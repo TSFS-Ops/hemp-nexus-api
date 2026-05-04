@@ -299,10 +299,16 @@ const programmes: EntitySpec = {
 /**
  * 6b. programme_participants
  *
- * `programmes/:id/participants/:participantId` PATCH only sets `status`
- * when `status` is in the body; setting `status: "approved"` additionally
- * stamps `approved_at` / `approved_by`. Without `status` the body is a
- * no-op (handler returns the row untouched). No transition RPC exists.
+ * `programmes/:id/participants/:participantId` PATCH accepts an allow-list
+ * of {status, role, notes}. The handler diffs the previous row against the
+ * new row and writes an audit entry only when at least one allow-listed
+ * field actually changed:
+ *   • status changed                  → `programme.participant_status_changed`
+ *   • only role/notes changed         → `programme.participant_updated`
+ *   • empty / no-op body              → no DB write, no audit row
+ * No transition RPC exists; this remains a plain `.update()` so the
+ * platform-wide invariant ("no field-save through transition logic") holds.
+ * Pinned by src/tests/programme-participant-audit.test.ts.
  */
 const programmeParticipants: EntitySpec = {
   entity: "programme_participants",
@@ -311,12 +317,18 @@ const programmeParticipants: EntitySpec = {
   statusField: "status",
   shouldInvokeTransitionRpc: (body) => "status" in body,
   fieldSaveBodies: {
+    notes_only: { notes: "Confirmed eligibility documents on file." },
+    metadata_only: { role: "lead" },
     empty_no_op: {},
   },
   transitionOnlyRpcs: [],
   expectedAuditOnFieldSave: {
-    skipped: true,
-    note: "Handler writes no audit on participant updates today; tracked separately.",
+    table: "audit_logs",
+    action: "programme.participant_updated",
+    note:
+      "Status changes write `programme.participant_status_changed`; metadata-only " +
+      "changes (role, notes) write `programme.participant_updated`. Empty/no-op " +
+      "PATCHes write no row. See src/tests/programme-participant-audit.test.ts.",
   },
 };
 
