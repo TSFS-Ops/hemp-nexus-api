@@ -156,13 +156,10 @@ export function PublicHeader() {
         {/* Desktop CTAs */}
         <div className="hidden lg:flex items-center gap-2">
           {isAuthenticated ? (
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all"
-            >
+            <DashboardLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all">
               Dashboard
               <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            </DashboardLink>
           ) : (
             <>
               <AuthLink className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -179,12 +176,9 @@ export function PublicHeader() {
         {/* Mobile actions */}
         <div className="lg:hidden flex items-center gap-1.5">
           {isAuthenticated ? (
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950"
-            >
+            <DashboardLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950">
               Dashboard
-            </Link>
+            </DashboardLink>
           ) : (
             <AuthLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-semibold rounded-md text-white bg-emerald-950">
               Log In
