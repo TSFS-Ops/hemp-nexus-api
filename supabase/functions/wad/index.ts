@@ -542,6 +542,13 @@ Deno.serve(async (req) => {
       const isTerminal = wad.status === "revoked" || wad.status === "superseded";
 
       // Resolve viewer role (mirrors resolveAttestationRole on the client).
+      // OWNERSHIP: `viewerRole` is the **viewer's own** signatory role on
+      // this WaD. It is derived strictly from canonical buyer_org_id /
+      // seller_org_id slots — never from a counterparty field, never from
+      // a search-inferred side. The corresponding DB column
+      // `wad_signatures.role` is constrained to
+      // ('buyer_signatory','seller_signatory','witness','admin') and means
+      // "the role of the signing party for THIS signature row".
       let viewerRole: "buyer_signatory" | "seller_signatory" | "witness" = "witness";
       if (userOrgId === wad.buyer_org_id) viewerRole = "buyer_signatory";
       else if (userOrgId === wad.seller_org_id) viewerRole = "seller_signatory";

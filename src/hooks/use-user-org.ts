@@ -30,7 +30,23 @@ export function useUserOrg() {
   return orgId;
 }
 
-/** Determine the user's role in a match */
+/**
+ * Determine the **viewer's** role in a match.
+ *
+ * OWNERSHIP: the return value is always `viewerRole` — the role of `orgId`
+ * (the current logged-in viewer) inside `match`. It is NEVER the
+ * counterparty's role and NEVER the initiator's role.
+ *
+ * Return values:
+ *   - "buyer"   : viewer's org sits in the canonical `buyer_org_id` slot.
+ *   - "seller"  : viewer's org sits in the canonical `seller_org_id` slot.
+ *   - "creator" : FALLBACK ONLY — viewer is the creator of an unsided
+ *                 unilateral match (neither buyer nor seller slot is
+ *                 populated yet). Treat this as "viewer can act on the
+ *                 match because they created it" — NOT as a substantive
+ *                 buyer-or-seller role. Do not infer trade side from it.
+ *   - null      : viewer has no relationship with this match.
+ */
 export function getMatchRole(
   orgId: string | null,
   match: { org_id: string; buyer_org_id?: string | null; seller_org_id?: string | null }

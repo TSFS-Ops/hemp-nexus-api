@@ -191,6 +191,10 @@ Deno.serve(async (req) => {
           creator_org_id: match.org_id,
           buyer_org_id: match.buyer_org_id,
           seller_org_id: match.seller_org_id,
+          // OWNERSHIP: `metadata.tradeSide` is the **creator's** declared
+          // side at the time the match record was created (creator-owned,
+          // not viewer- or counterparty-owned). Never read as the
+          // counterparty's side. See _shared/auto-link-trigger_integration_test.ts:260.
           declared_trade_side: (match.metadata as { tradeSide?: string } | null)?.tradeSide ?? null,
           state: match.state,
           poi_state: match.poi_state,

@@ -90,6 +90,14 @@ export default function DocsWebhooks() {
           Every webhook delivery has the same envelope. The <InlineCode>data</InlineCode>{" "}
           object varies by event.
         </DocP>
+        <Callout>
+          <strong className="text-foreground font-medium">Perspective.</strong> Webhook
+          payloads are scoped to the <strong className="text-foreground font-medium">subscribing org</strong>.
+          Any field prefixed <InlineCode>counterparty_</InlineCode> describes the org sitting in
+          the slot <em>opposite</em> to the subscribing org — never an absolute buyer or
+          seller. The same match emits one delivery per subscribed org and the
+          <InlineCode>counterparty_*</InlineCode> values flip accordingly.
+        </Callout>
         <CodePanel title="Sample · intent.confirmed" language="json" code={SAMPLE_PAYLOAD} />
 
         <DocH2 id="signature">Signature verification</DocH2>

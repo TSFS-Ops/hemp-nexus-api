@@ -31,15 +31,38 @@ export default function DocsCounterparties() {
         <DocEyebrow>Core resources</DocEyebrow>
         <DocH1>Counterparties</DocH1>
         <DocLede>
-          A counterparty is a verified legal entity your organisation can transact with.
-          Counterparties combine a registered entity, beneficial ownership graph, and
-          Authority-to-Bind records to form a single unit of trust the platform can gate
-          settlement against.
+          A <strong className="text-foreground font-medium">counterparty record</strong> is a
+          verified legal entity your organisation can transact with. Counterparty records
+          combine a registered entity, beneficial ownership graph, and Authority-to-Bind
+          records to form a single unit of trust the platform can gate settlement against.
         </DocLede>
+
+        <Callout>
+          The word <em>counterparty</em> is used in two senses on this platform — keep them
+          distinct:
+          <ul className="mt-2 list-disc pl-5 space-y-1">
+            <li>
+              <strong className="text-foreground">counterparty record</strong> — a verified
+              entity in your registry (this page).
+            </li>
+            <li>
+              <strong className="text-foreground">opposite party</strong> — in any specific
+              trade, the org sitting in the slot opposite to yours
+              (<InlineCode>buyer_org_id</InlineCode> from a seller's perspective,
+              <InlineCode>seller_org_id</InlineCode> from a buyer's). This is always
+              relative to the viewer.
+            </li>
+            <li>
+              <strong className="text-foreground">named lead</strong> — a contact name or
+              email captured during outreach, not yet promoted to a verified counterparty
+              record. Named leads cannot satisfy WaD certification.
+            </li>
+          </ul>
+        </Callout>
 
         <DocH2 id="entities">Entities</DocH2>
         <DocP>
-          Every counterparty starts as an <InlineCode>entity</InlineCode>. Entities are either{" "}
+          Every counterparty record starts as an <InlineCode>entity</InlineCode>. Entities are either{" "}
           <InlineCode>INDIVIDUAL</InlineCode> (a natural person) or <InlineCode>COMPANY</InlineCode>{" "}
           (a registered legal person). They carry jurisdiction, registration data, and a
           screening result.
@@ -113,10 +136,14 @@ export default function DocsCounterparties() {
 
         <DocH3>Engagement hold-point</DocH3>
         <DocP>
-          When you initiate engagement with a discovered counterparty, the platform issues a{" "}
-          <InlineCode>poi_engagement</InlineCode> record and notifies the counterparty by email.
-          Settlement is blocked until they accept; this is a deliberate compliance hold-point,
-          not a bug.
+          When you initiate engagement with a discovered counterparty record, the platform
+          issues a <InlineCode>poi_engagement</InlineCode> record. If a deliverable email is on
+          file for the named contact, an outreach notification is sent to that{" "}
+          <strong className="text-foreground font-medium">named lead</strong>; otherwise the
+          engagement waits for an admin to capture a contact via the engagements panel.
+          Settlement is blocked until the opposite party explicitly accepts — this is a
+          deliberate single-side acknowledgement hold-point, not a bug, and it is{" "}
+          <em>not</em> the same as both-party POI commitment.
         </DocP>
       </div>
     </DocsLayout>

@@ -10,6 +10,13 @@ interface PerformanceMetrics {
   searchSuccess: boolean;
   productCategory?: string;
   location?: string;
+  /**
+   * OWNERSHIP: `signalType` here is the **searcher/initiator's own side**
+   * ("buyer" → the searcher is buying; "seller" → the searcher is selling).
+   * It is the same value that surfaces on the wire as `signal_type` and as
+   * `parsedQuery.role` from the search edge function. NEVER read it as the
+   * counterparty's side.
+   */
   signalType?: string;
 }
 

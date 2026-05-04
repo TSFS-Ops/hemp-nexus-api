@@ -49,10 +49,10 @@ export default function DocsMatches() {
         </DocP>
         <ParamTable
           rows={[
-            { name: "discovery",            type: "initial", desc: "Both parties identified. Terms may still be amended." },
-            { name: "intent_declared",      type: "next",    desc: "Initiating party has confirmed intent. Counterparty has been notified." },
-            { name: "counterparty_sighted", type: "next",    desc: "Counterparty has acknowledged the match. Hold-point cleared." },
-            { name: "committed",            type: "next",    desc: "Both parties have signed Proof of Intent. Terms are now immutable." },
+            { name: "discovery",            type: "initial", desc: "Both party slots identified. Terms may still be amended." },
+            { name: "intent_declared",      type: "next",    desc: "Initiating party (the org that created the match) has confirmed intent. The org in the opposite slot has been notified — this is single-side acknowledgement, not bilateral acceptance." },
+            { name: "counterparty_sighted", type: "next",    desc: "The org in the opposite slot has acknowledged the match. Engagement hold-point cleared. Still single-side; not yet committed." },
+            { name: "committed",            type: "next",    desc: "BOTH parties have signed Proof of Intent (bilateral). Terms are now immutable." },
             { name: "completed",            type: "final",   desc: "WaD certificate issued. Evidence pack sealed and downloadable." },
           ]}
         />
@@ -101,7 +101,9 @@ export default function DocsMatches() {
         </div>
         <DocP>
           Returns the canonical match record including current state, hash, and embedded
-          counterparty references.
+          references to the orgs in each slot (<InlineCode>buyer_org_id</InlineCode> and{" "}
+          <InlineCode>seller_org_id</InlineCode>). Both slots are absolute — what counts as
+          "the counterparty" is always derived relative to the viewer's own slot.
         </DocP>
 
         <DocH2 id="confirm-intent">Confirm intent</DocH2>
@@ -116,7 +118,10 @@ export default function DocsMatches() {
         </DocP>
         <Callout>
           Confirm Intent is a hold-point: the call returns <InlineCode>409 ENGAGEMENT_PENDING</InlineCode>{" "}
-          until the counterparty has acknowledged the match. See{" "}
+          until the org in the opposite slot has acknowledged the match. Acknowledgement is
+          single-side and is <em>not</em> the same as bilateral acceptance — both parties
+          must reach <InlineCode>committed</InlineCode> for the POI/WaD to be considered
+          complete. See{" "}
           <a href="/docs/counterparties" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">Counterparties</a>{" "}
           for the engagement flow.
         </Callout>
