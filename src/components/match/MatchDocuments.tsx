@@ -139,6 +139,21 @@ const ALLOWED_TYPES = [
 interface UploadDraft { docType: string; title: string; notes: string; visibility: string }
 
 export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
+  // Per-side evidence counts power the bilateral POI minimum-evidence banner
+  // shown above the upload form. This mirrors the server-enforced
+  // MIN_EVIDENCE_PER_SIDE rule (atomic_generate_poi_v2) so users see the
+  // requirement on the Documents tab, not only at the POI button.
+  const { data: evidenceCounts } = useQuery({
+    queryKey: ["match-documents-evidence-counts", matchId],
+    queryFn: () => getMatchEvidenceCounts(matchId),
+    enabled: !!matchId,
+    staleTime: 0,
+  });
+  const buyerDocsCount = evidenceCounts?.buyerDocumentCount ?? 0;
+  const sellerDocsCount = evidenceCounts?.sellerDocumentCount ?? 0;
+  const perSideUnmet =
+    !!evidenceCounts && (buyerDocsCount === 0 || sellerDocsCount === 0);
+
   const [documents, setDocuments] = useState<MatchDocument[]>([]);
   // Truncation state: when the server cap is hit we MUST surface a persistent
   // banner — a sonner toast auto-dismisses in <4s and operators routinely
