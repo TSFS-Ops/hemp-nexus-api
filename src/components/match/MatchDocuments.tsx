@@ -767,7 +767,79 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     knownParticipants.length > 0 &&
     !isParticipant;
 
+  // Lazily fetch the matches the viewer's org *can* act on whenever the
+  // participant guard fires. Two sources are merged:
+  //   (1) matches where viewer's org is initiator/buyer/seller (RLS allows
+  //       direct read).
+  //   (2) accepted poi_engagements where the counterparty is viewer's org —
+  //       these are matches the viewer was explicitly invited to and may not
+  //       yet be on the matches table as buyer/seller.
+  // Cap to 5 most recent each so a non-participant gets a short, useful CTA
+  // instead of an unbounded list.
+  useEffect(() => {
+    if (!blockedNonParticipant || !viewerOrgId) return;
+    if (candidateMatches !== null || candidatesLoading) return;
+    let cancelled = false;
+    (async () => {
+      setCandidatesLoading(true);
+      try {
+        const [ownedRes, engagementsRes] = await Promise.all([
+          supabase
+            .from("matches")
+            .select("id, commodity, status, created_at")
+            .or(`org_id.eq.${viewerOrgId},buyer_org_id.eq.${viewerOrgId},seller_org_id.eq.${viewerOrgId}`)
+            .neq("id", matchId)
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("poi_engagements")
+            .select("match_id, created_at")
+            .eq("counterparty_org_id", viewerOrgId)
+            .eq("engagement_status", "accepted")
+            .neq("match_id", matchId)
+            .order("created_at", { ascending: false })
+            .limit(5),
+        ]);
+        if (cancelled) return;
+        const seen = new Set<string>();
+        const merged: CandidateMatch[] = [];
+        for (const row of ownedRes.data ?? []) {
+          const r = row as { id: string; commodity?: string | null; status?: string | null };
+          if (seen.has(r.id)) continue;
+          seen.add(r.id);
+          merged.push({ id: r.id, commodity: r.commodity, status: r.status, source: "owned" });
+        }
+        // Resolve engagement match details (commodity/status) in a second hop —
+        // engagements alone don't carry that, and we want the CTA labels to
+        // be self-explanatory.
+        const engagementIds = (engagementsRes.data ?? [])
+          .map((r) => (r as { match_id: string }).match_id)
+          .filter((id): id is string => !!id && !seen.has(id));
+        if (engagementIds.length > 0) {
+          const { data: engMatches } = await supabase
+            .from("matches")
+            .select("id, commodity, status")
+            .in("id", engagementIds);
+          for (const row of engMatches ?? []) {
+            const r = row as { id: string; commodity?: string | null; status?: string | null };
+            if (seen.has(r.id)) continue;
+            seen.add(r.id);
+            merged.push({ id: r.id, commodity: r.commodity, status: r.status, source: "engagement" });
+          }
+        }
+        if (!cancelled) setCandidateMatches(merged.slice(0, 5));
+      } catch (err) {
+        console.warn("Failed to look up candidate matches for non-participant CTA:", err);
+        if (!cancelled) setCandidateMatches([]);
+      } finally {
+        if (!cancelled) setCandidatesLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [blockedNonParticipant, viewerOrgId, matchId, candidateMatches, candidatesLoading]);
+
   if (blockedNonParticipant) {
+    const hasCandidates = !!candidateMatches && candidateMatches.length > 0;
     return (
       <Card>
         <CardHeader>
@@ -779,11 +851,84 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
             You cannot upload documents or complete POI for this match.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <p className="text-sm text-foreground">
             Please check that you are using the correct match link, or ask the
             initiating party to invite your organisation to this trade.
           </p>
+
+          {/* CTA: route the user to a match they can actually act on. */}
+          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              Looking for one of your trades?
+            </p>
+            {candidatesLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Looking up matches your organisation can act on…
+              </div>
+            )}
+            {!candidatesLoading && hasCandidates && (
+              <>
+                <ul className="space-y-1.5">
+                  {candidateMatches!.map((m) => (
+                    <li key={m.id} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm text-foreground truncate">
+                          {m.commodity || "Trade"}
+                          {m.status && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              · {m.status}
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {m.source === "engagement"
+                            ? "Invited counterparty"
+                            : "Your organisation"}
+                          <span className="mx-1">·</span>
+                          <span className="font-mono">{m.id.slice(0, 8)}</span>
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          window.location.href = `/desk/match/${m.id}`;
+                        }}
+                      >
+                        Open
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="mt-1"
+                  onClick={() => { window.location.href = "/desk/match/active"; }}
+                >
+                  See all your active trades
+                </Button>
+              </>
+            )}
+            {!candidatesLoading && !hasCandidates && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  We couldn't find any other matches your organisation can act
+                  on right now.
+                </p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => { window.location.href = "/desk/match/active"; }}
+                >
+                  Go to your trade desk
+                </Button>
+              </div>
+            )}
+          </div>
+
           <p className="text-xs text-muted-foreground">
             If you believe this is an error, contact support and quote match ID
             <span className="ml-1 font-mono">{matchId}</span>.
