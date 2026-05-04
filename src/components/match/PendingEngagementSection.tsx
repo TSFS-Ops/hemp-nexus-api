@@ -168,20 +168,20 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
   if (!name) {
     missingFields.push({
       label: "Counterparty name",
-      hint: "We need a name to address the invitation correctly.",
+      hint: "We need a name so the compliance desk can address outreach correctly.",
     });
   }
   if (!email) {
     missingFields.push({
       label: "Counterparty email",
-      hint: "Without an email, our compliance desk cannot send the invitation.",
+      hint: "Without an email, our compliance desk has no address to reach out to.",
     });
   }
   if (!engagement.counterparty_org_id && !terminal) {
     missingFields.push({
       label: "Linked organisation",
       hint:
-        "This counterparty has not yet registered. The match will auto-link once they sign up using the invited email.",
+        "This counterparty has not yet registered. The match will auto-link once they sign up using the recorded email.",
     });
   }
 
@@ -190,10 +190,10 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
     expiresIn === null
       ? null
       : expiresIn <= 0
-        ? "Invitation window has elapsed"
+        ? "Engagement window has elapsed"
         : expiresIn === 1
-          ? "Invitation expires in 1 day"
-          : `Invitation expires in ${expiresIn} days`;
+          ? "Engagement expires in 1 day"
+          : `Engagement expires in ${expiresIn} days`;
 
   // Border / surface tone
   const surface =
