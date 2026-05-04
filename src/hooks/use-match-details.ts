@@ -353,6 +353,32 @@ export function useMatchDetails(matchId: string | undefined) {
         throw rethrown;
       }
 
+      // ── ENGAGEMENT_PENDING (202 soft-route from match edge function) ──
+      // The server returns a typed payload — NOT a full Match — when the
+      // counterparty is named but not registered/attached. No credits were
+      // burned; refresh the match so the UI reflects the new pending
+      // engagement and toast info (not "POI sealed").
+      const softRouted =
+        updated &&
+        typeof updated === "object" &&
+        (updated as { code?: string }).code === "ENGAGEMENT_PENDING";
+
+      if (softRouted && actionPath === "generate-poi") {
+        if (mountedRef.current) {
+          await fetchMatch();
+          const payload = updated as unknown as {
+            counterparty_name?: string;
+            missing_party?: string;
+          };
+          const who = payload.counterparty_name || `the ${payload.missing_party ?? "counterparty"}`;
+          toast.info(
+            `Pending engagement created. ${who} is not yet registered on the platform — no credits were used. POI minting will resume once they accept.`,
+            { duration: 8000 },
+          );
+        }
+        return;
+      }
+
       if (!updated || !updated.id) {
         throw new Error("Server returned an invalid response. Contact support@izenzo.co.za.");
       }
