@@ -43,7 +43,7 @@ describe("D-03 role-confirmation helpers", () => {
   });
 
   it("Case 1: selected side === inferred side → no conflict, no modal", () => {
-    // user selected 'buyer', query was 'sellers for cashew' (parsedRole=seller → inferred user=buyer)
+    // user selected 'buyer'; server echoed parsedRole='buyer' → inferred user='buyer'
     expect(detectSideConflict("buyer", "buyer")).toBe(false);
     expect(detectSideConflict("seller", "seller")).toBe(false);
   });
