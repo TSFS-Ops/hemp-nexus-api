@@ -239,6 +239,7 @@ const governanceDocs: EntitySpec = {
     metadata_only: { display_name: "Updated label" }, // would be rejected at the schema; documented here
   },
   transitionOnlyRpcs: ["atomic_validate_governance_doc"],
+  transitionTriggerBody: { doc_id: "00000000-0000-0000-0000-000000000000", action: "validate" },
   expectedAuditOnFieldSave: {
     skipped: true,
     note: "Governance-docs PATCH is validate-only; field saves use the upload (POST) path.",
@@ -386,6 +387,7 @@ const signingKeys: EntitySpec = {
     metadata_only: { description: "Used by webhook receiver." },
   },
   transitionOnlyRpcs: ["signing_keys.revoke", "signing_keys.rotate"],
+  transitionTriggerBody: { action: "revoke" },
   expectedAuditOnFieldSave: {
     table: "audit_logs",
     action: "signing_key.metadata_updated",
@@ -486,11 +488,13 @@ describe("Platform-wide field-save × status matrix", () => {
 
       // 4. An explicit status change MUST flip the predicate to `true`
       //    (otherwise the entity has no working transition path at all).
-      if (spec.statusField && spec.transitionOnlyRpcs.length > 0) {
+      if (spec.transitionOnlyRpcs.length > 0) {
         it("an explicit status change DOES invoke the transition path", () => {
-          // Pick the first non-current status to ensure we model a real change.
-          const target = spec.statuses[1] ?? spec.statuses[0];
-          const body: Record<string, unknown> = { [spec.statusField!]: target };
+          const body =
+            spec.transitionTriggerBody ??
+            (spec.statusField
+              ? { [spec.statusField]: spec.statuses[1] ?? spec.statuses[0] }
+              : {});
           expect(spec.shouldInvokeTransitionRpc(body)).toBe(true);
         });
       }
