@@ -173,6 +173,16 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [sessionOrgId, setSessionOrgId] = useState<string | null>(null);
   const [showSuperseded, setShowSuperseded] = useState(false);
   const [historyRootId, setHistoryRootId] = useState<string | null>(null);
+
+  // Participant guard: hold the trio of orgs that are legitimately on this match
+  // (initiator/buyer/seller) so we can detect a viewer whose org is NOT a
+  // participant and stop them at a clear "wrong-match" panel instead of letting
+  // them hit the upload screen and get a useless "Failed to upload document".
+  const [matchOrgIds, setMatchOrgIds] = useState<{
+    initiator: string | null;
+    buyer: string | null;
+    seller: string | null;
+  } | null>(null);
   
   // Dialog states
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
