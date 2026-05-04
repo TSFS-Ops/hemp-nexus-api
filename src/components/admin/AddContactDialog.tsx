@@ -350,6 +350,7 @@ export function AddContactDialog({
             {errors.notes && <p className="text-xs text-destructive">{errors.notes}</p>}
           </div>
           </div>
+          </div>
           {/* ── Right column: read-only system-assisted intel panel ── */}
           <div className="space-y-2">
             <div className="text-xs font-medium text-slate-700 flex items-center gap-2">
