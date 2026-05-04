@@ -92,6 +92,7 @@ export type AddContactValues = z.infer<typeof addContactSchema>;
 
 export interface AddContactEngagementSummary {
   id: string;
+  match_id?: string | null;
   counterparty_org_name: string | null;
   counterparty_email: string | null;
   commodity: string | null;
