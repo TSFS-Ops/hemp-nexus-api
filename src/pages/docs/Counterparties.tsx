@@ -136,10 +136,14 @@ export default function DocsCounterparties() {
 
         <DocH3>Engagement hold-point</DocH3>
         <DocP>
-          When you initiate engagement with a discovered counterparty, the platform issues a{" "}
-          <InlineCode>poi_engagement</InlineCode> record and notifies the counterparty by email.
-          Settlement is blocked until they accept; this is a deliberate compliance hold-point,
-          not a bug.
+          When you initiate engagement with a discovered counterparty record, the platform
+          issues a <InlineCode>poi_engagement</InlineCode> record. If a deliverable email is on
+          file for the named contact, an outreach notification is sent to that{" "}
+          <strong className="text-foreground font-medium">named lead</strong>; otherwise the
+          engagement waits for an admin to capture a contact via the engagements panel.
+          Settlement is blocked until the opposite party explicitly accepts — this is a
+          deliberate single-side acknowledgement hold-point, not a bug, and it is{" "}
+          <em>not</em> the same as both-party POI commitment.
         </DocP>
       </div>
     </DocsLayout>
