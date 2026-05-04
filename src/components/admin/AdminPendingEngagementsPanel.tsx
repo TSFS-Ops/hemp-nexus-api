@@ -836,7 +836,7 @@ export function AdminPendingEngagementsPanel() {
         contactDetail.trim().toLowerCase() !== (eng.counterparty_email ?? "").toLowerCase() &&
         contactDetail.trim().length > 0
       ) {
-        const { data: patchData } = await supabase.functions.invoke<UpdatePoiEngagementResponse>(
+        const { data: patchData, error: patchError } = await supabase.functions.invoke<UpdatePoiEngagementResponse>(
           `poi-engagements/${eng.id}`,
           {
             method: "PATCH",
@@ -844,6 +844,25 @@ export function AdminPendingEngagementsPanel() {
             body: { counterparty_email: contactDetail.trim() },
           },
         );
+        // ── Surface PATCH failures explicitly. Previously we only
+        // destructured `data`, which silently swallowed save errors and
+        // let the code fall through to preview-outreach — which then
+        // 400'd with the misleading "no usable counterparty email on
+        // file" toast even though the real failure was the upstream
+        // PATCH (e.g. validation rejected the address, idempotency
+        // collision, transient 5xx). This is the "Zero Swallowed
+        // Errors" rule applied: a PATCH failure must surface the
+        // server's real reason and abort the outreach flow so the
+        // admin can correct the input. ──
+        if (patchError) {
+          const msg = await extractEdgeError(
+            patchError,
+            "Could not save the counterparty email. Please check the address and try again.",
+          );
+          toast.error(msg);
+          setOutreachDialog(null);
+          return;
+        }
         // Surface the auto-resolution outcome to the reviewer so they know
         // immediately whether the recipient will see this in their inbound
         // queue. Non-fatal — the email is saved either way.
@@ -884,9 +903,15 @@ export function AdminPendingEngagementsPanel() {
       });
     } catch (err: any) {
       console.error("Preview outreach error:", err);
+      // Fallback only kicks in if the server returned no parseable message.
+      // Previously the fallback asserted a specific cause ("no usable
+      // counterparty email on file"), which was misleading whenever the
+      // real failure was upstream (e.g. the PATCH that should have saved
+      // the email was silently swallowed). Keep the fallback neutral so
+      // the user is not led to the wrong fix.
       const msg = await extractEdgeError(
         err,
-        "Could not load email preview — the backend rejected this engagement (most often: no usable counterparty email on file).",
+        "Could not load email preview. Please try again — if the problem persists, check the engagement details and reload.",
       );
       toast.error(msg);
       setOutreachDialog(null);
