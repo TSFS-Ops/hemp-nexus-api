@@ -556,6 +556,56 @@ export function AdminPendingEngagementsPanel() {
   // outreach, so they're hidden from the active queue (still visible in "all").
   const isAutoLinked = (e: Engagement) => Boolean(e.counterparty_org_id);
 
+  /**
+   * Persistent row-level binding state — derived from the engagement row, NOT
+   * from the transient PATCH toast. This means the badge survives reloads,
+   * filter changes, and tab switches, so admins never have to remember what
+   * a previous toast said. Mirrors the four states defined by the
+   * `BINDING_HINT_MESSAGES` contract in src/types/poi-engagement.ts.
+   */
+  type BindingBadgeState = {
+    key: "linked" | "unregistered" | "suppressed" | "no_contact";
+    label: string;
+    title: string;
+    className: string;
+  };
+  const getBindingBadge = (e: Engagement): BindingBadgeState => {
+    if (e.counterparty_org_id) {
+      return {
+        key: "linked",
+        label: "Linked",
+        title:
+          "Counterparty email is bound to a registered organisation — they will see this in their inbound queue.",
+        className: "bg-emerald-50 text-emerald-800 border-emerald-300",
+      };
+    }
+    const email = (e.counterparty_email ?? "").trim();
+    if (!email) {
+      return {
+        key: "no_contact",
+        label: "No contact",
+        title: "No counterparty email on file. Use Add contact to capture a discovered email.",
+        className: "bg-slate-100 text-slate-700 border-slate-300",
+      };
+    }
+    if (!isUsableOutreachEmail(email)) {
+      return {
+        key: "suppressed",
+        label: "Suppressed / test",
+        title:
+          "Email uses a non-deliverable domain (e.g. .invalid) or is otherwise suppressed. Use Add contact to replace it.",
+        className: "bg-rose-50 text-rose-800 border-rose-300",
+      };
+    }
+    return {
+      key: "unregistered",
+      label: "Unregistered",
+      title:
+        "Email saved but no registered organisation matches it yet. Outreach can be sent — they will see the engagement once they sign up.",
+      className: "bg-amber-50 text-amber-800 border-amber-300",
+    };
+  };
+
   const filtered = useMemo(() => {
     let base: Engagement[];
     if (filter === "all") base = engagements;
