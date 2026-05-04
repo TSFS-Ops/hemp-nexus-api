@@ -254,10 +254,10 @@ export function AddContactDialog({
         <DialogHeader>
           <DialogTitle>Add contact details</DialogTitle>
           <DialogDescription>
-            Capture a real contact email for this counterparty so outreach can
-            be sent. This does <strong>not</strong> mark the engagement as
-            contacted — use <em>Mark contacted</em> only after you have
-            actually reached them.
+            Capture a real contact email for this counterparty so platform
+            outreach can be sent. This does <strong>not</strong> send an email
+            and does <strong>not</strong> mark the engagement as contacted —
+            after saving, use <em>Send outreach</em> to email them, or <em>Record contact</em> to log off-platform contact.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
