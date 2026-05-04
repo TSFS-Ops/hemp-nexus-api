@@ -1339,6 +1339,7 @@ export function AdminPendingEngagementsPanel() {
                                 onClick={() =>
                                   setAddContactFor({
                                     id: e.id,
+                                    match_id: e.match_id,
                                     counterparty_org_name: e.counterparty_org?.name ?? null,
                                     counterparty_email: e.counterparty_email,
                                     commodity: e.matches?.commodity ?? null,
