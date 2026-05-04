@@ -33,9 +33,12 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Search, Globe, Linkedin, Building2, X } from "lucide-react";
+import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
+import type { Match } from "@/hooks/use-match-details";
 import {
   Dialog,
   DialogContent,
@@ -89,6 +92,7 @@ export type AddContactValues = z.infer<typeof addContactSchema>;
 
 export interface AddContactEngagementSummary {
   id: string;
+  match_id?: string | null;
   counterparty_org_name: string | null;
   counterparty_email: string | null;
   commodity: string | null;
@@ -144,6 +148,26 @@ export function AddContactDialog({
     () => buildResearchLinks(engagement?.counterparty_org_name ?? null),
     [engagement?.counterparty_org_name],
   );
+
+  // Fetch the underlying match so we can mount the existing
+  // CounterpartyIntelPanel (it requires a full Match row). Read-only —
+  // no schema changes, no new edge functions. The panel itself runs
+  // the system-assisted public-source sketch on first render.
+  const matchId = engagement?.match_id ?? null;
+  const { data: matchRow, isLoading: matchLoading } = useQuery({
+    queryKey: ["add-contact-match", matchId],
+    enabled: !!open && !!matchId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as Match | null;
+    },
+    refetchOnWindowFocus: false,
+  });
 
   const handleSave = async () => {
     if (!engagement) return;
@@ -226,7 +250,7 @@ export function AddContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add contact details</DialogTitle>
           <DialogDescription>
@@ -236,8 +260,10 @@ export function AddContactDialog({
             actually reached them.
           </DialogDescription>
         </DialogHeader>
-
-        {/* Research helpers — only useful when we know the counterparty name. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* ── Left column: capture form + manual research deep-links ── */}
+          <div className="space-y-4">
+            {/* Research helpers — only useful when we know the counterparty name. */}
         {research && (
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
             <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
@@ -322,6 +348,30 @@ export function AddContactDialog({
               aria-invalid={!!errors.notes}
             />
             {errors.notes && <p className="text-xs text-destructive">{errors.notes}</p>}
+          </div>
+          </div>
+          </div>
+          {/* ── Right column: read-only system-assisted intel panel ── */}
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-slate-700 flex items-center gap-2">
+              <Search className="h-3.5 w-3.5" />
+              System-assisted intel
+            </div>
+            {!matchId ? (
+              <p className="text-xs text-muted-foreground">
+                No match context available — research deep-links on the left can still help.
+              </p>
+            ) : matchLoading ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading match…
+              </div>
+            ) : matchRow ? (
+              <CounterpartyIntelPanel match={matchRow} />
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Could not load match for intel. The capture form on the left still works.
+              </p>
+            )}
           </div>
         </div>
 
