@@ -6,7 +6,10 @@
  * 1-2 docs = "Moderate" (amber)
  * 3+ docs  = "Strong"   (green)
  *
- * No document is mandatory. More documents = stronger evidence bundle.
+ * MINIMUM (bilateral POI mint, server-enforced by atomic_generate_poi_v2):
+ * at least 1 supporting document attached by EACH side (buyer and seller).
+ * The strength bar is advisory above that floor; the floor itself is hard.
+ * Unilateral POIs do not require a document on the absent counterparty side.
  */
 
 import { ShieldCheck } from "lucide-react";
@@ -16,6 +19,12 @@ interface EvidenceStrengthIndicatorProps {
   documentCount: number;
   /** Compact mode for list views, shows just the bar + label */
   compact?: boolean;
+  /**
+   * When true, surface the bilateral per-side floor as the headline reason.
+   * Callers (StateProgressionCard, GovernanceDocSubmit) pass this when the
+   * MIN_EVIDENCE_PER_SIDE check would block POI mint.
+   */
+  requiredPerSideUnmet?: boolean;
   className?: string;
 }
 
