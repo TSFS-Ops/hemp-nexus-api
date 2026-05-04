@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { PanelStatusBadge } from "./PanelStatusBadge";
 interface LogRow {
   id: string;
   created_at: string;
@@ -67,16 +68,18 @@ export function LiveActivityFeed() {
     };
   }, [paused]);
   return <section>
-      <div className="flex items-end justify-between mb-5">
+      <div className="flex items-end justify-between mb-3">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
-            §02 / Realtime
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">§02 / Realtime</span>
+            <PanelStatusBadge kind="functional" />
           </div>
-          <h2 className="mt-1 text-lg text-slate-100 tracking-tight" style={{
-          fontFamily: "Inter, sans-serif"
-        }}>
+          <h2 className="mt-1 text-lg text-slate-100 tracking-tight" style={{ fontFamily: "Inter, sans-serif" }}>
             Live Event Stream
           </h2>
+          <p className="mt-1 text-[12.5px] text-slate-400 max-w-2xl" style={{ fontFamily: "Inter, sans-serif" }}>
+            Every API call your keys have made in the last hour, newest first. Use this to confirm a request reached us and copy a request_id for support.
+          </p>
         </div>
         <button onClick={() => setPaused(!paused)} className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 hover:text-slate-100 transition-colors">
           {paused ? "▶ resume" : "⏸ pause"}
