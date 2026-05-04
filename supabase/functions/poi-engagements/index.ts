@@ -943,8 +943,16 @@ Deno.serve(async (req) => {
             (entryType === "email_update"
               ? `Counterparty email updated to ${parsed.data.counterparty_email}`
               : null),
-          p_audit_action: "engagement.updated",
-          p_audit_org_id: null,
+          // Audit log: classify "mark contacted" actions distinctly so they
+          // appear in the platform-wide audit ledger with method + saved
+          // contact detail (carried via the outreach log row referenced by
+          // log_id in the audit metadata). For other PATCH operations
+          // (status flips, email updates, notes edits) we keep the generic
+          // 'engagement.updated' action.
+          p_audit_action: isContactAttempt
+            ? "engagement.marked_contacted"
+            : "engagement.updated",
+          p_audit_org_id: current.org_id,
         }
       );
 
@@ -995,6 +1003,43 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
+
+      // ── Audit ledger enrichment for "mark contacted" ──
+      // The atomic RPC writes a generic engagement.updated/marked_contacted
+      // row (status_only). For contact_attempt entries we additionally
+      // persist the chosen method and the saved contact detail (email /
+      // phone / WhatsApp / LinkedIn URL / etc.) directly into audit_logs
+      // metadata, so the platform-wide audit ledger is self-contained and
+      // does not require a join to engagement_outreach_logs to answer
+      // "which channel did the admin use, and what address was recorded?".
+      // Non-fatal: a failure here MUST NOT undo the state transition that
+      // already committed inside the RPC, hence the swallow-and-log.
+      if (isContactAttempt) {
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: current.org_id,
+            actor_user_id: authCtx.userId,
+            action: "engagement.contact_recorded",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              previous_status: current.engagement_status,
+              new_status: targetStatus,
+              contact_method: parsed.data.contact_method,
+              contact_detail: parsed.data.contact_detail,
+              counterparty_email: updated?.counterparty_email ?? null,
+              admin_email: adminProfile?.email ?? null,
+              admin_name: adminProfile?.full_name ?? null,
+              request_id: requestId,
+            },
+          });
+        } catch (auditErr) {
+          console.error(
+            `[${requestId}] Failed to insert engagement.contact_recorded audit row (non-fatal):`,
+            auditErr,
+          );
+        }
+      }
 
       // ── Admin audit log: explicit entry whenever support notes are created/updated/cleared ──
       if (parsed.data.support_notes !== undefined) {
