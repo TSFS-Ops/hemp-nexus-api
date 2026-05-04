@@ -65,6 +65,7 @@ import { listMatchDocuments } from "@/lib/match-documents-client";
 import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
+import { sanitizeStorageFilename } from "@/lib/storage-filenames";
 
 /** Detect MIME from first bytes of a file - client-side magic-byte check */
 const MAGIC_SIGS: [string, number[]][] = [
@@ -422,10 +423,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // First folder = org_id (RLS check), second folder = match_id (RLS cross-ref)
       const docId = crypto.randomUUID();
       // Sanitise filename in storage path to prevent path traversal
-      const safeStorageName = selectedFile.name
-        .replace(/[/\\:*?"<>|\x00-\x1f]/g, "_")
-        .replace(/\.{2,}/g, "_")
-        .slice(0, 255);
+      const safeStorageName = sanitizeStorageFilename(selectedFile.name);
       const storagePath = `${effectiveOrgId}/${matchId}/poi/${docId}/${safeStorageName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -472,10 +470,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       }
 
       // Sanitise filename: strip path traversal, null bytes, and non-printable chars
-      const sanitisedFilename = selectedFile.name
-        .replace(/[/\\:*?"<>|\x00-\x1f]/g, "_")
-        .replace(/\.{2,}/g, "_")
-        .slice(0, 255);
+      const sanitisedFilename = safeStorageName;
 
       const { error: insertError } = await supabase
         .from("match_documents")
