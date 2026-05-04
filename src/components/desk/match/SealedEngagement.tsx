@@ -90,9 +90,25 @@ export function SealedEngagement() {
     documents
   } = data;
   const matchRef = shortRef(match.id);
-  const counterparty = match.buyer_name && match.seller_name ?
-  // Show the side opposite to the creating party, fallback to whichever is set
-  match.buyer_name && match.seller_name ? `${match.buyer_name} ↔ ${match.seller_name}` : match.buyer_name ?? match.seller_name ?? "Counterparty" : match.buyer_name ?? match.seller_name ?? "Counterparty";
+  // Two distinct labels — never collapse them into a single ambiguous "counterparty":
+  //   - partyPairLabel : both parties, used for the certificate header / locked-terms summary
+  //   - counterpartyName: the OPPOSITE party from the current viewer, used in viewer-addressed copy
+  // Falls back to the most informative single name when one side is missing.
+  const buyerName = match.buyer_name ?? null;
+  const sellerName = match.seller_name ?? null;
+  const partyPairLabel =
+    buyerName && sellerName
+      ? `${buyerName} ↔ ${sellerName}`
+      : buyerName ?? sellerName ?? "Counterparty";
+  const viewerRole = getMatchRole(viewerOrgId, match);
+  const counterpartyName =
+    viewerRole === "buyer"
+      ? sellerName ?? "Counterparty"
+      : viewerRole === "seller"
+        ? buyerName ?? "Counterparty"
+        // Viewer is creator-without-side or unknown (e.g. admin/auditor view):
+        // show the pair rather than guessing — never default to "buyer".
+        : partyPairLabel;
   const commodity = match.commodity ?? "-";
   const volume = match.quantity_amount;
   const price = match.price_amount;
