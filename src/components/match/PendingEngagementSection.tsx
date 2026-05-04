@@ -37,6 +37,12 @@ export interface PendingEngagementRow {
   id?: string | null;
   engagement_status: string | null;
   counterparty_type: string | null;
+  /**
+   * Legacy fallback only. Canonical display name comes from the parent
+   * `matches` row (`buyer_name` / `seller_name`) — that is the field the
+   * user typed when drafting the trade and the field every other surface
+   * (hero card, wizard, admin pipeline) reads.
+   */
   counterparty_name?: string | null;
   counterparty_email: string | null;
   counterparty_org_id: string | null;
@@ -46,8 +52,21 @@ export interface PendingEngagementRow {
   expires_at?: string | null;
 }
 
+/**
+ * Minimum fields we need from the parent match to derive the counterparty's
+ * display name. Kept loose so callers can pass the full match row.
+ */
+export interface PendingEngagementMatch {
+  buyer_name?: string | null;
+  seller_name?: string | null;
+  buyer_org_id?: string | null;
+  seller_org_id?: string | null;
+}
+
 interface Props {
   engagement: PendingEngagementRow | null | undefined;
+  /** Parent match row — source of truth for the counterparty display name. */
+  match?: PendingEngagementMatch | null;
   /** True when the current viewer is the initiator (the POI creator). */
   isInitiator: boolean;
 }
