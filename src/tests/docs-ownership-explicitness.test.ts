@@ -53,7 +53,9 @@ describe("docs-ownership-explicitness — Matches page", () => {
   const text = readDoc("Matches.tsx");
 
   it("retrieve-a-match section talks about opposite slot, not bare 'counterparty references'", () => {
-    expect(text).toMatch(/opposite to the viewer/i);
+    // Accept either "opposite to the viewer" or "relative to the viewer's own slot" —
+    // both express the same ownership-explicit semantic (counterparty is viewer-relative).
+    expect(text).toMatch(/(opposite to the viewer|relative to the viewer'?s own slot)/i);
     expect(text).toMatch(/buyer_org_id/);
     expect(text).toMatch(/seller_org_id/);
     expect(text).not.toMatch(/embedded\s+counterparty references/i);
