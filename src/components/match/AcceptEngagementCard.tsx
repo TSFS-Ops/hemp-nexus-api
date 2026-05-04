@@ -154,29 +154,51 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button
-              onClick={() => setPendingAction("accepted")}
-              disabled={isSubmitting}
-              className="flex-1 sm:flex-none"
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Handshake className="h-4 w-4 mr-2" />
-              )}
-              Accept Trade
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setPendingAction("declined")}
-              disabled={isSubmitting}
-              className="flex-1 sm:flex-none text-destructive border-destructive/30 hover:bg-destructive/5"
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Decline
-            </Button>
-          </div>
+          {/* Button + banner alignment (P3): when the engagement is still
+              "notification_sent" the backend will refuse Accept with an
+              illegal-transition error, because the initiator has not yet
+              advanced the engagement to "contacted". The amber banner above
+              already says "Accept will become active as soon as…" — so the
+              Accept button MUST visually agree with the banner and be
+              disabled until status becomes "contacted". Decline stays
+              available at all engagement states. */}
+          {(() => {
+            const acceptBlocked = engagementStatus === "notification_sent";
+            const acceptReason = acceptBlocked
+              ? "Accept becomes available once the initiator sends their outreach (or an admin marks the engagement as contacted)."
+              : "Accept this trade engagement";
+            return (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={() => setPendingAction("accepted")}
+                  disabled={isSubmitting || acceptBlocked}
+                  className="flex-1 sm:flex-none"
+                  title={acceptReason}
+                  aria-label={acceptReason}
+                  aria-disabled={acceptBlocked || undefined}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : acceptBlocked ? (
+                    <Clock className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Handshake className="h-4 w-4 mr-2" />
+                  )}
+                  {acceptBlocked ? "Accept (waiting for initiator)" : "Accept Trade"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setPendingAction("declined")}
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-none text-destructive border-destructive/30 hover:bg-destructive/5"
+                  title="Decline this trade engagement"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Decline
+                </Button>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
