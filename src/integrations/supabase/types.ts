@@ -1925,6 +1925,75 @@ export type Database = {
           },
         ]
       }
+      disputed_credit_holds: {
+        Row: {
+          admin_risk_item_id: string | null
+          created_at: string
+          credits_held: number
+          dispute_reference: string
+          id: string
+          metadata: Json
+          opened_at: string
+          org_id: string
+          payment_reference: string
+          price_usd: number | null
+          reminded_at: string | null
+          resolution_reason: string | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_risk_item_id?: string | null
+          created_at?: string
+          credits_held: number
+          dispute_reference: string
+          id?: string
+          metadata?: Json
+          opened_at?: string
+          org_id: string
+          payment_reference: string
+          price_usd?: number | null
+          reminded_at?: string | null
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_risk_item_id?: string | null
+          created_at?: string
+          credits_held?: number
+          dispute_reference?: string
+          id?: string
+          metadata?: Json
+          opened_at?: string
+          org_id?: string
+          payment_reference?: string
+          price_usd?: number | null
+          reminded_at?: string | null
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputed_credit_holds_admin_risk_item_id_fkey"
+            columns: ["admin_risk_item_id"]
+            isOneToOne: false
+            referencedRelation: "admin_risk_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputed_credit_holds_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           created_at: string | null
@@ -6996,6 +7065,23 @@ export type Database = {
           source_function: string | null
         }
         Relationships: []
+      }
+      org_token_balances_v: {
+        Row: {
+          balance: number | null
+          held: number | null
+          org_id: string | null
+          usable: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_balances_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles_safe: {
         Row: {
