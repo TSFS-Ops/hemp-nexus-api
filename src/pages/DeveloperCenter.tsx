@@ -63,6 +63,7 @@ function WebhooksView() {
     <>
       <DeveloperHeader section="Webhook Logs" />
       <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
         <PlainEnglishWalkthrough />
         <WebhookLogs />
       </div>
@@ -75,6 +76,7 @@ function SchemaView() {
     <>
       <DeveloperHeader section="Schema Explorer" badge="OpenAPI 3.1" />
       <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
         <PlainEnglishWalkthrough />
         <SchemaExplorer />
       </div>
@@ -87,6 +89,7 @@ function DocsView() {
     <>
       <DeveloperHeader section="Integration Docs" badge="REST API" />
       <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
         <PlainEnglishWalkthrough />
         <IntegrationDocs />
       </div>
