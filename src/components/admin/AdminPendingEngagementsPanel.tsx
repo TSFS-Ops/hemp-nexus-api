@@ -688,7 +688,7 @@ export function AdminPendingEngagementsPanel() {
       );
       if (previewErr) throw previewErr;
       if (preview?.suppressed) {
-        toast.error("This address is on the suppression list. Use Mark contacted to record non-email outreach.");
+        toast.error("This address is on the suppression list. Use Record contact to log non-email outreach (phone, WhatsApp, in person).");
         return;
       }
 
@@ -1417,14 +1417,15 @@ export function AdminPendingEngagementsPanel() {
                                 <UserPlus className="h-3 w-3 mr-1" /> Add contact
                               </Button>
                             )}
-                            {/* D-05: Notify is offered for canonical pending states (notification_sent / legacy pending). Once 'contacted', the Mark-contacted action takes over. */}
+                            {/* Send outreach (formerly "Notify"): platform-sent email via Resend. Only offered for
+                                pre-acceptance states with a deliverable email. Distinct from "Record contact" which is audit-only. */}
                             {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (() => {
                               const usable = isUsableOutreachEmail(e.counterparty_email);
                               const reason = !e.counterparty_email
-                                ? "Cannot notify: no valid counterparty email on file. Use Add contact first."
+                                ? "Cannot send outreach: no valid counterparty email on file. Use Add contact first."
                                 : !usable
-                                  ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid). Use Add contact to replace it."
-                                  : "Send notification email";
+                                  ? "Cannot send outreach: counterparty email uses a non-deliverable test domain (.invalid). Use Add contact to replace it."
+                                  : "Platform sends an outreach email via Resend";
                               return (
                                 <Button
                                   size="sm" variant="outline"
@@ -1433,17 +1434,21 @@ export function AdminPendingEngagementsPanel() {
                                   title={reason}
                                   aria-label={reason}
                                 >
-                                  <Mail className="h-3 w-3 mr-1" /> Notify
+                                  <Mail className="h-3 w-3 mr-1" /> Send outreach
                                 </Button>
                               );
                             })()}
+                            {/* Record contact: audit-only log of how the admin reached the counterparty
+                                outside the platform (phone, WhatsApp, in person, LinkedIn).
+                                Choosing "Email" inside the dialog still routes to the platform send path. */}
                             {!isTerminal && (
                               <Button
                                 size="sm" variant="outline"
                                 onClick={() => openContactDialog(e)}
                                 disabled={actionLoadingId === e.id}
+                                title="Log how you reached the counterparty (off-platform). For platform-sent email, use Send outreach."
                               >
-                                <Send className="h-3 w-3 mr-1" /> Mark contacted
+                                <Send className="h-3 w-3 mr-1" /> Record contact
                               </Button>
                             )}
                             {!isTerminal && (
@@ -1600,13 +1605,20 @@ export function AdminPendingEngagementsPanel() {
         </CardContent>
       </Card>
 
-      {/* ── Mark as contacted dialog ───────────────────────────────────── */}
+      {/* ── Record contact dialog ──────────────────────────────────────────
+          Three sibling actions, one rule each:
+            • Add contact   — capture/discovery (AddContactDialog), unblocks email outreach
+            • Send outreach — platform sends an email via Resend (row button)
+            • Record contact — THIS dialog: audit-only log of off-platform contact
+          When the admin selects "Email" inside this dialog, the footer routes
+          them into the platform send path (Preview & send) so we never
+          silently log "I emailed them" without actually sending. */}
       <Dialog open={!!contactDialog} onOpenChange={(o) => !o && setContactDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Log outreach to counterparty</DialogTitle>
+            <DialogTitle>Record contact with counterparty</DialogTitle>
             <DialogDescription>
-              Record how you contacted the counterparty. This is logged for the audit trail only - the platform does not send anything on your behalf.
+              Log how you reached the counterparty <strong>outside the platform</strong> (phone, WhatsApp, LinkedIn, in person). This is an audit-only record — Izenzo does not send anything on your behalf. To send a platform email, close this dialog and use <em>Send outreach</em>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
