@@ -149,6 +149,26 @@ export function AddContactDialog({
     [engagement?.counterparty_org_name],
   );
 
+  // Fetch the underlying match so we can mount the existing
+  // CounterpartyIntelPanel (it requires a full Match row). Read-only —
+  // no schema changes, no new edge functions. The panel itself runs
+  // the system-assisted public-source sketch on first render.
+  const matchId = engagement?.match_id ?? null;
+  const { data: matchRow, isLoading: matchLoading } = useQuery({
+    queryKey: ["add-contact-match", matchId],
+    enabled: !!open && !!matchId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as Match | null;
+    },
+    refetchOnWindowFocus: false,
+  });
+
   const handleSave = async () => {
     if (!engagement) return;
 
