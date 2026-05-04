@@ -400,6 +400,25 @@ function BillingContent() {
           </Alert>
         )}
 
+        {/* SEC P0-3: settling banner — webhook hasn't confirmed credit yet.
+            Shows pending/settling state, never implies credits are available. */}
+        {paymentSettling && (
+          <Alert>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+              <div>
+                <p className="font-medium text-foreground">Payment settling</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  We've received your payment but haven't confirmed credit settlement yet. Credits will appear within 5 minutes — your balance below will not reflect this purchase until settlement completes. Reference: <code className="font-mono text-xs">{paymentSettling.reference}</code>
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" className="shrink-0 self-start sm:self-auto" onClick={() => setPaymentSettling(null)}>
+                Dismiss
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Current Balance Card */}
         <Card className={cn(
           isCritical && "border-amber-500",
