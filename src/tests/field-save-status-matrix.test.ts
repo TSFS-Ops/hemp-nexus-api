@@ -99,6 +99,13 @@ interface EntitySpec {
    */
   transitionOnlyRpcs: readonly string[];
   /**
+   * A representative body that SHOULD invoke the transition path. Used by
+   * the "explicit transition flips the predicate" probe so we can model
+   * each handler's real trigger shape (some take `status`, some take
+   * `action`, some take `to_state`, etc.).
+   */
+  transitionTriggerBody: Record<string, unknown>;
+  /**
    * What audit/log row a field-save is expected to write. `null` means the
    * entity intentionally writes no audit on metadata-only changes (with a
    * note explaining why).
