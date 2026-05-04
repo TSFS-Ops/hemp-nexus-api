@@ -594,7 +594,25 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
 
         {!isTerminal && nextLabel && !unilateralBlocked && !engagementBlocked && (
           <>
-            {legitimacyBlocksPoi && legitimacy && legitimacy.allowed === false ? (
+            {participantBlocksAction ? (
+              <div
+                role="alert"
+                className="flex items-start gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
+              >
+                <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    You can't {isPoiAction ? "generate a Proof of Intent" : isCompleteAction ? "complete this trade" : "progress this match"} — your organisation is not a participant on this match
+                  </p>
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    Only the buyer organisation or the seller organisation listed on this trade can attach the supporting documents required for {isPoiAction ? "POI mint" : "this step"} and trigger the action. Because your organisation is neither, you cannot upload the required evidence on either side and the {isPoiAction ? "POI" : "action"} cannot be sealed from this account.
+                  </p>
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    Please check that you opened the correct match link, or ask the initiating party to invite your organisation as the {viewerRoleOnMatch ?? "buyer or seller"} on a new trade request.
+                  </p>
+                </div>
+              </div>
+            ) : legitimacyBlocksPoi && legitimacy && legitimacy.allowed === false ? (
               <div
                 role="alert"
                 className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10"
