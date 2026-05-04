@@ -755,6 +755,11 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     <AlertTriangle className="h-4 w-4" />
                     Complete required fields first
                   </>
+                ) : participantBlocksAction ? (
+                  <>
+                    <ShieldAlert className="h-4 w-4" />
+                    Not a participant on this match
+                  </>
                 ) : minBundleBlocksPoi ? (
                   <>
                     <ShieldAlert className="h-4 w-4" />
