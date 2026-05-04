@@ -231,3 +231,107 @@ export async function resolveCounterpartyBinding(
     };
   }
 }
+
+/**
+ * Counterparty registration gate (post-2026-04-27 policy).
+ *
+ * Eligibility no longer requires `buyer_id` / `seller_id`, so a match with a
+ * named-but-unregistered counterparty now PASSES `evaluateEligibility` and
+ * would otherwise drop straight into `atomic_generate_poi_v2` — which would
+ * try to seal a binding POI against a non-platform entity. That is exactly
+ * the failure mode the soft-route was built to prevent.
+ *
+ * This helper runs BEFORE the eligibility branch and decides what to do
+ * when one side has no `*_org_id` on file:
+ *
+ *   - `soft_route`     — name present, org_id missing → create Pending
+ *                        Engagement, return 202 ENGAGEMENT_PENDING.
+ *   - `missing_details` — both name AND org_id missing on a side that the
+ *                        caller is not on → return 422 COUNTERPARTY_REQUIRED.
+ *   - `proceed`        — both sides have org_ids (registered bilateral) OR
+ *                        the match is unilateral → run normal POI mint.
+ *
+ * Important: this is independent of `evaluateEligibility`'s commercial-terms
+ * checks. Commercial gaps still hard-fail through the existing 422 path.
+ */
+export type CounterpartyGateOutcome =
+  | {
+      decision: "proceed";
+    }
+  | {
+      decision: "soft_route";
+      missing_party: "buyer" | "seller";
+      counterparty_name: string;
+    }
+  | {
+      decision: "missing_details";
+      missing_party: "buyer" | "seller";
+      missing: ("name" | "org")[];
+    };
+
+export function evaluateCounterpartyGate(
+  match: Record<string, unknown>,
+  callerOrgId: string,
+): CounterpartyGateOutcome {
+  // Unilateral matches have their own rules; the existing path handles them.
+  if (match.match_type === "unilateral") {
+    return { decision: "proceed" };
+  }
+
+  const buyerOrgId = (match.buyer_org_id as string | null) ?? null;
+  const sellerOrgId = (match.seller_org_id as string | null) ?? null;
+  const buyerName =
+    typeof match.buyer_name === "string" ? match.buyer_name.trim() : "";
+  const sellerName =
+    typeof match.seller_name === "string" ? match.seller_name.trim() : "";
+
+  // Both sides registered → normal mint.
+  if (buyerOrgId && sellerOrgId) {
+    return { decision: "proceed" };
+  }
+
+  // Identify which side is the *counterparty* (the one not held by the caller).
+  // If the caller is on neither side, treat any unattached side as the
+  // counterparty — the legitimacy / participation guard upstream will have
+  // already rejected non-parties before we get here.
+  let missingParty: "buyer" | "seller";
+  let missingName: string;
+  let missingOrgId: string | null;
+
+  if (buyerOrgId === callerOrgId && !sellerOrgId) {
+    missingParty = "seller";
+    missingName = sellerName;
+    missingOrgId = sellerOrgId;
+  } else if (sellerOrgId === callerOrgId && !buyerOrgId) {
+    missingParty = "buyer";
+    missingName = buyerName;
+    missingOrgId = buyerOrgId;
+  } else if (!sellerOrgId) {
+    missingParty = "seller";
+    missingName = sellerName;
+    missingOrgId = sellerOrgId;
+  } else {
+    missingParty = "buyer";
+    missingName = buyerName;
+    missingOrgId = buyerOrgId;
+  }
+
+  // Name present but org_id missing → soft-route to Pending Engagement.
+  if (missingName.length > 0 && !missingOrgId) {
+    return {
+      decision: "soft_route",
+      missing_party: missingParty,
+      counterparty_name: missingName,
+    };
+  }
+
+  // Neither name nor org_id → caller must add details first.
+  const missing: ("name" | "org")[] = [];
+  if (missingName.length === 0) missing.push("name");
+  if (!missingOrgId) missing.push("org");
+  return {
+    decision: "missing_details",
+    missing_party: missingParty,
+    missing,
+  };
+}
