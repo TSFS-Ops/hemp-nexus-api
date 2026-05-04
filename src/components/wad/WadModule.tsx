@@ -88,10 +88,16 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
         setGateFailures([]);
         toast.success("Signed Deal confirmed successfully");
         onWadCreated?.();
+      } else if (result.gateFailures?.length) {
+        // P4: gate failures are a workflow prerequisite, not a system error.
+        // The persistent banner below (rendered when gateFailures.length > 0)
+        // already lists each unmet gate with an actionable description, so we
+        // do NOT raise a toast here — that conflates "the system failed" with
+        // "you have prerequisites to complete" and dismisses before the user
+        // can read it.
+        setGateFailures(result.gateFailures);
       } else {
-        if (result.gateFailures?.length) {
-          setGateFailures(result.gateFailures);
-        }
+        // True infra/edge failure (no gate detail) — toast is appropriate.
         toast.error(result.error || "Failed to confirm Signed Deal");
       }
     } finally {
@@ -198,33 +204,39 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               <EvidenceStrengthIndicator documentCount={govDocCount} />
             </div>
             {gateFailures.length > 0 && (
-              <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2">
+              <div
+                role="alert"
+                className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-2"
+              >
                 <p className="text-sm font-medium text-destructive flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  Signed Deal creation blocked - {gateFailures.length} gate{gateFailures.length > 1 ? "s" : ""} failed:
+                  Signed Deal blocked — {gateFailures.length} prerequisite{gateFailures.length > 1 ? "s" : ""} not yet met
                 </p>
-                <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
+                <ol className="text-sm list-decimal list-inside space-y-1 text-foreground/80">
                   {gateFailures.map((f, i) => (
                     <li key={i}>{f}</li>
                   ))}
-                </ul>
+                </ol>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Resolve the above issues and try again. Each gate must pass for the evidence bundle to be sealed.
+                  Resolve every item above. <strong>Confirm Signed Deal</strong> will become active once all gates pass.
                 </p>
               </div>
             )}
             <Button
               onClick={handleCreateWad}
-              disabled={creating || !jurisdictionSelected}
+              disabled={creating || !jurisdictionSelected || gateFailures.length > 0}
               className="w-full"
+              title={
+                !jurisdictionSelected
+                  ? "Select a jurisdiction first."
+                  : gateFailures.length > 0
+                    ? `Resolve ${gateFailures.length} unmet prerequisite${gateFailures.length > 1 ? "s" : ""} listed above before confirming.`
+                    : "Confirm the Signed Deal and seal the evidence bundle."
+              }
             >
               {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               <FileCheck className="h-4 w-4 mr-2" />
-             {!jurisdictionSelected
-                 ? "Select jurisdiction first"
-                 : gateFailures.length > 0
-                    ? "Retry Creation"
-                    : "Confirm Signed Deal"}
+              {!jurisdictionSelected ? "Select jurisdiction first" : "Confirm Signed Deal"}
             </Button>
           </CardContent>
         </Card>
