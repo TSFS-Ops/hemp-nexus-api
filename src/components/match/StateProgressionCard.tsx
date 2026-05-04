@@ -705,25 +705,85 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
 
             {/* ── PER-SIDE EVIDENCE GATE (POI mint, bilateral only) ──
                 Pre-flight mirror of the DB MIN_EVIDENCE_PER_SIDE check. The
-                button below is disabled when this banner is shown. */}
-            {minBundleBlocksPoi && (
-              <div role="alert" className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
-                <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">
-                    At least one supporting document per side is required
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Each side of a Proof of Intent must have at least one
-                    supporting document of any type attached. Currently:
-                    buyer = <strong>{buyerDocsCount}</strong>,
-                    seller = <strong>{sellerDocsCount}</strong>.
-                    Open the <strong>Documents</strong> tab to attach a file
-                    on the missing side, then return here to seal the POI.
-                  </p>
+                button below is disabled when this banner is shown.
+                The wording is anchored to the VIEWER'S participant role:
+                  • Non-participants don't see this banner at all (the
+                    participant gate above already explains why they can't
+                    proceed; telling them to "open Documents" is misleading
+                    because RLS forbids them from uploading on either side).
+                  • Participants see "your side"/"counterparty's side"
+                    framing instead of raw "buyer = X, seller = Y" so we
+                    never imply they can upload on a side that isn't theirs. */}
+            {minBundleBlocksPoi && !participantBlocksAction && (() => {
+              const yourSide = viewerRoleOnMatch; // "buyer" | "seller" | null
+              const yourCount =
+                yourSide === "buyer" ? buyerDocsCount
+                  : yourSide === "seller" ? sellerDocsCount
+                    : null;
+              const cpCount =
+                yourSide === "buyer" ? sellerDocsCount
+                  : yourSide === "seller" ? buyerDocsCount
+                    : null;
+              const yourSideUnmet = yourCount !== null && yourCount < 1;
+              const cpSideUnmet = cpCount !== null && cpCount < 1;
+
+              return (
+                <div role="alert" className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
+                  <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      At least one supporting document per side is required
+                    </p>
+                    {yourSide ? (
+                      <p className="text-xs text-muted-foreground">
+                        Each side of a Proof of Intent must have at least one
+                        supporting document attached.{" "}
+                        {yourSideUnmet && cpSideUnmet ? (
+                          <>
+                            Your side ({yourSide}) has <strong>{yourCount}</strong> and the
+                            counterparty side has <strong>{cpCount}</strong>.
+                            Open the <strong>Documents</strong> tab to attach a
+                            file on your side. The counterparty must attach
+                            their own document on their side — you cannot
+                            upload on their behalf.
+                          </>
+                        ) : yourSideUnmet ? (
+                          <>
+                            Your side ({yourSide}) has <strong>{yourCount}</strong>.
+                            Open the <strong>Documents</strong> tab to attach a
+                            supporting file on your side, then return here to
+                            seal the POI.
+                          </>
+                        ) : (
+                          <>
+                            Your side ({yourSide}) has <strong>{yourCount}</strong>,
+                            so your side is satisfied. The counterparty side
+                            still has <strong>{cpCount}</strong> — only they
+                            can upload on their side. POI mint is blocked
+                            until they attach at least one supporting
+                            document.
+                          </>
+                        )}
+                      </p>
+                    ) : (
+                      // Defensive fallback: viewer is a participant (org_id
+                      // matches match.org_id) but is neither buyer_org_id
+                      // nor seller_org_id (e.g. creator-only on a draft).
+                      // Show neutral wording that doesn't claim they can
+                      // upload on either side.
+                      <p className="text-xs text-muted-foreground">
+                        Each side of a Proof of Intent must have at least one
+                        supporting document attached. Buyer side has{" "}
+                        <strong>{buyerDocsCount}</strong> and seller side has{" "}
+                        <strong>{sellerDocsCount}</strong>. Documents must be
+                        uploaded by each respective side before POI can be
+                        sealed.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Button always renders when balance/credits are OK. */}
             {(isFreeAction || (!showInsufficientBalance && !isBalancePending)) && (
