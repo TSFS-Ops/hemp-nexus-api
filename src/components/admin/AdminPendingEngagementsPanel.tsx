@@ -824,7 +824,10 @@ export function AdminPendingEngagementsPanel() {
       });
     } catch (err: any) {
       console.error("Preview outreach error:", err);
-      const msg = await extractEdgeError(err, "Could not load email preview");
+      const msg = await extractEdgeError(
+        err,
+        "Could not load email preview — the backend rejected this engagement (most often: no usable counterparty email on file).",
+      );
       toast.error(msg);
       setOutreachDialog(null);
     } finally {
