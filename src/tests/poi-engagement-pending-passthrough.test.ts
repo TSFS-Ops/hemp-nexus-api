@@ -77,4 +77,35 @@ describe("poi-engagements PATCH — pending pass-through", () => {
     const target = resolveTargetStatus({ currentStatus: "pending", requestedStatus: "bogus" });
     expect(ALLOWED_TARGET_STATUSES.has(target)).toBe(false);
   });
+
+  /**
+   * Coverage matrix — every engagement_status value the RPC's allow-list
+   * accepts must round-trip as a permitted same-status pass-through when the
+   * admin saves email or notes only (no `engagement_status` in the body).
+   *
+   * Without this, a future status (e.g. a new "snoozed") could be added to
+   * the schema but forgotten in the RPC allow-list, silently re-introducing
+   * the original "Could not save contact details" failure for that state.
+   */
+  describe("email/notes-only PATCH succeeds as a no-op for every engagement_status", () => {
+    for (const status of ALLOWED_TARGET_STATUSES) {
+      it(`status='${status}' — email-only PATCH resolves to a permitted ${status} pass-through`, () => {
+        const target = resolveTargetStatus({ currentStatus: status, requestedStatus: undefined });
+        expect(target).toBe(status);
+        expect(ALLOWED_TARGET_STATUSES.has(target)).toBe(true);
+      });
+
+      it(`status='${status}' — notes-only PATCH (null requestedStatus) resolves to a permitted ${status} pass-through`, () => {
+        const target = resolveTargetStatus({ currentStatus: status, requestedStatus: null });
+        expect(target).toBe(status);
+        expect(ALLOWED_TARGET_STATUSES.has(target)).toBe(true);
+      });
+
+      it(`status='${status}' — empty-string requestedStatus is treated as a pass-through, not a transition`, () => {
+        const target = resolveTargetStatus({ currentStatus: status, requestedStatus: "" });
+        expect(target).toBe(status);
+        expect(ALLOWED_TARGET_STATUSES.has(target)).toBe(true);
+      });
+    }
+  });
 });
