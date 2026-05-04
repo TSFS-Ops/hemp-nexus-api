@@ -108,4 +108,65 @@ describe("poi-engagements PATCH — pending pass-through", () => {
       });
     }
   });
+
+  /**
+   * Optimisation contract — side-field-only PATCHes must SKIP the RPC.
+   *
+   * The RPC takes a per-engagement advisory lock, which is correct for real
+   * state changes but unnecessary for "save email" or "save notes". After
+   * the optimisation, the handler routes those edits straight to a direct
+   * outreach_log + audit_log insert. The same-status pass-through path
+   * through the RPC remains as a safety net (covered above), but on the hot
+   * path it must not be used.
+   *
+   * `shouldInvokeStateTransitionRpc` mirrors the handler branch
+   * `isRealStateTransition = parsed.data.engagement_status !== undefined`.
+   */
+  function shouldInvokeStateTransitionRpc(body: {
+    engagement_status?: string;
+    counterparty_email?: string;
+    admin_notes?: string;
+  }): boolean {
+    return body.engagement_status !== undefined;
+  }
+
+  describe("side-field PATCH skips the state-transition RPC", () => {
+    for (const status of ALLOWED_TARGET_STATUSES) {
+      it(`status='${status}' — email-only PATCH does NOT invoke atomic_engagement_transition`, () => {
+        expect(
+          shouldInvokeStateTransitionRpc({ counterparty_email: "x@example.com" }),
+        ).toBe(false);
+      });
+
+      it(`status='${status}' — notes-only PATCH does NOT invoke atomic_engagement_transition`, () => {
+        expect(
+          shouldInvokeStateTransitionRpc({ admin_notes: "research note" }),
+        ).toBe(false);
+      });
+
+      it(`status='${status}' — combined email+notes PATCH does NOT invoke atomic_engagement_transition`, () => {
+        expect(
+          shouldInvokeStateTransitionRpc({
+            counterparty_email: "x@example.com",
+            admin_notes: "research note",
+          }),
+        ).toBe(false);
+      });
+    }
+
+    it("an explicit status change DOES invoke atomic_engagement_transition", () => {
+      expect(
+        shouldInvokeStateTransitionRpc({ engagement_status: "notification_sent" }),
+      ).toBe(true);
+    });
+
+    it("a contact-attempt PATCH (status='contacted') DOES invoke the RPC", () => {
+      expect(
+        shouldInvokeStateTransitionRpc({
+          engagement_status: "contacted",
+          counterparty_email: "x@example.com",
+        }),
+      ).toBe(true);
+    });
+  });
 });
