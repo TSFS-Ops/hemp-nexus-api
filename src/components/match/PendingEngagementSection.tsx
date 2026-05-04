@@ -37,6 +37,12 @@ export interface PendingEngagementRow {
   id?: string | null;
   engagement_status: string | null;
   counterparty_type: string | null;
+  /**
+   * Legacy fallback only. Canonical display name comes from the parent
+   * `matches` row (`buyer_name` / `seller_name`) — that is the field the
+   * user typed when drafting the trade and the field every other surface
+   * (hero card, wizard, admin pipeline) reads.
+   */
   counterparty_name?: string | null;
   counterparty_email: string | null;
   counterparty_org_id: string | null;
@@ -46,8 +52,21 @@ export interface PendingEngagementRow {
   expires_at?: string | null;
 }
 
+/**
+ * Minimum fields we need from the parent match to derive the counterparty's
+ * display name. Kept loose so callers can pass the full match row.
+ */
+export interface PendingEngagementMatch {
+  buyer_name?: string | null;
+  seller_name?: string | null;
+  buyer_org_id?: string | null;
+  seller_org_id?: string | null;
+}
+
 interface Props {
   engagement: PendingEngagementRow | null | undefined;
+  /** Parent match row — source of truth for the counterparty display name. */
+  match?: PendingEngagementMatch | null;
   /** True when the current viewer is the initiator (the POI creator). */
   isInitiator: boolean;
 }
@@ -151,7 +170,7 @@ function daysUntil(ts?: string | null): number | null {
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
-export function PendingEngagementSection({ engagement, isInitiator }: Props) {
+export function PendingEngagementSection({ engagement, match, isInitiator }: Props) {
   if (!engagement) return null;
 
   // Hide once fully resolved AND linked — other surfaces own that story.
@@ -163,7 +182,20 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
 
   // Identify any missing counterparty fields that would block / weaken outreach.
   const missingFields: { label: string; hint: string }[] = [];
-  const name = (engagement.counterparty_name || "").trim();
+  // Derive display name from the parent match — that is the canonical
+  // source. Prefer whichever side is unregistered (no *_org_id). Fall back
+  // to the engagement row only if the match is missing both names.
+  const buyerName = (match?.buyer_name || "").trim();
+  const sellerName = (match?.seller_name || "").trim();
+  const buyerUnregistered = !match?.buyer_org_id;
+  const sellerUnregistered = !match?.seller_org_id;
+  const derivedFromMatch =
+    buyerUnregistered && buyerName
+      ? buyerName
+      : sellerUnregistered && sellerName
+        ? sellerName
+        : buyerName || sellerName;
+  const name = (derivedFromMatch || engagement.counterparty_name || "").trim();
   const email = (engagement.counterparty_email || "").trim();
   if (!name) {
     missingFields.push({

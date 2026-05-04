@@ -174,6 +174,7 @@ function MatchDetailsContent() {
 
       <PendingEngagementSection
         engagement={engagementData}
+        match={match as any}
         isInitiator={matchRole === "creator" || userOrgId === (match as any).org_id}
       />
 
