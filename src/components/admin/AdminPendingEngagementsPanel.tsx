@@ -99,7 +99,7 @@ export function isUsableOutreachEmail(email: string | null | undefined): boolean
   return true;
 }
 
-
+interface OutreachLog {
   id: string;
   actor_type: "admin" | "counterparty" | "system";
   admin_email: string | null;
