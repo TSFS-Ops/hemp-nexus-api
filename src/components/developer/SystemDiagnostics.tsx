@@ -28,6 +28,8 @@ function Sparkline({
   );
 }
 
+import { PanelStatusBadge } from "./PanelStatusBadge";
+
 const LATENCY = [48, 44, 51, 39, 42, 40, 46, 41, 38, 43, 45, 42];
 
 export function SystemDiagnostics() {
@@ -37,9 +39,15 @@ export function SystemDiagnostics() {
 
   return (
     <section>
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-2">
-        // SYSTEM_DIAGNOSTICS
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">
+          // SYSTEM_DIAGNOSTICS
+        </div>
+        <PanelStatusBadge kind="informational" />
       </div>
+      <p className="text-[12px] text-slate-400 leading-relaxed mb-3 max-w-md" style={{ fontFamily: "Inter, sans-serif" }}>
+        Headline platform health: latency, ledger sync, and your hourly request budget. Sample numbers shown until your account starts producing live traffic.
+      </p>
       <div className="bg-slate-900 border border-slate-800 rounded-sm divide-y divide-slate-800">
         {/* Latency */}
         <div className="p-4">
