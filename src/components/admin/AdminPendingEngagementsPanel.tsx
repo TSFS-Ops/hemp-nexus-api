@@ -1336,16 +1336,27 @@ export function AdminPendingEngagementsPanel() {
                             >
                               {STATUS_LABELS[e.engagement_status] ?? e.engagement_status.replace("_", " ")}
                             </Badge>
-                            {isAutoLinked(e) && (
-                              <Badge
-                                variant="outline"
-                                className="whitespace-nowrap text-[10px] font-medium px-2 py-0.5 bg-emerald-50 text-emerald-800 border-emerald-300"
-                                title="Counterparty has signed up and been auto-linked. No outreach needed."
-                              >
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Auto-linked
-                              </Badge>
-                            )}
+                            {(() => {
+                              // Always render exactly one binding badge so
+                              // admins can see the persisted contact-binding
+                              // state at a glance (linked / unregistered /
+                              // suppressed / no contact) — no need to rely
+                              // on the transient toast from the last save.
+                              const b = getBindingBadge(e);
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className={`whitespace-nowrap text-[10px] font-medium px-2 py-0.5 ${b.className}`}
+                                  title={b.title}
+                                  aria-label={`Contact binding: ${b.label}. ${b.title}`}
+                                  data-binding-state={b.key}
+                                >
+                                  {b.key === "linked" && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                                  {b.key === "suppressed" && <AlertTriangle className="h-3 w-3 mr-1" />}
+                                  {b.label}
+                                </Badge>
+                              );
+                            })()}
                             {(() => {
                               // SLA badge: only render for non-terminal "awaiting outreach" states
                               // AND only when the counterparty has not been auto-linked.
