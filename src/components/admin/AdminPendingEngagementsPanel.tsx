@@ -1637,8 +1637,8 @@ export function AdminPendingEngagementsPanel() {
               </SafeSelect>
               <p className="text-xs text-muted-foreground">
                 {contactMethod === "email"
-                  ? "Email is the only method where the platform can send the outreach for you. You'll preview and edit the message before it's sent."
-                  : "This is a record of how you reached the counterparty. No message is sent - it's only logged in the immutable outreach trail."}
+                  ? "Email is the only method where the platform can send the outreach for you. Choosing Email here will open the preview-and-send flow — it does not silently log a contact."
+                  : "This is an audit-only record of how you reached the counterparty off-platform. No message is sent."}
               </p>
             </div>
             <div className="space-y-2">
