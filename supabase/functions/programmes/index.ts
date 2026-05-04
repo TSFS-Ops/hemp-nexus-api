@@ -223,18 +223,53 @@ Deno.serve(async (req) => {
         return jsonResponse(data, 201);
       }
 
-      // PATCH participant status
+      // PATCH participant — status change and/or metadata save.
+      //
+      // Audit contract (see src/tests/programme-participant-audit.test.ts):
+      //   • status change       → writes audit `programme.participant_status_changed`
+      //   • metadata-only save  → writes audit `programme.participant_updated` IFF
+      //                           at least one allow-listed field actually changed
+      //   • empty / no-op body  → no DB write, no audit row
+      // The audit payload always carries previous_status, new_status,
+      // changed_fields, programme_id, participant_id, actor_user_id and
+      // actor_org_id. status is never written unless explicitly supplied
+      // (preserves the "no field-save through transition logic" invariant).
       if (method === "PATCH") {
         const participantId = pathParts[3];
         if (!participantId) return jsonResponse({ error: "Participant ID required" }, 400);
 
         const body = await req.json();
+
+        // Allow-list of editable fields. `status` is the only transition-y
+        // one; the rest are pure metadata and must never imply a status change.
+        const ALLOWED = ["status", "role", "notes"] as const;
         const updates: Record<string, unknown> = {};
-        if ("status" in body) updates.status = body.status;
+        for (const key of ALLOWED) {
+          if (key in body) updates[key] = body[key];
+        }
         if (body.status === "approved") {
           updates.approved_at = new Date().toISOString();
           updates.approved_by = user.id;
         }
+
+        // Empty/no-op PATCH — return current row, write no audit row.
+        if (Object.keys(updates).length === 0) {
+          const { data: current, error: readErr } = await supabaseUser
+            .from("programme_participants")
+            .select("*")
+            .eq("id", participantId)
+            .single();
+          if (readErr) throw readErr;
+          return jsonResponse(current);
+        }
+
+        // Snapshot previous row so we can diff and audit honestly.
+        const { data: previous, error: prevErr } = await supabaseUser
+          .from("programme_participants")
+          .select("*")
+          .eq("id", participantId)
+          .single();
+        if (prevErr) throw prevErr;
 
         const { data, error } = await supabaseUser
           .from("programme_participants")
@@ -244,6 +279,39 @@ Deno.serve(async (req) => {
           .single();
 
         if (error) throw error;
+
+        // Compute genuinely-changed fields (ignore approved_at/approved_by
+        // bookkeeping that the handler stamps automatically).
+        const changedFields: string[] = [];
+        for (const key of ALLOWED) {
+          if (key in updates && previous?.[key] !== data?.[key]) {
+            changedFields.push(key);
+          }
+        }
+
+        if (changedFields.length > 0) {
+          const statusChanged = changedFields.includes("status");
+          await supabaseAdmin.from("audit_logs").insert({
+            org_id: profile.org_id,
+            actor_user_id: user.id,
+            action: statusChanged
+              ? "programme.participant_status_changed"
+              : "programme.participant_updated",
+            entity_type: "programme_participant",
+            entity_id: participantId,
+            metadata: {
+              programme_id: programmeId,
+              participant_id: participantId,
+              previous_status: previous?.status ?? null,
+              new_status: data?.status ?? null,
+              changed_fields: changedFields,
+              actor_user_id: user.id,
+              actor_org_id: profile.org_id,
+              timestamp: new Date().toISOString(),
+            },
+          });
+        }
+
         return jsonResponse(data);
       }
     }
