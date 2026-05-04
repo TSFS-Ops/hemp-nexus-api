@@ -1329,13 +1329,35 @@ export function AdminPendingEngagementsPanel() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
+                            {/* Add contact: dedicated discovery affordance for unregistered counterparties.
+                                Distinct from "Mark contacted" — captures a discovered email so Notify can run.
+                                Shown whenever the row has no usable email and the engagement isn't terminal. */}
+                            {!isTerminal && !isUsableOutreachEmail(e.counterparty_email) && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() =>
+                                  setAddContactFor({
+                                    id: e.id,
+                                    counterparty_org_name: e.counterparty_org?.name ?? null,
+                                    counterparty_email: e.counterparty_email,
+                                    commodity: e.matches?.commodity ?? null,
+                                  })
+                                }
+                                disabled={actionLoadingId === e.id}
+                                title="Capture a discovered contact email so outreach can be sent"
+                                aria-label="Add contact details"
+                              >
+                                <UserPlus className="h-3 w-3 mr-1" /> Add contact
+                              </Button>
+                            )}
                             {/* D-05: Notify is offered for canonical pending states (notification_sent / legacy pending). Once 'contacted', the Mark-contacted action takes over. */}
                             {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (() => {
                               const usable = isUsableOutreachEmail(e.counterparty_email);
                               const reason = !e.counterparty_email
-                                ? "Cannot notify: no valid counterparty email on file."
+                                ? "Cannot notify: no valid counterparty email on file. Use Add contact first."
                                 : !usable
-                                  ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid)."
+                                  ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid). Use Add contact to replace it."
                                   : "Send notification email";
                               return (
                                 <Button
