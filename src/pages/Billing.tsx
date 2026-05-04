@@ -161,11 +161,15 @@ function BillingContent() {
               setPaymentFailure("Your payment was not successful. Your card was not charged. Please try again below or use a different payment method.");
               toast.error("Payment failed. Your card was not charged.", { duration: 8000 });
             } else {
+              // SEC P0-3: persistent settling banner — webhook hasn't
+              // confirmed credit yet; show pending/settling, NOT credits.
+              setPaymentSettling({ reference });
               toast.info("Payment is still being processed. Credits will appear shortly. If they don't arrive within 5 minutes, contact support@izenzo.co.za.");
             }
           }
         } catch (err) {
           console.error("Verify error:", err);
+          setPaymentSettling({ reference });
           toast.info(
             "We couldn't confirm your payment status. If you were charged, credits will appear within 5 minutes. Otherwise, email support@izenzo.co.za.",
             { duration: 10000 }
@@ -204,11 +208,13 @@ function BillingContent() {
             } else if (paystackStatus === "failed") {
               toast.error("Payment failed. Your card was not charged. Please try again or use a different payment method.");
             } else {
+              setPaymentSettling({ reference });
               toast.info("Payment is still being processed. Credits will appear shortly. If they don't arrive within 5 minutes, contact support@izenzo.co.za.");
             }
           }
         } catch (err) {
           console.error("Verify error:", err);
+          setPaymentSettling({ reference });
           toast.error(
             "Could not verify payment. If credits don't appear within 5 minutes, email support@izenzo.co.za with your payment reference."
           );
