@@ -22,7 +22,7 @@ export function AdminEventStorePanel() {
     try {
       const [countRes, dataRes] = await Promise.all([
         supabase.from("event_store").select("id", { count: "exact", head: true }),
-        supabase.from("event_store").select("*").order("created_at", { ascending: false }).limit(EVENT_LIMIT),
+        supabase.from("event_store").select("*").order("occurred_at", { ascending: false }).limit(EVENT_LIMIT),
       ]);
       setTotal(countRes.count);
       if (dataRes.error) throw dataRes.error;
