@@ -116,6 +116,15 @@ function handleApiError(err: unknown, actionPath?: string): never {
     if (err.code === "ELIGIBILITY_FAILED") {
       rethrowWithTrace(formatEligibilityMessage(err.details), trace);
     }
+    if (err.code === "COUNTERPARTY_REQUIRED") {
+      rethrowWithTrace(err.message, trace);
+    }
+    if (err.code === "ENGAGEMENT_INSERT_FAILED") {
+      rethrowWithTrace(
+        `${err.message} No credits were used.`,
+        trace,
+      );
+    }
     // Only treat a generic 422 as a POI eligibility failure when we are
     // actually performing POI generation. Otherwise surface the server's
     // own message so users aren't told to "fix the Terms tab" for an
