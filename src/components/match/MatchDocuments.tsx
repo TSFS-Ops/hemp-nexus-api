@@ -61,6 +61,8 @@ import { format } from "date-fns";
 import { DocumentSharingDialog } from "./DocumentSharingDialog";
 import { DocumentAccessLogs } from "./DocumentAccessLogs";
 import { listMatchDocuments } from "@/lib/match-documents-client";
+import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
+import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 
 /** Detect MIME from first bytes of a file - client-side magic-byte check */
