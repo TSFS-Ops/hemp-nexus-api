@@ -2,11 +2,11 @@ const QUICKSTART = `# 1. Issue an API key from /developer/keys
 export IZENZO_KEY="sk_live_..."
 
 # 2. Authenticate every call with the X-API-Key header
-curl https://api.izenzo.co.za/functions/v1/healthz \\
+curl https://api.trade.izenzo.co.za/functions/v1/healthz \\
   -H "X-API-Key: $IZENZO_KEY"
 
 # 3. Record bilateral trade intent
-curl https://api.izenzo.co.za/functions/v1/match \\
+curl https://api.trade.izenzo.co.za/functions/v1/match \\
   -H "X-API-Key: $IZENZO_KEY" \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: $(uuidgen)" \\
@@ -18,7 +18,7 @@ curl https://api.izenzo.co.za/functions/v1/match \\
     "price":    { "amount": 9420, "currency": "USD" }
   }'`;
 
-const FETCH_SAMPLE = `const res = await fetch("https://api.izenzo.co.za/functions/v1/match", {
+const FETCH_SAMPLE = `const res = await fetch("https://api.trade.izenzo.co.za/functions/v1/match", {
   method: "POST",
   headers: {
     "X-API-Key": process.env.IZENZO_KEY,

@@ -127,7 +127,7 @@ export default function DocsIndex() {
             developer changelog and your account contact.
           </p>
           <pre className="bg-slate-950 text-slate-100 rounded-lg p-4 text-[13px] font-mono leading-relaxed overflow-x-auto">
-            <code>https://api.izenzo.co.za/functions/v1</code>
+            <code>https://api.trade.izenzo.co.za/functions/v1</code>
           </pre>
         </section>
       </div>

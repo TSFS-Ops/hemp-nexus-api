@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { DocsLayout } from "./DocsLayout";
 import { DocEyebrow, DocH1, DocH2, DocLede, DocP, CodePanel, EndpointBadge, InlineCode } from "./_shared";
 
-const CREATE_MATCH_CURL = `curl https://api.izenzo.co.za/functions/v1/match \\
+const CREATE_MATCH_CURL = `curl https://api.trade.izenzo.co.za/functions/v1/match \\
   -H "X-API-Key: sk_live_..." \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: 9f86d081-884c-7d65-9a2f-eaa0c55ad015" \\
@@ -122,7 +122,7 @@ export default function ApiReference() {
         <section className="border-t border-border pt-12">
           <DocH2 id="all-endpoints">All endpoints</DocH2>
           <p className="text-[13.5px] text-muted-foreground mb-6">
-            Base URL: <InlineCode>https://api.izenzo.co.za/functions/v1</InlineCode>. Endpoints
+            Base URL: <InlineCode>https://api.trade.izenzo.co.za/functions/v1</InlineCode>. Endpoints
             in the discovery, settlement, and webhook groups have dedicated guides linked above.
           </p>
           <div className="space-y-8">

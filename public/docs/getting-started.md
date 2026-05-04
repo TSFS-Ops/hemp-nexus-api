@@ -292,7 +292,7 @@ APIs let different software systems talk to each other automatically. Instead of
 
 2. **Test authentication**:
    ```bash
-   curl https://api.izenzo.co.za/functions/v1/healthz \
+   curl https://api.trade.izenzo.co.za/functions/v1/healthz \
      -H "X-API-Key: YOUR_API_KEY_HERE"
    ```
 
@@ -333,7 +333,7 @@ A signal expresses your intent to trade. Think of it as posting a want ad:
 #### Using cURL (Command Line)
 
 ```bash
-curl -X POST https://api.izenzo.co.za/functions/v1/signals \
+curl -X POST https://api.trade.izenzo.co.za/functions/v1/signals \
   -H "X-API-Key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
@@ -352,7 +352,7 @@ curl -X POST https://api.izenzo.co.za/functions/v1/signals \
 
 **The URL**:
 ```
-https://api.izenzo.co.za/functions/v1/signals
+https://api.trade.izenzo.co.za/functions/v1/signals
 ```
 - This is the "address" of the API endpoint
 - `/signals` means we're working with signals
@@ -404,7 +404,7 @@ async function createSignal() {
   const apiKey = process.env.API_KEY; // Store in environment variable
   
   const response = await fetch(
-    'https://api.izenzo.co.za/functions/v1/signals',
+    'https://api.trade.izenzo.co.za/functions/v1/signals',
     {
       method: 'POST',
       headers: {
@@ -447,7 +447,7 @@ import json
 
 api_key = os.environ.get('API_KEY')  # Store in environment variable
 
-url = 'https://api.izenzo.co.za/functions/v1/signals'
+url = 'https://api.trade.izenzo.co.za/functions/v1/signals'
 
 headers = {
     'X-API-Key': api_key,
@@ -933,7 +933,7 @@ Congratulations! You've successfully:
 ## 📚 Quick Reference
 
 ### Essential URLs
-- **Base URL**: `https://api.izenzo.co.za/functions/v1`
+- **Base URL**: `https://api.trade.izenzo.co.za/functions/v1`
 - **Health Check**: `/healthz`
 - **Create Signal**: `/signals` (POST)
 - **Create Match**: `/match` (POST)

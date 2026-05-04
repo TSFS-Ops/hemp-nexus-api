@@ -3,7 +3,7 @@ import { ArrowRight, Terminal } from "lucide-react";
 import { DocsLayout } from "./DocsLayout";
 import { DocEyebrow, DocH1, DocH2, DocLede, DocP, InlineCode, CodePanel, Callout } from "./_shared";
 
-const CURL_EXAMPLE = `curl https://api.izenzo.co.za/functions/v1/healthz \\
+const CURL_EXAMPLE = `curl https://api.trade.izenzo.co.za/functions/v1/healthz \\
   -H "X-API-Key: sk_live_..."`;
 
 const RESPONSE_EXAMPLE = `{
@@ -15,7 +15,7 @@ const RESPONSE_EXAMPLE = `{
   ]
 }`;
 
-const CREATE_MATCH = `curl https://api.izenzo.co.za/functions/v1/match \\
+const CREATE_MATCH = `curl https://api.trade.izenzo.co.za/functions/v1/match \\
   -H "X-API-Key: sk_live_..." \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: 9f86d081-884c-7d65-9a2f-eaa0c55ad015" \\

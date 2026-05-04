@@ -43,7 +43,7 @@ const BLOCKS: Block[] = [
   { kind: "h2", text: "2. Authentication" },
   { kind: "p", text: "Every request carries an API key in the X-API-Key header. Keys are issued in the Developer Centre. Live keys are prefixed sk_live_ and sandbox keys sk_test_. The prefix is not sensitive and is safe to share for support." },
   { kind: "p", text: "Secret keys are shown ONCE at creation. We store only a hash. If a key is exposed, rotate it immediately (issues a new key, the old one stops working) or revoke it if the integration is decommissioned." },
-  { kind: "code", text: "curl https://api.izenzo.co.za/functions/v1/healthz \\\n  -H \"X-API-Key: sk_live_...\"" },
+  { kind: "code", text: "curl https://api.trade.izenzo.co.za/functions/v1/healthz \\\n  -H \"X-API-Key: sk_live_...\"" },
 
   { kind: "h2", text: "3. Sandbox vs Live" },
   { kind: "p", text: "Sandbox is a safe playground. Synthetic counterparties, simulated credit burns, suppressed outbound email and webhooks, no audit weight. Use it to wire up your integration end-to-end before pointing at Live." },

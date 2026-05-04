@@ -19,10 +19,10 @@ info:
     email: api-support@izenzo.co.za
   license:
     name: Proprietary
-    url: https://api.izenzo.co.za/terms
+    url: https://api.trade.izenzo.co.za/terms
 
 servers:
-  - url: https://api.izenzo.co.za/functions/v1
+  - url: https://api.trade.izenzo.co.za/functions/v1
     description: Production
 
 security:
