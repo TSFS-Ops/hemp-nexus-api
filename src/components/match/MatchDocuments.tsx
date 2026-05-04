@@ -727,8 +727,63 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  // ── Participant guard ──
+  // Compute whether the viewer's org is one of the match's participant orgs
+  // (initiator/buyer/seller). If we have BOTH the viewer's org and the
+  // match's participant trio loaded, and the viewer's org is not among them,
+  // render a clear non-destructive panel instead of the upload UI. This
+  // prevents the "wrong-match link" failure mode where storage RLS would
+  // reject the upload with an opaque error.
+  const viewerOrgId = sessionOrgId || orgId || null;
+  const participantsLoaded = matchOrgIds !== null;
+  const knownParticipants = matchOrgIds
+    ? [matchOrgIds.initiator, matchOrgIds.buyer, matchOrgIds.seller].filter(
+        (v): v is string => !!v
+      )
+    : [];
+  const isParticipant =
+    !!viewerOrgId &&
+    participantsLoaded &&
+    knownParticipants.length > 0 &&
+    knownParticipants.includes(viewerOrgId);
+  // Only block when we have enough info to be sure: viewer org known AND
+  // match participants known AND non-empty AND viewer is not among them.
+  // If any of those are missing we fall through to the normal UI so we never
+  // false-positive a legitimate participant.
+  const blockedNonParticipant =
+    !!viewerOrgId &&
+    participantsLoaded &&
+    knownParticipants.length > 0 &&
+    !isParticipant;
+
+  if (blockedNonParticipant) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            Your organisation is not a participant on this trade
+          </CardTitle>
+          <CardDescription>
+            You cannot upload documents or complete POI for this match.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-foreground">
+            Please check that you are using the correct match link, or ask the
+            initiating party to invite your organisation to this trade.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            If you believe this is an error, contact support and quote match ID
+            <span className="ml-1 font-mono">{matchId}</span>.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
