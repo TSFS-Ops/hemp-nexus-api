@@ -836,7 +836,7 @@ export function AdminPendingEngagementsPanel() {
         contactDetail.trim().toLowerCase() !== (eng.counterparty_email ?? "").toLowerCase() &&
         contactDetail.trim().length > 0
       ) {
-        const { data: patchData } = await supabase.functions.invoke<UpdatePoiEngagementResponse>(
+        const { data: patchData, error: patchError } = await supabase.functions.invoke<UpdatePoiEngagementResponse>(
           `poi-engagements/${eng.id}`,
           {
             method: "PATCH",
@@ -844,6 +844,25 @@ export function AdminPendingEngagementsPanel() {
             body: { counterparty_email: contactDetail.trim() },
           },
         );
+        // ── Surface PATCH failures explicitly. Previously we only
+        // destructured `data`, which silently swallowed save errors and
+        // let the code fall through to preview-outreach — which then
+        // 400'd with the misleading "no usable counterparty email on
+        // file" toast even though the real failure was the upstream
+        // PATCH (e.g. validation rejected the address, idempotency
+        // collision, transient 5xx). This is the "Zero Swallowed
+        // Errors" rule applied: a PATCH failure must surface the
+        // server's real reason and abort the outreach flow so the
+        // admin can correct the input. ──
+        if (patchError) {
+          const msg = await extractEdgeError(
+            patchError,
+            "Could not save the counterparty email. Please check the address and try again.",
+          );
+          toast.error(msg);
+          setOutreachDialog(null);
+          return;
+        }
         // Surface the auto-resolution outcome to the reviewer so they know
         // immediately whether the recipient will see this in their inbound
         // queue. Non-fatal — the email is saved either way.
