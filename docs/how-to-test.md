@@ -25,7 +25,7 @@ This guide covers all testing methods available for the Compliance Matching API,
 Test if the API is running:
 
 ```bash
-curl https://api.izenzo.co.za/functions/v1/healthz
+curl https://api.trade.izenzo.co.za/functions/v1/healthz
 ```
 
 **Expected Response**:
@@ -46,7 +46,7 @@ curl https://api.izenzo.co.za/functions/v1/healthz
 Test your API key:
 
 ```bash
-curl https://api.izenzo.co.za/functions/v1/signals \
+curl https://api.trade.izenzo.co.za/functions/v1/signals \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -116,7 +116,7 @@ Run all endpoint tests from the command line:
 ```bash
 # Set your API key
 export API_KEY="sk_your_api_key"
-export BASE_URL="https://api.izenzo.co.za/functions/v1"
+export BASE_URL="https://api.trade.izenzo.co.za/functions/v1"
 
 # Test 1: Health Check
 echo "Testing Health Check..."
@@ -257,7 +257,7 @@ done
 ```javascript
 const assert = require('assert');
 
-const BASE_URL = 'https://api.izenzo.co.za/functions/v1';
+const BASE_URL = 'https://api.trade.izenzo.co.za/functions/v1';
 const API_KEY = process.env.API_KEY;
 
 const headers = {
@@ -378,7 +378,7 @@ import requests
 import time
 from datetime import datetime
 
-BASE_URL = 'https://api.izenzo.co.za/functions/v1'
+BASE_URL = 'https://api.trade.izenzo.co.za/functions/v1'
 API_KEY = os.environ.get('API_KEY')
 
 headers = {

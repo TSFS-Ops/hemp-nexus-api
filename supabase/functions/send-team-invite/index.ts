@@ -131,7 +131,7 @@ async function _serve(req: Request): Promise<Response> {
     const ALLOWED_HOSTS = [
       "izenzo.co.za",
       "www.izenzo.co.za",
-      "compliance-matching.lovable.app",
+      "api.trade.izenzo.co.za",
     ];
     let signupHost: string;
     try {

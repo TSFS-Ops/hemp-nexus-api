@@ -20,7 +20,7 @@ class TradeIzenzoClient:
     
     def __init__(self, api_key: str, base_url: str = None, timeout: int = 30):
         self.api_key = api_key
-        self.base_url = base_url or 'https://api.izenzo.co.za/functions/v1'
+        self.base_url = base_url or 'https://api.trade.izenzo.co.za/functions/v1'
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({

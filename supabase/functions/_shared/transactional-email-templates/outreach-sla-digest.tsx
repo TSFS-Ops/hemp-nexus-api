@@ -67,7 +67,7 @@ const OutreachSlaDigest = ({
         ))}
 
         <Button
-          href="https://compliance-matching.lovable.app/admin?tab=engagements"
+          href="https://api.trade.izenzo.co.za/admin?tab=engagements"
           style={button}
         >
           Open Pending Engagements

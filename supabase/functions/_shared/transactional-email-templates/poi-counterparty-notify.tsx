@@ -45,7 +45,7 @@ const PoiCounterpartyNotifyEmail = ({ commodity, creatorOrgName, matchId, side, 
           Please log in to your console to review the details and respond.
         </Text>
         <Button
-          href={`https://compliance-matching.lovable.app/desk/match/${matchId || ''}`}
+          href={`https://api.trade.izenzo.co.za/desk/match/${matchId || ''}`}
           style={button}
         >
           View Trade Request

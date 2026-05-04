@@ -956,7 +956,7 @@ Deno.serve(async (req) => {
                 'Credits burned': 1,
                 Route: 'Bilateral (both parties on platform)',
               },
-              consoleUrl: `https://compliance-matching.lovable.app/desk/match/${matchId}`,
+              consoleUrl: `https://api.trade.izenzo.co.za/desk/match/${matchId}`,
               consoleLabel: 'Open match',
               occurredAt: now,
             });

@@ -4,7 +4,7 @@
 
 set -e  # Exit on error
 
-BASE_URL="https://api.izenzo.co.za/functions/v1"
+BASE_URL="https://api.trade.izenzo.co.za/functions/v1"
 API_KEY="${TRADE_IZENZO_API_KEY:-sk_your_key_here}"
 
 echo "======================================"

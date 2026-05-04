@@ -70,7 +70,7 @@ To obtain an API key, sign up at the dashboard or use the `/api-keys` endpoint w
 
 ### Base URL
 ```
-https://api.izenzo.co.za/functions/v1
+https://api.trade.izenzo.co.za/functions/v1
 ```
 
 ---
@@ -198,7 +198,7 @@ https://api.izenzo.co.za/functions/v1
 
 #### Example
 ```bash
-curl https://api.izenzo.co.za/functions/v1/match/550e8400-e29b-41d4-a716-446655440000 \
+curl https://api.trade.izenzo.co.za/functions/v1/match/550e8400-e29b-41d4-a716-446655440000 \
   -H "X-API-Key: sk_your_key_here"
 ```
 
@@ -244,7 +244,7 @@ curl https://api.izenzo.co.za/functions/v1/match/550e8400-e29b-41d4-a716-4466554
 
 #### Example
 ```bash
-curl -X POST https://api.izenzo.co.za/functions/v1/match/550e8400-e29b-41d4-a716-446655440000/settle \
+curl -X POST https://api.trade.izenzo.co.za/functions/v1/match/550e8400-e29b-41d4-a716-446655440000/settle \
   -H "X-API-Key: sk_your_key_here"
 ```
 
@@ -303,19 +303,19 @@ None required (empty body).
 
 **Get all settled matches:**
 ```bash
-curl "https://api.izenzo.co.za/functions/v1/matches?limit=10&status=settled" \
+curl "https://api.trade.izenzo.co.za/functions/v1/matches?limit=10&status=settled" \
   -H "X-API-Key: sk_your_key_here"
 ```
 
 **Search for steel trades:**
 ```bash
-curl "https://api.izenzo.co.za/functions/v1/matches?commodity=steel&limit=20" \
+curl "https://api.trade.izenzo.co.za/functions/v1/matches?commodity=steel&limit=20" \
   -H "X-API-Key: sk_your_key_here"
 ```
 
 **Filter by commodity type:**
 ```bash
-curl "https://api.izenzo.co.za/functions/v1/matches?commodity_type=saas&status=matched" \
+curl "https://api.trade.izenzo.co.za/functions/v1/matches?commodity_type=saas&status=matched" \
   -H "X-API-Key: sk_your_key_here"
 ```
 
@@ -350,7 +350,7 @@ curl "https://api.izenzo.co.za/functions/v1/matches?commodity_type=saas&status=m
 
 ### 1. Create a match
 ```bash
-curl -X POST https://api.izenzo.co.za/functions/v1/match \
+curl -X POST https://api.trade.izenzo.co.za/functions/v1/match \
   -H "X-API-Key: sk_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -368,19 +368,19 @@ Save the returned `id`.
 
 ### 2. Retrieve the match
 ```bash
-curl https://api.izenzo.co.za/functions/v1/match/{id} \
+curl https://api.trade.izenzo.co.za/functions/v1/match/{id} \
   -H "X-API-Key: sk_your_key_here"
 ```
 
 ### 3. Mark as settled
 ```bash
-curl -X POST https://api.izenzo.co.za/functions/v1/match/{id}/settle \
+curl -X POST https://api.trade.izenzo.co.za/functions/v1/match/{id}/settle \
   -H "X-API-Key: sk_your_key_here"
 ```
 
 ### 4. Verify it's settled
 ```bash
-curl https://api.izenzo.co.za/functions/v1/match/{id} \
+curl https://api.trade.izenzo.co.za/functions/v1/match/{id} \
   -H "X-API-Key: sk_your_key_here"
 ```
 
@@ -463,7 +463,7 @@ If they match, the record is authentic and hasn't been tampered with.
 Sign up at the dashboard or use the `/api-keys` endpoint with JWT authentication:
 
 ```bash
-curl -X POST https://api.izenzo.co.za/functions/v1/api-keys \
+curl -X POST https://api.trade.izenzo.co.za/functions/v1/api-keys \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

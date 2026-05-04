@@ -8,7 +8,7 @@
  *   - k6 installed (https://k6.io)
  *   - Valid API key: K6_API_KEY
  *   - Pre-created match IDs: K6_MATCH_IDS (comma-separated)
- *   - Base URL: K6_BASE_URL (default: https://api.izenzo.co.za/functions/v1)
+ *   - Base URL: K6_BASE_URL (default: https://api.trade.izenzo.co.za/functions/v1)
  *
  * Usage:
  *   K6_API_KEY=sk_... K6_MATCH_IDS=id1,id2,id3 k6 run scripts/load-test-collapse.mjs
@@ -19,7 +19,7 @@ import { check, sleep } from "k6";
 import { Rate, Trend, Counter } from "k6/metrics";
 import { uuidv4 } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
 
-const BASE_URL = __ENV.K6_BASE_URL || "https://api.izenzo.co.za/functions/v1";
+const BASE_URL = __ENV.K6_BASE_URL || "https://api.trade.izenzo.co.za/functions/v1";
 const API_KEY = __ENV.K6_API_KEY;
 const MATCH_IDS = (__ENV.K6_MATCH_IDS || "").split(",").filter(Boolean);
 

@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       .eq('id', r.match_id)
       .maybeSingle()
 
-    const baseUrl = Deno.env.get('PUBLIC_APP_URL') ?? 'https://compliance-matching.lovable.app'
+    const baseUrl = Deno.env.get('PUBLIC_APP_URL') ?? 'https://api.trade.izenzo.co.za'
     const matchUrl = `${baseUrl}/dashboard/matches/${r.match_id}`
     const idempotencyKey = `acceptance-receipt-${r.id}`
 

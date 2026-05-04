@@ -6,7 +6,7 @@ import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Izenzo'
 const REPLY_TO_DESK = 'support@izenzo.co.za'
-const PLATFORM_BASE_URL = 'https://compliance-matching.lovable.app'
+const PLATFORM_BASE_URL = 'https://api.trade.izenzo.co.za'
 
 /**
  * Build a deep-link into the trade. Unregistered recipients are routed via

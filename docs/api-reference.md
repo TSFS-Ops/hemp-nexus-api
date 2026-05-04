@@ -1,7 +1,7 @@
 # Compliance Matching API Reference
 
 **Current Version**: v1.5  
-**Base URL**: `https://api.izenzo.co.za/functions/v1`  
+**Base URL**: `https://api.trade.izenzo.co.za/functions/v1`  
 **Last Updated**: 3 May 2026 (USD-native examples)
 
 ---

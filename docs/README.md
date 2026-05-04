@@ -164,13 +164,13 @@ Jump to **[Technical Architecture](./architecture.md)** for:
 
 2. **Test the Connection** (1 minute)
    ```bash
-   curl https://api.izenzo.co.za/functions/v1/healthz \
+   curl https://api.trade.izenzo.co.za/functions/v1/healthz \
      -H "X-API-Key: sk_your_api_key_here"
    ```
 
 3. **Create Your First Trade Request** (2 minutes)
    ```bash
-   curl -X POST https://api.izenzo.co.za/functions/v1/trade-requests \
+   curl -X POST https://api.trade.izenzo.co.za/functions/v1/trade-requests \
      -H "X-API-Key: sk_your_api_key_here" \
      -H "Content-Type: application/json" \
      -d '{
