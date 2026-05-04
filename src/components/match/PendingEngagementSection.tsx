@@ -233,8 +233,8 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
             </CardTitle>
             <CardDescription>
               {isInitiator
-                ? "Status of the invitation sent to your counterparty for this trade."
-                : "An invitation has been issued for this trade. Status shown below."}
+                ? "A pending engagement has been recorded for this trade. Status shown below."
+                : "A pending engagement is in progress for this trade. Status shown below."}
             </CardDescription>
           </div>
           <Badge variant="outline" className={cn("shrink-0 text-xs", badgeClass)}>
@@ -284,7 +284,7 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-              Invited
+              Recorded
             </dt>
             <dd className="text-foreground tabular-nums">
               {formatTs(engagement.created_at) || "—"}
