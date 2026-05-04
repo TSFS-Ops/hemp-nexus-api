@@ -64,4 +64,37 @@ describe("humaniseEngagementError", () => {
     expect(() => humaniseEngagementError(42)).not.toThrow();
     expect(humaniseEngagementError(null).headline).toMatch(/could not save/i);
   });
+
+  describe("requestId surfacing", () => {
+    it("extracts request_id from a top-level payload", () => {
+      const r = humaniseEngagementError({
+        message: "INVALID_TRANSITION",
+        request_id: "req_abc123",
+      });
+      expect(r.requestId).toBe("req_abc123");
+      expect(r.headline).toMatch(/status change/i);
+    });
+
+    it("extracts request_id from FunctionsHttpError-style context.bodyJson", () => {
+      const r = humaniseEngagementError({
+        message: "boom",
+        context: { bodyJson: { message: "boom", request_id: "req_xyz" } },
+      });
+      expect(r.requestId).toBe("req_xyz");
+    });
+
+    it("falls back to x-request-id header when body has no id", () => {
+      const headers = new Map<string, string>([["x-request-id", "hdr_999"]]);
+      const r = humaniseEngagementError({
+        message: "forbidden",
+        context: { headers: { get: (k: string) => headers.get(k) ?? null } },
+      });
+      expect(r.requestId).toBe("hdr_999");
+    });
+
+    it("returns no requestId when none is provided", () => {
+      const r = humaniseEngagementError("invalid_target_status:pending");
+      expect(r.requestId).toBeUndefined();
+    });
+  });
 });

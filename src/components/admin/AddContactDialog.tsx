@@ -247,15 +247,27 @@ export function AddContactDialog({
         const ctxBody = err?.context?.body;
         if (ctxBody && typeof ctxBody.json === "function") {
           const parsedErr = await ctxBody.json();
-          if (parsedErr?.message) serverMessage = String(parsedErr.message);
+          // Preserve the full parsed payload so humaniseEngagementError can
+          // also pick up `request_id` / `trace_id` fields, not just `message`.
+          if (parsedErr && typeof parsedErr === "object") {
+            serverMessage = {
+              message: parsedErr.message ?? String(err?.message ?? ""),
+              request_id: parsedErr.request_id ?? parsedErr.requestId,
+              trace_id: parsedErr.trace_id,
+              context: { headers: err?.context?.headers },
+            };
+          }
         }
       } catch {
         /* keep original err */
       }
       const humanised = humaniseEngagementError(serverMessage);
       setSaveError(humanised);
+      const description = [humanised.hint, humanised.requestId ? `Request ID: ${humanised.requestId}` : null]
+        .filter(Boolean)
+        .join(" — ");
       toast.error(humanised.headline, {
-        description: humanised.hint,
+        description: description || undefined,
       });
     } finally {
       setSaving(false);
@@ -405,6 +417,22 @@ export function AddContactDialog({
                 <p className="font-medium text-destructive">{saveError.headline}</p>
                 {saveError.hint && (
                   <p className="text-xs text-muted-foreground">{saveError.hint}</p>
+                )}
+                {saveError.requestId && (
+                  <p className="text-[11px] text-muted-foreground/90">
+                    Request ID:{" "}
+                    <code className="font-mono break-all">{saveError.requestId}</code>{" "}
+                    <button
+                      type="button"
+                      className="underline hover:no-underline"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(saveError.requestId!);
+                        toast.success("Request ID copied");
+                      }}
+                    >
+                      Copy
+                    </button>
+                  </p>
                 )}
                 <details className="text-[11px] text-muted-foreground/80">
                   <summary className="cursor-pointer select-none">Technical details</summary>
