@@ -36,7 +36,11 @@ import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Search, Globe, Linkedin, Building2, X } from "lucide-react";
+import { Loader2, Search, Globe, Linkedin, Building2, X, AlertCircle } from "lucide-react";
+import {
+  humaniseEngagementError,
+  type HumanisedEngagementError,
+} from "@/lib/humanise-engagement-error";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
 import type { Match } from "@/hooks/use-match-details";
 import {
