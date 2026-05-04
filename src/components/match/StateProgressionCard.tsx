@@ -350,6 +350,31 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   });
   const wadGateBlocksComplete = isCompleteAction && !wadLoading && !sealedWad;
 
+  // ── PARTICIPANT GATE (mirrors RLS on POI/match progression endpoints) ──
+  // The viewer's organisation must be one of the parties on this match
+  // (creator org, buyer_org_id, or seller_org_id) to mint a POI or to
+  // complete the trade. This is the same data the documents tab uses for
+  // its upload guard. We surface a clear in-card message and disable the
+  // CTA so users don't see a vague server-side rejection after click.
+  const viewerOrgId = userProfile?.org_id ?? null;
+  const matchAny = match as any;
+  const participantOrgIds = [
+    match.org_id ?? null,
+    matchAny.buyer_org_id ?? null,
+    matchAny.seller_org_id ?? null,
+  ].filter((id): id is string => typeof id === "string" && id.length > 0);
+  const participantsLoaded = !profileLoading && participantOrgIds.length > 0;
+  const isParticipant =
+    !!viewerOrgId && participantOrgIds.includes(viewerOrgId);
+  const viewerRoleOnMatch: "buyer" | "seller" | null =
+    viewerOrgId && matchAny.buyer_org_id === viewerOrgId
+      ? "buyer"
+      : viewerOrgId && matchAny.seller_org_id === viewerOrgId
+        ? "seller"
+        : null;
+  const participantBlocksAction =
+    !isTerminal && !!nextLabel && participantsLoaded && !!viewerOrgId && !isParticipant;
+
   const handleConfirmClick = async () => {
     if (loading || recheckingBalance) return;
 
