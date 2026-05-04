@@ -1268,8 +1268,14 @@ export function AdminPendingEngagementsPanel() {
                         </TableCell>
                         <TableCell className="text-sm">
                           <p>{e.counterparty_org?.name ?? "(unregistered)"}</p>
-                          {e.counterparty_email && (
-                            <p className="text-xs text-muted-foreground">{e.counterparty_email}</p>
+                          {e.counterparty_email ? (
+                            <p className="text-xs text-muted-foreground break-all">{e.counterparty_email}</p>
+                          ) : (
+                            !isTerminal && (
+                              <p className="text-[11px] text-amber-700 mt-0.5 leading-snug">
+                                No contact details yet. Research this counterparty, add a valid email, then send outreach.
+                              </p>
+                            )
                           )}
                         </TableCell>
                         <TableCell>
