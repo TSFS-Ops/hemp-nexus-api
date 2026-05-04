@@ -39,6 +39,7 @@ export function SealedEngagement() {
   } = useParams<{
     matchId: string;
   }>();
+  const viewerOrgId = useUserOrg();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
