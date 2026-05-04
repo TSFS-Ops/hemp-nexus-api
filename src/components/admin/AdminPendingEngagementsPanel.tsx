@@ -32,7 +32,7 @@ import { SafeSelect } from "@/components/admin/SafeSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye, StickyNote, Save, Download, FileText,
+  Inbox, Mail, CheckCircle2, XCircle, Clock, Send, RefreshCw, Loader2, History, AlertTriangle, Eye, StickyNote, Save, Download, FileText, UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -45,6 +45,7 @@ import {
   ENGAGEMENT_PENDING_STATES,
   isEngagementPending,
 } from "@/lib/engagement-state";
+import { AddContactDialog, type AddContactEngagementSummary } from "@/components/admin/AddContactDialog";
 
 interface Engagement {
   id: string;
@@ -192,6 +193,11 @@ export function AdminPendingEngagementsPanel() {
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<string>("");
   const [notesSaving, setNotesSaving] = useState(false);
+
+  // ── Add-contact dialog (capture discovered email/phone for unregistered counterparties) ──
+  // Distinct from "Mark contacted" — this is the *discovery* step that
+  // unblocks Notify, not a record that contact has actually happened.
+  const [addContactFor, setAddContactFor] = useState<AddContactEngagementSummary | null>(null);
 
   const openSupportNotes = (e: Engagement) => {
     if (notesOpenId === e.id) {
@@ -1262,8 +1268,14 @@ export function AdminPendingEngagementsPanel() {
                         </TableCell>
                         <TableCell className="text-sm">
                           <p>{e.counterparty_org?.name ?? "(unregistered)"}</p>
-                          {e.counterparty_email && (
-                            <p className="text-xs text-muted-foreground">{e.counterparty_email}</p>
+                          {e.counterparty_email ? (
+                            <p className="text-xs text-muted-foreground break-all">{e.counterparty_email}</p>
+                          ) : (
+                            !isTerminal && (
+                              <p className="text-[11px] text-amber-700 mt-0.5 leading-snug">
+                                No contact details yet. Research this counterparty, add a valid email, then send outreach.
+                              </p>
+                            )
                           )}
                         </TableCell>
                         <TableCell>
@@ -1317,13 +1329,35 @@ export function AdminPendingEngagementsPanel() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
+                            {/* Add contact: dedicated discovery affordance for unregistered counterparties.
+                                Distinct from "Mark contacted" — captures a discovered email so Notify can run.
+                                Shown whenever the row has no usable email and the engagement isn't terminal. */}
+                            {!isTerminal && !isUsableOutreachEmail(e.counterparty_email) && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() =>
+                                  setAddContactFor({
+                                    id: e.id,
+                                    counterparty_org_name: e.counterparty_org?.name ?? null,
+                                    counterparty_email: e.counterparty_email,
+                                    commodity: e.matches?.commodity ?? null,
+                                  })
+                                }
+                                disabled={actionLoadingId === e.id}
+                                title="Capture a discovered contact email so outreach can be sent"
+                                aria-label="Add contact details"
+                              >
+                                <UserPlus className="h-3 w-3 mr-1" /> Add contact
+                              </Button>
+                            )}
                             {/* D-05: Notify is offered for canonical pending states (notification_sent / legacy pending). Once 'contacted', the Mark-contacted action takes over. */}
                             {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (() => {
                               const usable = isUsableOutreachEmail(e.counterparty_email);
                               const reason = !e.counterparty_email
-                                ? "Cannot notify: no valid counterparty email on file."
+                                ? "Cannot notify: no valid counterparty email on file. Use Add contact first."
                                 : !usable
-                                  ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid)."
+                                  ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid). Use Add contact to replace it."
                                   : "Send notification email";
                               return (
                                 <Button
@@ -1740,6 +1774,14 @@ export function AdminPendingEngagementsPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add-contact dialog (capture discovered email/phone for unregistered counterparties). */}
+      <AddContactDialog
+        open={!!addContactFor}
+        onOpenChange={(open) => !open && setAddContactFor(null)}
+        engagement={addContactFor}
+        onSaved={() => fetchEngagements()}
+      />
     </div>
   );
 }
