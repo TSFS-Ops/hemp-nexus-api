@@ -49,6 +49,13 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
     return <>{children}</>;
   }
 
+  // Reserved marketplace host (trade.izenzo.co.za) — never serve the live
+  // console here. Show a holding page that soft-gates visitors to the
+  // authenticated console at api.trade.izenzo.co.za.
+  if (hostType === 'marketplace') {
+    return <MarketplaceHolding />;
+  }
+
   // PUBLIC DOMAIN: Check if user is trying to access console-only content
   if (hostType === 'public') {
     // Check if this is a console-only route
