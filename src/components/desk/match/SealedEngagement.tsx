@@ -196,7 +196,7 @@ export function SealedEngagement() {
               <TimelineNode state={trackerActiveState} title={trackerActiveTitle} timestamp={engagement?.responded_at ? fmtTimestamp(engagement.responded_at) : "In progress"} detail={<div className="text-xs text-muted-foreground leading-relaxed">
                     {status === "accepted" ? <>The counterparty counter-signed. WaD certificate has been sealed.</> : status === "declined" ? <>The counterparty declined this engagement. Match has been released.</> : status === "expired" ? <>The 30-day hold-point window elapsed without response.</> : <>
                         The initiating party may not self-confirm. The deal is held until{" "}
-                        <span className="text-muted-foreground font-medium">{counterparty}</span>{" "}
+                        <span className="text-muted-foreground font-medium">{counterpartyName}</span>{" "}
                         responds or the 30-day window elapses.
                       </>}
                   </div>} />
@@ -213,7 +213,7 @@ export function SealedEngagement() {
             </h2>
 
             <dl className="mt-10 space-y-7">
-              <LockedField label="Counterparty" value={counterparty} />
+              <LockedField label="Counterparty" value={counterpartyName} />
               <LockedField label="Commodity" value={commodity} />
               <div className="grid grid-cols-2 gap-10">
                 <LockedField label={`Volume${match.quantity_unit ? ` (${match.quantity_unit})` : ""}`} value={fmtNumber(volume as number | null)} mono />
@@ -255,7 +255,7 @@ export function SealedEngagement() {
               </header>
 
               <dl className="py-8 space-y-1">
-                <CertRow label="Counterparty" value={counterparty} />
+                <CertRow label="Counterparty" value={counterpartyName} />
                 <CertRow label="Commodity" value={commodity} />
                 <CertRow label="Volume" value={`${fmtNumber(volume as number | null)}${match.quantity_unit ? ` ${match.quantity_unit}` : ""}`} mono />
                 <CertRow label="Price" value={`${match.price_currency ?? ""} ${fmtNumber(price as number | null)}${match.quantity_unit ? ` / ${match.quantity_unit}` : ""}`.trim()} mono />
