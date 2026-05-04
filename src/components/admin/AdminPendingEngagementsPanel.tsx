@@ -1311,16 +1311,25 @@ export function AdminPendingEngagementsPanel() {
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
                             {/* D-05: Notify is offered for canonical pending states (notification_sent / legacy pending). Once 'contacted', the Mark-contacted action takes over. */}
-                            {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (
-                              <Button
-                                size="sm" variant="outline"
-                                onClick={() => sendNotification(e)}
-                                disabled={actionLoadingId === e.id || !e.counterparty_email}
-                                title={!e.counterparty_email ? "No email on file" : "Send notification email"}
-                              >
-                                <Mail className="h-3 w-3 mr-1" /> Notify
-                              </Button>
-                            )}
+                            {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (() => {
+                              const usable = isUsableOutreachEmail(e.counterparty_email);
+                              const reason = !e.counterparty_email
+                                ? "Cannot notify: no valid counterparty email on file."
+                                : !usable
+                                  ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid)."
+                                  : "Send notification email";
+                              return (
+                                <Button
+                                  size="sm" variant="outline"
+                                  onClick={() => sendNotification(e)}
+                                  disabled={actionLoadingId === e.id || !usable}
+                                  title={reason}
+                                  aria-label={reason}
+                                >
+                                  <Mail className="h-3 w-3 mr-1" /> Notify
+                                </Button>
+                              );
+                            })()}
                             {!isTerminal && (
                               <Button
                                 size="sm" variant="outline"
