@@ -116,6 +116,15 @@ function handleApiError(err: unknown, actionPath?: string): never {
     if (err.code === "ELIGIBILITY_FAILED") {
       rethrowWithTrace(formatEligibilityMessage(err.details), trace);
     }
+    if (err.code === "COUNTERPARTY_REQUIRED") {
+      rethrowWithTrace(err.message, trace);
+    }
+    if (err.code === "ENGAGEMENT_INSERT_FAILED") {
+      rethrowWithTrace(
+        `${err.message} No credits were used.`,
+        trace,
+      );
+    }
     // Only treat a generic 422 as a POI eligibility failure when we are
     // actually performing POI generation. Otherwise surface the server's
     // own message so users aren't told to "fix the Terms tab" for an
@@ -351,6 +360,32 @@ export function useMatchDetails(matchId: string | undefined) {
           }
         }
         throw rethrown;
+      }
+
+      // ── ENGAGEMENT_PENDING (202 soft-route from match edge function) ──
+      // The server returns a typed payload — NOT a full Match — when the
+      // counterparty is named but not registered/attached. No credits were
+      // burned; refresh the match so the UI reflects the new pending
+      // engagement and toast info (not "POI sealed").
+      const softRouted =
+        updated &&
+        typeof updated === "object" &&
+        (updated as { code?: string }).code === "ENGAGEMENT_PENDING";
+
+      if (softRouted && actionPath === "generate-poi") {
+        if (mountedRef.current) {
+          await fetchMatch();
+          const payload = updated as unknown as {
+            counterparty_name?: string;
+            missing_party?: string;
+          };
+          const who = payload.counterparty_name || `the ${payload.missing_party ?? "counterparty"}`;
+          toast.info(
+            `Pending engagement created. ${who} is not yet registered on the platform — no credits were used. POI minting will resume once they accept.`,
+            { duration: 8000 },
+          );
+        }
+        return;
       }
 
       if (!updated || !updated.id) {

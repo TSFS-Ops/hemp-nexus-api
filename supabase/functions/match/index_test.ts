@@ -174,3 +174,78 @@ Deno.test("binding resolver: lookup error → lookup_error", async () => {
   const r = await resolveCounterpartyBinding(makeFakeSupabase("error"), "user@example.com", "rid");
   assertEquals(r.status, "lookup_error");
 });
+
+// ────────────────────────────────────────────────────────────────────────
+// 4. Counterparty registration gate (post-2026-04-27 policy)
+// ────────────────────────────────────────────────────────────────────────
+
+import { evaluateCounterpartyGate } from "../_shared/soft-route.ts";
+
+const CALLER = "org-caller";
+
+Deno.test("cp-gate: both sides registered → proceed", () => {
+  const m = { match_type: "search", buyer_org_id: CALLER, seller_org_id: "org-other", buyer_name: "B", seller_name: "S" };
+  assertEquals(evaluateCounterpartyGate(m, CALLER).decision, "proceed");
+});
+
+Deno.test("cp-gate: named seller, no seller_org_id → soft_route", () => {
+  const m = { match_type: "search", buyer_org_id: CALLER, seller_org_id: null, buyer_name: "B", seller_name: "Amstad Produce LLC" };
+  const r = evaluateCounterpartyGate(m, CALLER);
+  assertEquals(r.decision, "soft_route");
+  if (r.decision === "soft_route") {
+    assertEquals(r.missing_party, "seller");
+    assertEquals(r.counterparty_name, "Amstad Produce LLC");
+  }
+});
+
+Deno.test("cp-gate: named buyer, no buyer_org_id → soft_route", () => {
+  const m = { match_type: "search", buyer_org_id: null, seller_org_id: CALLER, buyer_name: "Acme Buyer", seller_name: "S" };
+  const r = evaluateCounterpartyGate(m, CALLER);
+  assertEquals(r.decision, "soft_route");
+  if (r.decision === "soft_route") assertEquals(r.missing_party, "buyer");
+});
+
+Deno.test("cp-gate: missing seller name AND seller_org_id → missing_details", () => {
+  const m = { match_type: "search", buyer_org_id: CALLER, seller_org_id: null, buyer_name: "B", seller_name: "" };
+  const r = evaluateCounterpartyGate(m, CALLER);
+  assertEquals(r.decision, "missing_details");
+  if (r.decision === "missing_details") {
+    assertEquals(r.missing_party, "seller");
+    assert(r.missing.includes("name"));
+    assert(r.missing.includes("org"));
+  }
+});
+
+Deno.test("cp-gate: whitespace-only seller name → missing_details", () => {
+  const m = { match_type: "search", buyer_org_id: CALLER, seller_org_id: null, buyer_name: "B", seller_name: "   " };
+  assertEquals(evaluateCounterpartyGate(m, CALLER).decision, "missing_details");
+});
+
+Deno.test("cp-gate: unilateral always proceeds (handled elsewhere)", () => {
+  const m = { match_type: "unilateral", buyer_org_id: CALLER, seller_org_id: null, buyer_name: "B", seller_name: "" };
+  assertEquals(evaluateCounterpartyGate(m, CALLER).decision, "proceed");
+});
+
+Deno.test("cp-gate: production regression — match d945c7cb (search, named seller, no seller ids)", () => {
+  // Exact shape of the production row that surfaced the bug.
+  const m = {
+    match_type: "search",
+    state: "discovery",
+    status: "matched",
+    buyer_org_id: "354a6566-57a1-4d79-abae-19b31b6ddce5",
+    seller_org_id: null,
+    buyer_name: "Pending verification (legacy)",
+    seller_name: "Amstad Produce LLC",
+    commodity: "potatoes",
+    price_amount: 50,
+    price_currency: "USD",
+    quantity_amount: 1000,
+    quantity_unit: "MT",
+  };
+  const r = evaluateCounterpartyGate(m, "354a6566-57a1-4d79-abae-19b31b6ddce5");
+  assertEquals(r.decision, "soft_route");
+  if (r.decision === "soft_route") {
+    assertEquals(r.missing_party, "seller");
+    assertEquals(r.counterparty_name, "Amstad Produce LLC");
+  }
+});

@@ -15,7 +15,12 @@ import {
   ACTION_TOKEN_COSTS 
 } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
-import { evaluateSoftRoute, resolveCounterpartyBinding, type BindingHint } from "../_shared/soft-route.ts";
+import {
+  evaluateSoftRoute,
+  resolveCounterpartyBinding,
+  evaluateCounterpartyGate,
+  type BindingHint,
+} from "../_shared/soft-route.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
 import { checkMaintenanceMode, tryBypass } from "../_shared/test-mode-bypass.ts";
 import {
@@ -388,6 +393,202 @@ Deno.serve(async (req) => {
       } catch (bodyErr) {
         console.warn(`[${requestId}] Could not parse request body:`, bodyErr);
         // Non-fatal: server-side gates will still enforce.
+      }
+
+      // ── COUNTERPARTY REGISTRATION GATE (post-2026-04-27 policy) ──
+      // `evaluateEligibility` no longer requires `buyer_id` / `seller_id`,
+      // so a match with a named-but-unregistered counterparty would now
+      // pass eligibility and reach `atomic_generate_poi_v2`, which would
+      // try to seal a binding POI against a non-platform entity. This gate
+      // intercepts that case BEFORE the eligibility branch and routes the
+      // request to a Pending Engagement (202) — or returns a typed 422 if
+      // the caller has not supplied enough counterparty details to invite.
+      // No credits are burned on either branch.
+      const cpGate = evaluateCounterpartyGate(match, authCtx.orgId);
+
+      if (cpGate.decision === "missing_details") {
+        const missingHuman = cpGate.missing
+          .map((m) => (m === "name" ? "name" : "registered organisation"))
+          .join(" and ");
+        const message =
+          `Cannot create a Pending Engagement: counterparty ${cpGate.missing_party} ${missingHuman} is missing. ` +
+          `Add the counterparty ${missingHuman} on the match before generating a POI.`;
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: match.org_id,
+            actor_user_id: actorUserId,
+            actor_api_key_id: actorApiKeyId,
+            action: "intent.denied",
+            entity_type: "match",
+            entity_id: matchId,
+            metadata: {
+              request_id: requestId,
+              reason: "counterparty_required",
+              missing_party: cpGate.missing_party,
+              missing: cpGate.missing,
+            },
+          });
+        } catch (auditErr) {
+          console.warn(`[${requestId}] COUNTERPARTY_REQUIRED audit write failed (non-fatal):`, auditErr);
+        }
+        await logApiRequest({
+          supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+          endpoint: endpointLabel, method: "POST", statusCode: 422,
+          errorMessage: "counterparty_required",
+        });
+        throw new ApiException("COUNTERPARTY_REQUIRED", message, 422, {
+          missing_party: cpGate.missing_party,
+          missing: cpGate.missing,
+        });
+      }
+
+      if (cpGate.decision === "soft_route") {
+        console.log(
+          `[${requestId}] COUNTERPARTY_GATE soft_route match_id=${matchId} missing_party=${cpGate.missing_party}`,
+        );
+
+        // Resolve binding (best-effort; never fatal).
+        const binding: BindingHint = await resolveCounterpartyBinding(
+          supabase,
+          counterpartyEmail,
+          requestId,
+        );
+        const boundOrgId = binding.status === "bound" ? binding.org_id : null;
+
+        const insertPayload = {
+          match_id: matchId,
+          org_id: match.org_id,
+          counterparty_org_id: boundOrgId,
+          counterparty_type: boundOrgId ? "known" : "unknown",
+          counterparty_email: counterpartyEmail,
+          engagement_status: boundOrgId ? "notification_sent" : "pending",
+          source: "eligibility_soft_route",
+        } as Record<string, unknown>;
+
+        let engagementRow: Record<string, unknown> | null = null;
+        let idempotentReplay = false;
+        try {
+          const { data: insertedRow, error: insertErr } = await supabase
+            .from("poi_engagements")
+            .insert(insertPayload)
+            .select("*")
+            .maybeSingle();
+
+          if (insertErr) {
+            // 23505 = unique_violation → an engagement already exists for
+            // this match. Re-fetch and return it (idempotent replay).
+            const code = (insertErr as { code?: string }).code ?? "";
+            if (code === "23505") {
+              const { data: existing, error: refetchErr } = await supabase
+                .from("poi_engagements")
+                .select("*")
+                .eq("match_id", matchId)
+                .maybeSingle();
+              if (refetchErr || !existing) {
+                console.error(`[${requestId}] COUNTERPARTY_GATE conflict but re-fetch failed:`, refetchErr);
+                throw new ApiException(
+                  "ENGAGEMENT_INSERT_FAILED",
+                  "Pending engagement already exists but could not be retrieved. Please retry shortly.",
+                  500,
+                  { request_id: requestId },
+                );
+              }
+              engagementRow = existing;
+              idempotentReplay = true;
+              console.log(`[${requestId}] COUNTERPARTY_GATE idempotent replay — existing engagement ${existing.id}`);
+            } else {
+              console.error(`[${requestId}] COUNTERPARTY_GATE insert failed:`, insertErr);
+              throw new ApiException(
+                "ENGAGEMENT_INSERT_FAILED",
+                "Could not create Pending Engagement. Please retry shortly or contact support.",
+                500,
+                { request_id: requestId, db_code: code || null },
+              );
+            }
+          } else {
+            engagementRow = insertedRow;
+            console.log(`[${requestId}] COUNTERPARTY_GATE engagement created ${insertedRow?.id} binding=${binding.status}`);
+          }
+        } catch (engErr) {
+          if (engErr instanceof ApiException) throw engErr;
+          console.error(`[${requestId}] COUNTERPARTY_GATE insert threw:`, engErr);
+          throw new ApiException(
+            "ENGAGEMENT_INSERT_FAILED",
+            "Could not create Pending Engagement. Please retry shortly or contact support.",
+            500,
+            { request_id: requestId },
+          );
+        }
+
+        // Audit (separate row from intent.denied — soft route is NOT a denial).
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: match.org_id,
+            actor_user_id: actorUserId,
+            actor_api_key_id: actorApiKeyId,
+            action: "match.poi.soft_routed",
+            entity_type: "match",
+            entity_id: matchId,
+            metadata: {
+              request_id: requestId,
+              gate: "counterparty_registration",
+              engagement_id: engagementRow?.id,
+              missing_party: cpGate.missing_party,
+              counterparty_name: cpGate.counterparty_name,
+              binding_status: binding.status,
+              binding_org_id: binding.status === "bound" ? binding.org_id : null,
+              counterparty_email_supplied: counterpartyEmail !== null,
+              idempotent_replay: idempotentReplay,
+            },
+          });
+        } catch (auditErr) {
+          console.warn(`[${requestId}] COUNTERPARTY_GATE audit write failed (non-fatal):`, auditErr);
+        }
+
+        const responseBody = {
+          code: "ENGAGEMENT_PENDING",
+          message:
+            "Counterparty is not yet registered or attached. A pending engagement has been created; POI mint will resume once the counterparty registers and accepts.",
+          engagement_id: engagementRow?.id ?? null,
+          match_id: matchId,
+          missing_party: cpGate.missing_party,
+          invite_required: binding.status !== "bound",
+          counterparty_name: cpGate.counterparty_name,
+          counterparty_email: counterpartyEmail,
+          soft_route: {
+            status: "queued",
+            gate: "counterparty_registration",
+            message:
+              "Counterparty is named but not yet a registered organisation. The deal is queued in Pending Engagements; POI mint will resume once the counterparty registers and accepts.",
+          },
+          engagement: engagementRow,
+          binding,
+        };
+
+        try {
+          await storeIdempotentResponse(
+            {
+              supabase,
+              orgId: authCtx.orgId,
+              endpoint: idemEndpointLabel,
+              idempotencyKey,
+              requestId,
+            },
+            { status: 202, body: responseBody },
+          );
+        } catch (cacheErr) {
+          console.warn(`[${requestId}] COUNTERPARTY_GATE idempotency cache write failed (non-fatal):`, cacheErr);
+        }
+
+        await logApiRequest({
+          supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
+          endpoint: endpointLabel, method: "POST", statusCode: 202,
+        });
+
+        return new Response(JSON.stringify(responseBody), {
+          status: 202,
+          headers: { ...headers, "Content-Type": "application/json" },
+        });
       }
 
       // ELIGIBILITY CHECK

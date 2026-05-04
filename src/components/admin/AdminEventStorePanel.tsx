@@ -22,7 +22,7 @@ export function AdminEventStorePanel() {
     try {
       const [countRes, dataRes] = await Promise.all([
         supabase.from("event_store").select("id", { count: "exact", head: true }),
-        supabase.from("event_store").select("*").order("created_at", { ascending: false }).limit(EVENT_LIMIT),
+        supabase.from("event_store").select("*").order("occurred_at", { ascending: false }).limit(EVENT_LIMIT),
       ]);
       setTotal(countRes.count);
       if (dataRes.error) throw dataRes.error;
@@ -63,7 +63,7 @@ export function AdminEventStorePanel() {
                 <TableCell><Badge variant="outline" className="text-xs">{e.event_type}</Badge></TableCell>
                 <TableCell className="font-mono text-xs">{(e.entity_id || "N/A").substring(0, 12)}</TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">{(e.payload_hash || "").substring(0, 12)}...</TableCell>
-                <TableCell className="text-xs">{new Date(e.created_at).toLocaleString()}</TableCell>
+                <TableCell className="text-xs">{e.occurred_at ? new Date(e.occurred_at).toLocaleString() : "—"}</TableCell>
                 <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelected(e)}><Eye className="h-3.5 w-3.5" /></Button></TableCell>
               </TableRow>
             ))}
@@ -83,7 +83,7 @@ export function AdminEventStorePanel() {
               <div><span className="text-muted-foreground">Payload Hash:</span> <span className="font-mono text-xs break-all">{selected.payload_hash || "N/A"}</span></div>
               <div><span className="text-muted-foreground">Previous Hash:</span> <span className="font-mono text-xs break-all">{selected.previous_event_hash || "Genesis"}</span></div>
               <div><span className="text-muted-foreground">Actor:</span> <span className="font-mono text-xs">{selected.actor_user_id || "System"}</span></div>
-              <div><span className="text-muted-foreground">Created:</span> {new Date(selected.created_at).toLocaleString()}</div>
+              <div><span className="text-muted-foreground">Occurred:</span> {selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : "—"}</div>
               {selected.event_data && (
                 <div>
                   <span className="text-muted-foreground">Data:</span>
