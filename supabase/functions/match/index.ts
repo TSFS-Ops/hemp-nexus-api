@@ -15,7 +15,12 @@ import {
   ACTION_TOKEN_COSTS 
 } from "../_shared/token-metering.ts";
 import { enforceEligibility, evaluateEligibility, formatEligibilityResponse } from "../_shared/eligibility.ts";
-import { evaluateSoftRoute, resolveCounterpartyBinding, type BindingHint } from "../_shared/soft-route.ts";
+import {
+  evaluateSoftRoute,
+  resolveCounterpartyBinding,
+  evaluateCounterpartyGate,
+  type BindingHint,
+} from "../_shared/soft-route.ts";
 import { deriveActorIds, getCreatedBy } from "../_shared/actor-context.ts";
 import { checkMaintenanceMode, tryBypass } from "../_shared/test-mode-bypass.ts";
 import {
