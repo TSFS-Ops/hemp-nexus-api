@@ -76,6 +76,16 @@ export function PublicHeader() {
     return <a href={authUrl} className={className}>{children}</a>;
   };
 
+  // Dashboard always lives on the live console (api.trade.izenzo.co.za).
+  // In preview we keep relative SPA navigation; in production we hop domains
+  // so visitors on www.izenzo.co.za land on the correct authenticated host.
+  const DashboardLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+    if (isPreview) {
+      return <Link to="/dashboard" className={className}>{children}</Link>;
+    }
+    return <a href={dashboardUrl} className={className}>{children}</a>;
+  };
+
   return (
     <>
     <nav className="fixed top-0 inset-x-0 z-40 bg-card/80 backdrop-blur-md border-b border-border transition-all duration-300">
