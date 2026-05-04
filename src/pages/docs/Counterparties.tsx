@@ -31,15 +31,38 @@ export default function DocsCounterparties() {
         <DocEyebrow>Core resources</DocEyebrow>
         <DocH1>Counterparties</DocH1>
         <DocLede>
-          A counterparty is a verified legal entity your organisation can transact with.
-          Counterparties combine a registered entity, beneficial ownership graph, and
-          Authority-to-Bind records to form a single unit of trust the platform can gate
-          settlement against.
+          A <strong className="text-foreground font-medium">counterparty record</strong> is a
+          verified legal entity your organisation can transact with. Counterparty records
+          combine a registered entity, beneficial ownership graph, and Authority-to-Bind
+          records to form a single unit of trust the platform can gate settlement against.
         </DocLede>
+
+        <Callout>
+          The word <em>counterparty</em> is used in two senses on this platform — keep them
+          distinct:
+          <ul className="mt-2 list-disc pl-5 space-y-1">
+            <li>
+              <strong className="text-foreground">counterparty record</strong> — a verified
+              entity in your registry (this page).
+            </li>
+            <li>
+              <strong className="text-foreground">opposite party</strong> — in any specific
+              trade, the org sitting in the slot opposite to yours
+              (<InlineCode>buyer_org_id</InlineCode> from a seller's perspective,
+              <InlineCode>seller_org_id</InlineCode> from a buyer's). This is always
+              relative to the viewer.
+            </li>
+            <li>
+              <strong className="text-foreground">named lead</strong> — a contact name or
+              email captured during outreach, not yet promoted to a verified counterparty
+              record. Named leads cannot satisfy WaD certification.
+            </li>
+          </ul>
+        </Callout>
 
         <DocH2 id="entities">Entities</DocH2>
         <DocP>
-          Every counterparty starts as an <InlineCode>entity</InlineCode>. Entities are either{" "}
+          Every counterparty record starts as an <InlineCode>entity</InlineCode>. Entities are either{" "}
           <InlineCode>INDIVIDUAL</InlineCode> (a natural person) or <InlineCode>COMPANY</InlineCode>{" "}
           (a registered legal person). They carry jurisdiction, registration data, and a
           screening result.
