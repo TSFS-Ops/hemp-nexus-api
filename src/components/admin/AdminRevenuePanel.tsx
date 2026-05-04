@@ -561,7 +561,7 @@ export function AdminRevenuePanel() {
               asChild
               className="shrink-0"
             >
-              <a href="/hq?tab=settings&sub=tokens">
+              <a href="/hq/settings?sub=tokens">
                 <Coins className="h-4 w-4 mr-2" />
                 Issue manual credits
               </a>
