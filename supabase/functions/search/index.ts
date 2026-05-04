@@ -78,6 +78,14 @@ Deno.serve(async (req) => {
     }
 
     // Parse intent
+    // OWNERSHIP: `signalType` is the **initiator's own side** (= the
+    // searching user's own buyer/seller stance), normalised by either the
+    // explicit "I am a buyer/seller" toggle (`role` param) or by free-text
+    // heuristics ("looking for buyers" → searcher is a SELLER). It is
+    // NEVER the counterparty's side. Downstream this value is exposed on
+    // the wire as `parsedQuery.role` / `parsed_role` / `signal_type`,
+    // each of which carries the same "initiator's own side" meaning —
+    // see src/lib/role-confirmation.ts:21-30 for the client-side contract.
     let signalType: "buyer" | "seller" = role === "seller" ? "seller" : "buyer";
     const lowerQuery = query.toLowerCase();
     if (lowerQuery.includes("buyer") || lowerQuery.includes("looking for") || lowerQuery.includes("want to buy")) {
@@ -337,6 +345,10 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         query,
+        // OWNERSHIP: `parsedQuery.role` is the **searcher's own side**
+        // (initiator/viewer side), already normalised server-side. Clients
+        // MUST NOT invert it to derive the counterparty side; see
+        // src/lib/role-confirmation.ts.
         parsedQuery: { product, location: effectiveLocation, role: signalType },
         results: finalResults,
         metrics: {
