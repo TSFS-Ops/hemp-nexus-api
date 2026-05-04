@@ -5,7 +5,7 @@ import { LiveActivityFeed } from "@/components/developer/LiveActivityFeed";
 import WebhookLogs from "@/components/developer/WebhookLogs";
 import SchemaExplorer from "@/components/developer/SchemaExplorer";
 import IntegrationDocs from "@/components/developer/IntegrationDocs";
-import { EnvProvider, EnvSwitcher } from "@/components/developer/EnvSwitcher";
+import { EnvProvider, EnvSwitcher, EnvModeBanner, EnvModeComparison } from "@/components/developer/EnvSwitcher";
 import { QuickStart } from "@/components/developer/QuickStart";
 import { SystemDiagnostics } from "@/components/developer/SystemDiagnostics";
 import { QuickSchema } from "@/components/developer/QuickSchema";
@@ -40,7 +40,9 @@ function KeysView() {
     <>
       <DeveloperHeader section="API Keys" />
       <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
         <PlainEnglishWalkthrough />
+        <EnvModeComparison />
         <ApiKeysPanel />
 
         {/* HUD: Quick-Start (left) · Diagnostics (right) */}
@@ -61,6 +63,7 @@ function WebhooksView() {
     <>
       <DeveloperHeader section="Webhook Logs" />
       <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
         <PlainEnglishWalkthrough />
         <WebhookLogs />
       </div>
@@ -73,6 +76,7 @@ function SchemaView() {
     <>
       <DeveloperHeader section="Schema Explorer" badge="OpenAPI 3.1" />
       <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
         <PlainEnglishWalkthrough />
         <SchemaExplorer />
       </div>
@@ -85,6 +89,7 @@ function DocsView() {
     <>
       <DeveloperHeader section="Integration Docs" badge="REST API" />
       <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
         <PlainEnglishWalkthrough />
         <IntegrationDocs />
       </div>
