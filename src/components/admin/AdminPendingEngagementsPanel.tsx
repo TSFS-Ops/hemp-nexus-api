@@ -1774,6 +1774,14 @@ export function AdminPendingEngagementsPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add-contact dialog (capture discovered email/phone for unregistered counterparties). */}
+      <AddContactDialog
+        open={!!addContactFor}
+        onOpenChange={(open) => !open && setAddContactFor(null)}
+        engagement={addContactFor}
+        onSaved={() => fetchEngagements()}
+      />
     </div>
   );
 }
