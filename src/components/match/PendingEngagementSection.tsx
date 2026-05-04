@@ -182,7 +182,20 @@ export function PendingEngagementSection({ engagement, match, isInitiator }: Pro
 
   // Identify any missing counterparty fields that would block / weaken outreach.
   const missingFields: { label: string; hint: string }[] = [];
-  const name = (engagement.counterparty_name || "").trim();
+  // Derive display name from the parent match — that is the canonical
+  // source. Prefer whichever side is unregistered (no *_org_id). Fall back
+  // to the engagement row only if the match is missing both names.
+  const buyerName = (match?.buyer_name || "").trim();
+  const sellerName = (match?.seller_name || "").trim();
+  const buyerUnregistered = !match?.buyer_org_id;
+  const sellerUnregistered = !match?.seller_org_id;
+  const derivedFromMatch =
+    buyerUnregistered && buyerName
+      ? buyerName
+      : sellerUnregistered && sellerName
+        ? sellerName
+        : buyerName || sellerName;
+  const name = (derivedFromMatch || engagement.counterparty_name || "").trim();
   const email = (engagement.counterparty_email || "").trim();
   if (!name) {
     missingFields.push({
