@@ -52,9 +52,31 @@ function statusTone(s: string) {
   return "text-cyan-400 border-cyan-500/40";
 }
 
+import { downloadIntegrationGuidePdf } from "./IntegrationGuidePdf";
+
 export default function IntegrationDocs() {
   return (
     <div className="space-y-12 max-w-5xl">
+      {/* PDF download for client-team circulation */}
+      <section className="rounded-sm border border-slate-800 bg-slate-900/40 px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div style={{ fontFamily: "Inter, sans-serif" }}>
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-400">
+            // downloadable reference
+          </div>
+          <p className="mt-1 text-[13px] text-slate-200 leading-snug max-w-2xl">
+            Need to circulate this internally? Download a clean PDF of the integration guide. The Developer Centre stays the authoritative source; the PDF is a snapshot.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            try { downloadIntegrationGuidePdf(); } catch (e) { console.error(e); }
+          }}
+          className="shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-slate-100 border border-emerald-500/50 hover:border-emerald-400 hover:bg-emerald-500/10 px-3 py-1.5 rounded-sm transition-colors"
+        >
+          ↓ Integration guide (PDF)
+        </button>
+      </section>
+
       {/* Quickstart */}
       <section>
         <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">§01 / Quickstart</div>

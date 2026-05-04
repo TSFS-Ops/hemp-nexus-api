@@ -371,6 +371,16 @@ export function ApiKeysPanel() {
 
   return (
     <section>
+      {/* Plain-English intro for the API Keys area */}
+      <div className="mb-5 rounded-sm border border-slate-800 bg-slate-900/40 px-5 py-4" style={{ fontFamily: "Inter, sans-serif" }}>
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">
+          About API keys
+        </div>
+        <p className="mt-1 text-[13px] text-slate-200 leading-relaxed">
+          API keys let your back-office systems act on Izenzo on your behalf. Each key carries a set of scopes (what it can do) and an environment (sandbox or live). Calls made with a live key burn credits at the same rate as a manual operator, $1.00 per credit.
+        </p>
+      </div>
+
       <div className="flex items-end justify-between mb-5">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
@@ -445,7 +455,7 @@ export function ApiKeysPanel() {
       {confirm?.kind === "rotate" && (
         <ConfirmDialog
           title={`Rotate "${confirm.name}"?`}
-          message="A new key will be issued and shown once. The current key will stop working immediately. Update your integrations before any in-flight requests fail."
+          message="This will affect production. A new key will be issued and shown once. The current key stops working immediately, so update every integration using it before any in-flight request fails."
           confirmLabel="Rotate Now"
           onConfirm={() => {
             rotateMut.mutate(confirm.id);
@@ -458,7 +468,7 @@ export function ApiKeysPanel() {
       {confirm?.kind === "revoke" && (
         <ConfirmDialog
           title={`Revoke "${confirm.name}"?`}
-          message="This key will be permanently disabled. Any service using it will fail authentication. This cannot be undone."
+          message="This will affect production. The key is permanently disabled. Any service still using it will fail authentication on the next call. This cannot be undone."
           confirmLabel="Revoke Key"
           destructive
           onConfirm={() => {
