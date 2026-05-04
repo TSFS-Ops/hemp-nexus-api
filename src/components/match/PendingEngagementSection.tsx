@@ -170,7 +170,7 @@ function daysUntil(ts?: string | null): number | null {
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
-export function PendingEngagementSection({ engagement, isInitiator }: Props) {
+export function PendingEngagementSection({ engagement, match, isInitiator }: Props) {
   if (!engagement) return null;
 
   // Hide once fully resolved AND linked — other surfaces own that story.
