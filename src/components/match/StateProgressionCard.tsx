@@ -735,7 +735,8 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   !allRequiredFilled ||
                   wadGateBlocksComplete ||
                   (isCompleteAction && wadLoading) ||
-                  minBundleBlocksPoi
+                  minBundleBlocksPoi ||
+                  participantBlocksAction
                 }
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
