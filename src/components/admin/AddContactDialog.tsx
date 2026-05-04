@@ -191,6 +191,7 @@ export function AddContactDialog({
       return;
     }
     setErrors({});
+    setSaveError(null);
 
     // Build the audit-friendly admin_notes payload. Phone + free-text notes
     // are appended as a structured block so they survive in the immutable
@@ -235,22 +236,27 @@ export function AddContactDialog({
       onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
-      // Surface the backend's specific message (e.g. suppression, invalid
-      // format) instead of a generic fallback. Mirrors the panel's
-      // extractEdgeError helper but inlined here to avoid coupling.
-      let msg = "Could not save contact details.";
+      // ── Surface the backend rejection in plain English ──
+      // Try to pull a parsed JSON body off the FunctionsHttpError first
+      // (newer supabase-js builds expose .context.body as a Response).
+      // Then hand whatever we have to humaniseEngagementError, which maps
+      // known opaque codes (invalid_target_status, INVALID_TRANSITION,
+      // VALIDATION_ERROR, NOT_FOUND, …) to admin-readable copy.
+      let serverMessage: unknown = err;
       try {
         const ctxBody = err?.context?.body;
         if (ctxBody && typeof ctxBody.json === "function") {
           const parsedErr = await ctxBody.json();
-          if (parsedErr?.message) msg = String(parsedErr.message);
-        } else if (typeof err?.message === "string" && !err.message.includes("non-2xx")) {
-          msg = err.message;
+          if (parsedErr?.message) serverMessage = String(parsedErr.message);
         }
       } catch {
-        /* keep fallback */
+        /* keep original err */
       }
-      toast.error(msg);
+      const humanised = humaniseEngagementError(serverMessage);
+      setSaveError(humanised);
+      toast.error(humanised.headline, {
+        description: humanised.hint,
+      });
     } finally {
       setSaving(false);
     }
