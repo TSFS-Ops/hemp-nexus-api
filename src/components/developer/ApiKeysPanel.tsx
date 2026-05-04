@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Copy, RefreshCw, Check, Plus, Pencil, Trash2, AlertTriangle, X } from "lucide-react";
+import { Copy, RefreshCw, Check, Plus, Pencil, Trash2, AlertTriangle, X, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -387,6 +387,25 @@ export function ApiKeysPanel() {
           <Plus className="h-3 w-3" />
           New Key
         </button>
+      </div>
+
+      {/* Always-visible secret-key handling advisory.
+          Sits above the key list so the protection rules are read
+          BEFORE a key is created, not only after the reveal modal. */}
+      <div className="mb-5 flex items-start gap-3 bg-amber-500/5 border border-amber-500/30 px-4 py-3 rounded-sm">
+        <ShieldAlert className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" strokeWidth={1.75} />
+        <div className="space-y-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber-300">
+            Secret key handling
+          </p>
+          <ul className="text-[12px] text-slate-300 leading-relaxed space-y-0.5 list-disc pl-4 marker:text-amber-400/60">
+            <li>Secrets are shown <strong className="text-slate-100">once</strong> at creation or rotation. We store only a hash — we cannot recover or re-display them.</li>
+            <li>Treat each key like a password: paste it straight into your secrets manager, never commit to git, never paste into chat or tickets.</li>
+            <li>Use the <span className="font-mono text-amber-200">sk_live_</span> / <span className="font-mono text-amber-200">sk_test_</span> prefix for support — it is not sensitive.</li>
+            <li>If a key is exposed, <strong className="text-slate-100">rotate</strong> immediately (issues a new key, disables the old one) or <strong className="text-slate-100">revoke</strong> if the integration is gone.</li>
+            <li>Default to least privilege — only tick the scopes the integration actually needs.</li>
+          </ul>
+        </div>
       </div>
 
       {isLoading && (
