@@ -48,8 +48,9 @@ const MEGA_NAV: MegaCategory[] = [
 ];
 
 export function PublicHeader() {
-  const { getAuthUrl, isPreview } = useCrossDomainUrls();
+  const { getAuthUrl, getDashboardUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
+  const dashboardUrl = getDashboardUrl();
   const { isAuthenticated } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
