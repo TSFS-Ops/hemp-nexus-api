@@ -67,6 +67,7 @@ const bandStyles: Record<StrengthBand, { bar: string; text: string; dot: string 
 export function EvidenceStrengthIndicator({
   documentCount,
   compact = false,
+  requiredPerSideUnmet = false,
   className,
 }: EvidenceStrengthIndicatorProps) {
   const { band, label, percentage } = deriveStrength(documentCount);
@@ -106,13 +107,15 @@ export function EvidenceStrengthIndicator({
         />
       </div>
       <p className="text-xs text-muted-foreground">
-        {documentCount === 0
-          ? "No supporting documents uploaded. Add documents to strengthen this trade's evidence bundle."
-          : `${documentCount} supporting document${documentCount !== 1 ? "s" : ""} uploaded. ${
-              band === "strong"
-                ? "This trade has a strong evidence bundle."
-                : "Upload more documents to strengthen the evidence bundle."
-            }`}
+        {requiredPerSideUnmet
+          ? "Bilateral Proof of Intent requires at least 1 supporting document from each side (buyer and seller). Add documents on the missing side to unlock POI mint."
+          : documentCount === 0
+            ? "No supporting documents uploaded yet. Bilateral POI mint requires at least 1 document per side; add more to strengthen the bundle beyond the minimum."
+            : `${documentCount} supporting document${documentCount !== 1 ? "s" : ""} uploaded. ${
+                band === "strong"
+                  ? "This trade has a strong evidence bundle."
+                  : "Upload more documents to strengthen the evidence bundle."
+              }`}
       </p>
     </div>
   );
