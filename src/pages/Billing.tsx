@@ -146,6 +146,7 @@ function BillingContent() {
             } else {
               toast.success(`${data.credits} credits added. New balance: ${data.newBalance?.toLocaleString() ?? "updated"}.`);
             }
+            setPaymentSettling(null);
             queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
             queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
             queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
@@ -193,6 +194,7 @@ function BillingContent() {
             } else {
               toast.success(`${data.credits} credits added. New balance: ${data.newBalance?.toLocaleString() ?? "updated"}.`);
             }
+            setPaymentSettling(null);
             // Refresh ALL balance queries across the app
             queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
             queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
