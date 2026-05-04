@@ -349,6 +349,29 @@ export function AddContactDialog({
             />
             {errors.notes && <p className="text-xs text-destructive">{errors.notes}</p>}
           </div>
+          </div>
+          {/* ── Right column: read-only system-assisted intel panel ── */}
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-slate-700 flex items-center gap-2">
+              <Search className="h-3.5 w-3.5" />
+              System-assisted intel
+            </div>
+            {!matchId ? (
+              <p className="text-xs text-muted-foreground">
+                No match context available — research deep-links on the left can still help.
+              </p>
+            ) : matchLoading ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading match…
+              </div>
+            ) : matchRow ? (
+              <CounterpartyIntelPanel match={matchRow} />
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Could not load match for intel. The capture form on the left still works.
+              </p>
+            )}
+          </div>
         </div>
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
