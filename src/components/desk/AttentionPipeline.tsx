@@ -50,7 +50,10 @@ function relativeAge(iso: string): string {
   return `${months}mo ago`;
 }
 
-function deadlineFrom(iso: string | null | undefined): string | null {
+// Retained for future use once `matches.expires_at` is added back.
+// Kept as a private helper so the deadline-formatting logic stays in one place.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _deadlineFrom(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const diffMs = new Date(iso).getTime() - Date.now();
   if (diffMs <= 0) return "overdue";
