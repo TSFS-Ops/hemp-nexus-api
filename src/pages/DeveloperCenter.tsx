@@ -40,7 +40,9 @@ function KeysView() {
     <>
       <DeveloperHeader section="API Keys" />
       <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
         <PlainEnglishWalkthrough />
+        <EnvModeComparison />
         <ApiKeysPanel />
 
         {/* HUD: Quick-Start (left) · Diagnostics (right) */}
