@@ -6,7 +6,7 @@
  * Prerequisites:
  *   - k6 installed (https://k6.io)
  *   - Valid API key set as K6_API_KEY environment variable
- *   - Base URL set as K6_BASE_URL (default: https://api.izenzo.co.za/functions/v1)
+ *   - Base URL set as K6_BASE_URL (default: https://api.trade.izenzo.co.za/functions/v1)
  *
  * Usage:
  *   # Smoke test (10 VUs, 30s)
@@ -26,7 +26,7 @@ import { uuidv4 } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
 
 // ─── Configuration ──────────────────────────────────────────────────
 
-const BASE_URL = __ENV.K6_BASE_URL || "https://api.izenzo.co.za/functions/v1";
+const BASE_URL = __ENV.K6_BASE_URL || "https://api.trade.izenzo.co.za/functions/v1";
 const API_KEY = __ENV.K6_API_KEY;
 
 if (!API_KEY) {

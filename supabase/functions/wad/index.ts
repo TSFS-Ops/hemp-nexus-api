@@ -1001,7 +1001,7 @@ Deno.serve(async (req) => {
             "Documents bound": documents.length,
             "Seal hash": sealHash.slice(0, 16) + "…",
           },
-          consoleUrl: `https://compliance-matching.lovable.app/desk/match/${wad.poi_id || ""}`,
+          consoleUrl: `https://api.trade.izenzo.co.za/desk/match/${wad.poi_id || ""}`,
           consoleLabel: "Open trade",
         });
       })();

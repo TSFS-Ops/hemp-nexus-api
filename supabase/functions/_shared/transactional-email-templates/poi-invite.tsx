@@ -78,7 +78,7 @@ export const template = {
     price: '495',
     currency: 'USD',
     senderName: 'Festus Trading Ltd',
-    acceptUrl: 'https://compliance-matching.lovable.app/auth?redirect=/dashboard/matches/abc12345',
+    acceptUrl: 'https://api.trade.izenzo.co.za/auth?redirect=/dashboard/matches/abc12345',
   },
 } satisfies TemplateEntry
 

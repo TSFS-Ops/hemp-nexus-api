@@ -12,7 +12,7 @@
 class TradeIzenzoClient {
   constructor(apiKey, options = {}) {
     this.apiKey = apiKey;
-    this.baseUrl = options.baseUrl || 'https://api.izenzo.co.za/functions/v1';
+    this.baseUrl = options.baseUrl || 'https://api.trade.izenzo.co.za/functions/v1';
     this.timeout = options.timeout || 30000;
   }
 
@@ -211,7 +211,7 @@ if (require.main === module) {
 }
 
 
-const BASE_URL = 'https://api.izenzo.co.za/functions/v1';
+const BASE_URL = 'https://api.trade.izenzo.co.za/functions/v1';
 
 // Step 1: Health Check (public endpoint)
 async function healthCheck() {

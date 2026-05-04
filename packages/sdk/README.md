@@ -19,7 +19,7 @@ import { IzenzoClient } from '@izenzo/sdk';
 
 const client = new IzenzoClient({
   apiKey: 'sk_your_api_key',
-  baseUrl: 'https://api.izenzo.co.za/functions/v1', // optional, this is the default
+  baseUrl: 'https://api.trade.izenzo.co.za/functions/v1', // optional, this is the default
 });
 
 // Create a match
@@ -143,7 +143,7 @@ try {
 ```typescript
 const client = new IzenzoClient({
   apiKey:  'sk_...',
-  baseUrl: 'https://api.izenzo.co.za/functions/v1', // default
+  baseUrl: 'https://api.trade.izenzo.co.za/functions/v1', // default
   timeout: 30000, // ms, default
 });
 

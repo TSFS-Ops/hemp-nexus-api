@@ -394,7 +394,7 @@ async function _serve(req: Request): Promise<Response> {
             "Payment reference": reference,
             Source: "verify-fallback",
           },
-          consoleUrl: `https://compliance-matching.lovable.app/admin/billing`,
+          consoleUrl: `https://api.trade.izenzo.co.za/admin/billing`,
           consoleLabel: "Open billing console",
         });
       }
@@ -1025,7 +1025,7 @@ async function handleChargeSuccess(
         "New balance": newBalance,
         "Payment reference": reference,
       },
-      consoleUrl: `https://compliance-matching.lovable.app/admin/billing`,
+      consoleUrl: `https://api.trade.izenzo.co.za/admin/billing`,
       consoleLabel: "Open billing console",
       occurredAt: paid_at || new Date().toISOString(),
     });

@@ -102,7 +102,7 @@ Example integration:
 ```javascript
 // Create a buyer signal
 const response = await fetch(
-  'https://api.izenzo.co.za/functions/v1/signals',
+  'https://api.trade.izenzo.co.za/functions/v1/signals',
   {
     method: 'POST',
     headers: {

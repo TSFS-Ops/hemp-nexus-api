@@ -22,7 +22,7 @@ Onboard → Verify → Discover → Engage → Mint POI → Complete → Seal Wa
 
 ## Prerequisites
 
-- A running instance of the platform (e.g. `https://compliance-matching.lovable.app`)
+- A running instance of the platform (e.g. `https://api.trade.izenzo.co.za`)
 - Admin access (first user is auto-assigned `org_admin` + `org_member`)
 - The Checkpoint harness at `/admin/checkpoint-2026-04-16` (optional, for automated execution)
 

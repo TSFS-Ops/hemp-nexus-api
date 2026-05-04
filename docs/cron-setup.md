@@ -30,7 +30,7 @@ SELECT cron.schedule(
   $$
   SELECT
     net.http_post(
-        url := 'https://api.izenzo.co.za/functions/v1/webhook-retry',
+        url := 'https://api.trade.izenzo.co.za/functions/v1/webhook-retry',
         headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb,
         body := '{}'::jsonb
     ) as request_id;
@@ -54,7 +54,7 @@ SELECT cron.schedule(
   $$
   SELECT
     net.http_post(
-        url := 'https://api.izenzo.co.za/functions/v1/api-key-expiry',
+        url := 'https://api.trade.izenzo.co.za/functions/v1/api-key-expiry',
         headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb,
         body := '{}'::jsonb
     ) as request_id;
@@ -78,7 +78,7 @@ SELECT cron.schedule(
   $$
   SELECT
     net.http_post(
-        url := 'https://api.izenzo.co.za/functions/v1/data-retention',
+        url := 'https://api.trade.izenzo.co.za/functions/v1/data-retention',
         headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb,
         body := '{}'::jsonb
     ) as request_id;

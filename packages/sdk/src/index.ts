@@ -7,7 +7,7 @@
  *
  * const client = new IzenzoClient({
  *   apiKey: 'sk_your_api_key',
- *   baseUrl: 'https://api.izenzo.co.za/functions/v1',
+ *   baseUrl: 'https://api.trade.izenzo.co.za/functions/v1',
  * });
  *
  * const match = await client.matches.create({
@@ -276,13 +276,13 @@ export class IzenzoApiError extends Error {
 export interface IzenzoClientConfig {
   /** API key (sk_…) for authentication */
   apiKey: string;
-  /** Base URL of the Izenzo API. Defaults to https://api.izenzo.co.za/functions/v1 */
+  /** Base URL of the Izenzo API. Defaults to https://api.trade.izenzo.co.za/functions/v1 */
   baseUrl?: string;
   /** Request timeout in milliseconds. Defaults to 30 000 */
   timeout?: number;
 }
 
-const DEFAULT_BASE_URL = 'https://api.izenzo.co.za/functions/v1';
+const DEFAULT_BASE_URL = 'https://api.trade.izenzo.co.za/functions/v1';
 const DEFAULT_TIMEOUT = 30_000;
 
 // ─── Main client ────────────────────────────────────────────────────

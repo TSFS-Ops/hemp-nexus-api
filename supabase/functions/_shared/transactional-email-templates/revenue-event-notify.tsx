@@ -148,7 +148,7 @@ export const template = {
       Counterparty: 'Polska sp. z o.o.',
       'Credits burned': 1,
     },
-    consoleUrl: 'https://compliance-matching.lovable.app/desk/match/66422f18-5a28-4afb-a539',
+    consoleUrl: 'https://api.trade.izenzo.co.za/desk/match/66422f18-5a28-4afb-a539',
     consoleLabel: 'Open match',
     occurredAt: '2026-04-26T08:14:11Z',
     referenceId: '66422f18-5a28-4afb-a539',
