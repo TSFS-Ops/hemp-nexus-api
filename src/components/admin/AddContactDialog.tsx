@@ -389,6 +389,32 @@ export function AddContactDialog({
           </div>
         </div>
 
+        {/* ── Persistent server-rejection banner ──
+            Stays visible until the next save attempt or the dialog closes,
+            so the admin doesn't have to chase a transient toast. Includes
+            the original server code in a <details> for support diagnostics. */}
+        {saveError && (
+          <div
+            role="alert"
+            aria-live="polite"
+            className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm"
+          >
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+              <div className="space-y-1">
+                <p className="font-medium text-destructive">{saveError.headline}</p>
+                {saveError.hint && (
+                  <p className="text-xs text-muted-foreground">{saveError.hint}</p>
+                )}
+                <details className="text-[11px] text-muted-foreground/80">
+                  <summary className="cursor-pointer select-none">Technical details</summary>
+                  <code className="block mt-1 break-all font-mono">{saveError.technical}</code>
+                </details>
+              </div>
+            </div>
+          </div>
+        )}
+
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             <X className="h-3.5 w-3.5 mr-1" /> Cancel
