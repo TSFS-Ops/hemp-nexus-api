@@ -418,11 +418,13 @@ export function AdminVerificationQueuePanel() {
                     {r.reason && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.reason}</div>}
                     {insuf && (
                       <div
-                        className="mt-1 inline-flex items-center gap-1 rounded-sm border border-destructive/30 bg-destructive/5 px-1.5 py-0.5 text-[10px] text-destructive"
-                        title={`Counterparty wallet has ${insuf.balance} credit(s); ${insuf.required} required. Pickup will be rejected by the billing function until top-up.`}
+                        role="status"
+                        aria-label={`Blocked: counterparty out of credits (${insuf.balance} of ${insuf.required})`}
+                        data-testid={`row-blocked-reason-${r.id}`}
+                        className="mt-1 inline-flex items-center gap-1 rounded-sm border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive"
                       >
                         <ShieldAlert className="h-3 w-3" />
-                        Insufficient credits ({insuf.balance}/{insuf.required})
+                        Blocked: counterparty out of credits ({insuf.balance}/{insuf.required})
                       </div>
                     )}
                   </td>
