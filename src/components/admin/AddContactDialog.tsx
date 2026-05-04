@@ -137,6 +137,9 @@ export function AddContactDialog({
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Partial<Record<"email" | "phone" | "notes", string>>>({});
   const [saving, setSaving] = useState(false);
+  // Persistent server-side rejection state. Rendered inline above the footer
+  // so the admin can read the explanation without chasing a transient toast.
+  const [saveError, setSaveError] = useState<HumanisedEngagementError | null>(null);
 
   // Reset form whenever the dialog opens for a new engagement.
   useEffect(() => {
@@ -145,6 +148,7 @@ export function AddContactDialog({
       setPhone("");
       setNotes("");
       setErrors({});
+      setSaveError(null);
     }
   }, [open, engagement?.id, engagement?.counterparty_email]);
 
