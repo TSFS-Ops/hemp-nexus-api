@@ -183,6 +183,17 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     buyer: string | null;
     seller: string | null;
   } | null>(null);
+  // Candidate matches the viewer's org *can* legitimately act on. Loaded
+  // lazily when the participant guard fires, so the user gets a CTA back to
+  // a match they actually own / are an accepted counterparty on.
+  type CandidateMatch = {
+    id: string;
+    commodity?: string | null;
+    status?: string | null;
+    source: "owned" | "engagement";
+  };
+  const [candidateMatches, setCandidateMatches] = useState<CandidateMatch[] | null>(null);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
   
   // Dialog states
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
