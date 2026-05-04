@@ -83,7 +83,7 @@ export function AdminEventStorePanel() {
               <div><span className="text-muted-foreground">Payload Hash:</span> <span className="font-mono text-xs break-all">{selected.payload_hash || "N/A"}</span></div>
               <div><span className="text-muted-foreground">Previous Hash:</span> <span className="font-mono text-xs break-all">{selected.previous_event_hash || "Genesis"}</span></div>
               <div><span className="text-muted-foreground">Actor:</span> <span className="font-mono text-xs">{selected.actor_user_id || "System"}</span></div>
-              <div><span className="text-muted-foreground">Created:</span> {new Date(selected.created_at).toLocaleString()}</div>
+              <div><span className="text-muted-foreground">Occurred:</span> {selected.occurred_at ? new Date(selected.occurred_at).toLocaleString() : "—"}</div>
               {selected.event_data && (
                 <div>
                   <span className="text-muted-foreground">Data:</span>
