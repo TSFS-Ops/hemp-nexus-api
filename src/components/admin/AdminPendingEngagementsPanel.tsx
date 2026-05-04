@@ -753,6 +753,10 @@ export function AdminPendingEngagementsPanel() {
       toast.error("Email address is required");
       return;
     }
+    if (!isUsableOutreachEmail(contactDetail)) {
+      toast.error("Cannot preview: email uses a non-deliverable test domain (.invalid).");
+      return;
+    }
 
     const eng = contactDialog;
     setOutreachLoading(true);
