@@ -32,15 +32,18 @@ beforeEach(() => {
 });
 
 describe("D-03 role-confirmation helpers", () => {
-  it("inverts parsedQuery.role into the user's inferred side", () => {
-    expect(inferUserSideFromParsedRole("buyer")).toBe("seller");
-    expect(inferUserSideFromParsedRole("seller")).toBe("buyer");
+  it("returns parsedQuery.role as the user's own side (server already normalises it)", () => {
+    // The search edge function returns parsedQuery.role already representing
+    // the user's own side (echo of the explicit Buyer/Seller toggle, with
+    // free-text heuristics applied server-side). The helper must NOT invert it.
+    expect(inferUserSideFromParsedRole("buyer")).toBe("buyer");
+    expect(inferUserSideFromParsedRole("seller")).toBe("seller");
     expect(inferUserSideFromParsedRole(null)).toBeNull();
     expect(inferUserSideFromParsedRole(undefined as any)).toBeNull();
   });
 
   it("Case 1: selected side === inferred side → no conflict, no modal", () => {
-    // user selected 'buyer', query was 'sellers for cashew' (parsedRole=seller → inferred user=buyer)
+    // user selected 'buyer'; server echoed parsedRole='buyer' → inferred user='buyer'
     expect(detectSideConflict("buyer", "buyer")).toBe(false);
     expect(detectSideConflict("seller", "seller")).toBe(false);
   });
