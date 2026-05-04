@@ -20,15 +20,23 @@ export const ROLE_CONFIRMATION_REQUIRED: boolean =
   (import.meta as any)?.env?.VITE_ROLE_CONFIRMATION_REQUIRED !== "false";
 
 /**
- * parsedQuery.role describes the persona the user is SEARCHING FOR
- * (e.g. "buyers for cashew" → role=buyer, meaning user is a seller).
- * Therefore the user's inferred side is the inversion of parsedQuery.role.
+ * The search edge function (`supabase/functions/search/index.ts`) returns
+ * `parsedQuery.role` already normalised to the **user's own side**:
+ *   - explicit `role` param from the "I am a Buyer/Seller" toggle is passed
+ *     through unchanged ("buyer" → user is a buyer);
+ *   - free-text heuristics ("looking for buyers" → user is seller) are
+ *     applied server-side BEFORE the value is returned.
+ * The downstream "Searching: … as Buyer" chip in CounterpartySearch.tsx
+ * already renders this value as the user's own side, so this helper must
+ * return it as-is (no inversion). Inverting it caused a false "Confirm
+ * your side" prompt every time the explicit toggle and the parsed role
+ * agreed.
  */
 export function inferUserSideFromParsedRole(
   parsedRole: TradeSide | null | undefined,
 ): TradeSide | null {
-  if (parsedRole === "buyer") return "seller";
-  if (parsedRole === "seller") return "buyer";
+  if (parsedRole === "buyer") return "buyer";
+  if (parsedRole === "seller") return "seller";
   return null;
 }
 
