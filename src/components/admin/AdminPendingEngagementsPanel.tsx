@@ -717,14 +717,18 @@ export function AdminPendingEngagementsPanel() {
   };
 
   // ── Open the "Mark as contacted" dialog ──
-  // If the engagement has no counterparty email on file, default the method
-  // to "phone" so the admin doesn't have to manually switch off the empty
-  // email picker (and so we don't push them into a flow that requires data
-  // we don't have).
+  // Default to Email in both cases:
+  //   • If an email is on file, pre-fill it so the admin can confirm/correct.
+  //   • If NO email is on file, still default to Email and leave the field
+  //     blank so the admin sees the editable email input immediately and
+  //     can capture a discovered address inline (the "Preview & send email"
+  //     button will then PATCH counterparty_email before sending).
+  // The admin can still switch the dropdown to phone/WhatsApp/etc. for
+  // non-email outreach methods.
   const openContactDialog = (eng: Engagement) => {
     setContactDialog(eng);
     const hasEmail = !!(eng.counterparty_email && eng.counterparty_email.trim());
-    setContactMethod(hasEmail ? "email" : "phone");
+    setContactMethod("email");
     setContactDetail(hasEmail ? eng.counterparty_email! : "");
     setContactNotes("");
   };
