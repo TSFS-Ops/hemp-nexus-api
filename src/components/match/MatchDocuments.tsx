@@ -232,6 +232,33 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     getSessionOrgId();
   }, []);
 
+  // Fetch the match's participant org ids so we can render a clear
+  // "not a participant" panel instead of failing at the storage layer.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error: matchErr } = await supabase
+        .from("matches")
+        .select("org_id, buyer_org_id, seller_org_id")
+        .eq("id", matchId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (matchErr || !data) {
+        // If we cannot read the match (RLS or missing), leave matchOrgIds null
+        // — the participant guard below will treat that as "unknown" and the
+        // existing fetchDocuments error path will surface the real reason.
+        setMatchOrgIds({ initiator: null, buyer: null, seller: null });
+        return;
+      }
+      setMatchOrgIds({
+        initiator: (data as { org_id: string | null }).org_id ?? null,
+        buyer: (data as { buyer_org_id: string | null }).buyer_org_id ?? null,
+        seller: (data as { seller_org_id: string | null }).seller_org_id ?? null,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [matchId]);
+
   useEffect(() => {
     fetchDocuments();
   }, [matchId]);
