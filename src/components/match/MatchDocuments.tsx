@@ -685,7 +685,27 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Upload Section */}
+          {/* ── Per-side POI minimum-evidence banner ──
+              Mirrors atomic_generate_poi_v2's MIN_EVIDENCE_PER_SIDE check so
+              the rule is visible on the Documents tab, not only at click. */}
+          {perSideUnmet && (
+            <div
+              role="alert"
+              className="flex items-start gap-3 p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
+            >
+              <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  Bilateral Proof of Intent needs at least 1 document per side
+                </p>
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  Currently attached: buyer = <strong>{buyerDocsCount}</strong>,
+                  seller = <strong>{sellerDocsCount}</strong>. Upload a supporting
+                  document of any type from each side before generating POI.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium flex items-center gap-2">
               <Upload className="h-4 w-4" />
