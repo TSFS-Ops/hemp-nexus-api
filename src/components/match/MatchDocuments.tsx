@@ -173,6 +173,16 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [sessionOrgId, setSessionOrgId] = useState<string | null>(null);
   const [showSuperseded, setShowSuperseded] = useState(false);
   const [historyRootId, setHistoryRootId] = useState<string | null>(null);
+
+  // Participant guard: hold the trio of orgs that are legitimately on this match
+  // (initiator/buyer/seller) so we can detect a viewer whose org is NOT a
+  // participant and stop them at a clear "wrong-match" panel instead of letting
+  // them hit the upload screen and get a useless "Failed to upload document".
+  const [matchOrgIds, setMatchOrgIds] = useState<{
+    initiator: string | null;
+    buyer: string | null;
+    seller: string | null;
+  } | null>(null);
   
   // Dialog states
   const [sharingDoc, setSharingDoc] = useState<MatchDocument | null>(null);
@@ -221,6 +231,33 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     };
     getSessionOrgId();
   }, []);
+
+  // Fetch the match's participant org ids so we can render a clear
+  // "not a participant" panel instead of failing at the storage layer.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error: matchErr } = await supabase
+        .from("matches")
+        .select("org_id, buyer_org_id, seller_org_id")
+        .eq("id", matchId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (matchErr || !data) {
+        // If we cannot read the match (RLS or missing), leave matchOrgIds null
+        // — the participant guard below will treat that as "unknown" and the
+        // existing fetchDocuments error path will surface the real reason.
+        setMatchOrgIds({ initiator: null, buyer: null, seller: null });
+        return;
+      }
+      setMatchOrgIds({
+        initiator: (data as { org_id: string | null }).org_id ?? null,
+        buyer: (data as { buyer_org_id: string | null }).buyer_org_id ?? null,
+        seller: (data as { seller_org_id: string | null }).seller_org_id ?? null,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [matchId]);
 
   useEffect(() => {
     fetchDocuments();
@@ -515,9 +552,30 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       fetchDocuments();
     } catch (err: unknown) {
       console.error("Error uploading document:", err);
-      const message = err instanceof Error ? err.message : "Failed to upload document";
-      setError(message);
-      toast.error("Failed to upload document", { description: message });
+      const raw = err instanceof Error ? err.message : "Failed to upload document";
+      // Map Supabase RLS / storage rejections to a plain-English reason so
+      // counterparties on the wrong match don't see the useless generic
+      // "Failed to upload document". Storage RLS rejects with a 403 and a
+      // body that mentions "row-level security" or "new row violates" — and
+      // the storage client surfaces "row violates row-level security policy"
+      // or "Unauthorized". Treat those as a participant/permission failure.
+      const lower = raw.toLowerCase();
+      const isPermission =
+        lower.includes("row-level security") ||
+        lower.includes("row level security") ||
+        lower.includes("violates row") ||
+        lower.includes("unauthorized") ||
+        lower.includes("not allowed") ||
+        lower.includes("permission denied") ||
+        lower.includes("403");
+      const friendly = isPermission
+        ? "Your organisation is not a participant on this trade. You cannot upload documents or complete POI for this match. Please check that you are using the correct match link or ask the initiating party to invite the correct organisation."
+        : raw;
+      setError(friendly);
+      toast.error(
+        isPermission ? "Upload not permitted" : "Failed to upload document",
+        { description: friendly }
+      );
     } finally {
       setUploading(false);
     }
@@ -668,6 +726,61 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
+
+  // ── Participant guard ──
+  // Compute whether the viewer's org is one of the match's participant orgs
+  // (initiator/buyer/seller). If we have BOTH the viewer's org and the
+  // match's participant trio loaded, and the viewer's org is not among them,
+  // render a clear non-destructive panel instead of the upload UI. This
+  // prevents the "wrong-match link" failure mode where storage RLS would
+  // reject the upload with an opaque error.
+  const viewerOrgId = sessionOrgId || orgId || null;
+  const participantsLoaded = matchOrgIds !== null;
+  const knownParticipants = matchOrgIds
+    ? [matchOrgIds.initiator, matchOrgIds.buyer, matchOrgIds.seller].filter(
+        (v): v is string => !!v
+      )
+    : [];
+  const isParticipant =
+    !!viewerOrgId &&
+    participantsLoaded &&
+    knownParticipants.length > 0 &&
+    knownParticipants.includes(viewerOrgId);
+  // Only block when we have enough info to be sure: viewer org known AND
+  // match participants known AND non-empty AND viewer is not among them.
+  // If any of those are missing we fall through to the normal UI so we never
+  // false-positive a legitimate participant.
+  const blockedNonParticipant =
+    !!viewerOrgId &&
+    participantsLoaded &&
+    knownParticipants.length > 0 &&
+    !isParticipant;
+
+  if (blockedNonParticipant) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            Your organisation is not a participant on this trade
+          </CardTitle>
+          <CardDescription>
+            You cannot upload documents or complete POI for this match.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-foreground">
+            Please check that you are using the correct match link, or ask the
+            initiating party to invite your organisation to this trade.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            If you believe this is an error, contact support and quote match ID
+            <span className="ml-1 font-mono">{matchId}</span>.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>
