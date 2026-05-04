@@ -59,22 +59,38 @@ interface StatusMeta {
   icon: React.ComponentType<{ className?: string }>;
 }
 
+/**
+ * Copy is deliberately conservative: at the moment the soft-route creates
+ * a Pending Engagement, NO email is dispatched and NO in-app notification
+ * is queued — only a `poi_engagements` row and a `match.poi.soft_routed`
+ * audit entry. Outreach is performed later by a compliance reviewer from
+ * the admin Pending Engagements panel. So we must not claim "Invitation
+ * sent" or "We have emailed your counterparty" in the `pending` state.
+ */
 function statusMeta(status: string | null): StatusMeta {
   switch (status) {
-    case "notification_sent":
+    case "pending":
       return {
-        label: "Awaiting outreach",
+        label: "Pending Engagement created",
         tone: "pending",
         description:
-          "Our compliance desk has been notified and will email your counterparty shortly. No further action required from you.",
+          "Counterparty details have been recorded. No invitation has been sent yet — our compliance desk will review this engagement and reach out to your counterparty manually. You will be notified when outreach occurs or when they respond.",
+        icon: Clock,
+      };
+    case "notification_sent":
+      return {
+        label: "Queued for outreach",
+        tone: "pending",
+        description:
+          "Our compliance desk has been notified and will contact your counterparty manually. No email has been sent yet. No further action required from you.",
         icon: Clock,
       };
     case "contacted":
       return {
-        label: "Invitation sent",
+        label: "Outreach sent",
         tone: "active",
         description:
-          "Your counterparty has been emailed with an invitation to register and respond. We will notify you once they reply.",
+          "Our compliance desk has reached out to your counterparty. We will notify you once they reply.",
         icon: Mail,
       };
     case "accepted":
@@ -95,19 +111,11 @@ function statusMeta(status: string | null): StatusMeta {
       };
     case "expired":
       return {
-        label: "Invitation expired",
+        label: "Engagement window elapsed",
         tone: "fail",
         description:
           "The 30-day response window elapsed without a reply. You can restart the trade with the same or a different counterparty.",
         icon: XCircle,
-      };
-    case "pending":
-      return {
-        label: "Pending — awaiting outreach",
-        tone: "pending",
-        description:
-          "The engagement is queued. Our compliance desk will pick this up shortly.",
-        icon: Clock,
       };
     default:
       return {
@@ -160,20 +168,20 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
   if (!name) {
     missingFields.push({
       label: "Counterparty name",
-      hint: "We need a name to address the invitation correctly.",
+      hint: "We need a name so the compliance desk can address outreach correctly.",
     });
   }
   if (!email) {
     missingFields.push({
       label: "Counterparty email",
-      hint: "Without an email, our compliance desk cannot send the invitation.",
+      hint: "Without an email, our compliance desk has no address to reach out to.",
     });
   }
   if (!engagement.counterparty_org_id && !terminal) {
     missingFields.push({
       label: "Linked organisation",
       hint:
-        "This counterparty has not yet registered. The match will auto-link once they sign up using the invited email.",
+        "This counterparty has not yet registered. The match will auto-link once they sign up using the recorded email.",
     });
   }
 
@@ -182,10 +190,10 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
     expiresIn === null
       ? null
       : expiresIn <= 0
-        ? "Invitation window has elapsed"
+        ? "Engagement window has elapsed"
         : expiresIn === 1
-          ? "Invitation expires in 1 day"
-          : `Invitation expires in ${expiresIn} days`;
+          ? "Engagement expires in 1 day"
+          : `Engagement expires in ${expiresIn} days`;
 
   // Border / surface tone
   const surface =
@@ -225,8 +233,8 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
             </CardTitle>
             <CardDescription>
               {isInitiator
-                ? "Status of the invitation sent to your counterparty for this trade."
-                : "An invitation has been issued for this trade. Status shown below."}
+                ? "A pending engagement has been recorded for this trade. Status shown below."
+                : "A pending engagement is in progress for this trade. Status shown below."}
             </CardDescription>
           </div>
           <Badge variant="outline" className={cn("shrink-0 text-xs", badgeClass)}>
@@ -276,7 +284,7 @@ export function PendingEngagementSection({ engagement, isInitiator }: Props) {
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-              Invited
+              Recorded
             </dt>
             <dd className="text-foreground tabular-nums">
               {formatTs(engagement.created_at) || "—"}
