@@ -22,6 +22,12 @@ export interface HumanisedEngagementError {
   hint?: string;
   /** Original server message / code, kept verbatim for the diagnostics row. */
   technical: string;
+  /**
+   * Backend-issued request/trace id (if the server returned one in the error
+   * payload or response headers). Surfaced in the UI so admins can copy it
+   * straight into a support ticket or log query.
+   */
+  requestId?: string;
 }
 
 const FALLBACK_HEADLINE = "Could not save contact details.";
@@ -33,6 +39,9 @@ const FALLBACK_HEADLINE = "Could not save contact details.";
  */
 export function humaniseEngagementError(input: unknown): HumanisedEngagementError {
   const raw = extractRawMessage(input);
+  const requestId = extractRequestId(input);
+  const withRid = <T extends HumanisedEngagementError>(e: T): T =>
+    requestId ? { ...e, requestId } : e;
 
   // ── 1. Known transition rejections from atomic_engagement_transition ──
   // The RPC returns strings of the form `invalid_target_status:<status>`.
