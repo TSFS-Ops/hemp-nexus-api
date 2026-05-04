@@ -591,8 +591,12 @@ export function AdminPendingEngagementsPanel() {
 
   // ── Send counterparty notification via the engagement outreach endpoint ──
   const sendNotification = async (eng: Engagement) => {
-    if (!eng.counterparty_email) {
-      toast.error("No counterparty email on file. Add one before sending.");
+    if (!isUsableOutreachEmail(eng.counterparty_email)) {
+      toast.error(
+        eng.counterparty_email
+          ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid)."
+          : "Cannot notify: no valid counterparty email on file.",
+      );
       return;
     }
     setActionLoadingId(eng.id);
