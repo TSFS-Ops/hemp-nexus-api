@@ -6,8 +6,8 @@ const SAMPLE_KEY = {
   sandbox: "sk_test_3lp8••••8e02"
 };
 const HOST = {
-  production: "https://api.izenzo.co.za/functions/v1",
-  sandbox: "https://api.izenzo.co.za/functions/v1"
+  production: "https://api.trade.izenzo.co.za/functions/v1",
+  sandbox: "https://api.trade.izenzo.co.za/functions/v1"
 };
 const ORG_ID = {
   production: "org_4Lp2ZA",

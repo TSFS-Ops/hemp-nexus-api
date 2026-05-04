@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getHostType, getConsoleUrl, CONSOLE_ONLY_ROUTES, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
 import { DomainMismatch } from "@/components/DomainMismatch";
+import MarketplaceHolding from "@/pages/MarketplaceHolding";
 
 interface HostnameRouterProps {
   children: React.ReactNode;
@@ -46,6 +47,13 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
   // Preview mode: allow everything (for development/testing)
   if (hostType === 'preview') {
     return <>{children}</>;
+  }
+
+  // Reserved marketplace host (trade.izenzo.co.za) — never serve the live
+  // console here. Show a holding page that soft-gates visitors to the
+  // authenticated console at api.trade.izenzo.co.za.
+  if (hostType === 'marketplace') {
+    return <MarketplaceHolding />;
   }
 
   // PUBLIC DOMAIN: Check if user is trying to access console-only content

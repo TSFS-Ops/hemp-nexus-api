@@ -48,8 +48,9 @@ const MEGA_NAV: MegaCategory[] = [
 ];
 
 export function PublicHeader() {
-  const { getAuthUrl, isPreview } = useCrossDomainUrls();
+  const { getAuthUrl, getDashboardUrl, isPreview } = useCrossDomainUrls();
   const authUrl = getAuthUrl();
+  const dashboardUrl = getDashboardUrl();
   const { isAuthenticated } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -73,6 +74,16 @@ export function PublicHeader() {
       return <Link to="/auth" className={className}>{children}</Link>;
     }
     return <a href={authUrl} className={className}>{children}</a>;
+  };
+
+  // Dashboard always lives on the live console (api.trade.izenzo.co.za).
+  // In preview we keep relative SPA navigation; in production we hop domains
+  // so visitors on www.izenzo.co.za land on the correct authenticated host.
+  const DashboardLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+    if (isPreview) {
+      return <Link to="/dashboard" className={className}>{children}</Link>;
+    }
+    return <a href={dashboardUrl} className={className}>{children}</a>;
   };
 
   return (
@@ -145,13 +156,10 @@ export function PublicHeader() {
         {/* Desktop CTAs */}
         <div className="hidden lg:flex items-center gap-2">
           {isAuthenticated ? (
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all"
-            >
+            <DashboardLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all">
               Dashboard
               <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            </DashboardLink>
           ) : (
             <>
               <AuthLink className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -168,12 +176,9 @@ export function PublicHeader() {
         {/* Mobile actions */}
         <div className="lg:hidden flex items-center gap-1.5">
           {isAuthenticated ? (
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950"
-            >
+            <DashboardLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950">
               Dashboard
-            </Link>
+            </DashboardLink>
           ) : (
             <AuthLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-semibold rounded-md text-white bg-emerald-950">
               Log In

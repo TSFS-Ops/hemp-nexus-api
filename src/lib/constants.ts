@@ -116,8 +116,19 @@ export const QUERY_LIMIT_ADMIN = 200;
 
 
 // ─── Hostnames ──────────────────────────────────────────────────────
+// Production architecture (confirmed by client, 2026-05-04):
+//  - www.izenzo.co.za / izenzo.co.za  → public Mother Ship marketing site
+//  - api.trade.izenzo.co.za           → live authenticated console
+//                                       (POI, WaD, billing, admin, compliance,
+//                                        trading desk, developer/API tools,
+//                                        execution workflows, dashboard)
+//  - trade.izenzo.co.za               → RESERVED for future commodity
+//                                       marketplace verticals; must show a
+//                                       holding page, never the live console.
+//  - api.izenzo.co.za                 → NOT in use; do not link to it.
 export const HOSTNAMES = {
   CONSOLE: 'api.trade.izenzo.co.za',
+  MARKETPLACE: 'trade.izenzo.co.za',
   PUBLIC: 'izenzo.co.za',
   PUBLIC_WWW: 'www.izenzo.co.za',
 } as const;

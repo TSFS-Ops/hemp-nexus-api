@@ -84,7 +84,7 @@ function TerminalMockup() {
             <span className="text-emerald-400">curl</span>{" "}
             <span className="text-slate-400">-X</span>{" "}
             <span className="text-amber-300">POST</span>{" "}
-            <span className="text-sky-300">https://api.izenzo.co.za/functions/v1/match</span>{" "}
+            <span className="text-sky-300">https://api.trade.izenzo.co.za/functions/v1/match</span>{" "}
             <span className="text-slate-500">\</span>
             {"\n  "}
             <span className="text-slate-400">-H</span>{" "}
