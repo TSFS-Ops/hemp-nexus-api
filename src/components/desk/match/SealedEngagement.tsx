@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Check, Mail, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 function fmtCountdown(msRemaining: number) {
   if (msRemaining <= 0) return "Expired";
   const totalSec = Math.floor(msRemaining / 1000);
@@ -38,6 +39,7 @@ export function SealedEngagement() {
   } = useParams<{
     matchId: string;
   }>();
+  const viewerOrgId = useUserOrg();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -88,9 +90,25 @@ export function SealedEngagement() {
     documents
   } = data;
   const matchRef = shortRef(match.id);
-  const counterparty = match.buyer_name && match.seller_name ?
-  // Show the side opposite to the creating party, fallback to whichever is set
-  match.buyer_name && match.seller_name ? `${match.buyer_name} ↔ ${match.seller_name}` : match.buyer_name ?? match.seller_name ?? "Counterparty" : match.buyer_name ?? match.seller_name ?? "Counterparty";
+  // Two distinct labels — never collapse them into a single ambiguous "counterparty":
+  //   - partyPairLabel : both parties, used for the certificate header / locked-terms summary
+  //   - counterpartyName: the OPPOSITE party from the current viewer, used in viewer-addressed copy
+  // Falls back to the most informative single name when one side is missing.
+  const buyerName = match.buyer_name ?? null;
+  const sellerName = match.seller_name ?? null;
+  const partyPairLabel =
+    buyerName && sellerName
+      ? `${buyerName} ↔ ${sellerName}`
+      : buyerName ?? sellerName ?? "Counterparty";
+  const viewerRole = getMatchRole(viewerOrgId, match);
+  const counterpartyName =
+    viewerRole === "buyer"
+      ? sellerName ?? "Counterparty"
+      : viewerRole === "seller"
+        ? buyerName ?? "Counterparty"
+        // Viewer is creator-without-side or unknown (e.g. admin/auditor view):
+        // show the pair rather than guessing — never default to "buyer".
+        : partyPairLabel;
   const commodity = match.commodity ?? "-";
   const volume = match.quantity_amount;
   const price = match.price_amount;
@@ -178,7 +196,7 @@ export function SealedEngagement() {
               <TimelineNode state={trackerActiveState} title={trackerActiveTitle} timestamp={engagement?.responded_at ? fmtTimestamp(engagement.responded_at) : "In progress"} detail={<div className="text-xs text-muted-foreground leading-relaxed">
                     {status === "accepted" ? <>The counterparty counter-signed. WaD certificate has been sealed.</> : status === "declined" ? <>The counterparty declined this engagement. Match has been released.</> : status === "expired" ? <>The 30-day hold-point window elapsed without response.</> : <>
                         The initiating party may not self-confirm. The deal is held until{" "}
-                        <span className="text-muted-foreground font-medium">{counterparty}</span>{" "}
+                        <span className="text-muted-foreground font-medium">{counterpartyName}</span>{" "}
                         responds or the 30-day window elapses.
                       </>}
                   </div>} />
@@ -195,7 +213,7 @@ export function SealedEngagement() {
             </h2>
 
             <dl className="mt-10 space-y-7">
-              <LockedField label="Counterparty" value={counterparty} />
+              <LockedField label="Counterparty" value={counterpartyName} />
               <LockedField label="Commodity" value={commodity} />
               <div className="grid grid-cols-2 gap-10">
                 <LockedField label={`Volume${match.quantity_unit ? ` (${match.quantity_unit})` : ""}`} value={fmtNumber(volume as number | null)} mono />
@@ -237,7 +255,7 @@ export function SealedEngagement() {
               </header>
 
               <dl className="py-8 space-y-1">
-                <CertRow label="Counterparty" value={counterparty} />
+                <CertRow label="Counterparty" value={counterpartyName} />
                 <CertRow label="Commodity" value={commodity} />
                 <CertRow label="Volume" value={`${fmtNumber(volume as number | null)}${match.quantity_unit ? ` ${match.quantity_unit}` : ""}`} mono />
                 <CertRow label="Price" value={`${match.price_currency ?? ""} ${fmtNumber(price as number | null)}${match.quantity_unit ? ` / ${match.quantity_unit}` : ""}`.trim()} mono />

@@ -119,7 +119,14 @@ export function EngagementTracker({
    *  persistent trade request (no data loss, no re-entry). */
   const handleReuse = () => {
     const meta = match?.metadata as Record<string, unknown> | undefined;
-    const side = meta?.tradeSide as string || meta?.bidOfferSide as string || "buyer";
+    // `tradeSide` / `bidOfferSide` (legacy) on a match's metadata represent the
+    // INITIATOR's own side at the time the match was created (creator-owned, not
+    // counterparty-owned). We only forward it when explicitly present — never
+    // silently default to "buyer", or a seller's reuse would pre-fill as buyer.
+    // If absent, omit the param so the trade form requires explicit user selection.
+    const rawSide = (meta?.tradeSide ?? meta?.bidOfferSide) as unknown;
+    const initiatorTradeSide =
+      rawSide === "buyer" || rawSide === "seller" ? rawSide : null;
     const isUnilateral = match?.match_type === "unilateral";
     const params = new URLSearchParams();
     if (match?.commodity) params.set("commodity", match.commodity);
@@ -127,7 +134,7 @@ export function EngagementTracker({
     if (match?.quantity_unit) params.set("unit", match.quantity_unit);
     if (match?.price_amount) params.set("price", String(match.price_amount));
     if (match?.price_currency) params.set("currency", match.price_currency);
-    if (side) params.set("side", side);
+    if (initiatorTradeSide) params.set("side", initiatorTradeSide);
     if (match?.trade_request_id) params.set("trade_request_id", match.trade_request_id);
     const target = isUnilateral ? `${ROUTES.DASHBOARD}?section=unilateral&${params.toString()}` : `${ROUTES.DASHBOARD}?section=bilateral&${params.toString()}`;
     navigate(target);
