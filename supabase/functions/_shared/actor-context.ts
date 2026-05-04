@@ -1,8 +1,18 @@
 /**
  * Actor Context Utilities
- * 
+ *
  * Centralised helpers for deriving actor IDs from authentication context.
  * Ensures consistent handling of user IDs vs API key IDs across all endpoints.
+ *
+ * OWNERSHIP — `actor_role` column on `audit_logs`:
+ *   The `actor_role` value written by edge functions (typically
+ *   `actor_role: authCtx.roles?.[0] || null`) is the **acting user's first
+ *   RBAC role** (e.g. `platform_admin`, `org_admin`, `compliance_officer`).
+ *   It is NEVER a buyer/seller trade side and NEVER a viewer/initiator/
+ *   counterparty match-role. Audit consumers MUST NOT cross-reference
+ *   `audit_logs.actor_role` with `matches.buyer_org_id` /
+ *   `matches.seller_org_id` derived roles.
+ *   See `src/tests/audit-actor-role-shape.test.ts` for the canonical assertion.
  */
 
 import { AuthContext } from "./auth.ts";
