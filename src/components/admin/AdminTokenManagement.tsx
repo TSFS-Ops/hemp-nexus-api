@@ -272,36 +272,37 @@ export function AdminTokenManagement() {
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
-                                <DialogTitle>Add Tokens</DialogTitle>
+                                <DialogTitle>Add credits</DialogTitle>
                                 <DialogDescription>
-                                  Add tokens to {balance.organisation?.name || "this organisation"}
+                                  Issue credits to {balance.organisation?.name || "this organisation"}. Each credit is worth $1.00 USD and is recorded in the audit trail.
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                  <Label>Current Balance</Label>
+                                  <Label>Current balance</Label>
                                   <div className="text-2xl font-bold">
-                                    {balance.balance.toLocaleString()} tokens
+                                    {balance.balance.toLocaleString()} credits
                                   </div>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="amount">Tokens to Add</Label>
+                                  <Label htmlFor="amount">Credits to add</Label>
                                   <Input
                                     id="amount"
                                     type="number"
-                                    placeholder="Enter amount..."
+                                    placeholder="Enter amount (max 10,000)"
                                     value={topUpAmount}
                                     onChange={(e) => setTopUpAmount(e.target.value)}
                                     min="1"
+                                    max="10000"
                                   />
                                 </div>
                                 {topUpAmount && parseInt(topUpAmount) > 0 && (
                                   <div className="p-3 bg-muted rounded-lg">
                                     <div className="text-sm text-muted-foreground">
-                                      New balance will be approximately:
+                                      New balance will be:
                                     </div>
                                     <div className="text-xl font-bold text-primary">
-                                      {(balance.balance + parseInt(topUpAmount || "0")).toLocaleString()} tokens
+                                      {(balance.balance + parseInt(topUpAmount || "0")).toLocaleString()} credits
                                     </div>
                                   </div>
                                 )}
@@ -320,7 +321,7 @@ export function AdminTokenManagement() {
                                 >
                                   {submitting ? (
                                     <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adding…</>
-                                  ) : "Add Tokens"}
+                                  ) : "Add credits"}
                                 </Button>
                               </DialogFooter>
                             </DialogContent>
