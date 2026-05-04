@@ -55,12 +55,15 @@ import {
   EyeOff,
   RefreshCw,
   ClipboardCheck,
-  AlertTriangle
+  AlertTriangle,
+  ShieldAlert
 } from "lucide-react";
 import { format } from "date-fns";
 import { DocumentSharingDialog } from "./DocumentSharingDialog";
 import { DocumentAccessLogs } from "./DocumentAccessLogs";
 import { listMatchDocuments } from "@/lib/match-documents-client";
+import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
+import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 
 /** Detect MIME from first bytes of a file - client-side magic-byte check */
@@ -137,6 +140,21 @@ const ALLOWED_TYPES = [
 interface UploadDraft { docType: string; title: string; notes: string; visibility: string }
 
 export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
+  // Per-side evidence counts power the bilateral POI minimum-evidence banner
+  // shown above the upload form. This mirrors the server-enforced
+  // MIN_EVIDENCE_PER_SIDE rule (atomic_generate_poi_v2) so users see the
+  // requirement on the Documents tab, not only at the POI button.
+  const { data: evidenceCounts } = useQuery({
+    queryKey: ["match-documents-evidence-counts", matchId],
+    queryFn: () => getMatchEvidenceCounts(matchId),
+    enabled: !!matchId,
+    staleTime: 0,
+  });
+  const buyerDocsCount = evidenceCounts?.buyerDocumentCount ?? 0;
+  const sellerDocsCount = evidenceCounts?.sellerDocumentCount ?? 0;
+  const perSideUnmet =
+    !!evidenceCounts && (buyerDocsCount === 0 || sellerDocsCount === 0);
+
   const [documents, setDocuments] = useState<MatchDocument[]>([]);
   // Truncation state: when the server cap is hit we MUST surface a persistent
   // banner — a sonner toast auto-dismisses in <4s and operators routinely
@@ -668,7 +686,27 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Upload Section */}
+          {/* ── Per-side POI minimum-evidence banner ──
+              Mirrors atomic_generate_poi_v2's MIN_EVIDENCE_PER_SIDE check so
+              the rule is visible on the Documents tab, not only at click. */}
+          {perSideUnmet && (
+            <div
+              role="alert"
+              className="flex items-start gap-3 p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
+            >
+              <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  Bilateral Proof of Intent needs at least 1 document per side
+                </p>
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  Currently attached: buyer = <strong>{buyerDocsCount}</strong>,
+                  seller = <strong>{sellerDocsCount}</strong>. Upload a supporting
+                  document of any type from each side before generating POI.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium flex items-center gap-2">
               <Upload className="h-4 w-4" />

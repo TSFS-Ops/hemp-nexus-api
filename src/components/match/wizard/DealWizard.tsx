@@ -246,9 +246,9 @@ export function DealWizard({
           ? "Commercial terms complete — proceed to Proof of Intent"
           : "Complete the commercial terms",
         description: commercialTermsComplete
-          ? "Buyer, seller, commodity, quantity and price are all set. You can now generate a Proof of Intent (1 credit, $1.00 USD)."
-          : "Set the buyer, seller, commodity, quantity and price on the Terms tab before you can generate a Proof of Intent.",
-        helpText: "All five commercial terms are required by the POI gate. Documents and notes are optional but improve your evidence score.",
+          ? "Buyer, seller, commodity, quantity and price are all set. Before generating Proof of Intent (1 credit, $1.00 USD) you must also attach at least 1 supporting document from each side on the Documents tab."
+          : "Set the buyer, seller, commodity, quantity and price on the Terms tab. You will also need to attach at least 1 supporting document from each side before you can generate a Proof of Intent.",
+        helpText: "Commercial terms (5 fields) and at least 1 document per side are both required by the POI gate. Notes are optional.",
       };
     }
     if (activeId === "poi") {
@@ -268,7 +268,7 @@ export function DealWizard({
         tone: "action",
         eyebrow: "Your turn",
         title: "Generate a Proof of Intent",
-        description: "Mint a Proof of Intent on the audit ledger to formally signal commercial intent to your trading partner. Costs 1 credit ($1.00 USD), irreversible, fully audited.",
+        description: "Mint a Proof of Intent on the audit ledger to formally signal commercial intent to your trading partner. Costs 1 credit ($1.00 USD), irreversible, fully audited. Requires at least 1 supporting document from each side.",
         helpText: "POI generation is the platform's hold-point. Once minted, your trading partner is notified and you cannot edit the commercial terms.",
       };
     }
