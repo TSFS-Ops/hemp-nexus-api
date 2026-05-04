@@ -1,0 +1,370 @@
+/**
+ * PendingEngagementSection
+ *
+ * At-a-glance summary card shown on the Match Details page that answers
+ * two questions a trader keeps asking after clicking "Generate POI" against
+ * a named-but-unregistered counterparty:
+ *
+ *   1. What is the current invitation status?
+ *      (pending, notification_sent, contacted, accepted, declined, expired)
+ *
+ *   2. Are there any missing counterparty fields blocking outreach?
+ *      (counterparty name, counterparty email, org link)
+ *
+ * This card complements (it does NOT replace) the existing onboarding
+ * timeline (`UnknownCounterpartyStatus`) and the detailed
+ * `EngagementTracker`. Its job is to be the single, scannable header that
+ * tells the user what state they're in and what — if anything — is missing.
+ *
+ * Hidden when:
+ *   • there is no engagement row for this match, OR
+ *   • the engagement is terminal AND the counterparty is fully linked
+ *     (the rest of the page communicates state from there).
+ *
+ * Source of truth: `poi_engagements` row returned by
+ * `GET /poi-engagements/by-match/:matchId`. The parent
+ * (MatchDetails.tsx) is responsible for fetching it and passing the full
+ * row in via `engagement`.
+ */
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Clock, Mail, CheckCircle2, XCircle, UserPlus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { isEngagementTerminal } from "@/lib/engagement-state";
+
+export interface PendingEngagementRow {
+  id?: string | null;
+  engagement_status: string | null;
+  counterparty_type: string | null;
+  counterparty_name?: string | null;
+  counterparty_email: string | null;
+  counterparty_org_id: string | null;
+  created_at?: string | null;
+  contacted_at?: string | null;
+  responded_at?: string | null;
+  expires_at?: string | null;
+}
+
+interface Props {
+  engagement: PendingEngagementRow | null | undefined;
+  /** True when the current viewer is the initiator (the POI creator). */
+  isInitiator: boolean;
+}
+
+interface StatusMeta {
+  label: string;
+  tone: "pending" | "active" | "ok" | "fail";
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+function statusMeta(status: string | null): StatusMeta {
+  switch (status) {
+    case "notification_sent":
+      return {
+        label: "Awaiting outreach",
+        tone: "pending",
+        description:
+          "Our compliance desk has been notified and will email your counterparty shortly. No further action required from you.",
+        icon: Clock,
+      };
+    case "contacted":
+      return {
+        label: "Invitation sent",
+        tone: "active",
+        description:
+          "Your counterparty has been emailed with an invitation to register and respond. We will notify you once they reply.",
+        icon: Mail,
+      };
+    case "accepted":
+      return {
+        label: "Counterparty accepted",
+        tone: "ok",
+        description:
+          "Your counterparty has registered and accepted. The trade can now progress to Proof of Intent.",
+        icon: CheckCircle2,
+      };
+    case "declined":
+      return {
+        label: "Counterparty declined",
+        tone: "fail",
+        description:
+          "Your counterparty declined this engagement. You can restart the trade with a different counterparty from the trade detail page.",
+        icon: XCircle,
+      };
+    case "expired":
+      return {
+        label: "Invitation expired",
+        tone: "fail",
+        description:
+          "The 30-day response window elapsed without a reply. You can restart the trade with the same or a different counterparty.",
+        icon: XCircle,
+      };
+    case "pending":
+      return {
+        label: "Pending — awaiting outreach",
+        tone: "pending",
+        description:
+          "The engagement is queued. Our compliance desk will pick this up shortly.",
+        icon: Clock,
+      };
+    default:
+      return {
+        label: status ? `Status: ${status}` : "Unknown status",
+        tone: "pending",
+        description:
+          "This engagement is in an unrecognised state. Contact support@izenzo.co.za if it persists.",
+        icon: AlertCircle,
+      };
+  }
+}
+
+function formatTs(ts?: string | null): string | null {
+  if (!ts) return null;
+  try {
+    return new Date(ts).toLocaleString(undefined, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return null;
+  }
+}
+
+function daysUntil(ts?: string | null): number | null {
+  if (!ts) return null;
+  const t = new Date(ts).getTime();
+  if (Number.isNaN(t)) return null;
+  const ms = t - Date.now();
+  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
+export function PendingEngagementSection({ engagement, isInitiator }: Props) {
+  if (!engagement) return null;
+
+  // Hide once fully resolved AND linked — other surfaces own that story.
+  const terminal = isEngagementTerminal(engagement.engagement_status);
+  if (terminal && engagement.counterparty_org_id) return null;
+
+  const meta = statusMeta(engagement.engagement_status);
+  const Icon = meta.icon;
+
+  // Identify any missing counterparty fields that would block / weaken outreach.
+  const missingFields: { label: string; hint: string }[] = [];
+  const name = (engagement.counterparty_name || "").trim();
+  const email = (engagement.counterparty_email || "").trim();
+  if (!name) {
+    missingFields.push({
+      label: "Counterparty name",
+      hint: "We need a name to address the invitation correctly.",
+    });
+  }
+  if (!email) {
+    missingFields.push({
+      label: "Counterparty email",
+      hint: "Without an email, our compliance desk cannot send the invitation.",
+    });
+  }
+  if (!engagement.counterparty_org_id && !terminal) {
+    missingFields.push({
+      label: "Linked organisation",
+      hint:
+        "This counterparty has not yet registered. The match will auto-link once they sign up using the invited email.",
+    });
+  }
+
+  const expiresIn = daysUntil(engagement.expires_at);
+  const expiresLabel =
+    expiresIn === null
+      ? null
+      : expiresIn <= 0
+        ? "Invitation window has elapsed"
+        : expiresIn === 1
+          ? "Invitation expires in 1 day"
+          : `Invitation expires in ${expiresIn} days`;
+
+  // Border / surface tone
+  const surface =
+    meta.tone === "ok"
+      ? "border-emerald-500/40 bg-emerald-500/5"
+      : meta.tone === "fail"
+        ? "border-red-500/40 bg-red-500/5"
+        : "border-amber-500/40 bg-amber-500/5";
+
+  const badgeClass =
+    meta.tone === "ok"
+      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+      : meta.tone === "fail"
+        ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-400"
+        : meta.tone === "active"
+          ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+          : "border-muted-foreground/30 bg-muted text-muted-foreground";
+
+  const iconClass =
+    meta.tone === "ok"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : meta.tone === "fail"
+        ? "text-red-600 dark:text-red-400"
+        : "text-amber-600 dark:text-amber-400";
+
+  return (
+    <Card className={cn(surface)} aria-labelledby="pending-engagement-heading">
+      <CardHeader className="space-y-2">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="space-y-1 min-w-0">
+            <CardTitle
+              id="pending-engagement-heading"
+              className="flex items-center gap-2 text-lg"
+            >
+              <Icon className={cn("h-5 w-5 shrink-0", iconClass)} />
+              Pending Engagement
+            </CardTitle>
+            <CardDescription>
+              {isInitiator
+                ? "Status of the invitation sent to your counterparty for this trade."
+                : "An invitation has been issued for this trade. Status shown below."}
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className={cn("shrink-0 text-xs", badgeClass)}>
+            {meta.label}
+          </Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-5">
+        <p className="text-sm text-foreground/90 leading-relaxed">{meta.description}</p>
+
+        {/* ── Counterparty summary ─────────────────────────────────────── */}
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+              Counterparty
+            </dt>
+            <dd className="font-medium text-foreground">
+              {name || <span className="text-muted-foreground italic">Not provided</span>}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+              Email
+            </dt>
+            <dd className="font-mono text-xs text-foreground break-all">
+              {email || <span className="font-sans text-sm text-muted-foreground italic">Not provided</span>}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+              Linked organisation
+            </dt>
+            <dd className="text-foreground">
+              {engagement.counterparty_org_id ? (
+                <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Linked
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Awaiting signup
+                </span>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+              Invited
+            </dt>
+            <dd className="text-foreground tabular-nums">
+              {formatTs(engagement.created_at) || "—"}
+            </dd>
+          </div>
+          {engagement.contacted_at && (
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                Outreach sent
+              </dt>
+              <dd className="text-foreground tabular-nums">
+                {formatTs(engagement.contacted_at)}
+              </dd>
+            </div>
+          )}
+          {engagement.responded_at && (
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                Responded
+              </dt>
+              <dd className="text-foreground tabular-nums">
+                {formatTs(engagement.responded_at)}
+              </dd>
+            </div>
+          )}
+          {expiresLabel && !terminal && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                Window
+              </dt>
+              <dd
+                className={cn(
+                  "text-sm tabular-nums",
+                  expiresIn !== null && expiresIn <= 3
+                    ? "text-amber-700 dark:text-amber-400 font-medium"
+                    : "text-foreground",
+                )}
+              >
+                {expiresLabel}
+                {engagement.expires_at && (
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    ({formatTs(engagement.expires_at)})
+                  </span>
+                )}
+              </dd>
+            </div>
+          )}
+        </dl>
+
+        {/* ── Missing fields callout ──────────────────────────────────── */}
+        {missingFields.length > 0 && (
+          <div
+            className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4"
+            role="alert"
+            aria-label="Missing counterparty information"
+          >
+            <p className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+              <AlertCircle className="h-4 w-4" />
+              {missingFields.length === 1
+                ? "1 item still required"
+                : `${missingFields.length} items still required`}
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {missingFields.map((f) => (
+                <li key={f.label} className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600 dark:bg-amber-400" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground">{f.label}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.hint}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {isInitiator && !engagement.counterparty_org_id && (
+              <p className="mt-3 pt-3 border-t border-amber-500/30 text-xs text-muted-foreground">
+                Need to correct the email or name?{" "}
+                <a
+                  href="mailto:support@izenzo.co.za?subject=Update%20counterparty%20on%20pending%20engagement"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Contact support
+                </a>{" "}
+                and reference your match ID.
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

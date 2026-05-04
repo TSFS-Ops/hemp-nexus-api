@@ -24,6 +24,8 @@ import { EngagementTracker } from "@/components/match/EngagementTracker";
 import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
 import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard";
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
+import { PendingEngagementSection } from "@/components/match/PendingEngagementSection";
+import type { PendingEngagementRow } from "@/components/match/PendingEngagementSection";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { SpineTimeline } from "@/components/match/SpineTimeline";
@@ -69,12 +71,12 @@ function MatchDetailsContent() {
     queryKey: ["engagement-status-gate", matchId],
     queryFn: async () => {
       try {
+        // by-match returns the full poi_engagements row (`select("*")`),
+        // so we pull the wider shape here for the PendingEngagementSection.
         const result = await fetchEdgeFunction<{
-          engagement?: {
+          engagement?: PendingEngagementRow & {
             engagement_status: EngagementStatus;
             counterparty_type: string;
-            counterparty_email: string | null;
-            counterparty_org_id: string | null;
           };
         } | null>(`poi-engagements/by-match/${matchId}`, {
           method: "GET",
@@ -169,6 +171,11 @@ function MatchDetailsContent() {
       </div>
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
+
+      <PendingEngagementSection
+        engagement={engagementData}
+        isInitiator={matchRole === "creator" || userOrgId === (match as any).org_id}
+      />
 
       <UnknownCounterpartyStatus
         engagement={engagementData}
