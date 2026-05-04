@@ -924,42 +924,106 @@ Deno.serve(async (req) => {
       const targetStatus =
         (updates.engagement_status as string) || current.engagement_status;
 
-      // ── Atomic transition: engagement update + outreach log + audit log in ONE transaction ──
-      // Eliminates the orphan-row race; advisory lock serialises concurrent admin actions on the same row.
-      const { data: txnResult, error: txnErr } = await supabase.rpc(
-        "atomic_engagement_transition",
-        {
-          p_engagement_id: engagementId,
-          p_actor_type: "admin",
-          p_actor_user_id: authCtx.userId,
-          p_actor_email: adminProfile?.email || "unknown",
-          p_actor_name: adminProfile?.full_name || null,
-          p_new_status: targetStatus,
-          p_entry_type: entryType,
-          p_contact_method: isContactAttempt ? parsed.data.contact_method : null,
-          p_contact_detail: isContactAttempt ? parsed.data.contact_detail : null,
-          p_notes:
-            parsed.data.admin_notes ||
-            (entryType === "email_update"
-              ? `Counterparty email updated to ${parsed.data.counterparty_email}`
-              : null),
-          // Audit log: classify "mark contacted" actions distinctly so they
-          // appear in the platform-wide audit ledger with method + saved
-          // contact detail (carried via the outreach log row referenced by
-          // log_id in the audit metadata). For other PATCH operations
-          // (status flips, email updates, notes edits) we keep the generic
-          // 'engagement.updated' action.
-          p_audit_action: isContactAttempt
-            ? "engagement.marked_contacted"
-            : "engagement.updated",
-          p_audit_org_id: current.org_id,
-        }
-      );
+      // ── Branch: real state transition vs. side-field-only edit ──
+      // When the PATCH only touches counterparty_email / admin_notes /
+      // support_notes / contact_method / contact_date (no engagement_status
+      // in the parsed body), there is no state change. Calling
+      // atomic_engagement_transition with p_new_status = current.status used
+      // to be a same-status pass-through — correct, but it acquired the
+      // engagement's advisory lock and re-validated the status enum on every
+      // notes/email save, serialising unrelated admin edits.
+      //
+      // To avoid that overhead we now write the audit + outreach-log rows
+      // directly here for the side-field path, and only invoke the RPC when a
+      // real status transition is requested. The shape of the audit/outreach
+      // rows is intentionally identical to what `atomic_engagement_transition`
+      // would have written for a same-status call (see the migration that
+      // introduced the `pending` allow-list entry), so the audit ledger is
+      // byte-for-byte compatible with prior writes.
+      const isRealStateTransition = parsed.data.engagement_status !== undefined;
 
-      if (txnErr) throw txnErr;
-      const txn = txnResult as { success: boolean; error?: string } | null;
-      if (!txn?.success) {
-        throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
+      if (isRealStateTransition) {
+        const { data: txnResult, error: txnErr } = await supabase.rpc(
+          "atomic_engagement_transition",
+          {
+            p_engagement_id: engagementId,
+            p_actor_type: "admin",
+            p_actor_user_id: authCtx.userId,
+            p_actor_email: adminProfile?.email || "unknown",
+            p_actor_name: adminProfile?.full_name || null,
+            p_new_status: targetStatus,
+            p_entry_type: entryType,
+            p_contact_method: isContactAttempt ? parsed.data.contact_method : null,
+            p_contact_detail: isContactAttempt ? parsed.data.contact_detail : null,
+            p_notes:
+              parsed.data.admin_notes ||
+              (entryType === "email_update"
+                ? `Counterparty email updated to ${parsed.data.counterparty_email}`
+                : null),
+            // Audit log: classify "mark contacted" actions distinctly so they
+            // appear in the platform-wide audit ledger with method + saved
+            // contact detail (carried via the outreach log row referenced by
+            // log_id in the audit metadata). For other PATCH operations
+            // (status flips, email updates, notes edits) we keep the generic
+            // 'engagement.updated' action.
+            p_audit_action: isContactAttempt
+              ? "engagement.marked_contacted"
+              : "engagement.updated",
+            p_audit_org_id: current.org_id,
+          }
+        );
+
+        if (txnErr) throw txnErr;
+        const txn = txnResult as { success: boolean; error?: string } | null;
+        if (!txn?.success) {
+          throw new ApiException("TRANSITION_FAILED", txn?.error || "Atomic transition failed", 500);
+        }
+      } else {
+        // ── Side-field-only path: no RPC, no advisory lock ──
+        // Mirror the rows the RPC would have written for a same-status call.
+        const noopNotes =
+          parsed.data.admin_notes ||
+          (entryType === "email_update"
+            ? `Counterparty email updated to ${parsed.data.counterparty_email}`
+            : null);
+        const { data: logRow, error: logErr } = await supabase
+          .from("engagement_outreach_logs")
+          .insert({
+            engagement_id: engagementId,
+            actor_type: "admin",
+            admin_user_id: authCtx.userId,
+            admin_email: adminProfile?.email || "unknown",
+            admin_name: adminProfile?.full_name || null,
+            entry_type: entryType,
+            contact_method: null,
+            contact_detail: null,
+            previous_status: current.engagement_status,
+            new_status: current.engagement_status,
+            notes: noopNotes,
+          })
+          .select("id")
+          .single();
+        if (logErr) throw logErr;
+        const { error: auditErr } = await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: "engagement.updated",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            previous_status: current.engagement_status,
+            new_status: current.engagement_status,
+            log_id: logRow?.id ?? null,
+            // Mark this as the side-field path so we can distinguish it from
+            // genuine no-op same-status transitions in the audit ledger.
+            no_state_change: true,
+            entry_type: entryType,
+          },
+        });
+        if (auditErr) throw auditErr;
+        console.log(
+          `[${requestId}] Engagement ${engagementId} side-field PATCH (${entryType}); status remains ${current.engagement_status}; RPC skipped`
+        );
       }
 
       // Apply non-state field updates (counterparty_email, admin_notes, support_notes, contact_method, contact_date)
