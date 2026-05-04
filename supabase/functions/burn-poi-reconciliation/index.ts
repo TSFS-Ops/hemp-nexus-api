@@ -130,8 +130,7 @@ Deno.serve(async (req) => {
   const { data: burnRows, error: burnErr } = await admin
     .from("token_ledger")
     .select("id, org_id, request_id, tokens_burned, action_type, endpoint, created_at, metadata")
-    .eq("action_type", "burn")
-    .ilike("endpoint", "action:declare_intent%")
+    .eq("action_type", "declare_intent")
     .gte("created_at", sinceIso)
     .order("created_at", { ascending: false })
     .limit(ROW_LIMIT);
@@ -206,8 +205,7 @@ Deno.serve(async (req) => {
       admin
         .from("token_ledger")
         .select("request_id")
-        .eq("action_type", "burn")
-        .ilike("endpoint", "action:declare_intent%")
+        .eq("action_type", "declare_intent")
         .in("request_id", poiMatchIds),
       admin
         .from("audit_logs")
@@ -241,38 +239,38 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── 3. Optional: open admin_risk_items per drift case (idempotent) ─
+  // ── 3. Optional: open admin_risk_items per drift case (idempotent via title) ─
+  // admin_risk_items has no external_ref column, so we use a stable title
+  // prefix and skip insertion when an open row with the same title exists.
   let openedRiskItems = 0;
   if (openRiskItems) {
+    const buildAndInsert = async (title: string, description: string) => {
+      const { data: existing } = await admin
+        .from("admin_risk_items")
+        .select("id")
+        .eq("title", title)
+        .eq("status", "open")
+        .limit(1)
+        .maybeSingle();
+      if (existing) return;
+      const { error: insErr } = await admin.from("admin_risk_items").insert({
+        title,
+        description,
+        severity: "high",
+        status: "open",
+      });
+      if (!insErr) openedRiskItems++;
+    };
+
     for (const drift of burnsWithoutPoi) {
-      const externalRef = `recon:burn_without_poi:${drift.ledger_id}`;
-      try {
-        const { error: insErr } = await admin.from("admin_risk_items").insert({
-          title: `Reconciliation: burn without POI (${(drift.match_id as string).slice(0, 8)}…)`,
-          description: `token_ledger row ${drift.ledger_id} burned ${drift.tokens_burned} credits for org ${drift.org_id} against match ${drift.match_id} but no POI exists. Manual investigation required.`,
-          severity: "high",
-          status: "open",
-          external_ref: externalRef,
-        });
-        if (!insErr) openedRiskItems++;
-      } catch (e) {
-        console.error("[burn-poi-reconciliation] risk insert failed:", e);
-      }
+      const title = `Reconciliation: burn without POI [ledger ${String(drift.ledger_id).slice(0, 8)}]`;
+      const description = `token_ledger row ${drift.ledger_id} burned ${drift.tokens_burned} credits for org ${drift.org_id} against match ${drift.match_id} but no POI exists. Manual investigation required.`;
+      try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
     }
     for (const drift of poisWithoutBurn) {
-      const externalRef = `recon:poi_without_burn:${drift.poi_id}`;
-      try {
-        const { error: insErr } = await admin.from("admin_risk_items").insert({
-          title: `Reconciliation: POI without burn (${(drift.match_id as string).slice(0, 8)}…)`,
-          description: `POI ${drift.poi_id} (state=${drift.state}) for org ${drift.org_id} on match ${drift.match_id} has no matching burn or exemption. Manual investigation required.`,
-          severity: "high",
-          status: "open",
-          external_ref: externalRef,
-        });
-        if (!insErr) openedRiskItems++;
-      } catch (e) {
-        console.error("[burn-poi-reconciliation] risk insert failed:", e);
-      }
+      const title = `Reconciliation: POI without burn [poi ${String(drift.poi_id).slice(0, 8)}]`;
+      const description = `POI ${drift.poi_id} (state=${drift.state}) for org ${drift.org_id} on match ${drift.match_id} has no matching burn or exemption. Manual investigation required.`;
+      try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
     }
   }
 
