@@ -552,9 +552,30 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       fetchDocuments();
     } catch (err: unknown) {
       console.error("Error uploading document:", err);
-      const message = err instanceof Error ? err.message : "Failed to upload document";
-      setError(message);
-      toast.error("Failed to upload document", { description: message });
+      const raw = err instanceof Error ? err.message : "Failed to upload document";
+      // Map Supabase RLS / storage rejections to a plain-English reason so
+      // counterparties on the wrong match don't see the useless generic
+      // "Failed to upload document". Storage RLS rejects with a 403 and a
+      // body that mentions "row-level security" or "new row violates" — and
+      // the storage client surfaces "row violates row-level security policy"
+      // or "Unauthorized". Treat those as a participant/permission failure.
+      const lower = raw.toLowerCase();
+      const isPermission =
+        lower.includes("row-level security") ||
+        lower.includes("row level security") ||
+        lower.includes("violates row") ||
+        lower.includes("unauthorized") ||
+        lower.includes("not allowed") ||
+        lower.includes("permission denied") ||
+        lower.includes("403");
+      const friendly = isPermission
+        ? "Your organisation is not a participant on this trade. You cannot upload documents or complete POI for this match. Please check that you are using the correct match link or ask the initiating party to invite the correct organisation."
+        : raw;
+      setError(friendly);
+      toast.error(
+        isPermission ? "Upload not permitted" : "Failed to upload document",
+        { description: friendly }
+      );
     } finally {
       setUploading(false);
     }
