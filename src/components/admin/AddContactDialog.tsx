@@ -418,6 +418,22 @@ export function AddContactDialog({
                 {saveError.hint && (
                   <p className="text-xs text-muted-foreground">{saveError.hint}</p>
                 )}
+                {saveError.requestId && (
+                  <p className="text-[11px] text-muted-foreground/90">
+                    Request ID:{" "}
+                    <code className="font-mono break-all">{saveError.requestId}</code>{" "}
+                    <button
+                      type="button"
+                      className="underline hover:no-underline"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(saveError.requestId!);
+                        toast.success("Request ID copied");
+                      }}
+                    >
+                      Copy
+                    </button>
+                  </p>
+                )}
                 <details className="text-[11px] text-muted-foreground/80">
                   <summary className="cursor-pointer select-none">Technical details</summary>
                   <code className="block mt-1 break-all font-mono">{saveError.technical}</code>
