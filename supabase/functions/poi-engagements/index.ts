@@ -943,8 +943,16 @@ Deno.serve(async (req) => {
             (entryType === "email_update"
               ? `Counterparty email updated to ${parsed.data.counterparty_email}`
               : null),
-          p_audit_action: "engagement.updated",
-          p_audit_org_id: null,
+          // Audit log: classify "mark contacted" actions distinctly so they
+          // appear in the platform-wide audit ledger with method + saved
+          // contact detail (carried via the outreach log row referenced by
+          // log_id in the audit metadata). For other PATCH operations
+          // (status flips, email updates, notes edits) we keep the generic
+          // 'engagement.updated' action.
+          p_audit_action: isContactAttempt
+            ? "engagement.marked_contacted"
+            : "engagement.updated",
+          p_audit_org_id: current.org_id,
         }
       );
 
