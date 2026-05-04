@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Coins, CreditCard, TrendingUp, AlertTriangle, History, 
-  Shield, Building2, FileText, Check, Mail, Info
+  Shield, Building2, FileText, Check, Mail, Info, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -90,6 +90,11 @@ function BillingContent() {
   const { availability: billingAvailability } = useBillingAvailability();
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
   const [paymentCancelled, setPaymentCancelled] = useState(false);
+  // SEC P0-3: settling state — payment authorised by Paystack but
+  // webhook settlement / ledger write hasn't confirmed credits yet.
+  // Drives a persistent banner (instead of a single toast) so the user
+  // never sees "0 credits" without context.
+  const [paymentSettling, setPaymentSettling] = useState<{ reference: string } | null>(null);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
@@ -141,6 +146,7 @@ function BillingContent() {
             } else {
               toast.success(`${data.credits} credits added. New balance: ${data.newBalance?.toLocaleString() ?? "updated"}.`);
             }
+            setPaymentSettling(null);
             queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
             queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
             queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
@@ -156,11 +162,15 @@ function BillingContent() {
               setPaymentFailure("Your payment was not successful. Your card was not charged. Please try again below or use a different payment method.");
               toast.error("Payment failed. Your card was not charged.", { duration: 8000 });
             } else {
+              // SEC P0-3: persistent settling banner — webhook hasn't
+              // confirmed credit yet; show pending/settling, NOT credits.
+              setPaymentSettling({ reference });
               toast.info("Payment is still being processed. Credits will appear shortly. If they don't arrive within 5 minutes, contact support@izenzo.co.za.");
             }
           }
         } catch (err) {
           console.error("Verify error:", err);
+          setPaymentSettling({ reference });
           toast.info(
             "We couldn't confirm your payment status. If you were charged, credits will appear within 5 minutes. Otherwise, email support@izenzo.co.za.",
             { duration: 10000 }
@@ -184,6 +194,7 @@ function BillingContent() {
             } else {
               toast.success(`${data.credits} credits added. New balance: ${data.newBalance?.toLocaleString() ?? "updated"}.`);
             }
+            setPaymentSettling(null);
             // Refresh ALL balance queries across the app
             queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
             queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
@@ -199,11 +210,13 @@ function BillingContent() {
             } else if (paystackStatus === "failed") {
               toast.error("Payment failed. Your card was not charged. Please try again or use a different payment method.");
             } else {
+              setPaymentSettling({ reference });
               toast.info("Payment is still being processed. Credits will appear shortly. If they don't arrive within 5 minutes, contact support@izenzo.co.za.");
             }
           }
         } catch (err) {
           console.error("Verify error:", err);
+          setPaymentSettling({ reference });
           toast.error(
             "Could not verify payment. If credits don't appear within 5 minutes, email support@izenzo.co.za with your payment reference."
           );
@@ -381,6 +394,25 @@ function BillingContent() {
             <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <span>{paymentFailure}</span>
               <Button variant="ghost" size="sm" className="shrink-0 self-start sm:self-auto" onClick={() => setPaymentFailure(null)}>
+                Dismiss
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* SEC P0-3: settling banner — webhook hasn't confirmed credit yet.
+            Shows pending/settling state, never implies credits are available. */}
+        {paymentSettling && (
+          <Alert>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+              <div>
+                <p className="font-medium text-foreground">Payment settling</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  We've received your payment but haven't confirmed credit settlement yet. Credits will appear within 5 minutes — your balance below will not reflect this purchase until settlement completes. Reference: <code className="font-mono text-xs">{paymentSettling.reference}</code>
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" className="shrink-0 self-start sm:self-auto" onClick={() => setPaymentSettling(null)}>
                 Dismiss
               </Button>
             </AlertDescription>

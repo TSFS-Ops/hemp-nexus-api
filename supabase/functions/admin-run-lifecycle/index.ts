@@ -17,6 +17,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
+import { assertAal2 } from "../_shared/aal.ts";
 
 Deno.serve(async (req: Request) => {
   const requestId = crypto.randomUUID();
@@ -56,6 +57,14 @@ Deno.serve(async (req: Request) => {
     requireRole(authCtx, "platform_admin");
 
     const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // ── SEC-001: AAL2 / MFA enforcement for manual state-override ──
+    // `lifecycle-scheduler` mutates POI / engagement / breach state.
+    await assertAal2(req.headers.get("Authorization"), {
+      adminClient,
+      callerUserId: authCtx.userId,
+      action: "admin.lifecycle_scheduler.invoke",
+    });
 
     // ── Invoke lifecycle-scheduler with the internal cron key ──
     const startedAt = Date.now();

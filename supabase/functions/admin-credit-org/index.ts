@@ -23,6 +23,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.39.3';
 import { z } from 'npm:zod@3.23.8';
 import { handleCorsPreflight, withCors } from '../_shared/cors.ts';
+import { assertAal2 } from '../_shared/aal.ts';
+import { ApiException } from '../_shared/errors.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -132,6 +134,31 @@ Deno.serve(async (req) => {
         error: 'caller_not_platform_admin',
       });
       return jsonResponse(req, { error: 'Platform admin access required' }, 403);
+    }
+
+    // ── 2b. SEC-001: AAL2 / MFA enforcement ───────────────────────────
+    // Money-moving admin endpoints require an MFA-challenged session.
+    // Returns 403 MFA_REQUIRED when the JWT is aal1 / unknown.
+    try {
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: callerId,
+        action: 'admin.credit_org',
+      });
+    } catch (mfaErr) {
+      if (mfaErr instanceof ApiException && mfaErr.code === 'MFA_REQUIRED') {
+        await writeAudit(admin, callerId, null, 'failure', {
+          stage: 'mfa_check',
+          error: 'mfa_required',
+          observed_aal: (mfaErr.details as { observed_aal?: string } | undefined)?.observed_aal,
+        });
+        return jsonResponse(
+          req,
+          { error: mfaErr.message, code: 'MFA_REQUIRED' },
+          403,
+        );
+      }
+      throw mfaErr;
     }
 
     // ── 3. Input validation ────────────────────────────────────────────
