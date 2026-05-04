@@ -9,6 +9,7 @@ import { EnvProvider, EnvSwitcher } from "@/components/developer/EnvSwitcher";
 import { QuickStart } from "@/components/developer/QuickStart";
 import { SystemDiagnostics } from "@/components/developer/SystemDiagnostics";
 import { QuickSchema } from "@/components/developer/QuickSchema";
+import { PlainEnglishWalkthrough } from "@/components/developer/PlainEnglishWalkthrough";
 
 function DeveloperHeader({ section, badge }: { section: string; badge?: string }) {
   return (
@@ -39,6 +40,7 @@ function KeysView() {
     <>
       <DeveloperHeader section="API Keys" />
       <div className="px-12 py-10 space-y-10">
+        <PlainEnglishWalkthrough />
         <ApiKeysPanel />
 
         {/* HUD: Quick-Start (left) · Diagnostics (right) */}
@@ -58,7 +60,8 @@ function WebhooksView() {
   return (
     <>
       <DeveloperHeader section="Webhook Logs" />
-      <div className="px-12 py-10">
+      <div className="px-12 py-10 space-y-10">
+        <PlainEnglishWalkthrough />
         <WebhookLogs />
       </div>
     </>
@@ -69,7 +72,8 @@ function SchemaView() {
   return (
     <>
       <DeveloperHeader section="Schema Explorer" badge="OpenAPI 3.1" />
-      <div className="px-12 py-10">
+      <div className="px-12 py-10 space-y-10">
+        <PlainEnglishWalkthrough />
         <SchemaExplorer />
       </div>
     </>
@@ -80,7 +84,8 @@ function DocsView() {
   return (
     <>
       <DeveloperHeader section="Integration Docs" badge="REST API" />
-      <div className="px-12 py-10">
+      <div className="px-12 py-10 space-y-10">
+        <PlainEnglishWalkthrough />
         <IntegrationDocs />
       </div>
     </>
