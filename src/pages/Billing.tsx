@@ -90,6 +90,11 @@ function BillingContent() {
   const { availability: billingAvailability } = useBillingAvailability();
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
   const [paymentCancelled, setPaymentCancelled] = useState(false);
+  // SEC P0-3: settling state — payment authorised by Paystack but
+  // webhook settlement / ledger write hasn't confirmed credits yet.
+  // Drives a persistent banner (instead of a single toast) so the user
+  // never sees "0 credits" without context.
+  const [paymentSettling, setPaymentSettling] = useState<{ reference: string } | null>(null);
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
