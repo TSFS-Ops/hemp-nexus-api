@@ -260,8 +260,10 @@ export function AddContactDialog({
             actually reached them.
           </DialogDescription>
         </DialogHeader>
-
-        {/* Research helpers — only useful when we know the counterparty name. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* ── Left column: capture form + manual research deep-links ── */}
+          <div className="space-y-4">
+            {/* Research helpers — only useful when we know the counterparty name. */}
         {research && (
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
             <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
