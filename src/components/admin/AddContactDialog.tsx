@@ -36,7 +36,11 @@ import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Search, Globe, Linkedin, Building2, X } from "lucide-react";
+import { Loader2, Search, Globe, Linkedin, Building2, X, AlertCircle } from "lucide-react";
+import {
+  humaniseEngagementError,
+  type HumanisedEngagementError,
+} from "@/lib/humanise-engagement-error";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
 import type { Match } from "@/hooks/use-match-details";
 import {
@@ -133,6 +137,9 @@ export function AddContactDialog({
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Partial<Record<"email" | "phone" | "notes", string>>>({});
   const [saving, setSaving] = useState(false);
+  // Persistent server-side rejection state. Rendered inline above the footer
+  // so the admin can read the explanation without chasing a transient toast.
+  const [saveError, setSaveError] = useState<HumanisedEngagementError | null>(null);
 
   // Reset form whenever the dialog opens for a new engagement.
   useEffect(() => {
@@ -141,6 +148,7 @@ export function AddContactDialog({
       setPhone("");
       setNotes("");
       setErrors({});
+      setSaveError(null);
     }
   }, [open, engagement?.id, engagement?.counterparty_email]);
 
@@ -183,6 +191,7 @@ export function AddContactDialog({
       return;
     }
     setErrors({});
+    setSaveError(null);
 
     // Build the audit-friendly admin_notes payload. Phone + free-text notes
     // are appended as a structured block so they survive in the immutable
@@ -227,22 +236,27 @@ export function AddContactDialog({
       onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
-      // Surface the backend's specific message (e.g. suppression, invalid
-      // format) instead of a generic fallback. Mirrors the panel's
-      // extractEdgeError helper but inlined here to avoid coupling.
-      let msg = "Could not save contact details.";
+      // ── Surface the backend rejection in plain English ──
+      // Try to pull a parsed JSON body off the FunctionsHttpError first
+      // (newer supabase-js builds expose .context.body as a Response).
+      // Then hand whatever we have to humaniseEngagementError, which maps
+      // known opaque codes (invalid_target_status, INVALID_TRANSITION,
+      // VALIDATION_ERROR, NOT_FOUND, …) to admin-readable copy.
+      let serverMessage: unknown = err;
       try {
         const ctxBody = err?.context?.body;
         if (ctxBody && typeof ctxBody.json === "function") {
           const parsedErr = await ctxBody.json();
-          if (parsedErr?.message) msg = String(parsedErr.message);
-        } else if (typeof err?.message === "string" && !err.message.includes("non-2xx")) {
-          msg = err.message;
+          if (parsedErr?.message) serverMessage = String(parsedErr.message);
         }
       } catch {
-        /* keep fallback */
+        /* keep original err */
       }
-      toast.error(msg);
+      const humanised = humaniseEngagementError(serverMessage);
+      setSaveError(humanised);
+      toast.error(humanised.headline, {
+        description: humanised.hint,
+      });
     } finally {
       setSaving(false);
     }
@@ -374,6 +388,32 @@ export function AddContactDialog({
             )}
           </div>
         </div>
+
+        {/* ── Persistent server-rejection banner ──
+            Stays visible until the next save attempt or the dialog closes,
+            so the admin doesn't have to chase a transient toast. Includes
+            the original server code in a <details> for support diagnostics. */}
+        {saveError && (
+          <div
+            role="alert"
+            aria-live="polite"
+            className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm"
+          >
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+              <div className="space-y-1">
+                <p className="font-medium text-destructive">{saveError.headline}</p>
+                {saveError.hint && (
+                  <p className="text-xs text-muted-foreground">{saveError.hint}</p>
+                )}
+                <details className="text-[11px] text-muted-foreground/80">
+                  <summary className="cursor-pointer select-none">Technical details</summary>
+                  <code className="block mt-1 break-all font-mono">{saveError.technical}</code>
+                </details>
+              </div>
+            </div>
+          </div>
+        )}
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
