@@ -903,9 +903,15 @@ export function AdminPendingEngagementsPanel() {
       });
     } catch (err: any) {
       console.error("Preview outreach error:", err);
+      // Fallback only kicks in if the server returned no parseable message.
+      // Previously the fallback asserted a specific cause ("no usable
+      // counterparty email on file"), which was misleading whenever the
+      // real failure was upstream (e.g. the PATCH that should have saved
+      // the email was silently swallowed). Keep the fallback neutral so
+      // the user is not led to the wrong fix.
       const msg = await extractEdgeError(
         err,
-        "Could not load email preview — the backend rejected this engagement (most often: no usable counterparty email on file).",
+        "Could not load email preview. Please try again — if the problem persists, check the engagement details and reload.",
       );
       toast.error(msg);
       setOutreachDialog(null);
