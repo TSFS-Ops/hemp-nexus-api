@@ -94,7 +94,7 @@ export function AttentionPipeline() {
       const { data: matches, count } = await supabase
         .from("matches")
         .select(
-          "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at, expires_at",
+          "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at",
           { count: "exact" }
         )
         .or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`)
@@ -117,8 +117,8 @@ export function AttentionPipeline() {
           counterparty: counterparty ?? null,
           meta: counterparty ? counterparty : "Counterparty pending",
           ageLabel: relativeAge(m.created_at),
-          deadlineLabel: deadlineFrom(m.expires_at),
-          expiresAt: m.expires_at ?? null,
+          deadlineLabel: null,
+          expiresAt: null,
           priority,
           href: `/desk/deals/${m.id}`,
         };
