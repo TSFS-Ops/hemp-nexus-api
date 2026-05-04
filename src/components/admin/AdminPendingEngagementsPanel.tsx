@@ -194,6 +194,11 @@ export function AdminPendingEngagementsPanel() {
   const [notesDraft, setNotesDraft] = useState<string>("");
   const [notesSaving, setNotesSaving] = useState(false);
 
+  // ── Add-contact dialog (capture discovered email/phone for unregistered counterparties) ──
+  // Distinct from "Mark contacted" — this is the *discovery* step that
+  // unblocks Notify, not a record that contact has actually happened.
+  const [addContactFor, setAddContactFor] = useState<AddContactEngagementSummary | null>(null);
+
   const openSupportNotes = (e: Engagement) => {
     if (notesOpenId === e.id) {
       setNotesOpenId(null);
