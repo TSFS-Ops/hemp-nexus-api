@@ -78,6 +78,27 @@ interface Engagement {
   counterparty_org?: { id: string; name: string } | null;
 }
 
+/**
+ * Returns true when the engagement has a counterparty email that is plausibly
+ * deliverable. Frontend UX guard only — the backend (`poi-engagements`
+ * `preview-outreach` / `send-outreach`) remains the source of truth and will
+ * still reject anything that fails its own validation. We exclude:
+ *   • missing / null / whitespace-only addresses
+ *   • the reserved `.invalid` TLD (RFC 2606) used for test placeholders such
+ *     as `auto-link-tst-…@izenzo-test.invalid`, which are never deliverable.
+ */
+export function isUsableOutreachEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return false;
+  // Basic shape check — must contain a single '@' with content on both sides.
+  const at = trimmed.indexOf("@");
+  if (at <= 0 || at !== trimmed.lastIndexOf("@") || at === trimmed.length - 1) return false;
+  const domain = trimmed.slice(at + 1);
+  if (domain.endsWith(".invalid") || domain === "invalid") return false;
+  return true;
+}
+
 interface OutreachLog {
   id: string;
   actor_type: "admin" | "counterparty" | "system";
@@ -591,8 +612,12 @@ export function AdminPendingEngagementsPanel() {
 
   // ── Send counterparty notification via the engagement outreach endpoint ──
   const sendNotification = async (eng: Engagement) => {
-    if (!eng.counterparty_email) {
-      toast.error("No counterparty email on file. Add one before sending.");
+    if (!isUsableOutreachEmail(eng.counterparty_email)) {
+      toast.error(
+        eng.counterparty_email
+          ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid)."
+          : "Cannot notify: no valid counterparty email on file.",
+      );
       return;
     }
     setActionLoadingId(eng.id);
@@ -728,6 +753,10 @@ export function AdminPendingEngagementsPanel() {
       toast.error("Email address is required");
       return;
     }
+    if (!isUsableOutreachEmail(contactDetail)) {
+      toast.error("Cannot preview: email uses a non-deliverable test domain (.invalid).");
+      return;
+    }
 
     const eng = contactDialog;
     setOutreachLoading(true);
@@ -795,7 +824,10 @@ export function AdminPendingEngagementsPanel() {
       });
     } catch (err: any) {
       console.error("Preview outreach error:", err);
-      const msg = await extractEdgeError(err, "Could not load email preview");
+      const msg = await extractEdgeError(
+        err,
+        "Could not load email preview — the backend rejected this engagement (most often: no usable counterparty email on file).",
+      );
       toast.error(msg);
       setOutreachDialog(null);
     } finally {
@@ -1286,16 +1318,25 @@ export function AdminPendingEngagementsPanel() {
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
                             {/* D-05: Notify is offered for canonical pending states (notification_sent / legacy pending). Once 'contacted', the Mark-contacted action takes over. */}
-                            {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (
-                              <Button
-                                size="sm" variant="outline"
-                                onClick={() => sendNotification(e)}
-                                disabled={actionLoadingId === e.id || !e.counterparty_email}
-                                title={!e.counterparty_email ? "No email on file" : "Send notification email"}
-                              >
-                                <Mail className="h-3 w-3 mr-1" /> Notify
-                              </Button>
-                            )}
+                            {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (() => {
+                              const usable = isUsableOutreachEmail(e.counterparty_email);
+                              const reason = !e.counterparty_email
+                                ? "Cannot notify: no valid counterparty email on file."
+                                : !usable
+                                  ? "Cannot notify: counterparty email uses a non-deliverable test domain (.invalid)."
+                                  : "Send notification email";
+                              return (
+                                <Button
+                                  size="sm" variant="outline"
+                                  onClick={() => sendNotification(e)}
+                                  disabled={actionLoadingId === e.id || !usable}
+                                  title={reason}
+                                  aria-label={reason}
+                                >
+                                  <Mail className="h-3 w-3 mr-1" /> Notify
+                                </Button>
+                              );
+                            })()}
                             {!isTerminal && (
                               <Button
                                 size="sm" variant="outline"
