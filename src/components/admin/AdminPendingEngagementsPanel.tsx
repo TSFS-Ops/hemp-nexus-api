@@ -78,7 +78,28 @@ interface Engagement {
   counterparty_org?: { id: string; name: string } | null;
 }
 
-interface OutreachLog {
+/**
+ * Returns true when the engagement has a counterparty email that is plausibly
+ * deliverable. Frontend UX guard only — the backend (`poi-engagements`
+ * `preview-outreach` / `send-outreach`) remains the source of truth and will
+ * still reject anything that fails its own validation. We exclude:
+ *   • missing / null / whitespace-only addresses
+ *   • the reserved `.invalid` TLD (RFC 2606) used for test placeholders such
+ *     as `auto-link-tst-…@izenzo-test.invalid`, which are never deliverable.
+ */
+export function isUsableOutreachEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return false;
+  // Basic shape check — must contain a single '@' with content on both sides.
+  const at = trimmed.indexOf("@");
+  if (at <= 0 || at !== trimmed.lastIndexOf("@") || at === trimmed.length - 1) return false;
+  const domain = trimmed.slice(at + 1);
+  if (domain.endsWith(".invalid") || domain === "invalid") return false;
+  return true;
+}
+
+
   id: string;
   actor_type: "admin" | "counterparty" | "system";
   admin_email: string | null;
