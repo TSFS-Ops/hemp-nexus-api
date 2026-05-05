@@ -13,7 +13,7 @@ export function MarketplaceHolding() {
     >
       <main className="max-w-xl w-full text-center">
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
-          This domain is reserved for future Izenzo infrastructure.
+          Under construction.
         </h1>
       </main>
     </div>
