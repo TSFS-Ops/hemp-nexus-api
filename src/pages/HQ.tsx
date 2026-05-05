@@ -352,6 +352,11 @@ function AuditTab() {
             <AdminAuditLogs />
           </Surface>
         </TabsContent>
+        <TabsContent value="upload-audit">
+          <Surface label="Match document upload attempts · public.audit_logs (action=document.upload.attempt) · server-evaluated participant decision">
+            <AdminUploadAuditPanel />
+          </Surface>
+        </TabsContent>
         <TabsContent value="revenue-notifications">
           <Surface label="Revenue email attempts · public.revenue_notification_audit · support@izenzo.co.za">
             <AdminRevenueNotificationsPanel />
