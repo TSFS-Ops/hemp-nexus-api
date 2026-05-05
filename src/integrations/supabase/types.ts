@@ -7365,7 +7365,7 @@ export type Database = {
       bill_clip_on_request: { Args: { p_request_id: string }; Returns: Json }
       bill_clip_on_subscriptions_monthly: { Args: never; Returns: Json }
       can_delete_match_document_object: {
-        Args: { _object_name: string; _user_id: string }
+        Args: { _object_name: string; _owner_id?: string; _user_id: string }
         Returns: boolean
       }
       change_org_member_role: {
