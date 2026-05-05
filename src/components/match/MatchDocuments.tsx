@@ -563,14 +563,19 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
     } catch (err: unknown) {
       console.error("Error uploading document:", err);
       const raw = err instanceof Error ? err.message : "Failed to upload document";
+      const serverBody = typeof (err as { serverBody?: unknown })?.serverBody === "string"
+        ? (err as { serverBody: string }).serverBody
+        : "";
       // Map Supabase RLS / storage rejections to a plain-English reason so
       // counterparties on the wrong match don't see the useless generic
       // "Failed to upload document". Storage RLS rejects with a 403 and a
       // body that mentions "row-level security" or "new row violates" — and
       // the storage client surfaces "row violates row-level security policy"
       // or "Unauthorized". Treat those as a participant/permission failure.
-      const lower = raw.toLowerCase();
+      const lower = `${raw} ${serverBody}`.toLowerCase();
+      const isFinaliseParticipantBlock = lower.includes("org_not_participant");
       const isPermission =
+        isFinaliseParticipantBlock ||
         lower.includes("row-level security") ||
         lower.includes("row level security") ||
         lower.includes("violates row") ||
@@ -578,8 +583,10 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         lower.includes("not allowed") ||
         lower.includes("permission denied") ||
         lower.includes("403");
-      const friendly = isPermission
-        ? "Your organisation is not a participant on this trade. You cannot upload documents or complete POI for this match. Please check that you are using the correct match link or ask the initiating party to invite the correct organisation."
+      const friendly = isFinaliseParticipantBlock
+        ? "Your organisation is not a participant on this match, so this document cannot be attached."
+        : isPermission
+        ? "Your organisation is not a participant on this match, so this document cannot be attached."
         : raw;
       setError(friendly);
       toast.error(
