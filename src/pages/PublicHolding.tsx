@@ -14,7 +14,7 @@ export function PublicHolding() {
     >
       <main className="max-w-xl w-full text-center">
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
-          The Izenzo website is under construction.
+          Under construction.
         </h1>
       </main>
     </div>
