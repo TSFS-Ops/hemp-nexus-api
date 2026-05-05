@@ -66,6 +66,7 @@ import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import { sanitizeStorageFilename } from "@/lib/storage-filenames";
+import { logMatchDocumentUploadAttempt } from "@/lib/match-document-upload-log";
 
 /** Detect MIME from first bytes of a file - client-side magic-byte check */
 const MAGIC_SIGS: [string, number[]][] = [
