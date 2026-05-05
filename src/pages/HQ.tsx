@@ -322,7 +322,7 @@ function RevenueTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "revenue-notifications", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "upload-audit", "revenue-notifications", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -330,6 +330,7 @@ function AuditTab() {
           <TabsTrigger value="risk-alarms">Risk Alarms</TabsTrigger>
           <TabsTrigger value="rating-appeals">Rating Appeals</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="upload-audit">Upload Audit</TabsTrigger>
           <TabsTrigger value="revenue-notifications">Revenue Notifications</TabsTrigger>
           
           <TabsTrigger value="health">System Health</TabsTrigger>
