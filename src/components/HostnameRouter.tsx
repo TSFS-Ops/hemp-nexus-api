@@ -4,6 +4,8 @@ import { getHostType, getConsoleUrl, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
 import { DomainMismatch } from "@/components/DomainMismatch";
 import MarketplaceHolding from "@/pages/MarketplaceHolding";
 import PublicHolding from "@/pages/PublicHolding";
+import { useAuth } from "@/contexts/AuthContext";
+import Landing from "@/pages/Landing";
 
 interface HostnameRouterProps {
   children: React.ReactNode;
