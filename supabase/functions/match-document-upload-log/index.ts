@@ -202,6 +202,6 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    return errorResponse(err, { requestId: serverRequestId, headers });
+    return errorResponse(err as Error, serverRequestId, headers);
   }
 });
