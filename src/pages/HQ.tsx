@@ -51,6 +51,7 @@ import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
 import { AdminRatingAppealsPanel } from "@/components/admin/AdminRatingAppealsPanel";
 import { AdminRevenueNotificationsPanel } from "@/components/admin/AdminRevenueNotificationsPanel";
+import { AdminUploadAuditPanel } from "@/components/admin/AdminUploadAuditPanel";
 import { AdminRevenuePanel } from "@/components/admin/AdminRevenuePanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
@@ -321,7 +322,7 @@ function RevenueTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "revenue-notifications", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "upload-audit", "revenue-notifications", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -329,6 +330,7 @@ function AuditTab() {
           <TabsTrigger value="risk-alarms">Risk Alarms</TabsTrigger>
           <TabsTrigger value="rating-appeals">Rating Appeals</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="upload-audit">Upload Audit</TabsTrigger>
           <TabsTrigger value="revenue-notifications">Revenue Notifications</TabsTrigger>
           
           <TabsTrigger value="health">System Health</TabsTrigger>
@@ -348,6 +350,11 @@ function AuditTab() {
         <TabsContent value="audit-logs">
           <Surface label="Immutable audit trail · public.audit_logs">
             <AdminAuditLogs />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="upload-audit">
+          <Surface label="Match document upload attempts · public.audit_logs (action=document.upload.attempt) · server-evaluated participant decision">
+            <AdminUploadAuditPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="revenue-notifications">
