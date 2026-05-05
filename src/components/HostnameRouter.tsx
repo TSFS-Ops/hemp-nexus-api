@@ -4,6 +4,8 @@ import { getHostType, getConsoleUrl, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
 import { DomainMismatch } from "@/components/DomainMismatch";
 import MarketplaceHolding from "@/pages/MarketplaceHolding";
 import PublicHolding from "@/pages/PublicHolding";
+import { useAuth } from "@/contexts/AuthContext";
+import Landing from "@/pages/Landing";
 
 interface HostnameRouterProps {
   children: React.ReactNode;
@@ -36,14 +38,16 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
   const navigate = useNavigate();
   const hostType = getHostType();
   const pathname = location.pathname;
+  const { user, isLoading: authLoading } = useAuth();
 
-  // Console domain only: internal redirect "/" to "/dashboard"
-  // This is a same-domain SPA navigation, NOT a cross-domain redirect
+  // Console domain only: if a signed-in user lands on "/", send them to the
+  // dashboard. Unauthenticated visitors at "/" see the public Landing page
+  // (the former izenzo.co.za home), handled below — no redirect.
   useEffect(() => {
-    if (hostType === 'console' && pathname === '/') {
+    if (hostType === 'console' && pathname === '/' && !authLoading && user) {
       navigate('/dashboard', { replace: true });
     }
-  }, [pathname, hostType, navigate]);
+  }, [pathname, hostType, navigate, user, authLoading]);
 
   // Preview mode: allow everything (for development/testing)
   if (hostType === 'preview') {
@@ -64,11 +68,17 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
     return <PublicHolding />;
   }
 
-  // CONSOLE DOMAIN: Check if user is trying to access public-only content
+  // CONSOLE DOMAIN
   if (hostType === 'console') {
+    // Root: show the public Landing page to guests; signed-in users are
+    // redirected to /dashboard by the effect above.
+    if (pathname === '/' && !authLoading && !user) {
+      return <Landing />;
+    }
+
     // Check if this is a public-only route (excluding root which we handle above)
     const isPublicRoute = matchesRouteList(pathname, PUBLIC_ONLY_ROUTES) && pathname !== '/';
-    
+
     if (isPublicRoute) {
       // Show soft-gate with CTA - NO automatic redirect
       return <DomainMismatch type="public-content-on-console" attemptedPath={pathname} />;
