@@ -66,6 +66,7 @@ import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import { sanitizeStorageFilename } from "@/lib/storage-filenames";
+import { logMatchDocumentUploadAttempt } from "@/lib/match-document-upload-log";
 
 /** Detect MIME from first bytes of a file - client-side magic-byte check */
 const MAGIC_SIGS: [string, number[]][] = [
@@ -426,6 +427,16 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       const safeStorageName = sanitizeStorageFilename(selectedFile.name);
       const storagePath = `${effectiveOrgId}/${matchId}/poi/${docId}/${safeStorageName}`;
 
+      // Correlation id for the structured server-side upload log. Every
+      // log call below carries the same id so an operator can trace one
+      // attempt across storage_upload → db_insert → success/failure rows.
+      const clientRequestId = crypto.randomUUID();
+      // Track which phase we are in so the outer catch can attribute a
+      // re-thrown error (storage RLS rejection vs db insert failure vs
+      // anything else) when it writes the failure log row.
+      let currentPhase: "storage_upload" | "db_insert" | "validation" | "success" =
+        "storage_upload";
+
       const { error: uploadError } = await supabase.storage
         .from("match-documents")
         .upload(storagePath, selectedFile, {
@@ -433,7 +444,39 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           upsert: false,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        // Extract whatever the storage client gave us — status code lives on
+        // a few different shapes depending on supabase-js version.
+        const errAny = uploadError as unknown as {
+          status?: number;
+          statusCode?: number | string;
+          message?: string;
+          error?: string;
+        };
+        const storageStatus =
+          typeof errAny.status === "number"
+            ? errAny.status
+            : typeof errAny.statusCode === "number"
+            ? errAny.statusCode
+            : typeof errAny.statusCode === "string"
+            ? Number(errAny.statusCode) || null
+            : null;
+        await logMatchDocumentUploadAttempt({
+          match_id: matchId,
+          storage_path: storagePath,
+          filename: selectedFile.name,
+          file_size: selectedFile.size,
+          mime_type: selectedFile.type,
+          phase: "storage_upload",
+          outcome: "failure",
+          storage_status: storageStatus,
+          storage_error:
+            errAny.message || errAny.error || JSON.stringify(uploadError),
+          client_request_id: clientRequestId,
+          document_id: docId,
+        });
+        throw uploadError;
+      }
 
       // ── Server-side magic-byte re-validation via document-review ──
       // The file is now in storage. Call the edge function to validate server-side.
@@ -472,6 +515,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // Sanitise filename: strip path traversal, null bytes, and non-printable chars
       const sanitisedFilename = safeStorageName;
 
+      currentPhase = "db_insert";
       const { error: insertError } = await supabase
         .from("match_documents")
         .insert({
@@ -504,8 +548,33 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         await supabase.storage.from("match-documents").remove([storagePath]).catch((cleanupErr) => {
           console.error("Failed to clean up orphaned storage blob:", cleanupErr);
         });
+        await logMatchDocumentUploadAttempt({
+          match_id: matchId,
+          storage_path: storagePath,
+          filename: selectedFile.name,
+          file_size: selectedFile.size,
+          mime_type: selectedFile.type,
+          phase: "db_insert",
+          outcome: "failure",
+          db_error: insertError.message || JSON.stringify(insertError),
+          client_request_id: clientRequestId,
+          document_id: docId,
+        });
         throw insertError;
       }
+
+      currentPhase = "success";
+      await logMatchDocumentUploadAttempt({
+        match_id: matchId,
+        storage_path: storagePath,
+        filename: selectedFile.name,
+        file_size: selectedFile.size,
+        mime_type: selectedFile.type,
+        phase: "success",
+        outcome: "success",
+        client_request_id: clientRequestId,
+        document_id: docId,
+      });
 
       // Audit log (best-effort: client cannot insert into audit_logs under RLS,
       // so failure here MUST NOT block the user-visible upload outcome. The
