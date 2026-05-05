@@ -184,8 +184,8 @@ function ScreenFrame({
   const tx = enterFrom === "right" ? offset : enterFrom === "left" ? -offset : 0;
   const ty = enterFrom === "bottom" ? offset : 0;
 
-  // continuous slow zoom for cinematic feel
-  const zoom = 1 + (frame / 1800) * 0.04 + (1 - s) * 0.02;
+  // gentle entry zoom only — no continuous global drift to avoid overflow
+  const zoom = 1 + (1 - s) * 0.015;
 
   // float
   const floatY = Math.sin(frame * 0.025) * 4;
@@ -503,8 +503,8 @@ function TwoCol({
         <div style={{ flex: "0 0 42%" }}>
           <Caption eyebrow={eyebrow} title={title} body={body} delay={6} />
         </div>
-        <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-          <div style={{ width: "100%", maxWidth: 920 }}>
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", minWidth: 0 }}>
+          <div style={{ width: "100%", maxWidth: 860 }}>
             <ScreenFrame src={src} enterFrom={reverse ? "left" : "right"} scale={scale} />
           </div>
         </div>
