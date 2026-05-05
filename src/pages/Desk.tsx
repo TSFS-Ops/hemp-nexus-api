@@ -75,6 +75,14 @@ function RedirectDealToMatch() {
 }
 
 export default function Desk() {
+  const { user, isLoading } = useAuth();
+
+  // Guests landing on /desk (or any sub-route) see the public Landing page
+  // instead of being auto-bounced to /auth. Signed-in users get the desk.
+  if (!isLoading && !user) {
+    return <Landing />;
+  }
+
   return (
     <RequireAuth>
       <Routes>
