@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getHostType, getConsoleUrl, CONSOLE_ONLY_ROUTES, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
+import { getHostType, getConsoleUrl, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
 import { DomainMismatch } from "@/components/DomainMismatch";
 import MarketplaceHolding from "@/pages/MarketplaceHolding";
+import PublicHolding from "@/pages/PublicHolding";
 
 interface HostnameRouterProps {
   children: React.ReactNode;
@@ -56,15 +57,11 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
     return <MarketplaceHolding />;
   }
 
-  // PUBLIC DOMAIN: Check if user is trying to access console-only content
+  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za): show neutral
+  // under-construction holding page only. The public Mother Ship website is
+  // not yet live; no app routes are exposed here.
   if (hostType === 'public') {
-    // Check if this is a console-only route
-    const isConsoleRoute = matchesRouteList(pathname, CONSOLE_ONLY_ROUTES);
-    
-    if (isConsoleRoute) {
-      // Show soft-gate with CTA - NO automatic redirect
-      return <DomainMismatch type="console-content-on-public" attemptedPath={pathname} />;
-    }
+    return <PublicHolding />;
   }
 
   // CONSOLE DOMAIN: Check if user is trying to access public-only content
