@@ -67,6 +67,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import { sanitizeStorageFilename } from "@/lib/storage-filenames";
 import { logMatchDocumentUploadAttempt } from "@/lib/match-document-upload-log";
+import { UploadAuthzPanel } from "./UploadAuthzPanel";
 
 /** Detect MIME from first bytes of a file - client-side magic-byte check */
 const MAGIC_SIGS: [string, number[]][] = [
@@ -1040,6 +1041,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
               </div>
             </div>
           )}
+          <UploadAuthzPanel matchId={matchId} />
           <div className="border rounded-lg p-4 space-y-4">
             <h4 className="font-medium flex items-center gap-2">
               <Upload className="h-4 w-4" />
