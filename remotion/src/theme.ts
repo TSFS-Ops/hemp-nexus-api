@@ -1,12 +1,16 @@
-export const EMERALD = "#059669";
-export const EMERALD_LIGHT = "#34d399";
-export const DEEP_SLATE = "#0f172a";
+// Izenzo Civilisation OS palette
+export const BG = "#F8FAFC";
+export const BG_DEEP = "#0F172A";
+export const SLATE = "#0F172A";
 export const SLATE_700 = "#334155";
-export const SLATE_400 = "#94a3b8";
-export const SLATE_200 = "#e2e8f0";
-export const WHITE = "#f8fafc";
-export const RED_500 = "#ef4444";
-export const AMBER_500 = "#f59e0b";
+export const SLATE_500 = "#64748B";
+export const SLATE_300 = "#CBD5E1";
+export const SLATE_200 = "#E2E8F0";
+export const SLATE_100 = "#F1F5F9";
+export const EMERALD = "#047857";
+export const EMERALD_LIGHT = "#10B981";
+export const EMERALD_PALE = "#ECFDF5";
+export const WHITE = "#FFFFFF";
 
-export const FONT_INTER = "Inter, sans-serif";
-export const FONT_MONO = "JetBrains Mono, monospace";
+export const FONT_DISPLAY = "Inter, system-ui, sans-serif";
+export const FONT_MONO = "JetBrains Mono, ui-monospace, monospace";
