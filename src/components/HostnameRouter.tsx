@@ -38,14 +38,16 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
   const navigate = useNavigate();
   const hostType = getHostType();
   const pathname = location.pathname;
+  const { user, isLoading: authLoading } = useAuth();
 
-  // Console domain only: internal redirect "/" to "/dashboard"
-  // This is a same-domain SPA navigation, NOT a cross-domain redirect
+  // Console domain only: if a signed-in user lands on "/", send them to the
+  // dashboard. Unauthenticated visitors at "/" see the public Landing page
+  // (the former izenzo.co.za home), handled below — no redirect.
   useEffect(() => {
-    if (hostType === 'console' && pathname === '/') {
+    if (hostType === 'console' && pathname === '/' && !authLoading && user) {
       navigate('/dashboard', { replace: true });
     }
-  }, [pathname, hostType, navigate]);
+  }, [pathname, hostType, navigate, user, authLoading]);
 
   // Preview mode: allow everything (for development/testing)
   if (hostType === 'preview') {
