@@ -1,6 +1,8 @@
 import { Routes, Route, useNavigate, Navigate, useParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
+import { useAuth } from "@/contexts/AuthContext";
+import Landing from "@/pages/Landing";
 import { DeskLayout } from "@/components/desk/DeskLayout";
 import { DeskSidebar } from "@/components/desk/DeskSidebar";
 import { AttentionPipeline } from "@/components/desk/AttentionPipeline";
@@ -73,6 +75,14 @@ function RedirectDealToMatch() {
 }
 
 export default function Desk() {
+  const { user, isLoading } = useAuth();
+
+  // Guests landing on /desk (or any sub-route) see the public Landing page
+  // instead of being auto-bounced to /auth. Signed-in users get the desk.
+  if (!isLoading && !user) {
+    return <Landing />;
+  }
+
   return (
     <RequireAuth>
       <Routes>
