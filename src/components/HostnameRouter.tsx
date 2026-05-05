@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getHostType, getConsoleUrl, CONSOLE_ONLY_ROUTES, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
+import { getHostType, getConsoleUrl, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
 import { DomainMismatch } from "@/components/DomainMismatch";
 import MarketplaceHolding from "@/pages/MarketplaceHolding";
 import PublicHolding from "@/pages/PublicHolding";
