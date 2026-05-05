@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.idx_match_documents_one_current_per_type;
