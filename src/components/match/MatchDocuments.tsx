@@ -399,6 +399,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         }
       }
 
+      const effectiveDocType = docType || "other";
       const sha256Hash = await computeFileHash(selectedFile);
 
       // Check for duplicate hash
@@ -525,7 +526,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           org_id: effectiveOrgId,
           uploader_user_id: session.user.id,
           uploader_org_id: effectiveOrgId,
-          doc_type: docType,
+          doc_type: effectiveDocType,
           filename: sanitisedFilename,
           storage_path: storagePath,
           sha256_hash: sha256Hash,
@@ -591,7 +592,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           metadata: {
             document_id: docId,
             filename: selectedFile.name,
-            doc_type: docType,
+            doc_type: effectiveDocType,
             sha256_hash: sha256Hash,
             file_size: selectedFile.size,
             visibility: visibility,
@@ -659,7 +660,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
   const resetForm = () => {
     setSelectedFile(null);
-    setDocType("");
+    setDocType("other");
     setTitle("");
     setNotes("");
     setChangeNotes("");
