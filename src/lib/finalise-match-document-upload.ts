@@ -29,15 +29,10 @@ export interface FinaliseMatchDocumentUploadResult {
   };
 }
 
-export async function finaliseMatchDocumentUpload(
-  payload: FinaliseMatchDocumentUploadPayload,
-): Promise<FinaliseMatchDocumentUploadResult> {
-  return await fetchEdgeFunction<FinaliseMatchDocumentUploadResult>(
-    "finalise-match-document-upload",
-    {
-      method: "POST",
-      body: payload,
-      label: "finalise document upload",
-    },
-  );
+export async function finaliseMatchDocumentUpload(payload: FinaliseMatchDocumentUploadPayload): Promise<FinaliseMatchDocumentUploadResult> {
+  return await fetchEdgeFunction<FinaliseMatchDocumentUploadResult>("finalise-match-document-upload", {
+    method: "POST",
+    body: payload,
+    label: "finalise document upload",
+  });
 }
