@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchEdgeFunction } from "@/lib/edge-invoke";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Card,
@@ -67,6 +66,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import { sanitizeStorageFilename } from "@/lib/storage-filenames";
 import { logMatchDocumentUploadAttempt } from "@/lib/match-document-upload-log";
+import { finaliseMatchDocumentUpload } from "@/lib/finalise-match-document-upload";
 import { UploadAuthzPanel } from "./UploadAuthzPanel";
 
 /** Detect MIME from first bytes of a file - client-side magic-byte check */
@@ -480,90 +480,27 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         throw uploadError;
       }
 
-      // ── Server-side magic-byte re-validation via document-review ──
-      // The file is now in storage. Call the edge function to validate server-side.
-      // If the server rejects it, clean up the orphaned storage file.
-      let validateWarning: string | null = null;
-      try {
-        const validateResult = await fetchEdgeFunction<{ blocked?: boolean; reason?: string }>(
-          "validate-upload",
-          {
-            method: "POST",
-            body: {
-              bucket: "match-documents",
-              storage_path: storagePath,
-              client_mime: selectedFile.type,
-              file_size: selectedFile.size,
-            },
-            label: "validate upload",
-          }
-        );
-        if (validateResult?.blocked) {
-          // Clean up orphaned file
-          await supabase.storage.from("match-documents").remove([storagePath]);
-          setError(validateResult.reason || "Server rejected this file - content does not match declared type.");
-          setUploading(false);
-          return;
-        }
-      } catch (validationErr) {
-        // If server-side validation cannot be reached, do not treat that as a
-        // dead sign-in session. The client-side magic-byte check already ran,
-        // and the real upload + DB write below are still protected by storage
-        // and table access rules.
-        console.warn("Upload validation unavailable; continuing after client-side validation", validationErr);
-        validateWarning = "Server validation was unavailable, so the upload used browser-side file checks only.";
-      }
-
       // Sanitise filename: strip path traversal, null bytes, and non-printable chars
       const sanitisedFilename = safeStorageName;
 
       currentPhase = "db_insert";
-      const { error: insertError } = await supabase
-        .from("match_documents")
-        .insert({
-          id: docId,
-          match_id: matchId,
-          org_id: effectiveOrgId,
-          uploader_user_id: session.user.id,
-          uploader_org_id: effectiveOrgId,
-          doc_type: effectiveDocType,
-          filename: sanitisedFilename,
-          storage_path: storagePath,
-          sha256_hash: sha256Hash,
-          file_size: selectedFile.size,
-          mime_type: selectedFile.type,
-          magic_bytes_verified: !!detectedMime,
-          server_detected_mime: detectedMime || null,
-          status: "uploaded",
-          title: title || null,
-          notes: notes || null,
-          visibility: visibility,
-          // Version chain: new standalone doc is its own root, version 1, current
-          root_document_id: docId,
-          version: 1,
-          is_current_version: true,
-        });
-
-      if (insertError) {
-        // Clean up orphaned storage blob since DB insert failed
-        console.error("DB insert failed after storage upload, cleaning up blob:", storagePath);
-        await supabase.storage.from("match-documents").remove([storagePath]).catch((cleanupErr) => {
-          console.error("Failed to clean up orphaned storage blob:", cleanupErr);
-        });
-        await logMatchDocumentUploadAttempt({
-          match_id: matchId,
-          storage_path: storagePath,
-          filename: selectedFile.name,
-          file_size: selectedFile.size,
-          mime_type: selectedFile.type,
-          phase: "db_insert",
-          outcome: "failure",
-          db_error: insertError.message || JSON.stringify(insertError),
-          client_request_id: clientRequestId,
-          document_id: docId,
-        });
-        throw insertError;
-      }
+      const finaliseResult = await finaliseMatchDocumentUpload({
+        match_id: matchId,
+        document_id: docId,
+        storage_path: storagePath,
+        filename: sanitisedFilename,
+        file_size: selectedFile.size,
+        mime_type: selectedFile.type,
+        sha256_hash: sha256Hash,
+        doc_type: effectiveDocType,
+        title: title || null,
+        notes: notes || null,
+        visibility: visibility as "private" | "share_with_counterparty" | "share_with_roles",
+        magic_bytes_verified: !!detectedMime,
+        server_detected_mime: detectedMime || null,
+        client_request_id: clientRequestId,
+      });
+      if (!finaliseResult?.ok) throw new Error("Document upload finalisation failed");
 
       currentPhase = "success";
       await logMatchDocumentUploadAttempt({
@@ -621,10 +558,6 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       } else {
         toast.success("Document uploaded successfully");
       }
-      if (validateWarning) {
-        toast.warning("Document uploaded, but server validation could not be completed. Browser-side file checks passed.");
-      }
-
       resetForm();
       fetchDocuments();
     } catch (err: unknown) {
