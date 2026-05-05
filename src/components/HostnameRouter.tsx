@@ -68,11 +68,17 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
     return <PublicHolding />;
   }
 
-  // CONSOLE DOMAIN: Check if user is trying to access public-only content
+  // CONSOLE DOMAIN
   if (hostType === 'console') {
+    // Root: show the public Landing page to guests; signed-in users are
+    // redirected to /dashboard by the effect above.
+    if (pathname === '/' && !authLoading && !user) {
+      return <Landing />;
+    }
+
     // Check if this is a public-only route (excluding root which we handle above)
     const isPublicRoute = matchesRouteList(pathname, PUBLIC_ONLY_ROUTES) && pathname !== '/';
-    
+
     if (isPublicRoute) {
       // Show soft-gate with CTA - NO automatic redirect
       return <DomainMismatch type="public-content-on-console" attemptedPath={pathname} />;
