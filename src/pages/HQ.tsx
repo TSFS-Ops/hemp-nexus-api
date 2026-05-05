@@ -51,6 +51,7 @@ import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
 import { AdminRatingAppealsPanel } from "@/components/admin/AdminRatingAppealsPanel";
 import { AdminRevenueNotificationsPanel } from "@/components/admin/AdminRevenueNotificationsPanel";
+import { AdminUploadAuditPanel } from "@/components/admin/AdminUploadAuditPanel";
 import { AdminRevenuePanel } from "@/components/admin/AdminRevenuePanel";
 import SystemAnalytics from "@/components/admin/SystemAnalytics";
 import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
