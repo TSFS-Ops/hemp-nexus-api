@@ -515,6 +515,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // Sanitise filename: strip path traversal, null bytes, and non-printable chars
       const sanitisedFilename = safeStorageName;
 
+      currentPhase = "db_insert";
       const { error: insertError } = await supabase
         .from("match_documents")
         .insert({
@@ -547,8 +548,33 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         await supabase.storage.from("match-documents").remove([storagePath]).catch((cleanupErr) => {
           console.error("Failed to clean up orphaned storage blob:", cleanupErr);
         });
+        await logMatchDocumentUploadAttempt({
+          match_id: matchId,
+          storage_path: storagePath,
+          filename: selectedFile.name,
+          file_size: selectedFile.size,
+          mime_type: selectedFile.type,
+          phase: "db_insert",
+          outcome: "failure",
+          db_error: insertError.message || JSON.stringify(insertError),
+          client_request_id: clientRequestId,
+          document_id: docId,
+        });
         throw insertError;
       }
+
+      currentPhase = "success";
+      await logMatchDocumentUploadAttempt({
+        match_id: matchId,
+        storage_path: storagePath,
+        filename: selectedFile.name,
+        file_size: selectedFile.size,
+        mime_type: selectedFile.type,
+        phase: "success",
+        outcome: "success",
+        client_request_id: clientRequestId,
+        document_id: docId,
+      });
 
       // Audit log (best-effort: client cannot insert into audit_logs under RLS,
       // so failure here MUST NOT block the user-visible upload outcome. The
