@@ -4,6 +4,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 
 const BodySchema = z.object({
   match_id: z.string().uuid(),
@@ -131,17 +132,19 @@ Deno.serve(async (req) => {
       throw new ApiException("STORAGE_PATH_SCOPE_MISMATCH", "Storage path does not belong to this organisation and match", 400);
     }
 
-    const { data: objectRows, error: objectError } = await admin
-      .schema("storage")
-      .from("objects")
-      .select("id, bucket_id, name, owner_id, created_at, metadata")
-      .eq("bucket_id", "match-documents")
-      .eq("name", body.storage_path)
-      .limit(1);
-    const storageObject = objectRows?.[0] ?? null;
-    if (objectError || !storageObject) {
-      await writeAudit("finalise", "failure", { error_code: "STORAGE_OBJECT_MISSING", error_message: clip(objectError?.message ?? "Storage object missing"), storage_object_exists: false });
+    const { data: storageFile, error: storageReadError } = await admin.storage
+      .from("match-documents")
+      .download(body.storage_path);
+    if (storageReadError || !storageFile) {
+      await writeAudit("finalise", "failure", { error_code: "STORAGE_OBJECT_MISSING", error_message: clip(storageReadError?.message ?? "Storage object missing"), storage_object_exists: false });
       throw new ApiException("STORAGE_OBJECT_MISSING", "Upload could not be completed because the stored file could not be verified.", 409);
+    }
+    const headerBytes = new Uint8Array(await storageFile.slice(0, 16).arrayBuffer());
+    const magicResult = validateMagicBytes(headerBytes, body.mime_type || "application/octet-stream", body.file_size ?? storageFile.size);
+    if (magicResult.blocked) {
+      const cleanupResult = await cleanup("server_magic_byte_validation_failed");
+      await writeAudit("validation", "failure", { error_code: "FILE_VALIDATION_FAILED", error_message: magicResult.blockReason ?? "File validation failed", storage_object_exists: true, detected_mime: magicResult.detectedMime, ...cleanupResult });
+      throw new ApiException("FILE_VALIDATION_FAILED", magicResult.blockReason ?? "File validation failed", 400);
     }
 
     const { data: doc, error: insertError } = await admin
@@ -158,8 +161,8 @@ Deno.serve(async (req) => {
         sha256_hash: body.sha256_hash,
         file_size: body.file_size ?? null,
         mime_type: body.mime_type ?? null,
-        magic_bytes_verified: body.magic_bytes_verified ?? false,
-        server_detected_mime: body.server_detected_mime ?? null,
+        magic_bytes_verified: !!magicResult.detectedMime,
+        server_detected_mime: magicResult.detectedMime ?? body.server_detected_mime ?? null,
         status: "uploaded",
         title: body.title ?? null,
         notes: body.notes ?? null,
