@@ -157,13 +157,17 @@ export function OrgAdminContactCompletionCard({
   const { isPlatformAdmin, isOrgAdmin } = useAuth();
 
   // Visibility gate — must mirror the backend MT-009 Option B rule exactly.
-  const visible = useMemo(() => {
-    if (!engagement || !match || !viewerOrgId) return false;
-    if (isPlatformAdmin) return false; // platform admins use the admin panel
-    if (!isOrgAdmin) return false;
-    if (isEngagementTerminal(engagement.engagement_status)) return false;
-    return isCounterpartySide(viewerOrgId, engagement, match);
-  }, [engagement, match, viewerOrgId, isPlatformAdmin, isOrgAdmin]);
+  const visible = useMemo(
+    () =>
+      shouldShowOrgAdminContactCard({
+        engagement,
+        match,
+        viewerOrgId,
+        isPlatformAdmin: !!isPlatformAdmin,
+        isOrgAdmin: !!isOrgAdmin,
+      }),
+    [engagement, match, viewerOrgId, isPlatformAdmin, isOrgAdmin],
+  );
 
   const [email, setEmail] = useState("");
   const [contactType, setContactType] = useState<"organisation" | "named_individual">("organisation");
