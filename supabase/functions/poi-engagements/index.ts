@@ -1256,19 +1256,27 @@ Deno.serve(async (req) => {
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
       // ── Batch A — emit contact.assigned / contact.updated audit row ──
-      // Fires only when contact_type or contact_name actually changed value.
-      // First-time assignment (both previous fields null/empty) → assigned;
-      // any subsequent change → updated. actor_role is derived from the
-      // authenticated context, never from the request body.
-      if (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined) {
+      // Fires when contact_type, contact_name, or counterparty_email actually
+      // changed value. First-time assignment (all previous fields null/empty)
+      // → assigned; any subsequent change → updated. actor_role is derived
+      // from the authenticated context, never from the request body.
+      if (
+        parsed.data.contact_type !== undefined ||
+        parsed.data.contact_name !== undefined ||
+        parsed.data.counterparty_email !== undefined
+      ) {
         const prevType = (current as { contact_type?: string | null }).contact_type ?? null;
         const prevName = ((current as { contact_name?: string | null }).contact_name ?? "").toString().trim() || null;
+        const prevEmail = ((current as { counterparty_email?: string | null }).counterparty_email ?? "").toString().trim().toLowerCase() || null;
         const nextType = (sideUpdates.contact_type as string | null | undefined) ?? prevType ?? null;
         const nextNameRaw = sideUpdates.contact_name as string | null | undefined;
         const nextName = nextNameRaw === undefined ? prevName : (nextNameRaw === null ? null : nextNameRaw);
-        const changed = prevType !== nextType || prevName !== nextName;
+        const nextEmail = parsed.data.counterparty_email !== undefined
+          ? parsed.data.counterparty_email.trim().toLowerCase()
+          : prevEmail;
+        const changed = prevType !== nextType || prevName !== nextName || prevEmail !== nextEmail;
         if (changed) {
-          const wasUnset = !prevType && !prevName;
+          const wasUnset = !prevType && !prevName && !prevEmail;
           const action = wasUnset ? "contact.assigned" : "contact.updated";
           const actorRole = isPlatformAdmin ? "platform_admin" : "org_admin";
           try {
@@ -1281,8 +1289,8 @@ Deno.serve(async (req) => {
               metadata: {
                 actor_role: actorRole,
                 actor_org_id: authCtx.orgId ?? null,
-                previous: { contact_type: prevType, contact_name: prevName },
-                next: { contact_type: nextType, contact_name: nextName },
+                previous: { contact_type: prevType, contact_name: prevName, counterparty_email: prevEmail },
+                next: { contact_type: nextType, contact_name: nextName, counterparty_email: nextEmail },
                 request_id: requestId,
               },
             });
