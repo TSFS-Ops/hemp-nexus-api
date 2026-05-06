@@ -471,6 +471,7 @@ Deno.serve(async (req) => {
       }
 
       // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
+      // The initiator org is about to project Izenzo's name to a counterparty
       // via email. Block the send if the initiator org is not formally
       // approved to trade — UNLESS the tenant posture is `wad_only`, in
       // which case verification is deferred to WaD execution.
