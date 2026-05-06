@@ -4467,6 +4467,8 @@ export type Database = {
           admin_notes: string | null
           contact_date: string | null
           contact_method: string | null
+          contact_name: string | null
+          contact_type: string | null
           contacted_at: string | null
           counterparty_email: string | null
           counterparty_org_id: string | null
@@ -4490,6 +4492,8 @@ export type Database = {
           admin_notes?: string | null
           contact_date?: string | null
           contact_method?: string | null
+          contact_name?: string | null
+          contact_type?: string | null
           contacted_at?: string | null
           counterparty_email?: string | null
           counterparty_org_id?: string | null
@@ -4513,6 +4517,8 @@ export type Database = {
           admin_notes?: string | null
           contact_date?: string | null
           contact_method?: string | null
+          contact_name?: string | null
+          contact_type?: string | null
           contacted_at?: string | null
           counterparty_email?: string | null
           counterparty_org_id?: string | null
