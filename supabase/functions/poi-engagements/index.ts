@@ -782,11 +782,13 @@ Deno.serve(async (req) => {
         parsed.data.admin_notes !== undefined ||
         parsed.data.support_notes !== undefined ||
         parsed.data.contact_method !== undefined ||
-        parsed.data.contact_date !== undefined;
+        parsed.data.contact_date !== undefined ||
+        parsed.data.contact_type !== undefined ||
+        parsed.data.contact_name !== undefined;
       if (!hasMeaningfulChange) {
         throw new ApiException(
           "VALIDATION_ERROR",
-          "Request must include at least one field to update (engagement_status, counterparty_email, admin_notes, support_notes, contact_method, or contact_date).",
+          "Request must include at least one field to update (engagement_status, counterparty_email, contact_type, contact_name, admin_notes, support_notes, contact_method, or contact_date).",
           400
         );
       }
