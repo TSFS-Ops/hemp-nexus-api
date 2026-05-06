@@ -1128,6 +1128,13 @@ Deno.serve(async (req) => {
       if (parsed.data.admin_notes !== undefined) sideUpdates.admin_notes = parsed.data.admin_notes;
       if (parsed.data.contact_method !== undefined) sideUpdates.contact_method = parsed.data.contact_method;
       if (parsed.data.contact_date !== undefined) sideUpdates.contact_date = parsed.data.contact_date;
+      // Batch A — contact-completeness fields. Empty string was already
+      // normalised to null by the Zod schema; undefined means "leave alone".
+      if (parsed.data.contact_type !== undefined) sideUpdates.contact_type = parsed.data.contact_type;
+      if (parsed.data.contact_name !== undefined) {
+        const cn = parsed.data.contact_name;
+        sideUpdates.contact_name = cn === null ? null : (cn.trim() === "" ? null : cn.trim());
+      }
       if (parsed.data.support_notes !== undefined) {
         sideUpdates.support_notes = updates.support_notes;
         sideUpdates.support_notes_updated_at = updates.support_notes_updated_at;
