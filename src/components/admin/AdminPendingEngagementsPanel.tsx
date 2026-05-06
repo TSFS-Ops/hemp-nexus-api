@@ -1489,26 +1489,46 @@ export function AdminPendingEngagementsPanel() {
                             {/* Add contact: dedicated discovery affordance for unregistered counterparties.
                                 Distinct from "Mark contacted" — captures a discovered email so Notify can run.
                                 Shown whenever the row has no usable email and the engagement isn't terminal. */}
-                            {!isTerminal && !isUsableOutreachEmail(e.counterparty_email) && (
-                              <Button
-                                size="sm"
-                                variant="default"
-                                onClick={() =>
-                                  setAddContactFor({
-                                    id: e.id,
-                                    match_id: e.match_id,
-                                    counterparty_org_name: e.counterparty_org?.name ?? null,
-                                    counterparty_email: e.counterparty_email,
-                                    commodity: e.matches?.commodity ?? null,
-                                  })
-                                }
-                                disabled={actionLoadingId === e.id}
-                                title="Capture a discovered contact email so outreach can be sent"
-                                aria-label="Add contact details"
-                              >
-                                <UserPlus className="h-3 w-3 mr-1" /> Add contact
-                              </Button>
-                            )}
+                            {/* Batch A — Add/Edit contact dialog. Captures
+                                counterparty_email + contact_type +
+                                contact_name in one place. Shown for any
+                                non-terminal engagement so admins can move a
+                                row from Contact incomplete / Email missing
+                                into Organisation-level / Named individual. */}
+                            {!isTerminal && (() => {
+                              const cs = getEngagementContactState(e);
+                              const blocked = isOutreachBlocked(cs);
+                              const hasOrgLink = !!e.counterparty_org_id;
+                              const hasOrgName = !!(e.counterparty_org?.name && e.counterparty_org.name.trim());
+                              return (
+                                <Button
+                                  size="sm"
+                                  variant={blocked ? "default" : "outline"}
+                                  onClick={() =>
+                                    setAddContactFor({
+                                      id: e.id,
+                                      match_id: e.match_id,
+                                      counterparty_org_name: e.counterparty_org?.name ?? null,
+                                      counterparty_email: e.counterparty_email,
+                                      commodity: e.matches?.commodity ?? null,
+                                      contact_type: e.contact_type,
+                                      contact_name: e.contact_name,
+                                      has_org_link: hasOrgLink || hasOrgName,
+                                    })
+                                  }
+                                  disabled={actionLoadingId === e.id}
+                                  title={
+                                    blocked
+                                      ? contactBlockReason(cs) ?? "Capture contact details so outreach can be sent."
+                                      : "Edit the captured counterparty contact (email, type, name)."
+                                  }
+                                  aria-label={blocked ? "Add contact details" : "Edit contact details"}
+                                >
+                                  <UserPlus className="h-3 w-3 mr-1" />
+                                  {blocked ? "Add contact" : "Edit contact"}
+                                </Button>
+                              );
+                            })()}
                             {/* Send outreach (formerly "Notify"): platform-sent email via Resend. Only offered for
                                 pre-acceptance states with a deliverable email. Distinct from "Record contact" which is audit-only. */}
                             {/* Batch A — outreach button is gated on the
