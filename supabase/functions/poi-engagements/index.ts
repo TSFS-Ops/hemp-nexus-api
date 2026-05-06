@@ -804,6 +804,53 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
+      // ── Batch A — org_admin scoping (06 May 2026, signed) ──
+      // org_admins may ONLY:
+      //   1. update an engagement that belongs to their own org_id, AND
+      //   2. update contact_type / contact_name (no other field).
+      // Any violation: 403 FORBIDDEN + audit `contact.assignment_blocked`.
+      if (!isPlatformAdmin && isOrgAdmin) {
+        const sameOrg = !!authCtx.orgId && current.org_id === authCtx.orgId;
+        const onlyContactFields =
+          parsed.data.engagement_status === undefined &&
+          parsed.data.counterparty_email === undefined &&
+          parsed.data.admin_notes === undefined &&
+          parsed.data.support_notes === undefined &&
+          parsed.data.contact_method === undefined &&
+          parsed.data.contact_date === undefined &&
+          (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined);
+
+        if (!sameOrg || !onlyContactFields) {
+          // Best-effort audit; never block the 403 on audit failure.
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: current.org_id,
+              actor_user_id: authCtx.userId,
+              action: "contact.assignment_blocked",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "org_admin",
+                actor_org_id: authCtx.orgId ?? null,
+                target_org_id: current.org_id,
+                reason: !sameOrg ? "cross_org_attempt" : "non_contact_field_attempt",
+                attempted_fields: Object.keys(parsed.data).filter(
+                  (k) => (parsed.data as Record<string, unknown>)[k] !== undefined,
+                ),
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* swallow — audit must never mask the FORBIDDEN */ }
+          throw new ApiException(
+            "FORBIDDEN",
+            !sameOrg
+              ? "You may only edit contact details for engagements belonging to your own organisation."
+              : "Organisation admins may only edit contact_type and contact_name on engagements.",
+            403,
+          );
+        }
+      }
+
       const updates: Record<string, unknown> = {};
 
       // Validate status transition
