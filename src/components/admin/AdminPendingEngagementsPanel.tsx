@@ -1432,6 +1432,27 @@ export function AdminPendingEngagementsPanel() {
                                 </Badge>
                               );
                             })()}
+                            {/* Batch A — canonical contact-completeness badge.
+                                Mirrors the backend's outreach gate so an
+                                operator can read the state without opening
+                                the row. Wording is the signed spec. */}
+                            {(() => {
+                              const cs = getEngagementContactState(e);
+                              const blocked = isOutreachBlocked(cs);
+                              const reason = contactBlockReason(cs);
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className={`whitespace-nowrap text-[10px] font-medium px-2 py-0.5 ${CONTACT_STATE_STYLES[cs]}`}
+                                  title={reason ?? "Contact details are sufficient for outreach."}
+                                  aria-label={`Contact state: ${contactStateLabel(cs)}.${reason ? " " + reason : ""}`}
+                                  data-contact-state={cs}
+                                >
+                                  {blocked && <AlertTriangle className="h-3 w-3 mr-1" />}
+                                  {contactStateLabel(cs)}
+                                </Badge>
+                              );
+                            })()}
                             {(() => {
                               // SLA badge: only render for non-terminal "awaiting outreach" states
                               // AND only when the counterparty has not been auto-linked.
@@ -1490,20 +1511,30 @@ export function AdminPendingEngagementsPanel() {
                             )}
                             {/* Send outreach (formerly "Notify"): platform-sent email via Resend. Only offered for
                                 pre-acceptance states with a deliverable email. Distinct from "Record contact" which is audit-only. */}
-                            {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (() => {
-                              const usable = isUsableOutreachEmail(e.counterparty_email);
-                              const reason = !e.counterparty_email
-                                ? "Cannot send outreach: no valid counterparty email on file. Use Add contact first."
-                                : !usable
-                                  ? "Cannot send outreach: counterparty email uses a non-deliverable test domain (.invalid). Use Add contact to replace it."
-                                  : "Platform sends an outreach email via Resend";
+                            {/* Batch A — outreach button is gated on the
+                                canonical pre-acceptance state set
+                                (`isEngagementPending`, includes legacy
+                                'pending' defensively) AND on the
+                                contact-completeness state. The disabled
+                                tooltip surfaces the same reason text the
+                                backend returns (CONTACT_EMAIL_MISSING /
+                                CONTACT_INCOMPLETE) so admin and server
+                                never disagree about why the send is blocked. */}
+                            {isEngagementPending(e.engagement_status) && (() => {
+                              const cs = getEngagementContactState(e);
+                              const blocked = isOutreachBlocked(cs);
+                              const reason = blocked
+                                ? contactBlockReason(cs)!
+                                : "Platform sends an outreach email via Resend";
                               return (
                                 <Button
                                   size="sm" variant="outline"
                                   onClick={() => sendNotification(e)}
-                                  disabled={actionLoadingId === e.id || !usable}
+                                  disabled={actionLoadingId === e.id || blocked}
                                   title={reason}
                                   aria-label={reason}
+                                  data-outreach-blocked={blocked ? "true" : "false"}
+                                  data-outreach-block-code={blocked ? (cs === "email_missing" ? "CONTACT_EMAIL_MISSING" : "CONTACT_INCOMPLETE") : undefined}
                                 >
                                   <Mail className="h-3 w-3 mr-1" /> Send outreach
                                 </Button>
