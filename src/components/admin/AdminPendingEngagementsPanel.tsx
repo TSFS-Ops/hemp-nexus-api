@@ -619,6 +619,39 @@ export function AdminPendingEngagementsPanel() {
     };
   };
 
+  /**
+   * Batch A — canonical contact-state badge. Single source of truth via
+   * `getContactState`. Drives both the badge label and the Send-outreach
+   * disabled tooltip so admin and backend never disagree.
+   */
+  const CONTACT_STATE_STYLES: Record<ContactState, string> = {
+    organisation_contact: "bg-emerald-50 text-emerald-800 border-emerald-300",
+    named_individual_contact: "bg-sky-50 text-sky-800 border-sky-300",
+    email_missing: "bg-amber-50 text-amber-800 border-amber-300",
+    contact_incomplete: "bg-rose-50 text-rose-800 border-rose-300",
+  };
+  const getEngagementContactState = (e: Engagement): ContactState =>
+    getContactState(
+      {
+        counterparty_email: e.counterparty_email,
+        counterparty_org_id: e.counterparty_org_id,
+        contact_name: e.contact_name,
+        contact_type: e.contact_type,
+        counterparty_org: e.counterparty_org,
+      },
+      e.matches
+        ? {
+            buyer_name: e.matches.buyer_name,
+            seller_name: e.matches.seller_name,
+            // matches projection on this panel doesn't include *_org_id;
+            // pass undefined so the helper falls back to the engagement
+            // counterparty_org_id signal it already has.
+            buyer_org_id: undefined,
+            seller_org_id: undefined,
+          }
+        : null,
+    );
+
   const filtered = useMemo(() => {
     let base: Engagement[];
     if (filter === "all") base = engagements;
