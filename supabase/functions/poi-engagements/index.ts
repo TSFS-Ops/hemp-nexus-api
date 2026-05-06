@@ -13,6 +13,17 @@ import {
 import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
+// Batch A — single source of truth for contact-completeness gating.
+// Mirror of `src/lib/contact-completeness.ts`. Both files MUST stay in
+// lockstep; the regression tests pin both surfaces.
+import {
+  getContactState,
+  isOutreachBlocked,
+  contactBlockReason,
+  contactBlockCode,
+  contactStateLabel,
+  type ContactState,
+} from "../_shared/contact-completeness.ts";
 
 const EngagementStatusSchema = z.enum([
   "pending",
