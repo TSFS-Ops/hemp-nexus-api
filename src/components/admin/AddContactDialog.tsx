@@ -443,6 +443,84 @@ export function AddContactDialog({
             )}
           </div>
 
+          {/* Batch A — contact_type radio. Drives the canonical contact-state
+              badge and the backend's preview/send gate. "Email-only with no
+              organisation/name" remains Contact incomplete and is rejected
+              by the schema's superRefine — admins must pick a type and,
+              for named individuals, supply a name. */}
+          <fieldset className="space-y-2 rounded-md border border-slate-200 bg-slate-50/40 p-3">
+            <legend className="px-1 text-xs font-medium text-slate-700">
+              Contact type *
+            </legend>
+            <RadioGroup
+              value={contactType}
+              onValueChange={(v) => setContactType(v as "organisation" | "named_individual")}
+              className="gap-2"
+              aria-label="Contact type"
+            >
+              <label className="flex items-start gap-2 cursor-pointer">
+                <RadioGroupItem value="organisation" id="add-contact-type-org" className="mt-0.5" />
+                <span className="text-sm">
+                  <span className="font-medium">Organisation-level contact</span>
+                  <span className="block text-xs text-muted-foreground">
+                    A general inbox or shared address belonging to the counterparty organisation.
+                    {hasOrganisationName
+                      ? ` We'll use "${(engagement?.counterparty_org_name ?? "the linked organisation").trim()}" as the organisation name.`
+                      : " Provide the organisation's name in the field below."}
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <RadioGroupItem value="named_individual" id="add-contact-type-individual" className="mt-0.5" />
+                <span className="text-sm">
+                  <span className="font-medium">Named individual contact</span>
+                  <span className="block text-xs text-muted-foreground">
+                    A specific person at the counterparty (e.g. the procurement lead). Their full name is required below.
+                  </span>
+                </span>
+              </label>
+            </RadioGroup>
+            {errors.contact_type && (
+              <p className="text-xs text-destructive">{errors.contact_type}</p>
+            )}
+          </fieldset>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="add-contact-name">
+              {contactType === "named_individual"
+                ? "Full name *"
+                : hasOrganisationName
+                  ? "Organisation name (optional override)"
+                  : "Organisation name *"}
+            </Label>
+            <Input
+              id="add-contact-name"
+              type="text"
+              autoComplete="off"
+              placeholder={
+                contactType === "named_individual"
+                  ? "e.g. Naledi Mokoena"
+                  : hasOrganisationName
+                    ? engagement?.counterparty_org_name ?? "Override the linked organisation name"
+                    : "e.g. Acme Trading (Pty) Ltd"
+              }
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              aria-invalid={!!errors.contact_name}
+              aria-describedby={errors.contact_name ? "add-contact-name-err" : undefined}
+              maxLength={200}
+            />
+            {errors.contact_name && (
+              <p id="add-contact-name-err" className="text-xs text-destructive">
+                {errors.contact_name}
+              </p>
+            )}
+            {!errors.contact_name && contactType === "organisation" && hasOrganisationName && (
+              <p className="text-xs text-muted-foreground">
+                Leave blank to keep the linked organisation name.
+              </p>
+            )}
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="add-contact-phone">Phone (optional)</Label>
             <Input
