@@ -37,7 +37,7 @@ import { useAuth } from "@/contexts/AuthContext";
 // Inline counterparty-side check — mirrors the backend predicate in
 // supabase/functions/_shared/engagement-counterparty.ts. The backend
 // remains the source of truth; this is a UX visibility gate only.
-function isCounterpartySide(
+export function isCounterpartySide(
   actorOrgId: string | null | undefined,
   engagement: { org_id: string; counterparty_org_id?: string | null },
   match: { org_id?: string | null; buyer_org_id?: string | null; seller_org_id?: string | null } | null | undefined,
