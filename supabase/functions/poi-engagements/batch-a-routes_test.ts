@@ -137,15 +137,19 @@ function simulatePatchDecision(args: {
   // 3. platform_admin → unconditional pass.
   if (isPlatformAdmin) return { ok: true };
 
-  // 4. org_admin → contact-only AND counterparty-side (route line 883-940).
+  // 4. org_admin → contact-only (now incl. counterparty_email per Option B)
+  //    AND counterparty-side (route line 883-940).
+  const touchedContactField =
+    b.contact_type !== undefined ||
+    b.contact_name !== undefined ||
+    b.counterparty_email !== undefined;
   const onlyContactFields =
     b.engagement_status === undefined &&
-    b.counterparty_email === undefined &&
     b.admin_notes === undefined &&
     b.support_notes === undefined &&
     b.contact_method === undefined &&
     b.contact_date === undefined &&
-    (b.contact_type !== undefined || b.contact_name !== undefined);
+    touchedContactField;
 
   const isOwnSide = isCounterpartySide(args.actorOrgId, args.engagement, args.match);
   if (!isOwnSide || !onlyContactFields) {
