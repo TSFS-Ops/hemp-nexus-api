@@ -34,7 +34,23 @@ import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { isCounterpartySide } from "@/../supabase/functions/_shared/engagement-counterparty";
+// Inline counterparty-side check — mirrors the backend predicate in
+// supabase/functions/_shared/engagement-counterparty.ts. The backend
+// remains the source of truth; this is a UX visibility gate only.
+function isCounterpartySide(
+  actorOrgId: string | null | undefined,
+  engagement: { org_id: string; counterparty_org_id?: string | null },
+  match: { org_id?: string | null; buyer_org_id?: string | null; seller_org_id?: string | null } | null | undefined,
+): boolean {
+  if (!actorOrgId) return false;
+  if (engagement.org_id === actorOrgId) return false;
+  if (engagement.counterparty_org_id && engagement.counterparty_org_id === actorOrgId) return true;
+  if (match) {
+    const onMatch = match.buyer_org_id === actorOrgId || match.seller_org_id === actorOrgId;
+    if (onMatch && match.org_id !== actorOrgId) return true;
+  }
+  return false;
+}
 import {
   contactBlockReason,
   contactStateLabel,
