@@ -158,17 +158,44 @@ export function UnknownCounterpartyStatus({ engagement, isInitiator }: Props) {
                 : "This trade was issued to a counterparty who is not yet on the platform."}
             </CardDescription>
           </div>
-          <Badge
-            variant="outline"
-            className={cn(
-              "shrink-0 text-xs",
-              currentBadge.tone === "complete" && "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-              currentBadge.tone === "active" && "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-              currentBadge.tone === "pending" && "border-muted-foreground/30 bg-muted text-muted-foreground",
-            )}
-          >
-            {currentBadge.label}
-          </Badge>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs",
+                currentBadge.tone === "complete" && "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                currentBadge.tone === "active" && "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                currentBadge.tone === "pending" && "border-muted-foreground/30 bg-muted text-muted-foreground",
+              )}
+            >
+              {currentBadge.label}
+            </Badge>
+            {(() => {
+              const cs = getContactState({
+                counterparty_email: engagement.counterparty_email,
+                counterparty_org_id: engagement.counterparty_org_id,
+                contact_name: engagement.contact_name,
+                contact_type: engagement.contact_type,
+              });
+              const blocked = isOutreachBlocked(cs);
+              const reason = contactBlockReason(cs);
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[10px]",
+                    blocked
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                      : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                  )}
+                  title={reason ?? "Contact details are sufficient for outreach."}
+                  data-contact-state={cs}
+                >
+                  {contactStateLabel(cs)}
+                </Badge>
+              );
+            })()}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
