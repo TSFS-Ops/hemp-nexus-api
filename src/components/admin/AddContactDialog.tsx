@@ -143,6 +143,14 @@ export interface AddContactEngagementSummary {
   counterparty_org_name: string | null;
   counterparty_email: string | null;
   commodity: string | null;
+  /** Batch A — current contact_type on the engagement, if any. */
+  contact_type?: "organisation" | "named_individual" | null;
+  /** Batch A — current free-text contact_name on the engagement, if any. */
+  contact_name?: string | null;
+  /** Batch A — true when the engagement has a registered counterparty
+   *  organisation linked. Used so the schema can accept "organisation"
+   *  contact_type without forcing the admin to retype the name. */
+  has_org_link?: boolean;
 }
 
 interface AddContactDialogProps {
@@ -178,11 +186,25 @@ export function AddContactDialog({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
-  const [errors, setErrors] = useState<Partial<Record<"email" | "phone" | "notes", string>>>({});
+  // Batch A — contact_type/contact_name local state. Default to
+  // "organisation" when the engagement has an org name/link, otherwise
+  // default to "named_individual" so the admin is steered away from
+  // creating an "email-only / Contact incomplete" record.
+  const [contactType, setContactType] = useState<"organisation" | "named_individual">(
+    "named_individual",
+  );
+  const [contactName, setContactName] = useState("");
+  const [errors, setErrors] = useState<
+    Partial<Record<"email" | "contact_type" | "contact_name" | "phone" | "notes", string>>
+  >({});
   const [saving, setSaving] = useState(false);
   // Persistent server-side rejection state. Rendered inline above the footer
   // so the admin can read the explanation without chasing a transient toast.
   const [saveError, setSaveError] = useState<HumanisedEngagementError | null>(null);
+
+  const hasOrganisationName =
+    !!engagement?.has_org_link ||
+    !!(engagement?.counterparty_org_name && engagement.counterparty_org_name.trim());
 
   // Reset form whenever the dialog opens for a new engagement.
   useEffect(() => {
@@ -192,8 +214,23 @@ export function AddContactDialog({
       setNotes("");
       setErrors({});
       setSaveError(null);
+      // Prefer the existing contact_type if the row already has one;
+      // otherwise default based on whether an org name/link is known.
+      if (engagement?.contact_type === "organisation" || engagement?.contact_type === "named_individual") {
+        setContactType(engagement.contact_type);
+      } else {
+        setContactType(hasOrganisationName ? "organisation" : "named_individual");
+      }
+      setContactName(engagement?.contact_name ?? "");
     }
-  }, [open, engagement?.id, engagement?.counterparty_email]);
+  }, [
+    open,
+    engagement?.id,
+    engagement?.counterparty_email,
+    engagement?.contact_type,
+    engagement?.contact_name,
+    hasOrganisationName,
+  ]);
 
   const research = useMemo(
     () => buildResearchLinks(engagement?.counterparty_org_name ?? null),
@@ -223,11 +260,24 @@ export function AddContactDialog({
   const handleSave = async () => {
     if (!engagement) return;
 
-    const parsed = addContactSchema.safeParse({ email, phone, notes });
+    const parsed = addContactSchema.safeParse({
+      email,
+      contact_type: contactType,
+      contact_name: contactName,
+      hasOrganisationName,
+      phone,
+      notes,
+    });
     if (!parsed.success) {
       const next: typeof errors = {};
       for (const issue of parsed.error.issues) {
-        const key = issue.path[0] as "email" | "phone" | "notes" | undefined;
+        const key = issue.path[0] as
+          | "email"
+          | "contact_type"
+          | "contact_name"
+          | "phone"
+          | "notes"
+          | undefined;
         if (key && !next[key]) next[key] = issue.message;
       }
       setErrors(next);
