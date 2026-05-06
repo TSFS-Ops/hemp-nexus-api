@@ -37,7 +37,7 @@ import { useAuth } from "@/contexts/AuthContext";
 // Inline counterparty-side check — mirrors the backend predicate in
 // supabase/functions/_shared/engagement-counterparty.ts. The backend
 // remains the source of truth; this is a UX visibility gate only.
-function isCounterpartySide(
+export function isCounterpartySide(
   actorOrgId: string | null | undefined,
   engagement: { org_id: string; counterparty_org_id?: string | null },
   match: { org_id?: string | null; buyer_org_id?: string | null; seller_org_id?: string | null } | null | undefined,
@@ -59,6 +59,33 @@ import {
   isUsableContactEmail,
 } from "@/lib/contact-completeness";
 import { isEngagementTerminal } from "@/lib/engagement-state";
+
+/**
+ * Pure visibility predicate for OrgAdminContactCompletionCard.
+ *
+ * Mirrors the backend MT-009 Option B rule:
+ *   • viewer has org_admin role
+ *   • viewer is NOT a platform admin (those use the admin panel)
+ *   • engagement is not terminal
+ *   • viewer's org sits on the COUNTERPARTY side of the engagement
+ *
+ * Exported so the visibility matrix can be tested without rendering the
+ * component or stubbing AuthContext.
+ */
+export function shouldShowOrgAdminContactCard(args: {
+  engagement: { org_id: string; counterparty_org_id?: string | null; engagement_status: string | null } | null | undefined;
+  match: { org_id?: string | null; buyer_org_id?: string | null; seller_org_id?: string | null } | null | undefined;
+  viewerOrgId: string | null | undefined;
+  isPlatformAdmin: boolean;
+  isOrgAdmin: boolean;
+}): boolean {
+  const { engagement, match, viewerOrgId, isPlatformAdmin, isOrgAdmin } = args;
+  if (!engagement || !match || !viewerOrgId) return false;
+  if (isPlatformAdmin) return false;
+  if (!isOrgAdmin) return false;
+  if (engagement.engagement_status && isEngagementTerminal(engagement.engagement_status as any)) return false;
+  return isCounterpartySide(viewerOrgId, engagement, match);
+}
 
 const formSchema = z
   .object({
@@ -130,13 +157,17 @@ export function OrgAdminContactCompletionCard({
   const { isPlatformAdmin, isOrgAdmin } = useAuth();
 
   // Visibility gate — must mirror the backend MT-009 Option B rule exactly.
-  const visible = useMemo(() => {
-    if (!engagement || !match || !viewerOrgId) return false;
-    if (isPlatformAdmin) return false; // platform admins use the admin panel
-    if (!isOrgAdmin) return false;
-    if (isEngagementTerminal(engagement.engagement_status)) return false;
-    return isCounterpartySide(viewerOrgId, engagement, match);
-  }, [engagement, match, viewerOrgId, isPlatformAdmin, isOrgAdmin]);
+  const visible = useMemo(
+    () =>
+      shouldShowOrgAdminContactCard({
+        engagement,
+        match,
+        viewerOrgId,
+        isPlatformAdmin: !!isPlatformAdmin,
+        isOrgAdmin: !!isOrgAdmin,
+      }),
+    [engagement, match, viewerOrgId, isPlatformAdmin, isOrgAdmin],
+  );
 
   const [email, setEmail] = useState("");
   const [contactType, setContactType] = useState<"organisation" | "named_individual">("organisation");
