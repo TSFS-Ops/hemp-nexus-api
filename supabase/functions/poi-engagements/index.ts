@@ -938,7 +938,7 @@ Deno.serve(async (req) => {
             "FORBIDDEN",
             !isOwnSide
               ? "You may only edit contact details for the side of the match your organisation is on."
-              : "Organisation admins may only edit contact_type and contact_name on engagements.",
+              : "Organisation admins may only edit counterparty_email, contact_type and contact_name on engagements.",
             403,
           );
         }
