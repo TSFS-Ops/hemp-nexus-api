@@ -263,14 +263,34 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      const recipient = (eng.counterparty_email || "").trim().toLowerCase();
-      if (!recipient) {
-        throw new ApiException(
-          "VALIDATION_ERROR",
-          "This engagement has no counterparty email on file. Add one before previewing.",
-          400
-        );
+      // ── Batch A — contact-completeness gate ──
+      // Single source of truth: the helper decides whether outreach is allowed.
+      // email_missing      → CONTACT_EMAIL_MISSING
+      // contact_incomplete → CONTACT_INCOMPLETE
+      // organisation_contact / named_individual_contact → allowed
+      const previewState = getContactState(eng as any, (eng.matches as any) ?? null);
+      if (isOutreachBlocked(previewState)) {
+        const code = contactBlockCode(previewState)!;
+        const reason = contactBlockReason(previewState)!;
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: (eng as { org_id: string }).org_id,
+            actor_user_id: authCtx.userId,
+            action: "contact.incomplete_detected",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              actor_role: "platform_admin",
+              surface: "preview-outreach",
+              state: previewState,
+              code,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal */ }
+        throw new ApiException(code, reason, 422);
       }
+      const recipient = (eng.counterparty_email || "").trim().toLowerCase();
 
       const m = eng.matches as any;
       const initiatorOrgId = eng.org_id;
@@ -415,6 +435,39 @@ Deno.serve(async (req) => {
 
       if (engErr || !eng) {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+
+      // ── Batch A — contact-completeness gate (send) ──
+      // Block before any side effects (legitimacy, suppression, send) so a
+      // bad contact record never reaches the email pipeline. recipient_override
+      // can satisfy email_missing — re-evaluate against the override when set.
+      {
+        const overrideEmail = parsed.data.recipient_override?.trim().toLowerCase();
+        const engForCheck = overrideEmail
+          ? { ...(eng as any), counterparty_email: overrideEmail }
+          : (eng as any);
+        const sendState = getContactState(engForCheck, (eng.matches as any) ?? null);
+        if (isOutreachBlocked(sendState)) {
+          const code = contactBlockCode(sendState)!;
+          const reason = contactBlockReason(sendState)!;
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "contact.incomplete_detected",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "send-outreach",
+                state: sendState,
+                code,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal */ }
+          throw new ApiException(code, reason, 422);
+        }
       }
 
       // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
@@ -723,9 +776,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── PATCH /poi-engagements/:id — Update engagement (admin only) ──
+    // ── PATCH /poi-engagements/:id — Update engagement ──
+    // Batch A (06 May 2026): platform_admin retains full edit rights.
+    // org_admin may ONLY update contact_type / contact_name AND ONLY for
+    // engagements that belong to their own organisation. All other fields
+    // and any cross-org attempt are rejected with FORBIDDEN + audit-logged
+    // as `contact.assignment_blocked`. Normal org members remain denied.
     if (req.method === "PATCH" && engagementId) {
-      requireRole(authCtx, "platform_admin");
+      const isPlatformAdmin = authCtx.roles.includes("platform_admin");
+      const isOrgAdmin = authCtx.roles.includes("org_admin");
+      if (!isPlatformAdmin && !isOrgAdmin) {
+        throw new ApiException("FORBIDDEN", "Insufficient permissions", 403);
+      }
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(engagementId)) {
@@ -773,11 +835,13 @@ Deno.serve(async (req) => {
         parsed.data.admin_notes !== undefined ||
         parsed.data.support_notes !== undefined ||
         parsed.data.contact_method !== undefined ||
-        parsed.data.contact_date !== undefined;
+        parsed.data.contact_date !== undefined ||
+        parsed.data.contact_type !== undefined ||
+        parsed.data.contact_name !== undefined;
       if (!hasMeaningfulChange) {
         throw new ApiException(
           "VALIDATION_ERROR",
-          "Request must include at least one field to update (engagement_status, counterparty_email, admin_notes, support_notes, contact_method, or contact_date).",
+          "Request must include at least one field to update (engagement_status, counterparty_email, contact_type, contact_name, admin_notes, support_notes, contact_method, or contact_date).",
           400
         );
       }
@@ -791,6 +855,53 @@ Deno.serve(async (req) => {
 
       if (fetchErr || !current) {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+
+      // ── Batch A — org_admin scoping (06 May 2026, signed) ──
+      // org_admins may ONLY:
+      //   1. update an engagement that belongs to their own org_id, AND
+      //   2. update contact_type / contact_name (no other field).
+      // Any violation: 403 FORBIDDEN + audit `contact.assignment_blocked`.
+      if (!isPlatformAdmin && isOrgAdmin) {
+        const sameOrg = !!authCtx.orgId && current.org_id === authCtx.orgId;
+        const onlyContactFields =
+          parsed.data.engagement_status === undefined &&
+          parsed.data.counterparty_email === undefined &&
+          parsed.data.admin_notes === undefined &&
+          parsed.data.support_notes === undefined &&
+          parsed.data.contact_method === undefined &&
+          parsed.data.contact_date === undefined &&
+          (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined);
+
+        if (!sameOrg || !onlyContactFields) {
+          // Best-effort audit; never block the 403 on audit failure.
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: current.org_id,
+              actor_user_id: authCtx.userId,
+              action: "contact.assignment_blocked",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "org_admin",
+                actor_org_id: authCtx.orgId ?? null,
+                target_org_id: current.org_id,
+                reason: !sameOrg ? "cross_org_attempt" : "non_contact_field_attempt",
+                attempted_fields: Object.keys(parsed.data).filter(
+                  (k) => (parsed.data as Record<string, unknown>)[k] !== undefined,
+                ),
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* swallow — audit must never mask the FORBIDDEN */ }
+          throw new ApiException(
+            "FORBIDDEN",
+            !sameOrg
+              ? "You may only edit contact details for engagements belonging to your own organisation."
+              : "Organisation admins may only edit contact_type and contact_name on engagements.",
+            403,
+          );
+        }
       }
 
       const updates: Record<string, unknown> = {};
@@ -1070,6 +1181,13 @@ Deno.serve(async (req) => {
       if (parsed.data.admin_notes !== undefined) sideUpdates.admin_notes = parsed.data.admin_notes;
       if (parsed.data.contact_method !== undefined) sideUpdates.contact_method = parsed.data.contact_method;
       if (parsed.data.contact_date !== undefined) sideUpdates.contact_date = parsed.data.contact_date;
+      // Batch A — contact-completeness fields. Empty string was already
+      // normalised to null by the Zod schema; undefined means "leave alone".
+      if (parsed.data.contact_type !== undefined) sideUpdates.contact_type = parsed.data.contact_type;
+      if (parsed.data.contact_name !== undefined) {
+        const cn = parsed.data.contact_name;
+        sideUpdates.contact_name = cn === null ? null : (cn.trim() === "" ? null : cn.trim());
+      }
       if (parsed.data.support_notes !== undefined) {
         sideUpdates.support_notes = updates.support_notes;
         sideUpdates.support_notes_updated_at = updates.support_notes_updated_at;
@@ -1096,6 +1214,43 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
+
+      // ── Batch A — emit contact.assigned / contact.updated audit row ──
+      // Fires only when contact_type or contact_name actually changed value.
+      // First-time assignment (both previous fields null/empty) → assigned;
+      // any subsequent change → updated. actor_role is derived from the
+      // authenticated context, never from the request body.
+      if (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined) {
+        const prevType = (current as { contact_type?: string | null }).contact_type ?? null;
+        const prevName = ((current as { contact_name?: string | null }).contact_name ?? "").toString().trim() || null;
+        const nextType = (sideUpdates.contact_type as string | null | undefined) ?? prevType ?? null;
+        const nextNameRaw = sideUpdates.contact_name as string | null | undefined;
+        const nextName = nextNameRaw === undefined ? prevName : (nextNameRaw === null ? null : nextNameRaw);
+        const changed = prevType !== nextType || prevName !== nextName;
+        if (changed) {
+          const wasUnset = !prevType && !prevName;
+          const action = wasUnset ? "contact.assigned" : "contact.updated";
+          const actorRole = isPlatformAdmin ? "platform_admin" : "org_admin";
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: current.org_id,
+              actor_user_id: authCtx.userId,
+              action,
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: actorRole,
+                actor_org_id: authCtx.orgId ?? null,
+                previous: { contact_type: prevType, contact_name: prevName },
+                next: { contact_type: nextType, contact_name: nextName },
+                request_id: requestId,
+              },
+            });
+          } catch (e) {
+            console.warn(`[${requestId}] Failed to insert ${action} audit row (non-fatal):`, e);
+          }
+        }
+      }
 
       // ── Audit ledger enrichment for "mark contacted" ──
       // The atomic RPC writes a generic engagement.updated/marked_contacted
