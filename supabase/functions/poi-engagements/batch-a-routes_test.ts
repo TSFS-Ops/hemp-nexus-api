@@ -271,12 +271,11 @@ Deno.test("PATCH route: counterparty-side org_admin via match-side (no counterpa
   assertEquals(decision, { ok: true });
 });
 
-Deno.test("PATCH route: counterparty-side org_admin trying to set counterparty_email → FORBIDDEN (currently restricted)", () => {
-  // ⚠ POLICY QUESTION FLAGGED FOR DANIEL DAVIES (see report at end of file).
-  // Today the route restricts org_admin to contact_type/contact_name only.
-  // counterparty_email remains platform_admin-only. This test PINS that
-  // current behaviour so it cannot drift silently. If the policy is
-  // widened, update this test together with the route gate.
+Deno.test("PATCH route: counterparty-side org_admin can set counterparty_email → ALLOW (Option B 2026-05-06)", () => {
+  // Daniel Davies confirmed MT-009 Option C → Option B widening: an authorised
+  // counterparty-side org_admin must be able to assign a usable contact, which
+  // includes the email. Without this, the contact record cannot be completed
+  // and outreach stays blocked.
   const decision = simulatePatchDecision({
     roles: ORG_ADMIN,
     actorOrgId: counterpartySide,
@@ -284,12 +283,63 @@ Deno.test("PATCH route: counterparty-side org_admin trying to set counterparty_e
     engagement: engBound,
     match: matchBoundBuyerInit,
   });
+  assertEquals(decision, { ok: true });
+});
+
+Deno.test("PATCH route: counterparty-side org_admin can set counterparty_email + contact_type + contact_name together → ALLOW", () => {
+  const decision = simulatePatchDecision({
+    roles: ORG_ADMIN,
+    actorOrgId: counterpartySide,
+    body: UpdateEngagementSchemaMirror.parse({
+      counterparty_email: "jane@acme.com",
+      contact_type: "named_individual",
+      contact_name: "Jane Doe",
+    }),
+    engagement: engBound,
+    match: matchBoundBuyerInit,
+  });
+  assertEquals(decision, { ok: true });
+});
+
+Deno.test("PATCH route blocked: INITIATOR org_admin cannot set counterparty_email", () => {
+  const decision = simulatePatchDecision({
+    roles: ORG_ADMIN,
+    actorOrgId: initiator,
+    body: UpdateEngagementSchemaMirror.parse({ counterparty_email: "ops@acme.com" }),
+    engagement: engBound,
+    match: matchBoundBuyerInit,
+  });
   assert(!decision.ok);
   if (!decision.ok) {
     assertEquals(decision.code, "FORBIDDEN");
-    assertEquals(decision.status, 403);
-    assertEquals(decision.reason, "non_contact_field_attempt");
+    assertEquals(decision.reason, "wrong_side_or_initiator");
   }
+});
+
+Deno.test("PATCH route blocked: unrelated org_admin cannot set counterparty_email", () => {
+  const decision = simulatePatchDecision({
+    roles: ORG_ADMIN,
+    actorOrgId: outsider,
+    body: UpdateEngagementSchemaMirror.parse({ counterparty_email: "ops@acme.com" }),
+    engagement: engBound,
+    match: matchBoundBuyerInit,
+  });
+  assert(!decision.ok);
+  if (!decision.ok) {
+    assertEquals(decision.code, "FORBIDDEN");
+    assertEquals(decision.reason, "not_on_match");
+  }
+});
+
+Deno.test("PATCH route blocked: normal org_member cannot set counterparty_email", () => {
+  const decision = simulatePatchDecision({
+    roles: ORG_MEMBER,
+    actorOrgId: counterpartySide,
+    body: UpdateEngagementSchemaMirror.parse({ counterparty_email: "ops@acme.com" }),
+    engagement: engBound,
+    match: matchBoundBuyerInit,
+  });
+  assert(!decision.ok && decision.reason === "Insufficient permissions");
 });
 
 Deno.test("PATCH route: counterparty-side org_admin trying to change engagement_status → FORBIDDEN", () => {
