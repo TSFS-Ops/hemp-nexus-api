@@ -870,25 +870,30 @@ Deno.serve(async (req) => {
       // to edit the counterparty's contact details — that would let one side
       // write the other side's contact, which is exactly what MT-009 forbids.
       //
-      // Authoritative rule (matches Daniel Davies' clarification):
+      // Authoritative rule (matches Daniel Davies' clarification — MT-009 Option C, Option B widening 2026-05-06):
       //   • platform_admin → may edit any field on any engagement.
-      //   • org_admin      → may edit ONLY contact_type / contact_name AND
-      //                      ONLY when their org is the counterparty side of
-      //                      the match (counterparty_org_id match OR registered
-      //                      buyer/seller side opposite the initiator).
+      //   • org_admin      → may edit ONLY contact_type / contact_name /
+      //                      counterparty_email AND ONLY when their org is the
+      //                      counterparty side of the match (counterparty_org_id
+      //                      match OR registered buyer/seller side opposite the
+      //                      initiator). Outreach (preview/send) and
+      //                      notifications remain platform_admin-only.
       //   • everyone else  → blocked.
       //
       // Side identification uses the shared `isCounterpartySide` helper, which
       // is the same predicate used by POST /respond/:matchId.
       if (!isPlatformAdmin && isOrgAdmin) {
+        const touchedContactField =
+          parsed.data.contact_type !== undefined ||
+          parsed.data.contact_name !== undefined ||
+          parsed.data.counterparty_email !== undefined;
         const onlyContactFields =
           parsed.data.engagement_status === undefined &&
-          parsed.data.counterparty_email === undefined &&
           parsed.data.admin_notes === undefined &&
           parsed.data.support_notes === undefined &&
           parsed.data.contact_method === undefined &&
           parsed.data.contact_date === undefined &&
-          (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined);
+          touchedContactField;
 
         // Fetch the parent match so the helper can compare against
         // buyer_org_id / seller_org_id. Cheap targeted select; no join.
