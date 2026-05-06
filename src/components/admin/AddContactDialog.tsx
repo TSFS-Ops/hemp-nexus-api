@@ -309,6 +309,11 @@ export function AddContactDialog({
           headers: { "Idempotency-Key": crypto.randomUUID() },
           body: {
             counterparty_email: parsed.data.email.trim(),
+            // Batch A — persist the contact_type radio + free-text name
+            // so the canonical contact-state badge resolves correctly
+            // and the backend's preview/send gate has the right inputs.
+            contact_type: parsed.data.contact_type,
+            contact_name: (parsed.data.contact_name ?? "").trim() || null,
             ...(adminNotesPayload ? { admin_notes: adminNotesPayload } : {}),
           },
         },
