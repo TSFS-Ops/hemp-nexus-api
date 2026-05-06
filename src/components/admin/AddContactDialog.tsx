@@ -67,30 +67,73 @@ import {
 // for `counterparty_email` (3–254, .email()) and adds a frontend-only
 // `.invalid`-TLD block. Backend stays the source of truth.
 // ────────────────────────────────────────────────────────────────────────
-export const addContactSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(3, { message: "Email is too short." })
-    .max(254, { message: "Email must be 254 characters or fewer." })
-    .email({ message: "Enter a valid email address." })
-    .refine((v) => isUsableOutreachEmail(v), {
-      message:
-        "This address uses a non-deliverable test domain (.invalid). Use a real email.",
+// Batch A — schema mirrors the server-side `PatchPoiEngagementSchema`
+// for `counterparty_email`, `contact_type` and `contact_name`. The
+// `superRefine` enforces the workflow rule signed on 06 May 2026:
+//   • named individual → contact_name is required
+//   • organisation     → either an org link OR an organisation name
+//                        must be present (server already enforces; we
+//                        rely on the caller to pass a non-empty
+//                        `counterparty_org_name` or set `hasOrgLink`)
+// "Email-only with no organisation/name" remains Contact incomplete and
+// is rejected here so the admin sees the correction inline.
+export const addContactSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .min(3, { message: "Email is too short." })
+      .max(254, { message: "Email must be 254 characters or fewer." })
+      .email({ message: "Enter a valid email address." })
+      .refine((v) => isUsableOutreachEmail(v), {
+        message:
+          "This address uses a non-deliverable test domain (.invalid). Use a real email.",
+      }),
+    contact_type: z.enum(["organisation", "named_individual"], {
+      required_error: "Choose a contact type.",
+      invalid_type_error: "Choose a contact type.",
     }),
-  phone: z
-    .string()
-    .trim()
-    .max(64, { message: "Phone must be 64 characters or fewer." })
-    .optional()
-    .or(z.literal("")),
-  notes: z
-    .string()
-    .trim()
-    .max(2000, { message: "Notes must be 2000 characters or fewer." })
-    .optional()
-    .or(z.literal("")),
-});
+    contact_name: z
+      .string()
+      .trim()
+      .max(200, { message: "Name must be 200 characters or fewer." })
+      .optional()
+      .or(z.literal("")),
+    /** True when the engagement has counterparty_org_id OR a non-empty
+     *  organisation name on the parent match. Used to satisfy the
+     *  "organisation" contact_type without forcing the admin to retype it. */
+    hasOrganisationName: z.boolean().optional(),
+    phone: z
+      .string()
+      .trim()
+      .max(64, { message: "Phone must be 64 characters or fewer." })
+      .optional()
+      .or(z.literal("")),
+    notes: z
+      .string()
+      .trim()
+      .max(2000, { message: "Notes must be 2000 characters or fewer." })
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((val, ctx) => {
+    const name = (val.contact_name ?? "").trim();
+    if (val.contact_type === "named_individual" && !name) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contact_name"],
+        message: "Enter the named individual's full name.",
+      });
+    }
+    if (val.contact_type === "organisation" && !name && !val.hasOrganisationName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contact_name"],
+        message:
+          "Enter the organisation's name (or link to a registered organisation). Email alone is not enough.",
+      });
+    }
+  });
 
 export type AddContactValues = z.infer<typeof addContactSchema>;
 
