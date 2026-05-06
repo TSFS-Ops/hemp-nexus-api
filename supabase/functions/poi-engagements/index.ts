@@ -723,9 +723,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── PATCH /poi-engagements/:id — Update engagement (admin only) ──
+    // ── PATCH /poi-engagements/:id — Update engagement ──
+    // Batch A (06 May 2026): platform_admin retains full edit rights.
+    // org_admin may ONLY update contact_type / contact_name AND ONLY for
+    // engagements that belong to their own organisation. All other fields
+    // and any cross-org attempt are rejected with FORBIDDEN + audit-logged
+    // as `contact.assignment_blocked`. Normal org members remain denied.
     if (req.method === "PATCH" && engagementId) {
-      requireRole(authCtx, "platform_admin");
+      const isPlatformAdmin = authCtx.roles.includes("platform_admin");
+      const isOrgAdmin = authCtx.roles.includes("org_admin");
+      if (!isPlatformAdmin && !isOrgAdmin) {
+        throw new ApiException("FORBIDDEN", "Insufficient permissions", 403);
+      }
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(engagementId)) {
