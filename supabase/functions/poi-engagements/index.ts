@@ -50,6 +50,17 @@ const UpdateEngagementSchema = z.object({
   contact_method: z.enum(["email", "phone", "linkedin", "whatsapp", "in_person", "other"]).optional(),
   contact_detail: z.string().max(500).optional(),
   contact_date: z.string().datetime().optional(),
+  // Batch A — counterparty contact-completeness fields.
+  // contact_type: "organisation" | "named_individual" | null (clear).
+  // Empty string normalises to null so the UI can clear it.
+  contact_type: z
+    .union([z.enum(["organisation", "named_individual"]), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (v === "" || v === null ? null : v ?? undefined)),
+  contact_name: z
+    .union([z.string().trim().max(200, { message: "contact_name exceeds 200 characters" }), z.null()])
+    .optional()
+    .transform((v) => (v === null ? null : v === undefined ? undefined : v)),
 });
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -60,6 +71,13 @@ const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   declined: [],
   expired: [],
 };
+
+/**
+ * Batch A — fields the helper needs from the joined match row to derive
+ * the organisation-name fallback (matches.buyer_name / seller_name when
+ * the corresponding *_org_id is null).
+ */
+const MATCH_CONTACT_SELECT = "buyer_name,seller_name,buyer_org_id,seller_org_id";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
