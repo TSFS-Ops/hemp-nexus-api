@@ -437,7 +437,39 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
+      // ── Batch A — contact-completeness gate (send) ──
+      // Block before any side effects (legitimacy, suppression, send) so a
+      // bad contact record never reaches the email pipeline. recipient_override
+      // can satisfy email_missing — re-evaluate against the override when set.
+      {
+        const overrideEmail = parsed.data.recipient_override?.trim().toLowerCase();
+        const engForCheck = overrideEmail
+          ? { ...(eng as any), counterparty_email: overrideEmail }
+          : (eng as any);
+        const sendState = getContactState(engForCheck, (eng.matches as any) ?? null);
+        if (isOutreachBlocked(sendState)) {
+          const code = contactBlockCode(sendState)!;
+          const reason = contactBlockReason(sendState)!;
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "contact.incomplete_detected",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "send-outreach",
+                state: sendState,
+                code,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal */ }
+          throw new ApiException(code, reason, 422);
+        }
+      }
+
       // The initiator org is about to project Izenzo's name to a counterparty
       // via email. Block the send if the initiator org is not formally
       // approved to trade — UNLESS the tenant posture is `wad_only`, in
