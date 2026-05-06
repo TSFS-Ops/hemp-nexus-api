@@ -870,25 +870,30 @@ Deno.serve(async (req) => {
       // to edit the counterparty's contact details — that would let one side
       // write the other side's contact, which is exactly what MT-009 forbids.
       //
-      // Authoritative rule (matches Daniel Davies' clarification):
+      // Authoritative rule (matches Daniel Davies' clarification — MT-009 Option C, Option B widening 2026-05-06):
       //   • platform_admin → may edit any field on any engagement.
-      //   • org_admin      → may edit ONLY contact_type / contact_name AND
-      //                      ONLY when their org is the counterparty side of
-      //                      the match (counterparty_org_id match OR registered
-      //                      buyer/seller side opposite the initiator).
+      //   • org_admin      → may edit ONLY contact_type / contact_name /
+      //                      counterparty_email AND ONLY when their org is the
+      //                      counterparty side of the match (counterparty_org_id
+      //                      match OR registered buyer/seller side opposite the
+      //                      initiator). Outreach (preview/send) and
+      //                      notifications remain platform_admin-only.
       //   • everyone else  → blocked.
       //
       // Side identification uses the shared `isCounterpartySide` helper, which
       // is the same predicate used by POST /respond/:matchId.
       if (!isPlatformAdmin && isOrgAdmin) {
+        const touchedContactField =
+          parsed.data.contact_type !== undefined ||
+          parsed.data.contact_name !== undefined ||
+          parsed.data.counterparty_email !== undefined;
         const onlyContactFields =
           parsed.data.engagement_status === undefined &&
-          parsed.data.counterparty_email === undefined &&
           parsed.data.admin_notes === undefined &&
           parsed.data.support_notes === undefined &&
           parsed.data.contact_method === undefined &&
           parsed.data.contact_date === undefined &&
-          (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined);
+          touchedContactField;
 
         // Fetch the parent match so the helper can compare against
         // buyer_org_id / seller_org_id. Cheap targeted select; no join.
@@ -933,7 +938,7 @@ Deno.serve(async (req) => {
             "FORBIDDEN",
             !isOwnSide
               ? "You may only edit contact details for the side of the match your organisation is on."
-              : "Organisation admins may only edit contact_type and contact_name on engagements.",
+              : "Organisation admins may only edit counterparty_email, contact_type and contact_name on engagements.",
             403,
           );
         }
@@ -1251,19 +1256,27 @@ Deno.serve(async (req) => {
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
       // ── Batch A — emit contact.assigned / contact.updated audit row ──
-      // Fires only when contact_type or contact_name actually changed value.
-      // First-time assignment (both previous fields null/empty) → assigned;
-      // any subsequent change → updated. actor_role is derived from the
-      // authenticated context, never from the request body.
-      if (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined) {
+      // Fires when contact_type, contact_name, or counterparty_email actually
+      // changed value. First-time assignment (all previous fields null/empty)
+      // → assigned; any subsequent change → updated. actor_role is derived
+      // from the authenticated context, never from the request body.
+      if (
+        parsed.data.contact_type !== undefined ||
+        parsed.data.contact_name !== undefined ||
+        parsed.data.counterparty_email !== undefined
+      ) {
         const prevType = (current as { contact_type?: string | null }).contact_type ?? null;
         const prevName = ((current as { contact_name?: string | null }).contact_name ?? "").toString().trim() || null;
+        const prevEmail = ((current as { counterparty_email?: string | null }).counterparty_email ?? "").toString().trim().toLowerCase() || null;
         const nextType = (sideUpdates.contact_type as string | null | undefined) ?? prevType ?? null;
         const nextNameRaw = sideUpdates.contact_name as string | null | undefined;
         const nextName = nextNameRaw === undefined ? prevName : (nextNameRaw === null ? null : nextNameRaw);
-        const changed = prevType !== nextType || prevName !== nextName;
+        const nextEmail = parsed.data.counterparty_email !== undefined
+          ? parsed.data.counterparty_email.trim().toLowerCase()
+          : prevEmail;
+        const changed = prevType !== nextType || prevName !== nextName || prevEmail !== nextEmail;
         if (changed) {
-          const wasUnset = !prevType && !prevName;
+          const wasUnset = !prevType && !prevName && !prevEmail;
           const action = wasUnset ? "contact.assigned" : "contact.updated";
           const actorRole = isPlatformAdmin ? "platform_admin" : "org_admin";
           try {
@@ -1276,8 +1289,8 @@ Deno.serve(async (req) => {
               metadata: {
                 actor_role: actorRole,
                 actor_org_id: authCtx.orgId ?? null,
-                previous: { contact_type: prevType, contact_name: prevName },
-                next: { contact_type: nextType, contact_name: nextName },
+                previous: { contact_type: prevType, contact_name: prevName, counterparty_email: prevEmail },
+                next: { contact_type: nextType, contact_name: nextName, counterparty_email: nextEmail },
                 request_id: requestId,
               },
             });
