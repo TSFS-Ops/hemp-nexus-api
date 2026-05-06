@@ -857,13 +857,26 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      // ── Batch A — org_admin scoping (06 May 2026, signed) ──
-      // org_admins may ONLY:
-      //   1. update an engagement that belongs to their own org_id, AND
-      //   2. update contact_type / contact_name (no other field).
-      // Any violation: 403 FORBIDDEN + audit `contact.assignment_blocked`.
+      // ── Batch A — MT-009 Option C contact-edit gate (signed 06 May 2026) ──
+      //
+      // CORRECTED 06 May 2026: the original `engagement.org_id === authCtx.orgId`
+      // rule was wrong. `engagement.org_id` is the INITIATOR org. The contact
+      // record on this row represents the COUNTERPARTY side of the match
+      // (the side opposite the initiator). The initiator must NEVER be allowed
+      // to edit the counterparty's contact details — that would let one side
+      // write the other side's contact, which is exactly what MT-009 forbids.
+      //
+      // Authoritative rule (matches Daniel Davies' clarification):
+      //   • platform_admin → may edit any field on any engagement.
+      //   • org_admin      → may edit ONLY contact_type / contact_name AND
+      //                      ONLY when their org is the counterparty side of
+      //                      the match (counterparty_org_id match OR registered
+      //                      buyer/seller side opposite the initiator).
+      //   • everyone else  → blocked.
+      //
+      // Side identification uses the shared `isCounterpartySide` helper, which
+      // is the same predicate used by POST /respond/:matchId.
       if (!isPlatformAdmin && isOrgAdmin) {
-        const sameOrg = !!authCtx.orgId && current.org_id === authCtx.orgId;
         const onlyContactFields =
           parsed.data.engagement_status === undefined &&
           parsed.data.counterparty_email === undefined &&
@@ -873,7 +886,21 @@ Deno.serve(async (req) => {
           parsed.data.contact_date === undefined &&
           (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined);
 
-        if (!sameOrg || !onlyContactFields) {
+        // Fetch the parent match so the helper can compare against
+        // buyer_org_id / seller_org_id. Cheap targeted select; no join.
+        const { data: matchRow } = await supabase
+          .from("matches")
+          .select("org_id, buyer_org_id, seller_org_id")
+          .eq("id", current.match_id)
+          .maybeSingle();
+
+        const isOwnSide = isCounterpartySide(authCtx.orgId, current as any, matchRow);
+        const side = describeMatchSide(authCtx.orgId, matchRow);
+
+        if (!isOwnSide || !onlyContactFields) {
+          const reason = !isOwnSide
+            ? (side === null ? "not_on_match" : "wrong_side_or_initiator")
+            : "non_contact_field_attempt";
           // Best-effort audit; never block the 403 on audit failure.
           try {
             await supabase.from("audit_logs").insert({
@@ -885,8 +912,12 @@ Deno.serve(async (req) => {
               metadata: {
                 actor_role: "org_admin",
                 actor_org_id: authCtx.orgId ?? null,
-                target_org_id: current.org_id,
-                reason: !sameOrg ? "cross_org_attempt" : "non_contact_field_attempt",
+                initiator_org_id: current.org_id,
+                counterparty_org_id: (current as { counterparty_org_id?: string | null }).counterparty_org_id ?? null,
+                buyer_org_id: matchRow?.buyer_org_id ?? null,
+                seller_org_id: matchRow?.seller_org_id ?? null,
+                actor_match_side: side,
+                reason,
                 attempted_fields: Object.keys(parsed.data).filter(
                   (k) => (parsed.data as Record<string, unknown>)[k] !== undefined,
                 ),
@@ -896,8 +927,8 @@ Deno.serve(async (req) => {
           } catch (_e) { /* swallow — audit must never mask the FORBIDDEN */ }
           throw new ApiException(
             "FORBIDDEN",
-            !sameOrg
-              ? "You may only edit contact details for engagements belonging to your own organisation."
+            !isOwnSide
+              ? "You may only edit contact details for the side of the match your organisation is on."
               : "Organisation admins may only edit contact_type and contact_name on engagements.",
             403,
           );
