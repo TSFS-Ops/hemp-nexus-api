@@ -16,6 +16,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, Mail, UserPlus, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+// Batch A — surface the canonical contact-state label here too so the
+// timeline panel uses the same wording as the admin queue and the
+// pending-engagement card.
+import {
+  contactBlockReason,
+  contactStateLabel,
+  getContactState,
+  isOutreachBlocked,
+} from "@/lib/contact-completeness";
 
 export interface UnknownCounterpartyEngagement {
   engagement_status: string | null;
@@ -23,6 +32,9 @@ export interface UnknownCounterpartyEngagement {
   counterparty_email: string | null;
   counterparty_org_id: string | null;
   counterparty_name?: string | null;
+  /** Batch A — counterparty contact labelling fields. */
+  contact_type?: "organisation" | "named_individual" | null;
+  contact_name?: string | null;
   contacted_at?: string | null;
   responded_at?: string | null;
   created_at?: string | null;
