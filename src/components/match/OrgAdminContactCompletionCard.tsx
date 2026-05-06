@@ -60,6 +60,33 @@ import {
 } from "@/lib/contact-completeness";
 import { isEngagementTerminal } from "@/lib/engagement-state";
 
+/**
+ * Pure visibility predicate for OrgAdminContactCompletionCard.
+ *
+ * Mirrors the backend MT-009 Option B rule:
+ *   • viewer has org_admin role
+ *   • viewer is NOT a platform admin (those use the admin panel)
+ *   • engagement is not terminal
+ *   • viewer's org sits on the COUNTERPARTY side of the engagement
+ *
+ * Exported so the visibility matrix can be tested without rendering the
+ * component or stubbing AuthContext.
+ */
+export function shouldShowOrgAdminContactCard(args: {
+  engagement: { org_id: string; counterparty_org_id?: string | null; engagement_status: string | null } | null | undefined;
+  match: { org_id?: string | null; buyer_org_id?: string | null; seller_org_id?: string | null } | null | undefined;
+  viewerOrgId: string | null | undefined;
+  isPlatformAdmin: boolean;
+  isOrgAdmin: boolean;
+}): boolean {
+  const { engagement, match, viewerOrgId, isPlatformAdmin, isOrgAdmin } = args;
+  if (!engagement || !match || !viewerOrgId) return false;
+  if (isPlatformAdmin) return false;
+  if (!isOrgAdmin) return false;
+  if (engagement.engagement_status && isEngagementTerminal(engagement.engagement_status as any)) return false;
+  return isCounterpartySide(viewerOrgId, engagement, match);
+}
+
 const formSchema = z
   .object({
     counterparty_email: z
