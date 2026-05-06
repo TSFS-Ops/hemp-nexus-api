@@ -263,14 +263,34 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      const recipient = (eng.counterparty_email || "").trim().toLowerCase();
-      if (!recipient) {
-        throw new ApiException(
-          "VALIDATION_ERROR",
-          "This engagement has no counterparty email on file. Add one before previewing.",
-          400
-        );
+      // ── Batch A — contact-completeness gate ──
+      // Single source of truth: the helper decides whether outreach is allowed.
+      // email_missing      → CONTACT_EMAIL_MISSING
+      // contact_incomplete → CONTACT_INCOMPLETE
+      // organisation_contact / named_individual_contact → allowed
+      const previewState = getContactState(eng as any, (eng.matches as any) ?? null);
+      if (isOutreachBlocked(previewState)) {
+        const code = contactBlockCode(previewState)!;
+        const reason = contactBlockReason(previewState)!;
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: (eng as { org_id: string }).org_id,
+            actor_user_id: authCtx.userId,
+            action: "contact.incomplete_detected",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              actor_role: "platform_admin",
+              surface: "preview-outreach",
+              state: previewState,
+              code,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal */ }
+        throw new ApiException(code, reason, 422);
       }
+      const recipient = (eng.counterparty_email || "").trim().toLowerCase();
 
       const m = eng.matches as any;
       const initiatorOrgId = eng.org_id;
