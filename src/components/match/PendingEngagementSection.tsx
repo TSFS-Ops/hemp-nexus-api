@@ -32,6 +32,15 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Clock, Mail, CheckCircle2, XCircle, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isEngagementTerminal } from "@/lib/engagement-state";
+// Batch A — single source of truth for the contact-state label/tooltip
+// shown above the missing-fields callout.
+import {
+  contactBlockReason,
+  contactStateLabel,
+  getContactState,
+  isOutreachBlocked,
+  type ContactState,
+} from "@/lib/contact-completeness";
 
 export interface PendingEngagementRow {
   id?: string | null;
@@ -46,6 +55,9 @@ export interface PendingEngagementRow {
   counterparty_name?: string | null;
   counterparty_email: string | null;
   counterparty_org_id: string | null;
+  /** Batch A — counterparty contact labelling fields. */
+  contact_type?: "organisation" | "named_individual" | null;
+  contact_name?: string | null;
   created_at?: string | null;
   contacted_at?: string | null;
   responded_at?: string | null;
