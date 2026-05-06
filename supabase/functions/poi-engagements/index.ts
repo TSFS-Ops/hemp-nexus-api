@@ -24,6 +24,10 @@ import {
   contactStateLabel,
   type ContactState,
 } from "../_shared/contact-completeness.ts";
+import {
+  isCounterpartySide,
+  describeMatchSide,
+} from "../_shared/engagement-counterparty.ts";
 
 const EngagementStatusSchema = z.enum([
   "pending",
