@@ -46,6 +46,16 @@ import {
   isEngagementPending,
 } from "@/lib/engagement-state";
 import { AddContactDialog, type AddContactEngagementSummary } from "@/components/admin/AddContactDialog";
+// Batch A — single source of truth for contact-completeness labels and the
+// outreach gate. Mirrors the edge-function helper so the UI badge, tooltip
+// and Send-outreach disabled state always match the backend's 422 response.
+import {
+  contactBlockReason,
+  contactStateLabel,
+  getContactState,
+  isOutreachBlocked,
+  type ContactState,
+} from "@/lib/contact-completeness";
 
 interface Engagement {
   id: string;
@@ -55,6 +65,9 @@ interface Engagement {
   counterparty_email: string | null;
   counterparty_type: string | null;
   engagement_status: "pending" | "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+  // Batch A — counterparty contact labelling fields.
+  contact_type: "organisation" | "named_individual" | null;
+  contact_name: string | null;
   contact_method: string | null;
   contacted_at: string | null;
   responded_at: string | null;
