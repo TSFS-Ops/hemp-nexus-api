@@ -1162,6 +1162,43 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
+      // ── Batch A — emit contact.assigned / contact.updated audit row ──
+      // Fires only when contact_type or contact_name actually changed value.
+      // First-time assignment (both previous fields null/empty) → assigned;
+      // any subsequent change → updated. actor_role is derived from the
+      // authenticated context, never from the request body.
+      if (parsed.data.contact_type !== undefined || parsed.data.contact_name !== undefined) {
+        const prevType = (current as { contact_type?: string | null }).contact_type ?? null;
+        const prevName = ((current as { contact_name?: string | null }).contact_name ?? "").toString().trim() || null;
+        const nextType = (sideUpdates.contact_type as string | null | undefined) ?? prevType ?? null;
+        const nextNameRaw = sideUpdates.contact_name as string | null | undefined;
+        const nextName = nextNameRaw === undefined ? prevName : (nextNameRaw === null ? null : nextNameRaw);
+        const changed = prevType !== nextType || prevName !== nextName;
+        if (changed) {
+          const wasUnset = !prevType && !prevName;
+          const action = wasUnset ? "contact.assigned" : "contact.updated";
+          const actorRole = isPlatformAdmin ? "platform_admin" : "org_admin";
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: current.org_id,
+              actor_user_id: authCtx.userId,
+              action,
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: actorRole,
+                actor_org_id: authCtx.orgId ?? null,
+                previous: { contact_type: prevType, contact_name: prevName },
+                next: { contact_type: nextType, contact_name: nextName },
+                request_id: requestId,
+              },
+            });
+          } catch (e) {
+            console.warn(`[${requestId}] Failed to insert ${action} audit row (non-fatal):`, e);
+          }
+        }
+      }
+
       // ── Audit ledger enrichment for "mark contacted" ──
       // The atomic RPC writes a generic engagement.updated/marked_contacted
       // row (status_only). For contact_attempt entries we additionally
