@@ -16,6 +16,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, Mail, UserPlus, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+// Batch A — surface the canonical contact-state label here too so the
+// timeline panel uses the same wording as the admin queue and the
+// pending-engagement card.
+import {
+  contactBlockReason,
+  contactStateLabel,
+  getContactState,
+  isOutreachBlocked,
+} from "@/lib/contact-completeness";
 
 export interface UnknownCounterpartyEngagement {
   engagement_status: string | null;
@@ -23,6 +32,9 @@ export interface UnknownCounterpartyEngagement {
   counterparty_email: string | null;
   counterparty_org_id: string | null;
   counterparty_name?: string | null;
+  /** Batch A — counterparty contact labelling fields. */
+  contact_type?: "organisation" | "named_individual" | null;
+  contact_name?: string | null;
   contacted_at?: string | null;
   responded_at?: string | null;
   created_at?: string | null;
@@ -146,17 +158,44 @@ export function UnknownCounterpartyStatus({ engagement, isInitiator }: Props) {
                 : "This trade was issued to a counterparty who is not yet on the platform."}
             </CardDescription>
           </div>
-          <Badge
-            variant="outline"
-            className={cn(
-              "shrink-0 text-xs",
-              currentBadge.tone === "complete" && "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-              currentBadge.tone === "active" && "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-              currentBadge.tone === "pending" && "border-muted-foreground/30 bg-muted text-muted-foreground",
-            )}
-          >
-            {currentBadge.label}
-          </Badge>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs",
+                currentBadge.tone === "complete" && "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                currentBadge.tone === "active" && "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                currentBadge.tone === "pending" && "border-muted-foreground/30 bg-muted text-muted-foreground",
+              )}
+            >
+              {currentBadge.label}
+            </Badge>
+            {(() => {
+              const cs = getContactState({
+                counterparty_email: engagement.counterparty_email,
+                counterparty_org_id: engagement.counterparty_org_id,
+                contact_name: engagement.contact_name,
+                contact_type: engagement.contact_type,
+              });
+              const blocked = isOutreachBlocked(cs);
+              const reason = contactBlockReason(cs);
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[10px]",
+                    blocked
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                      : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                  )}
+                  title={reason ?? "Contact details are sufficient for outreach."}
+                  data-contact-state={cs}
+                >
+                  {contactStateLabel(cs)}
+                </Badge>
+              );
+            })()}
+          </div>
         </div>
       </CardHeader>
       <CardContent>

@@ -46,6 +46,16 @@ import {
   isEngagementPending,
 } from "@/lib/engagement-state";
 import { AddContactDialog, type AddContactEngagementSummary } from "@/components/admin/AddContactDialog";
+// Batch A — single source of truth for contact-completeness labels and the
+// outreach gate. Mirrors the edge-function helper so the UI badge, tooltip
+// and Send-outreach disabled state always match the backend's 422 response.
+import {
+  contactBlockReason,
+  contactStateLabel,
+  getContactState,
+  isOutreachBlocked,
+  type ContactState,
+} from "@/lib/contact-completeness";
 
 interface Engagement {
   id: string;
@@ -55,6 +65,9 @@ interface Engagement {
   counterparty_email: string | null;
   counterparty_type: string | null;
   engagement_status: "pending" | "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+  // Batch A — counterparty contact labelling fields.
+  contact_type: "organisation" | "named_individual" | null;
+  contact_name: string | null;
   contact_method: string | null;
   contacted_at: string | null;
   responded_at: string | null;
@@ -605,6 +618,39 @@ export function AdminPendingEngagementsPanel() {
       className: "bg-amber-50 text-amber-800 border-amber-300",
     };
   };
+
+  /**
+   * Batch A — canonical contact-state badge. Single source of truth via
+   * `getContactState`. Drives both the badge label and the Send-outreach
+   * disabled tooltip so admin and backend never disagree.
+   */
+  const CONTACT_STATE_STYLES: Record<ContactState, string> = {
+    organisation_contact: "bg-emerald-50 text-emerald-800 border-emerald-300",
+    named_individual_contact: "bg-sky-50 text-sky-800 border-sky-300",
+    email_missing: "bg-amber-50 text-amber-800 border-amber-300",
+    contact_incomplete: "bg-rose-50 text-rose-800 border-rose-300",
+  };
+  const getEngagementContactState = (e: Engagement): ContactState =>
+    getContactState(
+      {
+        counterparty_email: e.counterparty_email,
+        counterparty_org_id: e.counterparty_org_id,
+        contact_name: e.contact_name,
+        contact_type: e.contact_type,
+        counterparty_org: e.counterparty_org,
+      },
+      e.matches
+        ? {
+            buyer_name: e.matches.buyer_name,
+            seller_name: e.matches.seller_name,
+            // matches projection on this panel doesn't include *_org_id;
+            // pass undefined so the helper falls back to the engagement
+            // counterparty_org_id signal it already has.
+            buyer_org_id: undefined,
+            seller_org_id: undefined,
+          }
+        : null,
+    );
 
   const filtered = useMemo(() => {
     let base: Engagement[];
@@ -1386,6 +1432,27 @@ export function AdminPendingEngagementsPanel() {
                                 </Badge>
                               );
                             })()}
+                            {/* Batch A — canonical contact-completeness badge.
+                                Mirrors the backend's outreach gate so an
+                                operator can read the state without opening
+                                the row. Wording is the signed spec. */}
+                            {(() => {
+                              const cs = getEngagementContactState(e);
+                              const blocked = isOutreachBlocked(cs);
+                              const reason = contactBlockReason(cs);
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className={`whitespace-nowrap text-[10px] font-medium px-2 py-0.5 ${CONTACT_STATE_STYLES[cs]}`}
+                                  title={reason ?? "Contact details are sufficient for outreach."}
+                                  aria-label={`Contact state: ${contactStateLabel(cs)}.${reason ? " " + reason : ""}`}
+                                  data-contact-state={cs}
+                                >
+                                  {blocked && <AlertTriangle className="h-3 w-3 mr-1" />}
+                                  {contactStateLabel(cs)}
+                                </Badge>
+                              );
+                            })()}
                             {(() => {
                               // SLA badge: only render for non-terminal "awaiting outreach" states
                               // AND only when the counterparty has not been auto-linked.
@@ -1422,42 +1489,72 @@ export function AdminPendingEngagementsPanel() {
                             {/* Add contact: dedicated discovery affordance for unregistered counterparties.
                                 Distinct from "Mark contacted" — captures a discovered email so Notify can run.
                                 Shown whenever the row has no usable email and the engagement isn't terminal. */}
-                            {!isTerminal && !isUsableOutreachEmail(e.counterparty_email) && (
-                              <Button
-                                size="sm"
-                                variant="default"
-                                onClick={() =>
-                                  setAddContactFor({
-                                    id: e.id,
-                                    match_id: e.match_id,
-                                    counterparty_org_name: e.counterparty_org?.name ?? null,
-                                    counterparty_email: e.counterparty_email,
-                                    commodity: e.matches?.commodity ?? null,
-                                  })
-                                }
-                                disabled={actionLoadingId === e.id}
-                                title="Capture a discovered contact email so outreach can be sent"
-                                aria-label="Add contact details"
-                              >
-                                <UserPlus className="h-3 w-3 mr-1" /> Add contact
-                              </Button>
-                            )}
+                            {/* Batch A — Add/Edit contact dialog. Captures
+                                counterparty_email + contact_type +
+                                contact_name in one place. Shown for any
+                                non-terminal engagement so admins can move a
+                                row from Contact incomplete / Email missing
+                                into Organisation-level / Named individual. */}
+                            {!isTerminal && (() => {
+                              const cs = getEngagementContactState(e);
+                              const blocked = isOutreachBlocked(cs);
+                              const hasOrgLink = !!e.counterparty_org_id;
+                              const hasOrgName = !!(e.counterparty_org?.name && e.counterparty_org.name.trim());
+                              return (
+                                <Button
+                                  size="sm"
+                                  variant={blocked ? "default" : "outline"}
+                                  onClick={() =>
+                                    setAddContactFor({
+                                      id: e.id,
+                                      match_id: e.match_id,
+                                      counterparty_org_name: e.counterparty_org?.name ?? null,
+                                      counterparty_email: e.counterparty_email,
+                                      commodity: e.matches?.commodity ?? null,
+                                      contact_type: e.contact_type,
+                                      contact_name: e.contact_name,
+                                      has_org_link: hasOrgLink || hasOrgName,
+                                    })
+                                  }
+                                  disabled={actionLoadingId === e.id}
+                                  title={
+                                    blocked
+                                      ? contactBlockReason(cs) ?? "Capture contact details so outreach can be sent."
+                                      : "Edit the captured counterparty contact (email, type, name)."
+                                  }
+                                  aria-label={blocked ? "Add contact details" : "Edit contact details"}
+                                >
+                                  <UserPlus className="h-3 w-3 mr-1" />
+                                  {blocked ? "Add contact" : "Edit contact"}
+                                </Button>
+                              );
+                            })()}
                             {/* Send outreach (formerly "Notify"): platform-sent email via Resend. Only offered for
                                 pre-acceptance states with a deliverable email. Distinct from "Record contact" which is audit-only. */}
-                            {(e.engagement_status === "notification_sent" || e.engagement_status === "pending") && (() => {
-                              const usable = isUsableOutreachEmail(e.counterparty_email);
-                              const reason = !e.counterparty_email
-                                ? "Cannot send outreach: no valid counterparty email on file. Use Add contact first."
-                                : !usable
-                                  ? "Cannot send outreach: counterparty email uses a non-deliverable test domain (.invalid). Use Add contact to replace it."
-                                  : "Platform sends an outreach email via Resend";
+                            {/* Batch A — outreach button is gated on the
+                                canonical pre-acceptance state set
+                                (`isEngagementPending`, includes legacy
+                                'pending' defensively) AND on the
+                                contact-completeness state. The disabled
+                                tooltip surfaces the same reason text the
+                                backend returns (CONTACT_EMAIL_MISSING /
+                                CONTACT_INCOMPLETE) so admin and server
+                                never disagree about why the send is blocked. */}
+                            {isEngagementPending(e.engagement_status) && (() => {
+                              const cs = getEngagementContactState(e);
+                              const blocked = isOutreachBlocked(cs);
+                              const reason = blocked
+                                ? contactBlockReason(cs)!
+                                : "Platform sends an outreach email via Resend";
                               return (
                                 <Button
                                   size="sm" variant="outline"
                                   onClick={() => sendNotification(e)}
-                                  disabled={actionLoadingId === e.id || !usable}
+                                  disabled={actionLoadingId === e.id || blocked}
                                   title={reason}
                                   aria-label={reason}
+                                  data-outreach-blocked={blocked ? "true" : "false"}
+                                  data-outreach-block-code={blocked ? (cs === "email_missing" ? "CONTACT_EMAIL_MISSING" : "CONTACT_INCOMPLETE") : undefined}
                                 >
                                   <Mail className="h-3 w-3 mr-1" /> Send outreach
                                 </Button>

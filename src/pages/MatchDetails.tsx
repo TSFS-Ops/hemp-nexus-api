@@ -26,6 +26,7 @@ import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard"
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { PendingEngagementSection } from "@/components/match/PendingEngagementSection";
 import type { PendingEngagementRow } from "@/components/match/PendingEngagementSection";
+import { OrgAdminContactCompletionCard } from "@/components/match/OrgAdminContactCompletionCard";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { SpineTimeline } from "@/components/match/SpineTimeline";
@@ -181,6 +182,12 @@ function MatchDetailsContent() {
       <UnknownCounterpartyStatus
         engagement={engagementData}
         isInitiator={matchRole === "creator" || userOrgId === (match as any).org_id}
+      />
+
+      <OrgAdminContactCompletionCard
+        engagement={engagementData as any}
+        match={match as any}
+        viewerOrgId={userOrgId}
       />
 
       {matchId && <AcceptEngagementCard match={match} engagementStatus={engagementStatus} onResponded={fetchMatch} />}

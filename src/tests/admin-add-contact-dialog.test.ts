@@ -17,18 +17,27 @@ import { describe, it, expect } from "vitest";
 import { addContactSchema } from "@/components/admin/AddContactDialog";
 
 describe("addContactSchema", () => {
+  // Batch A — every accepted save must now include contact_type, and for
+  // organisation-level contacts must either pass hasOrganisationName=true
+  // or include a typed organisation name.
+  const baseOrg = {
+    contact_type: "organisation" as const,
+    contact_name: "Acme Trading (Pty) Ltd",
+    hasOrganisationName: true,
+  };
+
   it("accepts a plausibly deliverable email", () => {
-    const r = addContactSchema.safeParse({ email: "ops@trade.izenzo.co.za" });
+    const r = addContactSchema.safeParse({ email: "ops@trade.izenzo.co.za", ...baseOrg });
     expect(r.success).toBe(true);
   });
 
   it("rejects empty email", () => {
-    const r = addContactSchema.safeParse({ email: "   " });
+    const r = addContactSchema.safeParse({ email: "   ", ...baseOrg });
     expect(r.success).toBe(false);
   });
 
   it("rejects malformed email", () => {
-    const r = addContactSchema.safeParse({ email: "not-an-email" });
+    const r = addContactSchema.safeParse({ email: "not-an-email", ...baseOrg });
     expect(r.success).toBe(false);
   });
 
@@ -39,7 +48,7 @@ describe("addContactSchema", () => {
       "USER@FOO.INVALID",
     ];
     for (const email of cases) {
-      const r = addContactSchema.safeParse({ email });
+      const r = addContactSchema.safeParse({ email, ...baseOrg });
       expect(r.success, `expected ${email} to be rejected`).toBe(false);
     }
   });
@@ -47,6 +56,7 @@ describe("addContactSchema", () => {
   it("accepts optional phone + notes when within bounds", () => {
     const r = addContactSchema.safeParse({
       email: "buyer@acme.com",
+      ...baseOrg,
       phone: "+27 82 555 0100",
       notes: "Found contact email on company website footer.",
     });
@@ -57,10 +67,10 @@ describe("addContactSchema", () => {
     const longPhone = "+".padEnd(70, "1");
     const longNotes = "x".repeat(2001);
     expect(
-      addContactSchema.safeParse({ email: "a@b.com", phone: longPhone }).success,
+      addContactSchema.safeParse({ email: "a@b.com", ...baseOrg, phone: longPhone }).success,
     ).toBe(false);
     expect(
-      addContactSchema.safeParse({ email: "a@b.com", notes: longNotes }).success,
+      addContactSchema.safeParse({ email: "a@b.com", ...baseOrg, notes: longNotes }).success,
     ).toBe(false);
   });
 });

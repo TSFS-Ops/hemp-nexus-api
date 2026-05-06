@@ -55,6 +55,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { isUsableOutreachEmail } from "@/components/admin/AdminPendingEngagementsPanel";
 import {
   BINDING_HINT_MESSAGES,
@@ -67,30 +68,73 @@ import {
 // for `counterparty_email` (3–254, .email()) and adds a frontend-only
 // `.invalid`-TLD block. Backend stays the source of truth.
 // ────────────────────────────────────────────────────────────────────────
-export const addContactSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(3, { message: "Email is too short." })
-    .max(254, { message: "Email must be 254 characters or fewer." })
-    .email({ message: "Enter a valid email address." })
-    .refine((v) => isUsableOutreachEmail(v), {
-      message:
-        "This address uses a non-deliverable test domain (.invalid). Use a real email.",
+// Batch A — schema mirrors the server-side `PatchPoiEngagementSchema`
+// for `counterparty_email`, `contact_type` and `contact_name`. The
+// `superRefine` enforces the workflow rule signed on 06 May 2026:
+//   • named individual → contact_name is required
+//   • organisation     → either an org link OR an organisation name
+//                        must be present (server already enforces; we
+//                        rely on the caller to pass a non-empty
+//                        `counterparty_org_name` or set `hasOrgLink`)
+// "Email-only with no organisation/name" remains Contact incomplete and
+// is rejected here so the admin sees the correction inline.
+export const addContactSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .min(3, { message: "Email is too short." })
+      .max(254, { message: "Email must be 254 characters or fewer." })
+      .email({ message: "Enter a valid email address." })
+      .refine((v) => isUsableOutreachEmail(v), {
+        message:
+          "This address uses a non-deliverable test domain (.invalid). Use a real email.",
+      }),
+    contact_type: z.enum(["organisation", "named_individual"], {
+      required_error: "Choose a contact type.",
+      invalid_type_error: "Choose a contact type.",
     }),
-  phone: z
-    .string()
-    .trim()
-    .max(64, { message: "Phone must be 64 characters or fewer." })
-    .optional()
-    .or(z.literal("")),
-  notes: z
-    .string()
-    .trim()
-    .max(2000, { message: "Notes must be 2000 characters or fewer." })
-    .optional()
-    .or(z.literal("")),
-});
+    contact_name: z
+      .string()
+      .trim()
+      .max(200, { message: "Name must be 200 characters or fewer." })
+      .optional()
+      .or(z.literal("")),
+    /** True when the engagement has counterparty_org_id OR a non-empty
+     *  organisation name on the parent match. Used to satisfy the
+     *  "organisation" contact_type without forcing the admin to retype it. */
+    hasOrganisationName: z.boolean().optional(),
+    phone: z
+      .string()
+      .trim()
+      .max(64, { message: "Phone must be 64 characters or fewer." })
+      .optional()
+      .or(z.literal("")),
+    notes: z
+      .string()
+      .trim()
+      .max(2000, { message: "Notes must be 2000 characters or fewer." })
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((val, ctx) => {
+    const name = (val.contact_name ?? "").trim();
+    if (val.contact_type === "named_individual" && !name) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contact_name"],
+        message: "Enter the named individual's full name.",
+      });
+    }
+    if (val.contact_type === "organisation" && !name && !val.hasOrganisationName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contact_name"],
+        message:
+          "Enter the organisation's name (or link to a registered organisation). Email alone is not enough.",
+      });
+    }
+  });
 
 export type AddContactValues = z.infer<typeof addContactSchema>;
 
@@ -100,6 +144,14 @@ export interface AddContactEngagementSummary {
   counterparty_org_name: string | null;
   counterparty_email: string | null;
   commodity: string | null;
+  /** Batch A — current contact_type on the engagement, if any. */
+  contact_type?: "organisation" | "named_individual" | null;
+  /** Batch A — current free-text contact_name on the engagement, if any. */
+  contact_name?: string | null;
+  /** Batch A — true when the engagement has a registered counterparty
+   *  organisation linked. Used so the schema can accept "organisation"
+   *  contact_type without forcing the admin to retype the name. */
+  has_org_link?: boolean;
 }
 
 interface AddContactDialogProps {
@@ -135,11 +187,25 @@ export function AddContactDialog({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
-  const [errors, setErrors] = useState<Partial<Record<"email" | "phone" | "notes", string>>>({});
+  // Batch A — contact_type/contact_name local state. Default to
+  // "organisation" when the engagement has an org name/link, otherwise
+  // default to "named_individual" so the admin is steered away from
+  // creating an "email-only / Contact incomplete" record.
+  const [contactType, setContactType] = useState<"organisation" | "named_individual">(
+    "named_individual",
+  );
+  const [contactName, setContactName] = useState("");
+  const [errors, setErrors] = useState<
+    Partial<Record<"email" | "contact_type" | "contact_name" | "phone" | "notes", string>>
+  >({});
   const [saving, setSaving] = useState(false);
   // Persistent server-side rejection state. Rendered inline above the footer
   // so the admin can read the explanation without chasing a transient toast.
   const [saveError, setSaveError] = useState<HumanisedEngagementError | null>(null);
+
+  const hasOrganisationName =
+    !!engagement?.has_org_link ||
+    !!(engagement?.counterparty_org_name && engagement.counterparty_org_name.trim());
 
   // Reset form whenever the dialog opens for a new engagement.
   useEffect(() => {
@@ -149,8 +215,23 @@ export function AddContactDialog({
       setNotes("");
       setErrors({});
       setSaveError(null);
+      // Prefer the existing contact_type if the row already has one;
+      // otherwise default based on whether an org name/link is known.
+      if (engagement?.contact_type === "organisation" || engagement?.contact_type === "named_individual") {
+        setContactType(engagement.contact_type);
+      } else {
+        setContactType(hasOrganisationName ? "organisation" : "named_individual");
+      }
+      setContactName(engagement?.contact_name ?? "");
     }
-  }, [open, engagement?.id, engagement?.counterparty_email]);
+  }, [
+    open,
+    engagement?.id,
+    engagement?.counterparty_email,
+    engagement?.contact_type,
+    engagement?.contact_name,
+    hasOrganisationName,
+  ]);
 
   const research = useMemo(
     () => buildResearchLinks(engagement?.counterparty_org_name ?? null),
@@ -180,11 +261,24 @@ export function AddContactDialog({
   const handleSave = async () => {
     if (!engagement) return;
 
-    const parsed = addContactSchema.safeParse({ email, phone, notes });
+    const parsed = addContactSchema.safeParse({
+      email,
+      contact_type: contactType,
+      contact_name: contactName,
+      hasOrganisationName,
+      phone,
+      notes,
+    });
     if (!parsed.success) {
       const next: typeof errors = {};
       for (const issue of parsed.error.issues) {
-        const key = issue.path[0] as "email" | "phone" | "notes" | undefined;
+        const key = issue.path[0] as
+          | "email"
+          | "contact_type"
+          | "contact_name"
+          | "phone"
+          | "notes"
+          | undefined;
         if (key && !next[key]) next[key] = issue.message;
       }
       setErrors(next);
@@ -216,6 +310,11 @@ export function AddContactDialog({
           headers: { "Idempotency-Key": crypto.randomUUID() },
           body: {
             counterparty_email: parsed.data.email.trim(),
+            // Batch A — persist the contact_type radio + free-text name
+            // so the canonical contact-state badge resolves correctly
+            // and the backend's preview/send gate has the right inputs.
+            contact_type: parsed.data.contact_type,
+            contact_name: (parsed.data.contact_name ?? "").trim() || null,
             ...(adminNotesPayload ? { admin_notes: adminNotesPayload } : {}),
           },
         },
@@ -345,6 +444,84 @@ export function AddContactDialog({
             )}
           </div>
 
+          {/* Batch A — contact_type radio. Drives the canonical contact-state
+              badge and the backend's preview/send gate. "Email-only with no
+              organisation/name" remains Contact incomplete and is rejected
+              by the schema's superRefine — admins must pick a type and,
+              for named individuals, supply a name. */}
+          <fieldset className="space-y-2 rounded-md border border-slate-200 bg-slate-50/40 p-3">
+            <legend className="px-1 text-xs font-medium text-slate-700">
+              Contact type *
+            </legend>
+            <RadioGroup
+              value={contactType}
+              onValueChange={(v) => setContactType(v as "organisation" | "named_individual")}
+              className="gap-2"
+              aria-label="Contact type"
+            >
+              <label className="flex items-start gap-2 cursor-pointer">
+                <RadioGroupItem value="organisation" id="add-contact-type-org" className="mt-0.5" />
+                <span className="text-sm">
+                  <span className="font-medium">Organisation-level contact</span>
+                  <span className="block text-xs text-muted-foreground">
+                    A general inbox or shared address belonging to the counterparty organisation.
+                    {hasOrganisationName
+                      ? ` We'll use "${(engagement?.counterparty_org_name ?? "the linked organisation").trim()}" as the organisation name.`
+                      : " Provide the organisation's name in the field below."}
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <RadioGroupItem value="named_individual" id="add-contact-type-individual" className="mt-0.5" />
+                <span className="text-sm">
+                  <span className="font-medium">Named individual contact</span>
+                  <span className="block text-xs text-muted-foreground">
+                    A specific person at the counterparty (e.g. the procurement lead). Their full name is required below.
+                  </span>
+                </span>
+              </label>
+            </RadioGroup>
+            {errors.contact_type && (
+              <p className="text-xs text-destructive">{errors.contact_type}</p>
+            )}
+          </fieldset>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="add-contact-name">
+              {contactType === "named_individual"
+                ? "Full name *"
+                : hasOrganisationName
+                  ? "Organisation name (optional override)"
+                  : "Organisation name *"}
+            </Label>
+            <Input
+              id="add-contact-name"
+              type="text"
+              autoComplete="off"
+              placeholder={
+                contactType === "named_individual"
+                  ? "e.g. Naledi Mokoena"
+                  : hasOrganisationName
+                    ? engagement?.counterparty_org_name ?? "Override the linked organisation name"
+                    : "e.g. Acme Trading (Pty) Ltd"
+              }
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              aria-invalid={!!errors.contact_name}
+              aria-describedby={errors.contact_name ? "add-contact-name-err" : undefined}
+              maxLength={200}
+            />
+            {errors.contact_name && (
+              <p id="add-contact-name-err" className="text-xs text-destructive">
+                {errors.contact_name}
+              </p>
+            )}
+            {!errors.contact_name && contactType === "organisation" && hasOrganisationName && (
+              <p className="text-xs text-muted-foreground">
+                Leave blank to keep the linked organisation name.
+              </p>
+            )}
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="add-contact-phone">Phone (optional)</Label>
             <Input

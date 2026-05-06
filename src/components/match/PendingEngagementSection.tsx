@@ -32,6 +32,15 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Clock, Mail, CheckCircle2, XCircle, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isEngagementTerminal } from "@/lib/engagement-state";
+// Batch A — single source of truth for the contact-state label/tooltip
+// shown above the missing-fields callout.
+import {
+  contactBlockReason,
+  contactStateLabel,
+  getContactState,
+  isOutreachBlocked,
+  type ContactState,
+} from "@/lib/contact-completeness";
 
 export interface PendingEngagementRow {
   id?: string | null;
@@ -46,6 +55,9 @@ export interface PendingEngagementRow {
   counterparty_name?: string | null;
   counterparty_email: string | null;
   counterparty_org_id: string | null;
+  /** Batch A — counterparty contact labelling fields. */
+  contact_type?: "organisation" | "named_individual" | null;
+  contact_name?: string | null;
   created_at?: string | null;
   contacted_at?: string | null;
   responded_at?: string | null;
@@ -269,9 +281,42 @@ export function PendingEngagementSection({ engagement, match, isInitiator }: Pro
                 : "A pending engagement is in progress for this trade. Status shown below."}
             </CardDescription>
           </div>
-          <Badge variant="outline" className={cn("shrink-0 text-xs", badgeClass)}>
-            {meta.label}
-          </Badge>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <Badge variant="outline" className={cn("text-xs", badgeClass)}>
+              {meta.label}
+            </Badge>
+            {/* Batch A — canonical contact-state badge so the initiator can
+                see at a glance whether the recorded contact is sufficient
+                for the compliance desk to send outreach. */}
+            {(() => {
+              const cs: ContactState = getContactState(
+                {
+                  counterparty_email: engagement.counterparty_email,
+                  counterparty_org_id: engagement.counterparty_org_id,
+                  contact_name: engagement.contact_name,
+                  contact_type: engagement.contact_type,
+                },
+                match ?? null,
+              );
+              const blocked = isOutreachBlocked(cs);
+              const reason = contactBlockReason(cs);
+              const tone = blocked
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                : cs === "named_individual_contact"
+                  ? "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400"
+                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
+              return (
+                <Badge
+                  variant="outline"
+                  className={cn("text-[10px]", tone)}
+                  title={reason ?? "Contact details are sufficient for outreach."}
+                  data-contact-state={cs}
+                >
+                  {contactStateLabel(cs)}
+                </Badge>
+              );
+            })()}
+          </div>
         </div>
       </CardHeader>
 
