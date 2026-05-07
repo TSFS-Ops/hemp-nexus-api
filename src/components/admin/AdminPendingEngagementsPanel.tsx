@@ -663,8 +663,19 @@ export function AdminPendingEngagementsPanel() {
     );
 
   const filtered = useMemo(() => {
+    const trimmedId = idQuery.trim().toLowerCase();
     let base: Engagement[];
-    if (filter === "all") base = engagements;
+    if (trimmedId.length > 0) {
+      // ID lookup overrides the active tab so a row is never hidden because
+      // the operator is on the wrong tab. Match on engagement ID or match ID
+      // by substring (case-insensitive). A pasted full UUID becomes an exact
+      // hit; a fragment is a "find anything starting with…" convenience.
+      base = engagements.filter((e) => {
+        const eid = (e.id ?? "").toLowerCase();
+        const mid = (e.match_id ?? "").toLowerCase();
+        return eid.includes(trimmedId) || mid.includes(trimmedId);
+      });
+    } else if (filter === "all") base = engagements;
     else if (filter === "active") {
       // D-05: canonical pre-acceptance set, plus legacy 'pending' defensively.
       base = engagements.filter(
@@ -699,7 +710,7 @@ export function AdminPendingEngagementsPanel() {
       });
     }
     return base;
-  }, [engagements, filter, notesFilter, notesFrom, notesTo]);
+  }, [engagements, filter, notesFilter, notesFrom, notesTo, idQuery]);
 
   const stats = useMemo(() => {
     // D-05: canonical pending set = notification_sent + contacted (legacy
