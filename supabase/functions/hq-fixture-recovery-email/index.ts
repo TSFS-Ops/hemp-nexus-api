@@ -92,9 +92,15 @@ Deno.serve(async (req) => {
       redirectTo,
     });
     if (recoveryErr) {
-      // Do not echo provider internals to the client; surface a generic error.
-      console.error("recovery dispatch failed", { email, code: recoveryErr.status });
-      return json(req, { error: "RECOVERY_DISPATCH_FAILED" }, 502);
+      const status = recoveryErr.status ?? 0;
+      console.error("recovery dispatch failed", { email, code: status, msg: recoveryErr.message });
+      if (status === 429) {
+        return json(req, {
+          error: "RATE_LIMITED",
+          message: "Supabase Auth rate limit hit. Wait ~60 seconds between fixture sends.",
+        }, 429);
+      }
+      return json(req, { error: "RECOVERY_DISPATCH_FAILED", message: recoveryErr.message }, 502);
     }
 
     // Locate user_id for the audit row (best-effort).
