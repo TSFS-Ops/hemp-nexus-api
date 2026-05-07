@@ -202,6 +202,16 @@ export function AdminPendingEngagementsPanel() {
   const [notesFrom, setNotesFrom] = useState<string>("");
   const [notesTo, setNotesTo] = useState<string>("");
 
+  // ── ID lookup ──
+  // Free-text search across Engagement ID and Match ID. Accepts a full UUID
+  // (the canonical operator workflow — paste the ID from a support ticket or
+  // test guide) or any substring for convenience. Case-insensitive.
+  // Applied AFTER the tab/notes filters in `filtered`, but when a non-empty
+  // ID query is present we widen the base set to ALL engagements regardless
+  // of the active tab — operators looking up a specific row by ID should
+  // never have it hidden by the current tab.
+  const [idQuery, setIdQuery] = useState<string>("");
+
   // ── Support-notes editor (admin/reviewer-only, per row) ──
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<string>("");
@@ -653,8 +663,19 @@ export function AdminPendingEngagementsPanel() {
     );
 
   const filtered = useMemo(() => {
+    const trimmedId = idQuery.trim().toLowerCase();
     let base: Engagement[];
-    if (filter === "all") base = engagements;
+    if (trimmedId.length > 0) {
+      // ID lookup overrides the active tab so a row is never hidden because
+      // the operator is on the wrong tab. Match on engagement ID or match ID
+      // by substring (case-insensitive). A pasted full UUID becomes an exact
+      // hit; a fragment is a "find anything starting with…" convenience.
+      base = engagements.filter((e) => {
+        const eid = (e.id ?? "").toLowerCase();
+        const mid = (e.match_id ?? "").toLowerCase();
+        return eid.includes(trimmedId) || mid.includes(trimmedId);
+      });
+    } else if (filter === "all") base = engagements;
     else if (filter === "active") {
       // D-05: canonical pre-acceptance set, plus legacy 'pending' defensively.
       base = engagements.filter(
@@ -689,7 +710,7 @@ export function AdminPendingEngagementsPanel() {
       });
     }
     return base;
-  }, [engagements, filter, notesFilter, notesFrom, notesTo]);
+  }, [engagements, filter, notesFilter, notesFrom, notesTo, idQuery]);
 
   const stats = useMemo(() => {
     // D-05: canonical pending set = notification_sent + contacted (legacy
@@ -1261,6 +1282,44 @@ export function AdminPendingEngagementsPanel() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* ID lookup — find an engagement directly by Engagement ID or Match ID.
+          When a query is present it overrides the active tab so the matching
+          row is never hidden. Pasting a full UUID is the canonical workflow
+          for support tickets, test guides, and audit references. */}
+      <div className="flex flex-wrap items-end gap-3 p-3 rounded-md border border-slate-200 bg-white">
+        <div className="flex flex-col gap-1 flex-1 min-w-[280px]">
+          <Label htmlFor="engagement-id-search" className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold">
+            Look up by Engagement ID or Match ID
+          </Label>
+          <Input
+            id="engagement-id-search"
+            type="search"
+            inputMode="text"
+            autoComplete="off"
+            spellCheck={false}
+            value={idQuery}
+            onChange={(e) => setIdQuery(e.target.value)}
+            placeholder="Paste a full UUID, e.g. 34bbe9c0-5cd1-46e1-bf94-40e6b9313d9d"
+            className="h-9 font-mono text-xs bg-white"
+          />
+        </div>
+        {idQuery.trim().length > 0 && (
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-900 border-emerald-300 text-[11px]">
+              ID lookup active — tab filter ignored
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setIdQuery("")}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Filter tabs */}
