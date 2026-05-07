@@ -21,9 +21,9 @@ function json(req: Request, body: unknown, status = 200) {
   }));
 }
 
-function isProductionTier(): boolean {
-  const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
-  return tier === "production" || tier === "live" || tier === "prod";
+function isStagingTier(): boolean {
+  const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase().trim();
+  return tier === "staging" || tier === "dev" || tier === "development" || tier === "test";
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
   if (__pf) return __pf;
 
   try {
-    if (isProductionTier()) {
+    if (!isStagingTier()) {
       return json(req, { error: "STAGING_ONLY" }, 403);
     }
 

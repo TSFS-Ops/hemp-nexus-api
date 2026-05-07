@@ -37,9 +37,14 @@ function json(req: Request, body: unknown, status = 200) {
   }));
 }
 
-function isProductionTier(): boolean {
-  const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
-  return tier === "production" || tier === "live" || tier === "prod";
+/**
+ * Fail-CLOSED environment check.
+ *   - If ENVIRONMENT_TIER is unset/empty -> treated as production (deny).
+ *   - Only "staging" | "dev" | "development" | "test" enable this workflow.
+ */
+function isStagingTier(): boolean {
+  const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase().trim();
+  return tier === "staging" || tier === "dev" || tier === "development" || tier === "test";
 }
 
 function generatePassword(): string {
@@ -68,10 +73,10 @@ Deno.serve(async (req) => {
   if (__pf) return __pf;
 
   try {
-    if (isProductionTier()) {
+    if (!isStagingTier()) {
       return json(req, {
         error: "STAGING_ONLY",
-        message: "This workflow is disabled on production.",
+        message: "This workflow is disabled outside staging.",
       }, 403);
     }
 
