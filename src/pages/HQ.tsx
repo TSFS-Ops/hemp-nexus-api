@@ -387,7 +387,12 @@ function AuditTab() {
 }
 function SettingsTab() {
   // Full platform settings suite: configuration, thresholds, tokens, signing keys, BRD, overrides.
-  const [sub, setSub] = useUrlTab("sub", "platform", ["platform", "governance-posture", "thresholds", "tokens", "signing", "brd", "overrides"]);
+  // Staging-only: fixture password reset tab is hidden on production hosts.
+  const isStagingHost = typeof window !== "undefined" &&
+    !/(^|\.)izenzo\.co\.za$/i.test(window.location.hostname);
+  const baseTabs = ["platform", "governance-posture", "thresholds", "tokens", "signing", "brd", "overrides"];
+  const tabs = isStagingHost ? [...baseTabs, "staging-passwords"] : baseTabs;
+  const [sub, setSub] = useUrlTab("sub", "platform", tabs);
   return <>
       <TabHeader id="settings" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -399,7 +404,7 @@ function SettingsTab() {
           <TabsTrigger value="signing">Signing Keys</TabsTrigger>
           <TabsTrigger value="brd">BRD Constraints</TabsTrigger>
           <TabsTrigger value="overrides">Manual Overrides</TabsTrigger>
-          <TabsTrigger value="staging-passwords">Staging Passwords</TabsTrigger>
+          {isStagingHost && <TabsTrigger value="staging-passwords">Staging Passwords</TabsTrigger>}
         </TabsList>
         <TabsContent value="platform">
           <Surface label="Global platform variables · public.admin_settings">
@@ -436,11 +441,13 @@ function SettingsTab() {
             <AdminManualOverrides />
           </Surface>
         </TabsContent>
-        <TabsContent value="staging-passwords">
-          <Surface label="Staging-only fixture password reset · one-time reveal links · disabled on production">
-            <AdminStagingFixturePasswords />
-          </Surface>
-        </TabsContent>
+        {isStagingHost && (
+          <TabsContent value="staging-passwords">
+            <Surface label="Staging-only fixture password reset · one-time reveal links · disabled on production">
+              <AdminStagingFixturePasswords />
+            </Surface>
+          </TabsContent>
+        )}
       </Tabs>
     </>;
 }
