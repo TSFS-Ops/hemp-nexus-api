@@ -40,6 +40,7 @@ import { AdminTokenManagement } from "@/components/admin/AdminTokenManagement";
 import { AdminSigningKeysPanel } from "@/components/admin/AdminSigningKeysPanel";
 import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
+import { AdminStagingFixturePasswords } from "@/components/admin/AdminStagingFixturePasswords";
 import { AdminGovernancePosturePanel } from "@/components/admin/AdminGovernancePosturePanel";
 import { AdminRedirectOriginBanner } from "@/components/admin/AdminRedirectOriginBanner";
 // ── Audit & Health (compliance / observability) ─────────────────────
@@ -398,6 +399,7 @@ function SettingsTab() {
           <TabsTrigger value="signing">Signing Keys</TabsTrigger>
           <TabsTrigger value="brd">BRD Constraints</TabsTrigger>
           <TabsTrigger value="overrides">Manual Overrides</TabsTrigger>
+          <TabsTrigger value="staging-passwords">Staging Passwords</TabsTrigger>
         </TabsList>
         <TabsContent value="platform">
           <Surface label="Global platform variables · public.admin_settings">
@@ -432,6 +434,11 @@ function SettingsTab() {
         <TabsContent value="overrides">
           <Surface label="Break-glass manual interventions · audited · public.break_glass_actions">
             <AdminManualOverrides />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="staging-passwords">
+          <Surface label="Staging-only fixture password reset · one-time reveal links · disabled on production">
+            <AdminStagingFixturePasswords />
           </Surface>
         </TabsContent>
       </Tabs>

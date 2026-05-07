@@ -5695,6 +5695,42 @@ export type Database = {
           },
         ]
       }
+      staging_password_tokens: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          created_by: string
+          email: string
+          expires_at: string
+          id: string
+          password_plaintext: string | null
+          reveal_token_hash: string
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          created_by: string
+          email: string
+          expires_at: string
+          id?: string
+          password_plaintext?: string | null
+          reveal_token_hash: string
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          password_plaintext?: string | null
+          reveal_token_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       storage_deletion_queue: {
         Row: {
           bucket_id: string
