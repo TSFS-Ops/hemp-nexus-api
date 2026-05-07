@@ -1284,6 +1284,44 @@ export function AdminPendingEngagementsPanel() {
         ))}
       </div>
 
+      {/* ID lookup — find an engagement directly by Engagement ID or Match ID.
+          When a query is present it overrides the active tab so the matching
+          row is never hidden. Pasting a full UUID is the canonical workflow
+          for support tickets, test guides, and audit references. */}
+      <div className="flex flex-wrap items-end gap-3 p-3 rounded-md border border-slate-200 bg-white">
+        <div className="flex flex-col gap-1 flex-1 min-w-[280px]">
+          <Label htmlFor="engagement-id-search" className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold">
+            Look up by Engagement ID or Match ID
+          </Label>
+          <Input
+            id="engagement-id-search"
+            type="search"
+            inputMode="text"
+            autoComplete="off"
+            spellCheck={false}
+            value={idQuery}
+            onChange={(e) => setIdQuery(e.target.value)}
+            placeholder="Paste a full UUID, e.g. 34bbe9c0-5cd1-46e1-bf94-40e6b9313d9d"
+            className="h-9 font-mono text-xs bg-white"
+          />
+        </div>
+        {idQuery.trim().length > 0 && (
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-900 border-emerald-300 text-[11px]">
+              ID lookup active — tab filter ignored
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setIdQuery("")}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* Filter tabs */}
       <Tabs value={filter} onValueChange={setFilter}>
         <TabsList className="bg-white border border-slate-200 rounded-sm flex-wrap h-auto">
