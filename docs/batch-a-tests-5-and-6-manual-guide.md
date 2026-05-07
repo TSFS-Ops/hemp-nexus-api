@@ -6,9 +6,26 @@ counterparty side). All other Batch A items already pass automatically.
 **Environment:** Test environment only. Do **not** use live client or
 counterparty data.
 
-> **Verification note (2026-05-07):** This document was re-verified against
-> the live codebase before sending. Several details in the earlier draft
-> were corrected — see "Important platform behaviour" below.
+> **Fixture provisioned (2026-05-07):** The three test accounts and
+> their organisations have already been created and email-confirmed by
+> the Izenzo build team. Testers do **not** need to sign themselves up.
+> See "Provisioned fixture" below for how each tester sets their own
+> password via the Forgot Password flow. The only remaining manual step
+> is **Step 4 — build the test engagement** (initiator runs a Trade
+> Request against the counterparty test email).
+>
+> Provisioned accounts:
+>
+> | Email                                       | Organisation              | Side             |
+> | ------------------------------------------- | ------------------------- | ---------------- |
+> | `batch-a-initiator@test.izenzo.co.za`       | Batch A Initiator Ltd     | Initiator (buyer) |
+> | `batch-a-counterparty@test.izenzo.co.za`    | Batch A Counterparty Ltd  | Counterparty (seller) |
+> | `batch-a-unrelated@test.izenzo.co.za`       | Batch A Unrelated Ltd     | Not on the match |
+>
+> **Each tester must set their own password** before first sign-in:
+> open the sign-in page → **Forgot password** → enter the email above →
+> click the link in the test mailbox. No plaintext passwords are
+> distributed in this document or in chat.
 
 ---
 
