@@ -139,7 +139,8 @@ Deno.serve(async (req) => {
     await admin.from("audit_logs").insert({
       action: "staging.fixture_password_set",
       actor_user_id: caller.id,
-      target_user_id: userId,
+      entity_type: "auth_user",
+      entity_id: userId,
       metadata: {
         email,
         token_id: tokenRow.id,
