@@ -41,6 +41,7 @@ import { AdminSigningKeysPanel } from "@/components/admin/AdminSigningKeysPanel"
 import { BrdConstraintsPanel } from "@/components/admin/BrdConstraintsPanel";
 import { AdminManualOverrides } from "@/components/admin/AdminManualOverrides";
 import { AdminStagingFixturePasswords } from "@/components/admin/AdminStagingFixturePasswords";
+import { AdminFixtureRecoveryEmails } from "@/components/admin/AdminFixtureRecoveryEmails";
 import { AdminGovernancePosturePanel } from "@/components/admin/AdminGovernancePosturePanel";
 import { AdminRedirectOriginBanner } from "@/components/admin/AdminRedirectOriginBanner";
 // ── Audit & Health (compliance / observability) ─────────────────────
@@ -390,7 +391,7 @@ function SettingsTab() {
   // Staging-only: fixture password reset tab is hidden on production hosts.
   const isStagingHost = typeof window !== "undefined" &&
     !/(^|\.)izenzo\.co\.za$/i.test(window.location.hostname);
-  const baseTabs = ["platform", "governance-posture", "thresholds", "tokens", "signing", "brd", "overrides"];
+  const baseTabs = ["platform", "governance-posture", "thresholds", "tokens", "signing", "brd", "overrides", "fixture-recovery"];
   const tabs = isStagingHost ? [...baseTabs, "staging-passwords"] : baseTabs;
   const [sub, setSub] = useUrlTab("sub", "platform", tabs);
   return <>
@@ -404,6 +405,7 @@ function SettingsTab() {
           <TabsTrigger value="signing">Signing Keys</TabsTrigger>
           <TabsTrigger value="brd">BRD Constraints</TabsTrigger>
           <TabsTrigger value="overrides">Manual Overrides</TabsTrigger>
+          <TabsTrigger value="fixture-recovery">Fixture Recovery</TabsTrigger>
           {isStagingHost && <TabsTrigger value="staging-passwords">Staging Passwords</TabsTrigger>}
         </TabsList>
         <TabsContent value="platform">
@@ -439,6 +441,11 @@ function SettingsTab() {
         <TabsContent value="overrides">
           <Surface label="Break-glass manual interventions · audited · public.break_glass_actions">
             <AdminManualOverrides />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="fixture-recovery">
+          <Surface label="Batch A fixture recovery · standard Supabase recovery email · 4-account allowlist · audited">
+            <AdminFixtureRecoveryEmails />
           </Surface>
         </TabsContent>
         {isStagingHost && (
