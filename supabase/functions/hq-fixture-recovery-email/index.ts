@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       return json(req, { error: "RECOVERY_DISPATCH_FAILED" }, 502);
     }
 
-    // Locate user_id for the audit row (best-effort; do not block on this).
+    // Locate user_id for the audit row (best-effort).
     let targetUserId: string | null = null;
     try {
       const { data: prof } = await admin
@@ -108,27 +108,41 @@ Deno.serve(async (req) => {
       targetUserId = prof?.id ?? null;
     } catch (_) { /* ignore */ }
 
+    // audit_logs.org_id is NOT NULL — scope to the caller's org.
+    let actorOrgId: string | null = null;
+    try {
+      const { data: callerProf } = await admin
+        .from("profiles")
+        .select("org_id")
+        .eq("id", caller.id)
+        .maybeSingle();
+      actorOrgId = callerProf?.org_id ?? null;
+    } catch (_) { /* ignore */ }
+
     const sentAt = new Date().toISOString();
 
-    await admin
-      .from("audit_logs")
-      .insert({
-        action: "uat.fixture_recovery_email_sent",
-        actor_user_id: caller.id,
-        entity_type: "auth_user",
-        entity_id: targetUserId,
-        metadata: {
-          email,
-          fixture: FIXTURE_LABEL,
-          sent_at: sentAt,
-          redirect_to: redirectTo,
-        },
-      })
-      .then(() => {}, (e) => {
-        // Audit failure must not hide the user-facing success, but we log it
-        // server-side so an operator can reconcile from edge-function logs.
-        console.error("audit insert failed", e);
-      });
+    if (actorOrgId) {
+      await admin
+        .from("audit_logs")
+        .insert({
+          org_id: actorOrgId,
+          action: "uat.fixture_recovery_email_sent",
+          actor_user_id: caller.id,
+          entity_type: "auth_user",
+          entity_id: targetUserId,
+          metadata: {
+            email,
+            fixture: FIXTURE_LABEL,
+            sent_at: sentAt,
+            redirect_to: redirectTo,
+          },
+        })
+        .then(() => {}, (e) => {
+          console.error("audit insert failed", e);
+        });
+    } else {
+      console.error("audit insert skipped: caller has no org_id", { caller_id: caller.id });
+    }
 
     return json(req, {
       ok: true,
