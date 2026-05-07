@@ -202,6 +202,16 @@ export function AdminPendingEngagementsPanel() {
   const [notesFrom, setNotesFrom] = useState<string>("");
   const [notesTo, setNotesTo] = useState<string>("");
 
+  // ── ID lookup ──
+  // Free-text search across Engagement ID and Match ID. Accepts a full UUID
+  // (the canonical operator workflow — paste the ID from a support ticket or
+  // test guide) or any substring for convenience. Case-insensitive.
+  // Applied AFTER the tab/notes filters in `filtered`, but when a non-empty
+  // ID query is present we widen the base set to ALL engagements regardless
+  // of the active tab — operators looking up a specific row by ID should
+  // never have it hidden by the current tab.
+  const [idQuery, setIdQuery] = useState<string>("");
+
   // ── Support-notes editor (admin/reviewer-only, per row) ──
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<string>("");
