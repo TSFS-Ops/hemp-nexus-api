@@ -101,7 +101,7 @@ export function SealedEngagement() {
     match,
     engagement,
     documents
-  } = data;
+  } = data as { match: any; engagement: any; documents: any[] };
   const matchRef = shortRef(match.id);
   // Two distinct labels — never collapse them into a single ambiguous "counterparty":
   //   - partyPairLabel : both parties, used for the certificate header / locked-terms summary
