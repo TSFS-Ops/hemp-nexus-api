@@ -7393,6 +7393,16 @@ export type Database = {
         }
         Returns: number
       }
+      atomic_decline_late_acceptance: {
+        Args: {
+          p_actor_email: string
+          p_actor_name: string
+          p_actor_user_id: string
+          p_audit_org_id: string
+          p_parent_engagement_id: string
+        }
+        Returns: Json
+      }
       atomic_engagement_transition: {
         Args: {
           p_actor_email: string
@@ -7418,6 +7428,26 @@ export type Database = {
           p_org_id: string
           p_settled_at: string
           p_terms_hash?: string
+        }
+        Returns: Json
+      }
+      atomic_reconfirm_late_acceptance: {
+        Args: {
+          p_actor_email: string
+          p_actor_name: string
+          p_actor_user_id: string
+          p_audit_org_id: string
+          p_parent_engagement_id: string
+        }
+        Returns: Json
+      }
+      atomic_record_late_acceptance: {
+        Args: {
+          p_actor_email: string
+          p_actor_name: string
+          p_actor_user_id: string
+          p_audit_org_id: string
+          p_engagement_id: string
         }
         Returns: Json
       }
