@@ -2,10 +2,33 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getHostType, getConsoleUrl, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
 import { DomainMismatch } from "@/components/DomainMismatch";
-import MarketplaceHolding from "@/pages/MarketplaceHolding";
-import PublicHolding from "@/pages/PublicHolding";
+import { HOSTNAMES } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import Landing from "@/pages/Landing";
+
+/**
+ * Hard-redirect (full page navigation) the current browser to the live
+ * console host, preserving path, query, and hash. Used when traffic lands
+ * on the public Mother Ship (izenzo.co.za / www.izenzo.co.za) or on the
+ * reserved marketplace host (trade.izenzo.co.za) — per client direction
+ * (David Davies, 2026-05-08), neither of those domains should serve a
+ * holding page; both must funnel visitors to api.trade.izenzo.co.za so the
+ * SEO presence and inbound traffic routes into the live product.
+ *
+ * `window.location.replace` is used (not `assign`) so the holding-page URL
+ * does not pollute browser history and the back button behaves naturally.
+ */
+function redirectToConsole(): null {
+  if (typeof window === "undefined") return null;
+  const { pathname, search, hash } = window.location;
+  const target = `https://${HOSTNAMES.CONSOLE}${pathname}${search}${hash}`;
+  // Guard against a redirect loop in the (impossible-by-config but
+  // defensible) case where this ever runs on the console host itself.
+  if (window.location.host !== HOSTNAMES.CONSOLE) {
+    window.location.replace(target);
+  }
+  return null;
+}
 
 interface HostnameRouterProps {
   children: React.ReactNode;
@@ -54,18 +77,19 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
     return <>{children}</>;
   }
 
-  // Reserved marketplace host (trade.izenzo.co.za) — never serve the live
-  // console here. Show a holding page that soft-gates visitors to the
-  // authenticated console at api.trade.izenzo.co.za.
+  // Reserved marketplace host (trade.izenzo.co.za) — per client direction
+  // (2026-05-08), redirect all traffic to the live console at
+  // api.trade.izenzo.co.za, preserving path + query + hash. No holding page.
   if (hostType === 'marketplace') {
-    return <MarketplaceHolding />;
+    return redirectToConsole();
   }
 
-  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za): show neutral
-  // under-construction holding page only. The public Mother Ship website is
-  // not yet live; no app routes are exposed here.
+  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za) — per client direction
+  // (2026-05-08), the under-construction holding page is retired so that
+  // search-engine indexing of the apex domain is not damaged. All traffic
+  // is hard-redirected to the live console.
   if (hostType === 'public') {
-    return <PublicHolding />;
+    return redirectToConsole();
   }
 
   // CONSOLE DOMAIN
