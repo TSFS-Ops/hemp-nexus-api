@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { ErrorState } from "@/components/ui/error-state";
+import { fetchEngagementReadModelByMatchId, legacyEngagementAlias } from "@/lib/engagement-read-model";
 interface InboundDoc {
   name: string;
   hash: string;
@@ -95,11 +96,24 @@ export function InboundReview() {
       if (!match) throw new Error("Match not found or you do not have access.");
 
       // Engagement (counterparty hold-point record).
-      const {
-        data: engagement,
-        error: engagementErr
-      } = await supabase.from("poi_engagements").select("id, engagement_status, expires_at, counterparty_org_id, counterparty_email, created_at").eq("match_id", matchId).maybeSingle();
-      if (engagementErr) throw new Error(`Engagement lookup failed: ${engagementErr.message}`);
+      // Phase 1.5: read via canonical resolver — never `.maybeSingle()` on
+      // poi_engagements by match_id. Once Phase 2 allows multiple rows per
+      // match (expired parent + renewed child), this surface must show the
+      // renewed-child row to the counterparty, not the expired parent.
+      const engagementEnvelope = await fetchEngagementReadModelByMatchId(
+        supabase as never,
+        matchId,
+        "id, engagement_status, expires_at, counterparty_org_id, counterparty_email, created_at",
+      );
+      if (engagementEnvelope.error) throw new Error(`Engagement lookup failed: ${(engagementEnvelope.error as { message?: string })?.message ?? "unknown"}`);
+      const engagement = legacyEngagementAlias(engagementEnvelope.envelope) as unknown as {
+        id: string;
+        engagement_status: string;
+        expires_at: string | null;
+        counterparty_org_id: string | null;
+        counterparty_email: string | null;
+        created_at: string;
+      } | null;
 
       // Initiating-org name (for display).
       let initiatorName = match.org_id === match.buyer_org_id ? match.buyer_name : match.seller_name;

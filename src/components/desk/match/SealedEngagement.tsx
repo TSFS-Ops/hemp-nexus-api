@@ -13,6 +13,7 @@ import { ArrowLeft, Check, Mail, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import { fetchEngagementReadModelByMatchId, legacyEngagementAlias } from "@/lib/engagement-read-model";
 function fmtCountdown(msRemaining: number) {
   if (msRemaining <= 0) return "Expired";
   const totalSec = Math.floor(msRemaining / 1000);
@@ -53,12 +54,24 @@ export function SealedEngagement() {
     queryKey: ["sealed-engagement", matchId],
     enabled: !!matchId,
     queryFn: async () => {
-      const [matchRes, engagementRes, docsRes] = await Promise.all([supabase.from("matches").select("*").eq("id", matchId!).maybeSingle(), supabase.from("poi_engagements").select("*").eq("match_id", matchId!).maybeSingle(), supabase.from("match_documents").select("id, sha256_hash").eq("match_id", matchId!).eq("is_current_version", true)]);
+      // Phase 1.5: read engagement via the canonical read-model resolver
+      // instead of `.maybeSingle()` on poi_engagements. Today UNIQUE(match_id)
+      // still applies so there is at most one row, but Phase 2 will drop it
+      // and this surface MUST already pick the renewed-child row over the
+      // expired-parent row. We render the "current" engagement and gracefully
+      // fall back to the latest historical row when the match has only ever
+      // had a terminal engagement (so the post-mortem state still renders).
+      const [matchRes, engagementEnvelope, docsRes] = await Promise.all([
+        supabase.from("matches").select("*").eq("id", matchId!).maybeSingle(),
+        fetchEngagementReadModelByMatchId(supabase as never, matchId!),
+        supabase.from("match_documents").select("id, sha256_hash").eq("match_id", matchId!).eq("is_current_version", true),
+      ]);
       if (matchRes.error) throw matchRes.error;
       if (!matchRes.data) throw new Error("Match not found");
       return {
         match: matchRes.data,
-        engagement: engagementRes.data,
+        engagement: legacyEngagementAlias(engagementEnvelope.envelope),
+        engagementEnvelope: engagementEnvelope.envelope,
         documents: docsRes.data ?? []
       };
     }
@@ -88,7 +101,7 @@ export function SealedEngagement() {
     match,
     engagement,
     documents
-  } = data;
+  } = data as { match: any; engagement: any; documents: any[] };
   const matchRef = shortRef(match.id);
   // Two distinct labels — never collapse them into a single ambiguous "counterparty":
   //   - partyPairLabel : both parties, used for the certificate header / locked-terms summary
