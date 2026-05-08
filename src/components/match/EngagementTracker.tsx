@@ -73,13 +73,19 @@ export function EngagementTracker({
     queryKey: ["engagement-tracker", matchId],
     queryFn: async () => {
       try {
-        const result = await fetchEdgeFunction<{
-          engagement?: { engagement_status: EngagementStatus; counterparty_type?: string };
-        } | null>(`poi-engagements/by-match/${matchId}`, {
-          method: "GET",
-          label: "load engagement status",
-        });
-        return result?.engagement || null;
+        // Batch B Phase 1: consume the canonical read-model envelope and
+        // operate strictly on `current_engagement`. Historical (expired /
+        // declined) rows are intentionally NOT used to drive the live
+        // status stepper.
+        const result = await fetchEdgeFunction<unknown>(
+          `poi-engagements/by-match/${matchId}`,
+          { method: "GET", label: "load engagement status" },
+        );
+        const { parseByMatchResponse } = await import("@/lib/engagement-read-model");
+        const model = parseByMatchResponse(result);
+        return (model.current_engagement ?? null) as
+          | { engagement_status: EngagementStatus; counterparty_type?: string }
+          | null;
       } catch (err) {
         if (err instanceof EdgeInvokeError && err.code === "UNAUTHORIZED") {
           throw new Error("SESSION_EXPIRED");

@@ -193,7 +193,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── GET /poi-engagements/by-match/:matchId — Get engagement for a match ──
+    // ── GET /poi-engagements/by-match/:matchId — Engagement read-model ──
+    // Batch B Phase 1: returns the canonical envelope
+    //   { current_engagement, latest_historical_engagement, history,
+    //     read_model: "v1", engagement (legacy alias) }
+    // so every consumer can stop assuming one-row-per-match BEFORE the
+    // schema is unlocked in Phase 2. Today (UNIQUE(match_id) still in
+    // place) the resolver collapses to the historical behaviour: a single
+    // active row becomes `current_engagement`, a single terminal row
+    // becomes `latest_historical_engagement`, and `engagement` mirrors
+    // whichever was returned. See
+    // supabase/functions/_shared/engagement-read-model.ts for selection
+    // rules. Do NOT re-introduce `.maybeSingle()` here.
     if (req.method === "GET" && engagementId === "by-match" && parts[1]) {
       const matchId = parts[1];
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -205,14 +216,27 @@ Deno.serve(async (req) => {
         .from("poi_engagements")
         .select("*")
         .eq("match_id", matchId)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      return new Response(JSON.stringify({ engagement: data }), {
-        status: 200,
-        headers: { ...headers, "Content-Type": "application/json" },
-      });
+      const { resolveEngagementReadModel, legacyEngagementAlias } = await import(
+        "../_shared/engagement-read-model.ts"
+      );
+      const model = resolveEngagementReadModel((data ?? []) as never[]);
+
+      return new Response(
+        JSON.stringify({
+          ...model,
+          // Legacy alias — drop once every client consumes
+          // `current_engagement` (tracked in Batch B Phase 5 cleanup).
+          engagement: legacyEngagementAlias(model),
+        }),
+        {
+          status: 200,
+          headers: { ...headers, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // ── GET /poi-engagements/:id/outreach-log — Immutable outreach history ──

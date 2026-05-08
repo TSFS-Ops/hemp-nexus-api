@@ -67,23 +67,22 @@ function MatchDetailsContent() {
     })();
   }, [matchId]);
 
-  // Fetch engagement status for this match to enforce the hold-point gate
-  const { data: engagementData } = useQuery({
+  // Fetch the canonical engagement read-model envelope for this match.
+  // Batch B Phase 1: we now consume `current_engagement` from the
+  // {current_engagement, latest_historical_engagement, history,
+  // read_model} envelope instead of the old `.maybeSingle()` row. The
+  // `parseByMatchResponse` helper accepts either the new or legacy shape
+  // so a stale edge-function deployment never blanks the page.
+  const { data: engagementModel } = useQuery({
     queryKey: ["engagement-status-gate", matchId],
     queryFn: async () => {
       try {
-        // by-match returns the full poi_engagements row (`select("*")`),
-        // so we pull the wider shape here for the PendingEngagementSection.
-        const result = await fetchEdgeFunction<{
-          engagement?: PendingEngagementRow & {
-            engagement_status: EngagementStatus;
-            counterparty_type: string;
-          };
-        } | null>(`poi-engagements/by-match/${matchId}`, {
-          method: "GET",
-          label: "load engagement status",
-        });
-        return result?.engagement || null;
+        const result = await fetchEdgeFunction<unknown>(
+          `poi-engagements/by-match/${matchId}`,
+          { method: "GET", label: "load engagement status" },
+        );
+        const { parseByMatchResponse } = await import("@/lib/engagement-read-model");
+        return parseByMatchResponse(result);
       } catch {
         return null;
       }
@@ -92,7 +91,10 @@ function MatchDetailsContent() {
     refetchInterval: 30000,
   });
 
-  const engagementStatus: EngagementStatus = engagementData?.engagement_status || null;
+  const engagementData = (engagementModel?.current_engagement ?? null) as unknown as
+    | (PendingEngagementRow & { engagement_status: EngagementStatus; counterparty_type: string })
+    | null;
+  const engagementStatus: EngagementStatus = (engagementData?.engagement_status as EngagementStatus) || null;
 
   const matchRole = match ? getMatchRole(userOrgId, match as any) : null;
 
