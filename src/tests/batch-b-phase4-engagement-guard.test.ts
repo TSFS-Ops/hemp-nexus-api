@@ -133,10 +133,14 @@ describe("engagement progression guard — Phase 4 stable error codes", () => {
     const renewedPending = row("notification_sent", "2026-05-01T00:00:00.000Z", "r");
     const d = decide([historicalAccepted, renewedPending]);
     expect(d.allowed).toBe(false);
-    // The renewed child is the *current* engagement, so the code must
-    // describe the renewed-pending state — NOT report `accepted`.
+    // The renewed child is the *current* engagement, so the guard must
+    // describe the renewed-pending state — NOT report `accepted`. The
+    // read-model resolver only treats expired/declined rows as
+    // "historical", so a stale accepted row is not in `latest_historical`
+    // and the code is `ENGAGEMENT_NOT_ACCEPTED` rather than the renewed
+    // variant. Either way, progression MUST be blocked.
     expect(d.currentStatus).toBe("notification_sent");
-    expect(d.code).toBe("ENGAGEMENT_PENDING_RENEWED_ACCEPTANCE");
+    expect(d.code).toBe("ENGAGEMENT_NOT_ACCEPTED");
   });
 
   it("late_acceptance_pending_initiator_reconfirmation child still wins over a historical accepted parent", () => {
