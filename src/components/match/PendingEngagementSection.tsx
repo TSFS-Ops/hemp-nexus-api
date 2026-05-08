@@ -73,7 +73,18 @@ export interface PendingEngagementRow {
   counterparty_response?: string | null;
   renewed_from_engagement_id?: string | null;
   late_acceptance_recorded_at?: string | null;
-}
+  /**
+   * Batch B Phase 8.5b — drives the F-B4 wording branch. One of:
+   *   • `reconfirmation_window_expired`
+   *   • `initiator_declined_renewal`
+   *   • `renewed_engagement_created`
+   *   • null (still inside the reconfirmation window)
+   */
+  late_acceptance_resolution?: string | null;
+  /** Set when this expired parent has been superseded by a renewed child. */
+  renewed_engagement_id?: string | null;
+  /** Reconfirmation deadline (ISO timestamp). */
+  reconfirmation_window_expires_at?: string | null;
 
 /**
  * Minimum fields we need from the parent match to derive the counterparty's
