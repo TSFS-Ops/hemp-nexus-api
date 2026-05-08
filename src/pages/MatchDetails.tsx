@@ -91,8 +91,10 @@ function MatchDetailsContent() {
     refetchInterval: 30000,
   });
 
-  const engagementData = engagementModel?.current_engagement ?? null;
-  const engagementStatus: EngagementStatus = engagementData?.engagement_status || null;
+  const engagementData = (engagementModel?.current_engagement ?? null) as
+    | (PendingEngagementRow & { engagement_status: EngagementStatus; counterparty_type: string })
+    | null;
+  const engagementStatus: EngagementStatus = (engagementData?.engagement_status as EngagementStatus) || null;
 
   const matchRole = match ? getMatchRole(userOrgId, match as any) : null;
 
