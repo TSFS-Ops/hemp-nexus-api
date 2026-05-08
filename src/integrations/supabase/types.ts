@@ -7749,6 +7749,7 @@ export type Database = {
         | "accepted"
         | "declined"
         | "expired"
+        | "late_acceptance_pending_initiator_reconfirmation"
       gate_position: "entry" | "poi_mint" | "wad_only"
       revenue_notification_status: "sent" | "failed" | "skipped"
       signal_type: "buyer" | "seller"
@@ -7902,6 +7903,7 @@ export const Constants = {
         "accepted",
         "declined",
         "expired",
+        "late_acceptance_pending_initiator_reconfirmation",
       ],
       gate_position: ["entry", "poi_mint", "wad_only"],
       revenue_notification_status: ["sent", "failed", "skipped"],
