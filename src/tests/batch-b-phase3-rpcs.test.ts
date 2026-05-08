@@ -70,7 +70,7 @@ describe("Batch B Phase 3 — atomic_record_late_acceptance", () => {
   });
 
   it("is idempotent when already in the late-acceptance state", () => {
-    expect(sql).toMatch(/v_engagement\.engagement_status::text = 'late_acceptance_pending_initiator_reconfirmation'[\s\S]+'idempotent', true/);
+    expect(sql).toMatch(/v_prev_status = 'late_acceptance_pending_initiator_reconfirmation'[\s\S]+'idempotent', true/);
   });
 
   it("is service_role only", () => {
