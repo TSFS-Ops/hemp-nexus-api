@@ -237,3 +237,56 @@ describe("Batch B Phase 3 — initiator reconfirm/decline authority gate (Issue 
     expect(src).toMatch(/actor_role:\s*"platform_admin"/);
   });
 });
+
+// ─── Phase 3 patch — terminal/already-recorded states are rejected at the
+// route BEFORE the late-acceptance RPC is invoked. RPC hard rejections
+// are kept as defence-in-depth but no longer the user-facing surface.
+describe("Batch B Phase 3 patch — route-level early rejection of resolved states", () => {
+  const src = (() => {
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    return readFileSync(
+      join(process.cwd(), "supabase", "functions", "poi-engagements", "index.ts"),
+      "utf8",
+    );
+  })();
+
+  it("returns ENGAGEMENT_ALREADY_ACCEPTED for accepted+expired+accept (no RPC call)", () => {
+    expect(src).toMatch(/currentStatus === "accepted"[\s\S]+?"ENGAGEMENT_ALREADY_ACCEPTED"/);
+  });
+
+  it("returns ENGAGEMENT_ALREADY_DECLINED for declined+expired+accept", () => {
+    expect(src).toMatch(/currentStatus === "declined"[\s\S]+?"ENGAGEMENT_ALREADY_DECLINED"/);
+  });
+
+  it("returns LATE_ACCEPTANCE_ALREADY_RECORDED for late_acceptance_pending_initiator_reconfirmation+accept", () => {
+    expect(src).toMatch(
+      /currentStatus === "late_acceptance_pending_initiator_reconfirmation"[\s\S]+?"LATE_ACCEPTANCE_ALREADY_RECORDED"/,
+    );
+  });
+
+  it("only routes to atomic_record_late_acceptance when status is in {pending, notification_sent, contacted, expired}", () => {
+    expect(src).toMatch(
+      /LATE_ACCEPTANCE_ELIGIBLE_STATUSES\s*=\s*new Set\(\[\s*"pending",\s*"notification_sent",\s*"contacted",\s*"expired",?\s*\]\)/,
+    );
+    expect(src).toMatch(
+      /LATE_ACCEPTANCE_ELIGIBLE_STATUSES\.has\(currentStatus\)[\s\S]+?atomic_record_late_acceptance/,
+    );
+  });
+
+  it("keeps the RPC hard rejections in place as defence-in-depth (Phase 3 migration is unchanged)", () => {
+    // The RPC still rejects accepted/declined as engagement_already_resolved.
+    // We only require that the route never reaches it for those states.
+    const { readFileSync, readdirSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    const dir = join(process.cwd(), "supabase", "migrations");
+    const files = readdirSync(dir)
+      .filter((f: string) => f.endsWith(".sql"))
+      .sort();
+    const matches = files.filter((f: string) =>
+      readFileSync(join(dir, f), "utf8").includes("atomic_record_late_acceptance"),
+    );
+    const sql = readFileSync(join(dir, matches[matches.length - 1]), "utf8");
+    expect(sql).toMatch(/v_prev_status IN \('accepted','declined'\)/);
+  });
+});

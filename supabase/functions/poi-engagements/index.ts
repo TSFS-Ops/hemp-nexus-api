@@ -1613,7 +1613,47 @@ Deno.serve(async (req) => {
       const isExpired =
         currentStatus === "expired" ||
         (expiresAtMs !== null && Date.now() > expiresAtMs);
+
+      // ── Phase 3 patch: stable rejections for terminal / already-recorded
+      // states. Do NOT route resolved engagements into the late-acceptance
+      // RPC and rely on it to reject — return clear, observable codes.
+      // Statuses eligible for late-acceptance routing: pending,
+      // notification_sent, contacted, expired (when expires_at < now()).
       if (parsed.data.action === "accepted" && isExpired) {
+        if (currentStatus === "accepted") {
+          throw new ApiException(
+            "ENGAGEMENT_ALREADY_ACCEPTED",
+            "This engagement has already been accepted.",
+            409,
+          );
+        }
+        if (currentStatus === "declined") {
+          throw new ApiException(
+            "ENGAGEMENT_ALREADY_DECLINED",
+            "This engagement has already been declined and cannot be accepted.",
+            409,
+          );
+        }
+        if (currentStatus === "late_acceptance_pending_initiator_reconfirmation") {
+          throw new ApiException(
+            "LATE_ACCEPTANCE_ALREADY_RECORDED",
+            "Late acceptance has already been recorded; awaiting initiator reconfirmation.",
+            409,
+          );
+        }
+      }
+
+      const LATE_ACCEPTANCE_ELIGIBLE_STATUSES = new Set([
+        "pending",
+        "notification_sent",
+        "contacted",
+        "expired",
+      ]);
+      if (
+        parsed.data.action === "accepted" &&
+        isExpired &&
+        LATE_ACCEPTANCE_ELIGIBLE_STATUSES.has(currentStatus)
+      ) {
         const { data: lateProfile } = await supabase
           .from("profiles")
           .select("email, full_name")
