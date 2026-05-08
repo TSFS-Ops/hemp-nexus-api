@@ -145,14 +145,30 @@ function statusMeta(status: string | null): StatusMeta {
           "Your counterparty declined this engagement. You can restart the trade with a different counterparty from the trade detail page.",
         icon: XCircle,
       };
-    case "expired":
+    case "expired": {
+      // Batch B Phase 5: distinguish a plain expired window from one that
+      // already carries a recorded late acceptance, so the user is never
+      // told the trade is dead while a late acceptance is awaiting their
+      // reconfirmation.
+      const w = getEngagementWording({ status: "expired" });
       return {
-        label: "Engagement window elapsed",
+        label: w.badgeLabel,
         tone: "fail",
-        description:
-          "The 30-day response window elapsed without a reply. You can restart the trade with the same or a different counterparty.",
+        description: w.description,
         icon: XCircle,
       };
+    }
+    case "late_acceptance_pending_initiator_reconfirmation": {
+      const w = getEngagementWording({
+        status: "late_acceptance_pending_initiator_reconfirmation",
+      });
+      return {
+        label: w.badgeLabel,
+        tone: "active",
+        description: w.description,
+        icon: Clock,
+      };
+    }
     default:
       return {
         label: status ? `Status: ${status}` : "Unknown status",
