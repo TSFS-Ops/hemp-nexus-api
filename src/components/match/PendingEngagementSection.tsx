@@ -228,25 +228,58 @@ export function PendingEngagementSection({ engagement, match, isInitiator }: Pro
   const terminal = isEngagementTerminal(engagement.engagement_status);
   if (terminal && engagement.counterparty_org_id) return null;
 
-  // Batch B Phase 5 — overlay wording-engine output for late-acceptance
-  // semantics so an expired row that already carries a recorded late
-  // acceptance is never described as a flat dead window.
-  const wording = getEngagementWording({
+  // Batch B Phase 5 + Phase 8.5b — overlay wording-engine output for
+  // late-acceptance semantics so an expired row that already carries a
+  // recorded late acceptance is never described as a flat dead window,
+  // AND so a row whose reconfirmation window has elapsed is no longer
+  // described as "awaiting initiator reconfirmation".
+  const baseWording: EngagementWording = getEngagementWording({
     status: engagement.engagement_status as never,
     isRenewedChild: !!engagement.renewed_from_engagement_id,
+    hasRenewedChild: !!engagement.renewed_engagement_id,
     acceptedAfterExpiry:
       engagement.counterparty_response === "accepted_after_expiry" ||
       !!engagement.late_acceptance_recorded_at,
   });
+
+  // Resolution branch (Phase 8.5b F-B4 fix). Only relevant once the
+  // late-acceptance lifecycle has been resolved one way or the other; if
+  // `late_acceptance_resolution` is null we fall through to the active
+  // wording.
+  let resolutionWording: EngagementWording | null = null;
+  switch (engagement.late_acceptance_resolution) {
+    case "reconfirmation_window_expired":
+      resolutionWording = getReconfirmationWindowElapsedWording();
+      break;
+    case "initiator_declined_renewal":
+      resolutionWording = getInitiatorDeclinedLateAcceptanceWording();
+      break;
+    case "renewed_engagement_created":
+      resolutionWording = getRenewedEngagementCreatedWording();
+      break;
+    default:
+      resolutionWording = null;
+  }
+  const wording = resolutionWording ?? baseWording;
+
   const baseMeta = statusMeta(engagement.engagement_status);
-  const meta: StatusMeta =
+  const lateOverlay =
     engagement.engagement_status === "expired" &&
     (engagement.counterparty_response === "accepted_after_expiry" ||
-      engagement.late_acceptance_recorded_at)
-      ? { label: wording.badgeLabel, tone: "active", description: wording.description, icon: Clock }
-      : engagement.renewed_from_engagement_id
-        ? { label: wording.badgeLabel, tone: baseMeta.tone, description: wording.description, icon: baseMeta.icon }
-        : baseMeta;
+      engagement.late_acceptance_recorded_at);
+  const overlayTone: StatusMeta["tone"] = resolutionWording
+    ? wording.tone === "fail"
+      ? "fail"
+      : "active"
+    : "active";
+  const meta: StatusMeta =
+    resolutionWording
+      ? { label: wording.badgeLabel, tone: overlayTone, description: wording.description, icon: lateOverlay ? Clock : baseMeta.icon }
+      : lateOverlay
+        ? { label: wording.badgeLabel, tone: "active", description: wording.description, icon: Clock }
+        : engagement.renewed_from_engagement_id
+          ? { label: wording.badgeLabel, tone: baseMeta.tone, description: wording.description, icon: baseMeta.icon }
+          : baseMeta;
   const Icon = meta.icon;
 
   // Identify any missing counterparty fields that would block / weaken outreach.
