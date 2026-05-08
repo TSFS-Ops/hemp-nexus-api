@@ -1438,6 +1438,20 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Phase 3 Issue 3 fix: reconfirm / decline-late-acceptance create or
+      // foreclose a renewed engagement. They are workflow-authority actions,
+      // not ordinary participation. Restrict to org_admin on the initiating
+      // org, with an explicit, separately-audited platform_admin override.
+      const isInitiatorOrgAdmin = authCtx.roles.includes("org_admin");
+      const isPlatformAdminOverride = authCtx.roles.includes("platform_admin");
+      if (!isInitiatorOrgAdmin && !isPlatformAdminOverride) {
+        throw new ApiException(
+          "FORBIDDEN",
+          "Only an organisation admin on the initiating side can resolve a late acceptance.",
+          403,
+        );
+      }
+
       const { data: actorProfile } = await supabase
         .from("profiles")
         .select("email, full_name")
