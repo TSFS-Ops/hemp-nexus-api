@@ -156,6 +156,16 @@ Deno.serve(async (req) => {
       }
 
       // ── Hard-gate: Counterparty engagement must be accepted ──
+      // Phase 1.5 audit: this query is intentionally NOT migrated to the
+      // canonical resolver because it filters by `engagement_status =
+      // 'accepted'` AND uses `.limit(1)`. Per the Batch B status model
+      // only one engagement row per match can be in the `accepted`
+      // state at any moment (renewed-child rows start at
+      // `notification_sent`; expired-parent rows transition through
+      // `expired` and never return to `accepted`). So this gate
+      // continues to evaluate the correct row even after Phase 2 drops
+      // UNIQUE(match_id). `.maybeSingle()` is safe because `.limit(1)`
+      // bounds the result set.
       const { data: engagement } = await supabase
         .from("poi_engagements")
         .select("engagement_status")
