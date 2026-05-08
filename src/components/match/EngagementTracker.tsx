@@ -21,7 +21,13 @@ interface EngagementTrackerProps {
     trade_request_id?: string | null;
   };
 }
-type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+type EngagementStatus =
+  | "notification_sent"
+  | "contacted"
+  | "accepted"
+  | "declined"
+  | "expired"
+  | "late_acceptance_pending_initiator_reconfirmation";
 const STEPS = [{
   key: "notification_sent" as const,
   label: "Awaiting outreach",
@@ -46,12 +52,24 @@ const TERMINAL_OVERRIDES: Record<string, {
   expired: {
     label: "Expired",
     icon: AlertTriangle
+  },
+  // Batch B Phase 5: late acceptance recorded after the engagement window
+  // elapsed. We render this as a terminal-shaped step (workflow does NOT
+  // progress) but with explicit late-acceptance wording so the trader
+  // never sees a bare "Accepted" pip implying mutual acceptance.
+  late_acceptance_pending_initiator_reconfirmation: {
+    label: "Late acceptance — awaiting reconfirmation",
+    icon: AlertTriangle
   }
 };
 function getStepState(_stepKey: string, currentStatus: EngagementStatus, stepIndex: number): "complete" | "current" | "upcoming" | "terminal" {
   const statusOrder: EngagementStatus[] = ["notification_sent", "contacted", "accepted"];
   const currentIndex = statusOrder.indexOf(currentStatus);
-  if (currentStatus === "declined" || currentStatus === "expired") {
+  if (
+    currentStatus === "declined" ||
+    currentStatus === "expired" ||
+    currentStatus === "late_acceptance_pending_initiator_reconfirmation"
+  ) {
     const reachedIndex = statusOrder.indexOf("contacted");
     if (stepIndex <= reachedIndex) return "complete";
     return "terminal";
