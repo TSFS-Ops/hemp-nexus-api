@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Clock, Mail, CheckCircle2, XCircle, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isEngagementTerminal } from "@/lib/engagement-state";
+import { getEngagementWording } from "@/lib/engagement-wording";
 // Batch A — single source of truth for the contact-state label/tooltip
 // shown above the missing-fields callout.
 import {
