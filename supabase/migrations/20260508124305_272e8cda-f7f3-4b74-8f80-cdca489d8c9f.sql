@@ -1,0 +1,1 @@
+ALTER TYPE public.engagement_status ADD VALUE IF NOT EXISTS 'late_acceptance_pending_initiator_reconfirmation';
