@@ -107,9 +107,12 @@ describe("Batch B Phase 3 — atomic_reconfirm_late_acceptance", () => {
   });
 
   it("preserves counterparty_response and late_acceptance_recorded_at on the parent (no overwrite)", () => {
-    // The reconfirm UPDATE must not touch these two columns; if it did,
-    // the audit trail of the late acceptance would be lost.
-    const updateBlock = sql.match(/UPDATE poi_engagements\s+SET[\s\S]+?WHERE id = p_parent_engagement_id;/);
+    // Scope to the reconfirm function body so we don't accidentally
+    // match the UPDATE inside atomic_record_late_acceptance (which
+    // legitimately writes counterparty_response).
+    const fnBody = sql.match(/CREATE OR REPLACE FUNCTION public\.atomic_reconfirm_late_acceptance[\s\S]+?\$function\$;/);
+    expect(fnBody).toBeTruthy();
+    const updateBlock = fnBody![0].match(/UPDATE poi_engagements\s+SET[\s\S]+?WHERE id = p_parent_engagement_id;/);
     expect(updateBlock).toBeTruthy();
     expect(updateBlock![0]).not.toMatch(/counterparty_response\s*=/);
     expect(updateBlock![0]).not.toMatch(/late_acceptance_recorded_at\s*=/);
