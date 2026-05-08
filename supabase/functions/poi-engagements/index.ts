@@ -1510,8 +1510,30 @@ Deno.serve(async (req) => {
         renewedChild = child as Record<string, unknown> | null;
       }
 
+      // Phase 3 Issue 3: separately-audited record of the platform_admin
+      // override path so it is never silently mixed with org_admin actions.
+      if (!isInitiatorOrgAdmin && isPlatformAdminOverride) {
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: authCtx.orgId,
+            actor_user_id: authCtx.userId,
+            action: "pending_engagement.late_acceptance_resolved_via_platform_admin_override",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              actor_role: "platform_admin",
+              actor_org_id: authCtx.orgId ?? null,
+              resolution_action: action,
+              request_id: requestId,
+            },
+          });
+        } catch (e) {
+          console.error(`[${requestId}] platform_admin override audit insert failed`, e);
+        }
+      }
+
       console.log(
-        `[${requestId}] Initiator ${authCtx.orgId} ${action} on engagement ${engagementId}`,
+        `[${requestId}] Initiator ${authCtx.orgId} ${action} on engagement ${engagementId} (role=${isInitiatorOrgAdmin ? "org_admin" : "platform_admin_override"})`,
       );
 
       return new Response(
