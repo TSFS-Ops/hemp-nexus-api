@@ -79,6 +79,18 @@ export function parseByMatchResponse<R extends EngagementRow>(
 }
 
 /**
+ * Backwards-compatibility shim. Mirrors the backend helper of the same
+ * name: prefer the current engagement, fall back to the most recent
+ * historical row, else null. Useful for surfaces that previously did
+ * `.maybeSingle()` and need a single row to render against.
+ */
+export function legacyEngagementAlias<R extends EngagementRow>(
+  model: EngagementReadModel<R>,
+): R | null {
+  return model.current_engagement ?? model.latest_historical_engagement ?? null;
+}
+
+/**
  * Phase 1.5 client helper. Fetches every engagement row for a match
  * via the supabase-js client and returns the canonical read-model
  * envelope. UI surfaces that previously did
