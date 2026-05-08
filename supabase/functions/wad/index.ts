@@ -13,6 +13,7 @@ import { computeETag, ifNoneMatchMatches, notModifiedResponse } from "../_shared
 import { cacheHeaders } from "../_shared/cache.ts";
 import { safePdfText } from "../_shared/pdf-sanitizer.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
+import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -155,31 +156,27 @@ Deno.serve(async (req) => {
         throw new ApiException("HARD_GATE_FAILED", `Intent state must be COMPLETED, currently: ${poi.poi_state}`, 422);
       }
 
-      // ── Hard-gate: Counterparty engagement must be accepted ──
-      // Phase 1.5 audit: this query is intentionally NOT migrated to the
-      // canonical resolver because it filters by `engagement_status =
-      // 'accepted'` AND uses `.limit(1)`. Per the Batch B status model
-      // only one engagement row per match can be in the `accepted`
-      // state at any moment (renewed-child rows start at
-      // `notification_sent`; expired-parent rows transition through
-      // `expired` and never return to `accepted`). So this gate
-      // continues to evaluate the correct row even after Phase 2 drops
-      // UNIQUE(match_id). `.maybeSingle()` is safe because `.limit(1)`
-      // bounds the result set.
-      const { data: engagement } = await supabase
-        .from("poi_engagements")
-        .select("engagement_status")
-        .eq("match_id", poi_id)
-        .in("engagement_status", ["accepted"])
-        .limit(1)
-        .maybeSingle();
-
-      if (!engagement) {
-        throw new ApiException(
-          "HARD_GATE_FAILED",
-          "Counterparty engagement has not been accepted. WaD cannot be issued until the counterparty confirms participation.",
-          422
-        );
+      // ── Hard-gate: Counterparty engagement must be accepted (Batch B Phase 4) ──
+      // Use the canonical progression guard so a historical accepted row
+      // does NOT pass when a renewed `notification_sent` / `contacted` /
+      // `late_acceptance_pending_initiator_reconfirmation` child is the
+      // current engagement. The previous query (`.in("engagement_status",
+      // ["accepted"]).limit(1).maybeSingle()`) would happily pick up a
+      // stale accepted row even if a renewed pending child existed; that
+      // is unsafe once Phase 2 allows multiple rows per match.
+      {
+        const decision = await assertEngagementAllowsProgression(supabase, poi_id);
+        if (!decision.allowed) {
+          throw new ApiException(
+            decision.code!,
+            decision.message ?? "Counterparty engagement is not accepted. WaD cannot be issued.",
+            422,
+            {
+              current_engagement_status: decision.currentStatus,
+              has_historical_engagement: decision.hasHistorical,
+            },
+          );
+        }
       }
 
       // ── Hard-gate: Screening recentness (within 30 days) + risk_band checks ──

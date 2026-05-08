@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 
 /**
  * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
@@ -93,6 +94,26 @@ Deno.serve(async (req: Request) => {
       // Verify caller is party to the intent
       if (poi.org_id !== orgId) {
         throw new ApiException("FORBIDDEN", "Not authorised to create WaD for this intent", 403);
+      }
+
+      // ── ENGAGEMENT HOLD-POINT GUARD (Batch B Phase 4) ──
+      // WaD issuance is engagement-scoped progression. Use the canonical
+      // current-engagement guard so historical accepted rows do NOT pass
+      // when a renewed pending child supersedes them.
+      {
+        const matchIdForGuard = (poi as { match_id?: string | null }).match_id || poi.id;
+        const decision = await assertEngagementAllowsProgression(admin, matchIdForGuard);
+        if (!decision.allowed) {
+          throw new ApiException(
+            decision.code!,
+            decision.message ?? "Counterparty engagement is not accepted. WaD cannot be issued.",
+            422,
+            {
+              current_engagement_status: decision.currentStatus,
+              has_historical_engagement: decision.hasHistorical,
+            },
+          );
+        }
       }
 
       // ── Run Hard-Gates ──

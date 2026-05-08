@@ -4,6 +4,7 @@ import { errorResponse, ApiException, handleDatabaseError } from "../_shared/err
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
+import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
@@ -450,6 +451,24 @@ Deno.serve(async (req: Request) => {
             { current_probability: probability, required: 50.1 }
           );
         }
+      }
+
+      // ── ENGAGEMENT HOLD-POINT GUARD (Batch B Phase 4) ──
+      // Collapse / finality is the terminal commercial event for a match.
+      // Block when the current engagement is anything other than `accepted`
+      // (incl. late-acceptance pending reconfirmation, or a renewed
+      // pending child superseding a historical accepted row).
+      const engDecision = await assertEngagementAllowsProgression(adminClient, match_id);
+      if (!engDecision.allowed) {
+        throw new ApiException(
+          engDecision.code!,
+          engDecision.message ?? "Counterparty engagement is not accepted. Collapse blocked.",
+          409,
+          {
+            current_engagement_status: engDecision.currentStatus,
+            has_historical_engagement: engDecision.hasHistorical,
+          },
+        );
       }
     }
 

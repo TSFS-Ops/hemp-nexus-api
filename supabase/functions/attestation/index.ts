@@ -5,6 +5,7 @@ import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { assertWadIsSettleable } from "../_shared/test-mode-bypass.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
+import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 
 /**
  * Attestations Edge Function
@@ -82,6 +83,25 @@ Deno.serve(async (req: Request) => {
               { wad_id, bypassed_gates: guard.bypassedGates.map((b) => b.gate) }
             );
           }
+        }
+      }
+
+      // ── ENGAGEMENT HOLD-POINT GUARD (Batch B Phase 4) ──
+      // Director sign-off is the irrevocable commercial act on a WaD;
+      // every other attestation type is workflow progression on a match.
+      // Block all of them when the current engagement is not accepted.
+      if (match_id) {
+        const decision = await assertEngagementAllowsProgression(admin, match_id);
+        if (!decision.allowed) {
+          throw new ApiException(
+            decision.code!,
+            decision.message ?? "Counterparty engagement is not accepted. Attestation blocked.",
+            409,
+            {
+              current_engagement_status: decision.currentStatus,
+              has_historical_engagement: decision.hasHistorical,
+            },
+          );
         }
       }
 

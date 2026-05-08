@@ -31,6 +31,7 @@ import {
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { fetchEngagementReadModelByMatchId } from "../_shared/engagement-read-model.ts";
+import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -319,24 +320,22 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ENGAGEMENT HOLD-POINT GUARD: Block POI generation if counterparty has not accepted
-      // Phase 1.5: select via canonical resolver — never `.maybeSingle()` on
-      // poi_engagements by match_id. Once Phase 2 drops UNIQUE(match_id)
-      // a match can carry an expired-parent + renewed-child pair; this gate
-      // MUST evaluate the *current* engagement (the renewed child), never
-      // the legacy expired parent or the latest historical row.
-      const { current: currentEngagement, error: engErr } = await fetchEngagementReadModelByMatchId<{
-        id: string;
-        engagement_status: string;
-      }>(supabase, matchId, "id, engagement_status");
-
-      if (!engErr && currentEngagement && currentEngagement.engagement_status !== "accepted") {
-        const statusLabel = currentEngagement.engagement_status.replace(/_/g, " ");
-        throw new ApiException(
-          "ENGAGEMENT_PENDING",
-          `Cannot generate POI: counterparty engagement is '${statusLabel}'. The counterparty must accept before you can proceed.`,
-          409
-        );
+      // ENGAGEMENT HOLD-POINT GUARD (Batch B Phase 4): Block POI generation
+      // unless the *current* engagement is `accepted`. Uses the shared
+      // progression guard so historical accepted rows do NOT pass when a
+      // renewed child is pending, and stable error codes are emitted.
+      // Only the engagement-not-accepted branch is enforced here when an
+      // engagement row exists; the absence of an engagement row entirely
+      // is handled by the existing pending-engagement / soft-route paths
+      // below (a brand-new bilateral match has no engagement yet).
+      {
+        const decision = await assertEngagementAllowsProgression(supabase, matchId);
+        if (!decision.allowed && decision.code !== "ENGAGEMENT_REQUIRED") {
+          throw new ApiException(decision.code!, decision.message!, 409, {
+            current_engagement_status: decision.currentStatus,
+            has_historical_engagement: decision.hasHistorical,
+          });
+        }
       }
 
 
@@ -1234,6 +1233,20 @@ Deno.serve(async (req) => {
         );
       }
 
+      // ENGAGEMENT HOLD-POINT GUARD (Batch B Phase 4): reveal-counterparty
+      // is engagement-scoped progression and burns 1 credit. Block before
+      // the burn so we never charge for a state transition the engagement
+      // does not authorise.
+      {
+        const decision = await assertEngagementAllowsProgression(supabase, matchId);
+        if (!decision.allowed) {
+          throw new ApiException(decision.code!, decision.message!, 409, {
+            current_engagement_status: decision.currentStatus,
+            has_historical_engagement: decision.hasHistorical,
+          });
+        }
+      }
+
       // Burn tokens BEFORE the atomic lock (token burn is itself atomic via atomic_token_burn)
       await burnTokensForAction(supabase, authCtx.orgId, actorApiKeyId, 'counterparty_sighting', requestId, matchId);
 
@@ -1459,6 +1472,21 @@ Deno.serve(async (req) => {
           "A sealed WaD (Without a Doubt) evidence bundle is required before completing a trade. Please complete the WaD step first.",
           422
         );
+      }
+
+      // ENGAGEMENT HOLD-POINT GUARD (Batch B Phase 4): completion is the
+      // terminal commercial event and must NEVER fire if the current
+      // engagement is anything other than `accepted` (incl. late-acceptance
+      // pending reconfirmation, or a renewed-pending child superseding a
+      // historical accepted row).
+      {
+        const decision = await assertEngagementAllowsProgression(supabase, matchId);
+        if (!decision.allowed) {
+          throw new ApiException(decision.code!, decision.message!, 409, {
+            current_engagement_status: decision.currentStatus,
+            has_historical_engagement: decision.hasHistorical,
+          });
+        }
       }
 
       // Completion is free (0 credits) — burn call kept for audit trail consistency
