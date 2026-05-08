@@ -30,6 +30,7 @@ import {
 } from "../_shared/idempotency.ts";
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
+import { fetchEngagementReadModelByMatchId } from "../_shared/engagement-read-model.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -319,14 +320,18 @@ Deno.serve(async (req) => {
       }
 
       // ENGAGEMENT HOLD-POINT GUARD: Block POI generation if counterparty has not accepted
-      const { data: engagement, error: engErr } = await supabase
-        .from("poi_engagements")
-        .select("id, engagement_status")
-        .eq("match_id", matchId)
-        .maybeSingle();
+      // Phase 1.5: select via canonical resolver — never `.maybeSingle()` on
+      // poi_engagements by match_id. Once Phase 2 drops UNIQUE(match_id)
+      // a match can carry an expired-parent + renewed-child pair; this gate
+      // MUST evaluate the *current* engagement (the renewed child), never
+      // the legacy expired parent or the latest historical row.
+      const { current: currentEngagement, error: engErr } = await fetchEngagementReadModelByMatchId<{
+        id: string;
+        engagement_status: string;
+      }>(supabase, matchId, "id, engagement_status");
 
-      if (!engErr && engagement && !["accepted"].includes(engagement.engagement_status)) {
-        const statusLabel = engagement.engagement_status.replace(/_/g, " ");
+      if (!engErr && currentEngagement && currentEngagement.engagement_status !== "accepted") {
+        const statusLabel = currentEngagement.engagement_status.replace(/_/g, " ");
         throw new ApiException(
           "ENGAGEMENT_PENDING",
           `Cannot generate POI: counterparty engagement is '${statusLabel}'. The counterparty must accept before you can proceed.`,
