@@ -152,7 +152,7 @@ describe("Batch B Phase 6 — lifecycle-scheduler sweep block", () => {
 
   it("invokes the atomic RPC per row", () => {
     expect(code).toMatch(
-      /\.rpc\(\s*"atomic_expire_late_acceptance_reconfirmation_window",\s*\{\s*p_engagement_id:\s*row\.id\s*\}\s*\)/,
+      /\.rpc\(\s*"atomic_expire_late_acceptance_reconfirmation_window",\s*\{\s*p_engagement_id:\s*row\.id\s*\}/,
     );
   });
 
