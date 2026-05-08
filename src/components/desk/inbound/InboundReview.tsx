@@ -106,7 +106,7 @@ export function InboundReview() {
         "id, engagement_status, expires_at, counterparty_org_id, counterparty_email, created_at",
       );
       if (engagementEnvelope.error) throw new Error(`Engagement lookup failed: ${(engagementEnvelope.error as { message?: string })?.message ?? "unknown"}`);
-      const engagement = legacyEngagementAlias(engagementEnvelope.envelope) as {
+      const engagement = legacyEngagementAlias(engagementEnvelope.envelope) as unknown as {
         id: string;
         engagement_status: string;
         expires_at: string | null;
