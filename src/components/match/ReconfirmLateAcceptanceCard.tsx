@@ -7,9 +7,10 @@
  *   • Decline late acceptance      → POST /poi-engagements/:id/decline-late-acceptance
  *
  * The wording engine pin from `engagement-wording.ts` is the single source of
- * truth for visible copy. This card never says auto-decline, never says
- * mutual / binding / final / settled / executed, and never claims the
- * counterparty's late acceptance has progressed the workflow.
+ * truth for visible copy. This card never claims the system declines on
+ * the initiator's behalf, never says mutual / binding / final / settled /
+ * executed, and never claims the counterparty's late acceptance has
+ * progressed the workflow.
  *
  * Render conditions (all must be true):
  *   1. engagement.engagement_status === "late_acceptance_pending_initiator_reconfirmation"
