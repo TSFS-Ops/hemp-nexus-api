@@ -15,7 +15,8 @@
  *     blocked until the initiator reconfirms.
  *
  *   • If the initiator does not reconfirm within 7 calendar days we MUST
- *     NOT call this an "auto-decline". The late acceptance simply remains
+ *     NOT describe this as the system declining on their behalf. The late
+ *     acceptance simply remains recorded
  *     recorded and the original engagement remains expired.
  *
  *   • Renewed child engagements pending counterparty re-acceptance MUST
