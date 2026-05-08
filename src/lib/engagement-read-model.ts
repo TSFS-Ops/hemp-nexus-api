@@ -77,3 +77,47 @@ export function parseByMatchResponse<R extends EngagementRow>(
   }
   return resolveEngagementReadModel<R>([]);
 }
+
+/**
+ * Phase 1.5 client helper. Fetches every engagement row for a match
+ * via the supabase-js client and returns the canonical read-model
+ * envelope. UI surfaces that previously did
+ *   `from("poi_engagements").eq("match_id", id).maybeSingle()`
+ * MUST switch to this helper (or the `by-match` edge endpoint) before
+ * Phase 2 drops UNIQUE(match_id).
+ *
+ * Mirrors the backend `fetchEngagementReadModelByMatchId` so frontend
+ * and backend agree on which row is "current" for a given match.
+ */
+export async function fetchEngagementReadModelByMatchId<R extends EngagementRow = EngagementRow>(
+  supabase: {
+    from: (table: string) => {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          order: (col: string, opts: { ascending: boolean }) => Promise<{ data: R[] | null; error: unknown }>;
+        };
+      };
+    };
+  },
+  matchId: string,
+  columns = "*",
+): Promise<{
+  envelope: EngagementReadModel<R>;
+  current: R | null;
+  latest_historical: R | null;
+  error: unknown;
+}> {
+  const { data, error } = await supabase
+    .from("poi_engagements")
+    .select(columns)
+    .eq("match_id", matchId)
+    .order("created_at", { ascending: false });
+  const rows = (data ?? []) as R[];
+  const envelope = resolveEngagementReadModel(rows);
+  return {
+    envelope,
+    current: envelope.current_engagement,
+    latest_historical: envelope.latest_historical_engagement,
+    error,
+  };
+}

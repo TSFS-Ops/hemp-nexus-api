@@ -103,3 +103,51 @@ export function legacyEngagementAlias<R extends EngagementRow>(
 ): R | null {
   return model.current_engagement ?? model.latest_historical_engagement ?? null;
 }
+
+/**
+ * Phase 1.5 backend helper. Fetches every engagement row for a match
+ * and returns the canonical read-model envelope. ALL backend
+ * side-effect gates that previously did
+ *   `from("poi_engagements").eq("match_id", id).maybeSingle()`
+ * MUST switch to this helper before Phase 2 drops UNIQUE(match_id).
+ *
+ * Pass any PostgREST-shaped client (service-role or RLS-scoped). The
+ * `columns` parameter lets callers narrow the select; defaults to "*".
+ *
+ * Returns `{ envelope, current, latest_historical }` so callers can
+ * pick the row that matches their gate semantics:
+ *   - hold-point / "can this match progress?"  → use `current`
+ *   - "what was the last outcome?"             → use `latest_historical`
+ */
+export async function fetchEngagementReadModelByMatchId<R extends EngagementRow = EngagementRow>(
+  supabase: {
+    from: (table: string) => {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          order: (col: string, opts: { ascending: boolean }) => Promise<{ data: R[] | null; error: unknown }>;
+        };
+      };
+    };
+  },
+  matchId: string,
+  columns = "*",
+): Promise<{
+  envelope: EngagementReadModel<R>;
+  current: R | null;
+  latest_historical: R | null;
+  error: unknown;
+}> {
+  const { data, error } = await supabase
+    .from("poi_engagements")
+    .select(columns)
+    .eq("match_id", matchId)
+    .order("created_at", { ascending: false });
+  const rows = (data ?? []) as R[];
+  const envelope = resolveEngagementReadModel(rows);
+  return {
+    envelope,
+    current: envelope.current_engagement,
+    latest_historical: envelope.latest_historical_engagement,
+    error,
+  };
+}
