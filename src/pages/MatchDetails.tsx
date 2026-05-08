@@ -195,6 +195,12 @@ function MatchDetailsContent() {
 
       {matchId && <AcceptEngagementCard match={match} engagementStatus={engagementStatus} onResponded={fetchMatch} />}
 
+      <ReconfirmLateAcceptanceCard
+        match={match as any}
+        engagement={engagementData as any}
+        onResolved={fetchMatch}
+      />
+
       {matchId && <AcceptanceReceiptCard matchId={matchId} />}
 
       {matchId && <EngagementTracker matchId={matchId} match={match} />}
