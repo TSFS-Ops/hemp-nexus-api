@@ -205,7 +205,7 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
         badgeLabel: "Late acceptance — awaiting initiator reconfirmation",
         tone: "warn",
         headline: "Late acceptance recorded — awaiting initiator reconfirmation",
-        description: `The trading partner accepted after the engagement window elapsed. The late acceptance is recorded. The original engagement remains expired. This does not progress the POI or WaD workflow. The initiator has ${windowDays} calendar days to reconfirm; if no reconfirmation arrives, the late acceptance remains recorded and the original engagement remains expired.`,
+        description: `The trading partner accepted after the engagement window elapsed. The late acceptance is recorded and we are awaiting initiator reconfirmation. The original engagement remains expired. This does not progress the POI or WaD workflow. The initiator has ${windowDays} calendar days to reconfirm; if no reconfirmation arrives, the late acceptance remains recorded and the original engagement remains expired.`,
         progressionAllowed: false,
       };
 
