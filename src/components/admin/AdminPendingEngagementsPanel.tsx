@@ -64,7 +64,22 @@ interface Engagement {
   counterparty_org_id: string | null;
   counterparty_email: string | null;
   counterparty_type: string | null;
-  engagement_status: "pending" | "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+  // Batch B Phase 5: include `late_acceptance_pending_initiator_reconfirmation`
+  // so admin rows in that state are never silently dropped or mislabelled.
+  engagement_status:
+    | "pending"
+    | "notification_sent"
+    | "contacted"
+    | "accepted"
+    | "declined"
+    | "expired"
+    | "late_acceptance_pending_initiator_reconfirmation";
+  /** Set when the trading partner accepted after expires_at elapsed. */
+  counterparty_response?: string | null;
+  /** Set on renewed-child engagements that descend from a parent. */
+  renewed_from_engagement_id?: string | null;
+  late_acceptance_recorded_at?: string | null;
+  reconfirmation_window_expires_at?: string | null;
   // Batch A — counterparty contact labelling fields.
   contact_type: "organisation" | "named_individual" | null;
   contact_name: string | null;
