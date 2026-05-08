@@ -176,8 +176,9 @@ const STATUS_STYLES: Record<string, string> = {
 //
 // Batch B Phase 5: late_acceptance_pending_initiator_reconfirmation is
 // rendered with explicit late-acceptance wording. It must NEVER collapse
-// to "Accepted" (would imply the workflow may progress) and MUST NEVER
-// be described as auto-declined (would imply the initiator declined).
+// to "Accepted" (would imply the workflow may progress). The late
+// acceptance remains recorded; the original engagement remains expired
+// until the initiator explicitly reconfirms.
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
   notification_sent: "Awaiting outreach",
