@@ -140,6 +140,6 @@ GRANT EXECUTE ON FUNCTION public.atomic_record_late_acceptance(uuid, uuid, text,
 -- Note on Issue 2 (renewed child expires_at):
 -- Verified live: poi_engagements.expires_at column default is
 -- (now() + '30 days'::interval) and the column is NOT NULL. The
--- atomic_reconfirm_late_acceptance INSERT deliberately omits expires_at
+-- reconfirm RPC's INSERT deliberately omits expires_at
 -- so the renewed child receives a fresh 30-day validity window. No
 -- change required to that RPC.
