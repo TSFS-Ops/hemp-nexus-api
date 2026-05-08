@@ -77,12 +77,24 @@ describe("Batch B Phase 5 — completion audit", () => {
       expect(text).not.toMatch(/auto[-\s_]?decline/i);
     });
 
-    it("lifecycle-scheduler does not currently emit late-acceptance / reconfirmation / renewed notifications", () => {
-      // Phase 6 work has not shipped. Lifecycle scheduler emits only pod
-      // breach + stale-unilateral notifications today. This test pins that
-      // surface so a future addition is forced through the wording engine.
+    it("lifecycle-scheduler does not emit late-acceptance / reconfirmation / renewed notifications (Phase 6: still no notifications dispatched)", () => {
+      // Phase 6 added the reconfirmation-window expiry sweep. The sweep
+      // mutates DB state and writes one audit row per row swept, but it
+      // MUST NOT dispatch any notification. Pin both halves of that
+      // contract: the block exists with the canonical comment, and it
+      // never invokes the notification dispatcher or uses banned wording.
       const text = read("supabase/functions/lifecycle-scheduler/index.ts");
-      expect(text).not.toMatch(/late.acceptance|accepted_after_expiry|renewed_engagement|reconfirmation_window/i);
+      const block = text.match(
+        /6\. LATE-ACCEPTANCE RECONFIRMATION-WINDOW EXPIRY[\s\S]*?Webhook replay-guard pruning/,
+      );
+      expect(block, "Phase 6 sweep block must exist in lifecycle-scheduler").not.toBeNull();
+      expect(block![0]).not.toMatch(/notification-dispatch/);
+      expect(block![0]).toMatch(/notifications_dispatched:\s*0/);
+      expect(block![0].toLowerCase()).not.toMatch(/auto[-\s_]?decline/);
+      // Outside the Phase 6 block, the scheduler still must not mention
+      // late-acceptance state in any notification payload it dispatches.
+      const beforeBlock = text.split("6. LATE-ACCEPTANCE RECONFIRMATION-WINDOW EXPIRY")[0];
+      expect(beforeBlock).not.toMatch(/late.acceptance|accepted_after_expiry|renewed_engagement|reconfirmation_window/i);
     });
   });
 

@@ -543,6 +543,78 @@ Deno.serve(async (req: Request) => {
       error: staleErr?.message || null,
     };
 
+    // ────────────────────────────────────────────
+    // 6. LATE-ACCEPTANCE RECONFIRMATION-WINDOW EXPIRY (Batch B Phase 6)
+    // ────────────────────────────────────────────
+    // Find engagements still in the late-acceptance hold whose 7-day
+    // reconfirmation window has elapsed and which have no resolution yet.
+    // Each candidate is processed via the atomic RPC, which is idempotent:
+    // re-runs against an already-resolved row write nothing and emit no
+    // additional audit rows.
+    const lateAcceptanceCandidates = await admin
+      .from("poi_engagements")
+      .select("id, match_id, org_id, reconfirmation_window_expires_at")
+      .eq("engagement_status", "late_acceptance_pending_initiator_reconfirmation")
+      .is("late_acceptance_resolution", null)
+      .lt("reconfirmation_window_expires_at", nowIso)
+      .limit(500);
+
+    let lateAcceptanceSweptCount = 0;
+    let lateAcceptanceIdempotentCount = 0;
+    let lateAcceptanceErrorCount = 0;
+    const lateAcceptanceErrors: Array<{ id: string; error: string }> = [];
+
+    if (lateAcceptanceCandidates.error) {
+      lateAcceptanceErrorCount = 1;
+      lateAcceptanceErrors.push({ id: "<query>", error: lateAcceptanceCandidates.error.message });
+    } else if (lateAcceptanceCandidates.data && lateAcceptanceCandidates.data.length > 0) {
+      for (const row of lateAcceptanceCandidates.data) {
+        if (dryRun) {
+          // Dry-run: count what WOULD be swept; emit no DB writes / audit rows.
+          lateAcceptanceSweptCount++;
+          continue;
+        }
+        try {
+          const { data: rpcResult, error: rpcErr } = await admin.rpc(
+            "atomic_expire_late_acceptance_reconfirmation_window",
+            { p_engagement_id: row.id },
+          );
+          if (rpcErr) {
+            lateAcceptanceErrorCount++;
+            lateAcceptanceErrors.push({ id: row.id, error: rpcErr.message });
+            continue;
+          }
+          const result = rpcResult as { success?: boolean; idempotent?: boolean; error?: string } | null;
+          if (result?.success === false) {
+            lateAcceptanceErrorCount++;
+            lateAcceptanceErrors.push({ id: row.id, error: result.error ?? "rpc_failure" });
+          } else if (result?.idempotent) {
+            lateAcceptanceIdempotentCount++;
+          } else {
+            lateAcceptanceSweptCount++;
+          }
+        } catch (err) {
+          lateAcceptanceErrorCount++;
+          lateAcceptanceErrors.push({
+            id: row.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    }
+
+    results.late_acceptance_window_expiry = {
+      candidates_found: lateAcceptanceCandidates.data?.length ?? 0,
+      swept: lateAcceptanceSweptCount,
+      idempotent_skips: lateAcceptanceIdempotentCount,
+      errors: lateAcceptanceErrorCount,
+      error_samples: lateAcceptanceErrors.slice(0, 5),
+      // Phase 6 emits NO notifications. The late acceptance remains
+      // recorded; the original engagement remains expired and cannot
+      // proceed. No counterparty/initiator messaging is dispatched here.
+      notifications_dispatched: 0,
+    };
+
     // ── Webhook replay-guard pruning ──
     // Drops webhook_replay_guard rows older than 24h so the table stays
     // bounded. Safe to call even if there's nothing to prune.

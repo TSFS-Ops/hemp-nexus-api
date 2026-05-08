@@ -7420,6 +7420,10 @@ export type Database = {
         }
         Returns: Json
       }
+      atomic_expire_late_acceptance_reconfirmation_window: {
+        Args: { p_engagement_id: string }
+        Returns: Json
+      }
       atomic_generate_poi_v2: {
         Args: {
           p_acks?: Json
