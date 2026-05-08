@@ -8,6 +8,7 @@ import {
 import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { isActorLegalNameMissing } from "./legal-name-guard.ts";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 
 // Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
 // with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
@@ -263,6 +264,31 @@ async function _serve(req: Request): Promise<Response> {
         }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ── ENGAGEMENT HOLD-POINT GUARD (Batch B Phase 4) ──
+    // POI state progression requires the *current* engagement to be
+    // `accepted`. We skip this for terminal/cleanup transitions
+    // (REJECTED, EXPIRED, ANNULLED) which must remain reachable even when
+    // the engagement is in any state. Forward progression
+    // (PENDING_APPROVAL / ELIGIBLE / COMPLETION_REQUESTED / COMPLETED)
+    // is engagement-scoped and must be blocked when the current
+    // engagement is anything other than `accepted`.
+    const PROGRESSION_TARGETS = ["PENDING_APPROVAL", "ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"];
+    if (PROGRESSION_TARGETS.includes(toState)) {
+      const decision = await assertEngagementAllowsProgression(adminClient, matchId);
+      if (!decision.allowed && decision.code !== "ENGAGEMENT_REQUIRED") {
+        if (hasLock) await adminClient.rpc("release_lifecycle_lock");
+        return new Response(
+          JSON.stringify({
+            error: decision.message,
+            code: decision.code,
+            current_engagement_status: decision.currentStatus,
+            has_historical_engagement: decision.hasHistorical,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // ── Block collapse if approvals not complete ──
