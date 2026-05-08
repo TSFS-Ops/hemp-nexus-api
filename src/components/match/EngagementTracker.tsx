@@ -135,7 +135,10 @@ export function EngagementTracker({
   if (!engagement) return null;
   const status: EngagementStatus = engagement.engagement_status;
   const counterpartyType: string = engagement.counterparty_type || "unknown";
-  const isTerminal = status === "declined" || status === "expired";
+  const isTerminal =
+    status === "declined" ||
+    status === "expired" ||
+    status === "late_acceptance_pending_initiator_reconfirmation";
   const terminalInfo = isTerminal ? TERMINAL_OVERRIDES[status] : null;
 
   /** Navigate to the trade form pre-filled with the current match's details.
