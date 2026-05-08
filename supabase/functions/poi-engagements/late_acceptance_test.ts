@@ -180,28 +180,28 @@ Deno.test("pending + expires_at past + accepted → late_acceptance route", () =
   assertEquals(d.kind, "late_acceptance");
 });
 
-Deno.test("accepted + expires_at past + accepted → standard path (RPC will reject as already_resolved)", () => {
-  // The route does not duplicate the RPC's terminal-status guard. It
-  // simply does not re-route to late_acceptance; the standard transition
-  // table will reject it (and even if it didn't, the new RPC rejects
-  // accepted/declined explicitly).
+Deno.test("accepted + expires_at past + accepted → route still attempts late_acceptance; RPC rejects as already_resolved", () => {
+  // The route is intentionally optimistic on isExpired (it cannot
+  // distinguish a terminal-positive 'accepted' that happens to be past
+  // its expires_at). The new RPC enforces the
+  // 'engagement_already_resolved:accepted' rejection server-side.
   const d = decideRespondRoute({
     currentStatus: "accepted",
     expiresAtIso: "2026-04-30T00:00:00Z",
     action: "accepted",
     nowMs: Date.parse("2026-05-08T12:00:00Z"),
   });
-  assertEquals(d.kind, "reject_invalid_transition");
+  assertEquals(d.kind, "late_acceptance");
 });
 
-Deno.test("declined + expires_at past + accepted → standard path (RPC will reject as already_resolved)", () => {
+Deno.test("declined + expires_at past + accepted → route attempts late_acceptance; RPC rejects as already_resolved", () => {
   const d = decideRespondRoute({
     currentStatus: "declined",
     expiresAtIso: "2026-04-30T00:00:00Z",
     action: "accepted",
     nowMs: Date.parse("2026-05-08T12:00:00Z"),
   });
-  assertEquals(d.kind, "reject_invalid_transition");
+  assertEquals(d.kind, "late_acceptance");
 });
 
 Deno.test("contacted + expires_at in future + accepted → standard accept (no late routing)", () => {
