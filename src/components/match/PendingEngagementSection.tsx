@@ -85,6 +85,7 @@ export interface PendingEngagementRow {
   renewed_engagement_id?: string | null;
   /** Reconfirmation deadline (ISO timestamp). */
   reconfirmation_window_expires_at?: string | null;
+}
 
 /**
  * Minimum fields we need from the parent match to derive the counterparty's
