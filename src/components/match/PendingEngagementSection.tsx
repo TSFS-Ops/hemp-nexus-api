@@ -63,6 +63,10 @@ export interface PendingEngagementRow {
   contacted_at?: string | null;
   responded_at?: string | null;
   expires_at?: string | null;
+  /** Batch B Phase 5 — used to derive late-acceptance wording. */
+  counterparty_response?: string | null;
+  renewed_from_engagement_id?: string | null;
+  late_acceptance_recorded_at?: string | null;
 }
 
 /**
