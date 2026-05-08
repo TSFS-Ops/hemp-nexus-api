@@ -82,10 +82,7 @@ function MatchDetailsContent() {
           { method: "GET", label: "load engagement status" },
         );
         const { parseByMatchResponse } = await import("@/lib/engagement-read-model");
-        return parseByMatchResponse<PendingEngagementRow & {
-          engagement_status: EngagementStatus;
-          counterparty_type: string;
-        }>(result);
+        return parseByMatchResponse(result);
       } catch {
         return null;
       }
