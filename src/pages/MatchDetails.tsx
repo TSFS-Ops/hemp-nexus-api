@@ -27,6 +27,7 @@ import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpart
 import { PendingEngagementSection } from "@/components/match/PendingEngagementSection";
 import type { PendingEngagementRow } from "@/components/match/PendingEngagementSection";
 import { OrgAdminContactCompletionCard } from "@/components/match/OrgAdminContactCompletionCard";
+import { ReconfirmLateAcceptanceCard } from "@/components/match/ReconfirmLateAcceptanceCard";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { SpineTimeline } from "@/components/match/SpineTimeline";
