@@ -210,7 +210,25 @@ export function PendingEngagementSection({ engagement, match, isInitiator }: Pro
   const terminal = isEngagementTerminal(engagement.engagement_status);
   if (terminal && engagement.counterparty_org_id) return null;
 
-  const meta = statusMeta(engagement.engagement_status);
+  // Batch B Phase 5 — overlay wording-engine output for late-acceptance
+  // semantics so an expired row that already carries a recorded late
+  // acceptance is never described as a flat dead window.
+  const wording = getEngagementWording({
+    status: engagement.engagement_status as never,
+    isRenewedChild: !!engagement.renewed_from_engagement_id,
+    acceptedAfterExpiry:
+      engagement.counterparty_response === "accepted_after_expiry" ||
+      !!engagement.late_acceptance_recorded_at,
+  });
+  const baseMeta = statusMeta(engagement.engagement_status);
+  const meta: StatusMeta =
+    engagement.engagement_status === "expired" &&
+    (engagement.counterparty_response === "accepted_after_expiry" ||
+      engagement.late_acceptance_recorded_at)
+      ? { label: wording.badgeLabel, tone: "active", description: wording.description, icon: Clock }
+      : engagement.renewed_from_engagement_id
+        ? { label: wording.badgeLabel, tone: baseMeta.tone, description: wording.description, icon: baseMeta.icon }
+        : baseMeta;
   const Icon = meta.icon;
 
   // Identify any missing counterparty fields that would block / weaken outreach.
