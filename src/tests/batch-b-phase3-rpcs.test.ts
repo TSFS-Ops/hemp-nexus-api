@@ -38,9 +38,22 @@ describe("Batch B Phase 3 — atomic_record_late_acceptance", () => {
     expect(sql).toMatch(/pg_advisory_xact_lock[\s\S]*?SELECT \* INTO v_engagement[\s\S]*?FOR UPDATE/);
   });
 
-  it("requires the engagement to be expired before recording the late acceptance", () => {
-    expect(sql).toMatch(/v_engagement\.engagement_status::text <> 'expired'/);
+  it("accepts any non-terminal prior status whose expires_at has passed (clock-based, scheduler-independent)", () => {
+    // Issue 1 fix: must NOT require engagement_status = 'expired'. The
+    // RPC must accept pending / notification_sent / contacted / expired
+    // when expires_at < now(), and reject if expires_at is still in the
+    // future.
+    expect(sql).toMatch(/v_allowed_prior\s+CONSTANT text\[\]\s*:=\s*\n?\s*ARRAY\['pending','notification_sent','contacted','expired'\]/);
+    expect(sql).toMatch(/NOT \(v_prev_status = ANY \(v_allowed_prior\)\)/);
+    expect(sql).toMatch(/v_prev_status IN \('accepted','declined'\)/);
     expect(sql).toMatch(/now\(\) <= v_engagement\.expires_at/);
+    // Regression guard: the old strict-expired check must be gone.
+    expect(sql).not.toMatch(/v_engagement\.engagement_status::text <> 'expired'/);
+  });
+
+  it("records the previous status in audit metadata", () => {
+    expect(sql).toMatch(/'previous_status', v_prev_status/);
+    expect(sql).toMatch(/'scheduler_had_swept_to_expired', \(v_prev_status = 'expired'\)/);
   });
 
   it("sets the agreed late-acceptance fields atomically", () => {
