@@ -155,3 +155,61 @@ Deno.test("counterparty_response wording is accepted_after_expiry (not late_acce
   assert(allowed.includes("accepted_after_expiry"));
   assertFalse(allowed.includes("late_accepted"));
 });
+
+// ─── Phase 3 Issue 1 — broader clock-based late-acceptance routing ─────
+// The respond route must detect "expires_at < now()" for any non-terminal
+// status, not just rows the scheduler has already swept to expired.
+
+Deno.test("notification_sent + expires_at past + accepted → late_acceptance route", () => {
+  const d = decideRespondRoute({
+    currentStatus: "notification_sent",
+    expiresAtIso: "2026-04-30T00:00:00Z",
+    action: "accepted",
+    nowMs: Date.parse("2026-05-08T12:00:00Z"),
+  });
+  assertEquals(d.kind, "late_acceptance");
+});
+
+Deno.test("pending + expires_at past + accepted → late_acceptance route", () => {
+  const d = decideRespondRoute({
+    currentStatus: "pending",
+    expiresAtIso: "2026-04-30T00:00:00Z",
+    action: "accepted",
+    nowMs: Date.parse("2026-05-08T12:00:00Z"),
+  });
+  assertEquals(d.kind, "late_acceptance");
+});
+
+Deno.test("accepted + expires_at past + accepted → route still attempts late_acceptance; RPC rejects as already_resolved", () => {
+  // The route is intentionally optimistic on isExpired (it cannot
+  // distinguish a terminal-positive 'accepted' that happens to be past
+  // its expires_at). The new RPC enforces the
+  // 'engagement_already_resolved:accepted' rejection server-side.
+  const d = decideRespondRoute({
+    currentStatus: "accepted",
+    expiresAtIso: "2026-04-30T00:00:00Z",
+    action: "accepted",
+    nowMs: Date.parse("2026-05-08T12:00:00Z"),
+  });
+  assertEquals(d.kind, "late_acceptance");
+});
+
+Deno.test("declined + expires_at past + accepted → route attempts late_acceptance; RPC rejects as already_resolved", () => {
+  const d = decideRespondRoute({
+    currentStatus: "declined",
+    expiresAtIso: "2026-04-30T00:00:00Z",
+    action: "accepted",
+    nowMs: Date.parse("2026-05-08T12:00:00Z"),
+  });
+  assertEquals(d.kind, "late_acceptance");
+});
+
+Deno.test("contacted + expires_at in future + accepted → standard accept (no late routing)", () => {
+  const d = decideRespondRoute({
+    currentStatus: "contacted",
+    expiresAtIso: "2030-01-01T00:00:00Z",
+    action: "accepted",
+    nowMs: Date.parse("2026-05-08T12:00:00Z"),
+  });
+  assertEquals(d, { kind: "standard", targetStatus: "accepted" });
+});

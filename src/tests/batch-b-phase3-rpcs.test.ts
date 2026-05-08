@@ -38,9 +38,22 @@ describe("Batch B Phase 3 — atomic_record_late_acceptance", () => {
     expect(sql).toMatch(/pg_advisory_xact_lock[\s\S]*?SELECT \* INTO v_engagement[\s\S]*?FOR UPDATE/);
   });
 
-  it("requires the engagement to be expired before recording the late acceptance", () => {
-    expect(sql).toMatch(/v_engagement\.engagement_status::text <> 'expired'/);
+  it("accepts any non-terminal prior status whose expires_at has passed (clock-based, scheduler-independent)", () => {
+    // Issue 1 fix: must NOT require engagement_status = 'expired'. The
+    // RPC must accept pending / notification_sent / contacted / expired
+    // when expires_at < now(), and reject if expires_at is still in the
+    // future.
+    expect(sql).toMatch(/v_allowed_prior\s+CONSTANT text\[\]\s*:=\s*\n?\s*ARRAY\['pending','notification_sent','contacted','expired'\]/);
+    expect(sql).toMatch(/NOT \(v_prev_status = ANY \(v_allowed_prior\)\)/);
+    expect(sql).toMatch(/v_prev_status IN \('accepted','declined'\)/);
     expect(sql).toMatch(/now\(\) <= v_engagement\.expires_at/);
+    // Regression guard: the old strict-expired check must be gone.
+    expect(sql).not.toMatch(/v_engagement\.engagement_status::text <> 'expired'/);
+  });
+
+  it("records the previous status in audit metadata", () => {
+    expect(sql).toMatch(/'previous_status', v_prev_status/);
+    expect(sql).toMatch(/'scheduler_had_swept_to_expired', \(v_prev_status = 'expired'\)/);
   });
 
   it("sets the agreed late-acceptance fields atomically", () => {
@@ -57,7 +70,7 @@ describe("Batch B Phase 3 — atomic_record_late_acceptance", () => {
   });
 
   it("is idempotent when already in the late-acceptance state", () => {
-    expect(sql).toMatch(/v_engagement\.engagement_status::text = 'late_acceptance_pending_initiator_reconfirmation'[\s\S]+'idempotent', true/);
+    expect(sql).toMatch(/v_prev_status = 'late_acceptance_pending_initiator_reconfirmation'[\s\S]+'idempotent', true/);
   });
 
   it("is service_role only", () => {
@@ -168,5 +181,59 @@ describe("Batch B Phase 3 — atomic_engagement_transition hard rejections", () 
 
   it("rejects any direct write into or out of late_acceptance_pending_initiator_reconfirmation", () => {
     expect(sql).toMatch(/v_prev_status = 'late_acceptance_pending_initiator_reconfirmation'\s+OR p_new_status = 'late_acceptance_pending_initiator_reconfirmation'[\s\S]+'late_acceptance_state_requires_dedicated_rpc'/);
+  });
+});
+
+// ─── Issue 2 — renewed-child expires_at default ───────────────────────
+describe("Batch B Phase 3 — renewed child expires_at default (Issue 2)", () => {
+  it("relies on the verified poi_engagements.expires_at column default (now() + 30 days)", () => {
+    // The Phase 2 migration created the column with NOT NULL and the
+    // default `(now() + '30 days'::interval)` (verified live on
+    // 2026-05-08). The reconfirm RPC therefore omits expires_at on the
+    // renewed child INSERT to receive a fresh 30-day window. This test
+    // pins the patch migration's documented assertion so any future
+    // change to either side is a deliberate, reviewable edit.
+    const sql = (() => {
+      const { readFileSync, readdirSync } = require("node:fs") as typeof import("node:fs");
+      const { join } = require("node:path") as typeof import("node:path");
+      const dir = join(process.cwd(), "supabase", "migrations");
+      const files = readdirSync(dir).filter((f: string) => f.endsWith(".sql")).sort();
+      const matches = files.filter((f: string) =>
+        readFileSync(join(dir, f), "utf8").includes("Note on Issue 2"),
+      );
+      if (!matches.length) throw new Error("Issue 2 note not found in migrations");
+      return readFileSync(join(dir, matches[matches.length - 1]), "utf8");
+    })();
+    expect(sql).toMatch(/now\(\) \+ '30 days'::interval/);
+    expect(sql).toMatch(/NOT NULL/);
+  });
+});
+
+// ─── Issue 3 — initiator authority gating ─────────────────────────────
+describe("Batch B Phase 3 — initiator reconfirm/decline authority gate (Issue 3)", () => {
+  const src = (() => {
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    return readFileSync(
+      join(process.cwd(), "supabase", "functions", "poi-engagements", "index.ts"),
+      "utf8",
+    );
+  })();
+
+  it("requires org_admin (or platform_admin override) on the initiating org", () => {
+    expect(src).toMatch(/isInitiatorOrgAdmin\s*=\s*authCtx\.roles\.includes\("org_admin"\)/);
+    expect(src).toMatch(/isPlatformAdminOverride\s*=\s*authCtx\.roles\.includes\("platform_admin"\)/);
+    expect(src).toMatch(/if \(!isInitiatorOrgAdmin && !isPlatformAdminOverride\)[\s\S]+?"FORBIDDEN"/);
+  });
+
+  it("still requires the caller's org to match the initiating engagement org", () => {
+    expect(src).toMatch(/parent\.org_id !== authCtx\.orgId[\s\S]+?"FORBIDDEN"/);
+  });
+
+  it("emits a separately-audited record when the platform_admin override path is used", () => {
+    expect(src).toContain(
+      "pending_engagement.late_acceptance_resolved_via_platform_admin_override",
+    );
+    expect(src).toMatch(/actor_role:\s*"platform_admin"/);
   });
 });
