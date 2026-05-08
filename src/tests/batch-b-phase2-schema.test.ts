@@ -87,9 +87,27 @@ describe("Batch B Phase 2 — poi_engagements schema migration", () => {
     );
   });
 
-  it("adds the counterparty_response value check", () => {
-    expect(sql).toContain("poi_engagements_counterparty_response_chk");
-    expect(sql).toMatch(/counterparty_response IN \('accepted','declined','late_accepted'\)/);
+  it("adds the counterparty_response value check (with corrected accepted_after_expiry wording)", () => {
+    // The check constraint may be defined in the original Phase 2 migration
+    // OR in the follow-up patch migration that renamed late_accepted →
+    // accepted_after_expiry. Resolve the latest definition by reading every
+    // migration file that mentions the constraint and picking the last one.
+    const { readdirSync, readFileSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
+    const matching = files.filter((f) =>
+      readFileSync(join(MIGRATIONS_DIR, f), "utf8").includes(
+        "poi_engagements_counterparty_response_chk",
+      ),
+    );
+    expect(matching.length).toBeGreaterThan(0);
+    const latest = readFileSync(join(MIGRATIONS_DIR, matching[matching.length - 1]), "utf8");
+    expect(latest).toContain("poi_engagements_counterparty_response_chk");
+    expect(latest).toMatch(
+      /counterparty_response IN \('accepted','declined','accepted_after_expiry'\)/,
+    );
+    // Guard against silent regression to the rejected wording.
+    expect(latest).not.toMatch(/'late_accepted'/);
   });
 
   it("adds the late_acceptance_resolution value check", () => {
