@@ -332,14 +332,24 @@ function useSealedPage(orgId: string | null, page: number) {
       const ids = list.map((m) => m.id);
       const engagementByMatch = new Map<string, string>();
       if (ids.length > 0) {
+        // Phase 1.5: read-model resolver — see the active-lanes block above
+        // for the full rationale. Same shape, same Phase 2 forward-compat.
         const { data: engagements } = await supabase
           .from("poi_engagements")
-          .select("match_id, engagement_status")
-          .in("match_id", ids);
-        for (const e of engagements ?? []) {
-          if (e.match_id && e.engagement_status) {
-            engagementByMatch.set(e.match_id, e.engagement_status);
-          }
+          .select("id, match_id, engagement_status, created_at")
+          .in("match_id", ids)
+          .order("created_at", { ascending: false });
+        const grouped = new Map<string, EngagementRow[]>();
+        for (const e of (engagements ?? []) as EngagementRow[]) {
+          if (!e.match_id) continue;
+          const arr = grouped.get(e.match_id) ?? [];
+          arr.push(e);
+          grouped.set(e.match_id, arr);
+        }
+        for (const [matchId, rows] of grouped) {
+          const env = resolveEngagementReadModel(rows);
+          const picked = env.current_engagement ?? env.latest_historical_engagement;
+          if (picked?.engagement_status) engagementByMatch.set(matchId, picked.engagement_status);
         }
       }
 
