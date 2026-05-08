@@ -77,18 +77,19 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
     return <>{children}</>;
   }
 
-  // Reserved marketplace host (trade.izenzo.co.za) — never serve the live
-  // console here. Show a holding page that soft-gates visitors to the
-  // authenticated console at api.trade.izenzo.co.za.
+  // Reserved marketplace host (trade.izenzo.co.za) — per client direction
+  // (2026-05-08), redirect all traffic to the live console at
+  // api.trade.izenzo.co.za, preserving path + query + hash. No holding page.
   if (hostType === 'marketplace') {
-    return <MarketplaceHolding />;
+    return redirectToConsole();
   }
 
-  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za): show neutral
-  // under-construction holding page only. The public Mother Ship website is
-  // not yet live; no app routes are exposed here.
+  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za) — per client direction
+  // (2026-05-08), the under-construction holding page is retired so that
+  // search-engine indexing of the apex domain is not damaged. All traffic
+  // is hard-redirected to the live console.
   if (hostType === 'public') {
-    return <PublicHolding />;
+    return redirectToConsole();
   }
 
   // CONSOLE DOMAIN
