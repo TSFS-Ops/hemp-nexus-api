@@ -274,10 +274,15 @@ async function _serve(req: Request): Promise<Response> {
     // (PENDING_APPROVAL / ELIGIBLE / COMPLETION_REQUESTED / COMPLETED)
     // is engagement-scoped and must be blocked when the current
     // engagement is anything other than `accepted`.
+    // PENDING_APPROVAL is allowed when no engagement row exists yet (the
+    // initial mint can co-create the engagement). Anything past
+    // PENDING_APPROVAL strictly requires `current_engagement = accepted`.
     const PROGRESSION_TARGETS = ["PENDING_APPROVAL", "ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"];
     if (PROGRESSION_TARGETS.includes(toState)) {
       const decision = await assertEngagementAllowsProgression(adminClient, matchId);
-      if (!decision.allowed && decision.code !== "ENGAGEMENT_REQUIRED") {
+      const allowMissingEngagement =
+        toState === "PENDING_APPROVAL" && decision.code === "ENGAGEMENT_REQUIRED";
+      if (!decision.allowed && !allowMissingEngagement) {
         if (hasLock) await adminClient.rpc("release_lifecycle_lock");
         return new Response(
           JSON.stringify({
