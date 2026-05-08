@@ -4472,13 +4472,23 @@ export type Database = {
           contacted_at: string | null
           counterparty_email: string | null
           counterparty_org_id: string | null
+          counterparty_response: string | null
           counterparty_type: Database["public"]["Enums"]["counterparty_type"]
           created_at: string
           engagement_status: Database["public"]["Enums"]["engagement_status"]
           expires_at: string
           id: string
+          late_acceptance_recorded_at: string | null
+          late_acceptance_resolution: string | null
+          late_acceptance_resolved_at: string | null
           match_id: string
           org_id: string
+          original_expired_at: string | null
+          reconfirmation_window_expires_at: string | null
+          reconfirmed_at: string | null
+          reconfirmed_by_user_id: string | null
+          renewed_engagement_id: string | null
+          renewed_from_engagement_id: string | null
           responded_at: string | null
           sla_reminder_count: number
           sla_reminder_sent_at: string | null
@@ -4497,13 +4507,23 @@ export type Database = {
           contacted_at?: string | null
           counterparty_email?: string | null
           counterparty_org_id?: string | null
+          counterparty_response?: string | null
           counterparty_type?: Database["public"]["Enums"]["counterparty_type"]
           created_at?: string
           engagement_status?: Database["public"]["Enums"]["engagement_status"]
           expires_at?: string
           id?: string
+          late_acceptance_recorded_at?: string | null
+          late_acceptance_resolution?: string | null
+          late_acceptance_resolved_at?: string | null
           match_id: string
           org_id: string
+          original_expired_at?: string | null
+          reconfirmation_window_expires_at?: string | null
+          reconfirmed_at?: string | null
+          reconfirmed_by_user_id?: string | null
+          renewed_engagement_id?: string | null
+          renewed_from_engagement_id?: string | null
           responded_at?: string | null
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
@@ -4522,13 +4542,23 @@ export type Database = {
           contacted_at?: string | null
           counterparty_email?: string | null
           counterparty_org_id?: string | null
+          counterparty_response?: string | null
           counterparty_type?: Database["public"]["Enums"]["counterparty_type"]
           created_at?: string
           engagement_status?: Database["public"]["Enums"]["engagement_status"]
           expires_at?: string
           id?: string
+          late_acceptance_recorded_at?: string | null
+          late_acceptance_resolution?: string | null
+          late_acceptance_resolved_at?: string | null
           match_id?: string
           org_id?: string
+          original_expired_at?: string | null
+          reconfirmation_window_expires_at?: string | null
+          reconfirmed_at?: string | null
+          reconfirmed_by_user_id?: string | null
+          renewed_engagement_id?: string | null
+          renewed_from_engagement_id?: string | null
           responded_at?: string | null
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
@@ -4549,14 +4579,14 @@ export type Database = {
           {
             foreignKeyName: "poi_engagements_match_id_fkey"
             columns: ["match_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "match_evidence"
             referencedColumns: ["match_id"]
           },
           {
             foreignKeyName: "poi_engagements_match_id_fkey"
             columns: ["match_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "matches"
             referencedColumns: ["id"]
           },
@@ -4565,6 +4595,34 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_renewed_engagement_id_fkey"
+            columns: ["renewed_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_renewed_engagement_id_fkey"
+            columns: ["renewed_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "poi_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_renewed_from_engagement_id_fkey"
+            columns: ["renewed_from_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_renewed_from_engagement_id_fkey"
+            columns: ["renewed_from_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "poi_engagements"
             referencedColumns: ["id"]
           },
         ]
@@ -7044,14 +7102,14 @@ export type Database = {
           {
             foreignKeyName: "poi_engagements_match_id_fkey"
             columns: ["match_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "match_evidence"
             referencedColumns: ["match_id"]
           },
           {
             foreignKeyName: "poi_engagements_match_id_fkey"
             columns: ["match_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "matches"
             referencedColumns: ["id"]
           },
