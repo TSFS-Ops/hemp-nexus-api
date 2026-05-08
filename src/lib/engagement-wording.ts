@@ -131,7 +131,7 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
           : "Trading partner contacted",
         description: renewed
           ? "The compliance desk has reached out about the renewed engagement. The trading partner must accept the renewed engagement before the workflow can proceed."
-          : "The compliance desk has reached out to the trading partner. Awaiting their reply. No mutual acceptance has been recorded yet.",
+          : "The compliance desk has reached out to the trading partner. Awaiting their reply. No counterparty response has been recorded yet.",
         progressionAllowed: false,
       };
     }
