@@ -91,7 +91,7 @@ function MatchDetailsContent() {
     refetchInterval: 30000,
   });
 
-  const engagementData = (engagementModel?.current_engagement ?? null) as
+  const engagementData = (engagementModel?.current_engagement ?? null) as unknown as
     | (PendingEngagementRow & { engagement_status: EngagementStatus; counterparty_type: string })
     | null;
   const engagementStatus: EngagementStatus = (engagementData?.engagement_status as EngagementStatus) || null;
