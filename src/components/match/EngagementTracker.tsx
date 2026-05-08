@@ -240,7 +240,9 @@ export function EngagementTracker({
         {status === "declined" &&
           "Trading partner declined this trade. Re-use details to approach a different partner."}
         {status === "expired" &&
-          "This engagement has expired. Re-use details to try a different partner."}
+          "This engagement window has elapsed. Re-use details to try a different partner."}
+        {status === "late_acceptance_pending_initiator_reconfirmation" &&
+          "Late acceptance recorded after the engagement window elapsed. The original engagement remains expired. Awaiting initiator reconfirmation. This does not progress the POI or WaD workflow."}
       </p>
 
       {isTerminal && (
