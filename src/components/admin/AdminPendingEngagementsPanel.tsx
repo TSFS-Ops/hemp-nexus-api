@@ -64,7 +64,22 @@ interface Engagement {
   counterparty_org_id: string | null;
   counterparty_email: string | null;
   counterparty_type: string | null;
-  engagement_status: "pending" | "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+  // Batch B Phase 5: include `late_acceptance_pending_initiator_reconfirmation`
+  // so admin rows in that state are never silently dropped or mislabelled.
+  engagement_status:
+    | "pending"
+    | "notification_sent"
+    | "contacted"
+    | "accepted"
+    | "declined"
+    | "expired"
+    | "late_acceptance_pending_initiator_reconfirmation";
+  /** Set when the trading partner accepted after expires_at elapsed. */
+  counterparty_response?: string | null;
+  /** Set on renewed-child engagements that descend from a parent. */
+  renewed_from_engagement_id?: string | null;
+  late_acceptance_recorded_at?: string | null;
+  reconfirmation_window_expires_at?: string | null;
   // Batch A — counterparty contact labelling fields.
   contact_type: "organisation" | "named_individual" | null;
   contact_name: string | null;
@@ -148,12 +163,21 @@ const STATUS_STYLES: Record<string, string> = {
   accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
   declined: "bg-rose-50 text-rose-700 border-rose-200",
   expired: "bg-slate-100 text-slate-500 border-slate-200",
+  // Batch B Phase 5: visually distinct from `accepted` — late acceptance
+  // does NOT progress the workflow until the initiator reconfirms.
+  late_acceptance_pending_initiator_reconfirmation:
+    "bg-amber-50 text-amber-800 border-amber-300",
 };
 
 // Human-readable labels for engagement status. The DB enum value
 // 'notification_sent' historically meant "internal admin alert dispatched"
 // - NOT that the counterparty has been emailed. We surface it as
 // "Awaiting outreach" so admins don't mistake it for an outbound send.
+//
+// Batch B Phase 5: late_acceptance_pending_initiator_reconfirmation is
+// rendered with explicit late-acceptance wording. It must NEVER collapse
+// to "Accepted" (would imply the workflow may progress) and MUST NEVER
+// be described as auto-declined (would imply the initiator declined).
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
   notification_sent: "Awaiting outreach",
@@ -161,6 +185,8 @@ const STATUS_LABELS: Record<string, string> = {
   accepted: "Accepted",
   declined: "Declined",
   expired: "Expired",
+  late_acceptance_pending_initiator_reconfirmation:
+    "Late acceptance — awaiting initiator reconfirmation",
 };
 
 // D-05: the "pending" tab is preserved as a value for backwards-compatible
@@ -175,6 +201,13 @@ const FILTER_TABS = [
   { value: "contacted", label: "Contacted" },
   { value: "accepted", label: "Accepted" },
   { value: "declined", label: "Declined" },
+  // Batch B Phase 5: surface late-acceptance rows so admins can see them
+  // without scrolling through "All". Label deliberately distinct from
+  // "Accepted" so the workflow status is unambiguous.
+  {
+    value: "late_acceptance_pending_initiator_reconfirmation",
+    label: "Late acceptance — awaiting reconfirmation",
+  },
 ] as const;
 
 export function AdminPendingEngagementsPanel() {

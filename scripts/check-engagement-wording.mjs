@@ -27,6 +27,8 @@ const SCAN_DIRS = [
   "src/pages",
   "src/lib",
   "supabase/functions",
+  "supabase/functions/_shared/email-templates",
+  "supabase/functions/_shared/transactional-email-templates",
 ];
 const EXTENSIONS = new Set([".ts", ".tsx"]);
 const IGNORE = [
