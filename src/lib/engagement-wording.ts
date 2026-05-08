@@ -222,9 +222,10 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
 }
 
 /**
- * Wording for the "no reconfirmation within window" outcome. This is NOT
- * an auto-decline and MUST NOT be described as such — the late acceptance
- * remains recorded and the original engagement remains expired.
+ * Wording for the "no reconfirmation within window" outcome. This MUST
+ * NOT be described as the system declining on the initiator's behalf —
+ * the late acceptance remains recorded and the original engagement
+ * remains expired.
  */
 export function getReconfirmationWindowElapsedWording(
   windowDays: number = DEFAULT_WINDOW_DAYS,
