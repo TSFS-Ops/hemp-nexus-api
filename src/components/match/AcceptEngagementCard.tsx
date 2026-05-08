@@ -44,7 +44,13 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
   // 2. The engagement exists and is in a respondable state
   const isCreator = userOrgId === (match as any).org_id;
   const isCounterparty = !isCreator && (matchRole === "buyer" || matchRole === "seller");
-  const canRespond = engagementStatus === "notification_sent" || engagementStatus === "contacted";
+  // Batch B Phase 5: only respondable while pre-acceptance. Once a late
+  // acceptance has been recorded, the trading partner has already
+  // responded and the next action sits with the initiator (reconfirm /
+  // decline) — surfacing Accept here again would imply progression that
+  // the workflow does not allow.
+  const canRespond =
+    engagementStatus === "notification_sent" || engagementStatus === "contacted";
 
   if (!isCounterparty || !canRespond) return null;
 

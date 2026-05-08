@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Clock, Mail, CheckCircle2, XCircle, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isEngagementTerminal } from "@/lib/engagement-state";
+import { getEngagementWording } from "@/lib/engagement-wording";
 // Batch A — single source of truth for the contact-state label/tooltip
 // shown above the missing-fields callout.
 import {
@@ -62,6 +63,10 @@ export interface PendingEngagementRow {
   contacted_at?: string | null;
   responded_at?: string | null;
   expires_at?: string | null;
+  /** Batch B Phase 5 — used to derive late-acceptance wording. */
+  counterparty_response?: string | null;
+  renewed_from_engagement_id?: string | null;
+  late_acceptance_recorded_at?: string | null;
 }
 
 /**
@@ -140,14 +145,30 @@ function statusMeta(status: string | null): StatusMeta {
           "Your counterparty declined this engagement. You can restart the trade with a different counterparty from the trade detail page.",
         icon: XCircle,
       };
-    case "expired":
+    case "expired": {
+      // Batch B Phase 5: distinguish a plain expired window from one that
+      // already carries a recorded late acceptance, so the user is never
+      // told the trade is dead while a late acceptance is awaiting their
+      // reconfirmation.
+      const w = getEngagementWording({ status: "expired" });
       return {
-        label: "Engagement window elapsed",
+        label: w.badgeLabel,
         tone: "fail",
-        description:
-          "The 30-day response window elapsed without a reply. You can restart the trade with the same or a different counterparty.",
+        description: w.description,
         icon: XCircle,
       };
+    }
+    case "late_acceptance_pending_initiator_reconfirmation": {
+      const w = getEngagementWording({
+        status: "late_acceptance_pending_initiator_reconfirmation",
+      });
+      return {
+        label: w.badgeLabel,
+        tone: "active",
+        description: w.description,
+        icon: Clock,
+      };
+    }
     default:
       return {
         label: status ? `Status: ${status}` : "Unknown status",
@@ -189,7 +210,25 @@ export function PendingEngagementSection({ engagement, match, isInitiator }: Pro
   const terminal = isEngagementTerminal(engagement.engagement_status);
   if (terminal && engagement.counterparty_org_id) return null;
 
-  const meta = statusMeta(engagement.engagement_status);
+  // Batch B Phase 5 — overlay wording-engine output for late-acceptance
+  // semantics so an expired row that already carries a recorded late
+  // acceptance is never described as a flat dead window.
+  const wording = getEngagementWording({
+    status: engagement.engagement_status as never,
+    isRenewedChild: !!engagement.renewed_from_engagement_id,
+    acceptedAfterExpiry:
+      engagement.counterparty_response === "accepted_after_expiry" ||
+      !!engagement.late_acceptance_recorded_at,
+  });
+  const baseMeta = statusMeta(engagement.engagement_status);
+  const meta: StatusMeta =
+    engagement.engagement_status === "expired" &&
+    (engagement.counterparty_response === "accepted_after_expiry" ||
+      engagement.late_acceptance_recorded_at)
+      ? { label: wording.badgeLabel, tone: "active", description: wording.description, icon: Clock }
+      : engagement.renewed_from_engagement_id
+        ? { label: wording.badgeLabel, tone: baseMeta.tone, description: wording.description, icon: baseMeta.icon }
+        : baseMeta;
   const Icon = meta.icon;
 
   // Identify any missing counterparty fields that would block / weaken outreach.

@@ -21,7 +21,13 @@ interface EngagementTrackerProps {
     trade_request_id?: string | null;
   };
 }
-type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
+type EngagementStatus =
+  | "notification_sent"
+  | "contacted"
+  | "accepted"
+  | "declined"
+  | "expired"
+  | "late_acceptance_pending_initiator_reconfirmation";
 const STEPS = [{
   key: "notification_sent" as const,
   label: "Awaiting outreach",
@@ -46,12 +52,24 @@ const TERMINAL_OVERRIDES: Record<string, {
   expired: {
     label: "Expired",
     icon: AlertTriangle
+  },
+  // Batch B Phase 5: late acceptance recorded after the engagement window
+  // elapsed. We render this as a terminal-shaped step (workflow does NOT
+  // progress) but with explicit late-acceptance wording so the trader
+  // never sees a bare "Accepted" pip implying mutual acceptance.
+  late_acceptance_pending_initiator_reconfirmation: {
+    label: "Late acceptance — awaiting reconfirmation",
+    icon: AlertTriangle
   }
 };
 function getStepState(_stepKey: string, currentStatus: EngagementStatus, stepIndex: number): "complete" | "current" | "upcoming" | "terminal" {
   const statusOrder: EngagementStatus[] = ["notification_sent", "contacted", "accepted"];
   const currentIndex = statusOrder.indexOf(currentStatus);
-  if (currentStatus === "declined" || currentStatus === "expired") {
+  if (
+    currentStatus === "declined" ||
+    currentStatus === "expired" ||
+    currentStatus === "late_acceptance_pending_initiator_reconfirmation"
+  ) {
     const reachedIndex = statusOrder.indexOf("contacted");
     if (stepIndex <= reachedIndex) return "complete";
     return "terminal";
@@ -117,7 +135,10 @@ export function EngagementTracker({
   if (!engagement) return null;
   const status: EngagementStatus = engagement.engagement_status;
   const counterpartyType: string = engagement.counterparty_type || "unknown";
-  const isTerminal = status === "declined" || status === "expired";
+  const isTerminal =
+    status === "declined" ||
+    status === "expired" ||
+    status === "late_acceptance_pending_initiator_reconfirmation";
   const terminalInfo = isTerminal ? TERMINAL_OVERRIDES[status] : null;
 
   /** Navigate to the trade form pre-filled with the current match's details.
@@ -219,7 +240,9 @@ export function EngagementTracker({
         {status === "declined" &&
           "Trading partner declined this trade. Re-use details to approach a different partner."}
         {status === "expired" &&
-          "This engagement has expired. Re-use details to try a different partner."}
+          "This engagement window has elapsed. Re-use details to try a different partner."}
+        {status === "late_acceptance_pending_initiator_reconfirmation" &&
+          "Late acceptance recorded after the engagement window elapsed. The original engagement remains expired. Awaiting initiator reconfirmation. This does not progress the POI or WaD workflow."}
       </p>
 
       {isTerminal && (
