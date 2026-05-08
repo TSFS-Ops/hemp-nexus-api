@@ -20,7 +20,8 @@ type Action = "accepted" | "declined";
 type RouteDecision =
   | { kind: "late_acceptance" }
   | { kind: "standard"; targetStatus: Action }
-  | { kind: "reject_invalid_transition"; from: string; to: Action };
+  | { kind: "reject_invalid_transition"; from: string; to: Action }
+  | { kind: "reject_already_resolved"; code: string };
 
 const VALID_STATUS_TRANSITIONS: Record<string, Action[]> = {
   pending: [],
@@ -30,6 +31,13 @@ const VALID_STATUS_TRANSITIONS: Record<string, Action[]> = {
   declined: [],
   expired: [],
 };
+
+const LATE_ACCEPTANCE_ELIGIBLE_STATUSES = new Set([
+  "pending",
+  "notification_sent",
+  "contacted",
+  "expired",
+]);
 
 function decideRespondRoute(opts: {
   currentStatus: string;
@@ -42,7 +50,18 @@ function decideRespondRoute(opts: {
     opts.currentStatus === "expired" ||
     (expiresAtMs !== null && opts.nowMs > expiresAtMs);
   if (opts.action === "accepted" && isExpired) {
-    return { kind: "late_acceptance" };
+    if (opts.currentStatus === "accepted") {
+      return { kind: "reject_already_resolved", code: "ENGAGEMENT_ALREADY_ACCEPTED" };
+    }
+    if (opts.currentStatus === "declined") {
+      return { kind: "reject_already_resolved", code: "ENGAGEMENT_ALREADY_DECLINED" };
+    }
+    if (opts.currentStatus === "late_acceptance_pending_initiator_reconfirmation") {
+      return { kind: "reject_already_resolved", code: "LATE_ACCEPTANCE_ALREADY_RECORDED" };
+    }
+    if (LATE_ACCEPTANCE_ELIGIBLE_STATUSES.has(opts.currentStatus)) {
+      return { kind: "late_acceptance" };
+    }
   }
   const allowed = VALID_STATUS_TRANSITIONS[opts.currentStatus] ?? [];
   if (!allowed.includes(opts.action)) {
