@@ -1406,6 +1406,113 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── POST /poi-engagements/:engagementId/reconfirm — Initiator reconfirms a late acceptance ──
+    // ── POST /poi-engagements/:engagementId/decline-late-acceptance — Initiator declines ──
+    // Batch B Phase 3: late-acceptance resolution endpoints. Both routes
+    // are restricted to a member of the initiating organisation
+    // (engagement.org_id). Both delegate to a SECURITY DEFINER RPC that
+    // takes an advisory lock on the parent engagement so concurrent
+    // double-clicks cannot create two child rows or two resolutions.
+    if (
+      req.method === "POST" &&
+      typeof engagementId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(engagementId) &&
+      (parts[1] === "reconfirm" || parts[1] === "decline-late-acceptance")
+    ) {
+      const action = parts[1] as "reconfirm" | "decline-late-acceptance";
+
+      const { data: parent, error: parentErr } = await supabase
+        .from("poi_engagements")
+        .select("id, org_id, engagement_status, reconfirmation_window_expires_at")
+        .eq("id", engagementId)
+        .maybeSingle();
+      if (parentErr) throw parentErr;
+      if (!parent) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+      if (parent.org_id !== authCtx.orgId) {
+        throw new ApiException(
+          "FORBIDDEN",
+          "Only the initiating organisation can resolve a late acceptance.",
+          403,
+        );
+      }
+
+      const { data: actorProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
+        .maybeSingle();
+
+      const rpcName =
+        action === "reconfirm"
+          ? "atomic_reconfirm_late_acceptance"
+          : "atomic_decline_late_acceptance";
+
+      const { data: rpcResult, error: rpcErr } = await supabase.rpc(rpcName, {
+        p_parent_engagement_id: engagementId,
+        p_actor_user_id: authCtx.userId,
+        p_actor_email: actorProfile?.email ?? null,
+        p_actor_name: actorProfile?.full_name ?? null,
+        p_audit_org_id: authCtx.orgId,
+      });
+
+      if (rpcErr) {
+        const pgCode = (rpcErr as { code?: string }).code || "unknown";
+        const pgMsg = (rpcErr as { message?: string }).message || String(rpcErr);
+        console.error(
+          `[${requestId}] ${rpcName} failed for engagement ${engagementId}: code=${pgCode} msg=${pgMsg}`,
+        );
+        throw new ApiException(
+          "LATE_ACCEPTANCE_RESOLUTION_FAILED",
+          `Could not ${action.replace(/-/g, " ")} (db ${pgCode}). Please try again in a moment.`,
+          500,
+        );
+      }
+      const txn = rpcResult as { success: boolean; error?: string } | null;
+      if (!txn?.success) {
+        throw new ApiException(
+          "LATE_ACCEPTANCE_RESOLUTION_FAILED",
+          txn?.error || `Could not ${action.replace(/-/g, " ")}.`,
+          409,
+        );
+      }
+
+      const { data: parentAfter } = await supabase
+        .from("poi_engagements")
+        .select()
+        .eq("id", engagementId)
+        .single();
+
+      let renewedChild = null as Record<string, unknown> | null;
+      const renewedId = (rpcResult as { renewed_engagement_id?: string } | null)
+        ?.renewed_engagement_id;
+      if (renewedId) {
+        const { data: child } = await supabase
+          .from("poi_engagements")
+          .select()
+          .eq("id", renewedId)
+          .single();
+        renewedChild = child as Record<string, unknown> | null;
+      }
+
+      console.log(
+        `[${requestId}] Initiator ${authCtx.orgId} ${action} on engagement ${engagementId}`,
+      );
+
+      return new Response(
+        JSON.stringify({
+          parent_engagement: parentAfter,
+          renewed_engagement: renewedChild,
+          rpc: rpcResult,
+        }),
+        {
+          status: 200,
+          headers: { ...headers, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     // ── POST /poi-engagements/respond/:matchId — Counterparty accepts/declines ──
     if (req.method === "POST" && engagementId === "respond" && parts[1]) {
       const matchId = parts[1];
