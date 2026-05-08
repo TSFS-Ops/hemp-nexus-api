@@ -199,24 +199,40 @@ Deno.test("pending + expires_at past + accepted → late_acceptance route", () =
   assertEquals(d.kind, "late_acceptance");
 });
 
-Deno.test("accepted + expires_at past + accepted → route still attempts late_acceptance; RPC rejects as already_resolved", () => {
-  // The route is intentionally optimistic on isExpired (it cannot
-  // distinguish a terminal-positive 'accepted' that happens to be past
-  // its expires_at). The new RPC enforces the
-  // 'engagement_already_resolved:accepted' rejection server-side.
+Deno.test("accepted + expires_at past + accepted → reject_already_resolved (ENGAGEMENT_ALREADY_ACCEPTED), no late_acceptance call", () => {
   const d = decideRespondRoute({
     currentStatus: "accepted",
     expiresAtIso: "2026-04-30T00:00:00Z",
     action: "accepted",
     nowMs: Date.parse("2026-05-08T12:00:00Z"),
   });
-  assertEquals(d.kind, "late_acceptance");
+  assertEquals(d, { kind: "reject_already_resolved", code: "ENGAGEMENT_ALREADY_ACCEPTED" });
 });
 
-Deno.test("declined + expires_at past + accepted → route attempts late_acceptance; RPC rejects as already_resolved", () => {
+Deno.test("declined + expires_at past + accepted → reject_already_resolved (ENGAGEMENT_ALREADY_DECLINED), no late_acceptance call", () => {
   const d = decideRespondRoute({
     currentStatus: "declined",
     expiresAtIso: "2026-04-30T00:00:00Z",
+    action: "accepted",
+    nowMs: Date.parse("2026-05-08T12:00:00Z"),
+  });
+  assertEquals(d, { kind: "reject_already_resolved", code: "ENGAGEMENT_ALREADY_DECLINED" });
+});
+
+Deno.test("late_acceptance_pending_initiator_reconfirmation + accepted → reject_already_resolved (LATE_ACCEPTANCE_ALREADY_RECORDED)", () => {
+  const d = decideRespondRoute({
+    currentStatus: "late_acceptance_pending_initiator_reconfirmation",
+    expiresAtIso: "2026-04-30T00:00:00Z",
+    action: "accepted",
+    nowMs: Date.parse("2026-05-08T12:00:00Z"),
+  });
+  assertEquals(d, { kind: "reject_already_resolved", code: "LATE_ACCEPTANCE_ALREADY_RECORDED" });
+});
+
+Deno.test("expired + expires_at past + accepted → late_acceptance route", () => {
+  const d = decideRespondRoute({
+    currentStatus: "expired",
+    expiresAtIso: "2026-04-01T00:00:00Z",
     action: "accepted",
     nowMs: Date.parse("2026-05-08T12:00:00Z"),
   });
