@@ -148,8 +148,8 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
           ? "Renewed engagement accepted by trading partner"
           : "Trading partner accepted the engagement",
         description: renewed
-          ? "The trading partner has accepted the renewed engagement. The trade may now progress. This does not imply WaD has been issued or the deal is settled."
-          : "The trading partner has accepted this engagement. The trade may now progress. This does not imply WaD has been issued or the deal is settled.",
+          ? "The trading partner has accepted the renewed engagement. The trade may now progress to the next workflow stage. Acceptance alone does not imply later workflow stages have occurred."
+          : "The trading partner has accepted this engagement. The trade may now progress to the next workflow stage. Acceptance alone does not imply later workflow stages have occurred.",
         progressionAllowed: true,
       };
     }
