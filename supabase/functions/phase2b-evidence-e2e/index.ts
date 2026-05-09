@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
       commodity: "TEST_PHASE2B",
       quantity_amount: 1, quantity_unit: "MT",
       price_amount: 1, price_currency: "USD",
-      terms: "TEST", state: "matched",
+      terms: "TEST", state: "discovery", status: "matched",
       hash: `phase2b_${runId}`,
     }).select("id").single();
     if (mErr) throw new Error("create match: " + mErr.message);
