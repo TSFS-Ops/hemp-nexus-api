@@ -14,7 +14,7 @@ import { cacheHeaders } from "../_shared/cache.ts";
 import { safePdfText } from "../_shared/pdf-sanitizer.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
-// Batch C: assertNoOpenChallenge import deferred to Phase 3.
+import { assertNoOpenChallenge, challengeOpenResponse } from "../_shared/challenge-progression-guard.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -166,7 +166,22 @@ Deno.serve(async (req) => {
       // stale accepted row even if a renewed pending child existed; that
       // is unsafe once Phase 2 allows multiple rows per match.
       {
-        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
+        // Batch C Phase 3A: WaD create blocked while a challenge is open.
+        const matchIdForGuard =
+          (poi as { match_id?: string | null }).match_id || poi.id;
+        const challengeDecision = await assertNoOpenChallenge(supabase, matchIdForGuard);
+        if (!challengeDecision.allowed) {
+          throw new ApiException(
+            "CHALLENGE_OPEN",
+            challengeDecision.message ?? "Progression paused.",
+            409,
+            {
+              challenge_id: challengeDecision.challengeId,
+              challenge_status: challengeDecision.challengeStatus,
+              raised_at: challengeDecision.raisedAt,
+            },
+          );
+        }
 
         const decision = await assertEngagementAllowsProgression(supabase, poi_id);
         if (!decision.allowed) {
