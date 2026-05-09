@@ -24,6 +24,12 @@ import {
 } from "@/lib/challenge-outcomes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTransitionChallenge } from "@/hooks/useAdminChallengeMutations";
+import { useChallengeOverrideAudit } from "@/hooks/useChallengeOverrideAudit";
+import {
+  ADMIN_OVERRIDE_REASON_CATEGORY_LABELS,
+  REGULATOR_REFERENCE_NOT_APPLICABLE,
+  type AdminOverrideReasonCategory,
+} from "@/lib/challenge-override-categories";
 import type { ChallengeRow } from "@/hooks/useMatchChallenge";
 import { RecordOutcomeDialog } from "./RecordOutcomeDialog";
 import { AdminOverrideDialog } from "./AdminOverrideDialog";
