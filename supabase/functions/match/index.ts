@@ -1241,14 +1241,7 @@ Deno.serve(async (req) => {
       // the burn so we never charge for a state transition the engagement
       // does not authorise.
       {
-        // Batch C Phase 2: block engagement-scoped reveal/burn while a challenge is open.
-        const challengeDecision = await assertNoOpenChallenge(supabase, matchId);
-        if (!challengeDecision.allowed) {
-          throw new ApiException(challengeDecision.code!, challengeDecision.message!, 409, {
-            challenge_id: challengeDecision.challengeId,
-            challenge_status: challengeDecision.challengeStatus,
-          });
-        }
+        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
 
         const decision = await assertEngagementAllowsProgression(supabase, matchId);
         if (!decision.allowed) {
