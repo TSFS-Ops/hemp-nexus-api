@@ -298,4 +298,35 @@ describe("PendingEngagementSection — F-B4 expired-window wording branch", () =
     expect(txt).toMatch(/renewed engagement/i);
     expect(txt).not.toMatch(/auto[-\s_]?decline/i);
   });
+
+  // Phase 9 regression: live F-B4 fixture has counterparty_org_id linked AND
+  // status `expired` (terminal). The previous early-return
+  // `if (terminal && counterparty_org_id) return null` hid the card so the
+  // F-B4 wording never rendered. Pin that the late-acceptance-history
+  // exception keeps the card visible.
+  it("[Phase 9 regression] renders F-B4 wording even when counterparty_org_id is linked and status is terminal", () => {
+    const engagement = {
+      id: ENGAGEMENT_ID,
+      engagement_status: "expired" as const,
+      counterparty_type: "organisation",
+      counterparty_email: "x@example.com",
+      counterparty_org_id: "33333333-3333-3333-3333-333333333333",
+      counterparty_response: "accepted_after_expiry",
+      late_acceptance_recorded_at: "2026-04-01T00:00:00Z",
+      late_acceptance_resolution: "reconfirmation_window_expired",
+    };
+    render(
+      <PendingEngagementSection
+        engagement={engagement as any}
+        match={{ buyer_name: "Acme", seller_name: "Beta Co", buyer_org_id: null, seller_org_id: "33333333-3333-3333-3333-333333333333" }}
+        isInitiator
+      />,
+    );
+    const txt = document.body.textContent || "";
+    expect(txt).toMatch(/did not reconfirm/i);
+    expect(txt).toMatch(/late acceptance remains recorded/i);
+    expect(txt).toMatch(/original engagement remains expired/i);
+    expect(txt).not.toMatch(/\b(reconfirm engagement|decline late acceptance)\b/i);
+    expect(txt).not.toMatch(/\b(mutual|binding|final|settled|completed)\b/i);
+  });
 });
