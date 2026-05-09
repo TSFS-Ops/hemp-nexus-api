@@ -232,6 +232,10 @@ function MatchDetailsContent() {
 
       {matchId && <SpineTimeline matchId={matchId} />}
 
+      <MatchChallengePanel match={match as any} />
+
+      <ProgressionPausedBanner challenge={openChallenge ?? null} />
+
       <DealWizard
         match={match}
         canConfirm={MatchState.canDo(match.state || "discovery", "confirm_intent")}
