@@ -75,6 +75,13 @@ export function AdminChallengeReviewDrawer({ open, onOpenChange, challenge }: Ad
   const [outcomeMode, setOutcomeMode] = useState<"outcome_recorded" | "closed_no_action" | null>(null);
   const [overrideOpen, setOverrideOpen] = useState(false);
 
+  const isAdminOverride =
+    !!challenge &&
+    challenge.outcome_code === "admin_override_recorded" &&
+    !!challenge.break_glass_override_used;
+
+  const overrideAuditQ = useChallengeOverrideAudit(challenge?.id ?? null, isAdminOverride);
+
   if (!challenge) return null;
 
   const isOpen = challenge.status === "open";
