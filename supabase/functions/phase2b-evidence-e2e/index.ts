@@ -140,13 +140,29 @@ Deno.serve(async (req) => {
       if (error || !created.user) throw new Error(`createUser ${label}: ${error?.message}`);
       const uid = created.user.id;
       cleanup.push(() => admin.auth.admin.deleteUser(uid));
-      // profile
+
+      // The on_auth_user_created → _provision_user trigger has just (a) created
+      // a brand-new "New Organisation", (b) inserted a profile pointing at it,
+      // and (c) granted this user `org_admin` of that auto-org. We must strip
+      // the auto-granted roles AND the auto-org, otherwise our explicit role
+      // assignment is contaminated by leftover org_admin grants.
+      const { data: priorProfile } = await admin
+        .from("profiles").select("org_id").eq("id", uid).maybeSingle();
+      const autoOrgId = priorProfile?.org_id ?? null;
+      // Wipe ALL auto-granted roles for this fresh user.
+      await admin.from("user_roles").delete().eq("user_id", uid);
+      // Re-pin profile to the intended org.
       await admin.from("profiles").upsert({ id: uid, org_id: orgId, full_name: label, email });
       cleanup.push(() => admin.from("profiles").delete().eq("id", uid));
-      // role
+      // Drop the orphan auto-org if it still exists and isn't one of our fixture orgs.
+      if (autoOrgId && autoOrgId !== orgId && autoOrgId !== orgA!.id && autoOrgId !== orgB!.id && autoOrgId !== orgC!.id) {
+        await admin.from("organizations").delete().eq("id", autoOrgId);
+      }
+      // Now assign exactly the role we want.
       if (role) {
         await admin.from("user_roles").insert({ user_id: uid, role });
       }
+
       // Sign in
       const token = await signIn(email, PASSWORD);
       if (!token) throw new Error(`signIn ${label} failed`);
