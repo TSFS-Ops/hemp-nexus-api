@@ -32,7 +32,7 @@ import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE }
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { fetchEngagementReadModelByMatchId } from "../_shared/engagement-read-model.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
-import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
+// Batch C: assertNoOpenChallenge import deferred to Phase 3.
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -330,14 +330,7 @@ Deno.serve(async (req) => {
       // is handled by the existing pending-engagement / soft-route paths
       // below (a brand-new bilateral match has no engagement yet).
       {
-        // Batch C Phase 2: block POI mint while a challenge is open on the match.
-        const challengeDecision = await assertNoOpenChallenge(supabase, matchId);
-        if (!challengeDecision.allowed) {
-          throw new ApiException(challengeDecision.code!, challengeDecision.message!, 409, {
-            challenge_id: challengeDecision.challengeId,
-            challenge_status: challengeDecision.challengeStatus,
-          });
-        }
+        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
 
         const decision = await assertEngagementAllowsProgression(supabase, matchId);
         if (!decision.allowed && decision.code !== "ENGAGEMENT_REQUIRED") {
@@ -1248,14 +1241,7 @@ Deno.serve(async (req) => {
       // the burn so we never charge for a state transition the engagement
       // does not authorise.
       {
-        // Batch C Phase 2: block engagement-scoped reveal/burn while a challenge is open.
-        const challengeDecision = await assertNoOpenChallenge(supabase, matchId);
-        if (!challengeDecision.allowed) {
-          throw new ApiException(challengeDecision.code!, challengeDecision.message!, 409, {
-            challenge_id: challengeDecision.challengeId,
-            challenge_status: challengeDecision.challengeStatus,
-          });
-        }
+        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
 
         const decision = await assertEngagementAllowsProgression(supabase, matchId);
         if (!decision.allowed) {
@@ -1499,14 +1485,7 @@ Deno.serve(async (req) => {
       // pending reconfirmation, or a renewed-pending child superseding a
       // historical accepted row).
       {
-        // Batch C Phase 2: block completion while a challenge is open.
-        const challengeDecision = await assertNoOpenChallenge(supabase, matchId);
-        if (!challengeDecision.allowed) {
-          throw new ApiException(challengeDecision.code!, challengeDecision.message!, 409, {
-            challenge_id: challengeDecision.challengeId,
-            challenge_status: challengeDecision.challengeStatus,
-          });
-        }
+        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
 
         const decision = await assertEngagementAllowsProgression(supabase, matchId);
         if (!decision.allowed) {

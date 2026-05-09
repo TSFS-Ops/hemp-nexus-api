@@ -4,7 +4,7 @@ import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
-import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
+// Batch C: assertNoOpenChallenge import deferred to Phase 3.
 
 /**
  * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
@@ -104,19 +104,7 @@ Deno.serve(async (req: Request) => {
       {
         const matchIdForGuard = (poi as { match_id?: string | null }).match_id || poi.id;
 
-        // Batch C Phase 2: block WaD issuance while a challenge is open.
-        const challengeDecision = await assertNoOpenChallenge(admin, matchIdForGuard);
-        if (!challengeDecision.allowed) {
-          throw new ApiException(
-            challengeDecision.code!,
-            challengeDecision.message!,
-            409,
-            {
-              challenge_id: challengeDecision.challengeId,
-              challenge_status: challengeDecision.challengeStatus,
-            },
-          );
-        }
+        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
 
         const decision = await assertEngagementAllowsProgression(admin, matchIdForGuard);
         if (!decision.allowed) {
