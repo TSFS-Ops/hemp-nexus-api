@@ -190,7 +190,7 @@ function MatchDetailsContent() {
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
 
       <PendingEngagementSection
-        engagement={engagementData}
+        engagement={displayEngagement}
         match={match as any}
         isInitiator={matchRole === "creator" || userOrgId === (match as any).org_id}
       />
