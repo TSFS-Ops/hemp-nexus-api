@@ -92,7 +92,20 @@ function MatchDetailsContent() {
     refetchInterval: 30000,
   });
 
+  // Batch B Phase 9 F-B4 fix:
+  //   • `engagementData` (current) drives action/progression cards (Reconfirm,
+  //     Accept, POI/WaD gates) — strictly null when the row was swept back
+  //     to expired so no stale buttons appear.
+  //   • `displayEngagement` (current ?? latest_historical) drives read-only
+  //     status/wording (PendingEngagementSection) so the F-B4 historical
+  //     "initiator did not reconfirm / late acceptance remains recorded /
+  //     original engagement remains expired" wording renders even though
+  //     there is no current row.
   const engagementData = (engagementModel?.current_engagement ?? null) as unknown as
+    | (PendingEngagementRow & { engagement_status: EngagementStatus; counterparty_type: string })
+    | null;
+  const displayEngagement = (engagementData ??
+    (engagementModel?.latest_historical_engagement ?? null)) as unknown as
     | (PendingEngagementRow & { engagement_status: EngagementStatus; counterparty_type: string })
     | null;
   const engagementStatus: EngagementStatus = (engagementData?.engagement_status as EngagementStatus) || null;
