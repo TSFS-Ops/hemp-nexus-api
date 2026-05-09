@@ -140,13 +140,29 @@ Deno.serve(async (req) => {
       if (error || !created.user) throw new Error(`createUser ${label}: ${error?.message}`);
       const uid = created.user.id;
       cleanup.push(() => admin.auth.admin.deleteUser(uid));
-      // profile
+
+      // The on_auth_user_created → _provision_user trigger has just (a) created
+      // a brand-new "New Organisation", (b) inserted a profile pointing at it,
+      // and (c) granted this user `org_admin` of that auto-org. We must strip
+      // the auto-granted roles AND the auto-org, otherwise our explicit role
+      // assignment is contaminated by leftover org_admin grants.
+      const { data: priorProfile } = await admin
+        .from("profiles").select("org_id").eq("id", uid).maybeSingle();
+      const autoOrgId = priorProfile?.org_id ?? null;
+      // Wipe ALL auto-granted roles for this fresh user.
+      await admin.from("user_roles").delete().eq("user_id", uid);
+      // Re-pin profile to the intended org.
       await admin.from("profiles").upsert({ id: uid, org_id: orgId, full_name: label, email });
       cleanup.push(() => admin.from("profiles").delete().eq("id", uid));
-      // role
+      // Drop the orphan auto-org if it still exists and isn't one of our fixture orgs.
+      if (autoOrgId && autoOrgId !== orgId && autoOrgId !== orgA!.id && autoOrgId !== orgB!.id && autoOrgId !== orgC!.id) {
+        await admin.from("organizations").delete().eq("id", autoOrgId);
+      }
+      // Now assign exactly the role we want.
       if (role) {
         await admin.from("user_roles").insert({ user_id: uid, role });
       }
+
       // Sign in
       const token = await signIn(email, PASSWORD);
       if (!token) throw new Error(`signIn ${label} failed`);
@@ -264,6 +280,14 @@ Deno.serve(async (req) => {
 
     // ─── T3 ordinary org member is denied ─────────────────────
     {
+      // Diagnostic snapshot of authorisation inputs
+      const [profM, rolesM, isAdminM, isBuyerAdmin, isSellerAdmin] = await Promise.all([
+        admin.from("profiles").select("id, org_id, status").eq("id", userM.id).maybeSingle(),
+        admin.from("user_roles").select("role").eq("user_id", userM.id),
+        admin.rpc("is_admin", { user_id: userM.id }),
+        admin.rpc("is_org_admin", { _user_id: userM.id, _org_id: orgA!.id }),
+        admin.rpc("is_org_admin", { _user_id: userM.id, _org_id: orgB!.id }),
+      ]);
       const f = await makeFile("t3");
       const r = await callUploadEvidence(userM.token, {
         challenge_id: chOpen!.id,
@@ -277,8 +301,8 @@ Deno.serve(async (req) => {
         id: "T3", description: "Ordinary org member cannot upload evidence",
         route: "POST /match-challenges/upload-evidence", account_role: "org_member (party org)",
         expected: "403 FORBIDDEN",
-        observed: `status=${r.status} err=${r.body?.error ?? "-"}`,
-        pass: ok, details: r.body,
+        observed: `status=${r.status} err=${r.body?.error ?? "-"} | diag: profile.org_id=${profM.data?.org_id} status=${profM.data?.status} roles=${JSON.stringify(rolesM.data)} is_admin=${isAdminM.data} is_org_admin(buyer=${orgA!.id})=${isBuyerAdmin.data} is_org_admin(seller=${orgB!.id})=${isSellerAdmin.data}`,
+        pass: ok, details: { resp: r.body, diag: { profile: profM.data, roles: rolesM.data, isAdmin: isAdminM.data, isBuyerAdmin: isBuyerAdmin.data, isSellerAdmin: isSellerAdmin.data } },
       });
     }
 
@@ -329,31 +353,40 @@ Deno.serve(async (req) => {
     }
 
     // ─── T7 client cannot pick storage path ───────────────────
-    // Schema strips unknown fields; even if client sends `storage_path`,
-    // server must construct its own `<match>/<challenge>/<uuid>-<safe>`.
+    // Schema strips unknown fields; even if client sends `storage_path`/`path`,
+    // server must construct its own `<match>/<challenge>/<uuid>-<safe-filename>`.
+    // Use a benign filename so the assertion can rely solely on path-shape.
     {
       const f = await makeFile("t7");
-      const spoof = "/etc/passwd_or_some_other_match/and_chal/spoof.txt";
+      const spoof = "../../../../etc/passwd";
+      const benignFilename = "t7_benign.txt";
       const r = await callUploadEvidence(userA.token, {
         challenge_id: chOpen!.id,
-        filename: "t7_path_spoof.txt",
+        filename: benignFilename,
         mime_type: "text/plain",
         content_base64: b64(f.bytes),
         sha256: f.sha,
-        storage_path: spoof, // attempted client override
+        storage_path: spoof,
         path: spoof,
       });
-      const path = r.body?.storage_path ?? "";
+      const path: string = r.body?.storage_path ?? "";
+      const segs = path.split("/");
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i;
       const ok = r.status === 201
-        && path.startsWith(`${match!.id}/${chOpen!.id}/`)
+        && segs.length === 3
+        && segs[0] === match!.id
+        && segs[1] === chOpen!.id
+        && uuidRe.test(segs[2])
+        && segs[2].endsWith(benignFilename)
+        && !path.includes("..")
         && !path.includes("etc/passwd")
-        && !path.includes("spoof");
+        && !path.startsWith("/");
       record({
-        id: "T7", description: "Client cannot choose / spoof storage path; server constructs match_id/challenge_id/<uuid>-<safe>",
+        id: "T7", description: "Client cannot choose / spoof storage path; server constructs <match>/<challenge>/<uuid>-<safe-filename>",
         route: "POST /match-challenges/upload-evidence", account_role: "buyer_org_admin",
-        expected: `201 with path starting with ${match!.id}/${chOpen!.id}/`,
+        expected: `201 with shape ${match!.id}/${chOpen!.id}/<uuid>-${benignFilename}`,
         observed: `status=${r.status} path=${path}`,
-        pass: ok, details: { spoof_attempted: spoof, returned: path },
+        pass: ok, details: { spoof_attempted: spoof, returned: path, segs },
       });
     }
 
