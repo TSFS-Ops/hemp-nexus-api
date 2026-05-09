@@ -113,10 +113,11 @@ async function authenticate(req: Request): Promise<
   if (!authz?.startsWith("Bearer ")) {
     return { ok: false, resp: err("UNAUTHORIZED", "Missing bearer token", 401) };
   }
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authz } },
-  });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
+  const token = authz.slice(7);
+  // Validate the JWT explicitly via GoTrue (supabase-js v2 does NOT pick up the
+  // Authorization header for getUser() — must pass the token positionally).
+  const userClient = createClient(SUPABASE_URL, ANON_KEY);
+  const { data: userData, error: userErr } = await userClient.auth.getUser(token);
   if (userErr || !userData?.user) {
     return { ok: false, resp: err("UNAUTHORIZED", "Invalid session", 401) };
   }
@@ -125,7 +126,8 @@ async function authenticate(req: Request): Promise<
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
   const [profileRes, adminRes] = await Promise.all([
     admin.from("profiles").select("org_id").eq("id", userId).maybeSingle(),
-    admin.rpc("is_admin", { _user_id: userId }),
+    // public.is_admin signature is (user_id uuid) — must match exactly or PostgREST 404s.
+    admin.rpc("is_admin", { user_id: userId }),
   ]);
   return {
     ok: true,
