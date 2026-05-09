@@ -280,20 +280,7 @@ async function _serve(req: Request): Promise<Response> {
     // PENDING_APPROVAL strictly requires `current_engagement = accepted`.
     const PROGRESSION_TARGETS = ["PENDING_APPROVAL", "ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"];
     if (PROGRESSION_TARGETS.includes(toState)) {
-      // Batch C Phase 2: block match-scoped progression while a challenge is open.
-      const challengeDecision = await assertNoOpenChallenge(adminClient, matchId);
-      if (!challengeDecision.allowed) {
-        if (hasLock) await adminClient.rpc("release_lifecycle_lock");
-        return new Response(
-          JSON.stringify({
-            error: challengeDecision.message,
-            code: challengeDecision.code,
-            challenge_id: challengeDecision.challengeId,
-            challenge_status: challengeDecision.challengeStatus,
-          }),
-          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
 
       const decision = await assertEngagementAllowsProgression(adminClient, matchId);
       const allowMissingEngagement =
