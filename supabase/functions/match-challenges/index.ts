@@ -89,9 +89,21 @@ const UploadSchema = z.object({
   sha256: z.string().regex(/^[0-9a-f]{64}$/i),
 });
 
+const OVERRIDE_REASON_CATEGORIES = [
+  "documentation_corrected_commercial_confirmation_received",
+  "compliance_review_completed",
+  "regulator_or_authority_instruction",
+  "platform_risk_review_completed",
+  "duplicate_or_erroneous_challenge",
+  "other_governance_reason",
+] as const;
+
 const BreakGlassSchema = z.object({
   match_id: z.string().uuid(),
   reason: z.string().min(60).max(8000),
+  reason_category: z.enum(OVERRIDE_REASON_CATEGORIES).optional(),
+  internal_approval_reference: z.string().trim().min(1).max(200).optional(),
+  regulator_reference: z.string().trim().max(200).optional(),
 });
 
 function json(body: unknown, status = 200): Response {
