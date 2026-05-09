@@ -6,7 +6,7 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
 import { assertWadIsSettleable } from "../_shared/test-mode-bypass.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
-import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
+// Batch C: assertNoOpenChallenge import deferred to Phase 3.
 
 /**
  * Attestations Edge Function
