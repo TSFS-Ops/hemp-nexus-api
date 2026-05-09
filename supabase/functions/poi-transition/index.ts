@@ -57,11 +57,12 @@ async function _serve(req: Request): Promise<Response> {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify user
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    // Verify user — use positional auth.getUser(jwt) form (Phase 2b invariant);
+    // the header-based form silently returns null when no session is attached
+    // to the client, which manifests as a spurious 401 on valid bearer tokens.
+    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const bearer = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: { user }, error: authError } = await userClient.auth.getUser(bearer);
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorised" }),
