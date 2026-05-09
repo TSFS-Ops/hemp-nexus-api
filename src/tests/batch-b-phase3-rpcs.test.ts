@@ -100,14 +100,19 @@ describe("Batch B Phase 3 — atomic_reconfirm_late_acceptance", () => {
     expect(sql).toMatch(/renewed_from_engagement_id/);
   });
 
-  it("does NOT copy expires_at on the child (fresh expiry via column default)", () => {
-    // The INSERT column list must omit expires_at so the column default
-    // (now() + 30 days) applies. A regression that copies expires_at
-    // would carry forward the parent's stale expiry.
-    const insertBlock = sql.match(/INSERT INTO poi_engagements \(([^)]+)\)\s+VALUES/);
+  it("sets the renewed child's expires_at EXPLICITLY to now() + 14 days (Daniel 2026-05-09)", () => {
+    // The renewed child must give the trading partner exactly 14
+    // calendar days to accept/decline. We pin both the column being
+    // present in the INSERT list AND the literal value in the VALUES
+    // clause so a regression to the 30-day column default is loud.
+    const fnBody = sql.match(/CREATE OR REPLACE FUNCTION public\.atomic_reconfirm_late_acceptance[\s\S]+?\$function\$;/);
+    expect(fnBody).toBeTruthy();
+    const insertBlock = fnBody![0].match(/INSERT INTO poi_engagements \(([^)]+)\)\s+VALUES\s*\(([\s\S]+?)\)\s*RETURNING/);
     expect(insertBlock).toBeTruthy();
     const cols = insertBlock![1];
-    expect(cols).not.toMatch(/\bexpires_at\b/);
+    const vals = insertBlock![2];
+    expect(cols).toMatch(/\bexpires_at\b/);
+    expect(vals).toMatch(/now\(\)\s*\+\s*interval\s*'14 days'/);
   });
 
   it("returns the parent to expired and records resolution metadata", () => {
