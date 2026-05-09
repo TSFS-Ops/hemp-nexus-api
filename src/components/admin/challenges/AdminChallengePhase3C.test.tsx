@@ -227,6 +227,14 @@ describe("AdminOverrideDialog — B4/B5/B7", () => {
       ),
     );
     await advanceToStep2();
+    fireEvent.click(screen.getByTestId("override-category-select"));
+    const opt = await screen.findByTestId(
+      "override-category-documentation_corrected_commercial_confirmation_received",
+    );
+    fireEvent.click(opt);
+    fireEvent.change(screen.getByTestId("override-approval-ref-input"), {
+      target: { value: "IZENZO-REV-2026-041" },
+    });
     fireEvent.change(screen.getByTestId("override-reason-input"), {
       target: { value: "z".repeat(80) },
     });
@@ -236,6 +244,11 @@ describe("AdminOverrideDialog — B4/B5/B7", () => {
     expect(path).toBe("match-challenges/break-glass");
     expect(init.body.match_id).toBe(baseChallenge.match_id);
     expect(init.body.reason.length).toBeGreaterThanOrEqual(60);
+    expect(init.body.reason_category).toBe(
+      "documentation_corrected_commercial_confirmation_received",
+    );
+    expect(init.body.internal_approval_reference).toBe("IZENZO-REV-2026-041");
+    expect(init.body.regulator_reference).toBe("Not applicable");
     expect(toast.success).toHaveBeenCalled();
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
   });

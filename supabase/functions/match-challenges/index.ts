@@ -89,9 +89,21 @@ const UploadSchema = z.object({
   sha256: z.string().regex(/^[0-9a-f]{64}$/i),
 });
 
+const OVERRIDE_REASON_CATEGORIES = [
+  "documentation_corrected_commercial_confirmation_received",
+  "compliance_review_completed",
+  "regulator_or_authority_instruction",
+  "platform_risk_review_completed",
+  "duplicate_or_erroneous_challenge",
+  "other_governance_reason",
+] as const;
+
 const BreakGlassSchema = z.object({
   match_id: z.string().uuid(),
   reason: z.string().min(60).max(8000),
+  reason_category: z.enum(OVERRIDE_REASON_CATEGORIES).optional(),
+  internal_approval_reference: z.string().trim().min(1).max(200).optional(),
+  regulator_reference: z.string().trim().max(200).optional(),
 });
 
 function json(body: unknown, status = 200): Response {
@@ -462,10 +474,14 @@ Deno.serve(async (req) => {
         if (!isPlatformAdmin) {
           return err("FORBIDDEN", "Break-glass is restricted to platform admins", 403);
         }
+        const regulatorRef = (parsed.data.regulator_reference ?? "").trim();
         const { data, error: rpcErr } = await admin.rpc("platform_admin_break_glass_progress", {
           p_match_id: parsed.data.match_id,
           p_actor_user_id: userId,
           p_reason: parsed.data.reason,
+          p_reason_category: parsed.data.reason_category ?? null,
+          p_internal_approval_reference: parsed.data.internal_approval_reference ?? null,
+          p_regulator_reference: regulatorRef.length === 0 ? null : regulatorRef,
         });
         if (rpcErr) {
           const msg = rpcErr.message || "";

@@ -1,13 +1,16 @@
 /**
- * AdminOverrideDialog — Phase 3C
+ * AdminOverrideDialog — Phase 3C + 3E governance tightening.
  *
- * Sober UI for the platform-admin closure path internally known as
- * "break-glass". User-facing label is "Admin override closure".
+ * Sober UI for the platform-admin closure path. User-facing label is
+ * "Admin override closure" (never "break glass"). Two-step confirmation
+ * with structured governance fields:
+ *   • Reason category (required, closed list)
+ *   • Internal approval reference (required)
+ *   • Regulator reference (optional → stored as "Not applicable")
+ *   • Written reason (required, ≥60 chars)
  *
- * Two-step confirmation:
- *   step 1: explanation that the override is audited and immediately
- *           closes the challenge as `admin_override_recorded`.
- *   step 2: collect a >= 60-character reason and submit.
+ * Zero Swallowed Errors: try/catch/finally, toast.error on failure,
+ * dialog stays open, loading clears.
  */
 import { useState } from "react";
 import { toast } from "sonner";
@@ -20,13 +23,30 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useBreakGlassChallenge } from "@/hooks/useAdminChallengeMutations";
+import {
+  ADMIN_OVERRIDE_REASON_CATEGORIES,
+  ADMIN_OVERRIDE_REASON_CATEGORY_LABELS,
+  REGULATOR_REFERENCE_NOT_APPLICABLE,
+  normaliseRegulatorReference,
+  type AdminOverrideReasonCategory,
+} from "@/lib/challenge-override-categories";
 
 export const REASON_MIN = 60;
 export const REASON_MAX = 8000;
+export const APPROVAL_REF_MAX = 200;
+export const REGULATOR_REF_MAX = 200;
 
 export interface AdminOverrideDialogProps {
   open: boolean;
@@ -35,42 +55,86 @@ export interface AdminOverrideDialogProps {
   onClosed?: () => void;
 }
 
-export function AdminOverrideDialog({ open, onOpenChange, matchId, onClosed }: AdminOverrideDialogProps) {
+export function AdminOverrideDialog({
+  open,
+  onOpenChange,
+  matchId,
+  onClosed,
+}: AdminOverrideDialogProps) {
   const [step, setStep] = useState<1 | 2>(1);
+  const [reasonCategory, setReasonCategory] =
+    useState<AdminOverrideReasonCategory | "">("");
+  const [internalApprovalReference, setInternalApprovalReference] = useState("");
+  const [regulatorReference, setRegulatorReference] = useState("");
   const [reason, setReason] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
-  const breakGlass = useBreakGlassChallenge();
+  const overrideMutation = useBreakGlassChallenge();
 
   const reset = () => {
     setStep(1);
+    setReasonCategory("");
+    setInternalApprovalReference("");
+    setRegulatorReference("");
     setReason("");
     setValidationError(null);
   };
   const handleClose = () => {
-    if (breakGlass.isPending) return;
+    if (overrideMutation.isPending) return;
     reset();
     onOpenChange(false);
   };
 
   const handleSubmit = async () => {
     setValidationError(null);
-    const trimmed = reason.trim();
-    if (trimmed.length < REASON_MIN) {
-      setValidationError(`Reason must be at least ${REASON_MIN} characters (currently ${trimmed.length}).`);
+    if (!reasonCategory) {
+      setValidationError("Reason category is required.");
       return;
     }
-    if (trimmed.length > REASON_MAX) {
-      setValidationError(`Reason must be at most ${REASON_MAX} characters.`);
+    const approvalRef = internalApprovalReference.trim();
+    if (approvalRef.length === 0) {
+      setValidationError("Internal approval reference is required.");
       return;
     }
+    if (approvalRef.length > APPROVAL_REF_MAX) {
+      setValidationError(
+        `Internal approval reference must be at most ${APPROVAL_REF_MAX} characters.`,
+      );
+      return;
+    }
+    const regulatorTrimmed = regulatorReference.trim();
+    if (regulatorTrimmed.length > REGULATOR_REF_MAX) {
+      setValidationError(
+        `Regulator reference must be at most ${REGULATOR_REF_MAX} characters.`,
+      );
+      return;
+    }
+    const trimmedReason = reason.trim();
+    if (trimmedReason.length < REASON_MIN) {
+      setValidationError(
+        `Written reason must be at least ${REASON_MIN} characters (currently ${trimmedReason.length}).`,
+      );
+      return;
+    }
+    if (trimmedReason.length > REASON_MAX) {
+      setValidationError(`Written reason must be at most ${REASON_MAX} characters.`);
+      return;
+    }
+
     try {
-      await breakGlass.mutateAsync({ match_id: matchId, reason: trimmed });
+      await overrideMutation.mutateAsync({
+        match_id: matchId,
+        reason_category: reasonCategory,
+        internal_approval_reference: approvalRef,
+        regulator_reference: normaliseRegulatorReference(regulatorTrimmed),
+        reason: trimmedReason,
+      });
       toast.success("Admin override recorded. Progression resumes on this match.");
       onClosed?.();
       reset();
       onOpenChange(false);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Could not record the admin override.";
+      const msg =
+        err instanceof Error ? err.message : "Could not record the admin override.";
       toast.error(msg);
     }
   };
@@ -94,14 +158,74 @@ export function AdminOverrideDialog({ open, onOpenChange, matchId, onClosed }: A
               to both parties.
             </p>
             <p className="text-muted-foreground">
-              You will be asked to provide a written reason of at least {REASON_MIN} characters.
+              You will be asked to provide a reason category, an internal approval reference,
+              an optional regulator reference, and a written reason of at least {REASON_MIN}{" "}
+              characters.
             </p>
           </div>
         ) : (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
+              <Label htmlFor="override-category">
+                Reason category <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={reasonCategory}
+                onValueChange={(v) => setReasonCategory(v as AdminOverrideReasonCategory)}
+                disabled={overrideMutation.isPending}
+              >
+                <SelectTrigger id="override-category" data-testid="override-category-select">
+                  <SelectValue placeholder="Select a governance category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ADMIN_OVERRIDE_REASON_CATEGORIES.map((code) => (
+                    <SelectItem key={code} value={code} data-testid={`override-category-${code}`}>
+                      {ADMIN_OVERRIDE_REASON_CATEGORY_LABELS[code]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="override-approval-ref">
+                Internal approval reference <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="override-approval-ref"
+                data-testid="override-approval-ref-input"
+                value={internalApprovalReference}
+                onChange={(e) => setInternalApprovalReference(e.target.value)}
+                maxLength={APPROVAL_REF_MAX}
+                placeholder="e.g. IZENZO-REV-2026-041"
+                disabled={overrideMutation.isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="override-regulator-ref">
+                Regulator reference{" "}
+                <span className="text-muted-foreground">
+                  (optional — stored as "{REGULATOR_REFERENCE_NOT_APPLICABLE}" if blank)
+                </span>
+              </Label>
+              <Input
+                id="override-regulator-ref"
+                data-testid="override-regulator-ref-input"
+                value={regulatorReference}
+                onChange={(e) => setRegulatorReference(e.target.value)}
+                maxLength={REGULATOR_REF_MAX}
+                placeholder="e.g. FCA-REF-2026-09 or leave blank"
+                disabled={overrideMutation.isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="override-reason">
-                Reason <span className="text-muted-foreground">({REASON_MIN}–{REASON_MAX} characters)</span>
+                Written reason{" "}
+                <span className="text-muted-foreground">
+                  ({REASON_MIN}–{REASON_MAX} characters)
+                </span>
               </Label>
               <Textarea
                 id="override-reason"
@@ -111,12 +235,19 @@ export function AdminOverrideDialog({ open, onOpenChange, matchId, onClosed }: A
                 rows={6}
                 maxLength={REASON_MAX}
                 placeholder="State the operational facts that justify an administrator override."
-                disabled={breakGlass.isPending}
+                disabled={overrideMutation.isPending}
               />
-              <p className="text-xs text-muted-foreground">{reason.trim().length} / {REASON_MAX}</p>
+              <p className="text-xs text-muted-foreground">
+                {reason.trim().length} / {REASON_MAX}
+              </p>
             </div>
+
             {validationError && (
-              <p role="alert" data-testid="override-validation-error" className="text-sm text-destructive">
+              <p
+                role="alert"
+                data-testid="override-validation-error"
+                className="text-sm text-destructive"
+              >
                 {validationError}
               </p>
             )}
@@ -128,7 +259,7 @@ export function AdminOverrideDialog({ open, onOpenChange, matchId, onClosed }: A
             type="button"
             variant="ghost"
             onClick={handleClose}
-            disabled={breakGlass.isPending}
+            disabled={overrideMutation.isPending}
             data-testid="override-cancel-button"
           >
             Cancel
@@ -145,7 +276,7 @@ export function AdminOverrideDialog({ open, onOpenChange, matchId, onClosed }: A
             <LoadingButton
               type="button"
               onClick={handleSubmit}
-              loading={breakGlass.isPending}
+              loading={overrideMutation.isPending}
               loadingText="Recording…"
               data-testid="override-submit-button"
             >
