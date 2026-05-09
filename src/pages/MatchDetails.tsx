@@ -31,6 +31,9 @@ import { ReconfirmLateAcceptanceCard } from "@/components/match/ReconfirmLateAcc
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { SpineTimeline } from "@/components/match/SpineTimeline";
+import { MatchChallengePanel } from "@/components/match/MatchChallengePanel";
+import { ProgressionPausedBanner } from "@/components/match/ProgressionPausedBanner";
+import { useMatchChallenge } from "@/hooks/useMatchChallenge";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
@@ -39,6 +42,7 @@ import type { EngagementStatus } from "@/components/match/wizard/DealWizard";
 function MatchDetailsContent() {
   const { matchId } = useParams<{ matchId: string }>();
   const userOrgId = useUserOrg();
+  const { open: openChallenge } = useMatchChallenge(matchId);
   const {
     match,
     loading,
@@ -228,6 +232,10 @@ function MatchDetailsContent() {
       */}
 
       {matchId && <SpineTimeline matchId={matchId} />}
+
+      <MatchChallengePanel match={match as any} />
+
+      <ProgressionPausedBanner challenge={openChallenge ?? null} />
 
       <DealWizard
         match={match}
