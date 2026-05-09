@@ -30,6 +30,7 @@ import OrgsManagement from "@/components/admin/OrgsManagement";
 import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
 import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
+import { AdminChallengeQueuePanel } from "@/components/admin/AdminChallengeQueuePanel";
 import { AdminTradeApprovalsPanel } from "@/components/admin/AdminTradeApprovalsPanel";
 import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
 import { AdminVerificationQueuePanel } from "@/components/admin/AdminVerificationQueuePanel";
@@ -286,19 +287,25 @@ function EngagementsTab() {
     </>;
 }
 function DisputesTab() {
-  // Sub-tabs: Disputes · Trade Approvals · Verification Queue (clip-on)
-  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "approvals", "verification"]);
+  // Sub-tabs: Disputes · Challenges · Trade Approvals · Verification Queue (clip-on)
+  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification"]);
   return <>
       <TabHeader id="disputes" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-card border border-border rounded-sm">
           <TabsTrigger value="disputes">Active Disputes</TabsTrigger>
+          <TabsTrigger value="challenges">Challenges</TabsTrigger>
           <TabsTrigger value="approvals">Trade Approvals</TabsTrigger>
           <TabsTrigger value="verification">Verification Queue</TabsTrigger>
         </TabsList>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
             <AdminDisputesPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="challenges">
+          <Surface label="Match challenges · public.match_challenges · review and outcome controls">
+            <AdminChallengeQueuePanel />
           </Surface>
         </TabsContent>
         <TabsContent value="approvals">
