@@ -17,7 +17,7 @@
 //   FORBIDDEN, VALIDATION_ERROR, NOT_FOUND, INVALID_TRANSITION,
 //   CHALLENGE_TERMINAL, EVIDENCE_PATH_MISMATCH, BREAK_GLASS_REASON_TOO_SHORT
 //
-// Rating-emission: NONE. challenge_rating_impact remains disabled by default.
+// Rating-emission: NONE. The admin-settings flag governing this remains disabled by default.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
