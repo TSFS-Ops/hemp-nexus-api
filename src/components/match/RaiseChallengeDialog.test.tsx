@@ -114,10 +114,9 @@ describe("RaiseChallengeDialog — B1–B4", () => {
     fireEvent.click(screen.getByTestId("challenge-subject-select"));
     const opt = await screen.findByText(/Terms disagreement/i);
     fireEvent.click(opt);
-    await user.type(
-      screen.getByTestId("challenge-summary-input"),
-      "y".repeat(120),
-    );
+    fireEvent.change(screen.getByTestId("challenge-summary-input"), {
+      target: { value: "y".repeat(120) },
+    });
     fireEvent.click(screen.getByTestId("challenge-submit-button"));
     await waitFor(() => expect(fetchEdgeFunction).toHaveBeenCalledTimes(1));
     const [path, init] = (fetchEdgeFunction as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
@@ -143,10 +142,9 @@ describe("RaiseChallengeDialog — B1–B4", () => {
     fireEvent.click(screen.getByTestId("challenge-subject-select"));
     const opt = await screen.findByText(/Terms disagreement/i);
     fireEvent.click(opt);
-    await user.type(
-      screen.getByTestId("challenge-summary-input"),
-      "z".repeat(120),
-    );
+    fireEvent.change(screen.getByTestId("challenge-summary-input"), {
+      target: { value: "z".repeat(120) },
+    });
     fireEvent.click(screen.getByTestId("challenge-submit-button"));
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     // Dialog NOT closed
