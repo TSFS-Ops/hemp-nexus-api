@@ -178,6 +178,91 @@ export function AdminChallengeReviewDrawer({ open, onOpenChange, challenge }: Ad
               </div>
             )}
 
+            {isAdminOverride && (
+              <div
+                className="border border-border rounded-sm p-3 bg-muted/30 space-y-2"
+                data-testid="override-details-panel"
+              >
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Admin override governance record
+                </div>
+                {overrideAuditQ.isLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading override details…</p>
+                ) : overrideAuditQ.error ? (
+                  <p className="text-xs text-destructive">
+                    Could not load override details: {overrideAuditQ.error.message}
+                  </p>
+                ) : (
+                  (() => {
+                    const meta = overrideAuditQ.data?.metadata ?? null;
+                    const categoryCode = meta?.reason_category as
+                      | AdminOverrideReasonCategory
+                      | null
+                      | undefined;
+                    const categoryLabel = categoryCode
+                      ? ADMIN_OVERRIDE_REASON_CATEGORY_LABELS[categoryCode] ?? categoryCode
+                      : "Not recorded (legacy override)";
+                    const approvalRef =
+                      meta?.internal_approval_reference ?? "Not recorded (legacy override)";
+                    const regulatorRef =
+                      meta?.regulator_reference ?? REGULATOR_REFERENCE_NOT_APPLICABLE;
+                    const writtenReason =
+                      meta?.written_reason ?? challenge.outcome_summary ?? "—";
+                    return (
+                      <dl className="grid grid-cols-1 gap-y-2 text-sm">
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Reason category</dt>
+                          <dd data-testid="override-detail-category">{categoryLabel}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">
+                            Internal approval reference
+                          </dt>
+                          <dd className="font-mono text-xs" data-testid="override-detail-approval-ref">
+                            {approvalRef}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Regulator reference</dt>
+                          <dd className="font-mono text-xs" data-testid="override-detail-regulator-ref">
+                            {regulatorRef}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Written reason</dt>
+                          <dd className="whitespace-pre-wrap" data-testid="override-detail-written-reason">
+                            {writtenReason}
+                          </dd>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 pt-1 border-t border-border/60">
+                          <div>
+                            <dt className="text-[11px] text-muted-foreground">Closed by (admin)</dt>
+                            <dd className="font-mono text-[11px]">
+                              {overrideAuditQ.data?.actor_user_id ?? challenge.closed_by_user_id ?? "—"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-[11px] text-muted-foreground">Closed at</dt>
+                            <dd className="font-mono text-[11px]">
+                              {fmt(overrideAuditQ.data?.created_at ?? challenge.closed_at ?? null)}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-[11px] text-muted-foreground">Match ID</dt>
+                            <dd className="font-mono text-[11px]">{challenge.match_id}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-[11px] text-muted-foreground">Challenge ID</dt>
+                            <dd className="font-mono text-[11px]">{challenge.id}</dd>
+                          </div>
+                        </div>
+                      </dl>
+                    );
+                  })()
+                )}
+              </div>
+            )}
+
             <div className="border-t border-border pt-4 space-y-3">
               <h4 className="text-xs uppercase tracking-wide text-muted-foreground">
                 Comments
