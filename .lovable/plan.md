@@ -1,180 +1,114 @@
-# Phase 3C — Admin Challenge Queue & Outcome Controls (Plan)
+## Phase 3D — Comments + Evidence UI
 
-## 1. Scope
+Client-side only. Reuses existing `match-challenges/comment` and `match-challenges/upload-evidence` endpoints. No edge function, migration, RPC, RLS, notification, rating, fixture, client-guide, or Phase 3A/3B/3C server changes.
 
-Phase 3C is **platform-admin-only UI** that consumes the server endpoints already shipped in Batch C Phase 2. **No new server gates, no new RPCs, no new schema, no fixtures, no client guide, no rating emission, no legacy `disputes` changes.**
+### Scope
 
-In-scope surfaces:
+1. **Comment-write UI (party + admin surface)**
+  - In `MatchChallengePanel` (party view) and `AdminChallengeReviewDrawer` (HQ view), add a `ChallengeCommentThread` showing existing `match_challenge_comments` for the challenge (direct RLS read by `challenge_id`, ordered `created_at asc`).
+  - Add a `ChallengeCommentComposer` (textarea + Submit) that POSTs `match-challenges/comment` with `{ challenge_id, author_role, body, author_org_id? }`.
+  - Visible only when challenge status is non-terminal (`open` or `under_review`) AND the viewer is `platform_admin` OR a party `org_admin` per `useChallengePermissions`. Read-only (thread visible, composer hidden) for ordinary `org_member` and unrelated viewers (unrelated viewers see nothing because the RLS read returns no rows).
+  - Validation: trimmed body 1–2000 chars; submit disabled otherwise. Toast on 403/409/500. Invalidate the comments query on success.
+  - `author_role` derived from `useChallengePermissions` (`platform_admin` | `buyer_org_admin` | `seller_org_admin`).
+2. **Evidence-upload UI (party + admin surface)**
+  - `ChallengeEvidenceUploader`: single-file `<input type="file">`, computes SHA-256 + base64 client-side, POSTs `match-challenges/upload-evidence` with `{ challenge_id, filename, mime_type, sha256, content_base64 }`. Server constructs the storage path — client never sends one.
+  - Hard cap 25 MB (server enforces; client mirrors with friendly toast). Disabled when challenge terminal. Visibility identical to the composer (party `org_admin` or `platform_admin`).
+  - Toast on 403/409/413/500; invalidate evidence query on success.
+3. **Read-only evidence list (party panel + admin drawer)**
+  - `ChallengeEvidenceList`: direct RLS read of `match_challenge_evidence` by `challenge_id` ordered `created_at desc`. Shows `filename`, uploader org tag, size, SHA-256 (mono, truncated), uploaded-at.
+  - In `AdminChallengeReviewDrawer`: read-only — admins do not download or mutate evidence in 3D. (No signed-URL flow, no delete control.)
+  - In `MatchChallengePanel`: read-only list for any viewer the RLS lets read (i.e., parties + platform_admin); unrelated orgs see an empty list.
+4. **Read-only enforcement for ordinary org_member (test focus)**
+  - Extend `useChallengePermissions` consumer logic to expose `canComment` and `canUploadEvidence` (both ≡ `canRaise || isPlatformAdmin` and challenge non-terminal).
+  - Tests prove an `org_member` of a party org sees the thread + evidence list but no composer and no uploader, on both `open` and `under_review` challenges.
 
-1. **Admin Challenge Queue page** at `/hq/challenges` — list of all challenges, filterable by status.
-2. **Admin Challenge Detail drawer** — read-only context (match, parties, summary, comment thread, evidence list).
-3. **Review controls** — `transition open → under_review`.
-4. **Outcome recording controls** — `transition under_review → outcome_recorded` (with required `outcome_code` + ≥40-char `outcome_summary`) and `transition → closed_no_action` (with ≥40-char summary).
-5. **Break-Glass closure control** — `POST /match-challenges/break-glass` with ≥60-char reason; closes as `outcome_recorded` + `outcome_code=admin_override_recorded`.
+### Files
 
-Out-of-scope (explicit):
+**New (client only)**
 
-- Any new server endpoint, RPC, migration, or RLS change.
-- Comment-write UI (Phase 3D candidate).
-- Evidence upload UI (Phase 3D candidate).
-- Notification UI surfaces.
-- Rating emission.
-- Touching Phase 3A/3B files except `App.tsx` route registration.
+- `src/components/match/ChallengeCommentThread.tsx`
+- `src/components/match/ChallengeCommentComposer.tsx`
+- `src/components/match/ChallengeEvidenceList.tsx`
+- `src/components/match/ChallengeEvidenceUploader.tsx`
+- `src/hooks/useChallengeComments.ts` (RLS read + POST mutation)
+- `src/hooks/useChallengeEvidence.ts` (RLS read + upload mutation)
+- `src/lib/sha256.ts` (Web Crypto helper; or inline if trivial)
+- `src/components/match/ChallengePhase3D.test.tsx`
 
-## 2. Server contract reused (verified, no changes)
+**Edited (minimal wiring only)**
 
+- `src/components/match/MatchChallengePanel.tsx` — mount thread + composer + evidence list/uploader.
+- `src/components/admin/challenges/AdminChallengeReviewDrawer.tsx` — mount thread + composer + read-only evidence list.
 
-| Endpoint                             | Purpose                                        | Validation already enforced server-side                                                                                  |
-| ------------------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `POST /match-challenges/transition`  | All status moves                               | platform_admin required for `under_review`/`outcome_recorded`/`closed_no_action`; outcome_summary ≥40; outcome_code enum |
-| `POST /match-challenges/break-glass` | Force-close active challenge as admin override | platform_admin only; reason ≥60 chars                                                                                    |
-| `match_challenges` table (RLS)       | Read                                           | platform_admin sees all rows via `is_admin()`                                                                            |
+**Untouched (asserted by tests)**
 
+- All `supabase/functions/**`, all migrations, `src/lib/challenge-outcomes.ts`, Phase 3A files (`poi-transition`, `phase3a-progression-e2e`), Phase 3B/3C UI, legacy `disputes`, rating code.
 
-## 3. Files to add
+### Test Matrix
 
-```
-src/pages/hq/HqChallenges.tsx                       — queue page (route: /hq/challenges)
-src/components/hq/challenges/ChallengeQueueTable.tsx — list + status filter
-src/components/hq/challenges/ChallengeReviewDrawer.tsx — detail + action panel
-src/components/hq/challenges/RecordOutcomeDialog.tsx  — outcome_code + summary form
-src/components/hq/challenges/BreakGlassDialog.tsx     — ≥60-char reason confirmation
-src/hooks/useAdminChallengeQueue.ts                   — list query (RLS-trusted)
-src/hooks/useAdminChallengeMutations.ts               — transition + break-glass wrappers
-```
+**Static (S)**
 
-## 4. Files edited (minimal)
+- S1 No new files under `supabase/functions/**` or `supabase/migrations/**`.
+- S2 No imports of `phase3a-progression-e2e`, `poi-transition`, or any rating module.
+- S3 No string literal `"dispute"` (case-insensitive) in new files; reuse "challenge" wording.
+- S4 `check-edge-function-paths` and tsc clean.
+- S5 `useChallengeComments` / `useChallengeEvidence` POST only to `/functions/v1/match-challenges/comment` and `/functions/v1/match-challenges/upload-evidence`.
 
-- `src/App.tsx` — register `/hq/challenges` route behind existing platform_admin guard.
-- `src/components/admin/HqSidebar.tsx` (or equivalent existing HQ nav) — add "Challenges" link.
+**Render / role visibility (R)**
 
-Phase 3A/3B files are NOT touched. `useChallengePermissions`, `useMatchChallenge`, `RaiseChallengeDialog`, `ChallengeStatusCard`, `ProgressionPausedBanner`, `MatchChallengePanel`, and `MatchDetails.tsx` remain untouched.
+- R1 platform_admin: thread + composer + evidence list + uploader visible (open).
+- R2 platform_admin: composer + uploader hidden when challenge terminal (`outcome_recorded`).
+- R3 buyer org_admin (party): thread + composer + uploader visible (open + under_review).
+- R4 seller org_admin (party): same as R3.
+- R5 party org_member: thread + evidence list visible; composer + uploader **hidden**.
+- R6 unrelated org member: panel empty (no rows from RLS); no composer, no uploader.
+- R7 Admin drawer evidence list is read-only — no download button, no delete button.
 
-## 5. Behaviour
+**Behavioural (B)**
 
-### Queue page
+- B1 Composer body trimmed empty → submit disabled.
+- B2 Composer body > 2000 chars → submit disabled with helper text.
+- B3 Composer 200 → invalidates comments query, clears textarea, success toast.
+- B4 Composer 403/409/500 → toast.error, body retained.
+- B5 Uploader > 25 MB → blocked client-side with toast.error, no network call.
+- B6 Uploader 201 → invalidates evidence query, success toast, file input cleared.
+- B7 Uploader 403/409/500 → toast.error.
+- B8 SHA-256 sent matches client-computed hash of the file bytes (spy on fetch).
 
-- Default view: status filter chips (All / Open / Under review / Terminal). Default = Open.
-- Columns: Raised at, Match ID (link to match), Subject, Raised by role, Status, Age.
-- Newest first. Server-side ordering, page size 50, "Load more" pagination.
-- Empty state: "No challenges in this view."
+**Invariants (I)**
 
-### Review drawer (right-side Sheet)
+- I1 No file under `supabase/functions/**` modified.
+- I2 No file under `supabase/migrations/**` added.
+- I3 Phase 3A/3B/3C source files unchanged (git diff list asserted in test).
+- I4 `src/lib/challenge-outcomes.ts` unchanged.
+- I5 Phase 3A live harness re-run → 12/12 PASS.
+- I6 Vitest green for the new 3D suite + existing 3B/3C suites.
 
-- Header: status badge, challenge ID short, raised at, raised by role.
-- Body sections: Subject, Summary (full text), Match link, Outcome (if terminal).
-- Action footer (mutually exclusive based on current status):
-  - `open` → **Move to Under Review** button.
-  - `open` or `under_review` → **Record Outcome** + **Close — No Action** + **Break-Glass Override**.
-  - terminal → no actions; read-only.
+### Stop Conditions
 
-### Record Outcome dialog
-
-- Required fields: `outcome_code` (select), `outcome_summary` (textarea, 40–8000 chars, live counter).
-- Submits `transition` with `to_status=outcome_recorded`. On 200: invalidate `["admin-challenges"]` + `["match-challenges", matchId]`, close drawer, toast success.
-
-### Close — No Action dialog
-
-- Required: `outcome_summary` ≥40. Submits `transition` with `to_status=closed_no_action`.
-
-### Break-Glass dialog
-
-- Required: `reason` ≥60 chars.
-- **Two-step confirmation**: first screen explains override is audited and immediately closes the challenge; second screen accepts the reason.
-- Submits `break-glass`. On 200: same invalidation as outcome.
-- All three dialogs follow Modal Dismissal Standard (Close × + Cancel) and Zero Swallowed Errors (try/catch/finally + toast).
-
-## 6. Visibility rules
-
-- Route guarded by existing `RequireAuth` + platform_admin check (mirrors other `/hq/*` pages).
-- Non-platform-admin reaching the URL directly: redirect (existing pattern) — no 3C-specific gate code.
-- All action buttons additionally guard on `isPlatformAdmin` from `useAuth()` as belt-and-braces; the server is the authoritative gate.
-
-## 7. Invariants preserved
-
-- No `getUser()` regressions: all calls remain client-side via `supabase` SDK; no edge function code touched.
-- `is_admin({ user_id })` arg shape untouched (no new server callers).
-- No legacy `public.disputes` references.
-- No rating emission imports (`challenge_rating_impact` stays disabled).
-- `scripts/check-edge-function-paths.mjs` continues to pass — only the existing `match-challenges` paths are referenced.
-
-## 8. Test matrix (Phase 3C close-out)
-
-### Static (S1–S6)
-
-- **S1**: rg the new HQ files for forbidden wording (`dispute raised`, `accusation`, `guilty`, `wrongdoing`, `Warrant of Diligence`).
-- **S2**: rg the new HQ files for direct calls to progression edge functions (`poi-transition`, `wad`, `p3-wad`, `attestation`, `collapse`, `match`). Must be zero.
-- **S3**: rg the new HQ files for legacy `public.disputes` / `from("disputes")`. Must be zero.
-- **S4**: rg the new HQ files for `challenge_rating_impact` or rating emission imports. Must be zero.
-- **S5**: tsc/build clean.
-- **S6**: `scripts/check-edge-function-paths.mjs` passes.
-
-### Render (R1–R6)
-
-- **R1**: platform_admin sees `/hq/challenges` queue with rows.
-- **R2**: non-platform-admin authenticated user is redirected away.
-- **R3**: unauthenticated user is redirected to sign-in.
-- **R4**: drawer for `open` shows Move-to-Under-Review + Record Outcome + Close — No Action + Break-Glass.
-- **R5**: drawer for `under_review` hides Move-to-Under-Review and shows the rest.
-- **R6**: drawer for terminal status (`outcome_recorded` / `closed_no_action` / `withdrawn`) shows zero action buttons.
-
-### Behavioural (B1–B7)
-
-- **B1**: Record Outcome with summary <40 chars blocks submit, no network call.
-- **B2**: Record Outcome 200 → invalidates `["admin-challenges"]`, closes drawer, toast.success.
-- **B3**: Record Outcome 403/409/500 → toast.error, dialog stays open, loading clears.
-- **B4**: Break-Glass with reason <60 chars blocks submit, no network call.
-- **B5**: Break-Glass 200 → invalidates `["admin-challenges"]` and `["match-challenges", matchId]`, closes drawer, toast.success.
-- **B6**: Move-to-Under-Review submits `transition` with `to_status="under_review"` and no `outcome_*` fields.
-- **B7**: All dialogs dismiss via Close (×) and Cancel without submitting.
-
-### Invariants (I1–I5)
-
-- **I1**: rg confirms no Phase 3A/3B files (`useChallengePermissions*`, `useMatchChallenge*`, `MatchChallengePanel*`, `ChallengeStatusCard*`, `ProgressionPausedBanner*`, `RaiseChallengeDialog*`, `MatchDetails.tsx`) modified.
-- **I2**: rg confirms no `supabase/functions/**` modified.
-- **I3**: rg confirms no new migrations.
-- **I4**: Phase 3A live harness re-run → 12/12 PASS (final close-out only, not during dev).
-- **I5**: Vitest full suite still green.
-
-## 9. Stop conditions
-
-- After Phase 3C implementation, run S/R/B/I matrix and report PASS/FAIL per row.
-- **Do not start Phase 3D.** No comment-write UI, no evidence-upload UI, no notification surfaces.
-- If a UI test exposes a clear server defect, stop and surface it — do not silently re-open Phase 3A/3B or modify edge functions.
-
-## 10. Deliverables
-
-- 7 new client files (1 page + 4 components + 2 hooks).
-- 2 minimal edits (`App.tsx` route + HQ sidebar nav link).
-- 1 new vitest file `src/components/hq/challenges/ChallengePhase3C.test.tsx` covering R/B matrix.
-- Closeout matrix table with S1–S6, R1–R6, B1–B7, I1–I5 PASS/FAIL.  
+- Do **not** start fixtures, manual walkthrough, signed-URL download UI, evidence delete, or notification UI.
+- If a UI test surfaces a server defect, stop and surface it — no silent edge-function edits.
+- Phase 3D closes only when the full S/R/B/I matrix passes and 3A live harness still reports 12/12.  
   
-This is a good Phase 3C plan. I would approve it, with **four tightening instructions** before implementation.
-  The main plan is sound because it keeps 3C as a **client-side admin UI phase only**. It does not reopen gates, RPCs, migrations, rating, disputes, or fixtures. That is the right discipline.
-  The four things I would tighten:
-  1. **Route guard must use an existing, proven platform-admin guard**
-    &nbsp;
-    Do not invent a new admin-check pattern in `App.tsx`. Reuse the same guard already protecting the other `/hq/*` or platform admin pages. If there is no clean reusable guard, stop and report before creating one.
-  2. **Do not say “Break-Glass Override” too casually in UI**
-    &nbsp;
-    It is accurate internally, but client/admin UI should be sober. Use something like **“Admin override closure”** or **“Record admin override”**. The dialog can explain that it is audited and immediately closes the challenge. Avoid language that sounds like a magic bypass.
-  3. **Route path should match existing HQ conventions**
-    &nbsp;
-    `/hq/challenges` is fine only if existing HQ pages use `/hq/...`. If the existing admin area is under `/admin/...`, follow the existing route convention. Do not create a second admin namespace.
-  4. **Outcome labels must come from the central catalogue**
-    &nbsp;
-    The outcome select should import the locked neutral labels from `src/lib/challenge-outcomes.ts`. Do not retype labels inside the dialog. This avoids wording drift.
-  Send Lovable this:
+Phase 3D plan is sound and in the right order.
+  I would approve it **with two tightening points before implementation**:
+  1. **Do not allow** `body` **length 1–2000 if server allows 5–4000.**  
+  Phase 1 schema has `match_challenge_comments.body CHECK char_length BETWEEN 5 AND 4000`. So client-side validation should mirror the DB: **5–4000 chars**, not 1–2000. Otherwise the UI will allow 1–4 characters and the server will reject them. That creates a pointless error path.
+  2. **Be careful with** `canComment` **/** `canUploadEvidence` **wording.**  
+  The rule should be:
+    - challenge is `open` or `under_review`; and
+    - viewer is `platform_admin`; or
+    - viewer is party `org_admin`.
+    Do **not** define it as `canRaise || isPlatformAdmin` without checking challenge status, because `canRaise` may be true when the latest challenge is terminal and a new challenge can be raised. Comment/upload should not be allowed on terminal challenges.
+  So I would amend the plan as follows:
   ```text
-  Phase 3C plan approved with four tightening instructions:
+  Comment validation:
+  - trimmed body 5–4000 characters, matching the database CHECK constraint.
 
-  1. Use the existing proven platform-admin route guard for the HQ/admin area. Do not invent a new admin-check pattern. If there is no reusable guard, stop and report before creating one.
-
-  2. In user-facing UI, do not label the control “Break-Glass Override” unless there is already established UI wording for that. Prefer “Admin override closure” or “Record admin override”. The dialog must explain that it is audited and immediately closes the challenge.
-
-  3. Confirm the route namespace before adding it. Use /hq/challenges only if existing HQ pages already use /hq/*. If the existing admin area uses /admin/*, follow that convention instead.
-
-  4. Outcome labels must be imported from the locked central catalogue in src/lib/challenge-outcomes.ts. Do not duplicate or retype outcome labels in the component.
-
-  Proceed with Phase 3C implementation only. No new server endpoints, no RPCs, no migrations, no fixtures, no client guide, no notification UI, no rating emission, no legacy disputes changes, and do not start Phase 3D.
+  canComment / canUploadEvidence:
+  - true only when challenge.status is open or under_review AND viewer is platform_admin or party org_admin.
+  - false for terminal challenges, ordinary org_members, unrelated orgs, and unauthenticated users.
   ```
+  Everything else is correct.
+  Most important: **3D must stay client-only.** No edge changes, no migrations, no “quick fix” server edits. If something server-side breaks, stop and report it.
+  You can proceed with Phase 3D implementation under those two corrections.

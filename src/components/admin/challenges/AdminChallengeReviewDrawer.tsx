@@ -27,6 +27,9 @@ import { useTransitionChallenge } from "@/hooks/useAdminChallengeMutations";
 import type { ChallengeRow } from "@/hooks/useMatchChallenge";
 import { RecordOutcomeDialog } from "./RecordOutcomeDialog";
 import { AdminOverrideDialog } from "./AdminOverrideDialog";
+import { ChallengeCommentThread } from "@/components/match/ChallengeCommentThread";
+import { ChallengeCommentComposer } from "@/components/match/ChallengeCommentComposer";
+import { ChallengeEvidenceList } from "@/components/match/ChallengeEvidenceList";
 
 const STATUS_LABEL: Record<string, string> = {
   open: "Open",
@@ -161,7 +164,31 @@ export function AdminChallengeReviewDrawer({ open, onOpenChange, challenge }: Ad
                 )}
               </div>
             )}
+
+            <div className="border-t border-border pt-4 space-y-3">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground">
+                Comments
+              </h4>
+              <ChallengeCommentThread challengeId={challenge.id} />
+              {!isTerminal && isPlatformAdmin && (
+                <ChallengeCommentComposer
+                  challengeId={challenge.id}
+                  authorRole="platform_admin"
+                />
+              )}
+            </div>
+
+            <div className="border-t border-border pt-4 space-y-2">
+              <h4 className="text-xs uppercase tracking-wide text-muted-foreground">
+                Evidence
+              </h4>
+              <ChallengeEvidenceList challengeId={challenge.id} />
+              <p className="text-[11px] text-muted-foreground">
+                Evidence is read-only in this review surface. Parties upload from the match challenge panel.
+              </p>
+            </div>
           </div>
+
 
           {!isTerminal && isPlatformAdmin && (
             <div

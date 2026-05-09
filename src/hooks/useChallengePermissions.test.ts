@@ -16,7 +16,7 @@ describe("deriveChallengePermissions (Phase 3B)", () => {
       isOrgAdmin: true,
       isAuthenticated: true,
     });
-    expect(p).toEqual({ canViewCard: true, canRaise: true, canSeeBanner: true });
+    expect(p).toMatchObject({ canViewCard: true, canRaise: true, canSeeBanner: true });
   });
 
   it("R5: party org_member sees card+banner but cannot raise", () => {
@@ -27,7 +27,7 @@ describe("deriveChallengePermissions (Phase 3B)", () => {
       isOrgAdmin: false,
       isAuthenticated: true,
     });
-    expect(p).toEqual({ canViewCard: true, canRaise: false, canSeeBanner: true });
+    expect(p).toMatchObject({ canViewCard: true, canRaise: false, canSeeBanner: true });
   });
 
   it("R6/R7: platform_admin sees everything regardless of org match", () => {
@@ -38,7 +38,7 @@ describe("deriveChallengePermissions (Phase 3B)", () => {
       isOrgAdmin: false,
       isAuthenticated: true,
     });
-    expect(p).toEqual({ canViewCard: true, canRaise: true, canSeeBanner: true });
+    expect(p).toMatchObject({ canViewCard: true, canRaise: true, canSeeBanner: true });
   });
 
   it("R8: unrelated org sees nothing", () => {
@@ -49,7 +49,7 @@ describe("deriveChallengePermissions (Phase 3B)", () => {
       isOrgAdmin: true,
       isAuthenticated: true,
     });
-    expect(p).toEqual({ canViewCard: false, canRaise: false, canSeeBanner: false });
+    expect(p).toMatchObject({ canViewCard: false, canRaise: false, canSeeBanner: false });
   });
 
   it("R9: unauthenticated sees nothing", () => {
@@ -60,6 +60,6 @@ describe("deriveChallengePermissions (Phase 3B)", () => {
       isOrgAdmin: true,
       isAuthenticated: false,
     });
-    expect(p).toEqual({ canViewCard: false, canRaise: false, canSeeBanner: false });
+    expect(p).toMatchObject({ canViewCard: false, canRaise: false, canSeeBanner: false });
   });
 });

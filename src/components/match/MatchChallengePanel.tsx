@@ -18,6 +18,10 @@ import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChallengeStatusCard } from "./ChallengeStatusCard";
 import { RaiseChallengeDialog } from "./RaiseChallengeDialog";
+import { ChallengeCommentThread } from "./ChallengeCommentThread";
+import { ChallengeCommentComposer } from "./ChallengeCommentComposer";
+import { ChallengeEvidenceList } from "./ChallengeEvidenceList";
+import { ChallengeEvidenceUploader } from "./ChallengeEvidenceUploader";
 
 export interface MatchChallengePanelProps {
   match: {
@@ -30,7 +34,7 @@ export interface MatchChallengePanelProps {
 
 export function MatchChallengePanel({ match }: MatchChallengePanelProps) {
   const { open: openChallenge, latest } = useMatchChallenge(match.id);
-  const perms = useChallengePermissions(match);
+  const perms = useChallengePermissions(match, latest?.status);
   const viewerOrgId = useUserOrg();
   const { isPlatformAdmin } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,6 +62,34 @@ export function MatchChallengePanel({ match }: MatchChallengePanelProps) {
       data-testid="match-challenge-panel"
     >
       {showCard && <ChallengeStatusCard challenge={latest} />}
+
+      {latest && (
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+              Comments
+            </h4>
+            <ChallengeCommentThread challengeId={latest.id} />
+          </div>
+          {perms.canComment && perms.authorRole && (
+            <ChallengeCommentComposer
+              challengeId={latest.id}
+              authorRole={perms.authorRole}
+              authorOrgId={viewerOrgId}
+            />
+          )}
+
+          <div>
+            <h4 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+              Evidence
+            </h4>
+            <ChallengeEvidenceList challengeId={latest.id} />
+          </div>
+          {perms.canUploadEvidence && (
+            <ChallengeEvidenceUploader challengeId={latest.id} />
+          )}
+        </div>
+      )}
 
       {showRaise && (
         <div className="flex items-center justify-end">
