@@ -20,6 +20,18 @@ export interface ChallengePermissions {
   canViewCard: boolean;
   canRaise: boolean;
   canSeeBanner: boolean;
+  /**
+   * Phase 3D: comment + evidence write affordances.
+   *
+   * Mirrors server policy:
+   *   • challenge.status must be `open` or `under_review`
+   *   • viewer must be `platform_admin` OR a party `org_admin`
+   * Ordinary org_members and unrelated orgs are read-only.
+   */
+  canComment: boolean;
+  canUploadEvidence: boolean;
+  /** Viewer's `author_role` for comment posts; null when not allowed. */
+  authorRole: "platform_admin" | "buyer_org_admin" | "seller_org_admin" | null;
 }
 
 export interface ChallengePermissionsInput {
