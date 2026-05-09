@@ -45,23 +45,44 @@ export const errorResponse = (
   console.error(`[${requestId}] Error:`, error);
 
   if (error instanceof ApiException) {
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...headers
+    };
+
+    // Add Retry-After header for rate limit errors
+    if (error.statusCode === 429 && error.details?.retryAfter) {
+      responseHeaders['Retry-After'] = error.details.retryAfter.toString();
+    }
+
+    // Batch C Phase 3A: canonical CHALLENGE_OPEN response shape across ALL
+    // edge functions. We deliberately diverge from the standard
+    // `{code,message,details,requestId}` envelope so clients can rely on a
+    // single, stable shape regardless of which surface emitted the 409.
+    if (error.code === 'CHALLENGE_OPEN') {
+      const d = error.details ?? {};
+      const canonicalBody = {
+        error: 'CHALLENGE_OPEN',
+        code: 'CHALLENGE_OPEN',
+        message: error.message,
+        challenge_id: d.challenge_id ?? null,
+        challenge_status: d.challenge_status ?? null,
+        raised_at: d.raised_at ?? null,
+        requestId,
+      };
+      return new Response(JSON.stringify(canonicalBody), {
+        status: error.statusCode,
+        headers: responseHeaders,
+      });
+    }
+
     const body: ApiError = {
       code: error.code,
       message: error.message,
       details: error.details,
       requestId,
     };
-    
-    const responseHeaders: Record<string, string> = { 
-      'Content-Type': 'application/json', 
-      ...headers 
-    };
-    
-    // Add Retry-After header for rate limit errors
-    if (error.statusCode === 429 && error.details?.retryAfter) {
-      responseHeaders['Retry-After'] = error.details.retryAfter.toString();
-    }
-    
+
     return new Response(JSON.stringify(body), {
       status: error.statusCode,
       headers: responseHeaders,

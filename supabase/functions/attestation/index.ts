@@ -6,7 +6,7 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
 import { assertWadIsSettleable } from "../_shared/test-mode-bypass.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
-// Batch C: assertNoOpenChallenge import deferred to Phase 3.
+import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
 
 /**
  * Attestations Edge Function
@@ -92,8 +92,20 @@ Deno.serve(async (req: Request) => {
       // every other attestation type is workflow progression on a match.
       // Block all of them when the current engagement is not accepted.
       if (match_id) {
-        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
-        // Helper assertNoOpenChallenge remains importable but is intentionally not invoked here.
+        // Batch C Phase 3A: block attestation while a challenge is open.
+        const challengeDecision = await assertNoOpenChallenge(admin, match_id);
+        if (!challengeDecision.allowed) {
+          throw new ApiException(
+            "CHALLENGE_OPEN",
+            challengeDecision.message ?? "Progression paused.",
+            409,
+            {
+              challenge_id: challengeDecision.challengeId,
+              challenge_status: challengeDecision.challengeStatus,
+              raised_at: challengeDecision.raisedAt,
+            },
+          );
+        }
 
         const decision = await assertEngagementAllowsProgression(admin, match_id);
         if (!decision.allowed) {
