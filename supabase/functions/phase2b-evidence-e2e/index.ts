@@ -172,6 +172,7 @@ Deno.serve(async (req) => {
       quantity_amount: 1, quantity_unit: "MT",
       price_amount: 1, price_currency: "USD",
       terms: "TEST", state: "matched",
+      hash: `phase2b_${runId}`,
     }).select("id").single();
     if (mErr) throw new Error("create match: " + mErr.message);
     cleanup.push(() => admin.from("matches").delete().eq("id", match!.id));
