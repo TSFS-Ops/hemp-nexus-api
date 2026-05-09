@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public._phase2b_run_trigger_proof();
