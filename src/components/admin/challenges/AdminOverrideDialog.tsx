@@ -68,7 +68,7 @@ export function AdminOverrideDialog({
   const [regulatorReference, setRegulatorReference] = useState("");
   const [reason, setReason] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
-  const breakGlass = useBreakGlassChallenge();
+  const overrideMutation = useBreakGlassChallenge();
 
   const reset = () => {
     setStep(1);
