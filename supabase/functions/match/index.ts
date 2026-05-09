@@ -330,7 +330,20 @@ Deno.serve(async (req) => {
       // is handled by the existing pending-engagement / soft-route paths
       // below (a brand-new bilateral match has no engagement yet).
       {
-        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
+        // Batch C Phase 3A: POI generation blocked while a challenge is open.
+        const challengeDecision = await assertNoOpenChallenge(supabase, matchId);
+        if (!challengeDecision.allowed) {
+          throw new ApiException(
+            "CHALLENGE_OPEN",
+            challengeDecision.message ?? "Progression paused.",
+            409,
+            {
+              challenge_id: challengeDecision.challengeId,
+              challenge_status: challengeDecision.challengeStatus,
+              raised_at: challengeDecision.raisedAt,
+            },
+          );
+        }
 
         const decision = await assertEngagementAllowsProgression(supabase, matchId);
         if (!decision.allowed && decision.code !== "ENGAGEMENT_REQUIRED") {
@@ -1241,7 +1254,20 @@ Deno.serve(async (req) => {
       // the burn so we never charge for a state transition the engagement
       // does not authorise.
       {
-        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
+        // Batch C Phase 3A: counterparty reveal (token burn) blocked while a challenge is open.
+        const challengeDecision = await assertNoOpenChallenge(supabase, matchId);
+        if (!challengeDecision.allowed) {
+          throw new ApiException(
+            "CHALLENGE_OPEN",
+            challengeDecision.message ?? "Progression paused.",
+            409,
+            {
+              challenge_id: challengeDecision.challengeId,
+              challenge_status: challengeDecision.challengeStatus,
+              raised_at: challengeDecision.raisedAt,
+            },
+          );
+        }
 
         const decision = await assertEngagementAllowsProgression(supabase, matchId);
         if (!decision.allowed) {
@@ -1485,7 +1511,20 @@ Deno.serve(async (req) => {
       // pending reconfirmation, or a renewed-pending child superseding a
       // historical accepted row).
       {
-        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
+        // Batch C Phase 3A: completion blocked while a challenge is open.
+        const challengeDecision = await assertNoOpenChallenge(supabase, matchId);
+        if (!challengeDecision.allowed) {
+          throw new ApiException(
+            "CHALLENGE_OPEN",
+            challengeDecision.message ?? "Progression paused.",
+            409,
+            {
+              challenge_id: challengeDecision.challengeId,
+              challenge_status: challengeDecision.challengeStatus,
+              raised_at: challengeDecision.raisedAt,
+            },
+          );
+        }
 
         const decision = await assertEngagementAllowsProgression(supabase, matchId);
         if (!decision.allowed) {
