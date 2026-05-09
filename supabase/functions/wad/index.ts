@@ -166,19 +166,7 @@ Deno.serve(async (req) => {
       // stale accepted row even if a renewed pending child existed; that
       // is unsafe once Phase 2 allows multiple rows per match.
       {
-        // Batch C Phase 2: block WaD creation while a challenge is open on the match.
-        const challengeDecision = await assertNoOpenChallenge(supabase, poi_id);
-        if (!challengeDecision.allowed) {
-          throw new ApiException(
-            challengeDecision.code!,
-            challengeDecision.message!,
-            409,
-            {
-              challenge_id: challengeDecision.challengeId,
-              challenge_status: challengeDecision.challengeStatus,
-            },
-          );
-        }
+        // Batch C: CHALLENGE_OPEN gate wiring deferred to Phase 3 (pending approval).
 
         const decision = await assertEngagementAllowsProgression(supabase, poi_id);
         if (!decision.allowed) {
