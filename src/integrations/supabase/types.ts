@@ -7505,6 +7505,7 @@ export type Database = {
     }
     Functions: {
       _is_uuid: { Args: { p_text: string }; Returns: boolean }
+      _phase2b_run_trigger_proof: { Args: never; Returns: Json }
       _provision_user: {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }
         Returns: Json
