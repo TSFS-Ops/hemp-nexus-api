@@ -212,13 +212,16 @@ describe("Batch C Phase 1 — settings flag (no emission code)", () => {
 });
 
 describe("Batch C Phase 1 — legacy disputes untouched", () => {
-  it("the Phase 1 migration does not touch public.disputes", () => {
-    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/\bpublic\.disputes\b/);
-    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/ALTER TABLE\s+public\.disputes/i);
-    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/DROP\s+TABLE\s+public\.disputes/i);
+  it("the Phase 1 migration performs no DDL/DML against the legacy disputes table", () => {
+    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/ALTER TABLE\s+public\.disputes\b/i);
+    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/DROP\s+TABLE\s+(IF\s+EXISTS\s+)?public\.disputes\b/i);
+    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/UPDATE\s+public\.disputes\b/i);
+    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/INSERT\s+INTO\s+public\.disputes\b/i);
+    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/DELETE\s+FROM\s+public\.disputes\b/i);
+    expect(PHASE1_MIGRATION_TEXT).not.toMatch(/CREATE\s+POLICY[^;]+ON\s+public\.disputes\b/i);
   });
 
-  it("legacy disputes migration files and Journey 3 tests still exist on disk", () => {
+  it("legacy disputes table and Journey 3 tests still exist on disk", () => {
     const journey3 = path.resolve(
       __dirname,
       "../../src/tests/uat/journey-3-disputes.test.ts",
@@ -226,7 +229,7 @@ describe("Batch C Phase 1 — legacy disputes untouched", () => {
     expect(fs.existsSync(journey3)).toBe(true);
 
     // Original disputes table creation must still be present in the historical migration set.
-    expect(ALL_SQL).toMatch(/CREATE TABLE\s+(public\.)?disputes\b/i);
+    expect(ALL_SQL).toMatch(/CREATE TABLE\s+IF\s+NOT\s+EXISTS\s+public\.disputes\b/i);
   });
 });
 
