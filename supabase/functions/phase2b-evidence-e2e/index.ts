@@ -264,6 +264,14 @@ Deno.serve(async (req) => {
 
     // ─── T3 ordinary org member is denied ─────────────────────
     {
+      // Diagnostic snapshot of authorisation inputs
+      const [profM, rolesM, isAdminM, isBuyerAdmin, isSellerAdmin] = await Promise.all([
+        admin.from("profiles").select("id, org_id, status").eq("id", userM.id).maybeSingle(),
+        admin.from("user_roles").select("role").eq("user_id", userM.id),
+        admin.rpc("is_admin", { user_id: userM.id }),
+        admin.rpc("is_org_admin", { _user_id: userM.id, _org_id: orgA!.id }),
+        admin.rpc("is_org_admin", { _user_id: userM.id, _org_id: orgB!.id }),
+      ]);
       const f = await makeFile("t3");
       const r = await callUploadEvidence(userM.token, {
         challenge_id: chOpen!.id,
@@ -277,8 +285,8 @@ Deno.serve(async (req) => {
         id: "T3", description: "Ordinary org member cannot upload evidence",
         route: "POST /match-challenges/upload-evidence", account_role: "org_member (party org)",
         expected: "403 FORBIDDEN",
-        observed: `status=${r.status} err=${r.body?.error ?? "-"}`,
-        pass: ok, details: r.body,
+        observed: `status=${r.status} err=${r.body?.error ?? "-"} | diag: profile.org_id=${profM.data?.org_id} status=${profM.data?.status} roles=${JSON.stringify(rolesM.data)} is_admin=${isAdminM.data} is_org_admin(buyer=${orgA!.id})=${isBuyerAdmin.data} is_org_admin(seller=${orgB!.id})=${isSellerAdmin.data}`,
+        pass: ok, details: { resp: r.body, diag: { profile: profM.data, roles: rolesM.data, isAdmin: isAdminM.data, isBuyerAdmin: isBuyerAdmin.data, isSellerAdmin: isSellerAdmin.data } },
       });
     }
 
