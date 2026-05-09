@@ -5,7 +5,7 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
-import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
+// Batch C: assertNoOpenChallenge import deferred to Phase 3.
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
