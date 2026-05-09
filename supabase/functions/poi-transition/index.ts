@@ -9,6 +9,7 @@ import { checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { isActorLegalNameMissing } from "./legal-name-guard.ts";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
+import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
 
 // Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
 // with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
@@ -279,6 +280,21 @@ async function _serve(req: Request): Promise<Response> {
     // PENDING_APPROVAL strictly requires `current_engagement = accepted`.
     const PROGRESSION_TARGETS = ["PENDING_APPROVAL", "ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"];
     if (PROGRESSION_TARGETS.includes(toState)) {
+      // Batch C Phase 2: block match-scoped progression while a challenge is open.
+      const challengeDecision = await assertNoOpenChallenge(adminClient, matchId);
+      if (!challengeDecision.allowed) {
+        if (hasLock) await adminClient.rpc("release_lifecycle_lock");
+        return new Response(
+          JSON.stringify({
+            error: challengeDecision.message,
+            code: challengeDecision.code,
+            challenge_id: challengeDecision.challengeId,
+            challenge_status: challengeDecision.challengeStatus,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const decision = await assertEngagementAllowsProgression(adminClient, matchId);
       const allowMissingEngagement =
         toState === "PENDING_APPROVAL" && decision.code === "ENGAGEMENT_REQUIRED";
