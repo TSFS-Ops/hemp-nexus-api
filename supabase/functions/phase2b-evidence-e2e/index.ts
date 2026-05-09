@@ -208,6 +208,19 @@ Deno.serve(async (req) => {
       return { bytes, sha: await sha256Hex(bytes) };
     };
 
+    // Smoke probe: verify userA.token is recognised by GoTrue from inside this fn.
+    {
+      const probe = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: `Bearer ${userA.token}` } } });
+      const { data: pu, error: pe } = await probe.auth.getUser();
+      record({
+        id: "T0", description: "Smoke: userA token validates against GoTrue from inside harness",
+        route: "auth.getUser()", account_role: "buyer_org_admin",
+        expected: "user resolves with same uid",
+        observed: `uid=${pu?.user?.id ?? "null"} err=${pe?.message ?? "-"} token_len=${userA.token.length} url=${SUPABASE_URL}`,
+        pass: !!pu?.user && pu.user.id === userA.id,
+      });
+    }
+
     // ─── T1 party org_admin uploads to open challenge ─────────
     {
       const f = await makeFile("t1");
