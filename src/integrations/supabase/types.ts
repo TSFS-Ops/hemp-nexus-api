@@ -3138,6 +3138,169 @@ export type Database = {
           },
         ]
       }
+      match_challenge_comments: {
+        Row: {
+          author_org_id: string | null
+          author_role: string
+          author_user_id: string
+          body: string
+          challenge_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          author_org_id?: string | null
+          author_role: string
+          author_user_id: string
+          body: string
+          challenge_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          author_org_id?: string | null
+          author_role?: string
+          author_user_id?: string
+          body?: string
+          challenge_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_challenge_comments_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "match_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_challenge_evidence: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          filename: string
+          id: string
+          mime_type: string
+          sha256: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by_org_id: string | null
+          uploaded_by_user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          filename: string
+          id?: string
+          mime_type: string
+          sha256: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by_org_id?: string | null
+          uploaded_by_user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          filename?: string
+          id?: string
+          mime_type?: string
+          sha256?: string
+          size_bytes?: number
+          storage_path?: string
+          uploaded_by_org_id?: string | null
+          uploaded_by_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_challenge_evidence_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "match_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_challenges: {
+        Row: {
+          break_glass_override_used: boolean
+          closed_at: string | null
+          closed_by_user_id: string | null
+          created_at: string
+          id: string
+          match_id: string
+          org_id: string
+          outcome_code: string | null
+          outcome_summary: string | null
+          raised_by_org_id: string | null
+          raised_by_role: string
+          raised_by_user_id: string
+          rating_impact_emitted: boolean
+          status: string
+          subject_code: string
+          summary: string
+          under_review_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          break_glass_override_used?: boolean
+          closed_at?: string | null
+          closed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          match_id: string
+          org_id: string
+          outcome_code?: string | null
+          outcome_summary?: string | null
+          raised_by_org_id?: string | null
+          raised_by_role: string
+          raised_by_user_id: string
+          rating_impact_emitted?: boolean
+          status?: string
+          subject_code: string
+          summary: string
+          under_review_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          break_glass_override_used?: boolean
+          closed_at?: string | null
+          closed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          match_id?: string
+          org_id?: string
+          outcome_code?: string | null
+          outcome_summary?: string | null
+          raised_by_org_id?: string | null
+          raised_by_role?: string
+          raised_by_user_id?: string
+          rating_impact_emitted?: boolean
+          status?: string
+          subject_code?: string
+          summary?: string
+          under_review_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_challenges_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_challenges_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_counterparty_intel: {
         Row: {
           auto_generated_at: string | null
@@ -7687,6 +7850,14 @@ export type Database = {
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       is_match_participant: {
+        Args: { _match_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_match_participant_member: {
+        Args: { _match_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_match_party_org_admin: {
         Args: { _match_id: string; _user_id: string }
         Returns: boolean
       }
