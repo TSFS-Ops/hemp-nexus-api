@@ -1,250 +1,296 @@
-# Batch C — Phase 3: Progression Gates, UI Surfaces, Notifications (Revised)
+# Phase 3B — Minimal Challenge UI Surfaces
 
-**Status:** Phase 2b accepted. Phase 3 split into sub-phases with hard stop points. Implementation begins with **Phase 3A only**; 3B and 3C require explicit approval after 3A reports green.
+Phase 3A (server gates + notification suppression) is closed. Phase 3B introduces the **minimum** UI required for users to perceive and act on challenges from the match page only. **No admin queue, no admin outcome controls, no notification UI, no client guide, no fixtures.** Server gates are not modified.
 
-**Invariants carried forward (must not regress):**
+## In-scope (this phase)
 
-- `auth.getUser(token)` used positionally in `match-challenges`.
-- `is_admin` called with `{ user_id: ... }` — never `_user_id`.
-- Evidence upload path constructed server-side: `match_id/challenge_id/uuid-name`.
-- Legacy `disputes` table and journey untouched.
-- No rating emission code introduced.
-- No forbidden challenge wording (per `src/lib/challenge-outcomes.ts`).
+1. **Match Page Challenge Status Card** — neutral, institutional, read-only summary of the current challenge for the match.
+2. **Progression Paused Banner** — a banner that appears above progression CTAs when the match has a challenge in `open` or `under_review`.
+3. **Raise Challenge Entry Point** — a single CTA on the match page that opens a minimal raise dialog.
+4. **Role-based visibility** — applied uniformly across the three surfaces above.
 
----
+## Explicitly out-of-scope
 
-## Sub-phase split (hard stops)
-
-- **Phase 3A — Server-side gates + notification suppression.** Stop and report.
-- **Phase 3B — Minimal UI: challenge status card, raise entry point, "Progression paused" banner.** Stop and report.
-- **Phase 3C — Admin challenge queue + outcome controls.** Stop and report.
-
-Each sub-phase ships its own test matrix. No sub-phase begins without explicit approval of the previous report.
+- Admin queue, admin filters, outcome controls, evidence viewer (Phase 3C).
+- Notification settings UI / toast surfaces for `progression.*` events.
+- New server-side gates, new RPCs, new edge functions, schema changes.
+- Fixtures, manual walkthroughs, client guide, regression CSV exports.
+- Touching legacy `disputes` UI.
 
 ---
 
-## 1. Where `CHALLENGE_OPEN` WILL be wired (Phase 3A scope)
+## 1. Surfaces (UI only)
 
-A single shared guard `assertNoOpenChallenge(matchId, supabase)` (already in `supabase/functions/_shared/challenge-progression-guard.ts`) is invoked at the **first server-side mutation** of each surface below. Failure returns HTTP `409` with code `CHALLENGE_OPEN` and `{ challenge_id, status, raised_at }`.
+### 1.1 ChallengeStatusCard
 
+- Location: match details page, **above** the existing match hero card (sits above Deal Wizard per match-layout-hierarchy memory).
+- Renders only when `match_challenges` has a row for this `match_id` whose `status ∈ {open, under_review, outcome_recorded, withdrawn}`.
+- Shows: challenge ID short, `status` badge (neutral colour palette — no red/danger), `subject_code` (human label), `summary` (truncated to 240 chars + "Read more" expander), `raised_at`, `raised_by_role`, and (if terminal) `outcome_code` + `closed_at`.
+- Read-only. No actions inside the card itself.
+- Wording: must pass the same wording guard scanned in Phase 3A T10 (no "dispute raised", "accusation", "guilty", "wrongdoing").
 
-| #   | Surface                         | Edge function / RPC                              | Insertion point                                                  |
-| --- | ------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
-| 1   | POI generation                  | `poi-transition` (mint path)                     | Before `atomic_generate_poi_v2`                                  |
-| 2   | POI state transitions           | `poi-transition` (all non-terminal transitions)  | After auth, before RPC dispatch                                  |
-| 3   | WaD creation                    | `wad` (create)                                   | Before insert                                                    |
-| 4   | WaD attestation                 | `attestation`                                    | Before attest write                                              |
-| 5   | WaD seal                        | `wad` (seal) and `p3-wad` (seal)                 | Before seal RPC                                                  |
-| 6   | Completion request / confirm    | `match` (completion routes)                      | Before state change                                              |
-| 7   | Collapse / finality             | `collapse`                                       | Before collapse                                                  |
-| 8   | Match-scoped token burn         | `atomic_token_burn` callers (match-scoped only)  | Wrapper layer; `purpose IN ('poi_mint','wad_seal','completion')` |
-| 9   | Match-scoped settlement actions | settlement edge fns (match-scoped)               | Before settlement write                                          |
-| 10  | Engagement issuance / renewal   | `poi-engagements` (issue, renew) tied to a match | Before issue/renew write                                         |
-| 11  | Progression notifications       | `notification-dispatch`                          | Suppress events of type `progression.*` for the match while open |
+### 1.2 ProgressionPausedBanner
 
+- Location: rendered immediately above any progression CTA cluster on the match page (Generate POI, Transition POI, Create WaD, Seal WaD, Attest, Collapse, Reveal Counterparty, Complete, Settle).
+- Renders only when the match has a challenge with `status ∈ {open, under_review}`.
+- Copy: "Progression is paused while a challenge is open on this match." Neutral, institutional, no danger colour.
+- Disables (`aria-disabled`, visually muted) all progression CTAs in the cluster — does not hide them. CTA `onClick` still calls server, which will return canonical 409 CHALLENGE_OPEN; the banner is a UX hint, **not** the gate.
 
-**Guard semantics (locked):**
+### 1.3 RaiseChallengeButton + RaiseChallengeDialog
 
-- Returns `null` when no row in `match_challenges` for `match_id` is in `{ open, under_review }`.
-- Returns `409 CHALLENGE_OPEN` otherwise.
-- **Break-glass is not a bypass and not a live override.** It is the `platform_admin_break_glass_progress` RPC, which **closes** the challenge with terminal outcome `admin_override_recorded` in the same transaction as a mandatory `audit_logs` insert (transaction aborts if the audit insert fails). Only after that closure can progression proceed via the normal guard path. Required inputs: caller is `platform_admin`, reason ≥ 60 chars, mandatory audit. **No re-auth requirement is introduced in Phase 3** — that would be a separate, scoped piece of work.
-
----
-
-## 2. Where `CHALLENGE_OPEN` must NOT apply (explicit allow-list)
-
-Negative tests required for each:
-
-- Standalone credit purchases (`credits-purchase`, Paystack flow) — never gated.
-- Other matches for the same organisation — gate is strictly `match_id`-scoped.
-- Read-only viewing of match, POI, WaD, evidence.
-- Commenting on the challenge thread.
-- Evidence upload to the open challenge (`match-challenges/upload-evidence`).
-- Admin review actions on the challenge itself (transition `open → under_review`, record outcome, break-glass closure).
-- Legacy `disputes` flow — no shared code path, no shared table, no shared trigger.
+- Button location: inside ChallengeStatusCard when no `open`/`under_review` challenge exists, OR on the match page Action menu when the card isn't shown. One entry point per match — no duplication.
+- Dialog: minimal — `subject_code` (select from existing enum), `summary` (textarea, 60–4000 chars, required), Submit / Cancel. Modal must have a Close (×) button per Modal Dismissal Standard memory.
+- Submits to existing `match-challenges` POST `/raise` endpoint. **No** new server endpoint.
+- On 200: optimistic refetch of the match-challenges query; banner + card appear immediately.
+- On error: toast with the server message. Standard Zero Swallowed Errors try/catch/finally pattern.
 
 ---
 
-## 3. UI surfaces (Phase 3B + 3C — not implemented in 3A)
+## 2. Role-based visibility (single source of truth)
 
-All copy uses neutral pause language; no forbidden challenge wording. Strings drawn from `src/lib/challenge-outcomes.ts`.
-
-**Phase 3B (minimal):**
-
-- **Match page — Challenge Status Card**: visible on any match with a non-terminal challenge; shows status, raised timestamp, raising-side role, neutral summary.
-- **"Progression paused" banner**: rendered above progression CTAs on the match page when the guard would return `409`.
-- **Raise Challenge entry point**: visible only to party `org_admin` and `platform_admin`; hidden for ordinary `org_member`, unrelated orgs, auditors; disabled when an open challenge already exists.
-- **Ordinary org_member view**: read-only — status card, comments, evidence list — no raise/withdraw/outcome controls.
-
-**Phase 3C (admin):**
-
-- **Admin Challenge Queue** (`/admin/challenges`): lists `open` + `under_review` challenges across orgs; actions: start review, record outcome, break-glass closure (platform_admin + 60-char reason; mandatory audit; **no re-auth**).
-- **Unrelated org**: no challenge controls, no challenge data exposure beyond what RLS already permits.
-- **Progression CTAs**: disabled with neutral "Progression paused — challenge under review" tooltip when guard would 409.
-
----
-
-## 4. Notification behaviour (Phase 3A scope)
-
-Routed through `notification-dispatch`. Each event is templated and subject-clamped per `clampSubject`.
+Add `src/hooks/useChallengePermissions.ts` that resolves three booleans for `(match, currentUser, currentOrg)`:
 
 
-| Event                          | Recipients                                              | Channel                                                   |
-| ------------------------------ | ------------------------------------------------------- | --------------------------------------------------------- |
-| `challenge.raised`             | Counterparty org_admins, platform admin queue           | Email + in-app                                            |
-| `challenge.evidence_added`     | Both party org_admins, platform admin if `under_review` | In-app, digest email                                      |
-| `challenge.comment_added`      | Both party org_admins                                   | In-app, digest email                                      |
-| `challenge.review_started`     | Both party org_admins                                   | Email + in-app                                            |
-| `challenge.withdrawn`          | Both party org_admins                                   | Email + in-app                                            |
-| `challenge.outcome_recorded`   | Both party org_admins                                   | Email + in-app                                            |
-| `progression.*` for that match | —                                                       | **Suppressed** while challenge is `open` / `under_review` |
+| Role on match                        | canViewCard     | canRaise | canSeeBanner |
+| ------------------------------------ | --------------- | -------- | ------------ |
+| Party `org_admin` (buyer or seller)  | yes             | yes      | yes          |
+| Party `org_member` (buyer or seller) | yes (read-only) | **no**   | yes          |
+| Platform admin (`is_admin = true`)   | yes             | yes      | yes          |
+| Unrelated org                        | **no**          | **no**   | **no**       |
+| Unauthenticated                      | **no**          | **no**   | **no**       |
 
 
-**Suppression rule (precise):**
+Hook reads from already-loaded `match`, `useUserOrg`, and `is_admin` — no extra DB queries.
 
-- While a challenge is `open` or `under_review`, any `progression.*` notification scoped to that `match_id` is suppressed at dispatch time.
-- Each suppression writes a stable audit row: action `challenge.progression_notification_suppressed`, metadata `{ match_id, challenge_id, notification_type, intended_recipient_group, suppressed_at }`.
-- **Suppressed progression notifications are not replayed after closure.** Fresh `progression.*` notifications generated *after* the challenge reaches a terminal state may dispatch normally.
+`canRaise=false` users still see the card and banner if applicable; the Raise button is simply absent. **No client-side trust:** server already enforces raise permissions; the hook only decides what to render.
 
 ---
 
-## 5. Tests required
+## 3. Wiring (where edits land)
 
-### Phase 3A — server gates + suppression
+- `src/components/match/ChallengeStatusCard.tsx` — new, read-only.
+- `src/components/match/ProgressionPausedBanner.tsx` — new, presentational.
+- `src/components/match/RaiseChallengeDialog.tsx` — new, minimal modal.
+- `src/hooks/useChallengePermissions.ts` — new, derived booleans.
+- `src/hooks/useMatchChallenge.ts` — new, react-query wrapper around existing `match-challenges` GET endpoint, returns `{ open, terminal, latest, all }` slices.
+- `src/pages/MatchDetails.tsx` (or whichever currently hosts Deal Wizard / hero / progression CTAs) — slot the card above the hero, wrap progression CTA cluster with banner, mount dialog. Per match-layout-hierarchy memory: card sits above hero card; Deal Wizard remains above hero too — card slots **between Deal Wizard and hero** to keep gating visible at first glance.
 
-**5a. Unit — progression guard**
-
-- Returns null when no challenge row.
-- Returns null when only terminal challenges (`outcome_recorded`, `withdrawn`, `admin_override_recorded`, `closed_no_action`).
-- Returns 409 for `open`.
-- Returns 409 for `under_review`.
-- Match-id scoping: open challenge on match A does not gate match B.
-
-**5b. Edge — each blocked surface (positive-block tests)**
-For each of surfaces 1–10: party org_admin attempts the action while a challenge is open → expects `409 CHALLENGE_OPEN`.
-
-After the challenge reaches a terminal state, each test re-runs and asserts only that the failure is **no longer `CHALLENGE_OPEN**` — the action may still fail for pre-existing guards (credits, missing POI prerequisites, engagement state, match state, etc.). Test code asserts `response.status !== 409 || body.code !== 'CHALLENGE_OPEN'`.
-
-**5c. Edge — negative (must NOT block)**
-
-- Standalone credit purchase succeeds with open challenge on a related or unrelated match.
-- POI mint on match B succeeds while match A has open challenge.
-- Read of match, POI, WaD, evidence succeeds.
-- Comment on challenge thread succeeds.
-- Evidence upload to the open challenge succeeds (per Phase 2b matrix).
-- Admin can transition challenge state and execute break-glass closure.
-
-**5d. Notification suppression tests**
-
-- Trigger a `progression.*` notification while open → not dispatched; `challenge.progression_notification_suppressed` audit row written with full metadata.
-- Close challenge (any terminal outcome) → newly generated `progression.*` notifications dispatch normally; previously suppressed notifications are **not** replayed.
-
-**5e. Wording guard**
-
-- Static test: scan challenge-related strings for forbidden lexicon (re-uses existing list).
-
-**5f. Legacy disputes regression (revised — no row-hash dependency)**
-
-- Static check: Phase 3 migrations contain no DDL/DML against `public.disputes` (grep all Phase 3 SQL files).
-- Static check: no Phase 3 code edit touches the legacy disputes edge functions or client paths.
-- Behavioural: existing `journey-3-disputes.test.ts` (and any disputes endpoint contract tests) still pass unchanged with byte-identical payload shape.
-
-**5g. Break-glass regression**
-
-- Re-run Phase 2b break-glass proof: missing audit aborts the transaction; on success the challenge row is `admin_override_recorded` (terminal) and the next progression call on the same match passes the guard.
-- Negative: `platform_admin` with reason < 60 chars rejected.
-- Negative: non-`platform_admin` rejected.
-
-### Phase 3B (deferred)
-
-- Snapshot/role-visibility tests for raise button, status card, paused banner.
-- RTL test: ordinary org_member sees no raise/withdraw/outcome affordances.
-
-### Phase 3C (deferred)
-
-- Admin queue listing scoped to non-terminal challenges.
-- Outcome control + break-glass form validation tests.
+No changes to: `match-challenges` edge function, any other edge function, any migration, any RPC, `disputes` legacy code paths, Phase 3A guard helpers, notification dispatch.
 
 ---
 
-## Deliverables at Phase 3A close
+## 4. Phase 3B Test Matrix
 
-1. Files changed (edge fns, shared guard wiring, notification dispatch).
-2. Migration(s), if any (expected: none beyond optional indexes and the `challenge.progression_notification_suppressed` audit action being recognised).
-3. Test results: 5a–5g all green, with counts per category.
-4. Live proof script output for at least one representative surface from each of 5b and 5c.
-5. Wording-guard report.
-6. Legacy disputes static + behavioural proof (no row-hash).
-7. Confirmation: no rating emission code added; no forbidden wording introduced; `getUser(token)` and `is_admin({user_id})` invariants intact; break-glass is closure-only, no re-auth introduced.
+Phase 3B is UI-only, so the matrix is split into static checks + render-level assertions. **No new live edge-function harness.**
 
-**Stop after Phase 3A.** 3B and 3C require explicit approval.  
+### 4a. Static / build-time
+
+
+| ID  | Check                                                                                                                                   | Expected                                         |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| S1  | `rg "dispute raised|accusation|guilty|wrongdoing"` over the four new files                                                              | zero hits                                        |
+| S2  | `rg` over the four new files for direct calls to progression edge functions (poi-transition, wad, p3-wad, attestation, collapse, match) | zero hits — UI must never bypass existing wiring |
+| S3  | `rg` for new migrations under `supabase/migrations/` since 3A close                                                                     | zero new files (3B introduces no schema)         |
+| S4  | `tsc --noEmit` (via existing build)                                                                                                     | clean                                            |
+| S5  | `scripts/check-edge-function-paths.mjs` (existing prebuild)                                                                             | passes                                           |
+
+
+### 4b. Render assertions (vitest + React Testing Library)
+
+For each row, mock `useMatchChallenge` + `useChallengePermissions` and assert presence/absence:
+
+
+| ID  | Scenario                                            | Card                | Banner  | Raise button                                   |
+| --- | --------------------------------------------------- | ------------------- | ------- | ---------------------------------------------- |
+| R1  | Party org_admin, no challenge                       | hidden              | hidden  | visible (in card-empty / action-menu fallback) |
+| R2  | Party org_admin, status=open                        | visible             | visible | hidden (already raised)                        |
+| R3  | Party org_admin, status=under_review                | visible             | visible | hidden                                         |
+| R4  | Party org_admin, status=outcome_recorded (terminal) | visible             | hidden  | visible (new challenge allowed)                |
+| R5  | Party org_member, status=open                       | visible (read-only) | visible | hidden                                         |
+| R6  | Platform admin, no challenge                        | hidden              | hidden  | visible                                        |
+| R7  | Platform admin, status=open                         | visible             | visible | hidden                                         |
+| R8  | Unrelated org, status=open                          | hidden              | hidden  | hidden                                         |
+| R9  | Unauthenticated                                     | hidden              | hidden  | hidden                                         |
+
+
+### 4c. Behavioural
+
+
+| ID  | Test                                                                                                                                           | Expected                                                                      |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| B1  | RaiseChallengeDialog Close (×) and Cancel both dismiss without submit                                                                          | passes Modal Dismissal Standard                                               |
+| B2  | Submit with summary < 60 chars                                                                                                                 | client-side validation error; no network call                                 |
+| B3  | Submit with valid payload, mocked 200                                                                                                          | dialog closes; query invalidates; card appears                                |
+| B4  | Submit with mocked 409 / 500                                                                                                                   | toast error; dialog stays open; loading state cleared (Zero Swallowed Errors) |
+| B5  | Banner present → progression CTAs are `aria-disabled` and visually muted; clicking still routes through existing handlers (server is the gate) | passes                                                                        |
+
+
+### 4d. Invariants carried from 3A (must remain true)
+
+
+| ID  | Check                                                                                                                                                                               | Expected                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| I1  | `rg "auth.getUser\(\)"` across `supabase/functions/`                                                                                                                                | zero hits — positional form only (per new memory) |
+| I2  | `rg "is_admin"` arg shape                                                                                                                                                           | `{ user_id }` form preserved                      |
+| I3  | `git diff` touches no file under `supabase/functions/` (except possibly an added comment), no migration, no `src/lib/wad-state.ts`, no `src/lib/match-state.ts`, no `disputes` code | passes                                            |
+| I4  | Phase 3A live harness `phase3a-progression-e2e` re-run                                                                                                                              | still 12/12 PASS                                  |
+
+
+---
+
+## 5. Stop conditions
+
+After Phase 3B implementation:
+
+- Run S1–S5, R1–R9, B1–B5, I1–I4.
+- Report results.
+- **Do not start Phase 3C** (admin queue, outcome controls) without explicit approval.
+- If any UI test exposes a clear server-side defect, surface it and stop — do not silently re-open Phase 3A.
+
+## 6. Deliverables at 3B close
+
+- 5 new client files (4 components + 2 hooks).
+- 1 edited host page (`MatchDetails`).
+- Vitest suite for R1–R9 + B1–B5.
+- Static-check report (S1–S5).
+- Confirmation I1–I4 still hold.
+- No edge function changes, no migrations, no fixtures.  
   
-This revised matrix is now much cleaner. I would approve **Phase 3A only**.
-
-The important corrections are now in place:
-
-- Break-glass is correctly framed as **terminal closure**, not a live bypass.
-- No re-auth is being quietly introduced.
-- Suppressed notifications are **not replayed**, which is the safer rule.
-- “After terminal state” tests now correctly check only that the error is no longer `CHALLENGE_OPEN`.
-- Legacy disputes regression is no longer tied to fragile row hashes.
-- UI is deferred to 3B/3C, so 3A can stay focused on server gates and notification suppression.
-
-The only tightening I would still request before code starts is this:
-
-1. **Guard response shape must be one canonical shape everywhere.**  
-Pick one and pin it:
-  &nbsp;
-  ```json
-  {
-    "error": "CHALLENGE_OPEN",
-    "code": "CHALLENGE_OPEN",
-    "message": "...",
-    "challenge_id": "...",
-    "challenge_status": "open",
-    "raised_at": "..."
-  }
+This Phase 3B plan is mostly solid, but I would **not approve it exactly as written**. There are a few contradictions and implementation risks that should be tightened before Lovable writes code.
+  ## **Main corrections before implementation**
+  ### **1.**
+  `useMatchChallenge` **cannot use a GET endpoint unless one exists**
+  The plan says:
+  `useMatchChallenge.ts` — react-query wrapper around existing `match-challenges` GET endpoint
+  But the existing `match-challenges` edge function, from the Phase 2 work, was POST-route based: `/raise`, `/comment`, `/transition`, `/upload-evidence`, `/break-glass`.
+  So either there is no GET endpoint yet, or it has not been mentioned/proven.
+  **Correct approach for 3B:** do not create a new edge function unless strictly necessary. The hook should read directly from Supabase using RLS:
+  ```text
+  match_challenges
+    select id, match_id, status, subject_code, summary, raised_by_role,
+           raised_by_org_id, raised_by_user_id, outcome_code,
+           created_at, closed_at
+    where match_id = current match id
+    order created_at desc
   ```
-  Do not let some functions return `error`, others `code`, others `challengeId`.
-2. **Notification suppression must not send emails, but must not silently swallow failures to audit.**  
-If suppression audit fails, the dispatcher should fail closed for that notification event. Otherwise you can lose the only trace that a notification was intentionally suppressed.
-3. **Phase 3A must not introduce UI-visible copy except API messages.**  
-This keeps wording scope tight. Any banners/cards/buttons wait for 3B.
+  RLS already decides whether the user can see the row. If unrelated org gets zero rows, the UI shows nothing.
+  So change:
+  wrapper around existing `match-challenges` GET endpoint
+  to:
+  react-query wrapper around direct Supabase RLS-protected `match_challenges` select; no new edge function.
+  ### **2. Summary length conflicts with server rules**
+  The plan says dialog summary is:
+  60–4000 chars
+  But Phase 1 schema says `summary` is **20–2000 chars**. If the UI enforces 60–4000, the client and DB are inconsistent.
+  I recommend using **60–2000 chars** in the UI. That is stricter than DB on the minimum, but respects the DB maximum. It also encourages meaningful challenge reasons.
+  Change to:
+  ```text
+  summary textarea: 60–2000 chars, required.
+  ```
+  ### **3. The card render statuses should include**
+  `closed_no_action`
+  The card currently renders for:
+  ```text
+  open, under_review, outcome_recorded, withdrawn
+  ```
+  But the locked state machine also includes:
+  ```text
+  closed_no_action
+  ```
+  If a challenge is closed with no action, the card should still show the historical challenge outcome. Otherwise users may wonder where the challenge went.
+  Add `closed_no_action` to the card-visible statuses.
+  ### **4. Terminal**
+  `admin_override_recorded` **is not a status**
+  The test matrix refers to terminal statuses like:
+  `admin_override_recorded`
+  That is an **outcome_code**, not a `status`. The terminal status is:
+  ```text
+  outcome_recorded
+  ```
+  with:
+  ```text
+  outcome_code = admin_override_recorded
+  ```
+  Make sure the UI and tests do not treat `admin_override_recorded` as a status.
+  ### **5. “No challenge → raise button visible” needs a defined home**
+  The plan says the Raise button appears:
+  inside ChallengeStatusCard when no open/under_review challenge exists, OR on the match page Action menu when the card isn’t shown
+  But if the card is hidden when there is no challenge, the button cannot be “inside ChallengeStatusCard”. This creates ambiguity.
+  Better:
+  ```text
+  ChallengeStatusCard renders only when there is a challenge.
+  Raise Challenge button renders in the match page action area when canRaise=true and no open/under_review challenge exists.
+  If there is a terminal challenge card, the Raise button may render below or beside that card as a separate action, not inside the read-only card.
+  ```
+  This keeps the card read-only and avoids duplication.
+  ### **6. “Disable CTAs but clicking still calls server” is contradictory**
+  The plan says progression CTAs are disabled with `aria-disabled`, but:
+  CTA onClick still calls server
+  A truly disabled `<button disabled>` will not fire. `aria-disabled` can still fire if it is not actually disabled.
+  So be precise:
+  ```text
+  Do not use the HTML disabled attribute if the click should still reach the existing handler.
+  Use aria-disabled="true", muted styling, and tooltip/help text.
+  The existing handler remains attached so the server gate remains authoritative.
+  ```
+  This is slightly odd UX, but it matches the stated goal: UI hint, not client-side gate.
+  ### **7. Do not rerun the live Phase 3A harness as part of every UI iteration unless necessary**
+  I4 says:
+  Phase 3A live harness re-run — still 12/12 PASS
+  That is good before closing 3B, but not necessary on every small UI compile. Keep it as a **final close-out check**, not part of the inner loop.
+  ## **Revised instruction to Lovable**
+  Use this:
+  ```text
+  Proceed with Phase 3B only, with the following corrections to the plan:
 
-I would send Lovable this:
+  1. Do not create or modify any edge function, RPC, migration, notification logic, progression gate, WAD state, match state, or legacy disputes code.
 
-```text
-Approved for Phase 3A only.
+  2. `useMatchChallenge` must not assume a GET edge endpoint exists. Implement it as a React Query hook that reads directly from Supabase using the existing RLS-protected `match_challenges` table:
+     - filter by `match_id`
+     - order by `created_at desc`
+     - return `{ open, terminal, latest, all }`
+     - unrelated orgs should naturally receive no rows via RLS.
 
-Proceed with server-side progression gates and progression-notification suppression only. Do not start Phase 3B or 3C. No UI, no admin queue, no fixtures, no client guide.
+  3. Challenge card visible statuses are:
+     - `open`
+     - `under_review`
+     - `outcome_recorded`
+     - `withdrawn`
+     - `closed_no_action`
 
-Before implementation, lock these three final details:
+  4. Treat `admin_override_recorded` as an `outcome_code`, not a `status`.
 
-1. Use one canonical CHALLENGE_OPEN response shape everywhere:
-{
-  error: "CHALLENGE_OPEN",
-  code: "CHALLENGE_OPEN",
-  message: "Progression is paused because an open challenge exists on this match.",
-  challenge_id,
-  challenge_status,
-  raised_at
-}
+  5. Raise dialog summary validation must be 60–2000 characters. DB allows 20–2000, but UI should require 60 minimum for meaningful submissions and must not exceed the DB maximum.
 
-2. Notification suppression audit is mandatory. If a `progression.*` notification is suppressed because a challenge is open, write `audit_logs.action = "challenge.progression_notification_suppressed"` with metadata `{ match_id, challenge_id, notification_type, intended_recipient_group, suppressed_at }`. Do not dispatch the notification. Do not replay it after closure. If the audit insert fails, fail closed for that notification event.
+  6. Keep `ChallengeStatusCard` read-only. Do not place action buttons inside the card unless they are purely external wrapper actions. The Raise Challenge button should appear in the match action area when:
+     - `canRaise=true`
+     - no `open` or `under_review` challenge exists.
+     If a terminal challenge exists, show the card and still allow a separate Raise Challenge button outside/near the card.
 
-3. Phase 3A must introduce no UI-visible surfaces except neutral API error messages. Challenge status cards, raise challenge buttons, paused banners, and admin queue are Phase 3B/3C only.
+  7. ProgressionPausedBanner should use `aria-disabled`, muted styling, and tooltip/help text. Do not use a native `disabled` attribute if the click is intentionally meant to still route to the existing handler and let the server return canonical `409 CHALLENGE_OPEN`.
 
-Then implement Phase 3A:
-- wire `assertNoOpenChallenge` into the listed server-side match-scoped mutation surfaces only;
-- leave standalone credit purchases and unrelated matches ungated;
-- suppress only `progression.*` notifications scoped to the challenged match;
-- keep legacy `disputes` untouched;
-- keep rating emission absent;
-- preserve `auth.getUser(token)` and `is_admin({ user_id })`.
+  8. Add:
+     - `src/components/match/ChallengeStatusCard.tsx`
+     - `src/components/match/ProgressionPausedBanner.tsx`
+     - `src/components/match/RaiseChallengeDialog.tsx`
+     - `src/hooks/useChallengePermissions.ts`
+     - `src/hooks/useMatchChallenge.ts`
+     - one edited host page only, likely `src/pages/MatchDetails.tsx`
+     - one Vitest/RTL suite covering R1–R9 and B1–B5.
 
-At close, report the full 5a–5g test matrix, including live proof for at least one blocked surface and one allow-listed surface, notification suppression audit proof, wording guard, legacy disputes proof, and confirmation that no UI/fixtures/client guide were created.
+  9. Tests must prove:
+     - party org_admin can see raise when no open challenge exists
+     - party org_admin sees card/banner and no raise when open/under_review exists
+     - party org_member sees card/banner but no raise
+     - platform_admin can raise
+     - unrelated org and unauthenticated see nothing
+     - terminal challenge shows card but no banner
+     - close/cancel dismiss dialog without submit
+     - short summary blocks submit with no network call
+     - valid submit invalidates/refetches query
+     - server error shows toast and clears loading state
+     - no forbidden wording appears in the new files.
 
-Stop after Phase 3A.
-```
-
-After that, yes: let them proceed.
+  10. Do not start Phase 3C. No admin queue, no outcome controls, no fixtures, no client guide, no manual walkthrough.
+  ```
+  My verdict: **approved after these corrections**. The most important fix is the hook: use direct RLS table reads, not a non-existent GET endpoint.
