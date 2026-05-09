@@ -20,6 +20,13 @@ export interface TransitionInput {
 
 export interface BreakGlassInput {
   match_id: string;
+  /** Closed governance category (see ADMIN_OVERRIDE_REASON_CATEGORIES). */
+  reason_category: string;
+  /** Required internal approval reference (e.g. IZENZO-REV-2026-041). */
+  internal_approval_reference: string;
+  /** Optional regulator/authority reference; "Not applicable" if absent. */
+  regulator_reference: string;
+  /** Written reason, ≥60 characters. */
   reason: string;
 }
 
