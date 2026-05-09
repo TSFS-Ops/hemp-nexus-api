@@ -27,6 +27,9 @@ import { useTransitionChallenge } from "@/hooks/useAdminChallengeMutations";
 import type { ChallengeRow } from "@/hooks/useMatchChallenge";
 import { RecordOutcomeDialog } from "./RecordOutcomeDialog";
 import { AdminOverrideDialog } from "./AdminOverrideDialog";
+import { ChallengeCommentThread } from "@/components/match/ChallengeCommentThread";
+import { ChallengeCommentComposer } from "@/components/match/ChallengeCommentComposer";
+import { ChallengeEvidenceList } from "@/components/match/ChallengeEvidenceList";
 
 const STATUS_LABEL: Record<string, string> = {
   open: "Open",
