@@ -83,7 +83,7 @@ describe("RaiseChallengeDialog — B1–B4", () => {
   });
 
   it("B2: summary < 60 chars blocks submit and makes no network call", async () => {
-    const user = userEvent.setup();
+    // fireEvent only
     render(
       withClient(
         <RaiseChallengeDialog open={true} onOpenChange={vi.fn()} {...baseProps} />,
@@ -94,7 +94,7 @@ describe("RaiseChallengeDialog — B1–B4", () => {
     // Use the first option — the dropdown content renders in a portal
     const opt = await screen.findByText(/Terms disagreement/i);
     fireEvent.click(opt);
-    await user.type(screen.getByTestId("challenge-summary-input"), "too short");
+    fireEvent.change(screen.getByTestId("challenge-summary-input"), { target: { value: "too short" } });
     fireEvent.click(screen.getByTestId("challenge-submit-button"));
     await waitFor(() =>
       expect(screen.getByTestId("challenge-validation-error")).toBeInTheDocument(),
@@ -105,7 +105,7 @@ describe("RaiseChallengeDialog — B1–B4", () => {
   it("B3: valid submit with mocked 200 closes dialog and calls match-challenges/raise", async () => {
     (fetchEdgeFunction as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ ok: true });
     const onOpenChange = vi.fn();
-    const user = userEvent.setup();
+    // fireEvent only
     render(
       withClient(
         <RaiseChallengeDialog open={true} onOpenChange={onOpenChange} {...baseProps} />,
@@ -134,7 +134,7 @@ describe("RaiseChallengeDialog — B1–B4", () => {
       new Error("CHALLENGE_OPEN"),
     );
     const onOpenChange = vi.fn();
-    const user = userEvent.setup();
+    // fireEvent only
     render(
       withClient(
         <RaiseChallengeDialog open={true} onOpenChange={onOpenChange} {...baseProps} />,
