@@ -210,13 +210,13 @@ Deno.serve(async (req) => {
 
     // Smoke probe: verify userA.token is recognised by GoTrue from inside this fn.
     {
-      const probe = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: `Bearer ${userA.token}` } } });
-      const { data: pu, error: pe } = await probe.auth.getUser();
+      const probe = createClient(SUPABASE_URL, ANON_KEY);
+      const { data: pu, error: pe } = await probe.auth.getUser(userA.token);
       record({
-        id: "T0", description: "Smoke: userA token validates against GoTrue from inside harness",
-        route: "auth.getUser()", account_role: "buyer_org_admin",
+        id: "T0", description: "Smoke: userA token validates against GoTrue (auth.getUser(jwt))",
+        route: "auth.getUser(jwt)", account_role: "buyer_org_admin",
         expected: "user resolves with same uid",
-        observed: `uid=${pu?.user?.id ?? "null"} err=${pe?.message ?? "-"} token_len=${userA.token.length} url=${SUPABASE_URL}`,
+        observed: `uid=${pu?.user?.id ?? "null"} err=${pe?.message ?? "-"} token_len=${userA.token.length}`,
         pass: !!pu?.user && pu.user.id === userA.id,
       });
     }
