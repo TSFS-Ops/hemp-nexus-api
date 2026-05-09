@@ -42,6 +42,7 @@ import type { EngagementStatus } from "@/components/match/wizard/DealWizard";
 function MatchDetailsContent() {
   const { matchId } = useParams<{ matchId: string }>();
   const userOrgId = useUserOrg();
+  const { open: openChallenge } = useMatchChallenge(matchId);
   const {
     match,
     loading,
