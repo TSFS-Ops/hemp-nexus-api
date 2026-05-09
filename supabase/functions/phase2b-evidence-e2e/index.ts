@@ -337,31 +337,40 @@ Deno.serve(async (req) => {
     }
 
     // ─── T7 client cannot pick storage path ───────────────────
-    // Schema strips unknown fields; even if client sends `storage_path`,
-    // server must construct its own `<match>/<challenge>/<uuid>-<safe>`.
+    // Schema strips unknown fields; even if client sends `storage_path`/`path`,
+    // server must construct its own `<match>/<challenge>/<uuid>-<safe-filename>`.
+    // Use a benign filename so the assertion can rely solely on path-shape.
     {
       const f = await makeFile("t7");
-      const spoof = "/etc/passwd_or_some_other_match/and_chal/spoof.txt";
+      const spoof = "../../../../etc/passwd";
+      const benignFilename = "t7_benign.txt";
       const r = await callUploadEvidence(userA.token, {
         challenge_id: chOpen!.id,
-        filename: "t7_path_spoof.txt",
+        filename: benignFilename,
         mime_type: "text/plain",
         content_base64: b64(f.bytes),
         sha256: f.sha,
-        storage_path: spoof, // attempted client override
+        storage_path: spoof,
         path: spoof,
       });
-      const path = r.body?.storage_path ?? "";
+      const path: string = r.body?.storage_path ?? "";
+      const segs = path.split("/");
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i;
       const ok = r.status === 201
-        && path.startsWith(`${match!.id}/${chOpen!.id}/`)
+        && segs.length === 3
+        && segs[0] === match!.id
+        && segs[1] === chOpen!.id
+        && uuidRe.test(segs[2])
+        && segs[2].endsWith(benignFilename)
+        && !path.includes("..")
         && !path.includes("etc/passwd")
-        && !path.includes("spoof");
+        && !path.startsWith("/");
       record({
-        id: "T7", description: "Client cannot choose / spoof storage path; server constructs match_id/challenge_id/<uuid>-<safe>",
+        id: "T7", description: "Client cannot choose / spoof storage path; server constructs <match>/<challenge>/<uuid>-<safe-filename>",
         route: "POST /match-challenges/upload-evidence", account_role: "buyer_org_admin",
-        expected: `201 with path starting with ${match!.id}/${chOpen!.id}/`,
+        expected: `201 with shape ${match!.id}/${chOpen!.id}/<uuid>-${benignFilename}`,
         observed: `status=${r.status} path=${path}`,
-        pass: ok, details: { spoof_attempted: spoof, returned: path },
+        pass: ok, details: { spoof_attempted: spoof, returned: path, segs },
       });
     }
 
