@@ -79,7 +79,7 @@ export function AdminOverrideDialog({
     setValidationError(null);
   };
   const handleClose = () => {
-    if (breakGlass.isPending) return;
+    if (overrideMutation.isPending) return;
     reset();
     onOpenChange(false);
   };
@@ -121,7 +121,7 @@ export function AdminOverrideDialog({
     }
 
     try {
-      await breakGlass.mutateAsync({
+      await overrideMutation.mutateAsync({
         match_id: matchId,
         reason_category: reasonCategory,
         internal_approval_reference: approvalRef,
@@ -172,7 +172,7 @@ export function AdminOverrideDialog({
               <Select
                 value={reasonCategory}
                 onValueChange={(v) => setReasonCategory(v as AdminOverrideReasonCategory)}
-                disabled={breakGlass.isPending}
+                disabled={overrideMutation.isPending}
               >
                 <SelectTrigger id="override-category" data-testid="override-category-select">
                   <SelectValue placeholder="Select a governance category" />
@@ -198,7 +198,7 @@ export function AdminOverrideDialog({
                 onChange={(e) => setInternalApprovalReference(e.target.value)}
                 maxLength={APPROVAL_REF_MAX}
                 placeholder="e.g. IZENZO-REV-2026-041"
-                disabled={breakGlass.isPending}
+                disabled={overrideMutation.isPending}
               />
             </div>
 
@@ -216,7 +216,7 @@ export function AdminOverrideDialog({
                 onChange={(e) => setRegulatorReference(e.target.value)}
                 maxLength={REGULATOR_REF_MAX}
                 placeholder="e.g. FCA-REF-2026-09 or leave blank"
-                disabled={breakGlass.isPending}
+                disabled={overrideMutation.isPending}
               />
             </div>
 
@@ -235,7 +235,7 @@ export function AdminOverrideDialog({
                 rows={6}
                 maxLength={REASON_MAX}
                 placeholder="State the operational facts that justify an administrator override."
-                disabled={breakGlass.isPending}
+                disabled={overrideMutation.isPending}
               />
               <p className="text-xs text-muted-foreground">
                 {reason.trim().length} / {REASON_MAX}
@@ -259,7 +259,7 @@ export function AdminOverrideDialog({
             type="button"
             variant="ghost"
             onClick={handleClose}
-            disabled={breakGlass.isPending}
+            disabled={overrideMutation.isPending}
             data-testid="override-cancel-button"
           >
             Cancel
@@ -276,7 +276,7 @@ export function AdminOverrideDialog({
             <LoadingButton
               type="button"
               onClick={handleSubmit}
-              loading={breakGlass.isPending}
+              loading={overrideMutation.isPending}
               loadingText="Recording…"
               data-testid="override-submit-button"
             >
