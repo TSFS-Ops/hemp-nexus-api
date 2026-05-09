@@ -100,14 +100,19 @@ describe("Batch B Phase 3 — atomic_reconfirm_late_acceptance", () => {
     expect(sql).toMatch(/renewed_from_engagement_id/);
   });
 
-  it("does NOT copy expires_at on the child (fresh expiry via column default)", () => {
-    // The INSERT column list must omit expires_at so the column default
-    // (now() + 30 days) applies. A regression that copies expires_at
-    // would carry forward the parent's stale expiry.
-    const insertBlock = sql.match(/INSERT INTO poi_engagements \(([^)]+)\)\s+VALUES/);
+  it("sets the renewed child's expires_at EXPLICITLY to now() + 14 days (Daniel 2026-05-09)", () => {
+    // The renewed child must give the trading partner exactly 14
+    // calendar days to accept/decline. We pin both the column being
+    // present in the INSERT list AND the literal value in the VALUES
+    // clause so a regression to the 30-day column default is loud.
+    const fnBody = sql.match(/CREATE OR REPLACE FUNCTION public\.atomic_reconfirm_late_acceptance[\s\S]+?\$function\$;/);
+    expect(fnBody).toBeTruthy();
+    const insertBlock = fnBody![0].match(/INSERT INTO poi_engagements \(([^)]+)\)\s+VALUES\s*\(([\s\S]+?)\)\s*RETURNING/);
     expect(insertBlock).toBeTruthy();
     const cols = insertBlock![1];
-    expect(cols).not.toMatch(/\bexpires_at\b/);
+    const vals = insertBlock![2];
+    expect(cols).toMatch(/\bexpires_at\b/);
+    expect(vals).toMatch(/now\(\)\s*\+\s*interval\s*'14 days'/);
   });
 
   it("returns the parent to expired and records resolution metadata", () => {
@@ -184,28 +189,25 @@ describe("Batch B Phase 3 — atomic_engagement_transition hard rejections", () 
   });
 });
 
-// ─── Issue 2 — renewed-child expires_at default ───────────────────────
-describe("Batch B Phase 3 — renewed child expires_at default (Issue 2)", () => {
-  it("relies on the verified poi_engagements.expires_at column default (now() + 30 days)", () => {
-    // The Phase 2 migration created the column with NOT NULL and the
-    // default `(now() + '30 days'::interval)` (verified live on
-    // 2026-05-08). The reconfirm RPC therefore omits expires_at on the
-    // renewed child INSERT to receive a fresh 30-day window. This test
-    // pins the patch migration's documented assertion so any future
-    // change to either side is a deliberate, reviewable edit.
+// ─── Issue 2 — renewed-child expires_at is now an EXPLICIT 14-day window
+// (overrides the unchanged 30-day table column default) ───────────────
+describe("Batch B Phase 3 — renewed child expires_at = now() + 14 days (Daniel 2026-05-09)", () => {
+  it("the latest reconfirm-RPC migration sets expires_at = now() + interval '14 days'", () => {
     const sql = (() => {
       const { readFileSync, readdirSync } = require("node:fs") as typeof import("node:fs");
       const { join } = require("node:path") as typeof import("node:path");
       const dir = join(process.cwd(), "supabase", "migrations");
       const files = readdirSync(dir).filter((f: string) => f.endsWith(".sql")).sort();
       const matches = files.filter((f: string) =>
-        readFileSync(join(dir, f), "utf8").includes("Note on Issue 2"),
+        readFileSync(join(dir, f), "utf8").includes("atomic_reconfirm_late_acceptance"),
       );
-      if (!matches.length) throw new Error("Issue 2 note not found in migrations");
+      if (!matches.length) throw new Error("atomic_reconfirm_late_acceptance migration not found");
       return readFileSync(join(dir, matches[matches.length - 1]), "utf8");
     })();
-    expect(sql).toMatch(/now\(\) \+ '30 days'::interval/);
-    expect(sql).toMatch(/NOT NULL/);
+    expect(sql).toMatch(/now\(\)\s*\+\s*interval\s*'14 days'/);
+    // Sanity: the legacy "rely on 30-day default" wording must no longer
+    // be in the active reconfirm migration.
+    expect(sql).not.toMatch(/omits expires_at on the renewed child/);
   });
 });
 
