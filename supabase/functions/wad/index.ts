@@ -962,6 +962,26 @@ Deno.serve(async (req) => {
         throw new ApiException("FORBIDDEN", "Not authorised to seal this WaD", 403);
       }
 
+      // Batch C Phase 3A: WaD seal blocked while a challenge is open on the match.
+      {
+        const matchIdForGuard = (wad as { match_id?: string | null; poi_id?: string | null }).match_id || wad.poi_id;
+        if (matchIdForGuard) {
+          const challengeDecision = await assertNoOpenChallenge(supabase, matchIdForGuard);
+          if (!challengeDecision.allowed) {
+            throw new ApiException(
+              "CHALLENGE_OPEN",
+              challengeDecision.message ?? "Progression paused.",
+              409,
+              {
+                challenge_id: challengeDecision.challengeId,
+                challenge_status: challengeDecision.challengeStatus,
+                raised_at: challengeDecision.raisedAt,
+              },
+            );
+          }
+        }
+      }
+
       // Fetch attestations + documents in parallel
       const [attResult, docResult] = await Promise.all([
         supabase.from("wad_attestations").select("*").eq("wad_id", wadId),
