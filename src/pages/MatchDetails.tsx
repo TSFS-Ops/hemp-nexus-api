@@ -175,6 +175,7 @@ function MatchDetailsContent() {
 
   const isSettled = MatchState.isSettled(match.status);
   const showPrePoiVerification = MatchState.isPrePoi(match.state || match.status);
+  const { open: openChallenge } = useMatchChallenge(matchId);
 
   return (
     <PageContainer size="wide" className="space-y-6">
