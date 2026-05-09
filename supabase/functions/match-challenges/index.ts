@@ -474,10 +474,14 @@ Deno.serve(async (req) => {
         if (!isPlatformAdmin) {
           return err("FORBIDDEN", "Break-glass is restricted to platform admins", 403);
         }
+        const regulatorRef = (parsed.data.regulator_reference ?? "").trim();
         const { data, error: rpcErr } = await admin.rpc("platform_admin_break_glass_progress", {
           p_match_id: parsed.data.match_id,
           p_actor_user_id: userId,
           p_reason: parsed.data.reason,
+          p_reason_category: parsed.data.reason_category ?? null,
+          p_internal_approval_reference: parsed.data.internal_approval_reference ?? null,
+          p_regulator_reference: regulatorRef.length === 0 ? null : regulatorRef,
         });
         if (rpcErr) {
           const msg = rpcErr.message || "";
