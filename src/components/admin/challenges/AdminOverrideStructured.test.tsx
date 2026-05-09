@@ -252,9 +252,16 @@ describe("Phase 3E invariants", () => {
       "src/components/admin/challenges/AdminOverrideDialog.tsx",
       "utf8",
     );
+    // Only inspect user-facing text: strip comments, imports, and identifiers.
     const userFacing = src
       .split("\n")
-      .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"))
+      .filter(
+        (l) =>
+          !l.trim().startsWith("//") &&
+          !l.trim().startsWith("*") &&
+          !/^\s*import\s/.test(l) &&
+          !/useBreakGlassChallenge/.test(l),
+      )
       .join("\n");
     expect(/break[\s-]?glass/i.test(userFacing)).toBe(false);
     for (const banned of [/guilty/i, /liable/i, /\bfraud/i, /upheld/i, /winner/i, /\bloser/i]) {
