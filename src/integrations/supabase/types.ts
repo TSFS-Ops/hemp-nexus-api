@@ -7837,6 +7837,10 @@ export type Database = {
         Args: { _org_id: string; _role: string; _user_id: string }
         Returns: boolean
       }
+      has_open_match_challenge: {
+        Args: { p_match_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -7879,6 +7883,35 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      platform_admin_break_glass_progress: {
+        Args: { p_actor_user_id: string; p_match_id: string; p_reason: string }
+        Returns: {
+          break_glass_override_used: boolean
+          closed_at: string | null
+          closed_by_user_id: string | null
+          created_at: string
+          id: string
+          match_id: string
+          org_id: string
+          outcome_code: string | null
+          outcome_summary: string | null
+          raised_by_org_id: string | null
+          raised_by_role: string
+          raised_by_user_id: string
+          rating_impact_emitted: boolean
+          status: string
+          subject_code: string
+          summary: string
+          under_review_at: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "match_challenges"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       prune_webhook_replay_guard: { Args: never; Returns: number }
       purge_old_email_send_log: { Args: never; Returns: number }

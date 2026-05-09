@@ -5,6 +5,7 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
+import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
@@ -458,6 +459,20 @@ Deno.serve(async (req: Request) => {
       // Block when the current engagement is anything other than `accepted`
       // (incl. late-acceptance pending reconfirmation, or a renewed
       // pending child superseding a historical accepted row).
+      // Batch C Phase 2: block collapse/settlement while a challenge is open.
+      const challengeDecision = await assertNoOpenChallenge(adminClient, match_id);
+      if (!challengeDecision.allowed) {
+        throw new ApiException(
+          challengeDecision.code!,
+          challengeDecision.message!,
+          409,
+          {
+            challenge_id: challengeDecision.challengeId,
+            challenge_status: challengeDecision.challengeStatus,
+          },
+        );
+      }
+
       const engDecision = await assertEngagementAllowsProgression(adminClient, match_id);
       if (!engDecision.allowed) {
         throw new ApiException(
