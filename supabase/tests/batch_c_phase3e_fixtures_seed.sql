@@ -176,23 +176,29 @@ INSERT INTO public.match_challenges (
 
 -- Mandatory audit row for the override fixture.
 -- Uses the existing public.audit_logs table; no schema change.
-INSERT INTO public.audit_logs (action, actor_id, target_type, target_id, metadata, created_at)
+-- Carries the structured Phase 3E governance fields inside metadata.
+INSERT INTO public.audit_logs (org_id, actor_user_id, action, entity_type, entity_id, metadata, created_at)
 SELECT
-  'challenge.admin_override_recorded',
-  '47fffafa-ae53-4e63-b273-e0f4950bd6db',
+  '26acc60f-fdc0-491a-bfa9-bb94404646d4'::uuid,
+  '47fffafa-ae53-4e63-b273-e0f4950bd6db'::uuid,
+  'challenge.break_glass_override',
   'match_challenge',
   'c03e0006-0006-0006-0006-000000000006',
   jsonb_build_object(
     'match_id', '0e3e0006-0006-0006-0006-000000000006',
     'fixture', 'F-C-ADMIN-OVERRIDE',
     'outcome_code', 'admin_override_recorded',
-    'break_glass_override_used', true
+    'break_glass_override_used', true,
+    'reason_category', 'documentation_corrected_commercial_confirmation_received',
+    'internal_approval_reference', 'IZENZO-REV-2026-041',
+    'regulator_reference', 'Not applicable',
+    'written_reason', 'Demo: counterparty unresponsive for 14 days; platform admin reviewed the operational facts and closed the Challenge under override authority so the match may proceed.'
   ),
   now() - interval '1 hour'
 WHERE NOT EXISTS (
   SELECT 1 FROM public.audit_logs
-  WHERE action = 'challenge.admin_override_recorded'
-    AND target_id = 'c03e0006-0006-0006-0006-000000000006'
+  WHERE action = 'challenge.break_glass_override'
+    AND entity_id = 'c03e0006-0006-0006-0006-000000000006'
 );
 
 COMMIT;
