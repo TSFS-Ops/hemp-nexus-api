@@ -34,6 +34,17 @@ export interface ChallengePermissions {
   authorRole: "platform_admin" | "buyer_org_admin" | "seller_org_admin" | null;
 }
 
+export type ChallengeStatusForPerms =
+  | "open"
+  | "under_review"
+  | "outcome_recorded"
+  | "withdrawn"
+  | "closed_no_action"
+  | null
+  | undefined;
+
+const ACTIVE_STATUSES = new Set(["open", "under_review"]);
+
 export interface ChallengePermissionsInput {
   match: {
     org_id: string;
@@ -48,43 +59,77 @@ export interface ChallengePermissionsInput {
   isOrgAdmin?: boolean;
   /** Whether the viewer is authenticated. Defaults to AuthContext session. */
   isAuthenticated?: boolean;
+  /**
+   * Phase 3D: status of the challenge currently being viewed (if any).
+   * Required for `canComment` / `canUploadEvidence` to be true. Pass the
+   * status of the latest visible challenge.
+   */
+  challengeStatus?: ChallengeStatusForPerms;
 }
+
+const DENY: ChallengePermissions = {
+  canViewCard: false,
+  canRaise: false,
+  canSeeBanner: false,
+  canComment: false,
+  canUploadEvidence: false,
+  authorRole: null,
+};
 
 export function deriveChallengePermissions(
   input: ChallengePermissionsInput,
 ): ChallengePermissions {
-  const { match, viewerOrgId, isPlatformAdmin, isOrgAdmin, isAuthenticated } = input;
+  const {
+    match,
+    viewerOrgId,
+    isPlatformAdmin,
+    isOrgAdmin,
+    isAuthenticated,
+    challengeStatus,
+  } = input;
 
-  if (!isAuthenticated) {
-    return { canViewCard: false, canRaise: false, canSeeBanner: false };
-  }
+  if (!isAuthenticated) return DENY;
+
+  const isActive = !!challengeStatus && ACTIVE_STATUSES.has(challengeStatus);
 
   if (isPlatformAdmin) {
-    return { canViewCard: true, canRaise: true, canSeeBanner: true };
+    return {
+      canViewCard: true,
+      canRaise: true,
+      canSeeBanner: true,
+      canComment: isActive,
+      canUploadEvidence: isActive,
+      authorRole: "platform_admin",
+    };
   }
 
-  if (!match) {
-    return { canViewCard: false, canRaise: false, canSeeBanner: false };
-  }
+  if (!match) return DENY;
 
   const role = getMatchRole(viewerOrgId ?? null, match);
-  // "creator" without a buyer/seller slot is a fallback — treat like a party
-  // for view but not for raise (raise requires party org_admin).
   const isParty = role === "buyer" || role === "seller";
 
-  if (!isParty && role !== "creator") {
-    return { canViewCard: false, canRaise: false, canSeeBanner: false };
-  }
+  if (!isParty && role !== "creator") return DENY;
+
+  const partyOrgAdmin = !!isOrgAdmin && isParty;
+  const authorRole: ChallengePermissions["authorRole"] = partyOrgAdmin
+    ? role === "buyer"
+      ? "buyer_org_admin"
+      : "seller_org_admin"
+    : null;
 
   return {
     canViewCard: true,
-    canRaise: !!isOrgAdmin && isParty,
+    canRaise: partyOrgAdmin,
     canSeeBanner: true,
+    canComment: partyOrgAdmin && isActive,
+    canUploadEvidence: partyOrgAdmin && isActive,
+    authorRole,
   };
 }
 
 export function useChallengePermissions(
   match: ChallengePermissionsInput["match"],
+  challengeStatus?: ChallengeStatusForPerms,
 ): ChallengePermissions {
   const { session, isPlatformAdmin, isOrgAdmin } = useAuth();
   const viewerOrgId = useUserOrg();
@@ -97,7 +142,16 @@ export function useChallengePermissions(
         isPlatformAdmin,
         isOrgAdmin,
         isAuthenticated: !!session?.user?.id,
+        challengeStatus,
       }),
-    [match, viewerOrgId, isPlatformAdmin, isOrgAdmin, session?.user?.id],
+    [
+      match,
+      viewerOrgId,
+      isPlatformAdmin,
+      isOrgAdmin,
+      session?.user?.id,
+      challengeStatus,
+    ],
   );
 }
+
