@@ -87,19 +87,26 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "POST only" }), { status: 405, headers: baseHeaders });
   }
 
-  // Caller must be platform_admin
-  const authz = req.headers.get("authorization");
-  if (!authz?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "UNAUTHORIZED" }), { status: 401, headers: baseHeaders });
-  }
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authz } } });
-  const { data: u } = await userClient.auth.getUser();
-  if (!u?.user) return new Response(JSON.stringify({ error: "UNAUTHORIZED" }), { status: 401, headers: baseHeaders });
-
+  // Caller must be platform_admin OR present a valid INTERNAL_CRON_KEY.
+  const internalKey = Deno.env.get("INTERNAL_CRON_KEY") ?? "";
+  const presented = req.headers.get("x-internal-key") ?? "";
   const admin: SupabaseClient = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const { data: isAdminCaller } = await admin.rpc("is_admin", { user_id: u.user.id });
-  if (!isAdminCaller) {
-    return new Response(JSON.stringify({ error: "FORBIDDEN", message: "platform_admin required" }), { status: 403, headers: baseHeaders });
+  let authorized = false;
+  if (internalKey && presented && presented === internalKey) {
+    authorized = true;
+  } else {
+    const authz = req.headers.get("authorization");
+    if (authz?.startsWith("Bearer ")) {
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authz } } });
+      const { data: u } = await userClient.auth.getUser();
+      if (u?.user) {
+        const { data: isAdminCaller } = await admin.rpc("is_admin", { user_id: u.user.id });
+        if (isAdminCaller) authorized = true;
+      }
+    }
+  }
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "FORBIDDEN", message: "platform_admin or INTERNAL_CRON_KEY required" }), { status: 403, headers: baseHeaders });
   }
 
   let payload: any;
