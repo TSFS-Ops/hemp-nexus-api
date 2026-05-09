@@ -189,28 +189,25 @@ describe("Batch B Phase 3 — atomic_engagement_transition hard rejections", () 
   });
 });
 
-// ─── Issue 2 — renewed-child expires_at default ───────────────────────
-describe("Batch B Phase 3 — renewed child expires_at default (Issue 2)", () => {
-  it("relies on the verified poi_engagements.expires_at column default (now() + 30 days)", () => {
-    // The Phase 2 migration created the column with NOT NULL and the
-    // default `(now() + '30 days'::interval)` (verified live on
-    // 2026-05-08). The reconfirm RPC therefore omits expires_at on the
-    // renewed child INSERT to receive a fresh 30-day window. This test
-    // pins the patch migration's documented assertion so any future
-    // change to either side is a deliberate, reviewable edit.
+// ─── Issue 2 — renewed-child expires_at is now an EXPLICIT 14-day window
+// (overrides the unchanged 30-day table column default) ───────────────
+describe("Batch B Phase 3 — renewed child expires_at = now() + 14 days (Daniel 2026-05-09)", () => {
+  it("the latest reconfirm-RPC migration sets expires_at = now() + interval '14 days'", () => {
     const sql = (() => {
       const { readFileSync, readdirSync } = require("node:fs") as typeof import("node:fs");
       const { join } = require("node:path") as typeof import("node:path");
       const dir = join(process.cwd(), "supabase", "migrations");
       const files = readdirSync(dir).filter((f: string) => f.endsWith(".sql")).sort();
       const matches = files.filter((f: string) =>
-        readFileSync(join(dir, f), "utf8").includes("Note on Issue 2"),
+        readFileSync(join(dir, f), "utf8").includes("atomic_reconfirm_late_acceptance"),
       );
-      if (!matches.length) throw new Error("Issue 2 note not found in migrations");
+      if (!matches.length) throw new Error("atomic_reconfirm_late_acceptance migration not found");
       return readFileSync(join(dir, matches[matches.length - 1]), "utf8");
     })();
-    expect(sql).toMatch(/now\(\) \+ '30 days'::interval/);
-    expect(sql).toMatch(/NOT NULL/);
+    expect(sql).toMatch(/now\(\)\s*\+\s*interval\s*'14 days'/);
+    // Sanity: the legacy "rely on 30-day default" wording must no longer
+    // be in the active reconfirm migration.
+    expect(sql).not.toMatch(/omits expires_at on the renewed child/);
   });
 });
 
