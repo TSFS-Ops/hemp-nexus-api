@@ -8,16 +8,6 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-
-// jsdom polyfill — Radix Select calls scrollIntoView on mount
-if (!Element.prototype.scrollIntoView) {
-  Element.prototype.scrollIntoView = function () {};
-}
-// Radix uses pointer-capture APIs not implemented by jsdom
-if (!Element.prototype.hasPointerCapture) {
-  // @ts-expect-error jsdom polyfill
-  Element.prototype.hasPointerCapture = () => false;
-}
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChallengeStatusCard } from "./ChallengeStatusCard";
 import { ProgressionPausedBanner } from "./ProgressionPausedBanner";
