@@ -225,8 +225,18 @@ export function PendingEngagementSection({ engagement, match, isInitiator }: Pro
   if (!engagement) return null;
 
   // Hide once fully resolved AND linked — other surfaces own that story.
+  // Batch B Phase 9 F-B4 exception: when an expired row carries a recorded
+  // late acceptance OR a `late_acceptance_resolution`, this card is the
+  // ONLY surface that explains "initiator did not reconfirm / late
+  // acceptance remains recorded / original engagement remains expired",
+  // so we must keep it visible even though the engagement is terminal and
+  // the counterparty is linked.
   const terminal = isEngagementTerminal(engagement.engagement_status);
-  if (terminal && engagement.counterparty_org_id) return null;
+  const hasLateAcceptanceHistory =
+    engagement.counterparty_response === "accepted_after_expiry" ||
+    !!engagement.late_acceptance_recorded_at ||
+    !!engagement.late_acceptance_resolution;
+  if (terminal && engagement.counterparty_org_id && !hasLateAcceptanceHistory) return null;
 
   // Batch B Phase 5 + Phase 8.5b — overlay wording-engine output for
   // late-acceptance semantics so an expired row that already carries a
