@@ -43,6 +43,20 @@ export function humaniseEngagementError(input: unknown): HumanisedEngagementErro
   const withRid = <T extends HumanisedEngagementError>(e: T): T =>
     requestId ? { ...e, requestId } : e;
 
+  // ── 0. D2a email-change-after-outreach refusal ──
+  // The engagements PATCH refuses counterparty_email edits once outreach
+  // logs exist; the only safe path is the cancel-for-email-change endpoint
+  // followed by a replacement engagement.
+  if (/EMAIL_CHANGE_REQUIRES_CANCEL_RECREATE/i.test(raw)) {
+    return withRid({
+      headline:
+        "Email cannot be edited after outreach has started.",
+      hint:
+        "Use \"Cancel for email change\" on this engagement and create a replacement with the corrected email.",
+      technical: raw,
+    });
+  }
+
   // ── 1. Known transition rejections from atomic_engagement_transition ──
   // The RPC returns strings of the form `invalid_target_status:<status>`.
   const targetMatch = raw.match(/invalid_target_status:([a-z_]+)/i);
