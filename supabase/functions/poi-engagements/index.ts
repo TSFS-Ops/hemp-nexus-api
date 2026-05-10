@@ -1114,7 +1114,57 @@ Deno.serve(async (req) => {
         // Schema already trims + lowercases, but normalise defensively in case
         // the schema is relaxed in future.
         const normalisedEmail = parsed.data.counterparty_email.trim().toLowerCase();
+        const prevEmailNorm = ((current as { counterparty_email?: string | null }).counterparty_email ?? "")
+          .toString().trim().toLowerCase();
+
+        // ── D2a — refuse unsafe in-place email changes ──
+        // Once outreach has begun (status past 'pending') OR any prior
+        // contact_attempt has been logged, an admin must use the
+        // cancel-for-email-change + recreate flow rather than mutate the
+        // recipient on the live row. This protects the immutable outreach
+        // history from "the email we contacted" silently changing.
+        if (normalisedEmail !== prevEmailNorm) {
+          const isPendingStatus = current.engagement_status === "pending";
+          let hasContactAttempt = false;
+          if (isPendingStatus) {
+            const { count } = await supabase
+              .from("engagement_outreach_logs")
+              .select("id", { count: "exact", head: true })
+              .eq("engagement_id", engagementId)
+              .eq("entry_type", "contact_attempt");
+            hasContactAttempt = (count ?? 0) > 0;
+          }
+          if (!isPendingStatus || hasContactAttempt) {
+            try {
+              await supabase.from("audit_logs").insert({
+                org_id: current.org_id,
+                actor_user_id: authCtx.userId,
+                action: "engagement.email_change_refused",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  reason: !isPendingStatus
+                    ? "engagement_not_pending"
+                    : "contact_attempt_exists",
+                  current_status: current.engagement_status,
+                  previous_email: prevEmailNorm || null,
+                  attempted_email: normalisedEmail,
+                  request_id: requestId,
+                },
+              });
+            } catch (e) {
+              console.warn(`[${requestId}] email_change_refused audit insert failed (non-fatal):`, e);
+            }
+            throw new ApiException(
+              "EMAIL_CHANGE_REQUIRES_CANCEL_RECREATE",
+              "This engagement has already been used for outreach. To change the counterparty email, cancel this engagement and create a replacement.",
+              409,
+            );
+          }
+        }
+
         updates.counterparty_email = normalisedEmail;
+
 
         // ── Auto-resolve email → registered org ──
         // If the supplied counterparty email already maps to a profile on the
