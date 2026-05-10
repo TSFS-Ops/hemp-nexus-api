@@ -132,6 +132,10 @@ row → click **Review**.
 The platform has formally picked up the concern. Both parties can see
 that it is being looked at. The match is still paused.
 
+**Commercial question to answer:**
+*Is it clear to both parties that the platform has taken ownership of
+the review and that the match remains paused while that is happening?*
+
 ---
 
 ## Walkthrough 3 — Outcome Recorded
