@@ -259,6 +259,10 @@ Only organisation administrators and the platform can change the state
 of a Challenge. Ordinary members are kept informed but cannot mutate
 the record.
 
+**Commercial question to answer:**
+*Is the read-only experience for ordinary members the right balance
+between transparency and control?*
+
 ---
 
 End of walkthrough.
