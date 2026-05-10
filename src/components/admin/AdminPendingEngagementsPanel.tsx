@@ -1648,6 +1648,28 @@ export function AdminPendingEngagementsPanel() {
                                 </Button>
                               </div>
                             )}
+                            {/* D3 — "Why this is blocked / what to do next" hint per row. */}
+                            {(() => {
+                              const cs = getEngagementContactState(e);
+                              const reason = pickAdminEngagementBlockedReason({
+                                operational_state: e.operational_state ?? null,
+                                binding_candidates: e.binding_candidates ?? null,
+                                binding_resolution: e.binding_resolution ?? null,
+                                engagement_status: e.engagement_status ?? null,
+                                contact_blocked: isOutreachBlocked(cs),
+                              });
+                              if (!reason) return null;
+                              const copy = ADMIN_ENGAGEMENT_BLOCKED_COPY[reason];
+                              return (
+                                <span
+                                  className="text-[10px] text-slate-600 italic ml-1"
+                                  data-blocked-reason={reason}
+                                  title={copy.next}
+                                >
+                                  {copy.next}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
