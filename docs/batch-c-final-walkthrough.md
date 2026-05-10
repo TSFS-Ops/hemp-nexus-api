@@ -179,6 +179,10 @@ commercially safe and free of blame language?*
 The concern was reviewed and did not need any action. The record is
 preserved so we know it was looked at, even though nothing changed.
 
+**Commercial question to answer:**
+*Is "Closed — no action required" a clear, non-dismissive way to record
+a Challenge that did not warrant any change?*
+
 ---
 
 ## Walkthrough 5 — Withdrawn
