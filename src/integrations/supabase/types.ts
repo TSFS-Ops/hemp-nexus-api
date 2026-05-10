@@ -4628,6 +4628,11 @@ export type Database = {
       poi_engagements: {
         Row: {
           admin_notes: string | null
+          binding_candidates: Json | null
+          binding_resolution: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
+          cancelled_reason: string | null
           contact_date: string | null
           contact_method: string | null
           contact_name: string | null
@@ -4638,6 +4643,10 @@ export type Database = {
           counterparty_response: string | null
           counterparty_type: Database["public"]["Enums"]["counterparty_type"]
           created_at: string
+          dispute_metadata: Json | null
+          dispute_reason: string | null
+          disputed_at: string | null
+          disputed_by_token_hash: string | null
           engagement_status: Database["public"]["Enums"]["engagement_status"]
           expires_at: string
           id: string
@@ -4652,6 +4661,7 @@ export type Database = {
           reconfirmed_by_user_id: string | null
           renewed_engagement_id: string | null
           renewed_from_engagement_id: string | null
+          replacement_engagement_id: string | null
           responded_at: string | null
           sla_reminder_count: number
           sla_reminder_sent_at: string | null
@@ -4663,6 +4673,11 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          binding_candidates?: Json | null
+          binding_resolution?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
+          cancelled_reason?: string | null
           contact_date?: string | null
           contact_method?: string | null
           contact_name?: string | null
@@ -4673,6 +4688,10 @@ export type Database = {
           counterparty_response?: string | null
           counterparty_type?: Database["public"]["Enums"]["counterparty_type"]
           created_at?: string
+          dispute_metadata?: Json | null
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          disputed_by_token_hash?: string | null
           engagement_status?: Database["public"]["Enums"]["engagement_status"]
           expires_at?: string
           id?: string
@@ -4687,6 +4706,7 @@ export type Database = {
           reconfirmed_by_user_id?: string | null
           renewed_engagement_id?: string | null
           renewed_from_engagement_id?: string | null
+          replacement_engagement_id?: string | null
           responded_at?: string | null
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
@@ -4698,6 +4718,11 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          binding_candidates?: Json | null
+          binding_resolution?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
+          cancelled_reason?: string | null
           contact_date?: string | null
           contact_method?: string | null
           contact_name?: string | null
@@ -4708,6 +4733,10 @@ export type Database = {
           counterparty_response?: string | null
           counterparty_type?: Database["public"]["Enums"]["counterparty_type"]
           created_at?: string
+          dispute_metadata?: Json | null
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          disputed_by_token_hash?: string | null
           engagement_status?: Database["public"]["Enums"]["engagement_status"]
           expires_at?: string
           id?: string
@@ -4722,6 +4751,7 @@ export type Database = {
           reconfirmed_by_user_id?: string | null
           renewed_engagement_id?: string | null
           renewed_from_engagement_id?: string | null
+          replacement_engagement_id?: string | null
           responded_at?: string | null
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
@@ -4784,6 +4814,20 @@ export type Database = {
           {
             foreignKeyName: "poi_engagements_renewed_from_engagement_id_fkey"
             columns: ["renewed_from_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "poi_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_replacement_fk"
+            columns: ["replacement_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_replacement_fk"
+            columns: ["replacement_engagement_id"]
             isOneToOne: false
             referencedRelation: "poi_engagements"
             referencedColumns: ["id"]
@@ -8087,6 +8131,8 @@ export type Database = {
         | "declined"
         | "expired"
         | "late_acceptance_pending_initiator_reconfirmation"
+        | "cancelled_email_change"
+        | "disputed_being_named"
       gate_position: "entry" | "poi_mint" | "wad_only"
       revenue_notification_status: "sent" | "failed" | "skipped"
       signal_type: "buyer" | "seller"
@@ -8241,6 +8287,8 @@ export const Constants = {
         "declined",
         "expired",
         "late_acceptance_pending_initiator_reconfirmation",
+        "cancelled_email_change",
+        "disputed_being_named",
       ],
       gate_position: ["entry", "poi_mint", "wad_only"],
       revenue_notification_status: ["sent", "failed", "skipped"],
