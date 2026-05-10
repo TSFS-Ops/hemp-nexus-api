@@ -2227,6 +2227,22 @@ export function AdminPendingEngagementsPanel() {
         onClose={() => setBindingReviewFor(null)}
         onResolved={() => fetchEngagements()}
       />
+
+      {/* D3 — Record dispute dialog (admin_report or counterparty_token). */}
+      <DisputeEngagementDialog
+        open={!!disputeFor}
+        engagement={disputeFor}
+        onClose={() => setDisputeFor(null)}
+        onResolved={() => fetchEngagements()}
+      />
+
+      {/* D3 — Cancel-for-email-change dialog. */}
+      <CancelForEmailChangeDialog
+        open={!!cancelEmailFor}
+        engagement={cancelEmailFor}
+        onClose={() => setCancelEmailFor(null)}
+        onResolved={() => fetchEngagements()}
+      />
     </div>
   );
 }
