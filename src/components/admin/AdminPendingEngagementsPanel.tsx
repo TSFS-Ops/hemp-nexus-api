@@ -200,6 +200,8 @@ const STATUS_STYLES: Record<string, string> = {
   // does NOT progress the workflow until the initiator reconfirms.
   late_acceptance_pending_initiator_reconfirmation:
     "bg-amber-50 text-amber-800 border-amber-300",
+  disputed_being_named: "bg-rose-50 text-rose-800 border-rose-300",
+  cancelled_email_change: "bg-slate-100 text-slate-600 border-slate-300",
 };
 
 // Human-readable labels for engagement status. The DB enum value
@@ -221,6 +223,8 @@ const STATUS_LABELS: Record<string, string> = {
   expired: "Expired",
   late_acceptance_pending_initiator_reconfirmation:
     "Late acceptance — awaiting initiator reconfirmation",
+  disputed_being_named: "Disputed — being named",
+  cancelled_email_change: "Cancelled (email change)",
 };
 
 // D-05: the "pending" tab is preserved as a value for backwards-compatible
