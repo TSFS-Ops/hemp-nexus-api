@@ -14,7 +14,11 @@ export type EngagementGuardCode =
   | "ENGAGEMENT_PENDING_RENEWED_ACCEPTANCE"
   | "LATE_ACCEPTANCE_PENDING_INITIATOR_RECONFIRMATION"
   | "ENGAGEMENT_EXPIRED"
-  | "ENGAGEMENT_DECLINED";
+  | "ENGAGEMENT_DECLINED"
+  // D2a additions:
+  | "DISPUTED_BEING_NAMED"
+  | "BINDING_REVIEW_PENDING"
+  | "CANCELLED_EMAIL_CHANGE";
 
 export interface EngagementGuardDecision {
   allowed: boolean;
@@ -30,6 +34,54 @@ const PRE_ACCEPTANCE_STATUSES = new Set([
   "contacted",
 ]);
 
+function d2aBlockForRow(
+  row: { engagement_status: string } & Record<string, unknown>,
+  hasHistorical: boolean,
+): EngagementGuardDecision | null {
+  const status = row.engagement_status;
+
+  if (status === "disputed_being_named") {
+    return {
+      allowed: false,
+      code: "DISPUTED_BEING_NAMED",
+      message:
+        "This engagement has been recorded as disputed by the named counterparty. Workflow progression is blocked until the dispute is resolved.",
+      currentStatus: status,
+      hasHistorical,
+    };
+  }
+
+  if (status === "cancelled_email_change") {
+    return {
+      allowed: false,
+      code: "CANCELLED_EMAIL_CHANGE",
+      message:
+        "The previous engagement was cancelled because the counterparty email needed to change. A replacement engagement must be created before progression.",
+      currentStatus: status,
+      hasHistorical,
+    };
+  }
+
+  const operationalState = row.operational_state as string | null | undefined;
+  const bindingCandidates = row.binding_candidates as unknown;
+  const bindingResolution = row.binding_resolution as string | null | undefined;
+  const bindingPending =
+    operationalState === "binding_review_required" ||
+    (bindingCandidates != null && bindingResolution == null);
+  if (bindingPending) {
+    return {
+      allowed: false,
+      code: "BINDING_REVIEW_PENDING",
+      message:
+        "Counterparty contact requires a binding review (multiple candidate identities or a shared mailbox). Workflow progression is blocked until an admin resolves the binding.",
+      currentStatus: status,
+      hasHistorical,
+    };
+  }
+
+  return null;
+}
+
 export function decideEngagementProgression<R extends EngagementRow>(
   envelope: {
     current_engagement: R | null;
@@ -41,6 +93,16 @@ export function decideEngagementProgression<R extends EngagementRow>(
   const hasHistorical = !!historical;
 
   if (!current) {
+    if (historical?.engagement_status === "cancelled_email_change") {
+      return {
+        allowed: false,
+        code: "CANCELLED_EMAIL_CHANGE",
+        message:
+          "The previous engagement was cancelled because the counterparty email needed to change. A replacement engagement must be created before progression.",
+        currentStatus: null,
+        hasHistorical,
+      };
+    }
     if (historical?.engagement_status === "expired") {
       return {
         allowed: false,
@@ -70,6 +132,9 @@ export function decideEngagementProgression<R extends EngagementRow>(
       hasHistorical,
     };
   }
+
+  const d2aBlock = d2aBlockForRow(current as never, hasHistorical);
+  if (d2aBlock) return d2aBlock;
 
   const status = current.engagement_status;
 
