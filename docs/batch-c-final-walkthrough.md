@@ -243,12 +243,16 @@ a Challenge that did not warrant any change?*
 
 ## Walkthrough 5 — Withdrawn
 
-**Sign in as:** buyer org admin (`trade@izenzo.co.za`)
-*or* platform admin to view.
+**Party-side view — sign in as:** buyer org admin
+(`trade@izenzo.co.za`) and open *Demo · Withdrawn* from the match
+list.
 
-**Open:** *Demo · Withdrawn*.
+**Platform-admin view — sign in as:** platform admin
+(`james@izenzo.co.za`), go to Platform HQ → **Disputes** →
+**Challenges** sub-tab, and open the *Demo · Withdrawn* row → click
+**Review**.
 
-**Expect to see:**
+**Expect to see (either view):**
 - the Challenge in a terminal state of **Withdrawn**;
 - the original subject, summary, and any comments preserved;
 - the match unpaused.
@@ -268,7 +272,10 @@ realises the concern is no longer valid?*
 
 **Sign in as:** platform admin (`james@izenzo.co.za`).
 
-**Open:** *Demo · Admin override* → **Review** drawer.
+**Go to:** Platform HQ → **Disputes** → **Challenges** sub-tab.
+
+**Open:** the *Demo · Admin override* row in the queue → click
+**Review** to open the review drawer.
 
 **Expect to see:**
 - the Challenge in a terminal state with outcome
