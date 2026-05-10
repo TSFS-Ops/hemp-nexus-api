@@ -1545,7 +1545,305 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── POST /poi-engagements/:engagementId/reconfirm — Initiator reconfirms a late acceptance ──
+    // ── POST /poi-engagements/:id/dispute — Admin records a dispute ──
+    // D2a (Option C): the named counterparty has told Izenzo (via the
+    // tokenised link OR via an out-of-band channel like phone/email) that
+    // they are not the right counterparty. Two truthful sources are
+    // supported:
+    //   • dispute_source='counterparty_token' → token_hash REQUIRED
+    //   • dispute_source='admin_report'       → token_hash MAY be omitted
+    // The CHECK constraint poi_engagements_dispute_required_fields
+    // enforces both shapes server-side; this endpoint mirrors them and
+    // refuses inconsistent payloads BEFORE the UPDATE.
+    if (req.method === "POST" && engagementId && parts[1] === "dispute") {
+      requireRole(authCtx, "platform_admin");
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
+      }
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `POST /poi-engagements/${engagementId}/dispute`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
+      const DisputeSchema = z.object({
+        reason: z.string().trim().min(10).max(1000),
+        dispute_source: z.enum(["counterparty_token", "admin_report"]),
+        token_hash: z.string().trim().min(1).max(256).optional().nullable(),
+      }).superRefine((val, ctx) => {
+        if (val.dispute_source === "counterparty_token") {
+          if (!val.token_hash || val.token_hash.trim().length === 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["token_hash"],
+              message: "token_hash is required when dispute_source='counterparty_token'",
+            });
+          }
+        }
+      });
+      const body = await req.json().catch(() => ({}));
+      const parsed = DisputeSchema.safeParse(body);
+      if (!parsed.success) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          JSON.stringify(parsed.error.flatten().fieldErrors),
+          400,
+        );
+      }
+
+      const { data: current, error: fetchErr } = await supabase
+        .from("poi_engagements")
+        .select("*")
+        .eq("id", engagementId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+      if (!current) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+      if (current.engagement_status === "disputed_being_named") {
+        throw new ApiException(
+          "ALREADY_DISPUTED",
+          "This engagement has already been recorded as disputed.",
+          409,
+        );
+      }
+
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
+        .maybeSingle();
+
+      const nowIso = new Date().toISOString();
+      const tokenHash =
+        parsed.data.dispute_source === "counterparty_token"
+          ? parsed.data.token_hash!.trim()
+          : null;
+
+      const { data: updated, error: updErr } = await supabase
+        .from("poi_engagements")
+        .update({
+          engagement_status: "disputed_being_named",
+          operational_state: "disputed_being_named",
+          operational_state_set_by: authCtx.userId,
+          operational_state_set_at: nowIso,
+          disputed_at: nowIso,
+          dispute_source: parsed.data.dispute_source,
+          disputed_by_token_hash: tokenHash,
+          dispute_reason: parsed.data.reason,
+          dispute_metadata: {
+            previous_status: current.engagement_status,
+            actor_user_id: authCtx.userId,
+            source: parsed.data.dispute_source,
+            recorded_at: nowIso,
+            request_id: requestId,
+          },
+        })
+        .eq("id", engagementId)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+
+      try {
+        await supabase.from("engagement_outreach_logs").insert({
+          engagement_id: engagementId,
+          actor_type: "admin",
+          admin_user_id: authCtx.userId,
+          admin_email: adminProfile?.email ?? "unknown",
+          admin_name: adminProfile?.full_name ?? null,
+          previous_status: current.engagement_status,
+          new_status: "disputed_being_named",
+          entry_type: "dispute_raised",
+          notes: JSON.stringify({
+            event: "dispute_raised",
+            dispute_source: parsed.data.dispute_source,
+            has_token_hash: !!tokenHash,
+            reason: parsed.data.reason,
+            request_id: requestId,
+          }),
+        });
+      } catch (logErr) {
+        console.warn(`[${requestId}] dispute_raised log insert failed (non-fatal):`, logErr);
+      }
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: "engagement.dispute_raised",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            dispute_source: parsed.data.dispute_source,
+            has_token_hash: !!tokenHash,
+            previous_status: current.engagement_status,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(`[${requestId}] dispute audit insert failed (non-fatal):`, e);
+      }
+
+      const responseBody = { engagement: updated };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── POST /poi-engagements/:id/cancel-for-email-change — Admin cancels ──
+    // D2a: when the recorded counterparty email turns out to be wrong and
+    // outreach has already begun (so PATCH /counterparty_email is refused),
+    // the only safe path is to cancel the live engagement and create a
+    // replacement. This endpoint performs the cancel half only —
+    // replacement creation is intentionally out of scope for D2a.
+    if (req.method === "POST" && engagementId && parts[1] === "cancel-for-email-change") {
+      requireRole(authCtx, "platform_admin");
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
+      }
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `POST /poi-engagements/${engagementId}/cancel-for-email-change`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
+      const CancelSchema = z.object({
+        new_email: z
+          .string()
+          .trim()
+          .toLowerCase()
+          .min(3)
+          .max(254)
+          .email(),
+        reason: z.string().trim().max(1000).optional(),
+      });
+      const body = await req.json().catch(() => ({}));
+      const parsed = CancelSchema.safeParse(body);
+      if (!parsed.success) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          JSON.stringify(parsed.error.flatten().fieldErrors),
+          400,
+        );
+      }
+
+      const { data: current, error: fetchErr } = await supabase
+        .from("poi_engagements")
+        .select("*")
+        .eq("id", engagementId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+      if (!current) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+      if (current.engagement_status === "cancelled_email_change") {
+        throw new ApiException(
+          "ALREADY_CANCELLED",
+          "This engagement has already been cancelled for an email change.",
+          409,
+        );
+      }
+
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
+        .maybeSingle();
+
+      const nowIso = new Date().toISOString();
+      const oldEmail = ((current as { counterparty_email?: string | null }).counterparty_email ?? "")
+        .toString().trim().toLowerCase() || null;
+
+      // Satisfy poi_engagements_cancellation_required_fields:
+      //   cancelled_at + cancelled_reason (non-empty) + cancelled_by_user_id
+      const { data: updated, error: updErr } = await supabase
+        .from("poi_engagements")
+        .update({
+          engagement_status: "cancelled_email_change",
+          operational_state: "cancelled_for_email_change",
+          operational_state_set_by: authCtx.userId,
+          operational_state_set_at: nowIso,
+          cancelled_at: nowIso,
+          cancelled_reason: "email_change",
+          cancelled_by_user_id: authCtx.userId,
+        })
+        .eq("id", engagementId)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+
+      try {
+        await supabase.from("engagement_outreach_logs").insert({
+          engagement_id: engagementId,
+          actor_type: "admin",
+          admin_user_id: authCtx.userId,
+          admin_email: adminProfile?.email ?? "unknown",
+          admin_name: adminProfile?.full_name ?? null,
+          previous_status: current.engagement_status,
+          new_status: "cancelled_email_change",
+          entry_type: "cancelled",
+          notes: JSON.stringify({
+            event: "cancelled_for_email_change",
+            old_email: oldEmail,
+            new_email: parsed.data.new_email,
+            reason: parsed.data.reason ?? null,
+            request_id: requestId,
+          }),
+        });
+      } catch (logErr) {
+        console.warn(`[${requestId}] cancelled log insert failed (non-fatal):`, logErr);
+      }
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: "engagement.cancelled_for_email_change",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            previous_status: current.engagement_status,
+            old_email: oldEmail,
+            new_email: parsed.data.new_email,
+            reason: parsed.data.reason ?? null,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(`[${requestId}] cancel audit insert failed (non-fatal):`, e);
+      }
+
+      const responseBody = { engagement: updated };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+
     // ── POST /poi-engagements/:engagementId/decline-late-acceptance — Initiator declines ──
     // Batch B Phase 3: late-acceptance resolution endpoints. Both routes
     // are restricted to a member of the initiating organisation
