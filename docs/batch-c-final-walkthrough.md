@@ -109,6 +109,10 @@ match. Until it is resolved, neither side can push the deal forward.
 This is the platform behaving exactly as agreed: hold the deal, surface
 the concern, keep a record.
 
+**Commercial question to answer:**
+*Does this pause feel appropriate when a buyer or seller has raised a
+genuine concern about a live match?*
+
 ---
 
 ## Walkthrough 2 — Under Review
