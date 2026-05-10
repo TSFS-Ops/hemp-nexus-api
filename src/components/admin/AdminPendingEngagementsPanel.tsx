@@ -89,7 +89,9 @@ interface Engagement {
     | "accepted"
     | "declined"
     | "expired"
-    | "late_acceptance_pending_initiator_reconfirmation";
+    | "late_acceptance_pending_initiator_reconfirmation"
+    | "disputed_being_named"
+    | "cancelled_email_change";
   /** Set when the trading partner accepted after expires_at elapsed. */
   counterparty_response?: string | null;
   /** Set on renewed-child engagements that descend from a parent. */
