@@ -1594,6 +1594,36 @@ export function AdminPendingEngagementsPanel() {
                                 </Badge>
                               );
                             })()}
+                            {/* D2b — Binding-review badge + resolver button. */}
+                            {isBindingReviewPending(e) && (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Badge
+                                  variant="outline"
+                                  className="whitespace-nowrap text-[10px] font-medium px-2 py-0.5 bg-amber-50 text-amber-800 border-amber-300"
+                                  title="Counterparty contact requires a binding-review decision before outreach can proceed."
+                                  data-binding-review="required"
+                                >
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Binding review required
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-[10px]"
+                                  onClick={() =>
+                                    setBindingReviewFor({
+                                      id: e.id,
+                                      match_id: e.match_id,
+                                      operational_state: e.operational_state ?? null,
+                                      binding_candidates: e.binding_candidates ?? null,
+                                      binding_resolution: e.binding_resolution ?? null,
+                                    })
+                                  }
+                                >
+                                  Resolve binding
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
