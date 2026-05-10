@@ -1778,6 +1778,47 @@ export function AdminPendingEngagementsPanel() {
                                 <XCircle className="h-3 w-3 mr-1" /> Decline
                               </Button>
                             )}
+                            {/* D3 — Record dispute (admin_report or counterparty_token).
+                                Only offered when the engagement is not already disputed
+                                or in a terminal state. */}
+                            {!isTerminal && e.engagement_status !== "disputed_being_named" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setDisputeFor({
+                                    id: e.id,
+                                    match_id: e.match_id,
+                                    counterparty_email: e.counterparty_email,
+                                    counterparty_org_name: e.counterparty_org?.name ?? null,
+                                  })
+                                }
+                                disabled={actionLoadingId === e.id}
+                                title="Record that the named counterparty has disputed being involved."
+                              >
+                                <AlertTriangle className="h-3 w-3 mr-1" /> Dispute
+                              </Button>
+                            )}
+                            {/* D3 — Cancel for email change. Offered when outreach has
+                                already started so the PATCH email-change path is refused. */}
+                            {!isTerminal && e.engagement_status !== "cancelled_email_change" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setCancelEmailFor({
+                                    id: e.id,
+                                    match_id: e.match_id,
+                                    counterparty_email: e.counterparty_email,
+                                    counterparty_org_name: e.counterparty_org?.name ?? null,
+                                  })
+                                }
+                                disabled={actionLoadingId === e.id}
+                                title="Email turned out to be wrong after outreach started — cancel and recreate."
+                              >
+                                <Mail className="h-3 w-3 mr-1" /> Cancel for email change
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant={e.support_notes ? "default" : "ghost"}
