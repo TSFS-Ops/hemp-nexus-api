@@ -1937,7 +1937,17 @@ Deno.serve(async (req) => {
       const bindingResolution =
         (current as { binding_resolution?: string | null }).binding_resolution ?? null;
 
-      // Allow only when the row is genuinely in a binding-review state.
+      // Already-resolved must be checked BEFORE the "in binding review"
+      // gate, otherwise a row that has been confirmed_canonical / deferred
+      // (op_state cleared, binding_resolution set) would be rejected as
+      // NOT_PENDING instead of the correct ALREADY_RESOLVED.
+      if (bindingResolution != null) {
+        throw new ApiException(
+          "BINDING_REVIEW_ALREADY_RESOLVED",
+          "This engagement's binding review has already been resolved.",
+          409,
+        );
+      }
       const inBindingReview =
         previousOperationalState === "binding_review_required" ||
         (bindingCandidates != null && bindingResolution == null);
@@ -1945,13 +1955,6 @@ Deno.serve(async (req) => {
         throw new ApiException(
           "BINDING_REVIEW_NOT_PENDING",
           "This engagement is not awaiting a binding review.",
-          409,
-        );
-      }
-      if (bindingResolution != null) {
-        throw new ApiException(
-          "BINDING_REVIEW_ALREADY_RESOLVED",
-          "This engagement's binding review has already been resolved.",
           409,
         );
       }
