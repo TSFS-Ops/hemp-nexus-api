@@ -1,0 +1,191 @@
+# Batch C — Step-by-Step Walkthrough
+
+Audience: Daniel and the wider Izenzo review team.
+Environment: Izenzo demo / staging only. **Not production.**
+
+This walkthrough takes a reviewer through all six pre-seeded demo
+Challenges. For each one it tells you which account to sign in as,
+what to click, what you should see, and what it means commercially.
+
+The narrative example throughout is:
+
+> BlueRock Commodities (buyer) and CopperLine Trading (seller),
+> 500 MT of copper cathodes at USD 8,200 / MT, CIF Rotterdam.
+
+In the demo environment the buyer org is *Batch A Counterparty Ltd*
+and the seller org is *New Organisation*. Treat them as BlueRock and
+CopperLine for the purposes of the walkthrough.
+
+---
+
+## Demo accounts
+
+| Email                                          | Use as                            |
+|------------------------------------------------|-----------------------------------|
+| `trade@izenzo.co.za`                           | Buyer organisation administrator  |
+| `test2@izenzo.co.za`                           | Ordinary buyer-side member        |
+| `uat-billing-1777478536038@test.izenzo.co.za`  | Seller organisation administrator |
+| `james@izenzo.co.za`                           | Platform administrator            |
+
+## Demo matches
+
+All six demo matches are labelled `Demo · …` in the match list:
+
+1. Demo · Open challenge
+2. Demo · Under review
+3. Demo · Outcome recorded
+4. Demo · Closed no action
+5. Demo · Withdrawn
+6. Demo · Admin override
+
+---
+
+## Walkthrough 1 — Open Challenge
+
+**Sign in as:** buyer org admin (`trade@izenzo.co.za`).
+
+**Open:** *Demo · Open challenge*.
+
+**Click:** nothing — just scroll the match.
+
+**Expect to see:**
+- a **Progression Paused** banner at the top of the match;
+- a Challenge Status Card showing status **Open**, the subject, the
+  raiser's role, and the short summary;
+- the comment thread (may be empty or contain early comments);
+- the read-only evidence list.
+
+**What it means commercially:**
+A live concern has been raised on the BlueRock × CopperLine copper
+match. Until it is resolved, neither side can push the deal forward.
+This is the platform behaving exactly as agreed: hold the deal, surface
+the concern, keep a record.
+
+---
+
+## Walkthrough 2 — Under Review
+
+**Sign in as:** platform admin (`james@izenzo.co.za`).
+
+**Open:** HQ → Disputes → **Challenges** sub-tab → *Demo · Under review*
+row → click **Review**.
+
+**Expect to see:**
+- the review drawer with the Challenge details;
+- status shown as **Under review**;
+- the comment thread and evidence list visible;
+- the match itself still shows the Progression Paused banner.
+
+**What it means commercially:**
+The platform has formally picked up the concern. Both parties can see
+that it is being looked at. The match is still paused.
+
+---
+
+## Walkthrough 3 — Outcome Recorded
+
+**Sign in as:** platform admin (`james@izenzo.co.za`).
+
+**Open:** *Demo · Outcome recorded*.
+
+**Expect to see:**
+- the Challenge in a terminal state with outcome
+  **Corrected — trade may proceed** (or similar);
+- a recorded outcome summary, e.g.
+  *"Updated commercial confirmation aligns the match with the agreed
+  term sheet."*;
+- the match no longer paused — the Progression Paused banner is gone.
+
+**What it means commercially:**
+CopperLine fixed the underlying issue. The platform recorded the
+correction with a neutral outcome. BlueRock and CopperLine can now
+move the deal forward.
+
+---
+
+## Walkthrough 4 — Closed — No Action
+
+**Sign in as:** platform admin (`james@izenzo.co.za`).
+
+**Open:** *Demo · Closed no action*.
+
+**Expect to see:**
+- the Challenge in a terminal state with outcome **No action required**;
+- a short outcome summary explaining why no action was needed
+  (e.g. raised in error, immaterial, duplicate);
+- the match unpaused.
+
+**What it means commercially:**
+The concern was reviewed and did not need any action. The record is
+preserved so we know it was looked at, even though nothing changed.
+
+---
+
+## Walkthrough 5 — Withdrawn
+
+**Sign in as:** buyer org admin (`trade@izenzo.co.za`)
+*or* platform admin to view.
+
+**Open:** *Demo · Withdrawn*.
+
+**Expect to see:**
+- the Challenge in a terminal state of **Withdrawn**;
+- the original subject, summary, and any comments preserved;
+- the match unpaused.
+
+**What it means commercially:**
+The party that raised the concern decided to withdraw it (e.g. they
+realised they had read the term sheet incorrectly). The platform keeps
+the record. No fault is recorded.
+
+---
+
+## Walkthrough 6 — Admin Override Recorded
+
+**Sign in as:** platform admin (`james@izenzo.co.za`).
+
+**Open:** *Demo · Admin override* → **Review** drawer.
+
+**Expect to see:**
+- the Challenge in a terminal state with outcome
+  **Admin override recorded**;
+- the four governance fields displayed:
+  - Reason category (e.g. *Regulatory direction*)
+  - Internal approval reference (e.g. `IZENZO-REV-2026-041`)
+  - Regulator reference (e.g. `SARB-EXCON-2026-117`, or
+    *Not applicable*)
+  - Written reason (≥ 60 characters)
+- the match unpaused (override is terminal — it closes the Challenge,
+  it does not move the deal forward by itself).
+
+**What it means commercially:**
+This is the rare, last-resort governance action. The platform has
+recorded *why* the override happened, *who* approved it, and *which
+regulator*, if any, was involved. The four fields exist precisely so
+this kind of action can never be reduced to "an admin clicked a
+button".
+
+---
+
+## Optional — read-only member view
+
+**Sign in as:** ordinary buyer-side member (`test2@izenzo.co.za`).
+
+**Open:** any of the six demo matches above.
+
+**Expect to see:**
+- the Challenge Status Card;
+- the comment thread (read-only);
+- the evidence list (read-only);
+- **no** Raise Challenge button;
+- **no** comment composer;
+- **no** evidence uploader.
+
+**What it means commercially:**
+Only organisation administrators and the platform can change the state
+of a Challenge. Ordinary members are kept informed but cannot mutate
+the record.
+
+---
+
+End of walkthrough.
