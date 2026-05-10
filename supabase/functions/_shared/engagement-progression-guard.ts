@@ -39,7 +39,11 @@ export type EngagementGuardCode =
   | "ENGAGEMENT_PENDING_RENEWED_ACCEPTANCE"
   | "LATE_ACCEPTANCE_PENDING_INITIATOR_RECONFIRMATION"
   | "ENGAGEMENT_EXPIRED"
-  | "ENGAGEMENT_DECLINED";
+  | "ENGAGEMENT_DECLINED"
+  // D2a additions:
+  | "DISPUTED_BEING_NAMED"
+  | "BINDING_REVIEW_PENDING"
+  | "CANCELLED_EMAIL_CHANGE";
 
 export interface EngagementGuardDecision {
   allowed: boolean;
@@ -54,6 +58,67 @@ const PRE_ACCEPTANCE_STATUSES = new Set([
   "notification_sent",
   "contacted",
 ]);
+
+/**
+ * D2a — pre-flight checks for engagement-scoped progression that are NOT
+ * tied to the standard pre-acceptance / accepted lifecycle. Returns null
+ * when none of the D2a blocks apply, so the caller falls through to the
+ * existing CP-009 / accepted / expired / declined logic.
+ *
+ * Triggers:
+ *   • engagement_status = 'disputed_being_named'   → DISPUTED_BEING_NAMED
+ *   • engagement_status = 'cancelled_email_change' → CANCELLED_EMAIL_CHANGE
+ *   • operational_state = 'binding_review_required'
+ *     OR (binding_candidates IS NOT NULL AND binding_resolution IS NULL)
+ *     → BINDING_REVIEW_PENDING
+ */
+function d2aBlockForRow(
+  row: { engagement_status: string } & Record<string, unknown>,
+  hasHistorical: boolean,
+): EngagementGuardDecision | null {
+  const status = row.engagement_status;
+
+  if (status === "disputed_being_named") {
+    return {
+      allowed: false,
+      code: "DISPUTED_BEING_NAMED",
+      message:
+        "This engagement has been recorded as disputed by the named counterparty. Workflow progression is blocked until the dispute is resolved.",
+      currentStatus: status,
+      hasHistorical,
+    };
+  }
+
+  if (status === "cancelled_email_change") {
+    return {
+      allowed: false,
+      code: "CANCELLED_EMAIL_CHANGE",
+      message:
+        "The previous engagement was cancelled because the counterparty email needed to change. A replacement engagement must be created before progression.",
+      currentStatus: status,
+      hasHistorical,
+    };
+  }
+
+  const operationalState = row.operational_state as string | null | undefined;
+  const bindingCandidates = row.binding_candidates as unknown;
+  const bindingResolution = row.binding_resolution as string | null | undefined;
+  const bindingPending =
+    operationalState === "binding_review_required" ||
+    (bindingCandidates != null && bindingResolution == null);
+  if (bindingPending) {
+    return {
+      allowed: false,
+      code: "BINDING_REVIEW_PENDING",
+      message:
+        "Counterparty contact requires a binding review (multiple candidate identities or a shared mailbox). Workflow progression is blocked until an admin resolves the binding.",
+      currentStatus: status,
+      hasHistorical,
+    };
+  }
+
+  return null;
+}
 
 /**
  * Pure decision function — given a read-model envelope, return whether
