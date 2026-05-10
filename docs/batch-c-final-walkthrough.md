@@ -233,6 +233,11 @@ regulator*, if any, was involved. The four fields exist precisely so
 this kind of action can never be reduced to "an admin clicked a
 button".
 
+**Commercial question to answer:**
+*Are the four governance fields (reason category, internal approval
+reference, regulator reference, written reason) sufficient to defend
+an Admin Override Closure to a regulator or auditor after the fact?*
+
 ---
 
 ## Optional — read-only member view
