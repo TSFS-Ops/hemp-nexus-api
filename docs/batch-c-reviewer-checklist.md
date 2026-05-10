@@ -3,6 +3,20 @@
 Use this checklist while walking through the six demo Challenges.
 For each item, tick one option and add a short note if helpful.
 
+**Demo URL:**
+https://id-preview--95025ceb-b8ab-4906-adee-3188617c0dbc.lovable.app
+
+**Login:** use the demo accounts listed in
+`batch-c-final-walkthrough.md`. Passwords will be sent separately by
+the Izenzo operator (James).
+
+**Start here:** log in as the Buyer Admin (`trade@izenzo.co.za`) and
+open *Demo · Open challenge* — then follow `batch-c-final-walkthrough.md`
+in order through the six demo matches.
+
+**Out of scope (do not flag):** evidence download / delete, comment
+editing, notifications UI, rating impact, end-client help guide.
+
 Options:
 - **Looks correct**
 - **Needs wording change**

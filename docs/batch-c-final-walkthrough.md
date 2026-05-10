@@ -3,9 +3,57 @@
 Audience: Daniel and the wider Izenzo review team.
 Environment: Izenzo demo / staging only. **Not production.**
 
+## Quick start (read this first)
+
+**1. Where do I go?**
+Open the demo / staging environment in your browser:
+
+> **https://id-preview--95025ceb-b8ab-4906-adee-3188617c0dbc.lovable.app**
+
+(If your team uses the staging custom domain instead, the Izenzo
+operator will send you the alternative URL — the demo content is the
+same.)
+
+**2. How do I log in?**
+Use the demo accounts listed in the table below.
+**Passwords are not printed in this document.** The Izenzo operator
+(James) will share the demo passwords with you over your usual secure
+channel before the review session. If a password does not work, ping
+James and he will reset it on the spot.
+
+**3. What do I click first?**
+Log in as the **Buyer organisation administrator**
+(`trade@izenzo.co.za`), open the match labelled
+**Demo · Open challenge** from the match list, and start at
+*Walkthrough 1* below.
+
+**4. What am I meant to notice?**
+Each walkthrough section tells you exactly what should appear on
+screen and answers one commercial question (e.g. *"Does this pause
+feel appropriate when a buyer or seller has raised a genuine
+concern?"*). You only need to confirm those points — you do not need
+to test edge cases.
+
+**5. What is out of scope right now?**
+Please **do not** flag the following — they are deliberately deferred
+and will be picked up in a later batch:
+
+- Evidence file download from the read-only list
+- Evidence delete / replace
+- Comment editing or deletion
+- In-app notifications UI for new comments / outcomes
+- Any rating or scoring impact from a Challenge outcome
+- A polished end-client (counterparty) help guide
+
+The purpose of this pack is **confirmation and walkthrough**, not
+redesign. Daniel has already approved the workflow.
+
+---
+
 This walkthrough takes a reviewer through all six pre-seeded demo
 Challenges. For each one it tells you which account to sign in as,
-what to click, what you should see, and what it means commercially.
+what to click, what you should see, what it means commercially, and
+the one commercial question it is asking you to answer.
 
 The narrative example throughout is:
 
@@ -61,6 +109,10 @@ match. Until it is resolved, neither side can push the deal forward.
 This is the platform behaving exactly as agreed: hold the deal, surface
 the concern, keep a record.
 
+**Commercial question to answer:**
+*Does this pause feel appropriate when a buyer or seller has raised a
+genuine concern about a live match?*
+
 ---
 
 ## Walkthrough 2 — Under Review
@@ -79,6 +131,10 @@ row → click **Review**.
 **What it means commercially:**
 The platform has formally picked up the concern. Both parties can see
 that it is being looked at. The match is still paused.
+
+**Commercial question to answer:**
+*Is it clear to both parties that the platform has taken ownership of
+the review and that the match remains paused while that is happening?*
 
 ---
 
@@ -101,6 +157,10 @@ CopperLine fixed the underlying issue. The platform recorded the
 correction with a neutral outcome. BlueRock and CopperLine can now
 move the deal forward.
 
+**Commercial question to answer:**
+*Are the neutral outcome labels (e.g. "Corrected — trade may proceed")
+commercially safe and free of blame language?*
+
 ---
 
 ## Walkthrough 4 — Closed — No Action
@@ -118,6 +178,10 @@ move the deal forward.
 **What it means commercially:**
 The concern was reviewed and did not need any action. The record is
 preserved so we know it was looked at, even though nothing changed.
+
+**Commercial question to answer:**
+*Is "Closed — no action required" a clear, non-dismissive way to record
+a Challenge that did not warrant any change?*
 
 ---
 
@@ -137,6 +201,10 @@ preserved so we know it was looked at, even though nothing changed.
 The party that raised the concern decided to withdraw it (e.g. they
 realised they had read the term sheet incorrectly). The platform keeps
 the record. No fault is recorded.
+
+**Commercial question to answer:**
+*Does "Withdrawn" feel like a clean, neutral exit when a raiser
+realises the concern is no longer valid?*
 
 ---
 
@@ -165,6 +233,11 @@ regulator*, if any, was involved. The four fields exist precisely so
 this kind of action can never be reduced to "an admin clicked a
 button".
 
+**Commercial question to answer:**
+*Are the four governance fields (reason category, internal approval
+reference, regulator reference, written reason) sufficient to defend
+an Admin Override Closure to a regulator or auditor after the fact?*
+
 ---
 
 ## Optional — read-only member view
@@ -185,6 +258,10 @@ button".
 Only organisation administrators and the platform can change the state
 of a Challenge. Ordinary members are kept informed but cannot mutate
 the record.
+
+**Commercial question to answer:**
+*Is the read-only experience for ordinary members the right balance
+between transparency and control?*
 
 ---
 
