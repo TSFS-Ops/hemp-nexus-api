@@ -152,22 +152,45 @@ the review and that the match remains paused while that is happening?*
 
 ## Walkthrough 3 — Outcome Recorded
 
-**Sign in as:** platform admin (`james@izenzo.co.za`).
+This Challenge is terminal. There are two ways to confirm it,
+depending on role.
 
-**Open:** *Demo · Outcome recorded*.
+### 3a. Party-side view (buyer or seller)
+
+**Sign in as:** buyer org admin (`trade@izenzo.co.za`).
+
+**Open:** *Demo · Outcome recorded* from the match list (the ordinary
+match page).
 
 **Expect to see:**
-- the Challenge in a terminal state with outcome
+- the Challenge Status Card showing the terminal outcome
   **Corrected — trade may proceed** (or similar);
-- a recorded outcome summary, e.g.
+- the recorded outcome summary, e.g.
   *"Updated commercial confirmation aligns the match with the agreed
   term sheet."*;
-- the match no longer paused — the Progression Paused banner is gone.
+- the **Progression Paused** banner is no longer shown — the match is
+  free to move forward.
+
+### 3b. Platform-admin view
+
+**Sign in as:** platform admin (`james@izenzo.co.za`).
+
+**Go to:** Platform HQ → **Disputes** → **Challenges** sub-tab.
+
+**Open:** the *Demo · Outcome recorded* row in the queue → click
+**Review**.
+
+**Expect to see:**
+- the Challenge in the review drawer with the same terminal outcome
+  and outcome summary;
+- the full Challenge details (subject, raiser, comment thread,
+  evidence list).
 
 **What it means commercially:**
 CopperLine fixed the underlying issue. The platform recorded the
 correction with a neutral outcome. BlueRock and CopperLine can now
-move the deal forward.
+move the deal forward, and platform admins can see the closed record
+in HQ.
 
 **Commercial question to answer:**
 *Are the neutral outcome labels (e.g. "Corrected — trade may proceed")
@@ -177,15 +200,36 @@ commercially safe and free of blame language?*
 
 ## Walkthrough 4 — Closed — No Action
 
-**Sign in as:** platform admin (`james@izenzo.co.za`).
+This Challenge is terminal. There are two ways to confirm it,
+depending on role.
 
-**Open:** *Demo · Closed no action*.
+### 4a. Party-side view (buyer or seller)
+
+**Sign in as:** buyer org admin (`trade@izenzo.co.za`).
+
+**Open:** *Demo · Closed no action* from the match list (the ordinary
+match page).
 
 **Expect to see:**
-- the Challenge in a terminal state with outcome **No action required**;
+- the Challenge Status Card showing terminal outcome
+  **No action required**;
 - a short outcome summary explaining why no action was needed
   (e.g. raised in error, immaterial, duplicate);
-- the match unpaused.
+- the **Progression Paused** banner is no longer shown.
+
+### 4b. Platform-admin view
+
+**Sign in as:** platform admin (`james@izenzo.co.za`).
+
+**Go to:** Platform HQ → **Disputes** → **Challenges** sub-tab.
+
+**Open:** the *Demo · Closed no action* row in the queue → click
+**Review**.
+
+**Expect to see:**
+- the Challenge in the review drawer with the same terminal outcome
+  and outcome summary;
+- the full Challenge details visible in HQ.
 
 **What it means commercially:**
 The concern was reviewed and did not need any action. The record is
