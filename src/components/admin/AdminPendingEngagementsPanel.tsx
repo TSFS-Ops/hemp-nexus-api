@@ -277,6 +277,8 @@ export function AdminPendingEngagementsPanel() {
   // Distinct from "Mark contacted" — this is the *discovery* step that
   // unblocks Notify, not a record that contact has actually happened.
   const [addContactFor, setAddContactFor] = useState<AddContactEngagementSummary | null>(null);
+  // D2b — admin Binding Review Resolver dialog state.
+  const [bindingReviewFor, setBindingReviewFor] = useState<BindingReviewEngagement | null>(null);
 
   const openSupportNotes = (e: Engagement) => {
     if (notesOpenId === e.id) {
