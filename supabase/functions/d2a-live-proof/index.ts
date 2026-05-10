@@ -95,11 +95,18 @@ Deno.serve(async (req) => {
   } else {
     const authz = req.headers.get("authorization");
     if (authz?.startsWith("Bearer ")) {
-      const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authz } } });
-      const { data: u } = await userClient.auth.getUser();
-      if (u?.user) {
-        const { data: isAdminCaller } = await admin.rpc("is_admin", { user_id: u.user.id });
-        if (isAdminCaller) authorized = true;
+      const tok = authz.slice(7).trim();
+      // Accept service-role JWT directly so the harness can be invoked
+      // from internal automation that already holds it.
+      if (tok === SERVICE_ROLE) {
+        authorized = true;
+      } else {
+        const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authz } } });
+        const { data: u } = await userClient.auth.getUser();
+        if (u?.user) {
+          const { data: isAdminCaller } = await admin.rpc("is_admin", { user_id: u.user.id });
+          if (isAdminCaller) authorized = true;
+        }
       }
     }
   }
