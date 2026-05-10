@@ -249,6 +249,9 @@ const FILTER_TABS = [
   // D2b — surface engagements parked in binding-review so admins can
   // open the resolver dialog without scrolling through "All".
   { value: "binding_review_required", label: "Binding review required" },
+  // D3 — surface engagements parked in dispute / cancelled-email-change.
+  { value: "disputed_being_named", label: "Disputed — being named" },
+  { value: "cancelled_email_change", label: "Cancelled for email change" },
 ] as const;
 
 export function AdminPendingEngagementsPanel() {
