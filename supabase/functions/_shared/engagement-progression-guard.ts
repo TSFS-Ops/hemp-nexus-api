@@ -252,7 +252,10 @@ export async function assertEngagementAllowsProgression(
   const { envelope, error } = await fetchEngagementReadModelByMatchId<EngagementRow>(
     supabase,
     matchId,
-    "id, match_id, engagement_status, created_at, renewed_from_engagement_id",
+    // D2a: include operational_state + binding fields so the new
+    // DISPUTED_BEING_NAMED / BINDING_REVIEW_PENDING / CANCELLED_EMAIL_CHANGE
+    // branches see the row state they need to evaluate.
+    "id, match_id, engagement_status, created_at, renewed_from_engagement_id, operational_state, binding_candidates, binding_resolution",
   );
   if (error) {
     // Defensive: if we cannot read the engagement table, refuse rather
