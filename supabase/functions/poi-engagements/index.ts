@@ -328,7 +328,19 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      // ── Batch A — contact-completeness gate ──
+      // ── D2a outreach gate (preview) ──
+      // Block disputed + binding-review BEFORE the contact-completeness
+      // check so a disputed/binding-pending row never even renders a
+      // preview body. No audit row on preview blocks (no side-effect to
+      // attribute) — the send-outreach path writes the audit on block.
+      {
+        const gate = evaluateOutreachGate(eng as Record<string, unknown>);
+        if (gate) {
+          throw new ApiException(gate.code, gate.message, 409);
+        }
+      }
+
+
       // Single source of truth: the helper decides whether outreach is allowed.
       // email_missing      → CONTACT_EMAIL_MISSING
       // contact_incomplete → CONTACT_INCOMPLETE
