@@ -97,6 +97,11 @@ interface Engagement {
   created_at: string;
   sla_reminder_sent_at?: string | null;
   sla_reminder_count?: number | null;
+  // D2b — binding-review fields surfaced by the GET /poi-engagements list
+  // (the server returns `*` so these come along automatically).
+  operational_state?: string | null;
+  binding_candidates?: unknown;
+  binding_resolution?: string | null;
   matches?: {
     id: string;
     commodity: string | null;
@@ -109,6 +114,16 @@ interface Engagement {
   } | null;
   initiator_org?: { id: string; name: string } | null;
   counterparty_org?: { id: string; name: string } | null;
+}
+
+// D2b — predicate: is this engagement awaiting an admin binding-review
+// decision? Mirrors the server-side gate (operational_state OR
+// binding_candidates without binding_resolution).
+function isBindingReviewPending(e: { operational_state?: string | null; binding_candidates?: unknown; binding_resolution?: string | null }): boolean {
+  if (e.binding_resolution) return false;
+  if (e.operational_state === "binding_review_required") return true;
+  if (e.binding_candidates != null) return true;
+  return false;
 }
 
 /**
