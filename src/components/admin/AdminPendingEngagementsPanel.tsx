@@ -46,6 +46,10 @@ import {
   isEngagementPending,
 } from "@/lib/engagement-state";
 import { AddContactDialog, type AddContactEngagementSummary } from "@/components/admin/AddContactDialog";
+import {
+  BindingReviewResolverDialog,
+  type BindingReviewEngagement,
+} from "@/components/admin/BindingReviewResolverDialog";
 // Batch A — single source of truth for contact-completeness labels and the
 // outreach gate. Mirrors the edge-function helper so the UI badge, tooltip
 // and Send-outreach disabled state always match the backend's 422 response.
@@ -93,6 +97,11 @@ interface Engagement {
   created_at: string;
   sla_reminder_sent_at?: string | null;
   sla_reminder_count?: number | null;
+  // D2b — binding-review fields surfaced by the GET /poi-engagements list
+  // (the server returns `*` so these come along automatically).
+  operational_state?: string | null;
+  binding_candidates?: unknown;
+  binding_resolution?: string | null;
   matches?: {
     id: string;
     commodity: string | null;
@@ -105,6 +114,16 @@ interface Engagement {
   } | null;
   initiator_org?: { id: string; name: string } | null;
   counterparty_org?: { id: string; name: string } | null;
+}
+
+// D2b — predicate: is this engagement awaiting an admin binding-review
+// decision? Mirrors the server-side gate (operational_state OR
+// binding_candidates without binding_resolution).
+function isBindingReviewPending(e: { operational_state?: string | null; binding_candidates?: unknown; binding_resolution?: string | null }): boolean {
+  if (e.binding_resolution) return false;
+  if (e.operational_state === "binding_review_required") return true;
+  if (e.binding_candidates != null) return true;
+  return false;
 }
 
 /**
@@ -209,6 +228,9 @@ const FILTER_TABS = [
     value: "late_acceptance_pending_initiator_reconfirmation",
     label: "Late acceptance — awaiting reconfirmation",
   },
+  // D2b — surface engagements parked in binding-review so admins can
+  // open the resolver dialog without scrolling through "All".
+  { value: "binding_review_required", label: "Binding review required" },
 ] as const;
 
 export function AdminPendingEngagementsPanel() {
@@ -255,6 +277,8 @@ export function AdminPendingEngagementsPanel() {
   // Distinct from "Mark contacted" — this is the *discovery* step that
   // unblocks Notify, not a record that contact has actually happened.
   const [addContactFor, setAddContactFor] = useState<AddContactEngagementSummary | null>(null);
+  // D2b — admin Binding Review Resolver dialog state.
+  const [bindingReviewFor, setBindingReviewFor] = useState<BindingReviewEngagement | null>(null);
 
   const openSupportNotes = (e: Engagement) => {
     if (notesOpenId === e.id) {
@@ -724,6 +748,9 @@ export function AdminPendingEngagementsPanel() {
       );
     } else if (filter === "notification_sent") {
       base = engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
+    } else if (filter === "binding_review_required") {
+      // D2b — engagements awaiting an admin binding-review decision.
+      base = engagements.filter(isBindingReviewPending);
     } else {
       base = engagements.filter((e) => e.engagement_status === filter);
     }
@@ -1567,6 +1594,36 @@ export function AdminPendingEngagementsPanel() {
                                 </Badge>
                               );
                             })()}
+                            {/* D2b — Binding-review badge + resolver button. */}
+                            {isBindingReviewPending(e) && (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Badge
+                                  variant="outline"
+                                  className="whitespace-nowrap text-[10px] font-medium px-2 py-0.5 bg-amber-50 text-amber-800 border-amber-300"
+                                  title="Counterparty contact requires a binding-review decision before outreach can proceed."
+                                  data-binding-review="required"
+                                >
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Binding review required
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-[10px]"
+                                  onClick={() =>
+                                    setBindingReviewFor({
+                                      id: e.id,
+                                      match_id: e.match_id,
+                                      operational_state: e.operational_state ?? null,
+                                      binding_candidates: e.binding_candidates ?? null,
+                                      binding_resolution: e.binding_resolution ?? null,
+                                    })
+                                  }
+                                >
+                                  Resolve binding
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
@@ -2074,6 +2131,14 @@ export function AdminPendingEngagementsPanel() {
         onOpenChange={(open) => !open && setAddContactFor(null)}
         engagement={addContactFor}
         onSaved={() => fetchEngagements()}
+      />
+
+      {/* D2b — Binding Review Resolver (admin only). */}
+      <BindingReviewResolverDialog
+        open={!!bindingReviewFor}
+        engagement={bindingReviewFor}
+        onClose={() => setBindingReviewFor(null)}
+        onResolved={() => fetchEngagements()}
       />
     </div>
   );

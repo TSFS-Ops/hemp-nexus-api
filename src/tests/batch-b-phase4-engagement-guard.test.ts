@@ -243,6 +243,43 @@ describe("engagement progression guard — D2a (dispute / binding / cancelled)",
     expect(d.code).toBeUndefined();
   });
 
+  // ── D2b — resolver outcomes ─────────────────────────────────────────
+  it("D2b: confirmed_canonical resolution unblocks the binding gate", () => {
+    const r = {
+      ...row("accepted", "2026-05-10T00:00:00.000Z"),
+      operational_state: null,
+      binding_candidates: [{ org_id: "x" }, { org_id: "y" }],
+      binding_resolution: "confirmed_canonical",
+    };
+    const d = decide([r]);
+    expect(d.allowed).toBe(true);
+    expect(d.code).toBeUndefined();
+  });
+
+  it("D2b: deferred_no_review_needed resolution unblocks the binding gate", () => {
+    const r = {
+      ...row("accepted", "2026-05-10T00:00:00.000Z"),
+      operational_state: null,
+      binding_candidates: [{ org_id: "x" }],
+      binding_resolution: "deferred_no_review_needed",
+    };
+    const d = decide([r]);
+    expect(d.allowed).toBe(true);
+    expect(d.code).toBeUndefined();
+  });
+
+  it("D2b: rejected resolution KEEPS the binding gate blocked when operational_state remains binding_review_required", () => {
+    const r = {
+      ...row("contacted", "2026-05-10T00:00:00.000Z"),
+      operational_state: "binding_review_required",
+      binding_candidates: [{ org_id: "x" }, { org_id: "y" }],
+      binding_resolution: "rejected",
+    };
+    const d = decide([r]);
+    expect(d.allowed).toBe(false);
+    expect(d.code).toBe("BINDING_REVIEW_PENDING");
+  });
+
   it("CANCELLED_EMAIL_CHANGE when current engagement is cancelled_email_change", () => {
     const d = decide([row("cancelled_email_change", "2026-05-10T00:00:00.000Z")]);
     expect(d.allowed).toBe(false);
