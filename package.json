@@ -19,7 +19,8 @@
     "generate:routes": "node scripts/generate-routes.mjs",
     "test:summary": "node scripts/test-summary.mjs",
     "test:summary:strict": "node scripts/test-summary.mjs --strict",
-    "check:d1-drift": "node scripts/check-d1-drift.mjs"
+    "check:d1-drift": "node scripts/check-d1-drift.mjs",
+    "check:d1.5-drift": "node scripts/check-d1.5-drift.mjs"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",
