@@ -746,6 +746,9 @@ export function AdminPendingEngagementsPanel() {
       );
     } else if (filter === "notification_sent") {
       base = engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
+    } else if (filter === "binding_review_required") {
+      // D2b — engagements awaiting an admin binding-review decision.
+      base = engagements.filter(isBindingReviewPending);
     } else {
       base = engagements.filter((e) => e.engagement_status === filter);
     }
