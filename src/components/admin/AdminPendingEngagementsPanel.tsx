@@ -50,6 +50,18 @@ import {
   BindingReviewResolverDialog,
   type BindingReviewEngagement,
 } from "@/components/admin/BindingReviewResolverDialog";
+import {
+  DisputeEngagementDialog,
+  type DisputeEngagementTarget,
+} from "@/components/admin/DisputeEngagementDialog";
+import {
+  CancelForEmailChangeDialog,
+  type CancelEngagementTarget,
+} from "@/components/admin/CancelForEmailChangeDialog";
+import {
+  ADMIN_ENGAGEMENT_BLOCKED_COPY,
+  pickAdminEngagementBlockedReason,
+} from "@/lib/admin-engagement-blocked-reasons";
 // Batch A — single source of truth for contact-completeness labels and the
 // outreach gate. Mirrors the edge-function helper so the UI badge, tooltip
 // and Send-outreach disabled state always match the backend's 422 response.
@@ -77,7 +89,9 @@ interface Engagement {
     | "accepted"
     | "declined"
     | "expired"
-    | "late_acceptance_pending_initiator_reconfirmation";
+    | "late_acceptance_pending_initiator_reconfirmation"
+    | "disputed_being_named"
+    | "cancelled_email_change";
   /** Set when the trading partner accepted after expires_at elapsed. */
   counterparty_response?: string | null;
   /** Set on renewed-child engagements that descend from a parent. */
@@ -186,6 +200,8 @@ const STATUS_STYLES: Record<string, string> = {
   // does NOT progress the workflow until the initiator reconfirms.
   late_acceptance_pending_initiator_reconfirmation:
     "bg-amber-50 text-amber-800 border-amber-300",
+  disputed_being_named: "bg-rose-50 text-rose-800 border-rose-300",
+  cancelled_email_change: "bg-slate-100 text-slate-600 border-slate-300",
 };
 
 // Human-readable labels for engagement status. The DB enum value
@@ -207,6 +223,8 @@ const STATUS_LABELS: Record<string, string> = {
   expired: "Expired",
   late_acceptance_pending_initiator_reconfirmation:
     "Late acceptance — awaiting initiator reconfirmation",
+  disputed_being_named: "Disputed — being named",
+  cancelled_email_change: "Cancelled (email change)",
 };
 
 // D-05: the "pending" tab is preserved as a value for backwards-compatible
@@ -231,6 +249,9 @@ const FILTER_TABS = [
   // D2b — surface engagements parked in binding-review so admins can
   // open the resolver dialog without scrolling through "All".
   { value: "binding_review_required", label: "Binding review required" },
+  // D3 — surface engagements parked in dispute / cancelled-email-change.
+  { value: "disputed_being_named", label: "Disputed — being named" },
+  { value: "cancelled_email_change", label: "Cancelled for email change" },
 ] as const;
 
 export function AdminPendingEngagementsPanel() {
@@ -279,6 +300,9 @@ export function AdminPendingEngagementsPanel() {
   const [addContactFor, setAddContactFor] = useState<AddContactEngagementSummary | null>(null);
   // D2b — admin Binding Review Resolver dialog state.
   const [bindingReviewFor, setBindingReviewFor] = useState<BindingReviewEngagement | null>(null);
+  // D3 — admin Dispute + Cancel-for-email-change dialog state.
+  const [disputeFor, setDisputeFor] = useState<DisputeEngagementTarget | null>(null);
+  const [cancelEmailFor, setCancelEmailFor] = useState<CancelEngagementTarget | null>(null);
 
   const openSupportNotes = (e: Engagement) => {
     if (notesOpenId === e.id) {
@@ -1624,6 +1648,28 @@ export function AdminPendingEngagementsPanel() {
                                 </Button>
                               </div>
                             )}
+                            {/* D3 — "Why this is blocked / what to do next" hint per row. */}
+                            {(() => {
+                              const cs = getEngagementContactState(e);
+                              const reason = pickAdminEngagementBlockedReason({
+                                operational_state: e.operational_state ?? null,
+                                binding_candidates: e.binding_candidates ?? null,
+                                binding_resolution: e.binding_resolution ?? null,
+                                engagement_status: e.engagement_status ?? null,
+                                contact_blocked: isOutreachBlocked(cs),
+                              });
+                              if (!reason) return null;
+                              const copy = ADMIN_ENGAGEMENT_BLOCKED_COPY[reason];
+                              return (
+                                <span
+                                  className="text-[10px] text-slate-600 italic ml-1"
+                                  data-blocked-reason={reason}
+                                  title={copy.next}
+                                >
+                                  {copy.next}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
@@ -1730,6 +1776,47 @@ export function AdminPendingEngagementsPanel() {
                                 disabled={actionLoadingId === e.id}
                               >
                                 <XCircle className="h-3 w-3 mr-1" /> Decline
+                              </Button>
+                            )}
+                            {/* D3 — Record dispute (admin_report or counterparty_token).
+                                Only offered when the engagement is not already disputed
+                                or in a terminal state. */}
+                            {!isTerminal && e.engagement_status !== "disputed_being_named" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setDisputeFor({
+                                    id: e.id,
+                                    match_id: e.match_id,
+                                    counterparty_email: e.counterparty_email,
+                                    counterparty_org_name: e.counterparty_org?.name ?? null,
+                                  })
+                                }
+                                disabled={actionLoadingId === e.id}
+                                title="Record that the named counterparty has disputed being involved."
+                              >
+                                <AlertTriangle className="h-3 w-3 mr-1" /> Dispute
+                              </Button>
+                            )}
+                            {/* D3 — Cancel for email change. Offered when outreach has
+                                already started so the PATCH email-change path is refused. */}
+                            {!isTerminal && e.engagement_status !== "cancelled_email_change" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setCancelEmailFor({
+                                    id: e.id,
+                                    match_id: e.match_id,
+                                    counterparty_email: e.counterparty_email,
+                                    counterparty_org_name: e.counterparty_org?.name ?? null,
+                                  })
+                                }
+                                disabled={actionLoadingId === e.id}
+                                title="Email turned out to be wrong after outreach started — cancel and recreate."
+                              >
+                                <Mail className="h-3 w-3 mr-1" /> Cancel for email change
                               </Button>
                             )}
                             <Button
@@ -2138,6 +2225,22 @@ export function AdminPendingEngagementsPanel() {
         open={!!bindingReviewFor}
         engagement={bindingReviewFor}
         onClose={() => setBindingReviewFor(null)}
+        onResolved={() => fetchEngagements()}
+      />
+
+      {/* D3 — Record dispute dialog (admin_report or counterparty_token). */}
+      <DisputeEngagementDialog
+        open={!!disputeFor}
+        engagement={disputeFor}
+        onClose={() => setDisputeFor(null)}
+        onResolved={() => fetchEngagements()}
+      />
+
+      {/* D3 — Cancel-for-email-change dialog. */}
+      <CancelForEmailChangeDialog
+        open={!!cancelEmailFor}
+        engagement={cancelEmailFor}
+        onClose={() => setCancelEmailFor(null)}
         onResolved={() => fetchEngagements()}
       />
     </div>
