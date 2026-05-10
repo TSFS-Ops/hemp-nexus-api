@@ -46,6 +46,10 @@ import {
   isEngagementPending,
 } from "@/lib/engagement-state";
 import { AddContactDialog, type AddContactEngagementSummary } from "@/components/admin/AddContactDialog";
+import {
+  BindingReviewResolverDialog,
+  type BindingReviewEngagement,
+} from "@/components/admin/BindingReviewResolverDialog";
 // Batch A — single source of truth for contact-completeness labels and the
 // outreach gate. Mirrors the edge-function helper so the UI badge, tooltip
 // and Send-outreach disabled state always match the backend's 422 response.
