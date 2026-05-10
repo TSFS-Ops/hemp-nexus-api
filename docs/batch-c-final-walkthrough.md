@@ -157,6 +157,10 @@ CopperLine fixed the underlying issue. The platform recorded the
 correction with a neutral outcome. BlueRock and CopperLine can now
 move the deal forward.
 
+**Commercial question to answer:**
+*Are the neutral outcome labels (e.g. "Corrected — trade may proceed")
+commercially safe and free of blame language?*
+
 ---
 
 ## Walkthrough 4 — Closed — No Action
