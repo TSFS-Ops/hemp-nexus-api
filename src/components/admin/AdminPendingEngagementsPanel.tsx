@@ -228,6 +228,9 @@ const FILTER_TABS = [
     value: "late_acceptance_pending_initiator_reconfirmation",
     label: "Late acceptance — awaiting reconfirmation",
   },
+  // D2b — surface engagements parked in binding-review so admins can
+  // open the resolver dialog without scrolling through "All".
+  { value: "binding_review_required", label: "Binding review required" },
 ] as const;
 
 export function AdminPendingEngagementsPanel() {
