@@ -2102,6 +2102,14 @@ export function AdminPendingEngagementsPanel() {
         engagement={addContactFor}
         onSaved={() => fetchEngagements()}
       />
+
+      {/* D2b — Binding Review Resolver (admin only). */}
+      <BindingReviewResolverDialog
+        open={!!bindingReviewFor}
+        engagement={bindingReviewFor}
+        onClose={() => setBindingReviewFor(null)}
+        onResolved={() => fetchEngagements()}
+      />
     </div>
   );
 }
