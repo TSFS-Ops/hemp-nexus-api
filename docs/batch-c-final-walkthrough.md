@@ -89,14 +89,22 @@ CopperLine for the purposes of the walkthrough.
 
 ## Demo matches
 
-All six demo matches are labelled `Demo · …` in the match list:
+All six demo matches are listed below using friendly identifiers used
+throughout this guide. In the actual environment you'll recognise
+each one by its Challenge subject and summary text (the queue does
+not display these "Demo ·" titles as a column).
 
 1. Demo · Open challenge
 2. Demo · Under review
 3. Demo · Outcome recorded
 4. Demo · Closed no action
 5. Demo · Withdrawn
-6. Demo · Admin override
+6. Demo · Admin override recorded — note: the platform records an
+   admin override as the *outcome* of a Challenge, not as a separate
+   queue category. In Platform HQ → Disputes → Challenges this
+   example appears as a **terminal (closed) row**, identifiable by
+   the summary *"Counterparty unresponsive for 14 days; requested
+   administrative closure."*
 
 ---
 
@@ -274,12 +282,25 @@ realises the concern is no longer valid?*
 
 **Go to:** Platform HQ → **Disputes** → **Challenges** sub-tab.
 
-**Open:** the *Demo · Admin override* row in the queue → click
-**Review** to open the review drawer.
+**Important — how to identify this row in the queue:**
+The platform records an admin override as the **outcome** of a
+Challenge, not as a separate queue category. There is therefore no
+row literally labelled "Admin Override" in the Challenges queue.
+Instead, look for the **terminal (closed) row** whose summary reads:
 
-**Expect to see:**
+> *"Counterparty unresponsive for 14 days; requested administrative
+> closure."*
+
+That is the admin override demo example.
+
+**Open:** the row described above (it will appear as a terminal /
+outcome-recorded entry in the queue) → click **Review** to open the
+review drawer.
+
+**Expect to see (inside the review drawer):**
 - the Challenge in a terminal state with outcome
-  **Admin override recorded**;
+  **Admin override recorded** clearly shown in the drawer header /
+  outcome section;
 - the four governance fields displayed:
   - Reason category (e.g. *Regulatory direction*)
   - Internal approval reference (e.g. `IZENZO-REV-2026-041`)
