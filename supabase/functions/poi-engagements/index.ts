@@ -76,6 +76,43 @@ const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   expired: [],
 };
 
+// ── D2a — outreach gate ───────────────────────────────────────────────
+// Independent of the broader progression guard. Outreach (preview/send)
+// must be blocked when the engagement is recorded as disputed by the
+// named counterparty, OR when the contact requires a binding review
+// (multiple candidate identities / shared mailbox). This is intentionally
+// narrower than `assertEngagementAllowsProgression` — we deliberately do
+// NOT block on cancelled_email_change here because the cancel flow is
+// itself the resolution path; outreach on a cancelled row is impossible
+// (no active engagement_status target) and is handled by separate gates.
+type OutreachGateCode = "DISPUTED_BEING_NAMED" | "BINDING_REVIEW_PENDING";
+function evaluateOutreachGate(
+  eng: Record<string, unknown>,
+): { code: OutreachGateCode; message: string } | null {
+  const status = eng.engagement_status as string | null | undefined;
+  if (status === "disputed_being_named") {
+    return {
+      code: "DISPUTED_BEING_NAMED",
+      message:
+        "This engagement has been recorded as disputed by the named counterparty. Outreach is blocked until the dispute is resolved.",
+    };
+  }
+  const operationalState = eng.operational_state as string | null | undefined;
+  const bindingCandidates = eng.binding_candidates;
+  const bindingResolution = eng.binding_resolution as string | null | undefined;
+  const bindingPending =
+    operationalState === "binding_review_required" ||
+    (bindingCandidates != null && bindingResolution == null);
+  if (bindingPending) {
+    return {
+      code: "BINDING_REVIEW_PENDING",
+      message:
+        "Counterparty contact requires a binding review (multiple candidate identities or a shared mailbox). Outreach is blocked until an admin resolves the binding.",
+    };
+  }
+  return null;
+}
+
 /**
  * Batch A — fields the helper needs from the joined match row to derive
  * the organisation-name fallback (matches.buyer_name / seller_name when
