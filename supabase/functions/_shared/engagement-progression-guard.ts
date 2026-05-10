@@ -136,7 +136,23 @@ export function decideEngagementProgression<R extends EngagementRow>(
   const historical = envelope.latest_historical_engagement;
   const hasHistorical = !!historical;
 
+  // D2a — historical-only branches must be evaluated BEFORE the
+  // existing terminal branches so that `cancelled_email_change` (which
+  // is NOT in TERMINAL_STATUSES at the read-model level today) is still
+  // surfaced when it is the only row and resolved as historical by a
+  // future schema change. Today the row will most often arrive as
+  // `current` and be caught below; this branch is the safety net.
   if (!current) {
+    if (historical?.engagement_status === "cancelled_email_change") {
+      return {
+        allowed: false,
+        code: "CANCELLED_EMAIL_CHANGE",
+        message:
+          "The previous engagement was cancelled because the counterparty email needed to change. A replacement engagement must be created before progression.",
+        currentStatus: null,
+        hasHistorical,
+      };
+    }
     if (historical?.engagement_status === "expired") {
       return {
         allowed: false,
@@ -166,6 +182,13 @@ export function decideEngagementProgression<R extends EngagementRow>(
       hasHistorical,
     };
   }
+
+  // D2a — evaluate the new dispute / binding-review / cancelled-email
+  // gates BEFORE the existing accepted/late-acceptance/pre-acceptance
+  // branches so a disputed or binding-pending engagement is never
+  // mis-classified as a normal pre-acceptance state.
+  const d2aBlock = d2aBlockForRow(current as never, hasHistorical);
+  if (d2aBlock) return d2aBlock;
 
   const status = current.engagement_status;
 
