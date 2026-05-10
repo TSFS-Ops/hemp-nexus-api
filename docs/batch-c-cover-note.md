@@ -35,7 +35,13 @@ Passwords will be sent to you separately on our usual secure channel
 
 Log in as the **Buyer organisation administrator**
 (`trade@izenzo.co.za`) and open the match labelled
-**Demo · Open challenge**. Then follow Walkthroughs 1 → 6 in order.
+**Demo · Open challenge** from your match list. Then follow
+Walkthroughs 1 → 6 in order.
+
+Note: there are two ways to review the same Challenge depending on
+role. **Trading-party users** review from the ordinary match page.
+**Platform admins** review from **Platform HQ → Disputes →
+Challenges** sub-tab. This is expected.
 
 ## The six demo matches
 
