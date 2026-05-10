@@ -50,7 +50,17 @@ Challenges** sub-tab. This is expected.
 - Demo · Outcome recorded
 - Demo · Closed no action
 - Demo · Withdrawn
-- Demo · Admin override
+- Demo · Admin override recorded
+
+Note on the Admin override example: the platform records an admin
+override as the **outcome** of a Challenge, not as a separate queue
+category. In Platform HQ → Disputes → Challenges, the override
+example therefore appears as a terminal (closed) row, identifiable by
+its summary line *"Counterparty unresponsive for 14 days; requested
+administrative closure."* Open that row and click **Review** — the
+review drawer is where you confirm the outcome label *"Admin override
+recorded"* and the four governance fields. The Step-by-Step
+Walkthrough explains this in detail in section 6.
 
 ## Out of scope for this review
 
