@@ -8087,6 +8087,8 @@ export type Database = {
         | "declined"
         | "expired"
         | "late_acceptance_pending_initiator_reconfirmation"
+        | "cancelled_email_change"
+        | "disputed_being_named"
       gate_position: "entry" | "poi_mint" | "wad_only"
       revenue_notification_status: "sent" | "failed" | "skipped"
       signal_type: "buyer" | "seller"
@@ -8241,6 +8243,8 @@ export const Constants = {
         "declined",
         "expired",
         "late_acceptance_pending_initiator_reconfirmation",
+        "cancelled_email_change",
+        "disputed_being_named",
       ],
       gate_position: ["entry", "poi_mint", "wad_only"],
       revenue_notification_status: ["sent", "failed", "skipped"],
