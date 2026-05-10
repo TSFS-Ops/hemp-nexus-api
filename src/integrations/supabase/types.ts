@@ -3708,6 +3708,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          buyer_authorised_user_id: string | null
           buyer_committed_at: string | null
           buyer_id: string | null
           buyer_name: string | null
@@ -3732,6 +3733,7 @@ export type Database = {
           price_currency: string | null
           quantity_amount: number | null
           quantity_unit: string | null
+          seller_authorised_user_id: string | null
           seller_committed_at: string | null
           seller_id: string | null
           seller_name: string | null
@@ -3744,6 +3746,7 @@ export type Database = {
           trade_request_id: string | null
         }
         Insert: {
+          buyer_authorised_user_id?: string | null
           buyer_committed_at?: string | null
           buyer_id?: string | null
           buyer_name?: string | null
@@ -3768,6 +3771,7 @@ export type Database = {
           price_currency?: string | null
           quantity_amount?: number | null
           quantity_unit?: string | null
+          seller_authorised_user_id?: string | null
           seller_committed_at?: string | null
           seller_id?: string | null
           seller_name?: string | null
@@ -3780,6 +3784,7 @@ export type Database = {
           trade_request_id?: string | null
         }
         Update: {
+          buyer_authorised_user_id?: string | null
           buyer_committed_at?: string | null
           buyer_id?: string | null
           buyer_name?: string | null
@@ -3804,6 +3809,7 @@ export type Database = {
           price_currency?: string | null
           quantity_amount?: number | null
           quantity_unit?: string | null
+          seller_authorised_user_id?: string | null
           seller_committed_at?: string | null
           seller_id?: string | null
           seller_name?: string | null
@@ -4654,6 +4660,9 @@ export type Database = {
           late_acceptance_resolution: string | null
           late_acceptance_resolved_at: string | null
           match_id: string
+          operational_state: string | null
+          operational_state_set_at: string | null
+          operational_state_set_by: string | null
           org_id: string
           original_expired_at: string | null
           reconfirmation_window_expires_at: string | null
@@ -4699,6 +4708,9 @@ export type Database = {
           late_acceptance_resolution?: string | null
           late_acceptance_resolved_at?: string | null
           match_id: string
+          operational_state?: string | null
+          operational_state_set_at?: string | null
+          operational_state_set_by?: string | null
           org_id: string
           original_expired_at?: string | null
           reconfirmation_window_expires_at?: string | null
@@ -4744,6 +4756,9 @@ export type Database = {
           late_acceptance_resolution?: string | null
           late_acceptance_resolved_at?: string | null
           match_id?: string
+          operational_state?: string | null
+          operational_state_set_at?: string | null
+          operational_state_set_by?: string | null
           org_id?: string
           original_expired_at?: string | null
           reconfirmation_window_expires_at?: string | null
