@@ -89,14 +89,22 @@ CopperLine for the purposes of the walkthrough.
 
 ## Demo matches
 
-All six demo matches are labelled `Demo · …` in the match list:
+All six demo matches are listed below using friendly identifiers used
+throughout this guide. In the actual environment you'll recognise
+each one by its Challenge subject and summary text (the queue does
+not display these "Demo ·" titles as a column).
 
 1. Demo · Open challenge
 2. Demo · Under review
 3. Demo · Outcome recorded
 4. Demo · Closed no action
 5. Demo · Withdrawn
-6. Demo · Admin override
+6. Demo · Admin override recorded — note: the platform records an
+   admin override as the *outcome* of a Challenge, not as a separate
+   queue category. In Platform HQ → Disputes → Challenges this
+   example appears as a **terminal (closed) row**, identifiable by
+   the summary *"Counterparty unresponsive for 14 days; requested
+   administrative closure."*
 
 ---
 
