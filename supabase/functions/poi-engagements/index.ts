@@ -1843,6 +1843,199 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── POST /poi-engagements/:id/resolve-binding — D2b admin resolver ──
+    // D2b: when an engagement is parked in `binding_review_required` (or
+    // has `binding_candidates` populated with no `binding_resolution`),
+    // a platform admin reviews the candidate identities and explicitly
+    // records one of three outcomes:
+    //   • confirmed_canonical          → bind to selected_org_id, clear
+    //                                    operational_state, allow progression
+    //   • deferred_no_review_needed    → record decision, clear
+    //                                    operational_state, allow progression
+    //   • rejected                     → record decision, KEEP
+    //                                    operational_state=binding_review_required
+    //                                    so outreach/progression remain blocked
+    // Audit row is written to engagement_outreach_logs with the full
+    // structured payload (event, resolution, selected_org_id, admin_notes,
+    // previous_operational_state, request_id) JSON-encoded into `notes`
+    // because that table has no `metadata` column.
+    if (req.method === "POST" && engagementId && parts[1] === "resolve-binding") {
+      requireRole(authCtx, "platform_admin");
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
+      }
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `POST /poi-engagements/${engagementId}/resolve-binding`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
+      const ResolveSchema = z
+        .object({
+          resolution: z.enum([
+            "confirmed_canonical",
+            "rejected",
+            "deferred_no_review_needed",
+          ]),
+          selected_org_id: z.string().uuid().optional().nullable(),
+          notes: z.string().trim().min(20).max(1000),
+        })
+        .superRefine((val, ctx) => {
+          if (val.resolution === "confirmed_canonical") {
+            if (!val.selected_org_id) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["selected_org_id"],
+                message:
+                  "selected_org_id is required when resolution='confirmed_canonical'",
+              });
+            }
+          } else if (val.selected_org_id) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["selected_org_id"],
+              message:
+                "selected_org_id must be omitted unless resolution='confirmed_canonical'",
+            });
+          }
+        });
+
+      const body = await req.json().catch(() => ({}));
+      const parsed = ResolveSchema.safeParse(body);
+      if (!parsed.success) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          JSON.stringify(parsed.error.flatten().fieldErrors),
+          400,
+        );
+      }
+
+      const { data: current, error: fetchErr } = await supabase
+        .from("poi_engagements")
+        .select("*")
+        .eq("id", engagementId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+      if (!current) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+
+      const previousOperationalState =
+        (current as { operational_state?: string | null }).operational_state ?? null;
+      const bindingCandidates = (current as { binding_candidates?: unknown }).binding_candidates ?? null;
+      const bindingResolution =
+        (current as { binding_resolution?: string | null }).binding_resolution ?? null;
+
+      // Allow only when the row is genuinely in a binding-review state.
+      const inBindingReview =
+        previousOperationalState === "binding_review_required" ||
+        (bindingCandidates != null && bindingResolution == null);
+      if (!inBindingReview) {
+        throw new ApiException(
+          "BINDING_REVIEW_NOT_PENDING",
+          "This engagement is not awaiting a binding review.",
+          409,
+        );
+      }
+      if (bindingResolution != null) {
+        throw new ApiException(
+          "BINDING_REVIEW_ALREADY_RESOLVED",
+          "This engagement's binding review has already been resolved.",
+          409,
+        );
+      }
+
+      const { data: adminProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
+        .maybeSingle();
+
+      const nowIso = new Date().toISOString();
+
+      // Build the update payload according to the chosen resolution.
+      const updatePayload: Record<string, unknown> = {
+        binding_resolution: parsed.data.resolution,
+        operational_state_set_by: authCtx.userId,
+        operational_state_set_at: nowIso,
+      };
+      if (parsed.data.resolution === "confirmed_canonical") {
+        updatePayload.counterparty_org_id = parsed.data.selected_org_id;
+        updatePayload.operational_state = null;
+      } else if (parsed.data.resolution === "deferred_no_review_needed") {
+        updatePayload.operational_state = null;
+      } else {
+        // rejected — keep the row blocked.
+        updatePayload.operational_state = "binding_review_required";
+      }
+
+      const { data: updated, error: updErr } = await supabase
+        .from("poi_engagements")
+        .update(updatePayload)
+        .eq("id", engagementId)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+
+      try {
+        await supabase.from("engagement_outreach_logs").insert({
+          engagement_id: engagementId,
+          actor_type: "admin",
+          admin_user_id: authCtx.userId,
+          admin_email: adminProfile?.email ?? "unknown",
+          admin_name: adminProfile?.full_name ?? null,
+          previous_status: current.engagement_status,
+          new_status: current.engagement_status,
+          entry_type: "binding_review_resolved",
+          notes: JSON.stringify({
+            event: "binding_review_resolved",
+            resolution: parsed.data.resolution,
+            selected_org_id: parsed.data.selected_org_id ?? null,
+            admin_notes: parsed.data.notes,
+            previous_operational_state: previousOperationalState,
+            request_id: requestId,
+          }),
+        });
+      } catch (logErr) {
+        console.warn(`[${requestId}] binding_review_resolved log insert failed (non-fatal):`, logErr);
+      }
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: "engagement.binding_review_resolved",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            resolution: parsed.data.resolution,
+            selected_org_id: parsed.data.selected_org_id ?? null,
+            previous_operational_state: previousOperationalState,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(`[${requestId}] binding_review audit insert failed (non-fatal):`, e);
+      }
+
+      const responseBody = { engagement: updated };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
 
     // ── POST /poi-engagements/:engagementId/decline-late-acceptance — Initiator declines ──
     // Batch B Phase 3: late-acceptance resolution endpoints. Both routes
