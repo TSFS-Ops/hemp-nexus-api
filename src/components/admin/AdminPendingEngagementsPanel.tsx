@@ -300,6 +300,9 @@ export function AdminPendingEngagementsPanel() {
   const [addContactFor, setAddContactFor] = useState<AddContactEngagementSummary | null>(null);
   // D2b — admin Binding Review Resolver dialog state.
   const [bindingReviewFor, setBindingReviewFor] = useState<BindingReviewEngagement | null>(null);
+  // D3 — admin Dispute + Cancel-for-email-change dialog state.
+  const [disputeFor, setDisputeFor] = useState<DisputeEngagementTarget | null>(null);
+  const [cancelEmailFor, setCancelEmailFor] = useState<CancelEngagementTarget | null>(null);
 
   const openSupportNotes = (e: Engagement) => {
     if (notesOpenId === e.id) {
