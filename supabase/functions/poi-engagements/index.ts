@@ -514,7 +514,47 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
-      // ── Batch A — contact-completeness gate (send) ──
+      // ── D2a outreach gate (send) ──
+      // Block disputed + binding-review BEFORE legitimacy / suppression /
+      // email send. Audit-on-block via engagement_outreach_logs so the
+      // refusal is captured in the immutable history with the originating
+      // request_id. entry_type='system_action' is the canonical generic
+      // event type allowed by the live CHECK constraint.
+      {
+        const gate = evaluateOutreachGate(eng as Record<string, unknown>);
+        if (gate) {
+          const adminLookup = await supabase
+            .from("profiles")
+            .select("email, full_name")
+            .eq("id", authCtx.userId)
+            .maybeSingle();
+          const adminEmail = (adminLookup.data as { email?: string } | null)?.email ?? "unknown";
+          const adminName = (adminLookup.data as { full_name?: string | null } | null)?.full_name ?? null;
+          try {
+            await supabase.from("engagement_outreach_logs").insert({
+              engagement_id: engagementId,
+              actor_type: "admin",
+              admin_user_id: authCtx.userId,
+              admin_email: adminEmail,
+              admin_name: adminName,
+              previous_status: (eng as { engagement_status: string }).engagement_status,
+              new_status: (eng as { engagement_status: string }).engagement_status,
+              entry_type: "system_action",
+              notes: JSON.stringify({
+                event: "outreach_blocked",
+                guard_code: gate.code,
+                surface: "send-outreach",
+                request_id: requestId,
+              }),
+            });
+          } catch (logErr) {
+            console.warn(`[${requestId}] Failed to write outreach-blocked log row (non-fatal):`, logErr);
+          }
+          throw new ApiException(gate.code, gate.message, 409);
+        }
+      }
+
+
       // Block before any side effects (legitimacy, suppression, send) so a
       // bad contact record never reaches the email pipeline. recipient_override
       // can satisfy email_missing — re-evaluate against the override when set.
