@@ -4651,6 +4651,7 @@ export type Database = {
           created_at: string
           dispute_metadata: Json | null
           dispute_reason: string | null
+          dispute_source: string | null
           disputed_at: string | null
           disputed_by_token_hash: string | null
           engagement_status: Database["public"]["Enums"]["engagement_status"]
@@ -4699,6 +4700,7 @@ export type Database = {
           created_at?: string
           dispute_metadata?: Json | null
           dispute_reason?: string | null
+          dispute_source?: string | null
           disputed_at?: string | null
           disputed_by_token_hash?: string | null
           engagement_status?: Database["public"]["Enums"]["engagement_status"]
@@ -4747,6 +4749,7 @@ export type Database = {
           created_at?: string
           dispute_metadata?: Json | null
           dispute_reason?: string | null
+          dispute_source?: string | null
           disputed_at?: string | null
           disputed_by_token_hash?: string | null
           engagement_status?: Database["public"]["Enums"]["engagement_status"]
