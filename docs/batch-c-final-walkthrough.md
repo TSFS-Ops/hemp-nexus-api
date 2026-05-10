@@ -202,6 +202,10 @@ The party that raised the concern decided to withdraw it (e.g. they
 realised they had read the term sheet incorrectly). The platform keeps
 the record. No fault is recorded.
 
+**Commercial question to answer:**
+*Does "Withdrawn" feel like a clean, neutral exit when a raiser
+realises the concern is no longer valid?*
+
 ---
 
 ## Walkthrough 6 — Admin Override Recorded
