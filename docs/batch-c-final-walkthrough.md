@@ -34,7 +34,19 @@ feel appropriate when a buyer or seller has raised a genuine
 concern?"*). You only need to confirm those points — you do not need
 to test edge cases.
 
-**5. What is out of scope right now?**
+**5. Two ways to review the same Challenge — this is expected.**
+There are two ways to review the same Challenge depending on role.
+
+- **Trading-party users** (buyer or seller organisation administrators
+  and ordinary members) review a Challenge from the **ordinary match
+  page**, by opening the match from their match list.
+- **Platform admins** review a Challenge from **Platform HQ →
+  Disputes → Challenges sub-tab** (the Challenge Queue / review
+  drawer), not from the ordinary match page.
+
+Both views show the same Challenge. This is expected.
+
+**6. What is out of scope right now?**
 Please **do not** flag the following — they are deliberately deferred
 and will be picked up in a later batch:
 
