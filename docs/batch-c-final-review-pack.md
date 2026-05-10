@@ -5,6 +5,36 @@ Tone: plain English. No technical knowledge required.
 
 ---
 
+## How to use this pack
+
+This is the **first of three documents** to read, in order:
+
+1. `batch-c-final-review-pack.md` (this document) — what Batch C is
+   and why it exists.
+2. `batch-c-final-walkthrough.md` — exactly what to click in the demo
+   environment, and what to notice.
+3. `batch-c-reviewer-checklist.md` — the form to mark each item as
+   *Looks correct / Needs wording change / Needs workflow change /
+   Future scope*.
+
+**Demo environment URL:**
+> https://id-preview--95025ceb-b8ab-4906-adee-3188617c0dbc.lovable.app
+
+**Login:** demo account emails are listed in the walkthrough.
+Passwords will be shared by the Izenzo operator (James) over your
+usual secure channel — they are deliberately not printed in this
+pack.
+
+**Out of scope for this review** (please do not flag):
+evidence download / delete, comment editing, in-app notifications UI,
+rating impact from Challenge outcomes, end-client help guide. All are
+deferred to a later batch.
+
+The workflow itself has already been approved. The purpose of this
+pack is **confirmation and walkthrough, not redesign.**
+
+---
+
 ## 1. What Batch C is
 
 Batch C is the **Challenge Workflow** for live matches on the Izenzo
