@@ -25,6 +25,12 @@ Passwords will be shared by the Izenzo operator (James) over your
 usual secure channel — they are deliberately not printed in this
 pack.
 
+**Two review paths (expected):** the same Challenge can be reviewed
+two ways depending on role — trading-party users (buyer or seller
+organisation) review it from the ordinary **match page**, and
+platform admins review it from **Platform HQ → Disputes → Challenges**
+sub-tab. Both views show the same Challenge.
+
 **Out of scope for this review** (please do not flag):
 evidence download / delete, comment editing, in-app notifications UI,
 rating impact from Challenge outcomes, end-client help guide. All are

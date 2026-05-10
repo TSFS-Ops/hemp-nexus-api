@@ -11,8 +11,13 @@ https://id-preview--95025ceb-b8ab-4906-adee-3188617c0dbc.lovable.app
 the Izenzo operator (James).
 
 **Start here:** log in as the Buyer Admin (`trade@izenzo.co.za`) and
-open *Demo · Open challenge* — then follow `batch-c-final-walkthrough.md`
-in order through the six demo matches.
+open *Demo · Open challenge* from the match list — then follow
+`batch-c-final-walkthrough.md` in order through the six demo matches.
+
+**Two review paths (expected):** trading-party users (buyer/seller)
+review Challenges from the ordinary **match page**; platform admins
+review the same Challenges from **Platform HQ → Disputes → Challenges**
+sub-tab.
 
 **Out of scope (do not flag):** evidence download / delete, comment
 editing, notifications UI, rating impact, end-client help guide.
