@@ -198,3 +198,54 @@ describe("engagement progression guard — call-site contract", () => {
     expect(guarded).toHaveLength(8);
   });
 });
+
+// ── D2a — new guard codes ─────────────────────────────────────────────
+describe("engagement progression guard — D2a (dispute / binding / cancelled)", () => {
+  it("DISPUTED_BEING_NAMED when current engagement is disputed", () => {
+    const d = decide([row("disputed_being_named", "2026-05-10T00:00:00.000Z")]);
+    expect(d.allowed).toBe(false);
+    expect(d.code).toBe("DISPUTED_BEING_NAMED");
+  });
+
+  it("BINDING_REVIEW_PENDING when operational_state=binding_review_required", () => {
+    const r = {
+      ...row("contacted", "2026-05-10T00:00:00.000Z"),
+      operational_state: "binding_review_required",
+      binding_candidates: null,
+      binding_resolution: null,
+    };
+    const d = decide([r]);
+    expect(d.allowed).toBe(false);
+    expect(d.code).toBe("BINDING_REVIEW_PENDING");
+  });
+
+  it("BINDING_REVIEW_PENDING when binding_candidates present and binding_resolution null", () => {
+    const r = {
+      ...row("contacted", "2026-05-10T00:00:00.000Z"),
+      operational_state: null,
+      binding_candidates: [{ org_id: "x" }],
+      binding_resolution: null,
+    };
+    const d = decide([r]);
+    expect(d.allowed).toBe(false);
+    expect(d.code).toBe("BINDING_REVIEW_PENDING");
+  });
+
+  it("does NOT block when binding_resolution is set (resolved binding)", () => {
+    const r = {
+      ...row("accepted", "2026-05-10T00:00:00.000Z"),
+      operational_state: null,
+      binding_candidates: [{ org_id: "x" }],
+      binding_resolution: "bound_to_org_x",
+    };
+    const d = decide([r]);
+    expect(d.allowed).toBe(true);
+    expect(d.code).toBeUndefined();
+  });
+
+  it("CANCELLED_EMAIL_CHANGE when current engagement is cancelled_email_change", () => {
+    const d = decide([row("cancelled_email_change", "2026-05-10T00:00:00.000Z")]);
+    expect(d.allowed).toBe(false);
+    expect(d.code).toBe("CANCELLED_EMAIL_CHANGE");
+  });
+});
