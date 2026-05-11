@@ -213,8 +213,9 @@ export function AdminOutreachBlocksPanel() {
   }, [rows]);
 
   // Per-organisation rollup — uses ONLY the safe org_id field.
-  // No org name lookup, no joins; that would require additional safe-
-  // field guarantees outside this batch's scope.
+  // Display name comes from a scoped (id, name) read on organizations
+  // (Batch J), the same safe pattern used by AdminTradeApprovalsPanel.
+  // No joins to matches / poi_engagements / profiles / binding_candidates.
   const orgRollup = useMemo(() => {
     const m = new Map<string, { org_id: string; total: number; byAction: Record<OutreachBlockedAction, number> }>();
     for (const r of rows) {
