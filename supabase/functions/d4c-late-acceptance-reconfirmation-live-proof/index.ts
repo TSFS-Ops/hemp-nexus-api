@@ -70,7 +70,7 @@ async function postEngagementAction(
   edgeBase: string,
   jwt: string,
   engagementId: string,
-  action: "respond" | "reconfirm-late-acceptance" | "decline-late-acceptance",
+  action: "respond" | "reconfirm" | "decline-late-acceptance",
   body: Record<string, unknown>,
   idempotencyKey: string,
 ): Promise<PostResult> {
