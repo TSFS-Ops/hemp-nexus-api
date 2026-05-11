@@ -1549,6 +1549,43 @@ Deno.serve(async (req) => {
             notifyErr,
           );
         }
+
+        // ── D4c-3d — initiator-side notification (best-effort). ──
+        // Fires only at the initial entry into binding_review_required
+        // (this branch is already gated by `bindingReviewInitialEntry`,
+        // which is null on repeated PATCHes that find the row already
+        // in review). Recipient resolution and wording come from the
+        // D4c helper, which derives recipients ONLY from the initiating
+        // org_id and forbids counterparty/candidate/disputed exposure.
+        // Metadata is restricted to safe operational fields: request_id,
+        // previous_operational_state, and reason_codes_count. Do NOT add
+        // counterparty email, candidate org id/name, binding_candidates,
+        // possible org IDs, commodity, price, quantity, or dispute fields.
+        try {
+          const d4cResult = await dispatchD4cInitiatorAlert(supabase, {
+            eventType: "engagement.binding_review_required",
+            engagementId,
+            actorUserId: authCtx.userId ?? null,
+            sourceFunction: "poi-engagements",
+            dedupeKey: `binding_review_required:${engagementId}`,
+            metadata: {
+              request_id: requestId,
+              previous_operational_state:
+                ((current as { operational_state?: string | null }).operational_state) ?? null,
+              reason_codes_count: bindingReviewInitialEntry.reason_codes.length,
+            },
+          });
+          if (!d4cResult.ok) {
+            console.warn(
+              `[${requestId}] d4c initiator alert skipped (non-fatal): reason=${d4cResult.reason}`,
+            );
+          }
+        } catch (e) {
+          console.warn(
+            `[${requestId}] d4c initiator alert dispatch threw (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
       }
 
       // ── Batch A — emit contact.assigned / contact.updated audit row ──
