@@ -19,6 +19,7 @@ import { template as outreachIntentToTrade } from './outreach-intent-to-trade.ts
 import { template as outreachSlaDigest } from './outreach-sla-digest.tsx'
 import { template as acceptanceReceipt } from './acceptance-receipt.tsx'
 import { template as revenueEventNotify } from './revenue-event-notify.tsx'
+import { template as batchDInitiatorAlert } from './batch-d-initiator-alert.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'match-notification': matchNotification,
@@ -31,4 +32,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'outreach-sla-digest': outreachSlaDigest,
   'acceptance-receipt': acceptanceReceipt,
   'revenue-event-notify': revenueEventNotify,
+  // D4c-2: registered but NOT wired into any production trigger site.
+  // Sole intended caller is `dispatchD4cInitiatorAlert`.
+  'batch-d-initiator-alert': batchDInitiatorAlert,
 }
