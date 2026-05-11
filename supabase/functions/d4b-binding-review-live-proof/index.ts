@@ -74,8 +74,8 @@ async function patchEngagement(
   body: Record<string, unknown>,
   idempotencyKey: string,
 ): Promise<PatchResult> {
-  // NOTE: variable intentionally not named `baseUrl` — the route guard
-  // (`scripts/check-routes.mjs`) treats `${baseUrl}/...` as an in-app
+  // NOTE: parameter intentionally not named `baseUrl` — the route guard
+  // (scripts/check-routes.mjs) treats that variable name as an in-app
   // navigation target, which would falsely flag this edge-fn invocation.
   const res = await fetch(
     `${edgeBase}/functions/v1/poi-engagements/${engagementId}`,
