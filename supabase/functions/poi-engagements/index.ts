@@ -663,32 +663,26 @@ Deno.serve(async (req) => {
         if (isOutreachBlocked(sendState)) {
           const code = contactBlockCode(sendState)!;
           const reason = contactBlockReason(sendState)!;
-          // Batch E: emit canonical catalogue event AND keep legacy
-          // `contact.incomplete_detected` for one release window.
-          // Batch G — see RETIREMENT NOTE above the preview-outreach
-          // dual-write loop. Same removal rules apply here. Both gate
-          // paths must be retired together.
-          for (const action of [
-            "outreach.blocked.contact_incomplete",
-            "contact.incomplete_detected",
-          ] as const) {
-            try {
-              await supabase.from("audit_logs").insert({
-                org_id: (eng as { org_id: string }).org_id,
-                actor_user_id: authCtx.userId,
-                action,
-                entity_type: "poi_engagement",
-                entity_id: engagementId,
-                metadata: {
-                  actor_role: "platform_admin",
-                  surface: "send-outreach",
-                  state: sendState,
-                  code,
-                  request_id: requestId,
-                },
-              });
-            } catch (_e) { /* non-fatal */ }
-          }
+          // Batch H: legacy `contact.incomplete_detected` retired here
+          // too. Canonical event only — see preview-outreach gate above
+          // for the dependency-audit rationale. Do NOT reintroduce a
+          // legacy alias.
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "outreach.blocked.contact_incomplete",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "send-outreach",
+                state: sendState,
+                code,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal */ }
           throw new ApiException(code, reason, 422);
         }
       }
