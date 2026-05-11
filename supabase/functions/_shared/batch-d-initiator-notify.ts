@@ -625,6 +625,7 @@ export async function dispatchD4cInitiatorAlert(
       entity_id: args.engagementId,
       metadata: buildAuditMetadata({
         ...args,
+        now,
         dedupeKey,
         recipientCount: recipients.length,
         hardSuppressedCount: 0,
