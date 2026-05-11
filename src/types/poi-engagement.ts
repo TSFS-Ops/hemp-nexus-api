@@ -53,11 +53,33 @@ export interface BindingHintLookupError {
   message: string;
 }
 
+/**
+ * The supplied counterparty email is ambiguous (multi-org exact match,
+ * shared mailbox local-part, or domain-only ambiguity outside the free
+ * provider list). The engagement has been moved to the
+ * `binding_review_required` operational state and a platform admin
+ * must resolve it via the resolve-binding endpoint. The reviewer
+ * dashboard renders this with the existing binding-review queue.
+ */
+export interface BindingHintBindingReviewRequired {
+  status: "binding_review_required";
+  email: string;
+  /**
+   * One or more of:
+   *   • "shared_email_multi_org"       — same email registered to ≥2 orgs
+   *   • "shared_mailbox_local_part"    — info@/sales@/etc. with real candidates
+   *   • "domain_only_ambiguity"        — domain registered to ≥2 orgs (non-free)
+   */
+  reason_codes: string[];
+  candidate_count: number;
+}
+
 export type PoiEngagementBindingHint =
   | BindingHintBound
   | BindingHintNoMatch
   | BindingHintAlreadyBound
-  | BindingHintLookupError;
+  | BindingHintLookupError
+  | BindingHintBindingReviewRequired;
 
 /** PATCH /poi-engagements/:id response envelope. */
 export interface UpdatePoiEngagementResponse {
@@ -96,5 +118,10 @@ export const BINDING_HINT_MESSAGES: Record<
     tone: "error",
     title:
       "Email saved, but the platform could not check whether it matches a registered organisation. Please retry shortly.",
+  },
+  binding_review_required: {
+    tone: "warning",
+    title:
+      "Email saved, but it is ambiguous on the platform. The engagement has been moved to binding review and is awaiting a platform-admin decision before any outreach can begin.",
   },
 };

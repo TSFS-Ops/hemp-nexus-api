@@ -14,6 +14,7 @@ import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mo
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
 import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
+import { evaluateCounterpartyEmailBinding } from "../_shared/binding-resolver.ts";
 // Batch A — single source of truth for contact-completeness gating.
 // Mirror of `src/lib/contact-completeness.ts`. Both files MUST stay in
 // lockstep; the regression tests pin both surfaces.
@@ -1109,7 +1110,22 @@ Deno.serve(async (req) => {
         | { status: "no_match"; email: string; message: string }
         | { status: "already_bound"; org_id: string }
         | { status: "lookup_error"; email: string; message: string }
+        | {
+            status: "binding_review_required";
+            email: string;
+            reason_codes: string[];
+            candidate_count: number;
+          }
         | null = null;
+      // Tracks whether THIS PATCH transitions the engagement INTO
+      // binding_review_required for the first time. The D4b admin
+      // alert fires once at the initial-entry transition only, never
+      // on subsequent PATCHes that find the row already in review.
+      let bindingReviewInitialEntry: {
+        candidates: unknown;
+        reason_codes: string[];
+        candidate_count: number;
+      } | null = null;
 
       if (parsed.data.counterparty_email !== undefined) {
         // Schema already trims + lowercases, but normalise defensively in case
@@ -1167,24 +1183,22 @@ Deno.serve(async (req) => {
         updates.counterparty_email = normalisedEmail;
 
 
-        // ── Auto-resolve email → registered org ──
-        // If the supplied counterparty email already maps to a profile on the
-        // platform, bind the engagement to that org so it surfaces in the
-        // recipient's inbound queue (which filters by counterparty_org_id).
-        // Only resolve when the row is currently unbound, to avoid silently
-        // overwriting a deliberate prior binding.
+        // ── Resolve email → registered org (Batch D production resolver) ──
+        // Multi-profile lookup that distinguishes safe single-org auto-bind
+        // from ambiguous cases (multi-org, shared mailbox, domain-only).
+        // Ambiguous cases enter the binding_review_required operational
+        // state and fire a one-shot D4b admin alert (initial entry only).
+        // Only runs when the row is currently unbound — never overwrites
+        // a deliberate prior binding.
         if (!current.counterparty_org_id) {
-          const { data: matchedProfile, error: lookupErr } = await supabase
-            .from("profiles")
-            .select("org_id")
-            .ilike("email", normalisedEmail)
-            .not("org_id", "is", null)
-            .limit(1)
-            .maybeSingle();
-          if (lookupErr) {
+          const decision = await evaluateCounterpartyEmailBinding(
+            supabase,
+            normalisedEmail,
+          );
+          if (decision.kind === "lookup_error") {
             console.warn(
               `[${requestId}] counterparty_email→org resolve failed (non-fatal):`,
-              lookupErr.message,
+              decision.message,
             );
             bindingHint = {
               status: "lookup_error",
@@ -1192,16 +1206,54 @@ Deno.serve(async (req) => {
               message:
                 "Email saved, but the platform could not check whether it matches a registered organisation. Please retry shortly.",
             };
-          } else if (matchedProfile?.org_id) {
-            updates.counterparty_org_id = matchedProfile.org_id;
+          } else if (decision.kind === "safe_bind") {
+            updates.counterparty_org_id = decision.org_id;
             updates.counterparty_type = "known";
             bindingHint = {
               status: "bound",
-              org_id: matchedProfile.org_id,
+              org_id: decision.org_id,
               email: normalisedEmail,
             };
             console.log(
-              `[${requestId}] Auto-bound engagement ${engagementId} to org ${matchedProfile.org_id} via email ${normalisedEmail}`,
+              `[${requestId}] Auto-bound engagement ${engagementId} to org ${decision.org_id} via email ${normalisedEmail}`,
+            );
+          } else if (decision.kind === "binding_review_required") {
+            // Persist binding-review state. Only mark this as an
+            // "initial entry" if the row was NOT already in the
+            // binding_review_required operational state — repeated
+            // PATCHes must not duplicate the D4b admin alert.
+            const previousOperationalState =
+              ((current as { operational_state?: string | null })
+                .operational_state ?? null) as string | null;
+            const isAlreadyInReview =
+              previousOperationalState === "binding_review_required";
+            const candidatesPayload = {
+              version: 1,
+              computed_at: new Date().toISOString(),
+              submitted_email: normalisedEmail,
+              reason_codes: decision.reason_codes,
+              candidates: decision.candidates,
+            };
+            updates.operational_state = "binding_review_required";
+            updates.operational_state_set_by = authCtx.userId;
+            updates.operational_state_set_at = new Date().toISOString();
+            updates.binding_candidates = candidatesPayload;
+            // counterparty_org_id intentionally left NULL.
+            bindingHint = {
+              status: "binding_review_required",
+              email: normalisedEmail,
+              reason_codes: decision.reason_codes,
+              candidate_count: decision.candidates.length,
+            };
+            if (!isAlreadyInReview) {
+              bindingReviewInitialEntry = {
+                candidates: candidatesPayload,
+                reason_codes: decision.reason_codes,
+                candidate_count: decision.candidates.length,
+              };
+            }
+            console.log(
+              `[${requestId}] Engagement ${engagementId} entered binding_review_required (${decision.reason_codes.join(",")}, ${decision.candidates.length} candidates); initial_entry=${!isAlreadyInReview}`,
             );
           } else {
             bindingHint = {
@@ -1382,6 +1434,14 @@ Deno.serve(async (req) => {
       // Carry the auto-resolved binding fields (set above when an email matched a registered profile)
       if (updates.counterparty_org_id !== undefined) sideUpdates.counterparty_org_id = updates.counterparty_org_id;
       if (updates.counterparty_type !== undefined) sideUpdates.counterparty_type = updates.counterparty_type;
+      // Batch D — production binding-review path. When the resolver
+      // detects ambiguity it sets these on `updates`; we propagate
+      // them here so the row enters the binding_review_required
+      // operational state in the same write as the email update.
+      if (updates.operational_state !== undefined) sideUpdates.operational_state = updates.operational_state;
+      if (updates.operational_state_set_by !== undefined) sideUpdates.operational_state_set_by = updates.operational_state_set_by;
+      if (updates.operational_state_set_at !== undefined) sideUpdates.operational_state_set_at = updates.operational_state_set_at;
+      if (updates.binding_candidates !== undefined) sideUpdates.binding_candidates = updates.binding_candidates;
       if (parsed.data.admin_notes !== undefined) sideUpdates.admin_notes = parsed.data.admin_notes;
       if (parsed.data.contact_method !== undefined) sideUpdates.contact_method = parsed.data.contact_method;
       if (parsed.data.contact_date !== undefined) sideUpdates.contact_date = parsed.data.contact_date;
@@ -1418,6 +1478,77 @@ Deno.serve(async (req) => {
       }
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
+
+      // ── Batch D — binding-review initial-entry side-effects ──
+      // Fires exactly once when the engagement first transitions into
+      // binding_review_required. Subsequent PATCHes that find the row
+      // already in review take the `isAlreadyInReview` short-circuit
+      // above and skip this block entirely.
+      // The D4b admin alert helper targets the platform admin mailbox
+      // + Slack only; no counterparty/org-admin/external recipient is
+      // derived here. Outreach log uses entry_type='system_action'
+      // (existing CHECK value, no constraint change).
+      if (bindingReviewInitialEntry) {
+        try {
+          await supabase.from("engagement_outreach_logs").insert({
+            engagement_id: engagementId,
+            actor_type: "system",
+            previous_status: current.engagement_status,
+            new_status: current.engagement_status,
+            entry_type: "system_action",
+            notes: JSON.stringify({
+              event: "binding_review_required",
+              reason_codes: bindingReviewInitialEntry.reason_codes,
+              candidate_count: bindingReviewInitialEntry.candidate_count,
+              request_id: requestId,
+            }),
+          });
+        } catch (logErr) {
+          console.warn(
+            `[${requestId}] binding_review_required outreach log insert failed (non-fatal):`,
+            logErr,
+          );
+        }
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: current.org_id,
+            actor_user_id: authCtx.userId,
+            action: "engagement.binding_review_required",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              reason_codes: bindingReviewInitialEntry.reason_codes,
+              candidate_count: bindingReviewInitialEntry.candidate_count,
+              previous_operational_state:
+                ((current as { operational_state?: string | null }).operational_state) ?? null,
+              source: "poi-engagements:patch_resolver",
+              request_id: requestId,
+            },
+          });
+        } catch (e) {
+          console.warn(
+            `[${requestId}] binding_review_required audit insert failed (non-fatal):`,
+            e,
+          );
+        }
+        try {
+          await dispatchD4bAdminAlert(supabase, {
+            eventType: "engagement.binding_review_required",
+            engagementId,
+            engagement: {
+              engagement_status: updated?.engagement_status ?? null,
+              operational_state: "binding_review_required",
+              org_id: current.org_id,
+            },
+            sourceFunction: "poi-engagements:patch_initial_entry",
+          });
+        } catch (notifyErr) {
+          console.warn(
+            `[${requestId}] D4b binding_review_required admin alert failed (non-fatal):`,
+            notifyErr,
+          );
+        }
+      }
 
       // ── Batch A — emit contact.assigned / contact.updated audit row ──
       // Fires when contact_type, contact_name, or counterparty_email actually
