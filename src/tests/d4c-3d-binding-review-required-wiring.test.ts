@@ -31,7 +31,10 @@ function findD4cBindingReviewRequiredCall(): string {
   while (true) {
     const idx = SRC.indexOf("dispatchD4cInitiatorAlert(supabase, {", searchFrom);
     if (idx < 0) return "";
-    const slice = SRC.slice(idx, idx + 1500);
+    // Bound the slice to the call's closing `});` so unrelated downstream
+    // code (e.g. Batch A contact-assigned block) is not pulled in.
+    const end = SRC.indexOf("});", idx);
+    const slice = SRC.slice(idx, end > 0 ? end + 3 : idx + 800);
     if (slice.includes('"engagement.binding_review_required"')) {
       return slice;
     }
