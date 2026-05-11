@@ -150,27 +150,36 @@ describe("Batch H :: legacy contact.incomplete_detected retired", () => {
   });
 
   it("canonical outreach.blocked.contact_incomplete still emits from BOTH gate paths", () => {
-    // Each emit site sets a distinct surface in metadata. We require
-    // at least one canonical emit paired with each surface label.
-    const previewWindow = codeOnly.split('"preview-outreach"');
-    const sendWindow = codeOnly.split('"send-outreach"');
-    expect(previewWindow.length).toBeGreaterThanOrEqual(2);
-    expect(sendWindow.length).toBeGreaterThanOrEqual(2);
-
-    // Both surfaces must sit alongside a canonical action literal.
-    // Look at a generous window around each surface marker.
-    function surfaceHasCanonical(surface: string): boolean {
-      const idx = codeOnly.indexOf(`"${surface}"`);
-      if (idx < 0) return false;
-      const window = codeOnly.slice(Math.max(0, idx - 600), idx + 200);
-      return window.includes('"outreach.blocked.contact_incomplete"');
+    // Locate every occurrence of the canonical action literal and
+    // require that at least one sits inside a preview-outreach window
+    // and at least one sits inside a send-outreach window.
+    const literal = '"outreach.blocked.contact_incomplete"';
+    const occurrences: number[] = [];
+    let from = 0;
+    while (true) {
+      const i = codeOnly.indexOf(literal, from);
+      if (i < 0) break;
+      occurrences.push(i);
+      from = i + literal.length;
     }
     expect(
-      surfaceHasCanonical("preview-outreach"),
+      occurrences.length,
+      "expected at least two canonical emit sites (preview + send)",
+    ).toBeGreaterThanOrEqual(2);
+
+    const surfacesNear = occurrences.map((i) => {
+      const window = codeOnly.slice(Math.max(0, i - 200), i + 600);
+      return {
+        preview: window.includes('"preview-outreach"'),
+        send: window.includes('"send-outreach"'),
+      };
+    });
+    expect(
+      surfacesNear.some((s) => s.preview),
       "preview-outreach gate must still emit canonical contact_incomplete event",
     ).toBe(true);
     expect(
-      surfaceHasCanonical("send-outreach"),
+      surfacesNear.some((s) => s.send),
       "send-outreach gate must still emit canonical contact_incomplete event",
     ).toBe(true);
   });
