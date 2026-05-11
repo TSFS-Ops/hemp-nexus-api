@@ -46,6 +46,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.d4b-binding-review-live-proof]
     verify_jwt = false
+  [functions.d4b-binding-review-live-proof-runner]
+    verify_jwt = false
   [functions.data-retention]
     verify_jwt = false
   [functions.data-sources]
