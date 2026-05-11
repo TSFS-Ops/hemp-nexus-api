@@ -49,11 +49,13 @@ describe("D4c-3d — binding_review_required wiring", () => {
     );
   });
 
-  it("contains exactly one engagement.binding_review_required dispatch site", () => {
-    const dispatchEventOccurrences = SRC.split(
-      `eventType: "engagement.binding_review_required"`,
+  it("contains exactly one D4c initiator dispatch for binding_review_required", () => {
+    // Counted via the D4c-specific dedupe key so the D4b admin alert
+    // (which shares the same eventType string) is not conflated.
+    const occurrences = SRC.split(
+      "dedupeKey: `binding_review_required:${engagementId}`",
     ).length - 1;
-    expect(dispatchEventOccurrences).toBe(1);
+    expect(occurrences).toBe(1);
   });
 
   it("dispatch lives inside the bindingReviewInitialEntry initial-entry branch", () => {
