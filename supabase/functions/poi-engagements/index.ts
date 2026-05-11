@@ -252,9 +252,50 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "Invalid match ID format", 400);
       }
 
+      // Batch E Phase 3 — initiator-facing response hardening.
+      // Replace `select("*")` with an explicit allowlist so sensitive
+      // fields (binding_candidates, dispute_reason, dispute_source,
+      // disputed_by_token_hash, disputed_at, dispute_metadata,
+      // admin/support notes, SLA reminder counters, operational_state
+      // setter audit fields, cancellation audit fields, etc.) are
+      // never serialised onto the wire — even though no current UI
+      // surface displays them. The allowlist is the union of fields
+      // consumed by:
+      //   • PendingEngagementSection (initiator status banner & details)
+      //   • EngagementTracker (engagement_status, counterparty_type)
+      //   • UnknownCounterpartyStatus, OrgAdminContactCompletionCard,
+      //     ReconfirmLateAcceptanceCard, AcceptEngagementCard
+      //   • engagement-progression-guard (status, operational_state,
+      //     binding_resolution — NOT raw binding_candidates)
+      // Admin surfaces consume `GET /poi-engagements?type=...`, never
+      // this route, so role-specific shaping is not required here.
+      const BY_MATCH_RESPONSE_ALLOWLIST = [
+        "id",
+        "match_id",
+        "org_id",
+        "engagement_status",
+        "counterparty_type",
+        "counterparty_email",
+        "counterparty_org_id",
+        "contact_type",
+        "contact_name",
+        "created_at",
+        "updated_at",
+        "contacted_at",
+        "responded_at",
+        "expires_at",
+        "counterparty_response",
+        "renewed_from_engagement_id",
+        "renewed_engagement_id",
+        "late_acceptance_recorded_at",
+        "late_acceptance_resolution",
+        "reconfirmation_window_expires_at",
+        "operational_state",
+        "binding_resolution",
+      ].join(",");
       const { data, error } = await supabase
         .from("poi_engagements")
-        .select("*")
+        .select(BY_MATCH_RESPONSE_ALLOWLIST)
         .eq("match_id", matchId)
         .order("created_at", { ascending: false });
 
