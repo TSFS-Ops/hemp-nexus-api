@@ -1883,6 +1883,44 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] D4b admin alert failed (non-fatal):`, notifyErr);
       }
 
+      // D4c-3e: initiator-side alert that the Pending Engagement is
+      // paused for platform review. The already-disputed early-return
+      // above guarantees this branch only runs on the INITIAL entry to
+      // disputed_being_named (replays return 409 before reaching here),
+      // so dedupe is naturally enforced. Recipients are derived ONLY
+      // from poi_engagements.org_id by the helper; the disputed
+      // counterparty, candidate orgs, and external counterparties are
+      // never contacted. Metadata is restricted to safe operational
+      // fields. Do NOT add counterparty email/name/org_id, disputed
+      // party identity, dispute_reason, candidate orgs, binding
+      // candidates, commodity, price, quantity, or any user-entered
+      // dispute text. Best-effort: never fails the primary flow.
+      try {
+        const d4cResult = await dispatchD4cInitiatorAlert(supabase, {
+          eventType: "engagement.disputed_being_named",
+          engagementId,
+          actorUserId: authCtx.userId ?? null,
+          sourceFunction: "poi-engagements",
+          dedupeKey: `disputed_being_named:${engagementId}`,
+          metadata: {
+            request_id: requestId,
+            previous_status: current.engagement_status ?? null,
+            previous_operational_state:
+              (current as { operational_state?: string | null }).operational_state ?? null,
+          },
+        });
+        if (!d4cResult.ok) {
+          console.warn(
+            `[${requestId}] d4c initiator alert skipped (non-fatal): reason=${d4cResult.reason}`,
+          );
+        }
+      } catch (e) {
+        console.warn(
+          `[${requestId}] d4c initiator alert dispatch threw (non-fatal):`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+
       const responseBody = { engagement: updated };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
