@@ -351,8 +351,11 @@ export function AdminOutreachBlocksPanel() {
             <TableBody>
               {orgRollup.map((o) => (
                 <TableRow key={o.org_id}>
-                  <TableCell className="font-mono text-xs">
-                    {o.org_id.substring(0, 12)}
+                  <TableCell className="text-xs">
+                    <div className="font-medium">{orgLabel(o.org_id)}</div>
+                    <div className="font-mono text-[10px] text-muted-foreground">
+                      {o.org_id.substring(0, 12)}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">{o.total}</TableCell>
                   <TableCell className="text-right font-mono text-xs">
