@@ -91,7 +91,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "A Pending Engagement requires a binding-review decision and is awaiting platform review.",
-    emailEnabled: false,
+    adminDispatchEnabled: false,
   },
   {
     event: "engagement.binding_review_resolved",
@@ -106,7 +106,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "Binding review resolved. The engagement state has been updated by the platform.",
-    emailEnabled: false,
+    adminDispatchEnabled: false,
   },
   {
     event: "engagement.disputed_being_named",
@@ -120,7 +120,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "A counterparty has queried being named on a Pending Engagement. The engagement is paused for platform review.",
-    emailEnabled: false,
+    adminDispatchEnabled: false,
   },
   {
     event: "engagement.cancelled_email_change",
@@ -133,7 +133,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "Pending Engagement cancelled for email change. The initiating organisation may create a replacement engagement.",
-    emailEnabled: false,
+    adminDispatchEnabled: false,
   },
   {
     event: "engagement.email_change_blocked",
@@ -147,7 +147,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "The contact email cannot be edited on this engagement. Please cancel and recreate the engagement with the corrected address.",
-    emailEnabled: false,
+    adminDispatchEnabled: false,
   },
   {
     event: "outreach.blocked.contact_incomplete",
@@ -161,7 +161,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "Outreach is paused until the counterparty contact details are complete.",
-    emailEnabled: false,
+    adminDispatchEnabled: false,
   },
   {
     event: "outreach.blocked.binding_review_pending",
@@ -175,7 +175,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "Outreach is paused while the platform confirms the registered organisation linked to this contact.",
-    emailEnabled: false,
+    adminDispatchEnabled: false,
   },
   {
     event: "outreach.blocked.disputed_being_named",
@@ -189,7 +189,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "Outreach is paused while a counterparty query is under platform review. No action is required from you.",
-    emailEnabled: false,
+    adminDispatchEnabled: false,
   },
 ] as const;
 
