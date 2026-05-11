@@ -222,7 +222,7 @@ function baseDeps(extra: Partial<D4cInitiatorNotifyDeps> = {}): D4cInitiatorNoti
     ]),
     hardSuppressionChecker: async () => new Set<string>(),
     enqueueEmail: async () => ({ ok: true }),
-    hashEmail: async (e: string) => `hash(${e})`,
+    hashEmail: async (e: string) => `sha256:${e.length}:${e.charCodeAt(0).toString(16)}`,
     now: () => new Date("2026-05-11T12:00:00Z"),
     ...extra,
   };
