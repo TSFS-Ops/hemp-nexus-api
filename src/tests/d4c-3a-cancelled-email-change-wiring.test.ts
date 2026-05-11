@@ -35,8 +35,14 @@ describe("D4c-3a — cancelled-email-change initiator alert wiring", () => {
     );
   });
 
-  it("invokes dispatchD4cInitiatorAlert exactly once in the route file", () => {
-    const matches = SOURCE.match(/dispatchD4cInitiatorAlert\(/g) ?? [];
+  it("invokes dispatchD4cInitiatorAlert exactly once for the cancelled_email_change event", () => {
+    // Other D4c-3* phases wire additional events (e.g. D4c-3b wires
+    // binding_review_resolved), so total dispatch sites grow. The 3a
+    // contract is: exactly one call carries the cancelled_email_change
+    // event type.
+    const matches = SOURCE.match(
+      /dispatchD4cInitiatorAlert\(\s*supabase\s*,\s*\{[\s\S]*?eventType:\s*"engagement\.cancelled_email_change"/g,
+    ) ?? [];
     expect(matches.length).toBe(1);
   });
 

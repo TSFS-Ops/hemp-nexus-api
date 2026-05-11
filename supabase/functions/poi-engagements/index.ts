@@ -2213,6 +2213,45 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] binding_review audit insert failed (non-fatal):`, e);
       }
 
+      // ── D4c-3b: best-effort initiator-side operational notice ────────
+      // Fired ONLY when the resolution actually closes binding review
+      // (confirmed_canonical or deferred_no_review_needed). The "rejected"
+      // branch reasserts operational_state='binding_review_required' and
+      // is therefore intentionally skipped — the review is not resolved
+      // and `engagement.binding_review_resolved` would be misleading.
+      //
+      // The helper resolves recipients ONLY from the initiating org_id;
+      // it never reads counterparty/candidate/disputed fields. Metadata
+      // contains no counterparty email, candidate org, binding-candidate
+      // detail, commodity, price, quantity, or disputed-party identity —
+      // only the request id and the operational outcome.
+      if (parsed.data.resolution !== "rejected") {
+        try {
+          const d4cResult = await dispatchD4cInitiatorAlert(supabase, {
+            eventType: "engagement.binding_review_resolved",
+            engagementId,
+            actorUserId: authCtx.userId ?? null,
+            sourceFunction: "poi-engagements",
+            dedupeKey: `binding_review_resolved:${engagementId}`,
+            metadata: {
+              request_id: requestId,
+              resolution: parsed.data.resolution,
+              previous_operational_state: previousOperationalState,
+            },
+          });
+          if (!d4cResult.ok) {
+            console.warn(
+              `[${requestId}] d4c initiator alert skipped (non-fatal): reason=${d4cResult.reason}`,
+            );
+          }
+        } catch (e) {
+          console.warn(
+            `[${requestId}] d4c initiator alert dispatch threw (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }
+
       const responseBody = { engagement: updated };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
