@@ -335,9 +335,10 @@ Deno.serve(async (req) => {
     }
 
     // ── T1+T2+T3+T4: happy path: counterparty late-accepts ─────────────
-    const eid1 = await newExpiredEngagement("t1");
-    const r1 = await postEngagementAction(SUPABASE_URL, cpJwt, eid1, "respond",
-      { action: "accepted" }, `${tag}_t1`);
+    const e1 = await newExpiredEngagement("t1");
+    const eid1 = e1.engId;
+    const mid1 = e1.matchId;
+    const r1 = await postRespond(SUPABASE_URL, cpJwt, mid1, { action: "accepted" }, `${tag}_t1`);
     const row1 = await fetchEng(eid1);
     const queued1 = await fetchInitiatorAuditRows(
       eid1,
@@ -419,8 +420,7 @@ Deno.serve(async (req) => {
     });
 
     // ── T5: replay /respond → 409 + no new alert ───────────────────────
-    const r1b = await postEngagementAction(SUPABASE_URL, cpJwt, eid1, "respond",
-      { action: "accepted" }, `${tag}_t1_replay`);
+    const r1b = await postRespond(SUPABASE_URL, cpJwt, mid1, { action: "accepted" }, `${tag}_t1_replay`);
     const queued1b = await fetchInitiatorAuditRows(
       eid1,
       "engagement.initiator_alert_queued",
@@ -439,8 +439,7 @@ Deno.serve(async (req) => {
 
     // ── T6: reconfirm route does NOT emit pending-reconfirmation alert ─
     {
-      const r6 = await postEngagementAction(SUPABASE_URL, initJwt, eid1,
-        "reconfirm", {}, `${tag}_t6`);
+      const r6 = await postInitiatorAction(SUPABASE_URL, initJwt, eid1, "reconfirm", `${tag}_t6`);
       const queued6 = await fetchInitiatorAuditRows(
         eid1,
         "engagement.initiator_alert_queued",
@@ -459,17 +458,17 @@ Deno.serve(async (req) => {
 
     // ── T7: decline route on a fresh late-acceptance engagement ────────
     {
-      const eid7 = await newExpiredEngagement("t7");
-      const rPre = await postEngagementAction(SUPABASE_URL, cpJwt, eid7, "respond",
-        { action: "accepted" }, `${tag}_t7_pre`);
+      const e7 = await newExpiredEngagement("t7");
+      const eid7 = e7.engId;
+      const mid7 = e7.matchId;
+      const rPre = await postRespond(SUPABASE_URL, cpJwt, mid7, { action: "accepted" }, `${tag}_t7_pre`);
       // baseline must be exactly one queued alert from the late-accept
       const queued7Pre = await fetchInitiatorAuditRows(
         eid7,
         "engagement.initiator_alert_queued",
         "engagement.late_acceptance_pending_reconfirmation",
       );
-      const r7 = await postEngagementAction(SUPABASE_URL, initJwt, eid7,
-        "decline-late-acceptance", {}, `${tag}_t7`);
+      const r7 = await postInitiatorAction(SUPABASE_URL, initJwt, eid7, "decline-late-acceptance", `${tag}_t7`);
       const queued7Post = await fetchInitiatorAuditRows(
         eid7,
         "engagement.initiator_alert_queued",
@@ -491,7 +490,9 @@ Deno.serve(async (req) => {
 
     // ── T8: hard-suppressed initiating admin ───────────────────────────
     {
-      const eid8 = await newExpiredEngagement("t8");
+      const e8 = await newExpiredEngagement("t8");
+      const eid8 = e8.engId;
+      const mid8 = e8.matchId;
       const { error: supErr } = await admin.from("suppressed_emails").upsert({
         email: initAdminEmail.toLowerCase(),
         reason: "bounce",
@@ -500,8 +501,7 @@ Deno.serve(async (req) => {
       cleanup.push(() => admin.from("suppressed_emails")
         .delete().eq("email", initAdminEmail.toLowerCase()));
 
-      const r8 = await postEngagementAction(SUPABASE_URL, cpJwt, eid8, "respond",
-        { action: "accepted" }, `${tag}_t8`);
+      const r8 = await postRespond(SUPABASE_URL, cpJwt, mid8, { action: "accepted" }, `${tag}_t8`);
       const row8 = await fetchEng(eid8);
       const queued8 = await fetchInitiatorAuditRows(
         eid8,
