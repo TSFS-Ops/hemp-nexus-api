@@ -1109,7 +1109,22 @@ Deno.serve(async (req) => {
         | { status: "no_match"; email: string; message: string }
         | { status: "already_bound"; org_id: string }
         | { status: "lookup_error"; email: string; message: string }
+        | {
+            status: "binding_review_required";
+            email: string;
+            reason_codes: string[];
+            candidate_count: number;
+          }
         | null = null;
+      // Tracks whether THIS PATCH transitions the engagement INTO
+      // binding_review_required for the first time. The D4b admin
+      // alert fires once at the initial-entry transition only, never
+      // on subsequent PATCHes that find the row already in review.
+      let bindingReviewInitialEntry: {
+        candidates: unknown;
+        reason_codes: string[];
+        candidate_count: number;
+      } | null = null;
 
       if (parsed.data.counterparty_email !== undefined) {
         // Schema already trims + lowercases, but normalise defensively in case
