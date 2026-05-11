@@ -107,7 +107,11 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     event: "engagement.binding_review_resolved",
     label: "Binding review resolved",
     recommendation: "audit_only",
-    allowedRecipients: ["platform_admin"],
+    // D4c-2 correction: initiating_org_admin permitted to receive a
+    // generic resolution notice. Wording does not reveal the resolution
+    // direction, counterparty identity, candidate-org identity, or any
+    // disputed-party identity.
+    allowedRecipients: ["platform_admin", "initiating_org_admin"],
     forbiddenRecipients: [
       "counterparty_org_admin",
       "ordinary_org_member",
@@ -122,14 +126,20 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     event: "engagement.disputed_being_named",
     label: "Counterparty dispute received",
     recommendation: "admin_queue",
-    allowedRecipients: ["platform_admin"],
+    // D4c-2 correction: initiating_org_admin permitted to receive a
+    // generic "engagement paused for platform review" notice. The
+    // initiator already named the counterparty, so disclosing that
+    // the engagement is paused for review does not leak identity.
+    // The disputed-counterparty branch remains explicitly forbidden.
+    allowedRecipients: ["platform_admin", "initiating_org_admin"],
     forbiddenRecipients: [
+      "counterparty_org_admin",
       "ordinary_org_member",
       "external_unregistered_counterparty",
       "disputed_counterparty",
     ],
     safeWording:
-      "A counterparty has queried being named on a Pending Engagement. The engagement is paused for platform review.",
+      "This Pending Engagement is paused for platform review. No counterparty contact has been made on your behalf while the review is open.",
     adminDispatchEnabled: true,
   },
   {
