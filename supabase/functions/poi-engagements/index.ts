@@ -1987,6 +1987,36 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] cancel audit insert failed (non-fatal):`, e);
       }
 
+      // ── D4c-3a: best-effort initiator-side operational notice ────────
+      // Wired only after the cancellation state is committed and audited.
+      // The helper resolves recipients ONLY from the initiating org_id;
+      // it never reads counterparty/candidate/disputed fields. We pass
+      // no counterparty email, no new_email, no commodity, no PII — just
+      // the engagement id, a stable dedupe key, and the source function.
+      try {
+        const d4cResult = await dispatchD4cInitiatorAlert(supabase, {
+          eventType: "engagement.cancelled_email_change",
+          engagementId,
+          actorUserId: authCtx.userId ?? null,
+          sourceFunction: "poi-engagements",
+          dedupeKey: `cancelled_email_change:${engagementId}`,
+          metadata: {
+            request_id: requestId,
+            previous_status: current.engagement_status,
+          },
+        });
+        if (!d4cResult.ok) {
+          console.warn(
+            `[${requestId}] d4c initiator alert skipped (non-fatal): reason=${d4cResult.reason}`,
+          );
+        }
+      } catch (e) {
+        console.warn(
+          `[${requestId}] d4c initiator alert dispatch threw (non-fatal):`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+
       const responseBody = { engagement: updated };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
