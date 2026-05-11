@@ -1,18 +1,26 @@
 /**
- * Batch D — D4a Event Catalogue (single source of truth)
+ * Batch D — Event Catalogue (single source of truth, D4a + D4b)
  *
  * Canonical list of every notification / audit event introduced by
  * Batch D (Pending Engagement controls). Used by:
- *   - the wording guard (`src/tests/d4a-wording-guard.test.ts`) to
- *     refuse any safe-wording string containing a banned token;
- *   - the catalogue test (`src/tests/d4a-event-catalogue.test.ts`)
- *     to prove every event has exactly one entry and every entry is
- *     `emailEnabled: false` in D4a;
- *   - future D4b/D4c notification wiring (NOT in scope yet).
+ *   - the wording guard tests to refuse any safe-wording string
+ *     containing a banned token;
+ *   - the catalogue tests to prove every event has exactly one entry
+ *     and that the dispatch flag is correctly scoped;
+ *   - the D4b admin-notify helper (Deno mirror) to dispatch ONLY
+ *     events explicitly marked `adminDispatchEnabled: true`.
  *
- * D4a contract: NO event in this catalogue is allowed to dispatch
- * outbound email (`emailEnabled: false`). D4b will flip the admin-only
- * digest events to `true` after Daniel signs off on the wording.
+ * D4a contract (preserved): NO event in this catalogue may dispatch
+ * outbound email to ANY non-admin recipient. There is no general
+ * "email enabled" flag — the only flag is `adminDispatchEnabled`,
+ * which permits dispatch to the platform admin mailbox + Slack
+ * webhook ONLY (never to org admins, ordinary members, external
+ * counterparties, or disputed counterparties).
+ *
+ * D4b contract: an event may set `adminDispatchEnabled: true` only
+ * when `recommendation === 'admin_queue'` AND `allowedRecipients`
+ * is exactly `['platform_admin']`. Enforced by catalogue tests AND
+ * by the runtime helper (defence in depth).
  *
  * Forbidden tokens (enforced by the wording guard):
  *   accusation, accuse, guilty, liable, liability, wrongdoing,
