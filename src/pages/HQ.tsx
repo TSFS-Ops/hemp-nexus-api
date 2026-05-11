@@ -47,6 +47,7 @@ import { AdminGovernancePosturePanel } from "@/components/admin/AdminGovernanceP
 import { AdminRedirectOriginBanner } from "@/components/admin/AdminRedirectOriginBanner";
 // ── Audit & Health (compliance / observability) ─────────────────────
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
+import { AdminOutreachBlocksPanel } from "@/components/admin/AdminOutreachBlocksPanel";
 
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { EmailRetentionHealth } from "@/components/admin/EmailRetentionHealth";
@@ -339,6 +340,7 @@ function AuditTab() {
           <TabsTrigger value="risk-alarms">Risk Alarms</TabsTrigger>
           <TabsTrigger value="rating-appeals">Rating Appeals</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="outreach-blocks">Outreach Blocks</TabsTrigger>
           <TabsTrigger value="upload-audit">Upload Audit</TabsTrigger>
           <TabsTrigger value="revenue-notifications">Revenue Notifications</TabsTrigger>
           
@@ -359,6 +361,11 @@ function AuditTab() {
         <TabsContent value="audit-logs">
           <Surface label="Immutable audit trail · public.audit_logs">
             <AdminAuditLogs />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="outreach-blocks">
+          <Surface label="Outreach blocks · public.audit_logs (action=outreach.blocked.*) · canonical Batch E events only · counterparty/dispute/commercial fields never displayed">
+            <AdminOutreachBlocksPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="upload-audit">
