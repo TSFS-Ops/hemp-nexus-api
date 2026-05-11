@@ -85,9 +85,15 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     event: "engagement.binding_review_required",
     label: "Binding review required",
     recommendation: "admin_queue",
-    allowedRecipients: ["platform_admin"],
+    // D4c-2 correction: initiating_org_admin added to allowedRecipients
+    // so the initiator may receive a generic operational notice while
+    // the engagement awaits platform binding-review. The D4b admin
+    // dispatcher continues to target ONLY platform_admin (enforced in
+    // `batch-d-admin-notify.ts`); the D4c initiator helper targets
+    // ONLY initiating_org_admin (enforced in `batch-d-initiator-notify.ts`).
+    // No counterparty / candidate / disputed group is added here.
+    allowedRecipients: ["platform_admin", "initiating_org_admin"],
     forbiddenRecipients: [
-      "initiating_org_admin",
       "counterparty_org_admin",
       "ordinary_org_member",
       "external_unregistered_counterparty",
