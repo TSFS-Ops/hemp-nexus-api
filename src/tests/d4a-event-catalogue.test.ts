@@ -4,7 +4,8 @@
  * Proves:
  *   1. every Batch D event has exactly one catalogue entry;
  *   2. every catalogue entry passes the wording guard;
- *   3. every catalogue entry is `emailEnabled: false` in D4a;
+ *   3. admin dispatch is only ever enabled for admin_queue events
+ *      whose allowedRecipients is exactly ['platform_admin'];
  *   4. the wording guard correctly REJECTS each forbidden token;
  *   5. `disputed_counterparty` appears in the forbidden-recipients list
  *      of EVERY event in the catalogue (the hard safety rule);
