@@ -34,7 +34,11 @@ export type RecipientGroup =
   | "counterparty_org_admin"
   | "ordinary_org_member"
   | "external_unregistered_counterparty"
-  | "disputed_counterparty";
+  | "disputed_counterparty"
+  // D4c-0: a registered org surfaced by the binding resolver as a *possible*
+  // match for an ambiguous counterparty email. Candidate orgs MUST NEVER be
+  // contacted — doing so would leak that the platform suspects a binding.
+  | "candidate_org";
 
 export type NotificationRecommendation =
   | "audit_only"
