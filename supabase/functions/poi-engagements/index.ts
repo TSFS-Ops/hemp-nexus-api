@@ -1695,15 +1695,26 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] dispute audit insert failed (non-fatal):`, e);
       }
 
-      const responseBody = { engagement: updated };
-      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
-      return new Response(JSON.stringify(responseBody), {
-        status: 200,
-        headers: { ...headers, "Content-Type": "application/json" },
-      });
-    }
+      // D4b: admin-only alert for dispute_raised. Best-effort; never
+      // fails the request. Recipient is hard-coded to the platform
+      // admin mailbox + Slack inside the helper — no counterparty,
+      // org-admin, or external recipient is derived here.
+      try {
+        await dispatchD4bAdminAlert(supabase, {
+          eventType: "engagement.disputed_being_named",
+          engagementId,
+          engagement: {
+            engagement_status: updated.engagement_status,
+            operational_state: updated.operational_state,
+            org_id: current.org_id,
+          },
+          sourceFunction: "poi-engagements:dispute_raised",
+        });
+      } catch (notifyErr) {
+        console.warn(`[${requestId}] D4b admin alert failed (non-fatal):`, notifyErr);
+      }
 
-    // ── POST /poi-engagements/:id/cancel-for-email-change — Admin cancels ──
+
     // D2a: when the recorded counterparty email turns out to be wrong and
     // outreach has already begun (so PATCH /counterparty_email is refused),
     // the only safe path is to cancel the live engagement and create a
