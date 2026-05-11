@@ -32,7 +32,22 @@
  * mailbox + Slack only.
  */
 
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+// Minimal structural type for the Supabase client. Avoids importing
+// the full Deno-only SDK from this file so it can also be unit-tested
+// from Vitest (which compiles via tsc and cannot resolve esm.sh URLs).
+// The actual runtime client passed by the edge function satisfies
+// this shape exactly.
+type SupabaseLike = {
+  from: (table: string) => {
+    select: (cols: string) => {
+      ilike: (col: string, pattern: string) => {
+        not: (col: string, op: string, val: unknown) => {
+          limit: (n: number) => Promise<{ data: ProfileLookupRow[] | null; error: { message: string } | null }>;
+        };
+      };
+    };
+  };
+};
 
 /**
  * Hard-coded shared-mailbox local-parts. Approved 2026-05 by Daniel.
