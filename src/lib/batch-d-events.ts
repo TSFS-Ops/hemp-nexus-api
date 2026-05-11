@@ -216,3 +216,32 @@ export function findForbiddenWords(text: string): string[] {
   }
   return hits;
 }
+
+/**
+ * D4a hard safety rule (counterparty-side suppression).
+ *
+ * Returns `true` when the engagement is in a state that forbids ANY
+ * outbound contact to the counterparty. Mirrors the server gate in
+ * `supabase/functions/poi-engagements/index.ts :: evaluateOutreachGate`
+ * for the dispute branch. Use this from any future D4b/D4c dispatcher
+ * BEFORE composing a recipient list.
+ *
+ * Inputs are intentionally loose so callers can pass the raw row from
+ * `poi_engagements` without re-typing it.
+ */
+export function isDisputedCounterpartySuppressed(
+  eng: {
+    engagement_status?: string | null;
+    operational_state?: string | null;
+  } | null | undefined,
+): boolean {
+  if (!eng) return false;
+  return (
+    eng.engagement_status === "disputed_being_named" ||
+    eng.operational_state === "disputed_being_named"
+  );
+}
+
+/** Stable code returned by future dispatchers when suppression fires. */
+export const DISPUTED_COUNTERPARTY_SUPPRESSED_CODE =
+  "DISPUTED_COUNTERPARTY_SUPPRESSED" as const;
