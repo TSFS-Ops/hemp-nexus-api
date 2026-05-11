@@ -72,9 +72,8 @@ const D4C_INITIATOR_CATALOGUE: ReadonlyArray<CatalogueEntry> = [
   {
     event: "engagement.binding_review_required",
     label: "Binding review required",
-    allowedRecipients: ["platform_admin"],
+    allowedRecipients: ["platform_admin", "initiating_org_admin"],
     forbiddenRecipients: [
-      "initiating_org_admin",
       "counterparty_org_admin",
       "ordinary_org_member",
       "external_unregistered_counterparty",
@@ -86,7 +85,7 @@ const D4C_INITIATOR_CATALOGUE: ReadonlyArray<CatalogueEntry> = [
   {
     event: "engagement.binding_review_resolved",
     label: "Binding review resolved",
-    allowedRecipients: ["platform_admin"],
+    allowedRecipients: ["platform_admin", "initiating_org_admin"],
     forbiddenRecipients: [
       "counterparty_org_admin",
       "ordinary_org_member",
@@ -99,14 +98,15 @@ const D4C_INITIATOR_CATALOGUE: ReadonlyArray<CatalogueEntry> = [
   {
     event: "engagement.disputed_being_named",
     label: "Counterparty dispute received",
-    allowedRecipients: ["platform_admin"],
+    allowedRecipients: ["platform_admin", "initiating_org_admin"],
     forbiddenRecipients: [
+      "counterparty_org_admin",
       "ordinary_org_member",
       "external_unregistered_counterparty",
       "disputed_counterparty",
     ],
     safeWording:
-      "A counterparty has queried being named on a Pending Engagement. The engagement is paused for platform review.",
+      "This Pending Engagement is paused for platform review. No counterparty contact has been made on your behalf while the review is open.",
   },
   {
     event: "engagement.cancelled_email_change",
