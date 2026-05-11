@@ -194,16 +194,21 @@ Deno.serve(async (req) => {
       { email: `${tag}-alice@gmail.com`, org_id: orgA.id },
     ];
     const profileIds: string[] = [];
+    let seedIdx = 0;
     for (const seed of profileSeeds) {
-      // Profiles are 1:1 with auth.users. Create user first.
+      seedIdx += 1;
+      // auth.users.email is UNIQUE, but the resolver only reads profiles.email
+      // (which is not unique). Mint each auth user under a distinct address,
+      // then overwrite profiles.email with the canonical fixture address so
+      // the duplicate-exact + domain-ambiguity scenarios actually exist.
+      const authEmail = `seed-${seedIdx}-${tag}@d4b-br-auth.example.com`;
       const { data: u, error: uErr } = await admin.auth.admin.createUser({
-        email: seed.email,
+        email: authEmail,
         password: `${tag}-Pw!aA9`,
         email_confirm: true,
       });
-      if (uErr || !u.user) throw new Error(`auth user ${seed.email}: ${uErr?.message}`);
+      if (uErr || !u.user) throw new Error(`auth user ${authEmail}: ${uErr?.message}`);
       cleanup.push(() => admin.auth.admin.deleteUser(u.user!.id));
-      // Upsert profile with org_id (handle_new_user trigger may pre-create).
       const { error: pErr } = await admin
         .from("profiles")
         .upsert({ id: u.user.id, email: seed.email, org_id: seed.org_id }, { onConflict: "id" });
