@@ -66,19 +66,17 @@ interface PostResult {
   body: any;
 }
 
-async function postEngagementAction(
+async function postRespond(
   edgeBase: string,
   jwt: string,
-  engagementId: string,
-  action: "respond" | "reconfirm" | "decline-late-acceptance",
+  matchId: string,
   body: Record<string, unknown>,
   idempotencyKey: string,
 ): Promise<PostResult> {
-  // NOTE: parameter intentionally not named `baseUrl` — the route guard
-  // (scripts/check-routes.mjs) treats that variable name as an in-app
-  // navigation target.
+  // Counterparty respond route is POST /poi-engagements/respond/:matchId
+  // (path-segment 0 is the literal "respond"; 1 is the match id).
   const res = await fetch(
-    `${edgeBase}/functions/v1/poi-engagements/${engagementId}/${action}`,
+    `${edgeBase}/functions/v1/poi-engagements/respond/${matchId}`,
     {
       method: "POST",
       headers: {
@@ -91,13 +89,36 @@ async function postEngagementAction(
     },
   );
   let parsed: any;
-  try {
-    parsed = await res.json();
-  } catch {
-    parsed = await res.text();
-  }
+  try { parsed = await res.json(); } catch { parsed = await res.text(); }
   return { status: res.status, body: parsed };
 }
+
+async function postInitiatorAction(
+  edgeBase: string,
+  jwt: string,
+  engagementId: string,
+  action: "reconfirm" | "decline-late-acceptance",
+  idempotencyKey: string,
+): Promise<PostResult> {
+  // Initiator routes: POST /poi-engagements/:engagementId/{reconfirm|decline-late-acceptance}
+  const res = await fetch(
+    `${edgeBase}/functions/v1/poi-engagements/${engagementId}/${action}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+        "Idempotency-Key": idempotencyKey,
+        apikey: ANON_KEY,
+      },
+      body: JSON.stringify({}),
+    },
+  );
+  let parsed: any;
+  try { parsed = await res.json(); } catch { parsed = await res.text(); }
+  return { status: res.status, body: parsed };
+}
+
 
 async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input.trim().toLowerCase());
