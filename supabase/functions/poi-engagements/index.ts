@@ -13,6 +13,7 @@ import {
 import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
+import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
 // Batch A — single source of truth for contact-completeness gating.
 // Mirror of `src/lib/contact-completeness.ts`. Both files MUST stay in
 // lockstep; the regression tests pin both surfaces.
@@ -1692,6 +1693,25 @@ Deno.serve(async (req) => {
         });
       } catch (e) {
         console.warn(`[${requestId}] dispute audit insert failed (non-fatal):`, e);
+      }
+
+      // D4b: admin-only alert for dispute_raised. Best-effort; never
+      // fails the request. Recipient is hard-coded to the platform
+      // admin mailbox + Slack inside the helper — no counterparty,
+      // org-admin, or external recipient is derived here.
+      try {
+        await dispatchD4bAdminAlert(supabase, {
+          eventType: "engagement.disputed_being_named",
+          engagementId,
+          engagement: {
+            engagement_status: updated.engagement_status,
+            operational_state: updated.operational_state,
+            org_id: current.org_id,
+          },
+          sourceFunction: "poi-engagements:dispute_raised",
+        });
+      } catch (notifyErr) {
+        console.warn(`[${requestId}] D4b admin alert failed (non-fatal):`, notifyErr);
       }
 
       const responseBody = { engagement: updated };
