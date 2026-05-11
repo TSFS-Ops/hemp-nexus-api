@@ -119,4 +119,9 @@ export const BINDING_HINT_MESSAGES: Record<
     title:
       "Email saved, but the platform could not check whether it matches a registered organisation. Please retry shortly.",
   },
+  binding_review_required: {
+    tone: "warning",
+    title:
+      "Email saved, but it is ambiguous on the platform. The engagement has been moved to binding review and is awaiting a platform-admin decision before any outreach can begin.",
+  },
 };
