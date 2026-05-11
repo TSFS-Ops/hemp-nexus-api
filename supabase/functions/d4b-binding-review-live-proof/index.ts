@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
     async function newEngagement(label: string): Promise<string> {
       // Need a parent match. Reuse one match per test for simplicity.
       const { data: match, error: matchErr } = await admin.from("matches").insert({
-        buyer_org_id: orgA.id, seller_org_id: orgA.id, org_id: orgA.id,
+        buyer_org_id: orgA.id, seller_org_id: orgB.id, org_id: orgA.id,
         buyer_id: `${tag}_${label}_buyer`, seller_id: `${tag}_${label}_seller`,
         buyer_name: `${tag} buyer`, seller_name: `${tag} seller`,
         commodity: "TEST_D4B_BR", quantity_amount: 1, quantity_unit: "MT",
