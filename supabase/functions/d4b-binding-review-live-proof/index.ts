@@ -6,7 +6,7 @@
  * this harness:
  *
  *   1. Provisions disposable orgs/profiles/match/engagement under
- *      `*@d4b-br.test.invalid` (RLS-bypassing service-role inserts).
+ *      `*@d4b-br.test` (RLS-bypassing service-role inserts).
  *   2. Mints a synthetic platform_admin user, signs in with password,
  *      and uses that JWT for every PATCH call (so the production
  *      `requireRole(authCtx, 'platform_admin')` gate is genuinely
@@ -180,17 +180,17 @@ Deno.serve(async (req) => {
 
     // ── Provision the test profiles that will be the resolver targets ──
     // The resolver scans `profiles` by email/domain. We seed:
-    //   • alice@orgA.d4b-br.test.invalid → only in orgA  (UNIQUE EXACT)
-    //   • shared@d4b-br.test.invalid     → in both orgA + orgB  (DUPLICATE)
-    //   • staffA@orgshared.d4b-br.test.invalid → orgA   (DOMAIN ambiguity)
-    //   • staffB@orgshared.d4b-br.test.invalid → orgB   (DOMAIN ambiguity)
+    //   • alice@orgA.d4b-br.test → only in orgA  (UNIQUE EXACT)
+    //   • shared@d4b-br.test     → in both orgA + orgB  (DUPLICATE)
+    //   • staffA@orgshared.d4b-br.test → orgA   (DOMAIN ambiguity)
+    //   • staffB@orgshared.d4b-br.test → orgB   (DOMAIN ambiguity)
     //   • alice@gmail.com                → orgA  (free-provider control)
     const profileSeeds: { email: string; org_id: string }[] = [
-      { email: `alice@${tag}-orga.test.invalid`, org_id: orgA.id },
-      { email: `shared@${tag}-shared.test.invalid`, org_id: orgA.id },
-      { email: `shared@${tag}-shared.test.invalid`, org_id: orgB.id },
-      { email: `staffa@${tag}-domain.test.invalid`, org_id: orgA.id },
-      { email: `staffb@${tag}-domain.test.invalid`, org_id: orgB.id },
+      { email: `alice@${tag}-orga.test`, org_id: orgA.id },
+      { email: `shared@${tag}-shared.test`, org_id: orgA.id },
+      { email: `shared@${tag}-shared.test`, org_id: orgB.id },
+      { email: `staffa@${tag}-domain.test`, org_id: orgA.id },
+      { email: `staffb@${tag}-domain.test`, org_id: orgB.id },
       { email: `${tag}-alice@gmail.com`, org_id: orgA.id },
     ];
     const profileIds: string[] = [];
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Mint synthetic platform_admin user used for every PATCH call ──
-    const adminEmail = `${tag}-admin@d4b-br.test.invalid`;
+    const adminEmail = `${tag}-admin@d4b-br.test`;
     const adminPwd = `${tag}-AdmPw!aA9`;
     const { data: adminUser, error: adminErr } = await admin.auth.admin.createUser({
       email: adminEmail, password: adminPwd, email_confirm: true,
@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
     {
       const eid = await newEngagement("t1");
       const r = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `alice@${tag}-orga.test.invalid` },
+        { counterparty_email: `alice@${tag}-orga.test` },
         `${tag}_t1`);
       const row = await fetchRow(eid);
       const alerts = await countAlertSent(eid);
@@ -308,7 +308,7 @@ Deno.serve(async (req) => {
     {
       const eid = await newEngagement("t2");
       const r = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `shared@${tag}-shared.test.invalid` },
+        { counterparty_email: `shared@${tag}-shared.test` },
         `${tag}_t2`);
       const row = await fetchRow(eid);
       const alerts = await countAlertSent(eid);
@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
     {
       const eid = await newEngagement("t3");
       const r = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `info@${tag}-shared.test.invalid` },
+        { counterparty_email: `info@${tag}-shared.test` },
         `${tag}_t3`);
       const row = await fetchRow(eid);
       const reviewAudits = await countBindingReviewAudits(eid);
@@ -360,7 +360,7 @@ Deno.serve(async (req) => {
     {
       const eid = await newEngagement("t4");
       const r = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `newperson@${tag}-domain.test.invalid` },
+        { counterparty_email: `newperson@${tag}-domain.test` },
         `${tag}_t4`);
       const row = await fetchRow(eid);
       const reviewAudits = await countBindingReviewAudits(eid);
@@ -406,7 +406,7 @@ Deno.serve(async (req) => {
       const eid = await newEngagement("t6");
       // First call enters review.
       await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `shared@${tag}-shared.test.invalid` },
+        { counterparty_email: `shared@${tag}-shared.test` },
         `${tag}_t6_a`);
       const reviewAuditsAfter1 = await countBindingReviewAudits(eid);
       const alertsAfter1 = await countAlertSent(eid);
@@ -414,7 +414,7 @@ Deno.serve(async (req) => {
       // and the same email — the row is already in review, so no new
       // initial-entry alert/audit row should be written.
       const r2 = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `shared@${tag}-shared.test.invalid` },
+        { counterparty_email: `shared@${tag}-shared.test` },
         `${tag}_t6_b`);
       const reviewAuditsAfter2 = await countBindingReviewAudits(eid);
       const alertsAfter2 = await countAlertSent(eid);
@@ -440,11 +440,11 @@ Deno.serve(async (req) => {
         .in("entity_id", auditEntityIds)
         .gte("created_at", startedAt);
       const forbidden = [
-        `shared@${tag}-shared.test.invalid`,
-        `alice@${tag}-orga.test.invalid`,
-        `staffa@${tag}-domain.test.invalid`,
-        `staffb@${tag}-domain.test.invalid`,
-        `info@${tag}-shared.test.invalid`,
+        `shared@${tag}-shared.test`,
+        `alice@${tag}-orga.test`,
+        `staffa@${tag}-domain.test`,
+        `staffb@${tag}-domain.test`,
+        `info@${tag}-shared.test`,
         `${tag}-newperson@gmail.com`,
         orgA.name, orgB.name,
       ];
