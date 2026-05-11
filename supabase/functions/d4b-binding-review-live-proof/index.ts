@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
   }
 
   const runId = crypto.randomUUID();
-  const tag = `d4bbr_${runId.slice(0, 8)}`;
+  const tag = `d4bbr-${runId.slice(0, 8)}`;
   const tests: TestRecord[] = [];
   const cleanup: (() => Promise<unknown>)[] = [];
   const startedAt = new Date().toISOString();
