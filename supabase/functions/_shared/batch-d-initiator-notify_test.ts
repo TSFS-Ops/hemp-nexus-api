@@ -288,46 +288,51 @@ Deno.test("D4c-2 :: catalogue allowlist excludes outreach.blocked.* events", () 
   }
 });
 
-Deno.test("D4c-2 :: event that forbids initiating_org_admin is refused", async () => {
-  const fake = makeFakeSupabase();
-  const cap = captureEnqueue();
-  const result = await dispatchD4cInitiatorAlert(
-    fake.client,
-    {
-      // binding_review_required has initiating_org_admin in forbiddenRecipients
-      eventType: "engagement.binding_review_required",
-      engagementId: baseEng,
-      sourceFunction: "test-suite",
-    },
-    baseDeps({ enqueueEmail: cap.fn }),
-  );
-  assertFalse(result.ok);
-  if (!result.ok) assertEquals(result.reason, "wording_forbids_initiating_org");
-  assertEquals(cap.calls.length, 0);
-});
+Deno.test(
+  "D4c-2 :: every event in D4C_INITIATOR_ALLOWLIST successfully queues to initiator org admin (corrected D4c-2 invariant)",
+  async () => {
+    for (const ev of D4C_INITIATOR_ALLOWLIST) {
+      const fake = makeFakeSupabase();
+      const cap = captureEnqueue();
+      const result = await dispatchD4cInitiatorAlert(
+        fake.client,
+        {
+          eventType: ev,
+          engagementId: baseEng,
+          sourceFunction: "test-suite",
+        },
+        baseDeps({ enqueueEmail: cap.fn }),
+      );
+      assert(result.ok, `event ${ev} unexpectedly refused: ${JSON.stringify(result)}`);
+      // Every allowlisted event must actually enqueue (not just dedupe).
+      assertEquals(cap.calls.length, 1, `event ${ev} did not enqueue exactly one alert`);
+    }
+  },
+);
 
-Deno.test("D4c-2 :: event that does not allow initiating_org_admin is refused", async () => {
-  const fake = makeFakeSupabase();
-  const cap = captureEnqueue();
-  const result = await dispatchD4cInitiatorAlert(
-    fake.client,
-    {
-      // binding_review_resolved allowedRecipients = [platform_admin]
-      eventType: "engagement.binding_review_resolved",
-      engagementId: baseEng,
-      sourceFunction: "test-suite",
-    },
-    baseDeps({ enqueueEmail: cap.fn }),
-  );
-  assertFalse(result.ok);
-  if (!result.ok) {
-    assert(
-      result.reason === "wording_disallows_initiating_org" ||
-        result.reason === "wording_forbids_initiating_org",
+Deno.test(
+  "D4c-2 :: catalogue events outside the D4c initiator allowlist are refused",
+  async () => {
+    // `engagement.email_change_blocked` exists in the canonical catalogue
+    // (`src/lib/batch-d-events.ts`) and allows initiating_org_admin, but
+    // is INTENTIONALLY excluded from the D4c-2 helper allowlist. This
+    // proves the helper does not silently widen via the catalogue.
+    const fake = makeFakeSupabase();
+    const cap = captureEnqueue();
+    const result = await dispatchD4cInitiatorAlert(
+      fake.client,
+      {
+        eventType: "engagement.email_change_blocked",
+        engagementId: baseEng,
+        sourceFunction: "test-suite",
+      },
+      baseDeps({ enqueueEmail: cap.fn }),
     );
-  }
-  assertEquals(cap.calls.length, 0);
-});
+    assertFalse(result.ok);
+    if (!result.ok) assertEquals(result.reason, "event_not_in_allowlist");
+    assertEquals(cap.calls.length, 0);
+  },
+);
 
 Deno.test("D4c-2 :: recipient resolver failure → skipped audit, no queue", async () => {
   const fake = makeFakeSupabase();
