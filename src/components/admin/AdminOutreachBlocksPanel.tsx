@@ -169,14 +169,38 @@ export function AdminOutreachBlocksPanel() {
       // Surface filter is applied client-side because `surface` lives
       // inside the metadata jsonb column; the explicit allowlist in
       // pickSafeMetadata guarantees no other metadata field leaks.
-      if (surfaceFilter !== "all") {
-        return mapped.filter((r) => r.surface === surfaceFilter);
+      const filtered = surfaceFilter !== "all"
+        ? mapped.filter((r) => r.surface === surfaceFilter)
+        : mapped;
+
+      // Safe org-name resolution — uses the same pattern as
+      // AdminTradeApprovalsPanel: read ONLY (id, name) from the
+      // organizations table, scoped to org_ids already surfaced by
+      // the audit query. No joins to matches / poi_engagements /
+      // profiles / binding_candidates. No select("*").
+      const orgIds = Array.from(
+        new Set(filtered.map((r) => r.org_id).filter((v): v is string => !!v)),
+      );
+      let orgNames: Record<string, string> = {};
+      if (orgIds.length > 0) {
+        const { data: orgs, error: orgsErr } = await supabase
+          .from("organizations")
+          .select("id, name")
+          .in("id", orgIds);
+        if (orgsErr) throw orgsErr;
+        for (const o of orgs ?? []) {
+          if (typeof o.name === "string") orgNames[o.id as string] = o.name;
+        }
       }
-      return mapped;
+
+      return { rows: filtered, orgNames };
     },
   });
 
-  const rows = query.data ?? [];
+  const rows = query.data?.rows ?? [];
+  const orgNames = query.data?.orgNames ?? {};
+  const orgLabel = (id: string | null) =>
+    id ? (orgNames[id] ?? `${id.substring(0, 12)}…`) : "—";
 
   const counts = useMemo(() => {
     const c: Record<OutreachBlockedAction, number> = {
