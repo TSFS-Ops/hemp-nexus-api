@@ -374,22 +374,30 @@ Deno.serve(async (req) => {
       if (isOutreachBlocked(previewState)) {
         const code = contactBlockCode(previewState)!;
         const reason = contactBlockReason(previewState)!;
-        try {
-          await supabase.from("audit_logs").insert({
-            org_id: (eng as { org_id: string }).org_id,
-            actor_user_id: authCtx.userId,
-            action: "contact.incomplete_detected",
-            entity_type: "poi_engagement",
-            entity_id: engagementId,
-            metadata: {
-              actor_role: "platform_admin",
-              surface: "preview-outreach",
-              state: previewState,
-              code,
-              request_id: requestId,
-            },
-          });
-        } catch (_e) { /* non-fatal */ }
+        // Batch E: emit canonical catalogue event AND keep the legacy
+        // `contact.incomplete_detected` row for one release window so
+        // downstream consumers can migrate without a flag day.
+        for (const action of [
+          "outreach.blocked.contact_incomplete",
+          "contact.incomplete_detected",
+        ] as const) {
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action,
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "preview-outreach",
+                state: previewState,
+                code,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal */ }
+        }
         throw new ApiException(code, reason, 422);
       }
       const recipient = (eng.counterparty_email || "").trim().toLowerCase();
