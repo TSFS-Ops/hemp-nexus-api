@@ -129,7 +129,7 @@ export function AdminOutreachBlocksPanel() {
 
   const query = useQuery({
     queryKey: ["admin-outreach-blocks", actionFilter, surfaceFilter, windowFilter],
-    queryFn: async (): Promise<SafeRow[]> => {
+    queryFn: async (): Promise<{ rows: SafeRow[]; orgNames: Record<string, string> }> => {
       // Read only the columns we are allowed to surface. We deliberately
       // do NOT select(*) — that would pull metadata fields we must not
       // read (counterparty identity, dispute text, candidate lists,
@@ -169,14 +169,38 @@ export function AdminOutreachBlocksPanel() {
       // Surface filter is applied client-side because `surface` lives
       // inside the metadata jsonb column; the explicit allowlist in
       // pickSafeMetadata guarantees no other metadata field leaks.
-      if (surfaceFilter !== "all") {
-        return mapped.filter((r) => r.surface === surfaceFilter);
+      const filtered = surfaceFilter !== "all"
+        ? mapped.filter((r) => r.surface === surfaceFilter)
+        : mapped;
+
+      // Safe org-name resolution — uses the same pattern as
+      // AdminTradeApprovalsPanel: read ONLY (id, name) from the
+      // organizations table, scoped to org_ids already surfaced by
+      // the audit query. No joins to matches / poi_engagements /
+      // profiles / binding_candidates. No select("*").
+      const orgIds = Array.from(
+        new Set(filtered.map((r) => r.org_id).filter((v): v is string => !!v)),
+      );
+      let orgNames: Record<string, string> = {};
+      if (orgIds.length > 0) {
+        const { data: orgs, error: orgsErr } = await supabase
+          .from("organizations")
+          .select("id, name")
+          .in("id", orgIds);
+        if (orgsErr) throw orgsErr;
+        for (const o of orgs ?? []) {
+          if (typeof o.name === "string") orgNames[o.id as string] = o.name;
+        }
       }
-      return mapped;
+
+      return { rows: filtered, orgNames };
     },
   });
 
-  const rows = query.data ?? [];
+  const rows = query.data?.rows ?? [];
+  const orgNames = query.data?.orgNames ?? {};
+  const orgLabel = (id: string | null) =>
+    id ? (orgNames[id] ?? `${id.substring(0, 12)}…`) : "—";
 
   const counts = useMemo(() => {
     const c: Record<OutreachBlockedAction, number> = {
@@ -189,8 +213,9 @@ export function AdminOutreachBlocksPanel() {
   }, [rows]);
 
   // Per-organisation rollup — uses ONLY the safe org_id field.
-  // No org name lookup, no joins; that would require additional safe-
-  // field guarantees outside this batch's scope.
+  // Display name comes from a scoped (id, name) read on organizations
+  // (Batch J), the same safe pattern used by AdminTradeApprovalsPanel.
+  // No joins to matches / poi_engagements / profiles / binding_candidates.
   const orgRollup = useMemo(() => {
     const m = new Map<string, { org_id: string; total: number; byAction: Record<OutreachBlockedAction, number> }>();
     for (const r of rows) {
@@ -327,8 +352,11 @@ export function AdminOutreachBlocksPanel() {
             <TableBody>
               {orgRollup.map((o) => (
                 <TableRow key={o.org_id}>
-                  <TableCell className="font-mono text-xs">
-                    {o.org_id.substring(0, 12)}
+                  <TableCell className="text-xs">
+                    <div className="font-medium">{orgLabel(o.org_id)}</div>
+                    <div className="font-mono text-[10px] text-muted-foreground">
+                      {o.org_id.substring(0, 12)}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">{o.total}</TableCell>
                   <TableCell className="text-right font-mono text-xs">
@@ -403,8 +431,15 @@ export function AdminOutreachBlocksPanel() {
                         {ACTION_LABEL[r.action]}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {r.org_id ? r.org_id.substring(0, 12) : "—"}
+                    <TableCell className="text-xs">
+                      {r.org_id ? (
+                        <>
+                          <div>{orgLabel(r.org_id)}</div>
+                          <div className="font-mono text-[10px] text-muted-foreground">
+                            {r.org_id.substring(0, 12)}
+                          </div>
+                        </>
+                      ) : "—"}
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {r.entity_id ? r.entity_id.substring(0, 12) : "—"}
