@@ -334,11 +334,33 @@ Deno.serve(async (req) => {
       // ── D2a outreach gate (preview) ──
       // Block disputed + binding-review BEFORE the contact-completeness
       // check so a disputed/binding-pending row never even renders a
-      // preview body. No audit row on preview blocks (no side-effect to
-      // attribute) — the send-outreach path writes the audit on block.
+      // preview body. Batch E: emit the canonical audit-only catalogue
+      // event (`outreach.blocked.binding_review_pending` /
+      // `outreach.blocked.disputed_being_named`) so the catalogue SSOT
+      // and the live audit trail agree. No counterparty / candidate /
+      // dispute identity is ever written into the metadata.
       {
         const gate = evaluateOutreachGate(eng as Record<string, unknown>);
         if (gate) {
+          const canonicalAction =
+            gate.code === "DISPUTED_BEING_NAMED"
+              ? "outreach.blocked.disputed_being_named"
+              : "outreach.blocked.binding_review_pending";
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: canonicalAction,
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "preview-outreach",
+                guard_code: gate.code,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal */ }
           throw new ApiException(gate.code, gate.message, 409);
         }
       }
