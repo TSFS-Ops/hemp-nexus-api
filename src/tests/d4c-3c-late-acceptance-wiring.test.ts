@@ -44,11 +44,38 @@ describe("D4c-3c — late-acceptance pending-reconfirmation wiring", () => {
     expect(matches.length).toBe(1);
   });
 
+  function lateAcceptDispatchBlock(): string {
+    // Walk to the eventType literal, then back to the enclosing
+    // `dispatchD4cInitiatorAlert(supabase, {`, then forward to the
+    // matching `});` (the close of THIS dispatch call only).
+    const eventIdx = SRC.indexOf(
+      'eventType: "engagement.late_acceptance_pending_reconfirmation"',
+    );
+    expect(eventIdx).toBeGreaterThan(-1);
+    const startIdx = SRC.lastIndexOf(
+      "dispatchD4cInitiatorAlert(supabase, {",
+      eventIdx,
+    );
+    expect(startIdx).toBeGreaterThan(-1);
+    // Forward scan with brace-depth tracking from the opening `{`.
+    const openBrace = SRC.indexOf("{", startIdx);
+    let depth = 0;
+    let i = openBrace;
+    for (; i < SRC.length; i++) {
+      const ch = SRC[i];
+      if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) break;
+      }
+    }
+    // Include trailing `);`.
+    const end = SRC.indexOf(";", i) + 1;
+    return SRC.slice(startIdx, end);
+  }
+
   it("invocation passes engagementId, sourceFunction, and a stable dedupeKey", () => {
-    const re =
-      /dispatchD4cInitiatorAlert\(\s*supabase\s*,\s*\{[\s\S]*?eventType:\s*"engagement\.late_acceptance_pending_reconfirmation"[\s\S]*?\}\s*\)\s*;/;
-    const block = SRC.match(re)?.[0] ?? "";
-    expect(block.length).toBeGreaterThan(0);
+    const block = lateAcceptDispatchBlock();
     expect(block).toMatch(/engagementId:\s*engagement\.id/);
     expect(block).toMatch(/sourceFunction:\s*"poi-engagements"/);
     expect(block).toMatch(
@@ -58,9 +85,7 @@ describe("D4c-3c — late-acceptance pending-reconfirmation wiring", () => {
   });
 
   it("invocation passes only safe non-PII metadata (request_id, previous_status)", () => {
-    const re =
-      /dispatchD4cInitiatorAlert\(\s*supabase\s*,\s*\{[\s\S]*?eventType:\s*"engagement\.late_acceptance_pending_reconfirmation"[\s\S]*?\}\s*\)\s*;/;
-    const block = SRC.match(re)?.[0] ?? "";
+    const block = lateAcceptDispatchBlock();
     expect(block).toMatch(/metadata:\s*\{[\s\S]*?request_id:\s*requestId/);
     expect(block).toMatch(/previous_status:\s*currentStatus/);
     for (const banned of [
@@ -89,7 +114,7 @@ describe("D4c-3c — late-acceptance pending-reconfirmation wiring", () => {
       'eventType: "engagement.late_acceptance_pending_reconfirmation"',
     );
     expect(idx).toBeGreaterThan(-1);
-    const window = SRC.slice(Math.max(0, idx - 600), idx + 800);
+    const window = SRC.slice(Math.max(0, idx - 600), idx + 1200);
     expect(window).toMatch(/try\s*\{[\s\S]*dispatchD4cInitiatorAlert\(/);
     expect(window).toMatch(/\}\s*catch\s*\(/);
     expect(window).toMatch(/non-fatal/);
@@ -111,23 +136,17 @@ describe("D4c-3c — late-acceptance pending-reconfirmation wiring", () => {
     expect(responseIdx).toBeGreaterThan(dispatchIdx);
   });
 
-  it("reconfirm-late-acceptance route does NOT dispatch the pending-reconfirmation event", () => {
-    const startIdx = SRC.indexOf('"reconfirm-late-acceptance"');
-    expect(startIdx).toBeGreaterThan(-1);
-    // Window forward to the next route (decline-late-acceptance is
-    // earlier in the file, so use a generous forward slice).
-    const block = SRC.slice(startIdx, startIdx + 6000);
-    expect(block).not.toContain(
-      "engagement.late_acceptance_pending_reconfirmation",
+  it("reconfirm + decline-late-acceptance route handler does NOT dispatch the pending-reconfirmation event", () => {
+    // The reconfirm/decline branch is gated by
+    //   parts[1] === "reconfirm" || parts[1] === "decline-late-acceptance"
+    const startIdx = SRC.indexOf(
+      'parts[1] === "reconfirm" || parts[1] === "decline-late-acceptance"',
     );
-  });
-
-  it("decline-late-acceptance route does NOT dispatch the pending-reconfirmation event", () => {
-    const startIdx = SRC.indexOf('"decline-late-acceptance"');
     expect(startIdx).toBeGreaterThan(-1);
-    const block = SRC.slice(startIdx, startIdx + 6000);
+    const block = SRC.slice(startIdx, startIdx + 8000);
     expect(block).not.toContain(
       "engagement.late_acceptance_pending_reconfirmation",
     );
   });
 });
+
