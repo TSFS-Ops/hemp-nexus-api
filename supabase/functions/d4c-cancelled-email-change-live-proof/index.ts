@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
     }
     {
       const { error: rErr } = await admin.from("user_roles")
-        .insert({ user_id: initAdmin.user.id, role: "org_admin" });
+        .upsert({ user_id: initAdmin.user.id, role: "org_admin" }, { onConflict: "user_id,role" });
       if (rErr) throw new Error(`init admin role: ${rErr.message}`);
       cleanup.push(() => admin.from("user_roles")
         .delete().eq("user_id", initAdmin.user!.id).eq("role", "org_admin"));
@@ -222,11 +222,12 @@ Deno.serve(async (req) => {
     cleanup.push(() => admin.auth.admin.deleteUser(platAdmin.user!.id));
     {
       const { error: rErr } = await admin.from("user_roles")
-        .insert({ user_id: platAdmin.user.id, role: "platform_admin" });
+        .upsert({ user_id: platAdmin.user.id, role: "platform_admin" }, { onConflict: "user_id,role" });
       if (rErr) throw new Error(`plat admin role: ${rErr.message}`);
       cleanup.push(() => admin.from("user_roles")
         .delete().eq("user_id", platAdmin.user!.id).eq("role", "platform_admin"));
     }
+
     const userClient = createClient(SUPABASE_URL, ANON_KEY);
     const { data: sess, error: sessErr } = await userClient.auth
       .signInWithPassword({ email: platAdminEmail, password: platAdminPwd });
