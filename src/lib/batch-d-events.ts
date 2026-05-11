@@ -60,10 +60,20 @@ export interface BatchDEventEntry {
    */
   safeWording: string;
   /**
-   * D4a hard rule: every event ships with `false`. D4b is the first
-   * phase allowed to flip select admin-only events to `true`.
+   * D4b dispatch flag. When `true`, the D4b admin-notify helper is
+   * permitted to dispatch this event via the existing
+   * `notification-dispatch` edge function — and ONLY to the platform
+   * admin mailbox + Slack webhook. This is NOT a general "email is
+   * enabled" flag; it never permits dispatch to org admins, members,
+   * external counterparties, or disputed counterparties. The runtime
+   * helper additionally asserts `recommendation === 'admin_queue'`
+   * AND `allowedRecipients === ['platform_admin']` before sending.
+   *
+   * D4a default: `false`. D4b flips exactly two events to `true`
+   * (`engagement.binding_review_required`,
+   * `engagement.disputed_being_named`).
    */
-  emailEnabled: false;
+  adminDispatchEnabled: boolean;
 }
 
 export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
