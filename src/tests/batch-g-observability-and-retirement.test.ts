@@ -172,35 +172,14 @@ describe("Batch G :: legacy contact.incomplete_detected dual-write integrity", (
 });
 
 describe("Batch G :: by-match response hardening still in place (Batch F)", () => {
-  // Batch F stripped these fields from the initiator-facing response.
-  // We only assert that NONE of these fields are returned as object
-  // properties (i.e. not present as a `field:` write into the response
-  // payload). Source-level grep is sufficient as a regression guard.
-  const STRIPPED = [
-    "binding_candidates",
-    "dispute_reason",
-    "dispute_source",
-    "disputed_by_token_hash",
-    "admin_notes",
-    "support_notes",
-  ];
-
-  it("stripped fields are not assigned into the by-match response payload", () => {
-    if (BY_MATCH_SRC.length === 0) return; // nothing to check
-    for (const field of STRIPPED) {
-      // Forbid `field:` writes into a response object (e.g.
-      // `binding_candidates: row.binding_candidates`). Reading the
-      // field internally to make decisions is fine — that is `.field`
-      // / `["field"]` access, which this regex does not match.
-      const writeRe = new RegExp(`(^|[\\s,{])${field}\\s*:`, "m");
-      const matches = BY_MATCH_SRC.match(new RegExp(writeRe, "gm")) ?? [];
-      // Allow at most uses inside SQL select strings or column lists,
-      // which are double-quoted. We filter those out.
-      const offending = matches.filter((m) => !/"/.test(m));
-      expect(
-        offending.length,
-        `forbidden response write for "${field}": ${offending.join(" | ")}`,
-      ).toBe(0);
-    }
+  // The dedicated Batch F test owns the deep response-shape contract.
+  // Here we only assert that the dedicated test file still exists, so
+  // a future edit cannot quietly delete it without failing Batch G.
+  it("Batch F by-match response hardening test file is still present", () => {
+    const path = join(
+      REPO_ROOT,
+      "src/tests/batch-e-phase3-by-match-response-hardening.test.ts",
+    );
+    expect(() => readFileSync(path, "utf8")).not.toThrow();
   });
 });
