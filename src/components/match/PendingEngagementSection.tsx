@@ -43,11 +43,20 @@ import {
 // shown above the missing-fields callout.
 import {
   contactBlockReason,
+  contactBlockCode,
   contactStateLabel,
   getContactState,
   isOutreachBlocked,
   type ContactState,
 } from "@/lib/contact-completeness";
+// Batch E Phase 2 — neutral, initiator-facing copy for platform pauses.
+// Source of truth lives in `src/lib/initiator-blocked-copy.ts` and is
+// shared with the admin Pending Engagements panel via the catalogue
+// SSOT in `src/lib/batch-d-events.ts`.
+import {
+  getInitiatorBlockedCopy,
+  getInitiatorOutreachBlockCopy,
+} from "@/lib/initiator-blocked-copy";
 
 export interface PendingEngagementRow {
   id?: string | null;
@@ -85,6 +94,16 @@ export interface PendingEngagementRow {
   renewed_engagement_id?: string | null;
   /** Reconfirmation deadline (ISO timestamp). */
   reconfirmation_window_expires_at?: string | null;
+  /**
+   * Batch E Phase 2 — drives the initiator-facing "engagement paused for
+   * platform review" / "confirming counterparty record" banner. Returned
+   * by `GET /poi-engagements/by-match/:matchId` (server `select("*")`).
+   * The banner ONLY consumes the operational/status fields — the raw
+   * `binding_candidates` payload is intentionally NOT read here so no
+   * candidate-org identity can leak into initiator-facing UI.
+   */
+  operational_state?: string | null;
+  binding_resolution?: string | null;
 }
 
 /**
@@ -421,6 +440,83 @@ export function PendingEngagementSection({ engagement, match, isInitiator }: Pro
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {(() => {
+          // ── Batch E Phase 2 — initiator-facing platform-pause banner ──
+          // Surfaces the canonical "engagement paused" reasons (binding
+          // review pending / disputed being named) using neutral copy
+          // from `getInitiatorBlockedCopy`. Contact-incomplete pauses
+          // fall through to the existing missing-fields callout below
+          // (kept for action specificity), with a short banner from
+          // `getInitiatorOutreachBlockCopy` to mirror the wording the
+          // server returns.
+          //
+          // Strict no-leakage contract (mirrored by Phase 2 UI tests):
+          //   • no counterparty email/name in the banner;
+          //   • no candidate-org identity (binding review);
+          //   • no dispute reason text;
+          //   • no commercial details (commodity / price / quantity).
+          let blockedCode:
+            | "DISPUTED_BEING_NAMED"
+            | "BINDING_REVIEW_PENDING"
+            | null = null;
+          if (engagement.engagement_status === "disputed_being_named") {
+            blockedCode = "DISPUTED_BEING_NAMED";
+          } else if (
+            !engagement.binding_resolution &&
+            engagement.operational_state === "binding_review_required"
+          ) {
+            blockedCode = "BINDING_REVIEW_PENDING";
+          }
+          const platformCopy = blockedCode
+            ? getInitiatorBlockedCopy(blockedCode)
+            : null;
+
+          // Contact-incomplete banner — only when an engagement is still
+          // pre-acceptance and the contact is unusable.
+          const cs: ContactState = getContactState(
+            {
+              counterparty_email: engagement.counterparty_email,
+              counterparty_org_id: engagement.counterparty_org_id,
+              contact_name: engagement.contact_name,
+              contact_type: engagement.contact_type,
+            },
+            match ?? null,
+          );
+          const contactCode = isOutreachBlocked(cs) ? contactBlockCode(cs) : null;
+          const contactCopy =
+            !blockedCode && !terminal && contactCode
+              ? getInitiatorOutreachBlockCopy(contactCode)
+              : null;
+
+          const banner = platformCopy ?? contactCopy;
+          const bannerKind = platformCopy
+            ? blockedCode!
+            : contactCopy
+              ? contactCode!
+              : null;
+          if (!banner || !bannerKind) return null;
+          return (
+            <div
+              className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4"
+              role="status"
+              aria-live="polite"
+              data-blocked-banner={bannerKind}
+            >
+              <p className="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                <AlertCircle className="h-4 w-4" />
+                {banner.headline}
+              </p>
+              <p className="mt-2 text-sm text-foreground/90 leading-relaxed">
+                {banner.body}
+              </p>
+              {banner.next && (
+                <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                  {banner.next}
+                </p>
+              )}
+            </div>
+          );
+        })()}
         <p className="text-sm text-foreground/90 leading-relaxed">{meta.description}</p>
 
         {/* ── Counterparty summary ─────────────────────────────────────── */}
