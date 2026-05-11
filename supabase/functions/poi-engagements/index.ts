@@ -2560,7 +2560,7 @@ Deno.serve(async (req) => {
         // Fired ONLY on the initial transition into
         // late_acceptance_pending_initiator_reconfirmation. The
         // reconfirm and decline routes are SEPARATE handlers
-        // (`/reconfirm-late-acceptance`, `/decline-late-acceptance`)
+        // (`/reconfirm`, `/decline-late-acceptance`)
         // and do NOT dispatch this event.
         //
         // The helper resolves recipients ONLY from the initiating
