@@ -334,11 +334,33 @@ Deno.serve(async (req) => {
       // ── D2a outreach gate (preview) ──
       // Block disputed + binding-review BEFORE the contact-completeness
       // check so a disputed/binding-pending row never even renders a
-      // preview body. No audit row on preview blocks (no side-effect to
-      // attribute) — the send-outreach path writes the audit on block.
+      // preview body. Batch E: emit the canonical audit-only catalogue
+      // event (`outreach.blocked.binding_review_pending` /
+      // `outreach.blocked.disputed_being_named`) so the catalogue SSOT
+      // and the live audit trail agree. No counterparty / candidate /
+      // dispute identity is ever written into the metadata.
       {
         const gate = evaluateOutreachGate(eng as Record<string, unknown>);
         if (gate) {
+          const canonicalAction =
+            gate.code === "DISPUTED_BEING_NAMED"
+              ? "outreach.blocked.disputed_being_named"
+              : "outreach.blocked.binding_review_pending";
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: canonicalAction,
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "preview-outreach",
+                guard_code: gate.code,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal */ }
           throw new ApiException(gate.code, gate.message, 409);
         }
       }
@@ -352,22 +374,30 @@ Deno.serve(async (req) => {
       if (isOutreachBlocked(previewState)) {
         const code = contactBlockCode(previewState)!;
         const reason = contactBlockReason(previewState)!;
-        try {
-          await supabase.from("audit_logs").insert({
-            org_id: (eng as { org_id: string }).org_id,
-            actor_user_id: authCtx.userId,
-            action: "contact.incomplete_detected",
-            entity_type: "poi_engagement",
-            entity_id: engagementId,
-            metadata: {
-              actor_role: "platform_admin",
-              surface: "preview-outreach",
-              state: previewState,
-              code,
-              request_id: requestId,
-            },
-          });
-        } catch (_e) { /* non-fatal */ }
+        // Batch E: emit canonical catalogue event AND keep the legacy
+        // `contact.incomplete_detected` row for one release window so
+        // downstream consumers can migrate without a flag day.
+        for (const action of [
+          "outreach.blocked.contact_incomplete",
+          "contact.incomplete_detected",
+        ] as const) {
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action,
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "preview-outreach",
+                state: previewState,
+                code,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal */ }
+        }
         throw new ApiException(code, reason, 422);
       }
       const recipient = (eng.counterparty_email || "").trim().toLowerCase();
@@ -553,6 +583,31 @@ Deno.serve(async (req) => {
           } catch (logErr) {
             console.warn(`[${requestId}] Failed to write outreach-blocked log row (non-fatal):`, logErr);
           }
+          // Batch E: also emit the canonical catalogue audit event so
+          // the SSOT in `src/lib/batch-d-events.ts` and the live audit
+          // trail agree. Metadata carries no counterparty / candidate /
+          // dispute identity.
+          {
+            const canonicalAction =
+              gate.code === "DISPUTED_BEING_NAMED"
+                ? "outreach.blocked.disputed_being_named"
+                : "outreach.blocked.binding_review_pending";
+            try {
+              await supabase.from("audit_logs").insert({
+                org_id: (eng as { org_id: string }).org_id,
+                actor_user_id: authCtx.userId,
+                action: canonicalAction,
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  actor_role: "platform_admin",
+                  surface: "send-outreach",
+                  guard_code: gate.code,
+                  request_id: requestId,
+                },
+              });
+            } catch (_e) { /* non-fatal */ }
+          }
           throw new ApiException(gate.code, gate.message, 409);
         }
       }
@@ -570,22 +625,29 @@ Deno.serve(async (req) => {
         if (isOutreachBlocked(sendState)) {
           const code = contactBlockCode(sendState)!;
           const reason = contactBlockReason(sendState)!;
-          try {
-            await supabase.from("audit_logs").insert({
-              org_id: (eng as { org_id: string }).org_id,
-              actor_user_id: authCtx.userId,
-              action: "contact.incomplete_detected",
-              entity_type: "poi_engagement",
-              entity_id: engagementId,
-              metadata: {
-                actor_role: "platform_admin",
-                surface: "send-outreach",
-                state: sendState,
-                code,
-                request_id: requestId,
-              },
-            });
-          } catch (_e) { /* non-fatal */ }
+          // Batch E: emit canonical catalogue event AND keep legacy
+          // `contact.incomplete_detected` for one release window.
+          for (const action of [
+            "outreach.blocked.contact_incomplete",
+            "contact.incomplete_detected",
+          ] as const) {
+            try {
+              await supabase.from("audit_logs").insert({
+                org_id: (eng as { org_id: string }).org_id,
+                actor_user_id: authCtx.userId,
+                action,
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  actor_role: "platform_admin",
+                  surface: "send-outreach",
+                  state: sendState,
+                  code,
+                  request_id: requestId,
+                },
+              });
+            } catch (_e) { /* non-fatal */ }
+          }
           throw new ApiException(code, reason, 422);
         }
       }
