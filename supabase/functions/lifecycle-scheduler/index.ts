@@ -668,6 +668,7 @@ Deno.serve(async (req: Request) => {
     };
 
 
+    // ── Webhook replay-guard pruning ──
     // Drops webhook_replay_guard rows older than 24h so the table stays
     // bounded. Safe to call even if there's nothing to prune.
     // SKIPPED in dry-run (DELETE).
