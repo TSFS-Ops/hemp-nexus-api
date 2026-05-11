@@ -41,12 +41,32 @@ describe("Batch D — D4a event catalogue", () => {
     expect(names.sort()).toEqual([...EXPECTED_EVENTS].sort());
   });
 
-  it("hard-disables outbound email on every event in D4a", () => {
+  it("admin-dispatch is only enabled for admin_queue + platform_admin events (D4b invariant)", () => {
     for (const e of BATCH_D_EVENTS) {
-      expect(
-        e.emailEnabled,
-        `${e.event} must be emailEnabled:false in D4a`,
-      ).toBe(false);
+      if (e.adminDispatchEnabled) {
+        expect(
+          e.recommendation,
+          `${e.event} adminDispatchEnabled requires recommendation='admin_queue'`,
+        ).toBe("admin_queue");
+        expect(
+          [...e.allowedRecipients],
+          `${e.event} adminDispatchEnabled requires allowedRecipients=['platform_admin']`,
+        ).toEqual(["platform_admin"]);
+        // No org / member / counterparty group may be allowed when admin
+        // dispatch is on — this is the "no general email permission" rule.
+        for (const forbidden of [
+          "initiating_org_admin",
+          "counterparty_org_admin",
+          "ordinary_org_member",
+          "external_unregistered_counterparty",
+          "disputed_counterparty",
+        ]) {
+          expect(
+            e.allowedRecipients,
+            `${e.event} must not allow ${forbidden}`,
+          ).not.toContain(forbidden);
+        }
+      }
     }
   });
 
