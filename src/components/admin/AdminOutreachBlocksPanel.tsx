@@ -129,7 +129,7 @@ export function AdminOutreachBlocksPanel() {
 
   const query = useQuery({
     queryKey: ["admin-outreach-blocks", actionFilter, surfaceFilter, windowFilter],
-    queryFn: async (): Promise<SafeRow[]> => {
+    queryFn: async (): Promise<{ rows: SafeRow[]; orgNames: Record<string, string> }> => {
       // Read only the columns we are allowed to surface. We deliberately
       // do NOT select(*) — that would pull metadata fields we must not
       // read (counterparty identity, dispute text, candidate lists,
