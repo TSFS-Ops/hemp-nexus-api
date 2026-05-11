@@ -1738,10 +1738,41 @@ export function AdminPendingEngagementsPanel() {
                                 never disagree about why the send is blocked. */}
                             {isEngagementPending(e.engagement_status) && (() => {
                               const cs = getEngagementContactState(e);
-                              const blocked = isOutreachBlocked(cs);
-                              const reason = blocked
-                                ? contactBlockReason(cs)!
-                                : "Platform sends an outreach email via Resend";
+                              const contactBlock = isOutreachBlocked(cs);
+                              // Batch E Phase 2 — also pre-disable the
+                              // Send-outreach button when the server-side
+                              // outreach gate would 409 (binding-review
+                              // pending or disputed-being-named). Without
+                              // this, admins click Send, the server 409s,
+                              // and the UI surfaces the failure as a
+                              // toast — confusing because the row already
+                              // shows the parked-state chip. Tooltip uses
+                              // neutral wording (no counterparty /
+                              // candidate / dispute identity).
+                              const bindingBlock = isBindingReviewPending(e);
+                              const disputedBlock =
+                                e.engagement_status === "disputed_being_named" ||
+                                e.operational_state === "disputed_being_named";
+                              const platformBlockCode = bindingBlock
+                                ? "BINDING_REVIEW_PENDING"
+                                : disputedBlock
+                                  ? "DISPUTED_BEING_NAMED"
+                                  : null;
+                              const blocked = contactBlock || !!platformBlockCode;
+                              const reason = platformBlockCode === "BINDING_REVIEW_PENDING"
+                                ? "Resolve binding review before outreach."
+                                : platformBlockCode === "DISPUTED_BEING_NAMED"
+                                  ? "Engagement paused for platform review. Outreach is blocked."
+                                  : contactBlock
+                                    ? contactBlockReason(cs)!
+                                    : "Platform sends an outreach email via Resend";
+                              const outreachBlockCode = platformBlockCode
+                                ? platformBlockCode
+                                : contactBlock
+                                  ? cs === "email_missing"
+                                    ? "CONTACT_EMAIL_MISSING"
+                                    : "CONTACT_INCOMPLETE"
+                                  : undefined;
                               return (
                                 <Button
                                   size="sm" variant="outline"
@@ -1750,12 +1781,13 @@ export function AdminPendingEngagementsPanel() {
                                   title={reason}
                                   aria-label={reason}
                                   data-outreach-blocked={blocked ? "true" : "false"}
-                                  data-outreach-block-code={blocked ? (cs === "email_missing" ? "CONTACT_EMAIL_MISSING" : "CONTACT_INCOMPLETE") : undefined}
+                                  data-outreach-block-code={outreachBlockCode}
                                 >
                                   <Mail className="h-3 w-3 mr-1" /> Send outreach
                                 </Button>
                               );
                             })()}
+
                             {/* Record contact: audit-only log of how the admin reached the counterparty
                                 outside the platform (phone, WhatsApp, in person, LinkedIn).
                                 Choosing "Email" inside the dialog still routes to the platform send path. */}
