@@ -43,7 +43,15 @@ describe("Batch D — D4a event catalogue", () => {
     expect(names.sort()).toEqual([...EXPECTED_EVENTS].sort());
   });
 
-  it("admin-dispatch is only enabled for admin_queue + platform_admin events (D4b invariant)", () => {
+  it("admin-dispatch is only enabled for admin_queue events that include platform_admin and no external groups (D4b invariant)", () => {
+    // D4c-2 correction: admin dispatch may coexist with initiator
+    // dispatch on the same event. The catalogue invariant is therefore
+    // (a) recommendation === 'admin_queue', (b) platform_admin is in
+    // allowedRecipients, and (c) NO counterparty / member / external /
+    // disputed / candidate group is in allowedRecipients. The D4b
+    // dispatcher (`batch-d-admin-notify.ts`) still targets ONLY
+    // platform_admin at runtime; the D4c initiator helper
+    // (`batch-d-initiator-notify.ts`) targets ONLY initiating_org_admin.
     for (const e of BATCH_D_EVENTS) {
       if (e.adminDispatchEnabled) {
         expect(
@@ -51,17 +59,15 @@ describe("Batch D — D4a event catalogue", () => {
           `${e.event} adminDispatchEnabled requires recommendation='admin_queue'`,
         ).toBe("admin_queue");
         expect(
-          [...e.allowedRecipients],
-          `${e.event} adminDispatchEnabled requires allowedRecipients=['platform_admin']`,
-        ).toEqual(["platform_admin"]);
-        // No org / member / counterparty group may be allowed when admin
-        // dispatch is on — this is the "no general email permission" rule.
+          e.allowedRecipients,
+          `${e.event} adminDispatchEnabled requires platform_admin in allowedRecipients`,
+        ).toContain("platform_admin");
         for (const forbidden of [
-          "initiating_org_admin",
           "counterparty_org_admin",
           "ordinary_org_member",
           "external_unregistered_counterparty",
           "disputed_counterparty",
+          "candidate_org",
         ]) {
           expect(
             e.allowedRecipients,
