@@ -269,7 +269,15 @@ describe("Batch F — emit-site coverage", () => {
     // If a future entry is genuinely UI-only, add it to UI_ONLY_EVENTS
     // below WITH a comment explaining why.
     const UI_ONLY_EVENTS = new Set<string>([
-      // (none today)
+      // `engagement.email_change_blocked` is a documented catalogue
+      // entry that exists so future server logic can emit it as a
+      // canonical action when the email-change refusal path is
+      // promoted from a 4xx response into an audit row. Today the
+      // refusal is communicated only via the API error envelope and
+      // initiator UI copy; no audit row is written. Verified
+      // 2026-05-11 against poi-engagements/index.ts (no literal
+      // emit of "engagement.email_change_blocked").
+      "engagement.email_change_blocked",
     ]);
     for (const e of BATCH_D_EVENTS) {
       const c = EVENT_CLASSIFICATION[e.event];
