@@ -6,7 +6,7 @@
  * this harness:
  *
  *   1. Provisions disposable orgs/profiles/match/engagement under
- *      `*@d4b-br.test.invalid` (RLS-bypassing service-role inserts).
+ *      `*@d4b-br.example.com` (RLS-bypassing service-role inserts).
  *   2. Mints a synthetic platform_admin user, signs in with password,
  *      and uses that JWT for every PATCH call (so the production
  *      `requireRole(authCtx, 'platform_admin')` gate is genuinely
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
   }
 
   const runId = crypto.randomUUID();
-  const tag = `d4bbr_${runId.slice(0, 8)}`;
+  const tag = `d4bbr-${runId.slice(0, 8)}`;
   const tests: TestRecord[] = [];
   const cleanup: (() => Promise<unknown>)[] = [];
   const startedAt = new Date().toISOString();
@@ -180,30 +180,35 @@ Deno.serve(async (req) => {
 
     // ── Provision the test profiles that will be the resolver targets ──
     // The resolver scans `profiles` by email/domain. We seed:
-    //   • alice@orgA.d4b-br.test.invalid → only in orgA  (UNIQUE EXACT)
-    //   • shared@d4b-br.test.invalid     → in both orgA + orgB  (DUPLICATE)
-    //   • staffA@orgshared.d4b-br.test.invalid → orgA   (DOMAIN ambiguity)
-    //   • staffB@orgshared.d4b-br.test.invalid → orgB   (DOMAIN ambiguity)
+    //   • alice@orgA.d4b-br.example.com → only in orgA  (UNIQUE EXACT)
+    //   • shared@d4b-br.example.com     → in both orgA + orgB  (DUPLICATE)
+    //   • staffA@orgshared.d4b-br.example.com → orgA   (DOMAIN ambiguity)
+    //   • staffB@orgshared.d4b-br.example.com → orgB   (DOMAIN ambiguity)
     //   • alice@gmail.com                → orgA  (free-provider control)
     const profileSeeds: { email: string; org_id: string }[] = [
-      { email: `alice@${tag}-orga.test.invalid`, org_id: orgA.id },
-      { email: `shared@${tag}-shared.test.invalid`, org_id: orgA.id },
-      { email: `shared@${tag}-shared.test.invalid`, org_id: orgB.id },
-      { email: `staffa@${tag}-domain.test.invalid`, org_id: orgA.id },
-      { email: `staffb@${tag}-domain.test.invalid`, org_id: orgB.id },
+      { email: `alice@${tag}-orga.example.com`, org_id: orgA.id },
+      { email: `shared@${tag}-shared.example.com`, org_id: orgA.id },
+      { email: `shared@${tag}-shared.example.com`, org_id: orgB.id },
+      { email: `staffa@${tag}-domain.example.com`, org_id: orgA.id },
+      { email: `staffb@${tag}-domain.example.com`, org_id: orgB.id },
       { email: `${tag}-alice@gmail.com`, org_id: orgA.id },
     ];
     const profileIds: string[] = [];
+    let seedIdx = 0;
     for (const seed of profileSeeds) {
-      // Profiles are 1:1 with auth.users. Create user first.
+      seedIdx += 1;
+      // auth.users.email is UNIQUE, but the resolver only reads profiles.email
+      // (which is not unique). Mint each auth user under a distinct address,
+      // then overwrite profiles.email with the canonical fixture address so
+      // the duplicate-exact + domain-ambiguity scenarios actually exist.
+      const authEmail = `seed-${seedIdx}-${tag}@d4b-br-auth.example.com`;
       const { data: u, error: uErr } = await admin.auth.admin.createUser({
-        email: seed.email,
+        email: authEmail,
         password: `${tag}-Pw!aA9`,
         email_confirm: true,
       });
-      if (uErr || !u.user) throw new Error(`auth user ${seed.email}: ${uErr?.message}`);
+      if (uErr || !u.user) throw new Error(`auth user ${authEmail}: ${uErr?.message}`);
       cleanup.push(() => admin.auth.admin.deleteUser(u.user!.id));
-      // Upsert profile with org_id (handle_new_user trigger may pre-create).
       const { error: pErr } = await admin
         .from("profiles")
         .upsert({ id: u.user.id, email: seed.email, org_id: seed.org_id }, { onConflict: "id" });
@@ -212,7 +217,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Mint synthetic platform_admin user used for every PATCH call ──
-    const adminEmail = `${tag}-admin@d4b-br.test.invalid`;
+    const adminEmail = `${tag}-admin@d4b-br.example.com`;
     const adminPwd = `${tag}-AdmPw!aA9`;
     const { data: adminUser, error: adminErr } = await admin.auth.admin.createUser({
       email: adminEmail, password: adminPwd, email_confirm: true,
@@ -234,7 +239,7 @@ Deno.serve(async (req) => {
     async function newEngagement(label: string): Promise<string> {
       // Need a parent match. Reuse one match per test for simplicity.
       const { data: match, error: matchErr } = await admin.from("matches").insert({
-        buyer_org_id: orgA.id, seller_org_id: orgA.id, org_id: orgA.id,
+        buyer_org_id: orgA.id, seller_org_id: orgB.id, org_id: orgA.id,
         buyer_id: `${tag}_${label}_buyer`, seller_id: `${tag}_${label}_seller`,
         buyer_name: `${tag} buyer`, seller_name: `${tag} seller`,
         commodity: "TEST_D4B_BR", quantity_amount: 1, quantity_unit: "MT",
@@ -286,7 +291,7 @@ Deno.serve(async (req) => {
     {
       const eid = await newEngagement("t1");
       const r = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `alice@${tag}-orga.test.invalid` },
+        { counterparty_email: `alice@${tag}-orga.example.com` },
         `${tag}_t1`);
       const row = await fetchRow(eid);
       const alerts = await countAlertSent(eid);
@@ -308,7 +313,7 @@ Deno.serve(async (req) => {
     {
       const eid = await newEngagement("t2");
       const r = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `shared@${tag}-shared.test.invalid` },
+        { counterparty_email: `shared@${tag}-shared.example.com` },
         `${tag}_t2`);
       const row = await fetchRow(eid);
       const alerts = await countAlertSent(eid);
@@ -335,7 +340,7 @@ Deno.serve(async (req) => {
     {
       const eid = await newEngagement("t3");
       const r = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `info@${tag}-shared.test.invalid` },
+        { counterparty_email: `info@${tag}-shared.example.com` },
         `${tag}_t3`);
       const row = await fetchRow(eid);
       const reviewAudits = await countBindingReviewAudits(eid);
@@ -360,7 +365,7 @@ Deno.serve(async (req) => {
     {
       const eid = await newEngagement("t4");
       const r = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `newperson@${tag}-domain.test.invalid` },
+        { counterparty_email: `newperson@${tag}-domain.example.com` },
         `${tag}_t4`);
       const row = await fetchRow(eid);
       const reviewAudits = await countBindingReviewAudits(eid);
@@ -406,7 +411,7 @@ Deno.serve(async (req) => {
       const eid = await newEngagement("t6");
       // First call enters review.
       await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `shared@${tag}-shared.test.invalid` },
+        { counterparty_email: `shared@${tag}-shared.example.com` },
         `${tag}_t6_a`);
       const reviewAuditsAfter1 = await countBindingReviewAudits(eid);
       const alertsAfter1 = await countAlertSent(eid);
@@ -414,7 +419,7 @@ Deno.serve(async (req) => {
       // and the same email — the row is already in review, so no new
       // initial-entry alert/audit row should be written.
       const r2 = await patchEngagement(SUPABASE_URL, adminJwt, eid,
-        { counterparty_email: `shared@${tag}-shared.test.invalid` },
+        { counterparty_email: `shared@${tag}-shared.example.com` },
         `${tag}_t6_b`);
       const reviewAuditsAfter2 = await countBindingReviewAudits(eid);
       const alertsAfter2 = await countAlertSent(eid);
@@ -440,11 +445,11 @@ Deno.serve(async (req) => {
         .in("entity_id", auditEntityIds)
         .gte("created_at", startedAt);
       const forbidden = [
-        `shared@${tag}-shared.test.invalid`,
-        `alice@${tag}-orga.test.invalid`,
-        `staffa@${tag}-domain.test.invalid`,
-        `staffb@${tag}-domain.test.invalid`,
-        `info@${tag}-shared.test.invalid`,
+        `shared@${tag}-shared.example.com`,
+        `alice@${tag}-orga.example.com`,
+        `staffa@${tag}-domain.example.com`,
+        `staffb@${tag}-domain.example.com`,
+        `info@${tag}-shared.example.com`,
         `${tag}-newperson@gmail.com`,
         orgA.name, orgB.name,
       ];
