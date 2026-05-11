@@ -2038,26 +2038,8 @@ Deno.serve(async (req) => {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
       });
-      }
+    }
 
-      // D4b: admin-only alert. Best-effort; never fails the request.
-      // No counterparty/org-admin/external recipient is derived here —
-      // dispatch is hard-coded to the platform admin mailbox + Slack
-      // by the shared helper.
-      try {
-        await dispatchD4bAdminAlert(supabase, {
-          eventType: "engagement.disputed_being_named",
-          engagementId: engagementId,
-          engagement: {
-            engagement_status: updated.engagement_status,
-            operational_state: updated.operational_state,
-            org_id: current.org_id,
-          },
-          sourceFunction: "poi-engagements:dispute_raised",
-        });
-      } catch (notifyErr) {
-        console.warn(`[${requestId}] D4b admin alert failed (non-fatal):`, notifyErr);
-      }
 
     // ── POST /poi-engagements/:engagementId/decline-late-acceptance — Initiator declines ──
     // Batch B Phase 3: late-acceptance resolution endpoints. Both routes
