@@ -120,7 +120,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "A counterparty has queried being named on a Pending Engagement. The engagement is paused for platform review.",
-    adminDispatchEnabled: false,
+    adminDispatchEnabled: true,
   },
   {
     event: "engagement.cancelled_email_change",
