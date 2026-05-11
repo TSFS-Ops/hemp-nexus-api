@@ -13,6 +13,7 @@ import {
 import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
 import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
+import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
 // Batch A — single source of truth for contact-completeness gating.
 // Mirror of `src/lib/contact-completeness.ts`. Both files MUST stay in
 // lockstep; the regression tests pin both surfaces.
