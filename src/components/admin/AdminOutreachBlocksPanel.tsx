@@ -1,6 +1,6 @@
 /**
- * AdminOutreachBlocksPanel — Batch G observability surface
- * ────────────────────────────────────────────────────────
+ * AdminOutreachBlocksPanel — Batch G + Batch I observability surface
+ * ──────────────────────────────────────────────────────────────────
  * Read-only admin view that counts and lists the three canonical
  * Batch E outreach-blocked audit events:
  *
@@ -8,23 +8,26 @@
  *   • outreach.blocked.binding_review_pending
  *   • outreach.blocked.disputed_being_named
  *
- * Answers, in plain English:
- *   • How many times was outreach blocked because contact details
- *     were incomplete / binding review was pending / the engagement
- *     was disputed?
- *   • Which organisation was affected?
- *   • Which engagement was affected?
- *   • When did it happen?
- *   • Which surface triggered it (preview-outreach or send-outreach)?
+ * Batch I additions (internal-only operational visibility):
+ *   • Surface filter (preview-outreach / send-outreach / all)
+ *   • Time-window filter (24h / 7d / 30d / all)
+ *   • Reason filter via the existing summary cards
+ *   • "Top organisations blocked" rollup so admins can see which
+ *     organisations are repeatedly hitting outreach blocks and why.
  *
- * SAFETY (Batch G contract — enforced by tests):
+ * SAFETY (Batch G + Batch I contract — enforced by tests):
  *   This panel ONLY surfaces a tight allowlist of safe fields:
- *     org_id, entity_id (engagement id), action, surface, created_at.
+ *     id, action, org_id, entity_id, surface, created_at.
  *   It MUST NEVER read or display:
  *     counterparty_email, counterparty_name, counterparty_org_id,
  *     binding_candidates, dispute_reason, dispute_source,
  *     disputed_by_token_hash, commodity, price_amount,
  *     quantity_amount, admin_notes, support_notes.
+ *
+ *   The panel is strictly read-only:
+ *     • No resolve / send / retry / notify / email actions.
+ *     • No mutations, no edge-function calls, no dispatcher hooks.
+ *     • No counterparty-facing surface of any kind.
  *
  *   Wording rule: no blame / fault / guilt / fraud / breach /
  *   liability / finality language. This is observability, not a
@@ -45,6 +48,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
@@ -68,11 +78,25 @@ const ACTION_LABEL: Record<OutreachBlockedAction, string> = {
     "Engagement under dispute",
 };
 
-const ROW_LIMIT = 200;
+const ROW_LIMIT = 500;
+
+// Safe surface allowlist — must match the two real call sites in
+// supabase/functions/poi-engagements/index.ts.
+const SAFE_SURFACES = ["preview-outreach", "send-outreach"] as const;
+type SafeSurface = (typeof SAFE_SURFACES)[number];
+
+// Time-window options. "all" sends no created_at filter.
+const WINDOW_OPTIONS = [
+  { id: "24h", label: "Last 24 hours", hours: 24 },
+  { id: "7d", label: "Last 7 days", hours: 24 * 7 },
+  { id: "30d", label: "Last 30 days", hours: 24 * 30 },
+  { id: "all", label: "All time", hours: null },
+] as const;
+type WindowId = (typeof WINDOW_OPTIONS)[number]["id"];
 
 /**
  * Whitelist of metadata fields the panel may read. Anything else is
- * dropped before render. This is enforced by Batch G tests.
+ * dropped before render. This is enforced by Batch G/I tests.
  */
 const SAFE_METADATA_FIELDS = ["surface"] as const;
 
@@ -81,28 +105,30 @@ interface SafeRow {
   action: OutreachBlockedAction;
   org_id: string | null;
   entity_id: string | null;
-  surface: string | null;
+  surface: SafeSurface | null;
   created_at: string;
 }
 
-function pickSafeMetadata(meta: unknown): { surface: string | null } {
+function pickSafeMetadata(meta: unknown): { surface: SafeSurface | null } {
   if (!meta || typeof meta !== "object") return { surface: null };
   const m = meta as Record<string, unknown>;
   const surfaceRaw = m[SAFE_METADATA_FIELDS[0]];
-  const surface =
-    typeof surfaceRaw === "string" && surfaceRaw.length > 0
-      ? surfaceRaw
-      : null;
-  return { surface };
+  if (typeof surfaceRaw !== "string") return { surface: null };
+  if ((SAFE_SURFACES as readonly string[]).includes(surfaceRaw)) {
+    return { surface: surfaceRaw as SafeSurface };
+  }
+  return { surface: null };
 }
 
 export function AdminOutreachBlocksPanel() {
   const [actionFilter, setActionFilter] = useState<
     OutreachBlockedAction | "all"
   >("all");
+  const [surfaceFilter, setSurfaceFilter] = useState<SafeSurface | "all">("all");
+  const [windowFilter, setWindowFilter] = useState<WindowId>("7d");
 
   const query = useQuery({
-    queryKey: ["admin-outreach-blocks", actionFilter],
+    queryKey: ["admin-outreach-blocks", actionFilter, surfaceFilter, windowFilter],
     queryFn: async (): Promise<SafeRow[]> => {
       // Read only the columns we are allowed to surface. We deliberately
       // do NOT select(*) — that would pull metadata fields we must not
@@ -119,10 +145,16 @@ export function AdminOutreachBlocksPanel() {
         q = q.eq("action", actionFilter);
       }
 
+      const win = WINDOW_OPTIONS.find((w) => w.id === windowFilter);
+      if (win && win.hours != null) {
+        const since = new Date(Date.now() - win.hours * 60 * 60 * 1000).toISOString();
+        q = q.gte("created_at", since);
+      }
+
       const { data, error } = await q;
       if (error) throw error;
 
-      return (data ?? []).map((r): SafeRow => {
+      const mapped: SafeRow[] = (data ?? []).map((r): SafeRow => {
         const safe = pickSafeMetadata(r.metadata);
         return {
           id: r.id as string,
@@ -133,6 +165,14 @@ export function AdminOutreachBlocksPanel() {
           created_at: r.created_at as string,
         };
       });
+
+      // Surface filter is applied client-side because `surface` lives
+      // inside the metadata jsonb column; the explicit allowlist in
+      // pickSafeMetadata guarantees no other metadata field leaks.
+      if (surfaceFilter !== "all") {
+        return mapped.filter((r) => r.surface === surfaceFilter);
+      }
+      return mapped;
     },
   });
 
@@ -148,8 +188,98 @@ export function AdminOutreachBlocksPanel() {
     return c;
   }, [rows]);
 
+  // Per-organisation rollup — uses ONLY the safe org_id field.
+  // No org name lookup, no joins; that would require additional safe-
+  // field guarantees outside this batch's scope.
+  const orgRollup = useMemo(() => {
+    const m = new Map<string, { org_id: string; total: number; byAction: Record<OutreachBlockedAction, number> }>();
+    for (const r of rows) {
+      if (!r.org_id) continue;
+      const existing = m.get(r.org_id) ?? {
+        org_id: r.org_id,
+        total: 0,
+        byAction: {
+          "outreach.blocked.contact_incomplete": 0,
+          "outreach.blocked.binding_review_pending": 0,
+          "outreach.blocked.disputed_being_named": 0,
+        },
+      };
+      existing.total += 1;
+      existing.byAction[r.action] += 1;
+      m.set(r.org_id, existing);
+    }
+    return Array.from(m.values())
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+  }, [rows]);
+
+  const windowLabel =
+    WINDOW_OPTIONS.find((w) => w.id === windowFilter)?.label ?? "Last 7 days";
+
   return (
     <div className="space-y-4">
+      {/* Filters row — read-only operational scoping */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground">Time window</label>
+          <Select value={windowFilter} onValueChange={(v) => setWindowFilter(v as WindowId)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {WINDOW_OPTIONS.map((w) => (
+                <SelectItem key={w.id} value={w.id}>{w.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground">Surface</label>
+          <Select
+            value={surfaceFilter}
+            onValueChange={(v) => setSurfaceFilter(v as SafeSurface | "all")}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All surfaces</SelectItem>
+              {SAFE_SURFACES.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground">Reason</label>
+          <Select
+            value={actionFilter}
+            onValueChange={(v) => setActionFilter(v as OutreachBlockedAction | "all")}
+          >
+            <SelectTrigger className="w-[260px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All reasons</SelectItem>
+              {OUTREACH_BLOCKED_ACTIONS.map((a) => (
+                <SelectItem key={a} value={a}>{ACTION_LABEL[a]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          onClick={() => query.refetch()}
+          disabled={query.isFetching}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${query.isFetching ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Reason summary cards — clickable to toggle the reason filter */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {OUTREACH_BLOCKED_ACTIONS.map((a) => (
           <Card
@@ -169,38 +299,83 @@ export function AdminOutreachBlocksPanel() {
             <CardContent>
               <div className="text-2xl font-mono">{counts[a]}</div>
               <div className="text-xs text-muted-foreground mt-1">
-                in last {ROW_LIMIT} events
+                {windowLabel.toLowerCase()} · in last {ROW_LIMIT} events
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Per-organisation rollup — safe org_id only, no joins */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">
+            Organisations most often blocked
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Organisation</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Contact incomplete</TableHead>
+                <TableHead className="text-right">Binding review</TableHead>
+                <TableHead className="text-right">Under dispute</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orgRollup.map((o) => (
+                <TableRow key={o.org_id}>
+                  <TableCell className="font-mono text-xs">
+                    {o.org_id.substring(0, 12)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs">{o.total}</TableCell>
+                  <TableCell className="text-right font-mono text-xs">
+                    {o.byAction["outreach.blocked.contact_incomplete"]}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs">
+                    {o.byAction["outreach.blocked.binding_review_pending"]}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs">
+                    {o.byAction["outreach.blocked.disputed_being_named"]}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {orgRollup.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground py-6"
+                  >
+                    No organisations to summarise in the selected window.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Showing {rows.length} outreach-blocked event(s)
           {actionFilter !== "all" ? ` · filtered to ${ACTION_LABEL[actionFilter]}` : ""}
+          {surfaceFilter !== "all" ? ` · surface: ${surfaceFilter}` : ""}
+          {` · ${windowLabel.toLowerCase()}`}
         </p>
-        <div className="flex gap-2">
-          {actionFilter !== "all" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActionFilter("all")}
-            >
-              Clear filter
-            </Button>
-          )}
+        {(actionFilter !== "all" || surfaceFilter !== "all") && (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => query.refetch()}
-            disabled={query.isFetching}
+            onClick={() => {
+              setActionFilter("all");
+              setSurfaceFilter("all");
+            }}
           >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${query.isFetching ? "animate-spin" : ""}`} />
-            Refresh
+            Clear filters
           </Button>
-        </div>
+        )}
       </div>
 
       <Card>
