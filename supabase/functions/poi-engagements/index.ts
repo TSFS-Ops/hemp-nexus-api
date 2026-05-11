@@ -1434,6 +1434,14 @@ Deno.serve(async (req) => {
       // Carry the auto-resolved binding fields (set above when an email matched a registered profile)
       if (updates.counterparty_org_id !== undefined) sideUpdates.counterparty_org_id = updates.counterparty_org_id;
       if (updates.counterparty_type !== undefined) sideUpdates.counterparty_type = updates.counterparty_type;
+      // Batch D — production binding-review path. When the resolver
+      // detects ambiguity it sets these on `updates`; we propagate
+      // them here so the row enters the binding_review_required
+      // operational state in the same write as the email update.
+      if (updates.operational_state !== undefined) sideUpdates.operational_state = updates.operational_state;
+      if (updates.operational_state_set_by !== undefined) sideUpdates.operational_state_set_by = updates.operational_state_set_by;
+      if (updates.operational_state_set_at !== undefined) sideUpdates.operational_state_set_at = updates.operational_state_set_at;
+      if (updates.binding_candidates !== undefined) sideUpdates.binding_candidates = updates.binding_candidates;
       if (parsed.data.admin_notes !== undefined) sideUpdates.admin_notes = parsed.data.admin_notes;
       if (parsed.data.contact_method !== undefined) sideUpdates.contact_method = parsed.data.contact_method;
       if (parsed.data.contact_date !== undefined) sideUpdates.contact_date = parsed.data.contact_date;
