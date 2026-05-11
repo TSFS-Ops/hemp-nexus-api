@@ -526,7 +526,7 @@ Deno.test("D4c-2 :: audit metadata contains no counterparty PII; emails are hash
   );
   // Email hashes present
   assert(Array.isArray(meta.recipient_emails_hash));
-  assertEquals(meta.recipient_emails_hash[0], "hash(alice@example.com)");
+  assertEquals(meta.recipient_emails_hash[0], `sha256:17:${"a".charCodeAt(0).toString(16)}`);
   // Required classification fields
   assertEquals(meta.classification, "transactional_operational");
   assertEquals(meta.suppression_checked, true);
