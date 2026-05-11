@@ -29,11 +29,30 @@ describe("Batch D — D4b dispatch allowlist", () => {
     expect(new Set(flipped)).toEqual(EXPECTED_DISPATCH);
   });
 
-  it("flipped events are admin_queue + platform_admin only", () => {
+  it("flipped events are admin_queue, include platform_admin, and forbid counterparty/external groups", () => {
+    // After the D4c-2 correction pass, D4b admin-dispatch events MAY
+    // also list `initiating_org_admin` in allowedRecipients (so the D4c
+    // initiator helper can dispatch). They MUST still:
+    //   • use recommendation 'admin_queue'
+    //   • include 'platform_admin' in allowedRecipients
+    //   • never list counterparty / external / disputed groups
+    const FORBIDDEN = [
+      "counterparty_org_admin",
+      "ordinary_org_member",
+      "external_unregistered_counterparty",
+      "disputed_counterparty",
+      "candidate_org",
+    ];
     for (const e of BATCH_D_EVENTS) {
       if (!e.adminDispatchEnabled) continue;
       expect(e.recommendation).toBe("admin_queue");
-      expect([...e.allowedRecipients]).toEqual(["platform_admin"]);
+      expect([...e.allowedRecipients]).toContain("platform_admin");
+      for (const banned of FORBIDDEN) {
+        expect(
+          [...e.allowedRecipients].includes(banned as never),
+          `${e.event}: allowedRecipients must not include ${banned}`,
+        ).toBe(false);
+      }
     }
   });
 
