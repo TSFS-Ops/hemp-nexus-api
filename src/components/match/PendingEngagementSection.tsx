@@ -43,11 +43,20 @@ import {
 // shown above the missing-fields callout.
 import {
   contactBlockReason,
+  contactBlockCode,
   contactStateLabel,
   getContactState,
   isOutreachBlocked,
   type ContactState,
 } from "@/lib/contact-completeness";
+// Batch E Phase 2 — neutral, initiator-facing copy for platform pauses.
+// Source of truth lives in `src/lib/initiator-blocked-copy.ts` and is
+// shared with the admin Pending Engagements panel via the catalogue
+// SSOT in `src/lib/batch-d-events.ts`.
+import {
+  getInitiatorBlockedCopy,
+  getInitiatorOutreachBlockCopy,
+} from "@/lib/initiator-blocked-copy";
 
 export interface PendingEngagementRow {
   id?: string | null;
