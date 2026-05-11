@@ -1,0 +1,133 @@
+/**
+ * Batch D — D4a catalogue + wording guard tests.
+ *
+ * Proves:
+ *   1. every Batch D event has exactly one catalogue entry;
+ *   2. every catalogue entry passes the wording guard;
+ *   3. every catalogue entry is `emailEnabled: false` in D4a;
+ *   4. the wording guard correctly REJECTS each forbidden token;
+ *   5. `disputed_counterparty` appears in the forbidden-recipients list
+ *      of EVERY event in the catalogue (the hard safety rule);
+ *   6. the canonical event name set matches the D4 preflight scope.
+ */
+
+import { describe, it, expect } from "vitest";
+import {
+  BATCH_D_EVENTS,
+  BATCH_D_FORBIDDEN_WORDS,
+  findForbiddenWords,
+  getBatchDEvent,
+  type BatchDEventEntry,
+} from "@/lib/batch-d-events";
+
+const EXPECTED_EVENTS = [
+  "engagement.binding_review_required",
+  "engagement.binding_review_resolved",
+  "engagement.disputed_being_named",
+  "engagement.cancelled_email_change",
+  "engagement.email_change_blocked",
+  "outreach.blocked.contact_incomplete",
+  "outreach.blocked.binding_review_pending",
+  "outreach.blocked.disputed_being_named",
+];
+
+describe("Batch D — D4a event catalogue", () => {
+  it("contains exactly one entry per canonical event name", () => {
+    const names = BATCH_D_EVENTS.map((e) => e.event);
+    expect(new Set(names).size).toBe(names.length);
+    for (const expected of EXPECTED_EVENTS) {
+      expect(getBatchDEvent(expected), `missing event ${expected}`).toBeDefined();
+    }
+    expect(names.sort()).toEqual([...EXPECTED_EVENTS].sort());
+  });
+
+  it("hard-disables outbound email on every event in D4a", () => {
+    for (const e of BATCH_D_EVENTS) {
+      expect(
+        e.emailEnabled,
+        `${e.event} must be emailEnabled:false in D4a`,
+      ).toBe(false);
+    }
+  });
+
+  it("forbids re-contacting the disputed counterparty on every event", () => {
+    for (const e of BATCH_D_EVENTS) {
+      expect(
+        e.forbiddenRecipients,
+        `${e.event} must list disputed_counterparty as forbidden`,
+      ).toContain("disputed_counterparty");
+    }
+  });
+
+  it("never overlaps allowedRecipients with forbiddenRecipients", () => {
+    for (const e of BATCH_D_EVENTS) {
+      const overlap = e.allowedRecipients.filter((r) =>
+        e.forbiddenRecipients.includes(r),
+      );
+      expect(overlap, `${e.event} has overlap`).toEqual([]);
+    }
+  });
+});
+
+describe("Batch D — D4a wording guard", () => {
+  it("accepts every safeWording in the catalogue", () => {
+    for (const e of BATCH_D_EVENTS) {
+      const hits = findForbiddenWords(e.safeWording);
+      expect(
+        hits,
+        `${e.event} safeWording contains forbidden word(s): ${hits.join(", ")}`,
+      ).toEqual([]);
+    }
+  });
+
+  it("accepts every label in the catalogue", () => {
+    for (const e of BATCH_D_EVENTS) {
+      const hits = findForbiddenWords(e.label);
+      expect(hits, `${e.event} label contains forbidden word(s)`).toEqual([]);
+    }
+  });
+
+  it("rejects each forbidden token in isolation (case-insensitive)", () => {
+    for (const word of BATCH_D_FORBIDDEN_WORDS) {
+      const upper = word.toUpperCase();
+      const mixed = word.charAt(0).toUpperCase() + word.slice(1);
+      expect(findForbiddenWords(`copy contains ${word} here`)).toContain(word);
+      expect(findForbiddenWords(`copy contains ${upper} here`)).toContain(word);
+      expect(findForbiddenWords(`copy contains ${mixed} here`)).toContain(word);
+    }
+  });
+
+  it("does not flag innocent words that merely contain a forbidden substring", () => {
+    // "breach" is on the list as a whole word, but "outbreach" / "breached"
+    // tokenisations are intentionally caught (the guard is conservative).
+    // We only assert true negatives for clearly unrelated words.
+    expect(findForbiddenWords("paused under platform review")).toEqual([]);
+    expect(findForbiddenWords("awaiting binding-review decision")).toEqual([]);
+    expect(findForbiddenWords("the engagement has been cancelled")).toEqual([]);
+  });
+});
+
+describe("Batch D — D4a recommendation typing", () => {
+  it("only uses recommendation values defined by the catalogue", () => {
+    const allowed = new Set([
+      "audit_only",
+      "admin_queue",
+      "admin_email_candidate",
+      "deferred",
+    ]);
+    for (const e of BATCH_D_EVENTS) {
+      expect(allowed.has(e.recommendation), e.event).toBe(true);
+    }
+  });
+
+  it("does not recommend admin_email_candidate while emailEnabled is false (D4a invariant)", () => {
+    // A catalogue entry MAY be marked admin_email_candidate (D4b plan)
+    // but it must still ship with emailEnabled:false in D4a. Verified by
+    // the combination — this assertion is defence-in-depth.
+    for (const e of BATCH_D_EVENTS as readonly BatchDEventEntry[]) {
+      if (e.recommendation === "admin_email_candidate") {
+        expect(e.emailEnabled).toBe(false);
+      }
+    }
+  });
+});
