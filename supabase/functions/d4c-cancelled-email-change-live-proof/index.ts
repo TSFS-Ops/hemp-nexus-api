@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
         org_id: orgI.id,
         counterparty_org_id: orgC.id,
         counterparty_email: counterpartyEmail,
-        counterparty_type: "organisation",
+        counterparty_type: "known",
         engagement_status: "contacted",
         contact_type: "organisation",
         source: "admin_manual",
