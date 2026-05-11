@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
     const initJwt = initSess.session.access_token;
 
     // ── Helper: create a fresh expired engagement parked in `contacted`
-    async function newExpiredEngagement(label: string): Promise<string> {
+    async function newExpiredEngagement(label: string): Promise<{ engId: string; matchId: string }> {
       const { data: match, error: matchErr } = await admin.from("matches").insert({
         buyer_org_id: orgI.id, seller_org_id: orgC.id, org_id: orgI.id,
         buyer_id: `${tag}_${label}_buyer`, seller_id: `${tag}_${label}_seller`,
@@ -289,7 +289,10 @@ Deno.serve(async (req) => {
       if (matchErr || !match) throw new Error(`match ${label}: ${matchErr?.message}`);
       cleanup.push(() => admin.from("matches").delete().eq("id", match.id));
 
-      const expiredAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      // Insert with future expires_at (DB trigger forces 24h+ floor),
+      // then UPDATE status='expired' + expires_at=past in a single
+      // statement. The UPDATE trigger only guards
+      // notification_sent/contacted, so 'expired' transitions through.
       const { data: eng, error: engErr } = await admin.from("poi_engagements").insert({
         match_id: match.id,
         org_id: orgI.id,
@@ -299,13 +302,19 @@ Deno.serve(async (req) => {
         engagement_status: "contacted",
         contact_type: "organisation",
         source: "admin_manual",
-        expires_at: expiredAt,
       }).select("id").single();
       if (engErr || !eng) throw new Error(`eng ${label}: ${engErr?.message}`);
       cleanup.push(() => admin.from("poi_engagements").delete().eq("id", eng.id));
       cleanup.push(() => admin.from("audit_logs").delete().eq("entity_id", eng.id));
       cleanup.push(() => admin.from("engagement_outreach_logs").delete().eq("engagement_id", eng.id));
-      return eng.id;
+
+      const expiredAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { error: updErr } = await admin.from("poi_engagements")
+        .update({ engagement_status: "expired", expires_at: expiredAt })
+        .eq("id", eng.id);
+      if (updErr) throw new Error(`force-expire ${label}: ${updErr.message}`);
+
+      return { engId: eng.id, matchId: match.id };
     }
 
     async function fetchEng(id: string) {
