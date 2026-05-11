@@ -45,7 +45,7 @@ describe("Batch D — D4b dispatch allowlist", () => {
   });
 
   it("catalogue entry has no general email/org dispatch flags", () => {
-    const sample = BATCH_D_EVENTS[0] as Record<string, unknown>;
+    const sample = BATCH_D_EVENTS[0] as unknown as Record<string, unknown>;
     // adminDispatchEnabled is the only allowed dispatch flag. The
     // following keys MUST NOT appear (defence against drift back to a
     // generic outbound-email permission model).
