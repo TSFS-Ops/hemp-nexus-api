@@ -93,7 +93,13 @@ describe("D4c-3a — cancelled-email-change initiator alert wiring", () => {
   it("dispatch happens AFTER the cancel audit insert and BEFORE the response build", () => {
     const auditIdx = SOURCE.indexOf('action: "engagement.cancelled_for_email_change"');
     const dispatchIdx = SOURCE.indexOf("dispatchD4cInitiatorAlert(");
-    const responseIdx = SOURCE.indexOf("const responseBody = { engagement: updated };");
+    // There are many `const responseBody = ...` declarations across
+    // other route handlers; only the FIRST one AFTER the dispatch
+    // closes this branch.
+    const responseIdx = SOURCE.indexOf(
+      "const responseBody = { engagement: updated };",
+      dispatchIdx,
+    );
     expect(auditIdx).toBeGreaterThan(-1);
     expect(dispatchIdx).toBeGreaterThan(auditIdx);
     expect(responseIdx).toBeGreaterThan(dispatchIdx);
