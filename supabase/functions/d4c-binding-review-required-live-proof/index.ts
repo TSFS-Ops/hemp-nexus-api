@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
       const { data: eng, error: engErr } = await admin.from("poi_engagements").insert({
         match_id: match.id,
         org_id: orgI.id,
-        counterparty_type: "organisation",
+        counterparty_type: "unknown",
         engagement_status: "pending",
         source: "admin_manual",
       }).select("id").single();
