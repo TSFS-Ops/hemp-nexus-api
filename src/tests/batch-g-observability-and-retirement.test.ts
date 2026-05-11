@@ -42,24 +42,18 @@ const D4C_INITIATOR_SRC = readFileSync(
   join(REPO_ROOT, "supabase/functions/_shared/batch-d-initiator-notify.ts"),
   "utf8",
 );
-const BY_MATCH_SRC = (() => {
-  // Batch F hardening lives in the by-match response shaping. The exact
-  // file may have evolved — locate it by grepping the supabase/functions
-  // tree for the canonical strip list.
-  const candidates = [
-    "supabase/functions/poi-engagements/index.ts",
-    "supabase/functions/by-match/index.ts",
-    "supabase/functions/match-by-id/index.ts",
-  ];
-  for (const rel of candidates) {
-    try {
-      return readFileSync(join(REPO_ROOT, rel), "utf8");
-    } catch {
-      /* try next */
-    }
-  }
-  return "";
-})();
+// Strip JS/TS comments from the panel source before scanning for
+// forbidden field names. The panel's own header comment legitimately
+// names the fields it must NOT read — that documentation must not
+// trip the safety guard.
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((l) => l.replace(/\/\/.*$/, ""))
+    .join("\n");
+}
+const PANEL_CODE = stripComments(PANEL_SRC);
 
 const FORBIDDEN_FIELDS_IN_PANEL = [
   "counterparty_email",
@@ -92,33 +86,28 @@ describe("Batch G :: AdminOutreachBlocksPanel safety contract", () => {
   it("never reads or displays forbidden counterparty / dispute / commercial / note fields", () => {
     for (const field of FORBIDDEN_FIELDS_IN_PANEL) {
       expect(
-        PANEL_SRC.includes(field),
-        `AdminOutreachBlocksPanel must not reference forbidden field "${field}"`,
+        PANEL_CODE.includes(field),
+        `AdminOutreachBlocksPanel must not reference forbidden field "${field}" in code (comments excluded)`,
       ).toBe(false);
     }
   });
 
   it("uses an explicit column allowlist (never select(*))", () => {
-    // Defence against a future edit pulling raw rows: the panel must
-    // call `.select(...)` with an explicit, comma-separated list.
-    expect(PANEL_SRC).toMatch(
+    expect(PANEL_CODE).toMatch(
       /\.select\(\s*"id, action, org_id, entity_id, metadata, created_at"\s*\)/,
     );
-    // And must NOT call select("*") anywhere.
-    expect(PANEL_SRC.includes('select("*")')).toBe(false);
-    expect(PANEL_SRC.includes(".select('*')")).toBe(false);
+    expect(PANEL_CODE.includes('select("*")')).toBe(false);
+    expect(PANEL_CODE.includes(".select('*')")).toBe(false);
   });
 
   it("filters audit_logs by the three canonical actions only", () => {
     for (const a of OUTREACH_BLOCKED_ACTIONS) {
       expect(
-        PANEL_SRC.includes(`"${a}"`),
+        PANEL_CODE.includes(`"${a}"`),
         `panel must reference canonical action "${a}"`,
       ).toBe(true);
     }
-    // Panel must NOT surface the legacy event — it would double-count
-    // contact-incomplete blocks during the dual-write window.
-    expect(PANEL_SRC.includes('"contact.incomplete_detected"')).toBe(false);
+    expect(PANEL_CODE.includes('"contact.incomplete_detected"')).toBe(false);
   });
 });
 
