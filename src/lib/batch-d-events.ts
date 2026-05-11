@@ -91,7 +91,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     ],
     safeWording:
       "A Pending Engagement requires a binding-review decision and is awaiting platform review.",
-    adminDispatchEnabled: false,
+    adminDispatchEnabled: true,
   },
   {
     event: "engagement.binding_review_resolved",
