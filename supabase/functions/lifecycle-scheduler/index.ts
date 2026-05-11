@@ -615,7 +615,59 @@ Deno.serve(async (req: Request) => {
       notifications_dispatched: 0,
     };
 
-    // ── Webhook replay-guard pruning ──
+    // ────────────────────────────────────────────
+    // 7. D4b BINDING-REVIEW BACKLOG DIGEST (admin-only)
+    // ────────────────────────────────────────────
+    // Counts engagements still parked in `binding_review_required` whose
+    // age exceeds 24h, and emits a SINGLE rolled-up admin alert per run
+    // (not one per row). Recipient is the platform admin mailbox + Slack
+    // webhook only — no org-admin / counterparty / external recipient is
+    // ever derived. Helper enforces the recipient policy.
+    let bindingBacklogCount = 0;
+    let bindingBacklogDispatched = false;
+    try {
+      const backlogCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: backlog } = await admin
+        .from("poi_engagements")
+        .select("id, created_at")
+        .eq("operational_state", "binding_review_required")
+        .lt("created_at", backlogCutoff)
+        .limit(500);
+      bindingBacklogCount = backlog?.length ?? 0;
+
+      if (bindingBacklogCount > 0 && !dryRun) {
+        const { dispatchD4bAdminAlert } = await import(
+          "../_shared/batch-d-admin-notify.ts"
+        );
+        // Anchor the digest dedupe key to the OLDEST backlog row so a
+        // re-run within 60 minutes won't double-fire while still allowing
+        // a fresh digest as the backlog turns over.
+        const anchorId = backlog![0].id as string;
+        const result = await dispatchD4bAdminAlert(admin, {
+          eventType: "engagement.binding_review_required",
+          engagementId: anchorId,
+          backlogCount: bindingBacklogCount,
+          sourceFunction: "lifecycle-scheduler:binding_backlog_digest",
+        });
+        bindingBacklogDispatched = result.dispatched;
+      } else if (bindingBacklogCount > 0 && dryRun) {
+        await recordNotificationSkipped(admin, {
+          reason: "dry_run",
+          sourceFunction: "lifecycle-scheduler:binding_backlog_digest",
+          lifecycleEventType: "engagement.binding_review_required",
+          extra: { backlog_count: bindingBacklogCount },
+        });
+      }
+    } catch (digestErr) {
+      console.error("[lifecycle-scheduler] binding-review digest failed:", digestErr);
+    }
+
+    results.binding_review_backlog = {
+      pending: bindingBacklogCount,
+      admin_alert_dispatched: bindingBacklogDispatched,
+    };
+
+
     // Drops webhook_replay_guard rows older than 24h so the table stays
     // bounded. Safe to call even if there's nothing to prune.
     // SKIPPED in dry-run (DELETE).
