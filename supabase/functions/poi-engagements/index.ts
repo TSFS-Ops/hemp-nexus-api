@@ -418,6 +418,22 @@ Deno.serve(async (req) => {
         // Batch E: emit canonical catalogue event AND keep the legacy
         // `contact.incomplete_detected` row for one release window so
         // downstream consumers can migrate without a flag day.
+        //
+        // Batch G — RETIREMENT NOTE (do not remove yet):
+        //   `contact.incomplete_detected` is RETAINED TEMPORARILY for one
+        //   release window and MUST NOT be used by any new feature, BI
+        //   export, dashboard, or downstream consumer. The canonical
+        //   replacement is `outreach.blocked.contact_incomplete`.
+        //
+        //   It may be removed only when ALL of the following are true:
+        //     1. No production code (UI, edge function, scheduled job,
+        //        BI export, dashboard) reads `contact.incomplete_detected`.
+        //     2. Admin observability (Outreach Blocks panel) has been
+        //        live for at least one full release window.
+        //     3. A removal change is paired with a test that proves the
+        //        canonical event still fires from THIS gate path.
+        //   When removed, the dual-write loop below collapses to a single
+        //   `audit_logs.insert` with action `outreach.blocked.contact_incomplete`.
         for (const action of [
           "outreach.blocked.contact_incomplete",
           "contact.incomplete_detected",
@@ -668,6 +684,9 @@ Deno.serve(async (req) => {
           const reason = contactBlockReason(sendState)!;
           // Batch E: emit canonical catalogue event AND keep legacy
           // `contact.incomplete_detected` for one release window.
+          // Batch G — see RETIREMENT NOTE above the preview-outreach
+          // dual-write loop. Same removal rules apply here. Both gate
+          // paths must be retired together.
           for (const action of [
             "outreach.blocked.contact_incomplete",
             "contact.incomplete_detected",
