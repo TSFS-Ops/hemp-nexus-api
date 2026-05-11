@@ -94,6 +94,16 @@ export interface PendingEngagementRow {
   renewed_engagement_id?: string | null;
   /** Reconfirmation deadline (ISO timestamp). */
   reconfirmation_window_expires_at?: string | null;
+  /**
+   * Batch E Phase 2 — drives the initiator-facing "engagement paused for
+   * platform review" / "confirming counterparty record" banner. Returned
+   * by `GET /poi-engagements/by-match/:matchId` (server `select("*")`).
+   * The banner ONLY consumes the operational/status fields — the raw
+   * `binding_candidates` payload is intentionally NOT read here so no
+   * candidate-org identity can leak into initiator-facing UI.
+   */
+  operational_state?: string | null;
+  binding_resolution?: string | null;
 }
 
 /**
