@@ -430,8 +430,15 @@ export function AdminOutreachBlocksPanel() {
                         {ACTION_LABEL[r.action]}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {r.org_id ? r.org_id.substring(0, 12) : "—"}
+                    <TableCell className="text-xs">
+                      {r.org_id ? (
+                        <>
+                          <div>{orgLabel(r.org_id)}</div>
+                          <div className="font-mono text-[10px] text-muted-foreground">
+                            {r.org_id.substring(0, 12)}
+                          </div>
+                        </>
+                      ) : "—"}
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {r.entity_id ? r.entity_id.substring(0, 12) : "—"}
