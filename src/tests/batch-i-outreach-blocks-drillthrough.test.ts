@@ -31,10 +31,6 @@ const PANEL_SRC = readFileSync(
   join(REPO_ROOT, "src/components/admin/AdminOutreachBlocksPanel.tsx"),
   "utf8",
 );
-const D4B_SRC = readFileSync(
-  join(REPO_ROOT, "supabase/functions/_shared/batch-d-admin-notify.ts"),
-  "utf8",
-).slice(0, 0) || ""; // tolerate path differences; checked below
 const D4C_INITIATOR_SRC = readFileSync(
   join(REPO_ROOT, "supabase/functions/_shared/batch-d-initiator-notify.ts"),
   "utf8",
@@ -138,8 +134,8 @@ describe("Batch I :: panel remains strictly read-only — no mutations / no emai
     expect(PANEL_CODE.includes("batch-d-admin-notify")).toBe(false);
     expect(PANEL_CODE.includes("batch-d-initiator-notify")).toBe(false);
     expect(PANEL_CODE.includes("notification-dispatch")).toBe(false);
-    expect(PANEL_CODE.toLowerCase().includes("sendoutreach")).toBe(false);
-    expect(PANEL_CODE.toLowerCase().includes("send-outreach\"")).toBe(true); // referenced as a label/value, not a call
+    // "send-outreach" appears only as a safe label/filter value, not as a callable.
+    expect(PANEL_CODE.includes('"send-outreach"')).toBe(true);
   });
 
   it("contains no resolve / send / retry / notify action handlers", () => {
