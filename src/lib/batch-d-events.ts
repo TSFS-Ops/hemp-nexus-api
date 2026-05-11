@@ -218,7 +218,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
       "candidate_org",
     ],
     safeWording:
-      "The Pending Engagement expired and the counterparty's late acceptance has been recorded. Initiator reconfirmation is required before the engagement can proceed. No Proof of Intent has been completed, no Without a Doubt has been triggered, and no credit has been used.",
+      "The Pending Engagement expired and the counterparty's late acceptance has been recorded. Initiator reconfirmation is required before the engagement can proceed. No Proof of Intent has been issued, no Without a Doubt has been triggered, and no credit has been used.",
     adminDispatchEnabled: false,
   },
 ] as const;
