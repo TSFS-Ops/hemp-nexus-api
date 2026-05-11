@@ -1479,6 +1479,77 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
+      // ── Batch D — binding-review initial-entry side-effects ──
+      // Fires exactly once when the engagement first transitions into
+      // binding_review_required. Subsequent PATCHes that find the row
+      // already in review take the `isAlreadyInReview` short-circuit
+      // above and skip this block entirely.
+      // The D4b admin alert helper targets the platform admin mailbox
+      // + Slack only; no counterparty/org-admin/external recipient is
+      // derived here. Outreach log uses entry_type='system_action'
+      // (existing CHECK value, no constraint change).
+      if (bindingReviewInitialEntry) {
+        try {
+          await supabase.from("engagement_outreach_logs").insert({
+            engagement_id: engagementId,
+            actor_type: "system",
+            previous_status: current.engagement_status,
+            new_status: current.engagement_status,
+            entry_type: "system_action",
+            notes: JSON.stringify({
+              event: "binding_review_required",
+              reason_codes: bindingReviewInitialEntry.reason_codes,
+              candidate_count: bindingReviewInitialEntry.candidate_count,
+              request_id: requestId,
+            }),
+          });
+        } catch (logErr) {
+          console.warn(
+            `[${requestId}] binding_review_required outreach log insert failed (non-fatal):`,
+            logErr,
+          );
+        }
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: current.org_id,
+            actor_user_id: authCtx.userId,
+            action: "engagement.binding_review_required",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              reason_codes: bindingReviewInitialEntry.reason_codes,
+              candidate_count: bindingReviewInitialEntry.candidate_count,
+              previous_operational_state:
+                ((current as { operational_state?: string | null }).operational_state) ?? null,
+              source: "poi-engagements:patch_resolver",
+              request_id: requestId,
+            },
+          });
+        } catch (e) {
+          console.warn(
+            `[${requestId}] binding_review_required audit insert failed (non-fatal):`,
+            e,
+          );
+        }
+        try {
+          await dispatchD4bAdminAlert(supabase, {
+            eventType: "engagement.binding_review_required",
+            engagementId,
+            engagement: {
+              engagement_status: updated?.engagement_status ?? null,
+              operational_state: "binding_review_required",
+              org_id: current.org_id,
+            },
+            sourceFunction: "poi-engagements:patch_initial_entry",
+          });
+        } catch (notifyErr) {
+          console.warn(
+            `[${requestId}] D4b binding_review_required admin alert failed (non-fatal):`,
+            notifyErr,
+          );
+        }
+      }
+
       // ── Batch A — emit contact.assigned / contact.updated audit row ──
       // Fires when contact_type, contact_name, or counterparty_email actually
       // changed value. First-time assignment (all previous fields null/empty)
