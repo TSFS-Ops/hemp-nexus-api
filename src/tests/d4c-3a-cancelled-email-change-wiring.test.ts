@@ -52,22 +52,46 @@ describe("D4c-3a — cancelled-email-change initiator alert wiring", () => {
     );
   });
 
+  // Helper: locate the dispatch block whose eventType is exactly
+  // `engagement.cancelled_email_change`. There are now multiple
+  // dispatch sites (D4c-3a/3b/3c/3d/3e); the bare regex used to grab
+  // the first one, which is no longer the cancelled_email_change site.
+  function findCancelEmailChangeBlock(): string {
+    let from = 0;
+    while (true) {
+      const idx = SOURCE.indexOf("dispatchD4cInitiatorAlert(supabase, {", from);
+      if (idx < 0) return "";
+      const end = SOURCE.indexOf("});", idx);
+      const slice = SOURCE.slice(idx, end > 0 ? end + 3 : idx + 1500);
+      if (slice.includes('"engagement.cancelled_email_change"')) return slice;
+      from = idx + 1;
+    }
+  }
+  function findCancelEmailChangeDispatchIdx(): number {
+    let from = 0;
+    while (true) {
+      const idx = SOURCE.indexOf("dispatchD4cInitiatorAlert(supabase, {", from);
+      if (idx < 0) return -1;
+      const end = SOURCE.indexOf("});", idx);
+      const slice = SOURCE.slice(idx, end > 0 ? end + 3 : idx + 1500);
+      if (slice.includes('"engagement.cancelled_email_change"')) return idx;
+      from = idx + 1;
+    }
+  }
+
   it("invocation passes engagementId, sourceFunction, and a stable dedupeKey", () => {
-    const block = SOURCE.match(
-      /dispatchD4cInitiatorAlert\([\s\S]*?\}\s*\)\s*;/,
-    )?.[0] ?? "";
+    const block = findCancelEmailChangeBlock();
+    expect(block).not.toBe("");
     expect(block).toMatch(/engagementId\s*,/);
     expect(block).toMatch(/sourceFunction:\s*"poi-engagements"/);
     expect(block).toMatch(/dedupeKey:\s*`cancelled_email_change:\$\{engagementId\}`/);
   });
 
   it("invocation passes only safe non-PII metadata (request_id, previous_status)", () => {
-    const block = SOURCE.match(
-      /dispatchD4cInitiatorAlert\([\s\S]*?\}\s*\)\s*;/,
-    )?.[0] ?? "";
+    const block = findCancelEmailChangeBlock();
+    expect(block).not.toBe("");
     expect(block).toMatch(/metadata:\s*\{[\s\S]*?request_id:\s*requestId/);
     expect(block).toMatch(/previous_status:\s*current\.engagement_status/);
-    // Forbidden references inside the call site:
     for (const banned of [
       "counterparty_email",
       "new_email",
@@ -88,8 +112,7 @@ describe("D4c-3a — cancelled-email-change initiator alert wiring", () => {
   });
 
   it("invocation is wrapped in a try/catch so cancellation stays best-effort", () => {
-    // Look at the surrounding ~12 lines to confirm try { ... dispatch ... } catch
-    const idx = SOURCE.indexOf("dispatchD4cInitiatorAlert(");
+    const idx = findCancelEmailChangeDispatchIdx();
     expect(idx).toBeGreaterThan(-1);
     const window = SOURCE.slice(Math.max(0, idx - 400), idx + 800);
     expect(window).toMatch(/try\s*\{[\s\S]*dispatchD4cInitiatorAlert\(/);
@@ -98,10 +121,7 @@ describe("D4c-3a — cancelled-email-change initiator alert wiring", () => {
 
   it("dispatch happens AFTER the cancel audit insert and BEFORE the response build", () => {
     const auditIdx = SOURCE.indexOf('action: "engagement.cancelled_for_email_change"');
-    const dispatchIdx = SOURCE.indexOf("dispatchD4cInitiatorAlert(");
-    // There are many `const responseBody = ...` declarations across
-    // other route handlers; only the FIRST one AFTER the dispatch
-    // closes this branch.
+    const dispatchIdx = findCancelEmailChangeDispatchIdx();
     const responseIdx = SOURCE.indexOf(
       "const responseBody = { engagement: updated };",
       dispatchIdx,
