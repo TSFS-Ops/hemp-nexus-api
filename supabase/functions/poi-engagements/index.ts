@@ -583,6 +583,31 @@ Deno.serve(async (req) => {
           } catch (logErr) {
             console.warn(`[${requestId}] Failed to write outreach-blocked log row (non-fatal):`, logErr);
           }
+          // Batch E: also emit the canonical catalogue audit event so
+          // the SSOT in `src/lib/batch-d-events.ts` and the live audit
+          // trail agree. Metadata carries no counterparty / candidate /
+          // dispute identity.
+          {
+            const canonicalAction =
+              gate.code === "DISPUTED_BEING_NAMED"
+                ? "outreach.blocked.disputed_being_named"
+                : "outreach.blocked.binding_review_pending";
+            try {
+              await supabase.from("audit_logs").insert({
+                org_id: (eng as { org_id: string }).org_id,
+                actor_user_id: authCtx.userId,
+                action: canonicalAction,
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  actor_role: "platform_admin",
+                  surface: "send-outreach",
+                  guard_code: gate.code,
+                  request_id: requestId,
+                },
+              });
+            } catch (_e) { /* non-fatal */ }
+          }
           throw new ApiException(gate.code, gate.message, 409);
         }
       }
