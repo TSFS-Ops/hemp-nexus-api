@@ -27,6 +27,7 @@ const EXPECTED_EVENTS = [
   "engagement.disputed_being_named",
   "engagement.cancelled_email_change",
   "engagement.email_change_blocked",
+  "engagement.late_acceptance_pending_reconfirmation",
   "outreach.blocked.contact_incomplete",
   "outreach.blocked.binding_review_pending",
   "outreach.blocked.disputed_being_named",
