@@ -2556,6 +2556,43 @@ Deno.serve(async (req) => {
           `[${requestId}] Counterparty ${authCtx.orgId} late-accepted engagement ${engagement.id}; awaiting initiator reconfirmation`,
         );
 
+        // ── D4c-3c: best-effort initiator-side operational notice ────────
+        // Fired ONLY on the initial transition into
+        // late_acceptance_pending_initiator_reconfirmation. The
+        // reconfirm and decline routes are SEPARATE handlers
+        // (`/reconfirm`, `/decline-late-acceptance`)
+        // and do NOT dispatch this event.
+        //
+        // The helper resolves recipients ONLY from the initiating
+        // org_id (poi_engagements.org_id); it never reads
+        // counterparty/candidate/disputed fields. Metadata contains
+        // no counterparty email, candidate org, binding-candidate
+        // detail, commodity, price, quantity, or disputed-party
+        // identity — only the request id and prior status.
+        try {
+          const d4cResult = await dispatchD4cInitiatorAlert(supabase, {
+            eventType: "engagement.late_acceptance_pending_reconfirmation",
+            engagementId: engagement.id,
+            actorUserId: authCtx.userId ?? null,
+            sourceFunction: "poi-engagements",
+            dedupeKey: `late_acceptance_pending_reconfirmation:${engagement.id}`,
+            metadata: {
+              request_id: requestId,
+              previous_status: currentStatus,
+            },
+          });
+          if (!d4cResult.ok) {
+            console.warn(
+              `[${requestId}] d4c initiator alert skipped (non-fatal): reason=${d4cResult.reason}`,
+            );
+          }
+        } catch (e) {
+          console.warn(
+            `[${requestId}] d4c initiator alert dispatch threw (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+
         return new Response(
           JSON.stringify({
             engagement: lateUpdated,
