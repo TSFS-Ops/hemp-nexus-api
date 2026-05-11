@@ -195,6 +195,32 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
       "Outreach is paused while a counterparty query is under platform review. No action is required from you.",
     adminDispatchEnabled: false,
   },
+  {
+    // D4c-0 — late acceptance after engagement expiry.
+    //
+    // Initiator-relevant only. Cautious wording: the engagement EXPIRED;
+    // the counterparty's late acceptance has been RECORDED; initiator
+    // RECONFIRMATION is REQUIRED before anything progresses. No POI is
+    // completed, no WaD is triggered, no credit is used, no execution
+    // occurs. Counterparty-facing confirmation is intentionally NOT
+    // wired in this catalogue entry — that path is deferred to a later
+    // scope. Outbound dispatch is NOT enabled in D4c-0; this entry
+    // exists so D4c-1+ can build on a verified catalogue surface.
+    event: "engagement.late_acceptance_pending_reconfirmation",
+    label: "Late acceptance recorded — initiator reconfirmation required",
+    recommendation: "audit_only",
+    allowedRecipients: ["initiating_org_admin", "platform_admin"],
+    forbiddenRecipients: [
+      "counterparty_org_admin",
+      "ordinary_org_member",
+      "external_unregistered_counterparty",
+      "disputed_counterparty",
+      "candidate_org",
+    ],
+    safeWording:
+      "The Pending Engagement expired and the counterparty's late acceptance has been recorded. Initiator reconfirmation is required before the engagement can proceed. No Proof of Intent has been completed, no Without a Doubt has been triggered, and no credit has been used.",
+    adminDispatchEnabled: false,
+  },
 ] as const;
 
 /**
