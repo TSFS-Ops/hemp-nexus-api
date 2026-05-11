@@ -415,48 +415,29 @@ Deno.serve(async (req) => {
       if (isOutreachBlocked(previewState)) {
         const code = contactBlockCode(previewState)!;
         const reason = contactBlockReason(previewState)!;
-        // Batch E: emit canonical catalogue event AND keep the legacy
-        // `contact.incomplete_detected` row for one release window so
-        // downstream consumers can migrate without a flag day.
-        //
-        // Batch G — RETIREMENT NOTE (do not remove yet):
-        //   `contact.incomplete_detected` is RETAINED TEMPORARILY for one
-        //   release window and MUST NOT be used by any new feature, BI
-        //   export, dashboard, or downstream consumer. The canonical
-        //   replacement is `outreach.blocked.contact_incomplete`.
-        //
-        //   It may be removed only when ALL of the following are true:
-        //     1. No production code (UI, edge function, scheduled job,
-        //        BI export, dashboard) reads `contact.incomplete_detected`.
-        //     2. Admin observability (Outreach Blocks panel) has been
-        //        live for at least one full release window.
-        //     3. A removal change is paired with a test that proves the
-        //        canonical event still fires from THIS gate path.
-        //   When removed, the dual-write loop below collapses to a single
-        //   `audit_logs.insert` with action `outreach.blocked.contact_incomplete`.
-        for (const action of [
-          "outreach.blocked.contact_incomplete",
-          "contact.incomplete_detected",
-        ] as const) {
-          try {
-            await supabase.from("audit_logs").insert({
-              org_id: (eng as { org_id: string }).org_id,
-              actor_user_id: authCtx.userId,
-              action,
-              entity_type: "poi_engagement",
-              entity_id: engagementId,
-              metadata: {
-                actor_role: "platform_admin",
-                surface: "preview-outreach",
-                state: previewState,
-                code,
-                request_id: requestId,
-              },
-            });
-          } catch (_e) { /* non-fatal */ }
-        }
-        throw new ApiException(code, reason, 422);
-      }
+        // Batch H: legacy `contact.incomplete_detected` audit event has
+        // been retired. Dependency audit (2026-05-11) confirmed zero
+        // production consumers (no dashboard, BI export, scheduled job,
+        // admin panel, or scripted reporter referenced it). The canonical
+        // replacement is `outreach.blocked.contact_incomplete`, surfaced
+        // by HQ → Audit → Outreach Blocks (Batch G). Do NOT reintroduce
+        // a legacy alias — extend the canonical event instead.
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: (eng as { org_id: string }).org_id,
+            actor_user_id: authCtx.userId,
+            action: "outreach.blocked.contact_incomplete",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              actor_role: "platform_admin",
+              surface: "preview-outreach",
+              state: previewState,
+              code,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal */ }
       const recipient = (eng.counterparty_email || "").trim().toLowerCase();
 
       const m = eng.matches as any;
@@ -682,32 +663,26 @@ Deno.serve(async (req) => {
         if (isOutreachBlocked(sendState)) {
           const code = contactBlockCode(sendState)!;
           const reason = contactBlockReason(sendState)!;
-          // Batch E: emit canonical catalogue event AND keep legacy
-          // `contact.incomplete_detected` for one release window.
-          // Batch G — see RETIREMENT NOTE above the preview-outreach
-          // dual-write loop. Same removal rules apply here. Both gate
-          // paths must be retired together.
-          for (const action of [
-            "outreach.blocked.contact_incomplete",
-            "contact.incomplete_detected",
-          ] as const) {
-            try {
-              await supabase.from("audit_logs").insert({
-                org_id: (eng as { org_id: string }).org_id,
-                actor_user_id: authCtx.userId,
-                action,
-                entity_type: "poi_engagement",
-                entity_id: engagementId,
-                metadata: {
-                  actor_role: "platform_admin",
-                  surface: "send-outreach",
-                  state: sendState,
-                  code,
-                  request_id: requestId,
-                },
-              });
-            } catch (_e) { /* non-fatal */ }
-          }
+          // Batch H: legacy `contact.incomplete_detected` retired here
+          // too. Canonical event only — see preview-outreach gate above
+          // for the dependency-audit rationale. Do NOT reintroduce a
+          // legacy alias.
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "outreach.blocked.contact_incomplete",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "send-outreach",
+                state: sendState,
+                code,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal */ }
           throw new ApiException(code, reason, 422);
         }
       }

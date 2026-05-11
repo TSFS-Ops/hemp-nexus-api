@@ -294,19 +294,17 @@ describe("Batch F — emit-site coverage", () => {
   });
 });
 
-describe("Batch F — legacy contact.incomplete_detected dual-write status", () => {
-  it("is intentionally retained for one release window (NOT yet retired)", () => {
-    // Batch E Phase 1 added the canonical `outreach.blocked.contact_incomplete`
-    // emit but kept the legacy `contact.incomplete_detected` audit row
-    // alongside it for one release window so any external consumer
-    // (downstream report, BI extract, ops dashboard) has time to migrate.
-    // The companion test in `batch-e-outreach-blocked-emit.test.ts`
-    // pins the dual-write. This test pins the matching expectation:
-    // Batch F deliberately does NOT retire it. When Batch G retires it,
-    // both this assertion and the companion `retains the legacy ...`
-    // assertion must be updated together in the same change.
-    expect(
-      POI_ENGAGEMENTS_SRC.includes(`"contact.incomplete_detected"`),
-    ).toBe(true);
+describe("Batch H — legacy contact.incomplete_detected retired", () => {
+  it("legacy literal no longer appears in production code (comments stripped)", () => {
+    // Batch H — dependency audit (2026-05-11) confirmed zero production
+    // consumers of the legacy event. Dual-write retired. The historical
+    // name may still appear in retirement-note comments; only code-side
+    // literals are forbidden.
+    const codeOnly = POI_ENGAGEMENTS_SRC
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map((l) => l.replace(/\/\/.*$/, ""))
+      .join("\n");
+    expect(codeOnly.includes(`"contact.incomplete_detected"`)).toBe(false);
   });
 });

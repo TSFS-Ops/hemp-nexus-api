@@ -120,11 +120,20 @@ describe("Batch E :: poi-engagements emits canonical audit actions", () => {
     });
   }
 
-  it("retains the legacy contact.incomplete_detected emit alongside the canonical event", () => {
-    // One release window of dual-write before retiring the legacy action.
+  it("legacy contact.incomplete_detected emit has been retired (Batch H)", () => {
+    // Batch H — dependency audit confirmed zero production consumers.
+    // The legacy event must no longer appear as a string literal in
+    // poi-engagements/index.ts (comments referencing the historical
+    // name are stripped before the assertion).
+    const codeOnly = POI_ENGAGEMENTS_SRC
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map((l) => l.replace(/\/\/.*$/, ""))
+      .join("\n");
     expect(
-      POI_ENGAGEMENTS_SRC.includes(`"contact.incomplete_detected"`),
-    ).toBe(true);
+      codeOnly.includes(`"contact.incomplete_detected"`),
+      "legacy contact.incomplete_detected literal must not appear in production code",
+    ).toBe(false);
   });
 });
 

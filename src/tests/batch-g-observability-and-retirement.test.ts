@@ -136,38 +136,52 @@ describe("Batch G :: outreach.blocked.* stay audit-only", () => {
   });
 });
 
-describe("Batch G :: legacy contact.incomplete_detected dual-write integrity", () => {
-  it("legacy event is only emitted alongside the canonical event in poi-engagements", () => {
-    // Find every line that mentions the legacy action.
-    const lines = POI_ENGAGEMENTS_SRC.split("\n");
-    const legacyIdxs = lines
-      .map((l, i) => (l.includes('"contact.incomplete_detected"') ? i : -1))
-      .filter((i) => i >= 0);
+describe("Batch H :: legacy contact.incomplete_detected retired", () => {
+  // Strip comments before scanning so historical references in
+  // documentation do not trip the guard.
+  const codeOnly = POI_ENGAGEMENTS_SRC
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((l) => l.replace(/\/\/.*$/, ""))
+    .join("\n");
 
-    expect(
-      legacyIdxs.length,
-      "expected at least one legacy emit site",
-    ).toBeGreaterThanOrEqual(1);
-
-    for (const idx of legacyIdxs) {
-      // The legacy literal must sit inside a small window that ALSO
-      // contains the canonical literal. We allow a +/- 6 line window
-      // because the two strings live in the same array literal.
-      const start = Math.max(0, idx - 6);
-      const end = Math.min(lines.length - 1, idx + 6);
-      const window = lines.slice(start, end + 1).join("\n");
-      expect(
-        window.includes('"outreach.blocked.contact_incomplete"'),
-        `legacy emit at line ${idx + 1} is not paired with canonical emit in the same array literal`,
-      ).toBe(true);
-    }
+  it("legacy event no longer appears in production code", () => {
+    expect(codeOnly.includes('"contact.incomplete_detected"')).toBe(false);
   });
 
-  it("retirement note is present in the source", () => {
-    expect(POI_ENGAGEMENTS_SRC).toMatch(/Batch G[^\n]*RETIREMENT NOTE/);
-    // Spell out the key removal rule so a future edit cannot silently
-    // weaken it.
-    expect(POI_ENGAGEMENTS_SRC).toMatch(/MUST NOT be used by any new/);
+  it("canonical outreach.blocked.contact_incomplete still emits from BOTH gate paths", () => {
+    // Locate every occurrence of the canonical action literal and
+    // require that at least one sits inside a preview-outreach window
+    // and at least one sits inside a send-outreach window.
+    const literal = '"outreach.blocked.contact_incomplete"';
+    const occurrences: number[] = [];
+    let from = 0;
+    while (true) {
+      const i = codeOnly.indexOf(literal, from);
+      if (i < 0) break;
+      occurrences.push(i);
+      from = i + literal.length;
+    }
+    expect(
+      occurrences.length,
+      "expected at least two canonical emit sites (preview + send)",
+    ).toBeGreaterThanOrEqual(2);
+
+    const surfacesNear = occurrences.map((i) => {
+      const window = codeOnly.slice(Math.max(0, i - 200), i + 600);
+      return {
+        preview: window.includes('"preview-outreach"'),
+        send: window.includes('"send-outreach"'),
+      };
+    });
+    expect(
+      surfacesNear.some((s) => s.preview),
+      "preview-outreach gate must still emit canonical contact_incomplete event",
+    ).toBe(true);
+    expect(
+      surfacesNear.some((s) => s.send),
+      "send-outreach gate must still emit canonical contact_incomplete event",
+    ).toBe(true);
   });
 });
 
