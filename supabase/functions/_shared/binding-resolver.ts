@@ -257,7 +257,7 @@ export function decideBinding(
  * returns either the pure decision OR a lookup-error sentinel.
  */
 export async function evaluateCounterpartyEmailBinding(
-  supabase: SupabaseClient,
+  supabase: SupabaseLike,
   email: string,
 ): Promise<
   | BindingDecision
