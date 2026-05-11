@@ -1714,7 +1714,15 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] D4b admin alert failed (non-fatal):`, notifyErr);
       }
 
+      const responseBody = { engagement: updated };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
 
+    // ── POST /poi-engagements/:id/cancel-for-email-change — Admin cancels ──
     // D2a: when the recorded counterparty email turns out to be wrong and
     // outreach has already begun (so PATCH /counterparty_email is refused),
     // the only safe path is to cancel the live engagement and create a
