@@ -140,13 +140,13 @@ describe("Batch D — D4a recommendation typing", () => {
     }
   });
 
-  it("does not recommend admin_email_candidate while emailEnabled is false (D4a invariant)", () => {
-    // A catalogue entry MAY be marked admin_email_candidate (D4b plan)
-    // but it must still ship with emailEnabled:false in D4a. Verified by
-    // the combination — this assertion is defence-in-depth.
+  it("admin_email_candidate entries never enable admin dispatch", () => {
+    // `admin_email_candidate` is a planning-stage marker only; it must
+    // never coincide with `adminDispatchEnabled: true`. D4b uses
+    // `admin_queue` exclusively for the two flipped events.
     for (const e of BATCH_D_EVENTS as readonly BatchDEventEntry[]) {
       if (e.recommendation === "admin_email_candidate") {
-        expect(e.emailEnabled).toBe(false);
+        expect(e.adminDispatchEnabled).toBe(false);
       }
     }
   });
