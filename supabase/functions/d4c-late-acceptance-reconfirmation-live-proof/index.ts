@@ -410,7 +410,7 @@ Deno.serve(async (req) => {
     // ── T6: reconfirm route does NOT emit pending-reconfirmation alert ─
     {
       const r6 = await postEngagementAction(SUPABASE_URL, initJwt, eid1,
-        "reconfirm-late-acceptance", {}, `${tag}_t6`);
+        "reconfirm", {}, `${tag}_t6`);
       const queued6 = await fetchInitiatorAuditRows(
         eid1,
         "engagement.initiator_alert_queued",
