@@ -173,8 +173,13 @@ export function AdminEngagementForensicsPanel() {
               </TableHeader>
               <TableBody>
                 {rows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-mono text-xs">{r.id.slice(0, 8)}…</TableCell>
+                  <TableRow key={r.id} data-is-demo={r.is_demo === true ? "true" : "false"} className={r.is_demo === true ? "bg-amber-50/40" : ""}>
+                    <TableCell className="font-mono text-xs">
+                      {r.is_demo === true && (
+                        <Badge variant="outline" className="mr-1 text-[10px] font-bold uppercase bg-amber-100 border-amber-400 text-amber-900" data-testid="forensics-demo-badge">DEMO</Badge>
+                      )}
+                      {r.id.slice(0, 8)}…
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{r.match_id.slice(0, 8)}…</TableCell>
                     <TableCell className="text-xs">{r.counterparty_email || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell><Badge variant={statusVariant(r.engagement_status) as never}>{r.engagement_status}</Badge></TableCell>
