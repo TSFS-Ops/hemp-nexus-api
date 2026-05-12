@@ -57,7 +57,7 @@ export function AdminEngagementForensicsPanel() {
     queryFn: async () => {
       let q = supabase
         .from("poi_engagements")
-        .select("id, match_id, org_id, counterparty_org_id, counterparty_email, engagement_status, created_at, responded_at")
+        .select("id, match_id, org_id, counterparty_org_id, counterparty_email, engagement_status, created_at, responded_at, is_demo")
         .order("created_at", { ascending: false })
         .limit(FORENSICS_LIMIT);
 
@@ -65,6 +65,8 @@ export function AdminEngagementForensicsPanel() {
       if (email.trim()) q = q.ilike("counterparty_email", `%${email.trim()}%`);
       if (orgId.trim()) q = q.or(`org_id.ilike.%${orgId.trim()}%,counterparty_org_id.ilike.%${orgId.trim()}%`);
       if (status !== "any") q = q.eq("engagement_status", status as EngagementStatus);
+      // Phase 1 demo isolation: hide demo rows unless operator opts in.
+      if (!showDemo) q = q.eq("is_demo", false);
 
       const { data, error } = await q;
       if (error) throw error;
