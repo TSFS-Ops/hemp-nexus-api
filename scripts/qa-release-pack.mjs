@@ -95,8 +95,10 @@ const txtPath = join(tmp, "pack.txt");
 let text = "";
 try {
   execFileSync("pandoc", [OUT, "-t", "plain", "-o", txtPath]);
-  text = readFileSync(txtPath, "utf8");
-  ok("Pandoc text extract", `${text.length} chars`);
+  const raw = readFileSync(txtPath, "utf8");
+  // pandoc plain output hard-wraps at ~72 chars; flatten whitespace for regex
+  text = raw.replace(/\s+/g, " ");
+  ok("Pandoc text extract", `${raw.length} chars (flattened ${text.length})`);
 } catch (e) {
   fail("Pandoc text extract", e.message);
   report();
