@@ -1286,6 +1286,21 @@ export function AdminPendingEngagementsPanel() {
               )}
             </button>
           </div>
+          {/* Phase 1 demo isolation toggle */}
+          <button
+            type="button"
+            onClick={() => setShowDemo((v) => !v)}
+            className={`px-3 py-1.5 text-xs rounded-sm border ${
+              showDemo
+                ? "bg-amber-100 border-amber-300 text-amber-900"
+                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+            }`}
+            title="Demo rows are staged Daniel-facing fixtures. Hidden by default so they cannot be mistaken for real engagements."
+            aria-pressed={showDemo}
+            data-testid="show-demo-toggle"
+          >
+            {showDemo ? "Hiding demo rows: OFF" : "Show demo rows"}
+          </button>
           <Button
             variant="outline"
             size="sm"
