@@ -189,6 +189,18 @@ try {
     );
 }
 
+// 3f: versioning block present and references correct D/E mapping
+{
+  const hasBlock = /What changed in this version/.test(text);
+  const hasVer = /Version:\s*v\d+/.test(text);
+  const dePreserved = /Batch D \/ Batch E mapping:\s*Preserved/.test(text);
+  if (hasBlock && hasVer && dePreserved)
+    ok("Version + diff block", "section present, version stamped, D/E mapping preserved");
+  else
+    fail("Version + diff block",
+      `block=${hasBlock} version=${hasVer} dePreserved=${dePreserved}`);
+}
+
 // ---- Report -------------------------------------------------------------
 function report() {
   const pad = (s, n) => s + " ".repeat(Math.max(0, n - s.length));
