@@ -489,13 +489,21 @@ export function AdminOutreachBlocksPanel() {
         </p>
       </div>
 
-      {rows.length >= ROW_LIMIT && (
+      {isTruncated && (
         <div
           className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-warning-foreground"
           data-testid="outreach-blocks-cap-warning"
           role="status"
         >
-          Showing the first {ROW_LIMIT} matching audit rows. Narrow the filters (time window, reason, or surface) before exporting if you need a more precise file.
+          {countAvailable ? (
+            <>
+              Showing the first {ROW_LIMIT} of {(totalCount as number).toLocaleString()} matching audit rows. Narrow the filters (time window, reason, or surface) before exporting if you need the full set.
+            </>
+          ) : (
+            <>
+              The panel may be showing the first {ROW_LIMIT} matching audit rows. Narrow the filters (time window, reason, or surface) before exporting if you need a more precise file.
+            </>
+          )}
         </div>
       )}
 
@@ -510,11 +518,19 @@ export function AdminOutreachBlocksPanel() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {rows.length} outreach-blocked event(s)
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="outreach-blocks-count-text"
+        >
+          {countAvailable
+            ? `Showing ${rows.length.toLocaleString()} of ${(totalCount as number).toLocaleString()} matching outreach-blocked events`
+            : `Showing ${rows.length.toLocaleString()} outreach-blocked event(s)`}
           {actionFilter !== "all" ? ` · filtered to ${ACTION_LABEL[actionFilter]}` : ""}
           {surfaceFilter !== "all" ? ` · surface: ${surfaceFilter}` : ""}
           {` · ${windowLabel.toLowerCase()}`}
+          {countAvailable && (totalCount as number) > ROW_LIMIT
+            ? ". Narrow the filters before exporting if you need the full set."
+            : "."}
         </p>
         {(actionFilter !== "all" || surfaceFilter !== "all") && (
           <Button
