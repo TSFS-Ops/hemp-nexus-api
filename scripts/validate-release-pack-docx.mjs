@@ -16,6 +16,8 @@
  *   4. Banned phrases ("Lovable", "in plain English") are absent.
  *   5. The CSV column list and the do-not-include field list are present
  *      verbatim.
+ *   6. Numbered lists render as proper sequential numbering (no
+ *      "1. 1. 1." restarts caused by each item having its own numId).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -206,6 +208,91 @@ function checkDvsEFraming(text) {
   return failures;
 }
 
+// ------- Numbered-list regression check -------
+// Detects the docx-js failure mode where consecutive numbered paragraphs
+// each get their own numId and therefore each restart at "1.", producing
+// a rendered list that looks like "1. 1. 1." instead of "1. 2. 3.".
+function loadXml(docxPath, member) {
+  try {
+    return execFileSync("unzip", ["-p", docxPath, member]).toString("utf8");
+  } catch {
+    return "";
+  }
+}
+
+function buildNumberingMap(numberingXml) {
+  const numIdToAbs = new Map();
+  for (const m of numberingXml.matchAll(
+    /<w:num\s+w:numId="(\d+)"[^>]*>([\s\S]*?)<\/w:num>/g,
+  )) {
+    const abs = m[2].match(/<w:abstractNumId\s+w:val="(\d+)"/);
+    if (abs) numIdToAbs.set(m[1], abs[1]);
+  }
+  const absToLevels = new Map();
+  for (const m of numberingXml.matchAll(
+    /<w:abstractNum\s+w:abstractNumId="(\d+)"[^>]*>([\s\S]*?)<\/w:abstractNum>/g,
+  )) {
+    const levels = new Map();
+    for (const lv of m[2].matchAll(
+      /<w:lvl\s+w:ilvl="(\d+)"[^>]*>([\s\S]*?)<\/w:lvl>/g,
+    )) {
+      const fmt = lv[2].match(/<w:numFmt\s+w:val="([^"]+)"/);
+      levels.set(lv[1], fmt ? fmt[1] : "decimal");
+    }
+    absToLevels.set(m[1], levels);
+  }
+  return { numIdToAbs, absToLevels };
+}
+
+function checkNumberedListRestarts(docxPath) {
+  const failures = [];
+  const documentXml = loadXml(docxPath, "word/document.xml");
+  const numberingXml = loadXml(docxPath, "word/numbering.xml");
+  if (!documentXml) return failures;
+
+  const { numIdToAbs, absToLevels } = numberingXml
+    ? buildNumberingMap(numberingXml)
+    : { numIdToAbs: new Map(), absToLevels: new Map() };
+
+  // Per-paragraph (numId, ilvl, fmt) or null if not a list item.
+  const items = [];
+  for (const p of documentXml.matchAll(/<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g)) {
+    const numPr = p[1].match(/<w:numPr>([\s\S]*?)<\/w:numPr>/);
+    if (!numPr) { items.push(null); continue; }
+    const numId = numPr[1].match(/<w:numId\s+w:val="(\d+)"/);
+    if (!numId) { items.push(null); continue; }
+    const ilvl = numPr[1].match(/<w:ilvl\s+w:val="(\d+)"/);
+    const id = numId[1];
+    const lvl = ilvl ? ilvl[1] : "0";
+    const abs = numIdToAbs.get(id);
+    const fmt = abs ? absToLevels.get(abs)?.get(lvl) ?? "decimal" : "decimal";
+    items.push({ id, lvl, fmt });
+  }
+
+  // Scan runs of consecutive numbered items at the same level.
+  let i = 0;
+  while (i < items.length) {
+    const it = items[i];
+    if (!it || it.fmt === "bullet") { i += 1; continue; }
+    let j = i;
+    const idsSeen = new Set();
+    while (
+      j < items.length && items[j] &&
+      items[j].fmt === it.fmt && items[j].lvl === it.lvl
+    ) {
+      idsSeen.add(items[j].id);
+      j += 1;
+    }
+    if (j - i >= 2 && idsSeen.size > 1) {
+      failures.push(
+        `Numbered list starting at paragraph ${i} has ${j - i} consecutive items spread across ${idsSeen.size} distinct numIds (${[...idsSeen].join(", ")}). Each numId restarts at 1, so the list will render as "1. 1. ..." instead of sequential numbers. Use a single numbering reference for the run, or switch to bullets.`,
+      );
+    }
+    i = j;
+  }
+  return failures;
+}
+
 // ------- Runner -------
 function main() {
   const docxPath = process.argv[2];
@@ -226,6 +313,7 @@ function main() {
     ["Downstream cross-references", checkDownstreamRefs(text)],
     ["Banned phrases", checkBannedPhrases(text)],
     ["Required column / excluded-field lists", checkRequiredLists(text)],
+    ["Numbered-list rendering (no '1. 1. 1.' restarts)", checkNumberedListRestarts(docxPath)],
   ];
 
   let total = 0;
