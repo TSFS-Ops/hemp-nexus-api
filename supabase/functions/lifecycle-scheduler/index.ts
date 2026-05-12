@@ -637,6 +637,7 @@ Deno.serve(async (req: Request) => {
         .select("id, created_at")
         .eq("operational_state", "binding_review_required")
         .lt("created_at", backlogCutoff)
+        .eq("is_demo", false) // Phase 1 demo isolation
         .limit(500);
       bindingBacklogCount = backlog?.length ?? 0;
 
