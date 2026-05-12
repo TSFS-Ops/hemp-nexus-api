@@ -56,6 +56,31 @@ const D4B_DISPATCH_ALLOWLIST = {
 
 export type D4bAdminEvent = keyof typeof D4B_DISPATCH_ALLOWLIST;
 
+/**
+ * Phase 1 demo isolation. If the engagement (or its parent match) is
+ * flagged `is_demo`, the dispatcher refuses to send and audits the skip.
+ * Demo rows must never trigger real platform-admin email or Slack.
+ */
+async function isDemoEngagement(
+  supabase: SupabaseClient,
+  engagementId: string,
+): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from("poi_engagements")
+      .select("is_demo, matches:match_id ( is_demo )")
+      .eq("id", engagementId)
+      .maybeSingle();
+    if (!data) return false;
+    if ((data as { is_demo?: boolean }).is_demo === true) return true;
+    const m = (data as { matches?: { is_demo?: boolean } | null }).matches;
+    return m?.is_demo === true;
+  } catch (err) {
+    console.warn("[batch-d-admin-notify] is_demo lookup failed; defaulting to non-demo", err);
+    return false;
+  }
+}
+
 export const D4B_DISPATCH_EVENTS: readonly D4bAdminEvent[] = Object.keys(
   D4B_DISPATCH_ALLOWLIST,
 ) as D4bAdminEvent[];
