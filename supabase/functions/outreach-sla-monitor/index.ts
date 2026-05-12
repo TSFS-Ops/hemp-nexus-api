@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
       `)
       .in("engagement_status", ["pending", "notification_sent"])
       .lte("created_at", cutoffIso)
+      .eq("is_demo", false) // Phase 1 demo isolation: skip Daniel-facing demo rows
       .order("created_at", { ascending: true })
       .limit(50);
 

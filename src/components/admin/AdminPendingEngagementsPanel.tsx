@@ -128,6 +128,8 @@ interface Engagement {
   } | null;
   initiator_org?: { id: string; name: string } | null;
   counterparty_org?: { id: string; name: string } | null;
+  /** Phase 1 demo isolation: true for staged Daniel-facing fixture rows. */
+  is_demo?: boolean | null;
 }
 
 // D2b — predicate: is this engagement awaiting an admin binding-review
@@ -266,6 +268,9 @@ export function AdminPendingEngagementsPanel() {
   // "all" is a diagnostic mode for admins who need to audit known-counterparty engagements too.
   const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  // Phase 1 demo isolation: hide is_demo rows by default so admins never
+  // confuse Daniel-facing fixture rows with real production engagements.
+  const [showDemo, setShowDemo] = useState<boolean>(false);
   // Off-scope counters: when admin is on "Unknown only", we still surface how many
   // engagements live in the "All" bucket and how many of those auto-promoted in the
   // last 7 days. This prevents the "my row vanished after auto-link" support pattern.
@@ -794,8 +799,10 @@ export function AdminPendingEngagementsPanel() {
         return t >= fromMs && t <= toMs;
       });
     }
+    // Phase 1 demo isolation: hide is_demo rows unless operator opts in.
+    if (!showDemo) base = base.filter((e) => e.is_demo !== true);
     return base;
-  }, [engagements, filter, notesFilter, notesFrom, notesTo, idQuery]);
+  }, [engagements, filter, notesFilter, notesFrom, notesTo, idQuery, showDemo]);
 
   const stats = useMemo(() => {
     // D-05: canonical pending set = notification_sent + contacted (legacy
@@ -1279,6 +1286,21 @@ export function AdminPendingEngagementsPanel() {
               )}
             </button>
           </div>
+          {/* Phase 1 demo isolation toggle */}
+          <button
+            type="button"
+            onClick={() => setShowDemo((v) => !v)}
+            className={`px-3 py-1.5 text-xs rounded-sm border ${
+              showDemo
+                ? "bg-amber-100 border-amber-300 text-amber-900"
+                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+            }`}
+            title="Demo rows are staged Daniel-facing fixtures. Hidden by default so they cannot be mistaken for real engagements."
+            aria-pressed={showDemo}
+            data-testid="show-demo-toggle"
+          >
+            {showDemo ? "DEMO rows visible — click to hide" : "Show DEMO rows"}
+          </button>
           <Button
             variant="outline"
             size="sm"
@@ -1520,9 +1542,19 @@ export function AdminPendingEngagementsPanel() {
                     const isTerminal = ["accepted", "declined", "expired"].includes(e.engagement_status);
                     return (
                       <React.Fragment key={e.id}>
-                        <TableRow>
+                        <TableRow data-is-demo={e.is_demo === true ? "true" : "false"} className={e.is_demo === true ? "bg-amber-50/40" : ""}>
                         <TableCell>
                           <div className="text-sm">
+                            {e.is_demo === true && (
+                              <Badge
+                                variant="outline"
+                                className="mb-1 text-[10px] font-bold uppercase tracking-wide bg-amber-100 border-amber-400 text-amber-900"
+                                data-testid="demo-badge"
+                                title="Phase 1 demo isolation: this is a staged fixture row. It is excluded from lifecycle, SLA, billing and notification dispatch."
+                              >
+                                DEMO
+                              </Badge>
+                            )}
                             <p className="font-medium">{m?.commodity ?? "-"}</p>
                             <p className="text-xs text-muted-foreground">
                               {m?.quantity_amount} {m?.quantity_unit} · {m?.price_currency} {m?.price_amount?.toLocaleString?.() ?? "-"}

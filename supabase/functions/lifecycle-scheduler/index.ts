@@ -146,17 +146,20 @@ Deno.serve(async (req: Request) => {
     };
 
     // 1c. Expire stale draft/pending matches - only update poi_state (avoid status constraint violation)
+    // Phase 1 demo isolation: never expire demo matches via lifecycle.
     const { data: expiredMatches, error: matchErr } = dryRun
       ? await admin
           .from("matches")
           .select("id")
           .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
           .lt("created_at", thirtyDaysAgo)
+          .eq("is_demo", false)
       : await admin
           .from("matches")
           .update({ poi_state: "EXPIRED" })
           .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
           .lt("created_at", thirtyDaysAgo)
+          .eq("is_demo", false)
           .select("id");
 
     results.expired_matches = {
@@ -471,6 +474,7 @@ Deno.serve(async (req: Request) => {
       .not("state", "in", "(completed,cancelled,committed)")
       .not("status", "in", "(settled,cancelled)")
       .in("poi_state", ["DRAFT", "PENDING_APPROVAL", "ELIGIBLE"])
+      .eq("is_demo", false) // Phase 1 demo isolation
       .limit(200);
 
     let staleAuditCount = 0;
@@ -557,6 +561,7 @@ Deno.serve(async (req: Request) => {
       .eq("engagement_status", "late_acceptance_pending_initiator_reconfirmation")
       .is("late_acceptance_resolution", null)
       .lt("reconfirmation_window_expires_at", nowIso)
+      .eq("is_demo", false) // Phase 1 demo isolation
       .limit(500);
 
     let lateAcceptanceSweptCount = 0;
@@ -632,6 +637,7 @@ Deno.serve(async (req: Request) => {
         .select("id, created_at")
         .eq("operational_state", "binding_review_required")
         .lt("created_at", backlogCutoff)
+        .eq("is_demo", false) // Phase 1 demo isolation
         .limit(500);
       bindingBacklogCount = backlog?.length ?? 0;
 

@@ -257,7 +257,8 @@ export type D4cInitiatorNotifyResult =
         | "wording_forbids_initiating_org"
         | "recipient_resolution_failed"
         | "all_recipients_hard_suppressed"
-        | "queue_unavailable";
+        | "queue_unavailable"
+        | "demo_isolation";
       detail?: string;
     };
 
@@ -352,6 +353,43 @@ export async function dispatchD4cInitiatorAlert(
     deps.hardSuppressionChecker ?? makeDefaultHardSuppressionChecker(supabase);
 
   const dedupeKey = args.dedupeKey ?? `${args.eventType}:${args.engagementId}`;
+
+  // ── 0. Phase 1 demo isolation ──────────────────────────────────────
+  // Demo-flagged engagements (or matches) must never trigger real
+  // initiator/counterparty/org-admin email. Refuse and audit.
+  try {
+    const { data: demoLookup } = await supabase
+      .from("poi_engagements")
+      .select("is_demo, matches:match_id ( is_demo )")
+      .eq("id", args.engagementId)
+      .maybeSingle();
+    const engagementDemo = (demoLookup as { is_demo?: boolean } | null)?.is_demo === true;
+    const matchDemo =
+      (demoLookup as { matches?: { is_demo?: boolean } | null } | null)?.matches?.is_demo === true;
+    if (engagementDemo || matchDemo) {
+      await writeSkippedAudit(supabase, {
+        ...args,
+        now,
+        dedupeKey,
+        recipientCount: 0,
+        hardSuppressedCount: 0,
+        recipientUserIds: [],
+        recipientEmailHashes: [],
+        reason: "demo_isolation",
+      });
+      return {
+        ok: false,
+        eventType: args.eventType,
+        engagementId: args.engagementId,
+        reason: "demo_isolation",
+      };
+    }
+  } catch (demoErr) {
+    console.warn(
+      "[batch-d-initiator-notify] demo lookup failed; defaulting to non-demo",
+      demoErr,
+    );
+  }
 
   // ── 1. Allowlist check ─────────────────────────────────────────────
   if (!D4C_INITIATOR_ALLOWLIST.includes(args.eventType)) {

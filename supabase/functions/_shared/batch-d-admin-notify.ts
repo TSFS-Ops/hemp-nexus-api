@@ -56,6 +56,31 @@ const D4B_DISPATCH_ALLOWLIST = {
 
 export type D4bAdminEvent = keyof typeof D4B_DISPATCH_ALLOWLIST;
 
+/**
+ * Phase 1 demo isolation. If the engagement (or its parent match) is
+ * flagged `is_demo`, the dispatcher refuses to send and audits the skip.
+ * Demo rows must never trigger real platform-admin email or Slack.
+ */
+async function isDemoEngagement(
+  supabase: SupabaseClient,
+  engagementId: string,
+): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from("poi_engagements")
+      .select("is_demo, matches:match_id ( is_demo )")
+      .eq("id", engagementId)
+      .maybeSingle();
+    if (!data) return false;
+    if ((data as { is_demo?: boolean }).is_demo === true) return true;
+    const m = (data as { matches?: { is_demo?: boolean } | null }).matches;
+    return m?.is_demo === true;
+  } catch (err) {
+    console.warn("[batch-d-admin-notify] is_demo lookup failed; defaulting to non-demo", err);
+    return false;
+  }
+}
+
 export const D4B_DISPATCH_EVENTS: readonly D4bAdminEvent[] = Object.keys(
   D4B_DISPATCH_ALLOWLIST,
 ) as D4bAdminEvent[];
@@ -85,7 +110,7 @@ export interface D4bAdminNotifyArgs {
 
 export interface D4bAdminNotifyResult {
   dispatched: boolean;
-  skipped?: "non_admin_event" | "duplicate" | "dispatcher_error";
+  skipped?: "non_admin_event" | "duplicate" | "dispatcher_error" | "demo_isolation";
   detail?: string;
 }
 
@@ -114,6 +139,19 @@ export async function dispatchD4bAdminAlert(
   }
 
   const entry = D4B_DISPATCH_ALLOWLIST[args.eventType as D4bAdminEvent];
+
+  // ── Phase 1 demo isolation: refuse demo engagements ──
+  if (await isDemoEngagement(supabase, args.engagementId)) {
+    await recordNotificationSkipped(supabase, {
+      reason: "no_channels_configured",
+      sourceFunction: args.sourceFunction,
+      sourceEventType: args.eventType,
+      targetId: args.engagementId,
+      orgId,
+      extra: { d4b_block: "demo_isolation" },
+    });
+    return { dispatched: false, skipped: "demo_isolation" };
+  }
 
   // ── Defensive: if a future caller passes a counterparty recipient
   // somehow, log it. We never use the engagement to derive recipients
