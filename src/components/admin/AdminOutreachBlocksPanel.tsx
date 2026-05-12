@@ -303,6 +303,46 @@ export function AdminOutreachBlocksPanel() {
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${query.isFetching ? "animate-spin" : ""}`} />
           Refresh
         </Button>
+        {/*
+          Batch K — CSV export.
+          Intentionally uses ONLY the safe panel view-model (`rows` + `orgNames`)
+          that has already been filtered by time-window / surface / reason.
+          MUST NOT include raw audit metadata, counterparty identity, dispute
+          text, binding candidates, commercial terms, or admin/support notes.
+        */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const headers = [
+              "Created At",
+              "Reason",
+              "Action",
+              "Organisation Name",
+              "Organisation ID",
+              "Engagement ID",
+              "Surface",
+            ];
+            const csvRows = rows.map((r) => [
+              r.created_at,
+              ACTION_LABEL[r.action],
+              r.action,
+              r.org_id ? (orgNames[r.org_id] ?? "") : "",
+              r.org_id ?? "",
+              r.entity_id ?? "",
+              r.surface ?? "",
+            ]);
+            downloadCSV(
+              headers,
+              csvRows,
+              timestampedFilename("izenzo-outreach-blocks", "csv"),
+            );
+          }}
+          disabled={rows.length === 0 || query.isFetching}
+        >
+          <Download className="h-3.5 w-3.5 mr-1" />
+          Export CSV
+        </Button>
       </div>
 
       {/* Reason summary cards — clickable to toggle the reason filter */}
