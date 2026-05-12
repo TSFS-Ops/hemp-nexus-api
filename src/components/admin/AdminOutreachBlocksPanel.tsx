@@ -615,6 +615,23 @@ export function AdminOutreachBlocksPanel() {
         )}
       </div>
 
+      {/*
+        Batch N — Last refreshed indicator.
+        Reads only react-query's local dataUpdatedAt (no DB roundtrip).
+        Tooltips/title carry the absolute timestamp; the visible label uses
+        relative wording for legibility during ops triage.
+      */}
+      <p
+        className="text-xs text-muted-foreground"
+        data-testid="outreach-blocks-last-refreshed"
+        title={lastRefreshedAt ? format(lastRefreshedAt, "yyyy-MM-dd HH:mm:ss") : undefined}
+      >
+        {lastRefreshedAt
+          ? `Last refreshed ${formatDistanceToNow(lastRefreshedAt, { addSuffix: true })}`
+          : "Last refreshed —"}
+        {autoRefresh ? " · auto-refresh on (every 30s)" : ""}
+      </p>
+
       <Card>
         <CardContent className="p-0">
           {query.isLoading ? (
