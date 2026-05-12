@@ -110,7 +110,7 @@ export interface D4bAdminNotifyArgs {
 
 export interface D4bAdminNotifyResult {
   dispatched: boolean;
-  skipped?: "non_admin_event" | "duplicate" | "dispatcher_error";
+  skipped?: "non_admin_event" | "duplicate" | "dispatcher_error" | "demo_isolation";
   detail?: string;
 }
 
