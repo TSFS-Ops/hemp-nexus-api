@@ -140,6 +140,19 @@ export async function dispatchD4bAdminAlert(
 
   const entry = D4B_DISPATCH_ALLOWLIST[args.eventType as D4bAdminEvent];
 
+  // ── Phase 1 demo isolation: refuse demo engagements ──
+  if (await isDemoEngagement(supabase, args.engagementId)) {
+    await recordNotificationSkipped(supabase, {
+      reason: "no_channels_configured",
+      sourceFunction: args.sourceFunction,
+      sourceEventType: args.eventType,
+      targetId: args.engagementId,
+      orgId,
+      extra: { d4b_block: "demo_isolation" },
+    });
+    return { dispatched: false, skipped: "demo_isolation" };
+  }
+
   // ── Defensive: if a future caller passes a counterparty recipient
   // somehow, log it. We never use the engagement to derive recipients
   // — this branch exists purely as a tripwire. ──
