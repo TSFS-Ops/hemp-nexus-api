@@ -34,12 +34,14 @@
  *   determination.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -56,7 +58,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, RefreshCw, Download } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 
 // Canonical actions — must match the three Batch E catalogue entries.
@@ -127,12 +129,19 @@ function pickSafeMetadata(meta: unknown): { surface: SafeSurface | null } {
   return { surface: null };
 }
 
+// Batch N — auto-refresh interval. Long enough that an idle panel doesn't
+// hammer the database, short enough to feel responsive while ops triage.
+const AUTO_REFRESH_INTERVAL_MS = 30_000;
+
 export function AdminOutreachBlocksPanel() {
   const [actionFilter, setActionFilter] = useState<
     OutreachBlockedAction | "all"
   >("all");
   const [surfaceFilter, setSurfaceFilter] = useState<SafeSurface | "all">("all");
   const [windowFilter, setWindowFilter] = useState<WindowId>("7d");
+  // Batch N — opt-in auto-refresh. OFF by default so the panel never
+  // surprises an admin with background DB load.
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   const query = useQuery({
     queryKey: ["admin-outreach-blocks", actionFilter, surfaceFilter, windowFilter],
@@ -202,6 +211,8 @@ export function AdminOutreachBlocksPanel() {
 
       return { rows: filtered, orgNames };
     },
+    refetchInterval: autoRefresh ? AUTO_REFRESH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
   });
 
   // Batch M — precise total count for the SAME filter set as the row query.
@@ -250,7 +261,26 @@ export function AdminOutreachBlocksPanel() {
     refetchOnMount: false,
     placeholderData: keepPreviousData,
     retry: 1,
+    refetchInterval: autoRefresh ? AUTO_REFRESH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
   });
+
+  // Batch N — "last refreshed" indicator. Use the most recent successful
+  // fetch across both queries so the timestamp reflects the freshest data
+  // the panel is actually showing. Re-render every 15s so the relative
+  // wording ("just now" → "1 min ago") stays accurate without polling
+  // the database.
+  const lastRefreshedAt = useMemo(() => {
+    const a = query.dataUpdatedAt || 0;
+    const b = countQuery.dataUpdatedAt || 0;
+    const max = Math.max(a, b);
+    return max > 0 ? new Date(max) : null;
+  }, [query.dataUpdatedAt, countQuery.dataUpdatedAt]);
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((n) => n + 1), 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   const rows = query.data?.rows ?? [];
   const totalCount = countQuery.data;
@@ -352,10 +382,25 @@ export function AdminOutreachBlocksPanel() {
             </SelectContent>
           </Select>
         </div>
+        <div
+          className="ml-auto flex items-center gap-2"
+          data-testid="outreach-blocks-auto-refresh-control"
+        >
+          <Switch
+            id="outreach-blocks-auto-refresh"
+            checked={autoRefresh}
+            onCheckedChange={setAutoRefresh}
+          />
+          <Label
+            htmlFor="outreach-blocks-auto-refresh"
+            className="text-xs text-muted-foreground cursor-pointer"
+          >
+            Auto-refresh (30s)
+          </Label>
+        </div>
         <Button
           variant="outline"
           size="sm"
-          className="ml-auto"
           onClick={() => {
             // Manual Refresh bypasses the count cache deliberately —
             // the cache is only meant to absorb passive reloads and
@@ -569,6 +614,23 @@ export function AdminOutreachBlocksPanel() {
           </Button>
         )}
       </div>
+
+      {/*
+        Batch N — Last refreshed indicator.
+        Reads only react-query's local dataUpdatedAt (no DB roundtrip).
+        Tooltips/title carry the absolute timestamp; the visible label uses
+        relative wording for legibility during ops triage.
+      */}
+      <p
+        className="text-xs text-muted-foreground"
+        data-testid="outreach-blocks-last-refreshed"
+        title={lastRefreshedAt ? format(lastRefreshedAt, "yyyy-MM-dd HH:mm:ss") : undefined}
+      >
+        {lastRefreshedAt
+          ? `Last refreshed ${formatDistanceToNow(lastRefreshedAt, { addSuffix: true })}`
+          : "Last refreshed —"}
+        {autoRefresh ? " · auto-refresh on (every 30s)" : ""}
+      </p>
 
       <Card>
         <CardContent className="p-0">
