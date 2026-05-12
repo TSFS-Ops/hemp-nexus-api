@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
-import { ApiException, errorResponse } from "../_shared/errors.ts";
+import { ApiException, errorResponse, extractSourceLocation } from "../_shared/errors.ts";
 import { validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import {
