@@ -123,11 +123,25 @@ export function AdminEngagementForensicsPanel() {
               </Select>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={() => refetch()} disabled={isFetching}>
               <Search className="h-4 w-4 mr-2" />
               {isFetching ? "Searching…" : "Search engagements"}
             </Button>
+            <button
+              type="button"
+              onClick={() => setShowDemo((v) => !v)}
+              className={`px-3 py-1.5 text-xs rounded-sm border ${
+                showDemo
+                  ? "bg-amber-100 border-amber-300 text-amber-900"
+                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+              title="Demo rows are staged Daniel-facing fixtures. Hidden by default."
+              aria-pressed={showDemo}
+              data-testid="forensics-show-demo-toggle"
+            >
+              {showDemo ? "DEMO rows visible — click to hide" : "Show DEMO rows"}
+            </button>
             <span className="text-xs text-muted-foreground">
               Independent of triage tabs · returns up to 200 rows · case-insensitive prefix match
             </span>
