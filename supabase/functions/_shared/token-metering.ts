@@ -196,6 +196,17 @@ export async function burnTokens(
       ledgerEntryId: "",
     };
   }
+
+  // Phase 1 demo isolation: demo orgs never burn credits or write ledger.
+  if (await isDemoOrg(supabase, orgId)) {
+    console.log(`[token-metering] demo org ${orgId} → skip burn for ${endpoint}`);
+    return {
+      success: true,
+      newBalance: 0,
+      ledgerEntryId: "",
+      skipped: "demo",
+    };
+  }
   
   const tokensToBurn = outcome === "allowed" ? TOKENS_PER_CALL : 0;
   
