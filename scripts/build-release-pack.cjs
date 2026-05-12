@@ -93,6 +93,7 @@ children.push(
 );
 
 // ===== Safe to test =====
+const SAFE_TO_TEST_INDEX = children.length; // splice point for version/diff section
 children.push(H2("Safe to test"));
 children.push(P(
   "Every test in this pack is designed to be safe to run on the live platform. None of the actions you are asked to perform should send any new email or SMS to a counterparty, candidate organisation, disputed party, or any third party."
