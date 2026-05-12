@@ -89,14 +89,45 @@ export const errorResponse = (
     });
   }
 
-  // Generic error (don't leak stack traces)
+  // Generic error — return a structured 500 with sanitized location context
+  // so on-call engineers can correlate a requestId to a file:line without
+  // exposing full stack traces or absolute paths to clients.
   const body: ApiError = {
     code: 'INTERNAL_ERROR',
     message: 'An internal error occurred',
     requestId,
+    details: {
+      errorName: (error && (error as Error).name) || 'Error',
+      source: extractSourceLocation(error as Error),
+    },
   };
   return new Response(JSON.stringify(body), {
     status: 500,
     headers: { 'Content-Type': 'application/json', ...headers },
   });
 };
+
+/**
+ * Parse the first in-repo frame from an Error stack and return a sanitized
+ * `<file>:<line>[:<col>]` string. Strips absolute paths, query strings, and
+ * any `file://` / `https://` scheme so we never leak deploy-host paths.
+ *
+ * Returns `null` if no frame can be parsed.
+ */
+export function extractSourceLocation(error: Error | undefined | null): string | null {
+  if (!error || typeof error.stack !== 'string') return null;
+  const lines = error.stack.split('\n');
+  for (const raw of lines) {
+    // V8 / Deno stack frames look like:
+    //   "    at handler (file:///.../supabase/functions/poi-engagements/index.ts:441:15)"
+    //   "    at file:///.../index.ts:441:15"
+    const m = raw.match(/(?:\(|\bat\s+)(?:[a-z]+:\/\/[^\s)]*?\/)?([^\s/()]+\.[tj]sx?):(\d+)(?::(\d+))?\)?/i);
+    if (m) {
+      const file = m[1].split('?')[0];
+      const line = m[2];
+      const col = m[3];
+      return col ? `${file}:${line}:${col}` : `${file}:${line}`;
+    }
+  }
+  return null;
+}
