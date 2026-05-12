@@ -331,8 +331,63 @@ export function AdminOutreachBlocksPanel() {
   const windowLabel =
     WINDOW_OPTIONS.find((w) => w.id === windowFilter)?.label ?? "Last 7 days";
 
+  // Batch N polish — surface query failures so operators don't silently
+  // act on a stale or empty view. We deliberately render the error
+  // *message* only (no stack, no metadata leak) and offer a retry that
+  // re-runs both queries.
+  const queryError = query.isError ? (query.error as Error | undefined) : null;
+  const countError = countQuery.isError ? (countQuery.error as Error | undefined) : null;
+  const hasError = !!queryError || !!countError;
+
   return (
     <div className="space-y-4">
+      {/* Batch N polish — explicit read-only notice. The panel is observability
+          only: no outreach is ever sent from this surface, no row can be
+          edited or resolved here. */}
+      <div
+        className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+        data-testid="outreach-blocks-readonly-notice"
+        role="note"
+      >
+        Read-only view. This panel surfaces audit events for triage. No
+        outreach, notification, or row resolution is performed from here.
+      </div>
+
+      {/* Batch N polish — query error surface. Hidden when both queries
+          succeed. Retry re-runs both the rows and the precise-count query. */}
+      {hasError && (
+        <div
+          className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive flex items-start justify-between gap-3"
+          data-testid="outreach-blocks-query-error"
+          role="alert"
+        >
+          <div className="space-y-1">
+            <div className="font-medium">Could not load outreach-blocked events.</div>
+            {queryError && (
+              <div className="text-xs opacity-80">Rows: {queryError.message}</div>
+            )}
+            {countError && (
+              <div className="text-xs opacity-80">Count: {countError.message}</div>
+            )}
+            <div className="text-xs opacity-80">
+              The visible rows and total count may be stale or incomplete until this is retried.
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              query.refetch();
+              countQuery.refetch();
+            }}
+            disabled={query.isFetching || countQuery.isFetching}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${query.isFetching ? "animate-spin" : ""}`} />
+            Retry
+          </Button>
+        </div>
+      )}
+
       {/* Filters row — read-only operational scoping */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
