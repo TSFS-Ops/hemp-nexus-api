@@ -198,7 +198,48 @@ export function AdminOutreachBlocksPanel() {
     },
   });
 
+  // Batch M — precise total count for the SAME filter set as the row query.
+  // Uses a head/count-only query: no metadata, no counterparty, no engagement
+  // data, no commercial/dispute/notes fields are selected. Surface filter is
+  // applied server-side via the safe `metadata->>surface` JSON path so that
+  // the count matches the visible rows exactly without reading metadata.
+  const countQuery = useQuery({
+    queryKey: [
+      "admin-outreach-blocks-count",
+      actionFilter,
+      surfaceFilter,
+      windowFilter,
+    ],
+    queryFn: async (): Promise<number> => {
+      let q = supabase
+        .from("audit_logs")
+        .select("id", { count: "exact", head: true })
+        .in("action", OUTREACH_BLOCKED_ACTIONS as unknown as string[]);
+
+      if (actionFilter !== "all") {
+        q = q.eq("action", actionFilter);
+      }
+      const win = WINDOW_OPTIONS.find((w) => w.id === windowFilter);
+      if (win && win.hours != null) {
+        const since = new Date(Date.now() - win.hours * 60 * 60 * 1000).toISOString();
+        q = q.gte("created_at", since);
+      }
+      if (surfaceFilter !== "all") {
+        q = q.eq("metadata->>surface", surfaceFilter);
+      }
+
+      const { count, error } = await q;
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const rows = query.data?.rows ?? [];
+  const totalCount = countQuery.data;
+  const countAvailable = countQuery.isSuccess && typeof totalCount === "number";
+  const isTruncated = countAvailable
+    ? (totalCount as number) > ROW_LIMIT
+    : rows.length >= ROW_LIMIT;
   const orgNames = query.data?.orgNames ?? {};
   const orgLabel = (id: string | null) =>
     id ? (orgNames[id] ?? `${id.substring(0, 12)}…`) : "—";
@@ -448,13 +489,21 @@ export function AdminOutreachBlocksPanel() {
         </p>
       </div>
 
-      {rows.length >= ROW_LIMIT && (
+      {isTruncated && (
         <div
           className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-warning-foreground"
           data-testid="outreach-blocks-cap-warning"
           role="status"
         >
-          Showing the first {ROW_LIMIT} matching audit rows. Narrow the filters (time window, reason, or surface) before exporting if you need a more precise file.
+          {countAvailable ? (
+            <>
+              Showing the first {ROW_LIMIT} of {(totalCount as number).toLocaleString()} matching audit rows. Narrow the filters (time window, reason, or surface) before exporting if you need the full set.
+            </>
+          ) : (
+            <>
+              The panel may be showing the first {ROW_LIMIT} matching audit rows. Narrow the filters (time window, reason, or surface) before exporting if you need a more precise file.
+            </>
+          )}
         </div>
       )}
 
@@ -469,11 +518,19 @@ export function AdminOutreachBlocksPanel() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {rows.length} outreach-blocked event(s)
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="outreach-blocks-count-text"
+        >
+          {countAvailable
+            ? `Showing ${rows.length.toLocaleString()} of ${(totalCount as number).toLocaleString()} matching outreach-blocked events`
+            : `Showing ${rows.length.toLocaleString()} outreach-blocked event(s)`}
           {actionFilter !== "all" ? ` · filtered to ${ACTION_LABEL[actionFilter]}` : ""}
           {surfaceFilter !== "all" ? ` · surface: ${surfaceFilter}` : ""}
           {` · ${windowLabel.toLowerCase()}`}
+          {countAvailable && (totalCount as number) > ROW_LIMIT
+            ? ". Narrow the filters before exporting if you need the full set."
+            : "."}
         </p>
         {(actionFilter !== "all" || surfaceFilter !== "all") && (
           <Button
