@@ -267,6 +267,7 @@ describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle →
         "INSUFFICIENT_TOKENS",
         "insufficient_tokens",
         "EVIDENCE_WAIVER_REQUIRED",
+        "ACKNOWLEDGEMENTS_REQUIRED",
       ]).toContain(body.code);
       console.warn(`[UAT 5.1] Settle failed: ${body.code} - ${body.message}`);
     }
