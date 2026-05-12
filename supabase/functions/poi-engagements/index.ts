@@ -438,6 +438,9 @@ Deno.serve(async (req) => {
             },
           });
         } catch (_e) { /* non-fatal */ }
+        throw new ApiException(code, reason, 409);
+      }
+
       const recipient = (eng.counterparty_email || "").trim().toLowerCase();
 
       const m = eng.matches as any;
