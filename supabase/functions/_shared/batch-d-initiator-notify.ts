@@ -257,7 +257,8 @@ export type D4cInitiatorNotifyResult =
         | "wording_forbids_initiating_org"
         | "recipient_resolution_failed"
         | "all_recipients_hard_suppressed"
-        | "queue_unavailable";
+        | "queue_unavailable"
+        | "demo_isolation";
       detail?: string;
     };
 
