@@ -356,8 +356,14 @@ export function AdminOutreachBlocksPanel() {
           variant="outline"
           size="sm"
           className="ml-auto"
-          onClick={() => query.refetch()}
-          disabled={query.isFetching}
+          onClick={() => {
+            // Manual Refresh bypasses the count cache deliberately —
+            // the cache is only meant to absorb passive reloads and
+            // filter toggles, not explicit operator-driven refreshes.
+            query.refetch();
+            countQuery.refetch();
+          }}
+          disabled={query.isFetching || countQuery.isFetching}
         >
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${query.isFetching ? "animate-spin" : ""}`} />
           Refresh
