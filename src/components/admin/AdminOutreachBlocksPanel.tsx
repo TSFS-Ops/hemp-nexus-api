@@ -35,7 +35,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,12 @@ const ACTION_LABEL: Record<OutreachBlockedAction, string> = {
 };
 
 const ROW_LIMIT = 500;
+
+// Batch M+ — precise-count cache window. The count is a strictly read-only
+// audit aggregate, so a 60s freshness window is safe and cheap; cache is
+// retained for 5 minutes so re-toggling the same filter set is instant.
+const COUNT_QUERY_STALE_MS = 60_000;
+const COUNT_QUERY_GC_MS = 5 * 60_000;
 
 // Safe surface allowlist — must match the two real call sites in
 // supabase/functions/poi-engagements/index.ts.
@@ -232,6 +238,18 @@ export function AdminOutreachBlocksPanel() {
       if (error) throw error;
       return count ?? 0;
     },
+    // Batch M+ — cache the precise count per filter set so frequent panel
+    // reloads, refetches and filter toggles don't repeatedly hammer the
+    // audit_logs count(*) path. The queryKey already encodes the full
+    // (action, surface, window) filter tuple, so each distinct filter set
+    // gets its own cache entry. We keep prior data visible while a new
+    // count is being recomputed (avoids count text flicker).
+    staleTime: COUNT_QUERY_STALE_MS,
+    gcTime: COUNT_QUERY_GC_MS,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    placeholderData: keepPreviousData,
+    retry: 1,
   });
 
   const rows = query.data?.rows ?? [];
@@ -338,8 +356,14 @@ export function AdminOutreachBlocksPanel() {
           variant="outline"
           size="sm"
           className="ml-auto"
-          onClick={() => query.refetch()}
-          disabled={query.isFetching}
+          onClick={() => {
+            // Manual Refresh bypasses the count cache deliberately —
+            // the cache is only meant to absorb passive reloads and
+            // filter toggles, not explicit operator-driven refreshes.
+            query.refetch();
+            countQuery.refetch();
+          }}
+          disabled={query.isFetching || countQuery.isFetching}
         >
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${query.isFetching ? "animate-spin" : ""}`} />
           Refresh
