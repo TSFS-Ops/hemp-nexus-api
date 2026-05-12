@@ -93,6 +93,7 @@ children.push(
 );
 
 // ===== Safe to test =====
+const SAFE_TO_TEST_INDEX = children.length; // splice point for version/diff section
 children.push(H2("Safe to test"));
 children.push(P(
   "Every test in this pack is designed to be safe to run on the live platform. None of the actions you are asked to perform should send any new email or SMS to a counterparty, candidate organisation, disputed party, or any third party."
@@ -296,8 +297,12 @@ children.push(P(
   "Please walk through tests 1 to 7 and let us know whether this release is accepted. No further build batches will be started until acceptance is received. If anything in this pack is unclear, or if you would like the deferred items prioritised, please reply with the specific item and we will scope it against the signed Workflow Decision Form."
 ));
 
-// ----- Build -----
-const doc = new Document({
+// ----- Build helpers -----
+const { execFileSync } = require('child_process');
+const path = require('path');
+const crypto = require('crypto');
+
+const DOCX_OPTS = {
   styles: { default: { document: { run: { font: FONT, size: 22 } } } },
   numbering: {
     config: [
@@ -313,19 +318,189 @@ const doc = new Document({
           style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] },
     ],
   },
-  sections: [{
-    properties: {
-      page: {
-        size: { width: 12240, height: 15840 },
-        margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
-      },
-    },
-    children,
-  }],
-});
+};
+const SECTION_PROPS = {
+  page: { size: { width: 12240, height: 15840 },
+          margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
+};
 
-Packer.toBuffer(doc).then(buf => {
-  const out = "/mnt/documents/Izenzo_Release_Checkpoint_Client_Acceptance_Pack_REVISED.docx";
-  fs.writeFileSync(out, buf);
-  console.log("Wrote", out, buf.length, "bytes");
-});
+function buildDoc(allChildren) {
+  return new Document({
+    ...DOCX_OPTS,
+    sections: [{ properties: SECTION_PROPS, children: allChildren }],
+  });
+}
+
+// Anchors used to slice the rendered plain text into per-section bodies.
+// Order is presentation order in the document.
+const SECTION_ANCHORS = [
+  "Safe to test",
+  "What this release covers",
+  "What this release does not do",
+  "Batch D — Pending Engagement notifications and safety logic",
+  "Batch E — Outreach-blocked audit, in-product visibility, and server response hardening",
+  "Batch F — Production hardening, coverage, and proof consolidation",
+  "Batch K — Outreach Blocks admin panel and CSV export",
+  "Batch L — Export clarity",
+  "Batch M — Precise total count and last-refreshed indicator",
+  "Tests",
+  "How this maps to the signed Workflow Decision Form",
+  "Verification evidence",
+  "What counts as a problem",
+  "Sign-off requested",
+];
+// Anchors whose mapping is contractually load-bearing — flagged separately.
+const DE_ANCHORS = [
+  "Batch D — Pending Engagement notifications and safety logic",
+  "Batch E — Outreach-blocked audit, in-product visibility, and server response hardening",
+];
+
+function extractSections(flatText) {
+  const map = {};
+  const present = SECTION_ANCHORS.map(a => ({ a, idx: flatText.indexOf(a) }))
+    .filter(x => x.idx !== -1)
+    .sort((x, y) => x.idx - y.idx);
+  for (let i = 0; i < present.length; i++) {
+    const start = present[i].idx + present[i].a.length;
+    const end = i + 1 < present.length ? present[i + 1].idx : flatText.length;
+    map[present[i].a] = flatText.slice(start, end).trim();
+  }
+  for (const a of SECTION_ANCHORS) if (!(a in map)) map[a] = null;
+  return map;
+}
+const sha1 = (s) => crypto.createHash('sha1').update(s || '').digest('hex').slice(0, 10);
+
+function diffSections(prev, curr) {
+  const changes = { added: [], removed: [], changed: [], unchanged: 0,
+                    deMappingPreserved: true, deNotes: [] };
+  for (const a of SECTION_ANCHORS) {
+    const p = prev ? prev[a] : null;
+    const c = curr[a];
+    if (p == null && c != null) changes.added.push(a);
+    else if (p != null && c == null) changes.removed.push(a);
+    else if (p != null && c != null) {
+      if (sha1(p) !== sha1(c)) {
+        changes.changed.push({
+          anchor: a, prevHash: sha1(p), currHash: sha1(c),
+          delta: c.length - p.length,
+        });
+      } else changes.unchanged++;
+    }
+  }
+  for (const a of DE_ANCHORS) {
+    if (curr[a] == null) {
+      changes.deMappingPreserved = false;
+      changes.deNotes.push(`Anchor missing in current build: "${a}"`);
+    }
+    if (prev && prev[a] == null && curr[a] != null) {
+      changes.deNotes.push(`Anchor restored in this version: "${a}"`);
+    }
+  }
+  return changes;
+}
+
+function buildVersionBlock(version, prevVersion, builtAt, diff) {
+  const out = [];
+  out.push(H1("What changed in this version"));
+  out.push(Labeled("Version:", `v${version}` + (prevVersion ? ` (previous: v${prevVersion})` : " (initial versioned release)")));
+  out.push(Labeled("Built at:", builtAt));
+  out.push(Labeled("Batch D / Batch E mapping:",
+    diff.deMappingPreserved
+      ? "Preserved. D = Pending Engagement notifications and safety logic. E = Outreach-blocked audit, in-product visibility, and server response hardening."
+      : "WARNING — anchor not found. See notes below."));
+  if (diff.deNotes.length) {
+    for (const n of diff.deNotes) out.push(Bullet(n));
+  }
+  if (!prevVersion) {
+    out.push(P("This is the first versioned build, so there is no prior version to compare against. Subsequent builds will list per-section changes here."));
+    return out;
+  }
+  const total = diff.added.length + diff.removed.length + diff.changed.length;
+  if (total === 0) {
+    out.push(P(`No content changes detected against v${prevVersion}. ${diff.unchanged} sections unchanged.`));
+    return out;
+  }
+  out.push(P(`Summary: ${diff.added.length} added, ${diff.removed.length} removed, ${diff.changed.length} changed, ${diff.unchanged} unchanged (compared to v${prevVersion}).`));
+  if (diff.added.length) {
+    out.push(H3("Added sections"));
+    for (const a of diff.added) out.push(Bullet(a));
+  }
+  if (diff.removed.length) {
+    out.push(H3("Removed sections"));
+    for (const a of diff.removed) out.push(Bullet(a));
+  }
+  if (diff.changed.length) {
+    out.push(H3("Changed sections"));
+    for (const c of diff.changed) {
+      const sign = c.delta > 0 ? `+${c.delta}` : `${c.delta}`;
+      out.push(Bullet(`${c.anchor} (${sign} chars; ${c.prevHash} → ${c.currHash})`));
+    }
+  }
+  return out;
+}
+
+// ----- Pass 1: render preview to extract per-section text -----
+const TMP_DIR = fs.mkdtempSync(path.join(require('os').tmpdir(), 'releasepack-'));
+const previewPath = path.join(TMP_DIR, 'preview.docx');
+const previewTxt  = path.join(TMP_DIR, 'preview.txt');
+
+(async () => {
+  const previewBuf = await Packer.toBuffer(buildDoc(children));
+  fs.writeFileSync(previewPath, previewBuf);
+  execFileSync('pandoc', [previewPath, '-t', 'plain', '-o', previewTxt]);
+  const flat = fs.readFileSync(previewTxt, 'utf8').replace(/\s+/g, ' ');
+  const currSections = extractSections(flat);
+
+  // ----- Manifest / versioning -----
+  const MANIFEST = "/mnt/documents/release-pack-manifest.json";
+  let manifest = { versions: [] };
+  if (fs.existsSync(MANIFEST)) {
+    try { manifest = JSON.parse(fs.readFileSync(MANIFEST, 'utf8')); } catch {}
+    if (!Array.isArray(manifest.versions)) manifest.versions = [];
+  }
+  const last = manifest.versions[manifest.versions.length - 1] || null;
+  const prevSections = last ? last.sections : null;
+  const diff = diffSections(prevSections, currSections);
+  const newVersion = (last ? last.version : 0) + 1;
+  const prevVersion = last ? last.version : null;
+  const builtAt = new Date().toISOString();
+
+  // ----- Pass 2: splice version block into final children -----
+  const versionBlock = buildVersionBlock(newVersion, prevVersion, builtAt, diff);
+  const finalChildren = [
+    ...children.slice(0, SAFE_TO_TEST_INDEX),
+    ...versionBlock,
+    ...children.slice(SAFE_TO_TEST_INDEX),
+  ];
+  const finalBuf = await Packer.toBuffer(buildDoc(finalChildren));
+
+  const canonical = "/mnt/documents/Izenzo_Release_Checkpoint_Client_Acceptance_Pack_REVISED.docx";
+  const versioned = `/mnt/documents/Izenzo_Release_Checkpoint_Client_Acceptance_Pack_v${newVersion}.docx`;
+  fs.writeFileSync(canonical, finalBuf);
+  fs.writeFileSync(versioned, finalBuf);
+  const fileHash = crypto.createHash('sha256').update(finalBuf).digest('hex').slice(0, 16);
+
+  manifest.versions.push({
+    version: newVersion,
+    builtAt,
+    file: path.basename(versioned),
+    canonical: path.basename(canonical),
+    bytes: finalBuf.length,
+    sha256_16: fileHash,
+    deMappingPreserved: diff.deMappingPreserved,
+    diffSummary: {
+      added: diff.added, removed: diff.removed,
+      changed: diff.changed.map(c => ({ anchor: c.anchor, delta: c.delta,
+                                       prevHash: c.prevHash, currHash: c.currHash })),
+      unchanged: diff.unchanged,
+    },
+    sections: currSections, // stored for next-version diff
+  });
+  fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2));
+
+  console.log(`Wrote ${canonical} (${finalBuf.length} bytes)`);
+  console.log(`Wrote ${versioned}`);
+  console.log(`Version v${newVersion}` + (prevVersion ? ` (prev v${prevVersion})` : ' [initial]'));
+  console.log(`Diff: +${diff.added.length} -${diff.removed.length} ~${diff.changed.length} =${diff.unchanged}; D/E mapping preserved: ${diff.deMappingPreserved}`);
+})().catch(e => { console.error(e); process.exit(1); });
+
