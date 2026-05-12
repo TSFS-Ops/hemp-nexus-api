@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
-import { ApiException, errorResponse } from "../_shared/errors.ts";
+import { ApiException, errorResponse, extractSourceLocation } from "../_shared/errors.ts";
 import { validateInput } from "../_shared/validation.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import {
@@ -122,6 +122,35 @@ function evaluateOutreachGate(
  * the corresponding *_org_id is null).
  */
 const MATCH_CONTACT_SELECT = "buyer_name,seller_name,buyer_org_id,seller_org_id";
+
+// ── Process-level safety net ────────────────────────────────────────────────
+// If anything escapes the Deno.serve try/catch (e.g. a stray async without
+// await, or a top-level runtime error in an imported helper), log a
+// structured line so on-call can correlate. Bundling failures cannot be
+// caught here (the module never loads), but Supabase's deploy log already
+// surfaces those — what we add is a stable runtime channel.
+addEventListener("unhandledrejection", (e) => {
+  const err = (e as PromiseRejectionEvent).reason as Error | undefined;
+  console.error(JSON.stringify({
+    level: "error",
+    fn: "poi-engagements",
+    kind: "unhandledrejection",
+    name: err?.name ?? "Error",
+    message: err?.message ?? String(err),
+    source: extractSourceLocation(err ?? null),
+  }));
+});
+addEventListener("error", (e) => {
+  const ev = e as ErrorEvent;
+  console.error(JSON.stringify({
+    level: "error",
+    fn: "poi-engagements",
+    kind: "uncaught",
+    name: ev.error?.name ?? "Error",
+    message: ev.message,
+    source: ev.filename ? `${ev.filename.split("/").pop()}:${ev.lineno}:${ev.colno}` : extractSourceLocation(ev.error ?? null),
+  }));
+});
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -2906,7 +2935,18 @@ Deno.serve(async (req) => {
 
     throw new ApiException("NOT_FOUND", "Endpoint not found", 404);
   } catch (error) {
-    console.error(`[${requestId}] poi-engagements error:`, error);
+    const _src = extractSourceLocation(error as Error);
+    console.error(JSON.stringify({
+      level: "error",
+      fn: "poi-engagements",
+      kind: "handler",
+      requestId,
+      name: (error as Error)?.name ?? "Error",
+      message: (error as Error)?.message ?? String(error),
+      source: _src,
+      isApiException: error instanceof ApiException,
+      code: error instanceof ApiException ? error.code : undefined,
+    }));
     return errorResponse(error as Error, requestId, headers);
   }
 });
