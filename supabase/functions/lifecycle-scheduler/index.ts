@@ -146,17 +146,20 @@ Deno.serve(async (req: Request) => {
     };
 
     // 1c. Expire stale draft/pending matches - only update poi_state (avoid status constraint violation)
+    // Phase 1 demo isolation: never expire demo matches via lifecycle.
     const { data: expiredMatches, error: matchErr } = dryRun
       ? await admin
           .from("matches")
           .select("id")
           .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
           .lt("created_at", thirtyDaysAgo)
+          .eq("is_demo", false)
       : await admin
           .from("matches")
           .update({ poi_state: "EXPIRED" })
           .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
           .lt("created_at", thirtyDaysAgo)
+          .eq("is_demo", false)
           .select("id");
 
     results.expired_matches = {
