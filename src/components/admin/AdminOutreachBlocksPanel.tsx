@@ -55,8 +55,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, Download } from "lucide-react";
 import { format } from "date-fns";
+import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 
 // Canonical actions — must match the three Batch E catalogue entries.
 export const OUTREACH_BLOCKED_ACTIONS = [
