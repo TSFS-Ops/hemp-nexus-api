@@ -443,8 +443,8 @@ export function AdminOutreachBlocksPanel() {
           It includes only safe audit fields: when it happened, the reason,
           the action code, the organisation name and ID, the engagement ID,
           and the surface. It does <strong>not</strong> include counterparty
-          email or name, dispute reason, candidate organisations, commercial
-          terms (commodity, price, quantity), or any admin or support notes.
+          email or name, dispute reason, candidate organisations, trade
+          commercials (goods, price, quantity), or any admin or support notes.
         </p>
       </div>
 
@@ -454,9 +454,7 @@ export function AdminOutreachBlocksPanel() {
           data-testid="outreach-blocks-cap-warning"
           role="status"
         >
-          Showing the first {ROW_LIMIT} matching audit rows. Narrow the
-          filters (time window, reason, or surface) before exporting if you
-          need a more precise file.
+          Showing the first {ROW_LIMIT} matching audit rows. Narrow the filters (time window, reason, or surface) before exporting if you need a more precise file.
         </div>
       )}
 
