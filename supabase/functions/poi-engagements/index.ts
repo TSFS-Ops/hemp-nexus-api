@@ -2935,7 +2935,18 @@ Deno.serve(async (req) => {
 
     throw new ApiException("NOT_FOUND", "Endpoint not found", 404);
   } catch (error) {
-    console.error(`[${requestId}] poi-engagements error:`, error);
+    const _src = extractSourceLocation(error as Error);
+    console.error(JSON.stringify({
+      level: "error",
+      fn: "poi-engagements",
+      kind: "handler",
+      requestId,
+      name: (error as Error)?.name ?? "Error",
+      message: (error as Error)?.message ?? String(error),
+      source: _src,
+      isApiException: error instanceof ApiException,
+      code: error instanceof ApiException ? error.code : undefined,
+    }));
     return errorResponse(error as Error, requestId, headers);
   }
 });
