@@ -48,11 +48,12 @@ export function AdminEngagementForensicsPanel() {
   const [email, setEmail] = useState("");
   const [orgId, setOrgId] = useState("");
   const [status, setStatus] = useState<string>("any");
+  const [showDemo, setShowDemo] = useState<boolean>(false);
   const [selected, setSelected] = useState<EngagementRow | null>(null);
 
   const FORENSICS_LIMIT = 200;
   const { data: rows = [], isFetching, refetch } = useQuery({
-    queryKey: ["admin-forensics", matchId, email, orgId, status],
+    queryKey: ["admin-forensics", matchId, email, orgId, status, showDemo],
     queryFn: async () => {
       let q = supabase
         .from("poi_engagements")
