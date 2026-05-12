@@ -123,6 +123,35 @@ function evaluateOutreachGate(
  */
 const MATCH_CONTACT_SELECT = "buyer_name,seller_name,buyer_org_id,seller_org_id";
 
+// ── Process-level safety net ────────────────────────────────────────────────
+// If anything escapes the Deno.serve try/catch (e.g. a stray async without
+// await, or a top-level runtime error in an imported helper), log a
+// structured line so on-call can correlate. Bundling failures cannot be
+// caught here (the module never loads), but Supabase's deploy log already
+// surfaces those — what we add is a stable runtime channel.
+addEventListener("unhandledrejection", (e) => {
+  const err = (e as PromiseRejectionEvent).reason as Error | undefined;
+  console.error(JSON.stringify({
+    level: "error",
+    fn: "poi-engagements",
+    kind: "unhandledrejection",
+    name: err?.name ?? "Error",
+    message: err?.message ?? String(err),
+    source: extractSourceLocation(err ?? null),
+  }));
+});
+addEventListener("error", (e) => {
+  const ev = e as ErrorEvent;
+  console.error(JSON.stringify({
+    level: "error",
+    fn: "poi-engagements",
+    kind: "uncaught",
+    name: ev.error?.name ?? "Error",
+    message: ev.message,
+    source: ev.filename ? `${ev.filename.split("/").pop()}:${ev.lineno}:${ev.colno}` : extractSourceLocation(ev.error ?? null),
+  }));
+});
+
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
