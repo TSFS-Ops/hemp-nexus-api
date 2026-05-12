@@ -474,6 +474,7 @@ Deno.serve(async (req: Request) => {
       .not("state", "in", "(completed,cancelled,committed)")
       .not("status", "in", "(settled,cancelled)")
       .in("poi_state", ["DRAFT", "PENDING_APPROVAL", "ELIGIBLE"])
+      .eq("is_demo", false) // Phase 1 demo isolation
       .limit(200);
 
     let staleAuditCount = 0;
