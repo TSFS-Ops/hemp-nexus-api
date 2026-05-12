@@ -465,7 +465,15 @@ export async function burnTokensForAction(
   metadata?: Record<string, unknown>
 ): Promise<TokenBurnResult> {
   const tokensToBurn = customAmount ?? ACTION_TOKEN_COSTS[actionType];
-  
+
+  // Phase 1 demo isolation: demo orgs short-circuit BEFORE any balance read
+  // or RPC. Returns success so the calling workflow can continue, but writes
+  // no ledger row and changes no balance.
+  if (await isDemoOrg(supabase, orgId)) {
+    console.log(`[token-metering] demo org ${orgId} → skip burnTokensForAction(${actionType})`);
+    return { success: true, newBalance: 0, ledgerEntryId: "", skipped: "demo" };
+  }
+
   // Skip burn for zero-cost actions
   if (tokensToBurn === 0) {
     const { data: bal } = await supabase
