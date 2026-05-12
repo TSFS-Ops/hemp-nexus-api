@@ -64,6 +64,36 @@ export interface TokenBurnResult {
   success: boolean;
   newBalance: number;
   ledgerEntryId: string;
+  /**
+   * Phase 1 demo isolation. When the org is flagged `is_demo=true`,
+   * burn helpers short-circuit: no `atomic_token_burn` RPC, no token_ledger
+   * row, no balance change. The result still returns `success: true` so
+   * call-sites continue their workflow, but `skipped` is set to "demo".
+   */
+  skipped?: "demo";
+}
+
+/**
+ * Phase 1 demo isolation lookup. Returns true iff `organizations.is_demo`
+ * is true for `orgId`. Reads with the provided client (service-role in
+ * edge functions). Errors fail closed (treated as NOT demo) so a transient
+ * lookup failure can never silently skip a real production burn.
+ */
+export async function isDemoOrg(
+  supabase: SupabaseClient,
+  orgId: string,
+): Promise<boolean> {
+  if (!orgId) return false;
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("is_demo")
+    .eq("id", orgId)
+    .maybeSingle();
+  if (error) {
+    console.error("[token-metering] is_demo lookup failed; failing closed (not demo):", error);
+    return false;
+  }
+  return (data as { is_demo?: boolean } | null)?.is_demo === true;
 }
 
 /**
