@@ -1299,7 +1299,7 @@ export function AdminPendingEngagementsPanel() {
             aria-pressed={showDemo}
             data-testid="show-demo-toggle"
           >
-            {showDemo ? "Hiding demo rows: OFF" : "Show demo rows"}
+            {showDemo ? "DEMO rows visible — click to hide" : "Show DEMO rows"}
           </button>
           <Button
             variant="outline"
