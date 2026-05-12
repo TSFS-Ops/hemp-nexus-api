@@ -44,25 +44,28 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
     console.info(`[UAT 4.2] Initial balance: ${balance}`);
   });
 
-  // ── Step 2: Credit tokens (atomic_token_credit RPC) ────────────
-  it("4.3 - atomic_token_credit adds tokens to the balance", async () => {
-    const { data: before } = await supabase
-      .from("token_balances")
-      .select("balance")
-      .eq("org_id", orgId)
-      .single();
-    const balanceBefore = before!.balance;
-
+  // ── Step 2: Security boundary — atomic_token_credit is service-role only ───
+  // SECDEF Stage D1 hardening (2026-05-01): direct authenticated-user RPC to
+  // `atomic_token_credit` is forbidden. Crediting only happens via the
+  // service-role `token-purchase` edge function after Paystack settlement.
+  // This test asserts the security boundary; happy-path credit semantics are
+  // covered by token-purchase integration tests, not the user-JWT layer.
+  it("4.3 - atomic_token_credit rejects authenticated direct RPC (service-role only)", async () => {
     const { data, error } = await supabase.rpc("atomic_token_credit", {
       p_org_id: orgId,
       p_amount: 1000,
-      p_reason: "UAT simulated purchase",
+      p_reason: "uat:secdef_d1_boundary_check",
     });
 
-    expect(error).toBeNull();
-    const result = data as Record<string, unknown>;
-    expect(result.success).toBe(true);
-    expect(result.new_balance).toBe(balanceBefore + 1000);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+    const code = (error as { code?: string } | null)?.code ?? "";
+    const message = (error as { message?: string } | null)?.message ?? "";
+    const blocked =
+      code === "42501" ||
+      code === "PGRST202" ||
+      /permission denied|not (?:exist|found)|schema cache/i.test(message);
+    expect(blocked).toBe(true);
   });
 
   // ── Step 3: Verify idempotency index exists ────────────────────

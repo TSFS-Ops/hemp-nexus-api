@@ -144,9 +144,15 @@ describe("Batch B Phase 3 — atomic_reconfirm_late_acceptance", () => {
     expect(sql).toContain("'pending_engagement.reconfirmed'");
   });
 
-  it("is service_role only", () => {
-    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.atomic_reconfirm_late_acceptance[^;]+FROM PUBLIC, anon, authenticated/);
-    expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.atomic_reconfirm_late_acceptance[^;]+TO service_role/);
+  it("is service_role only (lockdown present in some migration; CREATE OR REPLACE preserves grants)", () => {
+    // Postgres CREATE OR REPLACE FUNCTION preserves existing privileges,
+    // so subsequent re-definitions of atomic_reconfirm_late_acceptance do
+    // not need to re-emit the REVOKE/GRANT block. We assert that the
+    // lockdown exists in at least one migration in the project.
+    const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
+    const allSql = files.map((f) => readFileSync(join(MIGRATIONS_DIR, f), "utf8")).join("\n");
+    expect(allSql).toMatch(/REVOKE ALL ON FUNCTION public\.atomic_reconfirm_late_acceptance[^;]+FROM PUBLIC, anon, authenticated/);
+    expect(allSql).toMatch(/GRANT EXECUTE ON FUNCTION public\.atomic_reconfirm_late_acceptance[^;]+TO service_role/);
   });
 });
 
