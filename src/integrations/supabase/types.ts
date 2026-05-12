@@ -4296,6 +4296,7 @@ export type Database = {
           frozen_reason: string | null
           id: string
           industry: string | null
+          is_demo: boolean
           jurisdictions: string[] | null
           legal_name: string | null
           logo_url: string | null
@@ -4325,6 +4326,7 @@ export type Database = {
           frozen_reason?: string | null
           id?: string
           industry?: string | null
+          is_demo?: boolean
           jurisdictions?: string[] | null
           legal_name?: string | null
           logo_url?: string | null
@@ -4354,6 +4356,7 @@ export type Database = {
           frozen_reason?: string | null
           id?: string
           industry?: string | null
+          is_demo?: boolean
           jurisdictions?: string[] | null
           legal_name?: string | null
           logo_url?: string | null

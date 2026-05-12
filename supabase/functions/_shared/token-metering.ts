@@ -64,6 +64,36 @@ export interface TokenBurnResult {
   success: boolean;
   newBalance: number;
   ledgerEntryId: string;
+  /**
+   * Phase 1 demo isolation. When the org is flagged `is_demo=true`,
+   * burn helpers short-circuit: no `atomic_token_burn` RPC, no token_ledger
+   * row, no balance change. The result still returns `success: true` so
+   * call-sites continue their workflow, but `skipped` is set to "demo".
+   */
+  skipped?: "demo";
+}
+
+/**
+ * Phase 1 demo isolation lookup. Returns true iff `organizations.is_demo`
+ * is true for `orgId`. Reads with the provided client (service-role in
+ * edge functions). Errors fail closed (treated as NOT demo) so a transient
+ * lookup failure can never silently skip a real production burn.
+ */
+export async function isDemoOrg(
+  supabase: SupabaseClient,
+  orgId: string,
+): Promise<boolean> {
+  if (!orgId) return false;
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("is_demo")
+    .eq("id", orgId)
+    .maybeSingle();
+  if (error) {
+    console.error("[token-metering] is_demo lookup failed; failing closed (not demo):", error);
+    return false;
+  }
+  return (data as { is_demo?: boolean } | null)?.is_demo === true;
 }
 
 /**
@@ -164,6 +194,17 @@ export async function burnTokens(
       success: true,
       newBalance: 0,
       ledgerEntryId: "",
+    };
+  }
+
+  // Phase 1 demo isolation: demo orgs never burn credits or write ledger.
+  if (await isDemoOrg(supabase, orgId)) {
+    console.log(`[token-metering] demo org ${orgId} → skip burn for ${endpoint}`);
+    return {
+      success: true,
+      newBalance: 0,
+      ledgerEntryId: "",
+      skipped: "demo",
     };
   }
   
@@ -374,6 +415,13 @@ export async function enforceTokenMetering(
   if (!isBillableEndpoint(endpoint)) {
     return; // Non-billable endpoints pass through
   }
+
+  // Phase 1 demo isolation: demo orgs bypass metering entirely.
+  // No balance check, no burn, no ledger row. Workflow continues.
+  if (await isDemoOrg(supabase, orgId)) {
+    console.log(`[token-metering] demo org ${orgId} → bypass enforceTokenMetering for ${endpoint}`);
+    return;
+  }
   
   // Check token balance
   const checkResult = await checkTokenBalance(supabase, orgId, endpoint);
@@ -417,7 +465,15 @@ export async function burnTokensForAction(
   metadata?: Record<string, unknown>
 ): Promise<TokenBurnResult> {
   const tokensToBurn = customAmount ?? ACTION_TOKEN_COSTS[actionType];
-  
+
+  // Phase 1 demo isolation: demo orgs short-circuit BEFORE any balance read
+  // or RPC. Returns success so the calling workflow can continue, but writes
+  // no ledger row and changes no balance.
+  if (await isDemoOrg(supabase, orgId)) {
+    console.log(`[token-metering] demo org ${orgId} → skip burnTokensForAction(${actionType})`);
+    return { success: true, newBalance: 0, ledgerEntryId: "", skipped: "demo" };
+  }
+
   // Skip burn for zero-cost actions
   if (tokensToBurn === 0) {
     const { data: bal } = await supabase
