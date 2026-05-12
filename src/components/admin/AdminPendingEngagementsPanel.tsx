@@ -1542,7 +1542,7 @@ export function AdminPendingEngagementsPanel() {
                     const isTerminal = ["accepted", "declined", "expired"].includes(e.engagement_status);
                     return (
                       <React.Fragment key={e.id}>
-                        <TableRow>
+                        <TableRow data-is-demo={e.is_demo === true ? "true" : "false"} className={e.is_replaced_marker_unused ? "" : (e.is_demo === true ? "bg-amber-50/40" : "")}>
                         <TableCell>
                           <div className="text-sm">
                             <p className="font-medium">{m?.commodity ?? "-"}</p>
