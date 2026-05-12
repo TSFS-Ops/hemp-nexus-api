@@ -268,6 +268,9 @@ export function AdminPendingEngagementsPanel() {
   // "all" is a diagnostic mode for admins who need to audit known-counterparty engagements too.
   const [scope, setScope] = useState<"unknown" | "all">("unknown");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  // Phase 1 demo isolation: hide is_demo rows by default so admins never
+  // confuse Daniel-facing fixture rows with real production engagements.
+  const [showDemo, setShowDemo] = useState<boolean>(false);
   // Off-scope counters: when admin is on "Unknown only", we still surface how many
   // engagements live in the "All" bucket and how many of those auto-promoted in the
   // last 7 days. This prevents the "my row vanished after auto-link" support pattern.
