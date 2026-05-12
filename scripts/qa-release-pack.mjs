@@ -89,7 +89,15 @@ if (!existsSync(OUT)) {
   else fail("Structural validator", `exit ${r.status} — ${tail}`);
 }
 
-// ---- Step 3: pandoc text extract & semantic checks ----------------------
+// ---- Step 2b: phrase/field linter (release gate) ------------------------
+{
+  const LINTER = resolve("scripts/lint-release-pack.mjs");
+  const r = spawnSync("node", [LINTER, OUT], { encoding: "utf8" });
+  const out = (r.stdout + r.stderr).trim();
+  const tail = out.split("\n").slice(-2).join(" | ");
+  if (r.status === 0) ok("Phrase/field linter", tail);
+  else fail("Phrase/field linter", `exit ${r.status} — ${tail}`);
+}
 const tmp = mkdtempSync(join(tmpdir(), "qa-pack-"));
 const txtPath = join(tmp, "pack.txt");
 let text = "";
