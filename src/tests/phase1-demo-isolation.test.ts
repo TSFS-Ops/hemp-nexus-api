@@ -136,19 +136,18 @@ describe("Phase 1 — HQ panel demo-row visibility contract", () => {
   });
 });
 
-describe("Phase 1 — DEFERRED: token metering / progression-guard", () => {
-  // Documenting the explicit STOP point per Phase 1 instructions.
-  // Token metering is keyed on org_id only — not on a match or engagement
-  // — so a row-level is_demo flag cannot be honoured without either
-  // plumbing match/engagement context into burnTokens / burnTokensForAction
-  // or adding organizations.is_demo. Both are design decisions that fall
-  // outside the row-level Phase 1 primitive and are deferred to the
-  // Phase 2 seeding plan.
-  it("documents the deferred design decision (no behavioural change yet)", () => {
+describe("Phase 1 — RESOLVED: token metering uses organizations.is_demo (Option B)", () => {
+  // Decision (Phase 1 close-out): metering keyed on org_id is isolated by
+  // adding organizations.is_demo and short-circuiting in token-metering.ts.
+  // Detailed assertions live in phase1-demo-isolation-billing.test.ts.
+  it("token-metering still calls atomic_token_burn with p_org_id for real orgs", () => {
     const meteringSrc = readSource("supabase/functions/_shared/token-metering.ts");
-    // The current contract burns tokens via atomic_token_burn keyed on
-    // p_org_id — confirm no row-level flag has been silently introduced.
     expect(meteringSrc).toMatch(/atomic_token_burn[\s\S]{0,200}p_org_id/);
-    expect(meteringSrc).not.toMatch(/is_demo/);
+  });
+
+  it("token-metering now references is_demo (org-level isolation in place)", () => {
+    const meteringSrc = readSource("supabase/functions/_shared/token-metering.ts");
+    expect(meteringSrc).toMatch(/is_demo/);
+    expect(meteringSrc).toMatch(/isDemoOrg/);
   });
 });
