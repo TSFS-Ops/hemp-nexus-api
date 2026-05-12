@@ -426,6 +426,48 @@ export function AdminOutreachBlocksPanel() {
         </CardContent>
       </Card>
 
+      {/*
+        Batch L — export transparency.
+        Plain-English notes describing exactly what the CSV does and does
+        not include. No backend, no dispatcher, no counterparty surface.
+      */}
+      <div
+        className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1"
+        data-testid="outreach-blocks-export-explainer"
+      >
+        <p>
+          The CSV export contains only the rows currently shown above. It
+          respects the selected time window, reason, and surface filters.
+        </p>
+        <p>
+          It includes only safe audit fields: when it happened, the reason,
+          the action code, the organisation name and ID, the engagement ID,
+          and the surface. It does <strong>not</strong> include counterparty
+          email or name, dispute reason, candidate organisations, trade
+          commercials (goods, price, quantity), or any admin or support notes.
+        </p>
+      </div>
+
+      {rows.length >= ROW_LIMIT && (
+        <div
+          className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-warning-foreground"
+          data-testid="outreach-blocks-cap-warning"
+          role="status"
+        >
+          Showing the first {ROW_LIMIT} matching audit rows. Narrow the filters (time window, reason, or surface) before exporting if you need a more precise file.
+        </div>
+      )}
+
+      {!query.isLoading && rows.length === 0 && (
+        <div
+          className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground"
+          data-testid="outreach-blocks-empty-state"
+        >
+          No rows match the current filters. Export CSV is disabled until at
+          least one row is shown.
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Showing {rows.length} outreach-blocked event(s)
