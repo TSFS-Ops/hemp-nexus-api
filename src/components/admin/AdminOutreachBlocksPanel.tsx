@@ -399,6 +399,8 @@ export function AdminOutreachBlocksPanel() {
           </Label>
         </div>
         <Button
+          variant="outline"
+          size="sm"
           onClick={() => {
             // Manual Refresh bypasses the count cache deliberately —
             // the cache is only meant to absorb passive reloads and
