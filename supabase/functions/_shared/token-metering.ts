@@ -415,6 +415,13 @@ export async function enforceTokenMetering(
   if (!isBillableEndpoint(endpoint)) {
     return; // Non-billable endpoints pass through
   }
+
+  // Phase 1 demo isolation: demo orgs bypass metering entirely.
+  // No balance check, no burn, no ledger row. Workflow continues.
+  if (await isDemoOrg(supabase, orgId)) {
+    console.log(`[token-metering] demo org ${orgId} → bypass enforceTokenMetering for ${endpoint}`);
+    return;
+  }
   
   // Check token balance
   const checkResult = await checkTokenBalance(supabase, orgId, endpoint);
