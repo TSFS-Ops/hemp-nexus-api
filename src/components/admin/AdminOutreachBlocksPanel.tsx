@@ -211,6 +211,8 @@ export function AdminOutreachBlocksPanel() {
 
       return { rows: filtered, orgNames };
     },
+    refetchInterval: autoRefresh ? AUTO_REFRESH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
   });
 
   // Batch M — precise total count for the SAME filter set as the row query.
