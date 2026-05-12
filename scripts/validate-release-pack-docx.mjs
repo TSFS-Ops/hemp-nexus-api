@@ -16,6 +16,8 @@
  *   4. Banned phrases ("Lovable", "in plain English") are absent.
  *   5. The CSV column list and the do-not-include field list are present
  *      verbatim.
+ *   6. Numbered lists render as proper sequential numbering (no
+ *      "1. 1. 1." restarts caused by each item having its own numId).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
