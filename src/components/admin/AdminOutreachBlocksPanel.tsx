@@ -232,6 +232,18 @@ export function AdminOutreachBlocksPanel() {
       if (error) throw error;
       return count ?? 0;
     },
+    // Batch M+ — cache the precise count per filter set so frequent panel
+    // reloads, refetches and filter toggles don't repeatedly hammer the
+    // audit_logs count(*) path. The queryKey already encodes the full
+    // (action, surface, window) filter tuple, so each distinct filter set
+    // gets its own cache entry. We keep prior data visible while a new
+    // count is being recomputed (avoids count text flicker).
+    staleTime: COUNT_QUERY_STALE_MS,
+    gcTime: COUNT_QUERY_GC_MS,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    placeholderData: keepPreviousData,
+    retry: 1,
   });
 
   const rows = query.data?.rows ?? [];
