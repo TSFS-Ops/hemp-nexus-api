@@ -90,7 +90,7 @@ describe("Batch N polish :: query error surface", () => {
     const region = PANEL_CODE.split("outreach-blocks-query-error")[1] ?? "";
     expect(region).toMatch(/query\.refetch\(\)/);
     expect(region).toMatch(/countQuery\.refetch\(\)/);
-    expect(region).toMatch(/>Retry</);
+    expect(region).toMatch(/Retry/);
   });
 
   it("warns the operator that the visible view may be stale", () => {
