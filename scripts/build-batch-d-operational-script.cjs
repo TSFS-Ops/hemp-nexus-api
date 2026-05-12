@@ -134,7 +134,7 @@ function TestBlock({ n, title, classification, readiness, purpose, account, page
     Labeled("Exact button or action:", action),
     Labeled("Expected visible result:", expected),
     Labeled("What must not happen:", mustNot),
-    Labeled("Pass / fail:", "[ ] PASS    [ ] FAIL    Notes: ____________________________"),
+    Labeled("Pass / fail:", "[ ] PASS    [ ] FAIL    Notes:"),
   ];
 }
 
@@ -313,8 +313,8 @@ c.push(Bullet("Tests that require Daniel to create an expired engagement or act 
 c.push(H1("Final send gate"));
 c.push(Callout("NOT READY TO SEND — admin setup still required. This document should not be sent to Daniel until Test 1 has a verified ambiguous email and Tests 2–6 have real row names, logins where required, and direct links."));
 c.push(Labeled("Reviewer:", "Daniel Davies — Izenzo"));
-c.push(Labeled("Date completed:", "____________________"));
-c.push(Labeled("Overall decision:", "[ ] Accept Batch D    [ ] Accept with wording changes    [ ] Hold for further work"));
+c.push(Labeled("Date completed:", ""));
+c.push(Labeled("Overall decision:", "Accept Batch D / Accept with wording changes / Hold for further work"));
 
 const doc = new Document({
   styles: {
@@ -338,7 +338,7 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buf) => {
-  const out = "/mnt/documents/Izenzo_Batch_D_Operational_Test_Script_v2.docx";
+  const out = "/mnt/documents/Izenzo_Batch_D_Operational_Test_Script_v3.docx";
   fs.writeFileSync(out, buf);
   console.log("Wrote", out, buf.length, "bytes");
 });
