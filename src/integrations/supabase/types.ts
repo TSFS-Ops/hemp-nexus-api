@@ -3723,6 +3723,7 @@ export type Database = {
           finality_tokens_burned: number | null
           hash: string
           id: string
+          is_demo: boolean
           match_type: string
           metadata: Json | null
           org_id: string
@@ -3761,6 +3762,7 @@ export type Database = {
           finality_tokens_burned?: number | null
           hash: string
           id?: string
+          is_demo?: boolean
           match_type?: string
           metadata?: Json | null
           org_id: string
@@ -3799,6 +3801,7 @@ export type Database = {
           finality_tokens_burned?: number | null
           hash?: string
           id?: string
+          is_demo?: boolean
           match_type?: string
           metadata?: Json | null
           org_id?: string
@@ -4657,6 +4660,7 @@ export type Database = {
           engagement_status: Database["public"]["Enums"]["engagement_status"]
           expires_at: string
           id: string
+          is_demo: boolean
           late_acceptance_recorded_at: string | null
           late_acceptance_resolution: string | null
           late_acceptance_resolved_at: string | null
@@ -4706,6 +4710,7 @@ export type Database = {
           engagement_status?: Database["public"]["Enums"]["engagement_status"]
           expires_at?: string
           id?: string
+          is_demo?: boolean
           late_acceptance_recorded_at?: string | null
           late_acceptance_resolution?: string | null
           late_acceptance_resolved_at?: string | null
@@ -4755,6 +4760,7 @@ export type Database = {
           engagement_status?: Database["public"]["Enums"]["engagement_status"]
           expires_at?: string
           id?: string
+          is_demo?: boolean
           late_acceptance_recorded_at?: string | null
           late_acceptance_resolution?: string | null
           late_acceptance_resolved_at?: string | null
