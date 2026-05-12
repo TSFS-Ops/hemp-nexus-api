@@ -102,9 +102,8 @@ describe("extractSourceLocation() — sanitiser safety", () => {
   });
 
   it("returns null when stack is not a string", () => {
-    const e = new Error("x");
-    // @ts-expect-error force non-string
+    const e = new Error("x") as Error & { stack?: unknown };
     e.stack = undefined;
-    expect(extractSourceLocation(e)).toBeNull();
+    expect(extractSourceLocation(e as Error)).toBeNull();
   });
 });
