@@ -34,12 +34,14 @@
  *   determination.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -56,7 +58,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, RefreshCw, Download } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
 
 // Canonical actions — must match the three Batch E catalogue entries.
