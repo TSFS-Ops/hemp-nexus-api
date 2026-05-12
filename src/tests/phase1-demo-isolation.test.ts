@@ -72,8 +72,7 @@ describe("Phase 1 — D4b admin notification helper refuses demo rows (source pi
 
   it("returns skipped:'demo_isolation' before composing or dispatching", () => {
     expect(src).toMatch(/skipped:\s*"demo_isolation"/);
-    // The demo branch must execute BEFORE notification-dispatch is invoked.
-    const dispatchIdx = src.indexOf("notification-dispatch");
+    const dispatchIdx = src.indexOf('functions.invoke(\n      "notification-dispatch"');
     const demoIdx = src.indexOf('skipped: "demo_isolation"');
     expect(demoIdx).toBeGreaterThan(0);
     expect(dispatchIdx).toBeGreaterThan(demoIdx);
