@@ -382,10 +382,23 @@ export function AdminOutreachBlocksPanel() {
             </SelectContent>
           </Select>
         </div>
+        <div
+          className="ml-auto flex items-center gap-2"
+          data-testid="outreach-blocks-auto-refresh-control"
+        >
+          <Switch
+            id="outreach-blocks-auto-refresh"
+            checked={autoRefresh}
+            onCheckedChange={setAutoRefresh}
+          />
+          <Label
+            htmlFor="outreach-blocks-auto-refresh"
+            className="text-xs text-muted-foreground cursor-pointer"
+          >
+            Auto-refresh (30s)
+          </Label>
+        </div>
         <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
           onClick={() => {
             // Manual Refresh bypasses the count cache deliberately —
             // the cache is only meant to absorb passive reloads and
