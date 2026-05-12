@@ -799,8 +799,10 @@ export function AdminPendingEngagementsPanel() {
         return t >= fromMs && t <= toMs;
       });
     }
+    // Phase 1 demo isolation: hide is_demo rows unless operator opts in.
+    if (!showDemo) base = base.filter((e) => e.is_demo !== true);
     return base;
-  }, [engagements, filter, notesFilter, notesFrom, notesTo, idQuery]);
+  }, [engagements, filter, notesFilter, notesFrom, notesTo, idQuery, showDemo]);
 
   const stats = useMemo(() => {
     // D-05: canonical pending set = notification_sent + contacted (legacy
