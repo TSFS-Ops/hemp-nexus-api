@@ -129,12 +129,19 @@ function pickSafeMetadata(meta: unknown): { surface: SafeSurface | null } {
   return { surface: null };
 }
 
+// Batch N — auto-refresh interval. Long enough that an idle panel doesn't
+// hammer the database, short enough to feel responsive while ops triage.
+const AUTO_REFRESH_INTERVAL_MS = 30_000;
+
 export function AdminOutreachBlocksPanel() {
   const [actionFilter, setActionFilter] = useState<
     OutreachBlockedAction | "all"
   >("all");
   const [surfaceFilter, setSurfaceFilter] = useState<SafeSurface | "all">("all");
   const [windowFilter, setWindowFilter] = useState<WindowId>("7d");
+  // Batch N — opt-in auto-refresh. OFF by default so the panel never
+  // surprises an admin with background DB load.
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   const query = useQuery({
     queryKey: ["admin-outreach-blocks", actionFilter, surfaceFilter, windowFilter],
