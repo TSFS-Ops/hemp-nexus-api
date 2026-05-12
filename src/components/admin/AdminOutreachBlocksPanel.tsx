@@ -261,7 +261,26 @@ export function AdminOutreachBlocksPanel() {
     refetchOnMount: false,
     placeholderData: keepPreviousData,
     retry: 1,
+    refetchInterval: autoRefresh ? AUTO_REFRESH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
   });
+
+  // Batch N — "last refreshed" indicator. Use the most recent successful
+  // fetch across both queries so the timestamp reflects the freshest data
+  // the panel is actually showing. Re-render every 15s so the relative
+  // wording ("just now" → "1 min ago") stays accurate without polling
+  // the database.
+  const lastRefreshedAt = useMemo(() => {
+    const a = query.dataUpdatedAt || 0;
+    const b = countQuery.dataUpdatedAt || 0;
+    const max = Math.max(a, b);
+    return max > 0 ? new Date(max) : null;
+  }, [query.dataUpdatedAt, countQuery.dataUpdatedAt]);
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((n) => n + 1), 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   const rows = query.data?.rows ?? [];
   const totalCount = countQuery.data;
