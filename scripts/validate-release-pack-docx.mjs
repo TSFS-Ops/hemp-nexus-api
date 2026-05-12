@@ -313,6 +313,7 @@ function main() {
     ["Downstream cross-references", checkDownstreamRefs(text)],
     ["Banned phrases", checkBannedPhrases(text)],
     ["Required column / excluded-field lists", checkRequiredLists(text)],
+    ["Numbered-list rendering (no '1. 1. 1.' restarts)", checkNumberedListRestarts(docxPath)],
   ];
 
   let total = 0;
