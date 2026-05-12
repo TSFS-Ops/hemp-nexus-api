@@ -81,6 +81,12 @@ const ACTION_LABEL: Record<OutreachBlockedAction, string> = {
 
 const ROW_LIMIT = 500;
 
+// Batch M+ — precise-count cache window. The count is a strictly read-only
+// audit aggregate, so a 60s freshness window is safe and cheap; cache is
+// retained for 5 minutes so re-toggling the same filter set is instant.
+const COUNT_QUERY_STALE_MS = 60_000;
+const COUNT_QUERY_GC_MS = 5 * 60_000;
+
 // Safe surface allowlist — must match the two real call sites in
 // supabase/functions/poi-engagements/index.ts.
 const SAFE_SURFACES = ["preview-outreach", "send-outreach"] as const;
