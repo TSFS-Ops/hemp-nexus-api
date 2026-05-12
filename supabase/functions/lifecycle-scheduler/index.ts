@@ -561,6 +561,7 @@ Deno.serve(async (req: Request) => {
       .eq("engagement_status", "late_acceptance_pending_initiator_reconfirmation")
       .is("late_acceptance_resolution", null)
       .lt("reconfirmation_window_expires_at", nowIso)
+      .eq("is_demo", false) // Phase 1 demo isolation
       .limit(500);
 
     let lateAcceptanceSweptCount = 0;
