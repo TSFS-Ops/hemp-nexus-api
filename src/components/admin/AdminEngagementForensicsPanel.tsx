@@ -39,6 +39,8 @@ interface EngagementRow {
   engagement_status: EngagementStatus;
   created_at: string;
   responded_at: string | null;
+  /** Phase 1 demo isolation flag. */
+  is_demo?: boolean | null;
 }
 
 export function AdminEngagementForensicsPanel() {
