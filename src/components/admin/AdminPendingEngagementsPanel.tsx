@@ -1545,6 +1545,16 @@ export function AdminPendingEngagementsPanel() {
                         <TableRow data-is-demo={e.is_demo === true ? "true" : "false"} className={e.is_demo === true ? "bg-amber-50/40" : ""}>
                         <TableCell>
                           <div className="text-sm">
+                            {e.is_demo === true && (
+                              <Badge
+                                variant="outline"
+                                className="mb-1 text-[10px] font-bold uppercase tracking-wide bg-amber-100 border-amber-400 text-amber-900"
+                                data-testid="demo-badge"
+                                title="Phase 1 demo isolation: this is a staged fixture row. It is excluded from lifecycle, SLA, billing and notification dispatch."
+                              >
+                                DEMO
+                              </Badge>
+                            )}
                             <p className="font-medium">{m?.commodity ?? "-"}</p>
                             <p className="text-xs text-muted-foreground">
                               {m?.quantity_amount} {m?.quantity_unit} · {m?.price_currency} {m?.price_amount?.toLocaleString?.() ?? "-"}
