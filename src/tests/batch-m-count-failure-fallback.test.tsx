@@ -140,14 +140,10 @@ describe("Batch M :: count query failure → heuristic fallback", () => {
     renderPanel();
     await waitFor(() =>
       expect(
-        screen.getByTestId("outreach-blocks-count-text"),
-      ).toBeInTheDocument(),
+        screen.getByTestId("outreach-blocks-count-text").textContent ?? "",
+      ).toMatch(/Showing\s+500\s+outreach-blocked event\(s\)/),
     );
-    // No "of Y" precise wording — falls back to heuristic phrasing.
     const countText = screen.getByTestId("outreach-blocks-count-text");
-    expect(countText.textContent ?? "").toMatch(
-      /Showing\s+500\s+outreach-blocked event\(s\)/,
-    );
     expect(countText.textContent ?? "").not.toMatch(
       /of\s+\d[\d,]*\s+matching outreach-blocked events/,
     );
