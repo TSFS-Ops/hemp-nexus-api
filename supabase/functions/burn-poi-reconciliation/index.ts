@@ -333,7 +333,63 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── 4. Optional: open admin_risk_items per drift case (idempotent via title) ─
+  // ── 4. MINTED_WITHOUT_ENGAGEMENT (AUD-003 Fix 3) ───────────────────
+  // A minted match (state in minted set OR with a declare_intent burn in window)
+  // must have at least one current poi_engagements row. Engagement self-heal
+  // happens opportunistically on user action; this probe is the after-the-fact
+  // safety net so admin sees orphans even if the user never returns.
+  const mintedWithoutEngagement: Array<Record<string, unknown>> = [];
+  // Union the minted match ids with any match ids referenced by a burn in window
+  // (covers cases where state didn't move but a burn happened, e.g. partial mint).
+  const candidateMatchIds = new Set<string>(mintedMatchIds);
+  for (const id of burnMatchIdSet) candidateMatchIds.add(id);
+
+  if (candidateMatchIds.size > 0) {
+    const ids = Array.from(candidateMatchIds);
+    const { data: engagementHits, error: engErr } = await admin
+      .from("poi_engagements")
+      .select("match_id, engagement_status")
+      .in("match_id", ids);
+
+    if (engErr) {
+      console.error("[burn-poi-reconciliation] engagement fetch failed:", engErr);
+      throw new Error(`ENGAGEMENT_FETCH_FAILED: ${engErr.message}`);
+    }
+
+    const matchesWithCurrentEng = new Set<string>();
+    for (const e of engagementHits ?? []) {
+      const row = e as { match_id: string | null; engagement_status: string | null };
+      if (!row.match_id) continue;
+      const s = (row.engagement_status ?? "").toString();
+      if (s === "expired" || s === "declined" || s === "cancelled_email_change") continue;
+      matchesWithCurrentEng.add(row.match_id);
+    }
+
+    // Build a quick lookup for match metadata (org_id, state) using whichever
+    // source we already have in memory.
+    const metaByMatchId = new Map<string, { org_id?: string | null; state?: string | null }>();
+    for (const m of mintedMatches ?? []) {
+      const row = m as { id: string; org_id: string; state: string };
+      metaByMatchId.set(row.id, { org_id: row.org_id, state: row.state });
+    }
+    for (const b of burnRows ?? []) {
+      const row = b as { request_id: string | null; org_id: string };
+      const id = (row.request_id ?? "").toString().trim();
+      if (id && !metaByMatchId.has(id)) metaByMatchId.set(id, { org_id: row.org_id, state: null });
+    }
+
+    for (const id of ids) {
+      if (matchesWithCurrentEng.has(id)) continue;
+      const meta = metaByMatchId.get(id) ?? {};
+      mintedWithoutEngagement.push({
+        match_id: id,
+        org_id: meta.org_id ?? null,
+        state: meta.state ?? null,
+      });
+    }
+  }
+
+  // ── 5. Optional: open admin_risk_items per drift case (idempotent via title) ─
   // admin_risk_items has no external_ref column, so we use a stable title
   // prefix and skip insertion when an open row with the same title exists.
   let openedRiskItems = 0;
@@ -371,9 +427,14 @@ Deno.serve(async (req) => {
       const description = `Match ${drift.match_id} (state=${drift.state}, status=${drift.status}) for org ${drift.org_id} is in a minted state but has no ledger_events.poi.minted row. State-vs-ledger drift; manual investigation required. No silent repair performed.`;
       try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
     }
+    for (const drift of mintedWithoutEngagement) {
+      const title = `Reconciliation: minted match without engagement [match ${String(drift.match_id).slice(0, 8)}]`;
+      const description = `Match ${drift.match_id} (state=${drift.state ?? 'unknown'}) for org ${drift.org_id ?? 'unknown'} has been minted/burned but has no current poi_engagements row. Engagement self-heal did not run; manual investigation required. No silent repair performed.`;
+      try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
+    }
   }
 
-  // ── 5. Audit row ───────────────────────────────────────────────────
+  // ── 6. Audit row ───────────────────────────────────────────────────
   try {
     await admin.from("admin_audit_logs").insert({
       admin_user_id: null,
@@ -386,6 +447,7 @@ Deno.serve(async (req) => {
         burns_without_poi: burnsWithoutPoi.length,
         pois_without_burn: poisWithoutBurn.length,
         state_without_ledger: stateWithoutLedger.length,
+        minted_without_engagement: mintedWithoutEngagement.length,
         opened_risk_items: openedRiskItems,
         source: "burn-poi-reconciliation",
       },
@@ -411,6 +473,20 @@ Deno.serve(async (req) => {
       count: stateWithoutLedger.length,
       samples: stateWithoutLedger.slice(0, SAMPLE_CAP),
     },
+    minted_without_engagement: {
+      count: mintedWithoutEngagement.length,
+      samples: mintedWithoutEngagement.slice(0, SAMPLE_CAP),
+    },
     opened_risk_items: openedRiskItems,
   });
+  } catch (err) {
+    // AUD-003 Fix 2: outer catch — surface reconciliation failure to admin.
+    console.error("[burn-poi-reconciliation] run failed:", err);
+    await recordSelfIncident(admin, runId, err);
+    return json(500, {
+      error: "RECONCILIATION_FAILED",
+      run_id: runId,
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
 });
