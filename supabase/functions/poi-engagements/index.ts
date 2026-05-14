@@ -774,6 +774,21 @@ Deno.serve(async (req) => {
 
       const recipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
       if (!recipient) {
+        // ── NOT-001 / NOT-006: blocked send-outreach with no recipient.
+        // Record canonical skip audit (idempotent per target/reason/day)
+        // before throwing so the silent block is observable.
+        await recordNotificationSkipped(supabase, {
+          reason: "no_recipient",
+          sourceFunction: "poi-engagements/send-outreach",
+          targetId: engagementId,
+          channel: "email",
+          orgId: eng.org_id ?? null,
+          extra: {
+            match_id: eng.match_id,
+            engagement_id: engagementId,
+            request_id: requestId,
+          },
+        });
         throw new ApiException("VALIDATION_ERROR", "No recipient email available", 400);
       }
 
