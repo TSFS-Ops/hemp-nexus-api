@@ -36,7 +36,10 @@ const BANNED_TERMS = [
   [/\bFinalise[d]?\s+Commitment\b/gi, "Finalised Commitment", "Signed Deal"],
   [/\bCompliance Match\b/gi, "Compliance Match", "Izenzo"],
   [/\bBid\s*\/\s*Offer\b/gi, "Bid/Offer", "Trade Request"],
-  [/\b(?:demo|illustrative|mock-up)\b/gi, "demo/illustrative/mock-up", "(remove or replace)"],
+  // Note: "demo" / "test mode" / "preview" are legitimate product features
+  // (see Test-Mode Bypass and _demo/ fixtures). Do not ban them globally —
+  // narrow rules can be added if a specific marketing surface starts
+  // claiming demo data is real.
   [/\bOrganization\b/g, "Organization (US spelling)", "Organisation"],
   [/\bFinalize\b/g, "Finalize (US spelling)", "Finalise"],
   [/\bLicense\b/g, "License (US spelling)", "Licence (noun)"],
