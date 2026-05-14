@@ -3,7 +3,7 @@ import { DocEyebrow, DocH1, DocH2, DocH3, DocLede, DocP, InlineCode, CodePanel, 
 
 const ERROR_SHAPE = `{
   "code":      "ENGAGEMENT_PENDING",
-  "message":   "Counterparty has not yet acknowledged this match.",
+  "message":   "Counterparty has not yet acknowledged this match. The engagement hold-point is still in effect.",
   "requestId": "req_01HX7Z9K3M2P4Q6R8T0V2X4Y6A",
   "details":   { "matchId": "match_01HX7Z..." }
 }`;
@@ -59,7 +59,7 @@ export default function DocsErrors() {
             { name: "STATE_TRANSITION_INVALID", type: "409", desc: "Tried to advance a match to a state it can't reach from its current state." },
             { name: "TRADE_APPROVAL_MISSING",   type: "422", desc: "Counterparty has no active trade approval. Issue one or renew." },
             { name: "WAD_GATE_FAILURE",         type: "422", desc: "One or more WaD hard-gates failed. details.failedGates lists each." },
-            { name: "INSUFFICIENT_TOKENS",      type: "422", desc: "Credit balance below the minimum required for this action. (Code name preserved for API contract stability.)" },
+            { name: "INSUFFICIENT_TOKENS",      type: "422", desc: "Credit balance below the minimum required for this action. Top up at /desk/settings/balance. (Wire code remains INSUFFICIENT_TOKENS for API contract stability; user-facing wording is Credits.)" },
             { name: "RATE_LIMIT_EXCEEDED",      type: "429", desc: "Too many requests. The Retry-After header tells you when to try again." },
           ]}
         />

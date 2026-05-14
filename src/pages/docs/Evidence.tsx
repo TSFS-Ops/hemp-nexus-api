@@ -75,21 +75,22 @@ export default function DocsEvidence() {
 
         <DocH2 id="wad">WaD certificate</DocH2>
         <DocP>
-          Settlement runs through the Without-a-Doubt (WaD) issuance engine, which enforces nine
+          Settlement runs through the Without a Doubt (WaD) issuance engine, which enforces ten
           deterministic hard-gates. Every gate must pass before a match can complete; the
           evidence pack records the result of each.
         </DocP>
         <ParamTable
           rows={[
-            { name: "1. POI_STATE",            type: "gate", desc: "Match is in committed state with both parties' Proof of Intent signed." },
-            { name: "2. ENTITY_STATUS",        type: "gate", desc: "Both buyer and seller entities are ACTIVE and unblocked." },
-            { name: "3. UBO_COMPLETENESS",     type: "gate", desc: "Verified beneficial ownership ≥ 100% for both parties." },
-            { name: "4. AUTHORITY_TO_BIND",    type: "gate", desc: "An active, verified ATB record exists for the signing party on each side." },
+            { name: "1. POI_STATE",              type: "gate", desc: "Match is in committed state with both parties' Proof of Intent recorded." },
+            { name: "2. ENTITY_STATUS",          type: "gate", desc: "Both buyer and seller entities are VERIFIED and unblocked." },
+            { name: "3. UBO_COMPLETENESS",       type: "gate", desc: "Verified beneficial ownership ≥ 100% for both parties." },
+            { name: "4. AUTHORITY_TO_BIND",      type: "gate", desc: "An active, verified ATB record exists for the signing party on each side." },
             { name: "5. JURISDICTION_SELECTION", type: "gate", desc: "Origin and destination jurisdictions resolved and not on the embargo register." },
-            { name: "6. GOVERNANCE_DOCUMENTS", type: "gate", desc: "All mandatory governance documents validated and on file." },
-            { name: "7. COMPLIANCE_CLEAR",     type: "gate", desc: "Zero open compliance cases against either party." },
-            { name: "8. TOKEN_BALANCE",        type: "gate", desc: "Sufficient credit balance to cover the settlement burn. (Gate identifier preserved for API contract stability.)" },
-            { name: "9. DISCOVERY_ELIGIBILITY",type: "gate", desc: "Both parties remain discoverable to each other (no opt-outs or blocks since match creation)." },
+            { name: "6. GOVERNANCE_DOCUMENTS",   type: "gate", desc: "All mandatory governance documents validated and on file." },
+            { name: "7. COMPLIANCE_CLEAR",       type: "gate", desc: "Zero open compliance cases against either party." },
+            { name: "8. CREDIT_BALANCE",         type: "gate", desc: "Sufficient credit balance to cover the settlement burn. (Wire identifier remains INSUFFICIENT_TOKENS for API contract stability.)" },
+            { name: "9. SCREENING_RECENTNESS",   type: "gate", desc: "Sanctions / PEP screening for both parties is within the 30-day freshness window." },
+            { name: "10. WEBHOOK_CONNECTIVITY",  type: "gate", desc: "Neither party's primary webhook endpoint is auto-disabled. Sealing requires a live notification channel on each side." },
           ]}
         />
         <Callout variant="warning">

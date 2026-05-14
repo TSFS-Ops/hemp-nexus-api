@@ -74,14 +74,14 @@ export default function DocsWebhooks() {
           rows={[
             { name: "signal.created",            type: "event", desc: "A buyer or seller signal was created." },
             { name: "option.selected",           type: "event", desc: "A counterparty selected one of your options." },
-            { name: "match.created",             type: "event", desc: "A bilateral match was recorded." },
-            { name: "match.counterparty_bound",  type: "event", desc: "Counterparty engagement accepted; hold-point cleared." },
-            { name: "counterparty.sighted",      type: "event", desc: "Counterparty has acknowledged a match they are party to." },
-            { name: "poi.generated",             type: "event", desc: "Proof of Intent has been issued for a match." },
-            { name: "intent.confirmed",          type: "event", desc: "Both parties' intent confirmed; collapse ledger sealed." },
-            { name: "transaction.committed",     type: "event", desc: "Match advanced to committed; terms now immutable." },
-            { name: "transaction.completed",     type: "event", desc: "WaD certificate issued; evidence pack available." },
-            { name: "unilateral.stale",          type: "event", desc: "A unilateral signal expired without engagement." },
+            { name: "match.created",             type: "event", desc: "A bilateral match was recorded against a Trade Request." },
+            { name: "engagement.accepted",       type: "event", desc: "Counterparty accepted the engagement; hold-point cleared and POI mint is now reachable." },
+            { name: "counterparty.sighted",      type: "event", desc: "Counterparty has acknowledged a match they are party to (single-side)." },
+            { name: "poi.generated",             type: "event", desc: "Proof of Intent has been minted for a match." },
+            { name: "intent.confirmed",          type: "event", desc: "Both parties' Proof of Intent recorded; collapse ledger entry sealed." },
+            { name: "transaction.committed",     type: "event", desc: "Match advanced to committed; terms are now immutable." },
+            { name: "wad.sealed",                type: "event", desc: "Without a Doubt certificate sealed; evidence pack available for download." },
+            { name: "dispute.opened",            type: "event", desc: "A dispute was raised against a match; commercial mutations are blocked until resolved." },
           ]}
         />
 
