@@ -33,6 +33,7 @@ import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { fetchEngagementReadModelByMatchId } from "../_shared/engagement-read-model.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
+import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
