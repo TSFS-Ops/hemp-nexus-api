@@ -40,7 +40,7 @@ Two organisations are created to represent the trading parties.
 | Status | active | active |
 
 **What happens behind the scenes**:
-- Each org gets a `token_balances` record initialised at 1,000 tokens (via `initialize_org_token_balance` trigger)
+- Each org gets a `token_balances` record initialised at 1,000 credits (USD-native; 1 credit = $1.00 USD) via the `initialize_org_token_balance` trigger
 - Org IDs are generated (UUIDs)
 
 **API**: `POST /functions/v1/orgs`
@@ -423,7 +423,7 @@ After completing the walkthrough, verify:
 - [ ] Both orgs "Approved to Trade"
 - [ ] Signals created (buy + sell)
 - [ ] Match discovered and confirmed
-- [ ] Intent confirmed (500 tokens burned)
+- [ ] POI minted (credits burned per configured cost; `exempt_burn` for founder/admin accounts)
 - [ ] POI probability ≥ 50.1%
 - [ ] Collapse record exists in append-only ledger
 - [ ] ECDSA signature verified
@@ -432,7 +432,7 @@ After completing the walkthrough, verify:
 - [ ] Both parties attested
 - [ ] Evidence pack exportable
 - [ ] Audit trail complete (15+ events)
-- [ ] Token balance reflects burns
+- [ ] Credit balance reflects burns
 
 ---
 
