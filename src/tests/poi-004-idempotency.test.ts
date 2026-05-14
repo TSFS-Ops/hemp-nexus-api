@@ -94,8 +94,8 @@ describe("POI-004 #1 — concurrent calls, different Idempotency-Keys", () => {
     expect(MATCH_EDGE).toMatch(
       /POI already generated - returning idempotently/,
     );
-    expect(MATCH_EDGE).toMatch(
-      /['intent_declared',\s*'counterparty_sighted',\s*'committed',\s*'completed']\.includes\(currentState\)/,
+    expect(MATCH_EDGE).toContain(
+      "['intent_declared', 'counterparty_sighted', 'committed', 'completed'].includes(currentState)",
     );
   });
 
