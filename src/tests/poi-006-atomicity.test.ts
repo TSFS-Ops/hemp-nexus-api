@@ -178,7 +178,7 @@ describe('POI-006: reconciliation coverage (criterion 9)', () => {
 
   it('reconciliation requires INTERNAL_CRON_KEY, service-role JWT or platform_admin (locked down)', () => {
     expect(RECONCILIATION).toContain('INTERNAL_CRON_KEY');
-    expect(RECONCILIATION).toContain("'platform_admin'");
+    expect(RECONCILIATION).toMatch(/["']platform_admin["']/);
     expect(RECONCILIATION).toMatch(/return json\(401, \{ error: "UNAUTHORIZED" \}\)/);
   });
 });
