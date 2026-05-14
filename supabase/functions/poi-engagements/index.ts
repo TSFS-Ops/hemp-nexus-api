@@ -2536,6 +2536,7 @@ Deno.serve(async (req) => {
       const cached = await lookupIdempotentResponse(idemOpts);
       if (cached) return cachedResponseToHttp(cached, headers);
 
+      const { data: actorProfile } = await supabase
         .from("profiles")
         .select("email, full_name")
         .eq("id", authCtx.userId)
