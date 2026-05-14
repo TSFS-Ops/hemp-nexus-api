@@ -2620,17 +2620,16 @@ Deno.serve(async (req) => {
         `[${requestId}] Initiator ${authCtx.orgId} ${action} on engagement ${engagementId} (role=${isInitiatorOrgAdmin ? "org_admin" : "platform_admin_override"})`,
       );
 
-      return new Response(
-        JSON.stringify({
-          parent_engagement: parentAfter,
-          renewed_engagement: renewedChild,
-          rpc: rpcResult,
-        }),
-        {
-          status: 200,
-          headers: { ...headers, "Content-Type": "application/json" },
-        },
-      );
+      const responseBody = {
+        parent_engagement: parentAfter,
+        renewed_engagement: renewedChild,
+        rpc: rpcResult,
+      };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
     }
 
     // ── POST /poi-engagements/respond/:matchId — Counterparty accepts/declines ──
