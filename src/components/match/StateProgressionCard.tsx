@@ -162,10 +162,10 @@ const CREDITS_PER_ACTION = 1;
  * payload + a `poi.acknowledgements_recorded` audit row.
  */
 const DECLARATION_SENTENCE =
-  "I confirm that I am authorised to submit this Proof of Intention on behalf of the named organisation, and that the information provided is true, accurate, and complete to the best of my knowledge.";
+  "I confirm that I am authorised to submit this Proof of Intent on behalf of the named organisation, and that the information provided is true, accurate, and complete to the best of my knowledge.";
 
 const ATB_SENTENCE =
-  "I confirm I have the authority to bind my organisation to this Proof of Intention.";
+  "I confirm I have the authority to bind my organisation to this Proof of Intent.";
 
 const FALSE_DECLARATION_WARNING =
   "Submitting a false Proof of Intent may result in account suspension, removal from the platform, and referral to the relevant authorities.";

@@ -62,10 +62,21 @@ function scanFile(filePath) {
   ];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const rawLine = lines[i];
+    const line = rawLine;
 
     // Skip allowlisted lines
     if (ALLOWLIST.some((al) => al.test(line))) continue;
+
+    // Skip pure code-comment lines and block-comment bodies — the guard only
+    // cares about user-facing copy, not internal documentation.
+    const trimmed = line.trim();
+    const isCommentLine =
+      trimmed.startsWith("//") ||
+      trimmed.startsWith("/*") ||
+      trimmed.startsWith("*") ||
+      trimmed.startsWith("*/");
+    if (isCommentLine) continue;
 
     for (const [pattern, label, fix] of BANNED_TERMS) {
       pattern.lastIndex = 0;
