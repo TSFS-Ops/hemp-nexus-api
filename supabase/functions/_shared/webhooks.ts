@@ -154,14 +154,22 @@ async function deliverWebhook(
 
 /**
  * Trigger webhooks for a specific event
- * This runs in the background and doesn't block the response
+ * This runs in the background and doesn't block the response.
+ *
+ * `eventIdempotencyKey` (POI-004 stage-2): a stable per-logical-event key
+ * (e.g. `poi.generated:<matchId>`). When supplied, the same event cannot
+ * produce two `webhook_deliveries` rows for the same endpoint, even if the
+ * upstream caller fires twice. Legacy callers that omit it remain
+ * unconstrained.
  */
 export async function triggerWebhooks(
   supabase: SupabaseClient,
   orgId: string,
   event: string,
-  data: Record<string, any>
+  data: Record<string, any>,
+  options?: { eventIdempotencyKey?: string | null }
 ): Promise<void> {
+  const eventIdempotencyKey = options?.eventIdempotencyKey ?? null;
   try {
     // Fetch active webhook endpoints subscribed to this event
     const { data: endpoints, error } = await supabase
@@ -209,12 +217,19 @@ export async function triggerWebhooks(
       }
 
       const result = await deliverWebhook(
-        endpoint.url, 
-        payload, 
+        endpoint.url,
+        payload,
         secret,
         endpoint.id,
-        supabase
+        supabase,
+        eventIdempotencyKey,
       );
+
+      // Idempotent replays must NOT touch the circuit breaker — they did
+      // not represent a new delivery attempt.
+      if (result.idempotent) {
+        return result;
+      }
 
       // Circuit breaker: atomic success/failure tracking
       if (result.success) {
