@@ -966,12 +966,16 @@ Deno.serve(async (req) => {
         console.log(`[${requestId}] POI engagement record created (type=${counterpartyType}, counterpartyOrgId=${counterpartyOrgId || 'null'})`);
       }
 
-      // Trigger webhooks
+      // Trigger webhooks. POI-004 stage-2: stable per-match idempotency
+      // key prevents the same poi.generated event from creating duplicate
+      // webhook_deliveries rows for the same endpoint, even on retry or
+      // a future refactor that re-fires the IIFE.
       triggerWebhooks(supabase, match.org_id, "poi.generated", {
         matchId, hash: match.hash, confirmedAt: now, committedAt: now,
         commodity: match.commodity, quantity: match.quantity_amount,
         note: "POI generated - no payment or legal obligation"
-      }).catch(err => console.error(`Webhook error:`, err));
+      }, { eventIdempotencyKey: `poi.generated:${matchId}` })
+        .catch(err => console.error(`Webhook error:`, err));
 
       // ── POI Notification Routing (fire-and-forget) ──
       // Route A: Unilateral (no counterparty name at all) → notify admins
