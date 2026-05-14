@@ -769,6 +769,28 @@ Deno.serve(async (req) => {
             console.warn(`[${requestId}] SOFT_ROUTE audit write failed (non-fatal):`, auditErr);
           }
 
+          // ── NOT-001 / NOT-006: same skip-audit policy as the
+          // counterparty-gate branch. Only emit when there is no usable
+          // recipient email; the helper dedupes per target/reason/day.
+          if (!counterpartyEmail) {
+            await recordNotificationSkipped(supabase, {
+              reason: "no_recipient",
+              sourceFunction: "match.soft_route",
+              targetId: (engagementRow?.id as string | undefined) ?? null,
+              channel: "email",
+              orgId: match.org_id,
+              extra: {
+                gate: "eligibility_soft_route",
+                match_id: matchId,
+                engagement_id: engagementRow?.id ?? null,
+                missing_buyer_id: softRoute.missingBuyerId,
+                missing_seller_id: softRoute.missingSellerId,
+                counterparty_email_supplied: false,
+                request_id: requestId,
+              },
+            });
+          }
+
           const responseBody = {
             soft_route: {
               status: "queued",
