@@ -96,22 +96,31 @@ export async function emitRevenueNotification(
 
   // Append audit row (best-effort — never throws).
   try {
-    await supabase.from("revenue_notification_audit").insert({
-      event_type: args.eventType,
-      reference_id: args.referenceId ?? null,
-      idempotency_key: args.idempotencyKey,
-      recipient_email: recipient,
-      org_id: args.orgId ?? null,
-      org_name: args.orgName ?? null,
-      status,
-      error_message: errorMessage,
-      details: {
-        headline: args.headline ?? null,
-        consoleUrl: args.consoleUrl ?? null,
-        contactEmail: args.contactEmail ?? null,
-        payload: args.details ?? {},
-      },
-    });
+    const { error: auditError } = await supabase
+      .from("revenue_notification_audit")
+      .insert({
+        event_type: args.eventType,
+        reference_id: args.referenceId ?? null,
+        idempotency_key: args.idempotencyKey,
+        recipient_email: recipient,
+        org_id: args.orgId ?? null,
+        org_name: args.orgName ?? null,
+        status,
+        error_message: errorMessage,
+        details: {
+          headline: args.headline ?? null,
+          consoleUrl: args.consoleUrl ?? null,
+          contactEmail: args.contactEmail ?? null,
+          payload: args.details ?? {},
+        },
+      });
+    // Unique-violation (23505) is expected on a true idempotent replay race
+    // — the upstream lookup missed because both calls observed an empty
+    // table. Treat as a no-op.
+    if (auditError && (auditError as any).code !== "23505") {
+      console.error("[revenue-notify] audit insert failed", auditError);
+    }
+
   } catch (auditErr) {
     console.error("[revenue-notify] audit insert failed", auditErr);
   }
