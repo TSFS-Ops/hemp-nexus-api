@@ -16,6 +16,7 @@ import { clampSubject } from "../_shared/email-subject.ts";
 import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
 import { dispatchD4cInitiatorAlert } from "../_shared/batch-d-initiator-notify.ts";
 import { evaluateCounterpartyEmailBinding } from "../_shared/binding-resolver.ts";
+import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
 // Batch A — single source of truth for contact-completeness gating.
 // Mirror of `src/lib/contact-completeness.ts`. Both files MUST stay in
 // lockstep; the regression tests pin both surfaces.
