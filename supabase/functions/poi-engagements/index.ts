@@ -845,6 +845,21 @@ Deno.serve(async (req) => {
           reason: "recipient_suppressed",
           details: { engagement_id: engagementId, recipient },
         });
+        // ── NOT-001 / NOT-006: canonical skip audit for suppressed
+        // recipient. Idempotent per target/reason/day via helper dedupe.
+        await recordNotificationSkipped(supabase, {
+          reason: "recipient_suppressed",
+          sourceFunction: "poi-engagements/send-outreach",
+          targetId: engagementId,
+          recipientEmail: recipient,
+          channel: "email",
+          orgId: eng.org_id ?? null,
+          extra: {
+            match_id: eng.match_id,
+            engagement_id: engagementId,
+            request_id: requestId,
+          },
+        });
         throw new ApiException(
           "RECIPIENT_SUPPRESSED",
           `Cannot send: ${recipient} is on the suppression list (previously bounced or unsubscribed). Use 'Mark contacted' to log a non-email outreach instead.`,
