@@ -142,9 +142,19 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
 
   const callRoute = async (action: Exclude<PendingAction, null>) => {
     setSubmitting(action);
+    // Reuse the per-attempt key so a rapid double-submit (e.g. dialog
+    // double-tap) replays the same cached server response instead of
+    // running the RPC again. A fresh key is minted on the next dialog open.
+    const key =
+      idempotencyKeys[action] ??
+      generateIdempotencyKey(`reconfirm_${action}`);
+    if (idempotencyKeys[action] !== key) {
+      setIdempotencyKeys((prev) => ({ ...prev, [action]: key }));
+    }
     try {
       await fetchEdgeFunction(`poi-engagements/${engagement.id}/${action}`, {
         method: "POST",
+        headers: { "Idempotency-Key": key },
         label:
           action === "reconfirm"
             ? "reconfirm the late acceptance"
@@ -162,6 +172,10 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
         );
       }
       onResolved?.();
+      // Clear the per-attempt key on success so that any subsequent
+      // user-initiated action (e.g. on a future renewed row) gets a fresh
+      // key rather than accidentally replaying this cached response.
+      setIdempotencyKeys({ reconfirm: null, "decline-late-acceptance": null });
     } catch (err) {
       const humanised = humaniseEngagementError(err);
       toast.error(humanised.headline, {
