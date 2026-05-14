@@ -112,7 +112,14 @@ function MatchDetailsContent() {
     (engagementModel?.latest_historical_engagement ?? null)) as unknown as
     | (PendingEngagementRow & { engagement_status: EngagementStatus; counterparty_type: string })
     | null;
-  const engagementStatus: EngagementStatus = (engagementData?.engagement_status as EngagementStatus) || null;
+  // Batch D Test 7 fix: AcceptEngagementCard needs to see `expired` so it
+  // can render the "Accept (late)" affordance, but the read-model resolver
+  // classifies expired/declined as *historical* and zeroes out
+  // `current_engagement`. Drive the gate from `displayEngagement` (current
+  // ∪ latest_historical) — the card itself enforces the respondable
+  // status whitelist (`notification_sent` | `contacted` | `expired`) so
+  // accepted/declined/cancelled never re-surface an action button.
+  const engagementStatus: EngagementStatus = (displayEngagement?.engagement_status as EngagementStatus) || null;
 
   const matchRole = match ? getMatchRole(userOrgId, match as any) : null;
 
