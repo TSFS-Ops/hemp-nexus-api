@@ -2510,6 +2510,32 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Batch D Test 6 — duplicate-click / replay protection. Required header.
+      // The shared idempotency helper caches the successful 200 response keyed
+      // on (org_id, endpoint, idempotency_key). A second click using the same
+      // key replays the same body with X-Idempotent-Replay: true rather than
+      // running the RPC again, so no second renewed engagement / audit row
+      // can be created. The advisory lock + status precondition inside
+      // atomic_reconfirm_late_acceptance / atomic_decline_late_acceptance
+      // remain the durable backstop.
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          "Idempotency-Key header is required",
+          400,
+        );
+      }
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `POST /poi-engagements/${engagementId}/${action}`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
       const { data: actorProfile } = await supabase
         .from("profiles")
         .select("email, full_name")
@@ -2594,17 +2620,16 @@ Deno.serve(async (req) => {
         `[${requestId}] Initiator ${authCtx.orgId} ${action} on engagement ${engagementId} (role=${isInitiatorOrgAdmin ? "org_admin" : "platform_admin_override"})`,
       );
 
-      return new Response(
-        JSON.stringify({
-          parent_engagement: parentAfter,
-          renewed_engagement: renewedChild,
-          rpc: rpcResult,
-        }),
-        {
-          status: 200,
-          headers: { ...headers, "Content-Type": "application/json" },
-        },
-      );
+      const responseBody = {
+        parent_engagement: parentAfter,
+        renewed_engagement: renewedChild,
+        rpc: rpcResult,
+      };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
     }
 
     // ── POST /poi-engagements/respond/:matchId — Counterparty accepts/declines ──

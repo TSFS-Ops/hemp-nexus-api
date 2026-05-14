@@ -52,6 +52,7 @@ const DEMO_MATCH_HASHES = [
   "DEMO-LATE-ACCEPT-004",
   "DEMO-LATE-RECONFIRM-005",
   "DEMO-CLEAN-006",
+  "DEMO-RECONFIRM-DUPLICATE-007",
 ];
 
 function json(body: unknown, status = 200): Response {

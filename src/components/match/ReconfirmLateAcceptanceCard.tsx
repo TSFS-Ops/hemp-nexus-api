@@ -49,6 +49,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserOrg } from "@/hooks/use-user-org";
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
+import { generateIdempotencyKey } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { humaniseEngagementError } from "@/lib/humanise-engagement-error";
 import { getEngagementWording } from "@/lib/engagement-wording";
@@ -94,7 +95,22 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
   const viewerOrgId = useUserOrg();
   const [pending, setPending] = useState<PendingAction>(null);
   const [submitting, setSubmitting] = useState<PendingAction>(null);
+  // One stable Idempotency-Key per user-initiated attempt (per dialog open).
+  // Reused across rapid double-taps of the dialog confirm button so the
+  // server replays the cached 200 instead of re-running the RPC. Cleared
+  // when the dialog closes so the next intentional click gets a fresh key.
+  const [idempotencyKeys, setIdempotencyKeys] = useState<{
+    reconfirm: string | null;
+    "decline-late-acceptance": string | null;
+  }>({ reconfirm: null, "decline-late-acceptance": null });
 
+  const openPending = (action: Exclude<PendingAction, null>) => {
+    setIdempotencyKeys((prev) => ({
+      ...prev,
+      [action]: prev[action] ?? generateIdempotencyKey(`reconfirm_${action}`),
+    }));
+    setPending(action);
+  };
   // Gate 1: engagement must be in the late-acceptance reconfirmation window.
   if (
     !engagement ||
@@ -126,9 +142,19 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
 
   const callRoute = async (action: Exclude<PendingAction, null>) => {
     setSubmitting(action);
+    // Reuse the per-attempt key so a rapid double-submit (e.g. dialog
+    // double-tap) replays the same cached server response instead of
+    // running the RPC again. A fresh key is minted on the next dialog open.
+    const key =
+      idempotencyKeys[action] ??
+      generateIdempotencyKey(`reconfirm_${action}`);
+    if (idempotencyKeys[action] !== key) {
+      setIdempotencyKeys((prev) => ({ ...prev, [action]: key }));
+    }
     try {
       await fetchEdgeFunction(`poi-engagements/${engagement.id}/${action}`, {
         method: "POST",
+        headers: { "Idempotency-Key": key },
         label:
           action === "reconfirm"
             ? "reconfirm the late acceptance"
@@ -146,6 +172,10 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
         );
       }
       onResolved?.();
+      // Clear the per-attempt key on success so that any subsequent
+      // user-initiated action (e.g. on a future renewed row) gets a fresh
+      // key rather than accidentally replaying this cached response.
+      setIdempotencyKeys({ reconfirm: null, "decline-late-acceptance": null });
     } catch (err) {
       const humanised = humaniseEngagementError(err);
       toast.error(humanised.headline, {
@@ -250,7 +280,7 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
 
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
-              onClick={() => setPending("reconfirm")}
+              onClick={() => openPending("reconfirm")}
               disabled={isBusy}
               data-testid="reconfirm-late-acceptance-button"
               className="flex-1 sm:flex-none"
@@ -264,7 +294,7 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
             </Button>
             <Button
               variant="outline"
-              onClick={() => setPending("decline-late-acceptance")}
+              onClick={() => openPending("decline-late-acceptance")}
               disabled={isBusy}
               data-testid="decline-late-acceptance-button"
               className="flex-1 sm:flex-none text-destructive border-destructive/30 hover:bg-destructive/5"

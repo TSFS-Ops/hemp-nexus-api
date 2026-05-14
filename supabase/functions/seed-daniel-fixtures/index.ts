@@ -85,6 +85,11 @@ const FIXTURES = [
     purpose: "Initiator reconfirm/decline late acceptance",
   },
   { id: "DEMO-CLEAN-006", purpose: "Control row — ordinary engagement" },
+  {
+    id: "DEMO-RECONFIRM-DUPLICATE-007",
+    purpose:
+      "Initiator reconfirm — duplicate-click / Idempotency-Key replay test",
+  },
 ];
 
 function json(body: unknown, status = 200): Response {
@@ -582,6 +587,47 @@ Deno.serve(async (req) => {
         operational_state: null,
         click: "HQ → Engagements → toggle 'Show DEMO rows' → confirm row appears alongside others",
         route: "/hq/engagements",
+      });
+    }
+
+    // G. DEMO-RECONFIRM-DUPLICATE-007 — fresh late-acceptance reconfirmation
+    //    row dedicated to Test 6 (duplicate-click / Idempotency-Key replay).
+    //    Same shape as fixture E but a separate match so Test 5 consumption
+    //    of fixture E does not contaminate Test 6.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-RECONFIRM-DUPLICATE-007",
+        initiatorOrgId,
+        counterpartyOrgId,
+      );
+      const expiredAt = iso(now - 2 * day);
+      const recordedAt = iso(now - 1 * day);
+      const windowExpires = iso(now + 6 * day);
+      const eng = await ensureEngagement(admin, {
+        fixture_id: "DEMO-RECONFIRM-DUPLICATE-007",
+        match_id: matchId,
+        org_id: initiatorOrgId,
+        counterparty_org_id: counterpartyOrgId,
+        counterparty_email: ACCOUNTS[2].email,
+        engagement_status: "late_acceptance_pending_initiator_reconfirmation",
+        operational_state: null,
+        original_expired_at: expiredAt,
+        late_acceptance_recorded_at: recordedAt,
+        reconfirmation_window_expires_at: windowExpires,
+        expires_at: windowExpires,
+      });
+      results.push({
+        fixture: "DEMO-RECONFIRM-DUPLICATE-007",
+        purpose:
+          "Initiator reconfirm — duplicate-click / Idempotency-Key replay test",
+        match_id: matchId,
+        engagement_id: eng.id,
+        engagement_status: "late_acceptance_pending_initiator_reconfirmation",
+        operational_state: null,
+        click:
+          "Login as daniel-initiator → Match Details → 'Reconfirm and renew engagement' (then double-click / refresh+retry to verify duplicate-safe replay)",
+        route: `/desk/match/${matchId}`,
       });
     }
 
