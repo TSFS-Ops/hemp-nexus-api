@@ -292,7 +292,30 @@ async function ensureEngagement(
     .eq("match_id", shape.match_id)
     .eq("is_demo", true)
     .maybeSingle();
-  if (existing) return { id: existing.id, created: false };
+  if (existing) {
+    // Self-heal: keep status/expires_at consistent with the fixture
+    // contract on every re-seed. Without this, fixtures whose contract
+    // changed (e.g. DEMO-LATE-ACCEPT-004 needing expires_at < now())
+    // stay stuck in their old shape on already-seeded environments.
+    const update: Record<string, unknown> = {
+      engagement_status: shape.engagement_status,
+      operational_state: shape.operational_state ?? null,
+      original_expired_at: shape.original_expired_at ?? null,
+      late_acceptance_recorded_at: shape.late_acceptance_recorded_at ?? null,
+      reconfirmation_window_expires_at: shape.reconfirmation_window_expires_at ?? null,
+    };
+    if (shape.expires_at) update.expires_at = shape.expires_at;
+    const { error: updErr } = await admin
+      .from("poi_engagements")
+      .update(update)
+      .eq("id", existing.id);
+    if (updErr) {
+      throw new Error(
+        `engagement self-heal failed (${shape.fixture_id}): ${updErr.message}`,
+      );
+    }
+    return { id: existing.id, created: false };
+  }
 
   const insert: Record<string, unknown> = {
     match_id: shape.match_id,
