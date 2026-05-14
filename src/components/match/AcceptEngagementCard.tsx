@@ -254,7 +254,11 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingAction === "accepted" ? "Accept this trade?" : "Decline this trade?"}
+              {pendingAction === "accepted"
+                ? isExpired
+                  ? "Accept this trade after expiry?"
+                  : "Accept this trade?"
+                : "Decline this trade?"}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
@@ -266,7 +270,9 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
                       <strong>{match.commodity}</strong>.
                     </p>
                     <p className="text-sm">
-                      The trade will progress and both parties can negotiate terms.
+                      {isExpired
+                        ? "Because this engagement has already expired, your acceptance will not progress the deal immediately. It will be sent to the initiator for reconfirmation, and they have a limited window to confirm or decline."
+                        : "The trade will progress and both parties can negotiate terms."}
                     </p>
                   </>
                 ) : (
