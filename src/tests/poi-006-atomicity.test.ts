@@ -137,16 +137,14 @@ describe('POI-006: edge function — post-commit failures are non-fatal (criteri
   });
 
   it('post-commit poi.generated audit insert no longer throws AUDIT_LOG_ERROR', () => {
-    // The poi.generated post-commit insert must not raise the legacy
-    // AUDIT_LOG_ERROR. (Other unrelated branches in the file may still use it
-    // for non-POI-006 paths, so we scope by line context.)
-    expect(MATCH_INDEX).not.toMatch(
-      /POI-006: secondary poi\.generated audit[\s\S]*?AUDIT_LOG_ERROR/,
-    );
-    // It must be wrapped in a try/catch that only logs.
-    expect(MATCH_INDEX).toMatch(
-      /POI-006: secondary poi\.generated audit insert failed \(non-fatal\)/,
-    );
+    // Locate the POI-006 secondary-audit catch block and verify it does NOT
+    // throw (only logs). We match a bounded window after the marker comment.
+    const marker = 'POI-006: secondary poi.generated audit insert failed (non-fatal)';
+    const idx = MATCH_INDEX.indexOf(marker);
+    expect(idx).toBeGreaterThan(0);
+    const window = MATCH_INDEX.slice(idx, idx + 400);
+    expect(window).not.toMatch(/throw\s+new\s+ApiException/);
+    expect(window).not.toMatch(/AUDIT_LOG_ERROR/);
   });
 
   it('recordMatchEvent failure is logged but does not throw', () => {
