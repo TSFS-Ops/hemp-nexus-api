@@ -280,7 +280,7 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
 
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
-              onClick={() => setPending("reconfirm")}
+              onClick={() => openPending("reconfirm")}
               disabled={isBusy}
               data-testid="reconfirm-late-acceptance-button"
               className="flex-1 sm:flex-none"
@@ -294,7 +294,7 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
             </Button>
             <Button
               variant="outline"
-              onClick={() => setPending("decline-late-acceptance")}
+              onClick={() => openPending("decline-late-acceptance")}
               disabled={isBusy}
               data-testid="decline-late-acceptance-button"
               className="flex-1 sm:flex-none text-destructive border-destructive/30 hover:bg-destructive/5"
