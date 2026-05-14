@@ -166,6 +166,8 @@ Deno.serve(async (req) => {
   const runId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
 
+  try {
+
   // ── 1. BURN_WITHOUT_POI ────────────────────────────────────────────
   // Pull burn rows tagged `action:declare_intent` in window.
   // request_id holds the match_id (per atomic_generate_poi_v2 contract).
