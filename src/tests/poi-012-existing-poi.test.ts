@@ -182,14 +182,12 @@ describe('POI-012 — existing POI idempotency + legacy drift hardening', () => 
 
     it('does not render the Generate POI CTA outside the discovery state', () => {
       const src = readFileSync(path, 'utf8');
-      // Either the CTA is gated to currentState === 'discovery' or it is hidden
-      // by an isDiscovery / canGeneratePoi flag derived from match state.
-      const looksGated =
-        /currentState\s*===\s*'discovery'/.test(src) ||
-        /state\s*===\s*'discovery'/.test(src) ||
-        /canGeneratePoi/.test(src) ||
-        /isDiscovery/.test(src);
-      expect(looksGated).toBe(true);
+      // CTA gating: isPoiAction is derived from actionPath === "generate-poi",
+      // which is itself derived from MatchState.getNextState(currentState).
+      // Once the state leaves 'discovery', getNextState no longer points at the
+      // POI generation transition, so the CTA cannot render.
+      expect(src).toMatch(/isPoiAction\s*=\s*actionPath\s*===\s*["']generate-poi["']/);
+      expect(src).toMatch(/MatchState\.getNextState\(currentState\)/);
     });
   });
 });
