@@ -3,10 +3,10 @@ import { ChevronRight, Home } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 
 const ROUTE_LABELS: Record<string, string> = {
-  [ROUTES.DASHBOARD]: "Overview",
+  [ROUTES.DASHBOARD]: "Desk",
   [ROUTES.DASHBOARD_SEARCH]: "Search",
   [ROUTES.DASHBOARD_ORDER_BOOK]: "Order Book",
-  [ROUTES.DASHBOARD_MATCHES]: "Matches",
+  [ROUTES.DASHBOARD_MATCHES]: "Trade Requests",
   [ROUTES.DASHBOARD_SETTINGS]: "Settings",
   [ROUTES.DASHBOARD_ACCOUNT]: "Organisation",
   [ROUTES.DASHBOARD_COMPLIANCE]: "Compliance",

@@ -4,7 +4,7 @@ const TABS = [
   { to: "/desk/settings", label: "My Profile", end: true },
   { to: "/desk/settings/company", label: "Company Identity (KYB)" },
   { to: "/desk/settings/notifications", label: "Notification Rules" },
-  { to: "/desk/settings/balance", label: "Token Balance" },
+  { to: "/desk/settings/balance", label: "Credit Balance" },
 ];
 
 export function SettingsTabs() {

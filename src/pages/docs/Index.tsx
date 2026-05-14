@@ -34,8 +34,8 @@ const CONCEPTS = [
   {
     to: "/docs/matches",
     icon: FileCheck,
-    title: "Matches",
-    desc: "Bilateral trade intent between two verified organisations. State machine, transitions, terms.",
+    title: "Trade Requests & Matches",
+    desc: "A Trade Request is the persistent unit of intent; a Match is the bilateral child record that runs through the POI state machine. Lifecycle, transitions, terms.",
   },
   {
     to: "/docs/counterparties",
@@ -47,7 +47,7 @@ const CONCEPTS = [
     to: "/docs/evidence",
     icon: FileCheck,
     title: "Evidence Packs",
-    desc: "Append-only, SHA-256-sealed audit record for every settled deal. Includes WaD certificate.",
+    desc: "Append-only, SHA-256-sealed audit record for every settled deal. Includes the Without a Doubt (WaD) certificate and its 10 hard-gates.",
   },
   {
     to: "/docs/webhooks",
@@ -65,8 +65,9 @@ export default function DocsIndex() {
         <DocH1>Izenzo Developer Docs</DocH1>
         <DocLede>
           Izenzo is governance infrastructure for cross-border trade. Use the API to verify
-          counterparties, record bilateral intent, generate cryptographically sealed Proof of
-          Intent, and produce tamper-evident evidence packs your auditors can verify offline.
+          counterparties, open Trade Requests, mint cryptographically sealed Proof of Intent
+          (POI), seal the Without a Doubt (WaD) certificate, and produce tamper-evident
+          evidence packs your auditors can verify offline.
         </DocLede>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-16">

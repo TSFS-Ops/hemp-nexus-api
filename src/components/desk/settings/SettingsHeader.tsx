@@ -8,7 +8,7 @@ export function SettingsHeader() {
         Settings &amp; Identity
       </h1>
       <p className="mt-3 md:mt-4 text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl">
-        Manage your profile, company verification status, notification preferences, and trading credits.
+        Manage your profile, company verification status, notification preferences, and credit balance.
       </p>
     </header>
   );

@@ -23,23 +23,30 @@ const IGNORE_PATHS = [
 ];
 
 // Banned terms: [regex, human-readable label, suggested replacement]
+//
+// Aligned with canon (mem://index, 2026-05-14):
+//   - "Counterparty" is CANONICAL (do not flag).
+//   - "POI" and "WaD" acronyms are CANONICAL in UI; "WaD" must always
+//     expand as "Without a Doubt" — never "Warrant of Diligence".
+//   - "Proof of Intention" is wrong; canon is "Proof of Intent".
+//   - "Bid/Offer" is banned in UI; use Trade Request.
 const BANNED_TERMS = [
-  [/\bCounterpart(?:y|ies)\b/gi, "Counterparty/Counterparties", "Trading Partner(s)"],
-  [/\bProof of Intention\b/gi, "Proof of Intention", "Trade Request"],
-  [/\bConfirm(?:ed)?\s+Intent\b/gi, "Confirm(ed) Intent", "Send Trade Request / Trade Request"],
+  [/\bProof of Intention\b/gi, "Proof of Intention", "Proof of Intent"],
+  [/\bWarrant of Diligence\b/gi, "Warrant of Diligence (wrong WaD expansion)", "Without a Doubt"],
   [/\bFinalise[d]?\s+Commitment\b/gi, "Finalised Commitment", "Signed Deal"],
   [/\bCompliance Match\b/gi, "Compliance Match", "Izenzo"],
-  [/\b(?:demo|illustrative|mock-up)\b/gi, "demo/illustrative/mock-up", "(remove or replace)"],
+  [/\bBid\s*\/\s*Offer\b/gi, "Bid/Offer", "Trade Request"],
+  // Note: "demo" / "test mode" / "preview" are legitimate product features
+  // (see Test-Mode Bypass and _demo/ fixtures). Do not ban them globally —
+  // narrow rules can be added if a specific marketing surface starts
+  // claiming demo data is real.
   [/\bOrganization\b/g, "Organization (US spelling)", "Organisation"],
   [/\bFinalize\b/g, "Finalize (US spelling)", "Finalise"],
   [/\bLicense\b/g, "License (US spelling)", "Licence (noun)"],
 ];
 
-// POI/WaD acronyms in user-facing strings (not code variables)
-const ACRONYM_PATTERNS = [
-  [/["'`].*\bPOI\b.*["'`]/g, "POI acronym in UI string"],
-  [/["'`].*\bWaD\b.*["'`]/g, "WaD acronym in UI string"],
-];
+// No acronym bans — POI and WaD are canonical UI tokens.
+const ACRONYM_PATTERNS = [];
 
 let totalViolations = 0;
 
@@ -58,10 +65,21 @@ function scanFile(filePath) {
   ];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const rawLine = lines[i];
+    const line = rawLine;
 
     // Skip allowlisted lines
     if (ALLOWLIST.some((al) => al.test(line))) continue;
+
+    // Skip pure code-comment lines and block-comment bodies — the guard only
+    // cares about user-facing copy, not internal documentation.
+    const trimmed = line.trim();
+    const isCommentLine =
+      trimmed.startsWith("//") ||
+      trimmed.startsWith("/*") ||
+      trimmed.startsWith("*") ||
+      trimmed.startsWith("*/");
+    if (isCommentLine) continue;
 
     for (const [pattern, label, fix] of BANNED_TERMS) {
       pattern.lastIndex = 0;

@@ -52,11 +52,6 @@ export default function DocsCounterparties() {
               <InlineCode>seller_org_id</InlineCode> from a buyer's). This is always
               relative to the viewer.
             </li>
-            <li>
-              <strong className="text-foreground">named lead</strong> — a contact name or
-              email captured during outreach, not yet promoted to a verified counterparty
-              record. Named leads cannot satisfy WaD certification.
-            </li>
           </ul>
         </Callout>
 
@@ -138,10 +133,9 @@ export default function DocsCounterparties() {
         <DocP>
           When you initiate engagement with a discovered counterparty record, the platform
           issues a <InlineCode>poi_engagement</InlineCode> record. If a deliverable email is on
-          file for the named contact, an outreach notification is sent to that{" "}
-          <strong className="text-foreground font-medium">named lead</strong>; otherwise the
-          engagement waits for an admin to capture a contact via the engagements panel.
-          Settlement is blocked until the opposite party explicitly accepts — this is a
+          file for the named contact, an outreach notification is sent to that contact;
+          otherwise the engagement waits for an admin to capture a contact via the engagements
+          panel. POI mint is blocked until the opposite party explicitly accepts — this is a
           deliberate single-side acknowledgement hold-point, not a bug, and it is{" "}
           <em>not</em> the same as both-party POI commitment.
         </DocP>

@@ -37,9 +37,9 @@ type NavItem = { path: string; label: string; icon: typeof LayoutDashboard; exac
 type PersonaKey = "trader" | "governor" | "developer";
 
 const TRADER_NAV: NavItem[] = [
-  { path: ROUTES.DASHBOARD, label: "Home", icon: LayoutDashboard, exact: true },
+  { path: ROUTES.DASHBOARD, label: "Desk", icon: LayoutDashboard, exact: true },
   { path: ROUTES.DASHBOARD_SEARCH, label: "Search", icon: Search },
-  { path: ROUTES.DASHBOARD_MATCHES, label: "Deals", icon: Handshake },
+  { path: ROUTES.DASHBOARD_MATCHES, label: "Trades", icon: Handshake },
 ];
 
 const GOVERNOR_NAV: NavItem[] = [
@@ -66,14 +66,14 @@ const TRADER_PROFILE: NavItem[] = [
 
 const GOVERNOR_PROFILE: NavItem[] = [
   { path: "/governance/health", label: "System Health", icon: Activity },
-  { path: ROUTES.DASHBOARD, label: "Trader Desk", icon: LayoutDashboard },
+  { path: ROUTES.DASHBOARD, label: "Desk", icon: LayoutDashboard },
   { path: "/developer/keys", label: "Developer Terminal", icon: KeyRound },
   { path: ROUTES.DASHBOARD_SETTINGS, label: "Settings", icon: Settings },
 ];
 
 const DEVELOPER_PROFILE: NavItem[] = [
   { path: "/developer/docs", label: "Integration Docs", icon: BookOpen },
-  { path: ROUTES.DASHBOARD, label: "Trader Desk", icon: LayoutDashboard },
+  { path: ROUTES.DASHBOARD, label: "Desk", icon: LayoutDashboard },
   { path: "/governance/triage", label: "Governance Console", icon: Shield },
   { path: ROUTES.DASHBOARD_SETTINGS, label: "Settings", icon: Settings },
 ];
