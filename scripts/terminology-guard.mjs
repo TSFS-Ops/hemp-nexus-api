@@ -23,23 +23,27 @@ const IGNORE_PATHS = [
 ];
 
 // Banned terms: [regex, human-readable label, suggested replacement]
+//
+// Aligned with canon (mem://index, 2026-05-14):
+//   - "Counterparty" is CANONICAL (do not flag).
+//   - "POI" and "WaD" acronyms are CANONICAL in UI; "WaD" must always
+//     expand as "Without a Doubt" — never "Warrant of Diligence".
+//   - "Proof of Intention" is wrong; canon is "Proof of Intent".
+//   - "Bid/Offer" is banned in UI; use Trade Request.
 const BANNED_TERMS = [
-  [/\bCounterpart(?:y|ies)\b/gi, "Counterparty/Counterparties", "Trading Partner(s)"],
-  [/\bProof of Intention\b/gi, "Proof of Intention", "Trade Request"],
-  [/\bConfirm(?:ed)?\s+Intent\b/gi, "Confirm(ed) Intent", "Send Trade Request / Trade Request"],
+  [/\bProof of Intention\b/gi, "Proof of Intention", "Proof of Intent"],
+  [/\bWarrant of Diligence\b/gi, "Warrant of Diligence (wrong WaD expansion)", "Without a Doubt"],
   [/\bFinalise[d]?\s+Commitment\b/gi, "Finalised Commitment", "Signed Deal"],
   [/\bCompliance Match\b/gi, "Compliance Match", "Izenzo"],
+  [/\bBid\s*\/\s*Offer\b/gi, "Bid/Offer", "Trade Request"],
   [/\b(?:demo|illustrative|mock-up)\b/gi, "demo/illustrative/mock-up", "(remove or replace)"],
   [/\bOrganization\b/g, "Organization (US spelling)", "Organisation"],
   [/\bFinalize\b/g, "Finalize (US spelling)", "Finalise"],
   [/\bLicense\b/g, "License (US spelling)", "Licence (noun)"],
 ];
 
-// POI/WaD acronyms in user-facing strings (not code variables)
-const ACRONYM_PATTERNS = [
-  [/["'`].*\bPOI\b.*["'`]/g, "POI acronym in UI string"],
-  [/["'`].*\bWaD\b.*["'`]/g, "WaD acronym in UI string"],
-];
+// No acronym bans — POI and WaD are canonical UI tokens.
+const ACRONYM_PATTERNS = [];
 
 let totalViolations = 0;
 
