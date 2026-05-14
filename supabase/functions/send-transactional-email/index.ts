@@ -125,6 +125,46 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // POI-004 stage-2: idempotency short-circuit. If a caller supplied an
+  // explicit `idempotencyKey` and we have a prior email_send_log row with
+  // that key, return the prior messageId/status instead of enqueuing a
+  // second send. Callers that omit `idempotencyKey` opt out of dedupe
+  // (the field defaults to messageId, which is unique-per-call).
+  const callerSuppliedKey =
+    idempotencyKey && idempotencyKey !== messageId ? idempotencyKey : null
+  if (callerSuppliedKey) {
+    const { data: prior, error: priorErr } = await supabase
+      .from('email_send_log')
+      .select('message_id, status, recipient_email, template_name')
+      .eq('idempotency_key', callerSuppliedKey)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (priorErr) {
+      console.error('Idempotency lookup failed', { error: priorErr, callerSuppliedKey })
+    } else if (prior) {
+      console.log('Idempotent replay — returning prior send', {
+        idempotencyKey: callerSuppliedKey,
+        priorMessageId: prior.message_id,
+        priorStatus: prior.status,
+      })
+      return wrap(new Response(
+        JSON.stringify({
+          success: true,
+          queued: false,
+          idempotent: true,
+          messageId: prior.message_id,
+          status: prior.status,
+          idempotencyKey: callerSuppliedKey,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      ))
+    }
+  }
+
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
     .from('suppressed_emails')
