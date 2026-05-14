@@ -38,6 +38,29 @@ export async function emitRevenueNotification(
   const recipient = args.recipientEmail || DEFAULT_RECIPIENT;
   const occurredAt = args.occurredAt || new Date().toISOString();
 
+  // POI-004 stage-2: idempotency short-circuit. If we already have an audit
+  // row for this idempotency_key, do NOT re-dispatch the email — the prior
+  // call already attempted (and either sent or failed). Re-dispatch would
+  // cause duplicate revenue notices for the same logical event.
+  try {
+    const { data: prior } = await supabase
+      .from("revenue_notification_audit")
+      .select("id, status")
+      .eq("idempotency_key", args.idempotencyKey)
+      .limit(1)
+      .maybeSingle();
+    if (prior) {
+      console.log(
+        `[revenue-notify] idempotent replay — skipping ${args.eventType} dispatch (prior status=${prior.status})`,
+      );
+      return;
+    }
+  } catch (lookupErr) {
+    // Non-fatal: if the lookup fails we fall through and let the unique
+    // index on idempotency_key catch any duplicate insert below.
+    console.error("[revenue-notify] idempotency lookup failed", lookupErr);
+  }
+
   let status: "sent" | "failed" | "skipped" = "sent";
   let errorMessage: string | null = null;
 
@@ -73,22 +96,31 @@ export async function emitRevenueNotification(
 
   // Append audit row (best-effort — never throws).
   try {
-    await supabase.from("revenue_notification_audit").insert({
-      event_type: args.eventType,
-      reference_id: args.referenceId ?? null,
-      idempotency_key: args.idempotencyKey,
-      recipient_email: recipient,
-      org_id: args.orgId ?? null,
-      org_name: args.orgName ?? null,
-      status,
-      error_message: errorMessage,
-      details: {
-        headline: args.headline ?? null,
-        consoleUrl: args.consoleUrl ?? null,
-        contactEmail: args.contactEmail ?? null,
-        payload: args.details ?? {},
-      },
-    });
+    const { error: auditError } = await supabase
+      .from("revenue_notification_audit")
+      .insert({
+        event_type: args.eventType,
+        reference_id: args.referenceId ?? null,
+        idempotency_key: args.idempotencyKey,
+        recipient_email: recipient,
+        org_id: args.orgId ?? null,
+        org_name: args.orgName ?? null,
+        status,
+        error_message: errorMessage,
+        details: {
+          headline: args.headline ?? null,
+          consoleUrl: args.consoleUrl ?? null,
+          contactEmail: args.contactEmail ?? null,
+          payload: args.details ?? {},
+        },
+      });
+    // Unique-violation (23505) is expected on a true idempotent replay race
+    // — the upstream lookup missed because both calls observed an empty
+    // table. Treat as a no-op.
+    if (auditError && (auditError as any).code !== "23505") {
+      console.error("[revenue-notify] audit insert failed", auditError);
+    }
+
   } catch (auditErr) {
     console.error("[revenue-notify] audit insert failed", auditErr);
   }

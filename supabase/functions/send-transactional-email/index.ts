@@ -125,6 +125,46 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // POI-004 stage-2: idempotency short-circuit. If a caller supplied an
+  // explicit `idempotencyKey` and we have a prior email_send_log row with
+  // that key, return the prior messageId/status instead of enqueuing a
+  // second send. Callers that omit `idempotencyKey` opt out of dedupe
+  // (the field defaults to messageId, which is unique-per-call).
+  const callerSuppliedKey =
+    idempotencyKey && idempotencyKey !== messageId ? idempotencyKey : null
+  if (callerSuppliedKey) {
+    const { data: prior, error: priorErr } = await supabase
+      .from('email_send_log')
+      .select('message_id, status, recipient_email, template_name')
+      .eq('idempotency_key', callerSuppliedKey)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (priorErr) {
+      console.error('Idempotency lookup failed', { error: priorErr, callerSuppliedKey })
+    } else if (prior) {
+      console.log('Idempotent replay — returning prior send', {
+        idempotencyKey: callerSuppliedKey,
+        priorMessageId: prior.message_id,
+        priorStatus: prior.status,
+      })
+      return wrap(new Response(
+        JSON.stringify({
+          success: true,
+          queued: false,
+          idempotent: true,
+          messageId: prior.message_id,
+          status: prior.status,
+          idempotencyKey: callerSuppliedKey,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      ))
+    }
+  }
+
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
     .from('suppressed_emails')
@@ -150,6 +190,7 @@ Deno.serve(async (req) => {
     // Log the suppressed attempt
     await supabase.from('email_send_log').insert({
       message_id: messageId,
+      idempotency_key: callerSuppliedKey,
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'suppressed',
@@ -183,6 +224,7 @@ Deno.serve(async (req) => {
     })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
+      idempotency_key: callerSuppliedKey,
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'failed',
@@ -216,6 +258,7 @@ Deno.serve(async (req) => {
       })
       await supabase.from('email_send_log').insert({
         message_id: messageId,
+        idempotency_key: callerSuppliedKey,
         template_name: templateName,
         recipient_email: effectiveRecipient,
         status: 'failed',
@@ -245,6 +288,7 @@ Deno.serve(async (req) => {
       })
       await supabase.from('email_send_log').insert({
         message_id: messageId,
+        idempotency_key: callerSuppliedKey,
         template_name: templateName,
         recipient_email: effectiveRecipient,
         status: 'failed',
@@ -267,6 +311,7 @@ Deno.serve(async (req) => {
     })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
+      idempotency_key: callerSuppliedKey,
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'suppressed',
@@ -304,16 +349,48 @@ Deno.serve(async (req) => {
   // `subject_length` is persisted in metadata so the 200-char contract is
   // forensically auditable from email_send_log alone (no need to replay
   // template rendering).
-  await supabase.from('email_send_log').insert({
-    message_id: messageId,
-    template_name: templateName,
-    recipient_email: effectiveRecipient,
-    status: 'pending',
-    metadata: {
-      subject_length: typeof resolvedSubject === 'string' ? resolvedSubject.length : null,
-      subject_over_limit: typeof resolvedSubject === 'string' && resolvedSubject.length > 200,
-    },
-  })
+  const { error: pendingInsertError } = await supabase
+    .from('email_send_log')
+    .insert({
+      message_id: messageId,
+      idempotency_key: callerSuppliedKey,
+      template_name: templateName,
+      recipient_email: effectiveRecipient,
+      status: 'pending',
+      metadata: {
+        subject_length: typeof resolvedSubject === 'string' ? resolvedSubject.length : null,
+        subject_over_limit: typeof resolvedSubject === 'string' && resolvedSubject.length > 200,
+      },
+    })
+
+  // POI-004 stage-2 race: a concurrent caller with the same idempotencyKey
+  // may have written the pending row first. Re-fetch and short-circuit
+  // (do NOT enqueue a second message). Postgres unique-violation = 23505.
+  if (pendingInsertError && callerSuppliedKey && (pendingInsertError as any).code === '23505') {
+    const { data: prior } = await supabase
+      .from('email_send_log')
+      .select('message_id, status')
+      .eq('idempotency_key', callerSuppliedKey)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    console.log('Idempotent replay (race) — returning prior pending send', {
+      idempotencyKey: callerSuppliedKey,
+      priorMessageId: prior?.message_id,
+    })
+    return wrap(new Response(
+      JSON.stringify({
+        success: true,
+        queued: false,
+        idempotent: true,
+        messageId: prior?.message_id ?? messageId,
+        status: prior?.status ?? 'pending',
+        idempotencyKey: callerSuppliedKey,
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    ))
+  }
+
 
   const { error: enqueueError } = await supabase.rpc('enqueue_email', {
     queue_name: 'transactional_emails',
@@ -342,6 +419,7 @@ Deno.serve(async (req) => {
 
     await supabase.from('email_send_log').insert({
       message_id: messageId,
+      idempotency_key: callerSuppliedKey,
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'failed',

@@ -37,10 +37,36 @@ async function deliverWebhook(
   payload: WebhookPayload,
   secret: string,
   webhookEndpointId: string,
-  supabase: SupabaseClient
-): Promise<{ success: boolean; statusCode?: number; error?: string }> {
+  supabase: SupabaseClient,
+  eventIdempotencyKey?: string | null,
+): Promise<{ success: boolean; statusCode?: number; error?: string; idempotent?: boolean }> {
   const body = JSON.stringify(payload);
   const signature = await generateSignature(body, secret);
+
+  // POI-004 stage-2: structural dedupe by (endpoint, event idempotency key).
+  // If a row already exists for this endpoint + key, we have already
+  // delivered (or attempted to deliver) this logical event — do NOT POST
+  // again. Returns idempotent:true so callers can distinguish from a fresh
+  // delivery in metrics.
+  if (eventIdempotencyKey) {
+    const { data: prior } = await supabase
+      .from("webhook_deliveries")
+      .select("id, response_status_code")
+      .eq("webhook_endpoint_id", webhookEndpointId)
+      .eq("event_idempotency_key", eventIdempotencyKey)
+      .limit(1)
+      .maybeSingle();
+    if (prior) {
+      console.log(
+        `[webhooks] idempotent replay — skipping ${payload.event} for endpoint ${webhookEndpointId}`,
+      );
+      return {
+        success: prior.response_status_code != null && prior.response_status_code >= 200 && prior.response_status_code < 300,
+        statusCode: prior.response_status_code ?? undefined,
+        idempotent: true,
+      };
+    }
+  }
 
   let responseStatusCode = 0;
   let responseBody = "";
@@ -69,17 +95,27 @@ async function deliverWebhook(
       nextRetry = retryDate.toISOString();
     }
 
-    // Log successful or failed delivery attempt
-    await supabase.from("webhook_deliveries").insert({
+    // Log successful or failed delivery attempt. The unique index on
+    // (webhook_endpoint_id, event_idempotency_key) is our last-line guard
+    // against a race where two concurrent triggers both passed the lookup
+    // above; we treat 23505 as a benign idempotent skip.
+    const { error: insertError } = await supabase.from("webhook_deliveries").insert({
       webhook_endpoint_id: webhookEndpointId,
       org_id: payload.orgId,
       event_type: payload.event,
+      event_idempotency_key: eventIdempotencyKey ?? null,
       payload: payload.data,
       response_status_code: responseStatusCode,
       response_body: responseBody.substring(0, 1000),
       delivery_attempt: 1,
       next_retry_at: nextRetry,
     });
+    if (insertError && (insertError as any).code === "23505") {
+      console.log(
+        `[webhooks] race resolved by unique index — duplicate ${payload.event} for endpoint ${webhookEndpointId}`,
+      );
+      return { success: response.ok, statusCode: response.status, idempotent: true };
+    }
 
     return {
       success: response.ok,
@@ -94,16 +130,20 @@ async function deliverWebhook(
     retryDate.setMinutes(retryDate.getMinutes() + 5);
 
     // Log failed delivery attempt
-    await supabase.from("webhook_deliveries").insert({
+    const { error: insertError } = await supabase.from("webhook_deliveries").insert({
       webhook_endpoint_id: webhookEndpointId,
       org_id: payload.orgId,
       event_type: payload.event,
+      event_idempotency_key: eventIdempotencyKey ?? null,
       payload: payload.data,
       response_status_code: 0,
       error_message: errorMessage,
       delivery_attempt: 1,
       next_retry_at: retryDate.toISOString(),
     });
+    if (insertError && (insertError as any).code === "23505") {
+      return { success: false, error: errorMessage, idempotent: true };
+    }
 
     return {
       success: false,
@@ -114,14 +154,22 @@ async function deliverWebhook(
 
 /**
  * Trigger webhooks for a specific event
- * This runs in the background and doesn't block the response
+ * This runs in the background and doesn't block the response.
+ *
+ * `eventIdempotencyKey` (POI-004 stage-2): a stable per-logical-event key
+ * (e.g. `poi.generated:<matchId>`). When supplied, the same event cannot
+ * produce two `webhook_deliveries` rows for the same endpoint, even if the
+ * upstream caller fires twice. Legacy callers that omit it remain
+ * unconstrained.
  */
 export async function triggerWebhooks(
   supabase: SupabaseClient,
   orgId: string,
   event: string,
-  data: Record<string, any>
+  data: Record<string, any>,
+  options?: { eventIdempotencyKey?: string | null }
 ): Promise<void> {
+  const eventIdempotencyKey = options?.eventIdempotencyKey ?? null;
   try {
     // Fetch active webhook endpoints subscribed to this event
     const { data: endpoints, error } = await supabase
@@ -169,12 +217,19 @@ export async function triggerWebhooks(
       }
 
       const result = await deliverWebhook(
-        endpoint.url, 
-        payload, 
+        endpoint.url,
+        payload,
         secret,
         endpoint.id,
-        supabase
+        supabase,
+        eventIdempotencyKey,
       );
+
+      // Idempotent replays must NOT touch the circuit breaker — they did
+      // not represent a new delivery attempt.
+      if (result.idempotent) {
+        return result;
+      }
 
       // Circuit breaker: atomic success/failure tracking
       if (result.success) {
