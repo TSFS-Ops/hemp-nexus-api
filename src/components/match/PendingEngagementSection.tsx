@@ -340,13 +340,14 @@ export function PendingEngagementSection({ engagement, match, isInitiator }: Pro
       hint: "Without an email, our compliance desk has no address to reach out to.",
     });
   }
-  if (!engagement.counterparty_org_id && !terminal) {
-    missingFields.push({
-      label: "Linked organisation",
-      hint:
-        "This counterparty has not yet registered. The match will auto-link once they sign up using the recorded email.",
-    });
-  }
+  // NOTE: an unlinked counterparty organisation is INFORMATIONAL — the
+  // dl row above already shows "Awaiting signup", and the server-side
+  // outreach gate (`getContactState`) does not require a linked org. It
+  // used to be listed under "items still required", but that confused
+  // initiators (Batch E Test 2 review, 14 May 2026): the list mixed
+  // genuine blockers (name, email) with an auto-resolving info note. We
+  // now ONLY list true outreach blockers here. Do not re-add the
+  // "Linked organisation" entry without re-confirming with the client.
 
   const expiresIn = daysUntil(engagement.expires_at);
   const expiresLabel =
