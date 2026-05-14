@@ -880,7 +880,12 @@ Deno.serve(async (req) => {
       if (finalFetchError) handleDatabaseError(finalFetchError, requestId);
       const updated = finalMatch;
 
-      // Audit log - POI generation (single consolidated entry)
+      // ── POI-006: post-commit secondary writes are NON-FATAL ──
+      // The atomic mint (burn + ledger + state + primary `poi.minted` audit +
+      // poi_engagements row) has already committed inside atomic_generate_poi_v2.
+      // The secondary `poi.generated` audit row, recordMatchEvent and any
+      // legacy engagement insert below add forensic richness but MUST NOT
+      // cause the user to see Generate POI as failed when the POI is real.
       try {
         await supabase.from("audit_logs").insert({
           org_id: match.org_id,
@@ -904,22 +909,24 @@ Deno.serve(async (req) => {
             tokens_burned: ACTION_TOKEN_COSTS.declare_intent,
             previous_state: currentState,
             new_state: updated?.state || 'committed',
-            // ── Step 3: forensic audit memory of the legitimacy posture in
-            // force at the moment of mint. Lets reviewers reconstruct WHY a
-            // historical mint was permitted (e.g. wad_only deferred posture).
             gate_position: legitimacy.gatePosition,
             governance_profile_id: governanceProfile.profileId,
-            // ── 2026-04-30 final POI scope: declaration + ATB acks recorded
-            // on every mint, plus per-side evidence counts at mint time.
             declaration_ack: acksPayload?.declaration_ack ?? null,
             atb_ack: acksPayload?.atb_ack ?? null,
             actor_roles: acksPayload?.actor_roles ?? [],
             ack_timestamp: acksPayload?.ack_timestamp ?? null,
             evidence_counts: transitionResult?.evidence_counts ?? null,
+            engagement_created: transitionResult?.engagement_created ?? null,
+            engagement_existed: transitionResult?.engagement_existed ?? null,
             note: "POI generated - single credit charge. Discovery → Committed in one step."
           }
         });
+      } catch (auditError) {
+        // Non-fatal: primary audit row already exists in-RPC as `poi.minted`.
+        console.error(`[${requestId}] POI-006: secondary poi.generated audit insert failed (non-fatal):`, auditError);
+      }
 
+      try {
         await recordMatchEvent(
           supabase, matchId, match.org_id, "poi.generated",
           {
@@ -929,42 +936,15 @@ Deno.serve(async (req) => {
             commodity: match.commodity,
             tokensCharged: ACTION_TOKEN_COSTS.declare_intent,
             state: updated?.state || 'committed',
-            note: "POI generated with single R10 credit charge"
+            note: "POI generated"
           },
           actorUserId, actorApiKeyId
         );
-      } catch (auditError) {
-        console.error(`[${requestId}] Failed to create audit log:`, auditError);
-        throw new ApiException("AUDIT_LOG_ERROR", "Failed to create audit trail", 500);
+      } catch (eventError) {
+        console.error(`[${requestId}] POI-006: recordMatchEvent failed (non-fatal):`, eventError);
       }
 
-      console.log(`[${requestId}] POI generated successfully (discovery → committed)`);
-
-      // ── Create POI Engagement Record (hold-point) ──
-      // This creates the engagement tracking entry that gates progression until
-      // the counterparty responds (accepted/declined/expired).
-      // MUST be awaited — if this fails, the platform is internally inconsistent.
-      {
-        // Determine counterparty from real org UUIDs, not synthetic buyer_id/seller_id
-        const counterpartyOrgId = match.buyer_org_id === match.org_id
-          ? match.seller_org_id
-          : match.buyer_org_id;
-        // A counterparty is only 'known' if a real platform org UUID exists
-        const counterpartyType = counterpartyOrgId ? 'known' : 'unknown';
-
-        const { error: engError } = await supabase.from("poi_engagements").insert({
-          match_id: matchId,
-          org_id: match.org_id,
-          counterparty_org_id: counterpartyOrgId || null,
-          counterparty_type: counterpartyType,
-          engagement_status: 'notification_sent',
-        });
-        if (engError) {
-          console.error(`[${requestId}] CRITICAL: Failed to create POI engagement record:`, engError);
-          throw new ApiException("ENGAGEMENT_CREATION_FAILED", "Failed to create engagement tracking record", 500, { detail: engError.message });
-        }
-        console.log(`[${requestId}] POI engagement record created (type=${counterpartyType}, counterpartyOrgId=${counterpartyOrgId || 'null'})`);
-      }
+      console.log(`[${requestId}] POI generated successfully (discovery → committed); engagement row owned by atomic_generate_poi_v2 (created=${transitionResult?.engagement_created}, existed=${transitionResult?.engagement_existed})`);
 
       // Trigger webhooks. POI-004 stage-2: stable per-match idempotency
       // key prevents the same poi.generated event from creating duplicate
