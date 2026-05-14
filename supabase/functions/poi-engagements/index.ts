@@ -951,7 +951,7 @@ Deno.serve(async (req) => {
             p_contact_method: "email",
             p_contact_detail: recipient,
             p_notes: snapshotNotes,
-            p_audit_action: "engagement.outreach_email_sent",
+            p_audit_action: "engagement.outreach_email_queued",
             p_audit_org_id: null,
           }
         );
