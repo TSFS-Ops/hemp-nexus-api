@@ -84,7 +84,13 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
       queryClient.invalidateQueries({ queryKey: ["engagement-status-gate"] });
 
       if (pendingAction === "accepted") {
-        toast.success("You have accepted this trade engagement. The deal can now proceed.");
+        if (isExpired) {
+          toast.success(
+            "Late acceptance recorded. The initiator has been notified and must reconfirm within the late-acceptance window.",
+          );
+        } else {
+          toast.success("You have accepted this trade engagement. The deal can now proceed.");
+        }
       } else {
         toast.info("You have declined this trade engagement.");
       }
