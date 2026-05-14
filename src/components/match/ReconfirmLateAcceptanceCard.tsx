@@ -49,6 +49,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserOrg } from "@/hooks/use-user-org";
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
+import { generateIdempotencyKey } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { humaniseEngagementError } from "@/lib/humanise-engagement-error";
 import { getEngagementWording } from "@/lib/engagement-wording";
