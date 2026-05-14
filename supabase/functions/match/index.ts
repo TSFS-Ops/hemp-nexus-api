@@ -33,6 +33,7 @@ import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { fetchEngagementReadModelByMatchId } from "../_shared/engagement-read-model.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
+import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
 // Constants for request validation
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const uuidSchema = z.string().uuid();
@@ -595,6 +596,28 @@ Deno.serve(async (req) => {
           console.warn(`[${requestId}] COUNTERPARTY_GATE audit write failed (non-fatal):`, auditErr);
         }
 
+        // ── NOT-001 / NOT-006: when no usable counterparty email exists,
+        // record a canonical notification_skipped(no_recipient) row so the
+        // silent no-email branch is auditable. Idempotent on retry via the
+        // helper's per-target/per-day dedupe.
+        if (!counterpartyEmail) {
+          await recordNotificationSkipped(supabase, {
+            reason: "no_recipient",
+            sourceFunction: "match.soft_route",
+            targetId: (engagementRow?.id as string | undefined) ?? null,
+            channel: "email",
+            orgId: match.org_id,
+            extra: {
+              gate: "counterparty_registration",
+              match_id: matchId,
+              engagement_id: engagementRow?.id ?? null,
+              missing_party: cpGate.missing_party,
+              counterparty_email_supplied: false,
+              request_id: requestId,
+            },
+          });
+        }
+
         const responseBody = {
           code: "ENGAGEMENT_PENDING",
           message:
@@ -744,6 +767,28 @@ Deno.serve(async (req) => {
             });
           } catch (auditErr) {
             console.warn(`[${requestId}] SOFT_ROUTE audit write failed (non-fatal):`, auditErr);
+          }
+
+          // ── NOT-001 / NOT-006: same skip-audit policy as the
+          // counterparty-gate branch. Only emit when there is no usable
+          // recipient email; the helper dedupes per target/reason/day.
+          if (!counterpartyEmail) {
+            await recordNotificationSkipped(supabase, {
+              reason: "no_recipient",
+              sourceFunction: "match.soft_route",
+              targetId: (engagementRow?.id as string | undefined) ?? null,
+              channel: "email",
+              orgId: match.org_id,
+              extra: {
+                gate: "eligibility_soft_route",
+                match_id: matchId,
+                engagement_id: engagementRow?.id ?? null,
+                missing_buyer_id: softRoute.missingBuyerId,
+                missing_seller_id: softRoute.missingSellerId,
+                counterparty_email_supplied: false,
+                request_id: requestId,
+              },
+            });
           }
 
           const responseBody = {

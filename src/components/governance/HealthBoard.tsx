@@ -82,17 +82,39 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
+  // ── NOT-001 / NOT-006 Fix 6: surface manual-follow-up workload ──
+  // Pending Engagements where the soft-route had no usable recipient are
+  // recorded as `notification_skipped(no_recipient, source=match.soft_route)`.
+  // We count today's distinct rows so admin sees the manual-contact backlog.
+  const { data: noRecipientCount } = useQuery<number>({
+    queryKey: ["healthboard-no-recipient-skips"],
+    queryFn: async () => {
+      const dayStart = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString();
+      const { count, error } = await supabase
+        .from("audit_logs")
+        .select("id", { head: true, count: "exact" })
+        .eq("action", "notification_skipped")
+        .gte("created_at", dayStart)
+        .contains("metadata", { reason: "no_recipient", source_function: "match.soft_route" });
+      if (error) return 0;
+      return count ?? 0;
+    },
+    refetchInterval: 60000,
+    refetchOnWindowFocus: false,
+  });
+
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
 
   const operational = GATES.filter(g => g.status === "operational").length;
   const openIncidents = incidents.filter(i => i.status !== "resolved").length;
   const lastBeat = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : new Date().toISOString();
+  const noRecipient = noRecipientCount ?? 0;
 
   return (
     <>
       {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-px bg-muted border border-border mb-10">
+      <div className="grid grid-cols-4 gap-px bg-muted border border-border mb-10">
         <div className="bg-card p-5">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Composite</p>
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">99.962%</p>
@@ -110,6 +132,13 @@ export function HealthBoard() {
             {openIncidents > 0
               ? `monitoring · ${shortId(incidents.find(i => i.status !== "resolved")!.id)}`
               : "all clear"}
+          </p>
+        </div>
+        <div className="bg-card p-5" data-testid="healthboard-no-recipient-tile">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">No-Recipient Outreach</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{noRecipient}</p>
+          <p className={`font-mono text-[10px] mt-0.5 ${noRecipient > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
+            {noRecipient > 0 ? "manual follow-up required · today" : "no manual backlog · today"}
           </p>
         </div>
       </div>

@@ -16,6 +16,7 @@ import { clampSubject } from "../_shared/email-subject.ts";
 import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
 import { dispatchD4cInitiatorAlert } from "../_shared/batch-d-initiator-notify.ts";
 import { evaluateCounterpartyEmailBinding } from "../_shared/binding-resolver.ts";
+import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
 // Batch A — single source of truth for contact-completeness gating.
 // Mirror of `src/lib/contact-completeness.ts`. Both files MUST stay in
 // lockstep; the regression tests pin both surfaces.
@@ -773,6 +774,21 @@ Deno.serve(async (req) => {
 
       const recipient = (parsed.data.recipient_override || eng.counterparty_email || "").trim().toLowerCase();
       if (!recipient) {
+        // ── NOT-001 / NOT-006: blocked send-outreach with no recipient.
+        // Record canonical skip audit (idempotent per target/reason/day)
+        // before throwing so the silent block is observable.
+        await recordNotificationSkipped(supabase, {
+          reason: "no_recipient",
+          sourceFunction: "poi-engagements/send-outreach",
+          targetId: engagementId,
+          channel: "email",
+          orgId: eng.org_id ?? null,
+          extra: {
+            match_id: eng.match_id,
+            engagement_id: engagementId,
+            request_id: requestId,
+          },
+        });
         throw new ApiException("VALIDATION_ERROR", "No recipient email available", 400);
       }
 
@@ -828,6 +844,21 @@ Deno.serve(async (req) => {
           orgId: authCtx.orgId ?? null,
           reason: "recipient_suppressed",
           details: { engagement_id: engagementId, recipient },
+        });
+        // ── NOT-001 / NOT-006: canonical skip audit for suppressed
+        // recipient. Idempotent per target/reason/day via helper dedupe.
+        await recordNotificationSkipped(supabase, {
+          reason: "recipient_suppressed",
+          sourceFunction: "poi-engagements/send-outreach",
+          targetId: engagementId,
+          recipientEmail: recipient,
+          channel: "email",
+          orgId: eng.org_id ?? null,
+          extra: {
+            match_id: eng.match_id,
+            engagement_id: engagementId,
+            request_id: requestId,
+          },
         });
         throw new ApiException(
           "RECIPIENT_SUPPRESSED",
@@ -920,7 +951,7 @@ Deno.serve(async (req) => {
             p_contact_method: "email",
             p_contact_detail: recipient,
             p_notes: snapshotNotes,
-            p_audit_action: "engagement.outreach_email_sent",
+            p_audit_action: "engagement.outreach_email_queued",
             p_audit_org_id: null,
           }
         );
