@@ -236,11 +236,22 @@ async function ensureMatch(
   hash: string,
   buyer_org_id: string,
   seller_org_id: string,
+  opts?: { buyer_name?: string | null; seller_name?: string | null },
 ): Promise<string> {
   // creator org = buyer (initiator). matches_role_invariant trigger requires
   // creator to be one of the two filled sides — buyer satisfies that.
   const existing = await findMatchByHash(admin, buyer_org_id, hash);
-  if (existing) return existing;
+  if (existing) {
+    // Self-heal display names so the initiator UI can resolve a
+    // "Counterparty" label without re-seeding from scratch.
+    if (opts && (opts.buyer_name !== undefined || opts.seller_name !== undefined)) {
+      const upd: Record<string, unknown> = {};
+      if (opts.buyer_name !== undefined) upd.buyer_name = opts.buyer_name;
+      if (opts.seller_name !== undefined) upd.seller_name = opts.seller_name;
+      await admin.from("matches").update(upd).eq("id", existing);
+    }
+    return existing;
+  }
   const { data, error } = await admin
     .from("matches")
     .insert({
@@ -251,6 +262,8 @@ async function ensureMatch(
       state: "discovery",
       buyer_org_id,
       seller_org_id,
+      buyer_name: opts?.buyer_name ?? null,
+      seller_name: opts?.seller_name ?? null,
       match_type: "search",
       poi_state: "DRAFT",
       is_demo: true,
@@ -320,6 +333,13 @@ async function ensureEngagement(
       original_expired_at: shape.original_expired_at ?? null,
       late_acceptance_recorded_at: shape.late_acceptance_recorded_at ?? null,
       reconfirmation_window_expires_at: shape.reconfirmation_window_expires_at ?? null,
+      // Self-heal contact shape so fixture wording corrections (e.g. Batch E
+      // fixture 002 swapping to a NULL email + named contact) propagate to
+      // already-seeded environments without a wipe-and-reseed.
+      counterparty_email: shape.counterparty_email,
+      counterparty_org_id: shape.counterparty_org_id,
+      contact_name: shape.contact_name ?? null,
+      contact_type: shape.contact_type ?? null,
     };
     if (shape.expires_at) update.expires_at = shape.expires_at;
     const { error: updErr } = await admin
@@ -711,23 +731,29 @@ Deno.serve(async (req) => {
     }
 
     // I. DEMO-BE-EMAIL-MISSING-002 — Batch E observability fixture.
-    //    Counterparty organisation is known but the email is unusable
-    //    (`.invalid` domain), so `getContactState` returns
-    //    "email_missing". Initiator sees the neutral "Outreach paused —
-    //    email missing" amber banner; admin Send-outreach is disabled.
+    //    Counterparty identity is fully known (linked organisation +
+    //    named individual contact) but no usable email is on file
+    //    (`counterparty_email = NULL`). `getContactState` therefore
+    //    returns "email_missing" — NOT "contact_incomplete" — so the
+    //    initiator amber banner reads "Outreach paused — email missing"
+    //    and the required-items list does NOT claim the counterparty
+    //    name is missing. Admin Send-outreach remains disabled.
     {
       const matchId = await ensureMatch(
         admin,
         "DEMO-BE-EMAIL-MISSING-002",
         initiatorOrgId,
         counterpartyOrgId,
+        { seller_name: "DEMO Counterparty Co." },
       );
       const eng = await ensureEngagement(admin, {
         fixture_id: "DEMO-BE-EMAIL-MISSING-002",
         match_id: matchId,
         org_id: initiatorOrgId,
         counterparty_org_id: counterpartyOrgId,
-        counterparty_email: "demo-counterparty-no-email@example.invalid",
+        counterparty_email: null,
+        contact_type: "named_individual",
+        contact_name: "DEMO Counterparty Contact",
         engagement_status: "pending",
         operational_state: null,
         expires_at: iso(now + 30 * day),
