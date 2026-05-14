@@ -95,7 +95,22 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
   const viewerOrgId = useUserOrg();
   const [pending, setPending] = useState<PendingAction>(null);
   const [submitting, setSubmitting] = useState<PendingAction>(null);
+  // One stable Idempotency-Key per user-initiated attempt (per dialog open).
+  // Reused across rapid double-taps of the dialog confirm button so the
+  // server replays the cached 200 instead of re-running the RPC. Cleared
+  // when the dialog closes so the next intentional click gets a fresh key.
+  const [idempotencyKeys, setIdempotencyKeys] = useState<{
+    reconfirm: string | null;
+    "decline-late-acceptance": string | null;
+  }>({ reconfirm: null, "decline-late-acceptance": null });
 
+  const openPending = (action: Exclude<PendingAction, null>) => {
+    setIdempotencyKeys((prev) => ({
+      ...prev,
+      [action]: prev[action] ?? generateIdempotencyKey(`reconfirm_${action}`),
+    }));
+    setPending(action);
+  };
   // Gate 1: engagement must be in the late-acceptance reconfirmation window.
   if (
     !engagement ||
