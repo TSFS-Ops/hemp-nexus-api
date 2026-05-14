@@ -69,6 +69,48 @@ interface SweepBody {
   open_risk_items?: boolean;
 }
 
+// AUD-003 Fix 2: idempotent self-incident writer for reconciliation failures.
+async function recordSelfIncident(
+  admin: ReturnType<typeof createClient>,
+  runId: string,
+  err: unknown,
+) {
+  const title = "Reconciliation: burn-poi-reconciliation run failed";
+  const message = err instanceof Error ? err.message : String(err);
+  const description =
+    `burn-poi-reconciliation failed at ${new Date().toISOString()}. ` +
+    `run_id=${runId} error=${message}. The drift safety net did not complete; manual investigation required.`;
+  try {
+    const { data: existing } = await admin
+      .from("admin_risk_items")
+      .select("id")
+      .eq("title", title)
+      .eq("status", "open")
+      .limit(1)
+      .maybeSingle();
+    if (existing) return;
+    await admin.from("admin_risk_items").insert({
+      title,
+      description,
+      severity: "high",
+      status: "open",
+    });
+  } catch (e) {
+    console.error("[burn-poi-reconciliation] self-incident insert failed:", e);
+  }
+  try {
+    await admin.from("admin_audit_logs").insert({
+      admin_user_id: null,
+      action: "reconciliation.burn_poi.failed",
+      target_type: "system",
+      target_id: null,
+      details: { run_id: runId, error: message, source: "burn-poi-reconciliation" },
+    });
+  } catch (e) {
+    console.error("[burn-poi-reconciliation] failure-audit insert failed:", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "METHOD_NOT_ALLOWED" });
