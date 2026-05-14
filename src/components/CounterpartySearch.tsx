@@ -872,7 +872,7 @@ export default function CounterpartySearch() {
                   if (validPrice || validVolume) {
                     return (
                       <p>
-                        <strong>Commercial terms from your bid/offer will be recorded:</strong>
+                        <strong>Commercial terms from your Trade Request will be recorded:</strong>
                         {validVolume && ` Quantity: ${tradeContext.volume} MT`}
                         {validPrice && ` · Price: $${tradeContext.price}`}
                         {tradeContext.side && ` · Side: ${tradeContext.side.toUpperCase()}`}
