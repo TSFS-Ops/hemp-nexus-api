@@ -124,7 +124,7 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
         : "engagement.contacted";
       return {
         key,
-        badgeLabel: renewed ? "Renewed engagement — awaiting trading partner" : "Outreach sent",
+        badgeLabel: renewed ? "Renewed engagement — awaiting trading partner" : "Outreach queued",
         tone: "active",
         headline: renewed
           ? "Renewed engagement pending trading partner acceptance"
