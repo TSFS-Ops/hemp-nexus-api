@@ -1028,7 +1028,7 @@ Deno.serve(async (req) => {
                 link: `/desk/match/${matchId}`,
                 org_id: creatorOrgId,
               }));
-              await supabase.from("notifications").insert(notifRows);
+              await supabase.from("notifications").upsert(notifRows, { onConflict: 'user_id,type,link', ignoreDuplicates: true });
             }
 
             // 2. Email: send facilitation alert to configured admin email
@@ -1085,7 +1085,7 @@ Deno.serve(async (req) => {
                 link: `/desk/match/${matchId}`,
                 org_id: creatorOrgId,
               }));
-              await supabase.from("notifications").insert(notifRows);
+              await supabase.from("notifications").upsert(notifRows, { onConflict: 'user_id,type,link', ignoreDuplicates: true });
             }
 
             // 2. Email: send support desk notification
@@ -1130,7 +1130,7 @@ Deno.serve(async (req) => {
                 link: `/desk/match/${matchId}`,
                 org_id: counterpartyOrgId,
               }));
-              await supabase.from("notifications").insert(notifRows);
+              await supabase.from("notifications").upsert(notifRows, { onConflict: 'user_id,type,link', ignoreDuplicates: true });
 
               // 2. Email: send to all counterparty org users
               for (const u of cpUsers) {
