@@ -113,9 +113,9 @@ export function UnknownCounterpartyStatus({ engagement, isInitiator }: Props) {
     },
     {
       id: "outreach",
-      label: outreachDone ? "Outreach email sent" : "Outreach email pending",
+      label: outreachDone ? "Outreach email queued" : "Outreach email pending",
       description: outreachDone
-        ? `An invitation was sent${engagement.counterparty_email ? ` to ${engagement.counterparty_email}` : ""}, asking your counterparty to register and respond.`
+        ? `An outreach email was queued for delivery${engagement.counterparty_email ? ` to ${engagement.counterparty_email}` : ""}, asking your counterparty to register and respond. Delivery status will appear in the email log.`
         : engagement.counterparty_email
           ? `Ready to send to ${engagement.counterparty_email}. Awaiting compliance desk action.`
           : "Awaiting confirmation of your counterparty's email address before outreach can be sent.",
@@ -139,7 +139,7 @@ export function UnknownCounterpartyStatus({ engagement, isInitiator }: Props) {
     if (linkedDone)
       return { label: "Linked — awaiting response", tone: "complete" as const };
     if (outreachDone)
-      return { label: "Outreach sent — awaiting signup", tone: "active" as const };
+      return { label: "Outreach queued — awaiting signup", tone: "active" as const };
     return { label: "Support notified — outreach pending", tone: "pending" as const };
   })();
 

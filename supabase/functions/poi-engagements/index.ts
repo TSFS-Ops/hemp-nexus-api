@@ -891,7 +891,7 @@ Deno.serve(async (req) => {
       }
 
       const snapshotNotes = [
-        `EMAIL SENT to ${recipient}`,
+        `EMAIL QUEUED to ${recipient}`,
         `Subject: ${parsed.data.subject}`,
         parsed.data.custom_message ? `\nMessage:\n${parsed.data.custom_message}` : "",
         `\nReply-to: support@izenzo.co.za`,

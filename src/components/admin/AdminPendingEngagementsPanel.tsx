@@ -864,7 +864,9 @@ export function AdminPendingEngagementsPanel() {
       );
       if (error) throw error;
 
-      toast.success(`Notification sent to ${data?.sent_to ?? eng.counterparty_email}`);
+      toast.success(
+        `Outreach email queued for ${data?.sent_to ?? eng.counterparty_email}. Delivery status will appear in the email log.`
+      );
       fetchEngagements();
     } catch (err: any) {
       console.error("Send notification error:", err);
@@ -1152,7 +1154,7 @@ export function AdminPendingEngagementsPanel() {
         }
         throw Object.assign(new Error(title), { description });
       }
-      toast.success(`Email sent to ${data?.sent_to ?? outreachRecipient}`);
+      toast.success(`Outreach email queued for ${data?.sent_to ?? outreachRecipient}.`);
       setOutreachDialog(null);
       fetchEngagements();
     } catch (err: any) {

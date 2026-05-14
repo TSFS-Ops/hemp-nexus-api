@@ -27,6 +27,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Eye, ShieldCheck, Mail, Bell, AlertTriangle, Hash } from "lucide-react";
 import { format } from "date-fns";
+import { getEngagementWording } from "@/lib/engagement-wording";
 
 type EngagementStatus = "pending" | "notification_sent" | "contacted" | "accepted" | "declined" | "expired";
 
@@ -182,7 +183,16 @@ export function AdminEngagementForensicsPanel() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">{r.match_id.slice(0, 8)}…</TableCell>
                     <TableCell className="text-xs">{r.counterparty_email || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell><Badge variant={statusVariant(r.engagement_status) as never}>{r.engagement_status}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <Badge variant={statusVariant(r.engagement_status) as never}>
+                          {getEngagementWording({ status: r.engagement_status }).badgeLabel}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground font-mono" data-testid="forensics-raw-status">
+                          Raw status: {r.engagement_status}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-xs">
                       {r.responded_at ? format(new Date(r.responded_at), "yyyy-MM-dd HH:mm") : "—"}
                     </TableCell>
