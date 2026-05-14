@@ -57,6 +57,36 @@ export async function recordNotificationSkipped(
   args: NotificationSkipArgs,
 ): Promise<void> {
   try {
+    // ── NOT-001/006 Fix 4: idempotent dedupe ──
+    // Repeated identical skips (same target + reason + channel + source) within
+    // a UTC-day window must not multiply audit rows. Different reasons or new
+    // days are still recorded. Best-effort: dedupe failure must NOT swallow
+    // the write — fall through to insert if the existence check errors.
+    if (args.targetId) {
+      try {
+        const dayStartIso = new Date(
+          new Date().toISOString().slice(0, 10) + "T00:00:00.000Z",
+        ).toISOString();
+        const { data: existing } = await supabase
+          .from("audit_logs")
+          .select("id")
+          .eq("action", "notification_skipped")
+          .eq("entity_id", args.targetId)
+          .gte("created_at", dayStartIso)
+          .contains("metadata", {
+            reason: args.reason,
+            source_function: args.sourceFunction,
+            channel: args.channel ?? null,
+          })
+          .limit(1);
+        if (existing && existing.length > 0) {
+          return; // already recorded today — idempotent no-op
+        }
+      } catch (dedupeErr) {
+        console.warn("[notification-skip-audit] dedupe check failed (continuing to insert):", dedupeErr);
+      }
+    }
+
     const metadata: Record<string, unknown> = {
       reason: args.reason,
       source_function: args.sourceFunction,
