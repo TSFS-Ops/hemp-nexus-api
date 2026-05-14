@@ -239,7 +239,57 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── 3. Optional: open admin_risk_items per drift case (idempotent via title) ─
+  // ── 3. STATE_WITHOUT_LEDGER (POI-012) ──────────────────────────────
+  // Detect matches whose state says POI was minted but for which no
+  // ledger_events.poi.minted row exists. This is *state-vs-ledger drift*
+  // and is distinct from BURN_WITHOUT_POI / POI_WITHOUT_BURN above.
+  const { data: mintedMatches, error: mintedErr } = await admin
+    .from("matches")
+    .select("id, org_id, state, status, updated_at, created_at")
+    .in("state", ["intent_declared", "counterparty_sighted", "committed", "completed"])
+    .gte("updated_at", sinceIso)
+    .order("updated_at", { ascending: false })
+    .limit(ROW_LIMIT);
+
+  if (mintedErr) {
+    console.error("[burn-poi-reconciliation] minted-matches fetch failed:", mintedErr);
+    return json(500, { error: "MINTED_MATCH_FETCH_FAILED", detail: mintedErr.message });
+  }
+
+  const stateWithoutLedger: Array<Record<string, unknown>> = [];
+  const mintedMatchIds = (mintedMatches ?? []).map((m) => (m as { id: string }).id).filter(Boolean);
+
+  if (mintedMatchIds.length > 0) {
+    const { data: mintedLedgerRows, error: mintedLedgerErr } = await admin
+      .from("ledger_events")
+      .select("match_id")
+      .eq("event_type", "poi.minted")
+      .in("match_id", mintedMatchIds);
+
+    if (mintedLedgerErr) {
+      console.error("[burn-poi-reconciliation] minted-ledger fetch failed:", mintedLedgerErr);
+      return json(500, { error: "MINTED_LEDGER_FETCH_FAILED", detail: mintedLedgerErr.message });
+    }
+
+    const ledgerMatchIds = new Set(
+      (mintedLedgerRows ?? []).map((r) => (r as { match_id: string | null }).match_id).filter(Boolean),
+    );
+
+    for (const m of mintedMatches ?? []) {
+      const row = m as { id: string; org_id: string; state: string; status: string; updated_at: string; created_at: string };
+      if (ledgerMatchIds.has(row.id)) continue;
+      stateWithoutLedger.push({
+        match_id: row.id,
+        org_id: row.org_id,
+        state: row.state,
+        status: row.status,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      });
+    }
+  }
+
+  // ── 4. Optional: open admin_risk_items per drift case (idempotent via title) ─
   // admin_risk_items has no external_ref column, so we use a stable title
   // prefix and skip insertion when an open row with the same title exists.
   let openedRiskItems = 0;
@@ -272,9 +322,14 @@ Deno.serve(async (req) => {
       const description = `POI ${drift.poi_id} (state=${drift.state}) for org ${drift.org_id} on match ${drift.match_id} has no matching burn or exemption. Manual investigation required.`;
       try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
     }
+    for (const drift of stateWithoutLedger) {
+      const title = `Reconciliation: minted state without ledger event [match ${String(drift.match_id).slice(0, 8)}]`;
+      const description = `Match ${drift.match_id} (state=${drift.state}, status=${drift.status}) for org ${drift.org_id} is in a minted state but has no ledger_events.poi.minted row. State-vs-ledger drift; manual investigation required. No silent repair performed.`;
+      try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
+    }
   }
 
-  // ── 4. Audit row ───────────────────────────────────────────────────
+  // ── 5. Audit row ───────────────────────────────────────────────────
   try {
     await admin.from("admin_audit_logs").insert({
       admin_user_id: null,
@@ -286,6 +341,7 @@ Deno.serve(async (req) => {
         window_days: windowDays,
         burns_without_poi: burnsWithoutPoi.length,
         pois_without_burn: poisWithoutBurn.length,
+        state_without_ledger: stateWithoutLedger.length,
         opened_risk_items: openedRiskItems,
         source: "burn-poi-reconciliation",
       },
@@ -306,6 +362,10 @@ Deno.serve(async (req) => {
     pois_without_burn: {
       count: poisWithoutBurn.length,
       samples: poisWithoutBurn.slice(0, SAMPLE_CAP),
+    },
+    state_without_ledger: {
+      count: stateWithoutLedger.length,
+      samples: stateWithoutLedger.slice(0, SAMPLE_CAP),
     },
     opened_risk_items: openedRiskItems,
   });
