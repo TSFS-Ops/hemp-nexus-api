@@ -90,6 +90,21 @@ const FIXTURES = [
     purpose:
       "Initiator reconfirm — duplicate-click / Idempotency-Key replay test",
   },
+  // Batch E — outreach-blocked observability fixtures. Both rows are
+  // hard-stuck in their blocked state: outreach cannot be sent because
+  // the contact-completeness gate (`getContactState`) refuses, so no
+  // notification path, lifecycle job, or POI side-effect can fire even
+  // before the is_demo isolation kicks in.
+  {
+    id: "DEMO-BE-CONTACT-INCOMPLETE-001",
+    purpose:
+      "Outreach blocked — contact incomplete (no usable email, no org, no named individual)",
+  },
+  {
+    id: "DEMO-BE-EMAIL-MISSING-002",
+    purpose:
+      "Outreach blocked — email missing (organisation known, email unusable)",
+  },
 ];
 
 function json(body: unknown, status = 200): Response {
