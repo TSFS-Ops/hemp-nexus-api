@@ -169,6 +169,24 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
             </div>
           )}
 
+          {isExpired && (
+            <div
+              role="status"
+              className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10"
+            >
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-sm text-amber-900 dark:text-amber-100 space-y-1">
+                <p className="font-medium">This engagement has expired</p>
+                <p className="text-xs">
+                  Because this engagement has expired, your acceptance will not
+                  complete the workflow immediately. It will be sent back to the
+                  initiator for reconfirmation, and they have a limited window
+                  to confirm or decline.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Button + banner alignment (P3): when the engagement is still
               "notification_sent" the backend will refuse Accept with an
               illegal-transition error, because the initiator has not yet
