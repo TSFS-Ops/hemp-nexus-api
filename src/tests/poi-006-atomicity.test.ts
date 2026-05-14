@@ -96,7 +96,10 @@ describe('POI-006: engagement row is atomic with mint (criterion 6)', () => {
 
   it('engagement insert appears AFTER the audit row insert (last in the transaction, so any earlier failure rolls it back)', () => {
     const auditIdx = MIGRATION.indexOf("INSERT INTO audit_logs");
-    const engIdx = MIGRATION.indexOf('INSERT INTO poi_engagements');
+    // Two engagement inserts exist: the idempotent self-heal first, then the
+    // canonical post-mint one. The canonical one (lastIndexOf) must come
+    // after the audit insert in the fresh-mint path.
+    const engIdx = MIGRATION.lastIndexOf('INSERT INTO poi_engagements');
     expect(auditIdx).toBeGreaterThan(0);
     expect(engIdx).toBeGreaterThan(auditIdx);
   });
