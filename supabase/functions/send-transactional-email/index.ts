@@ -190,6 +190,7 @@ Deno.serve(async (req) => {
     // Log the suppressed attempt
     await supabase.from('email_send_log').insert({
       message_id: messageId,
+      idempotency_key: callerSuppliedKey,
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'suppressed',
@@ -223,6 +224,7 @@ Deno.serve(async (req) => {
     })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
+      idempotency_key: callerSuppliedKey,
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'failed',
@@ -256,6 +258,7 @@ Deno.serve(async (req) => {
       })
       await supabase.from('email_send_log').insert({
         message_id: messageId,
+        idempotency_key: callerSuppliedKey,
         template_name: templateName,
         recipient_email: effectiveRecipient,
         status: 'failed',
@@ -285,6 +288,7 @@ Deno.serve(async (req) => {
       })
       await supabase.from('email_send_log').insert({
         message_id: messageId,
+        idempotency_key: callerSuppliedKey,
         template_name: templateName,
         recipient_email: effectiveRecipient,
         status: 'failed',
@@ -307,6 +311,7 @@ Deno.serve(async (req) => {
     })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
+      idempotency_key: callerSuppliedKey,
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'suppressed',
@@ -346,6 +351,7 @@ Deno.serve(async (req) => {
   // template rendering).
   await supabase.from('email_send_log').insert({
     message_id: messageId,
+    idempotency_key: callerSuppliedKey,
     template_name: templateName,
     recipient_email: effectiveRecipient,
     status: 'pending',
@@ -382,6 +388,7 @@ Deno.serve(async (req) => {
 
     await supabase.from('email_send_log').insert({
       message_id: messageId,
+      idempotency_key: callerSuppliedKey,
       template_name: templateName,
       recipient_email: effectiveRecipient,
       status: 'failed',
