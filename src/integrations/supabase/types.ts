@@ -7876,6 +7876,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      ensure_poi_engagement_for_minted_match: {
+        Args: { p_match_id: string; p_org_id: string }
+        Returns: Json
+      }
       ensure_sole_member_is_org_admin: {
         Args: { _org_id: string }
         Returns: undefined

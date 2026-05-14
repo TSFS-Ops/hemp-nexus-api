@@ -227,14 +227,44 @@ Deno.serve(async (req) => {
 
       const currentState = match.state || 'discovery';
       
-      // Idempotent return if already past discovery (POI already generated)
+      // Idempotent return if already past discovery (POI already generated).
+      // POI-012: before returning, run a small self-heal that ensures a current
+      // poi_engagements row exists for this minted match. Legacy/damaged rows
+      // (minted match with no engagement) are repaired here without burning
+      // credits, writing a ledger event, or duplicating audit/notification rows.
       if (['intent_declared', 'counterparty_sighted', 'committed', 'completed'].includes(currentState) || match.status === 'settled') {
-        console.log(`[${requestId}] POI already generated - returning idempotently`);
+        let engagementCreated = false;
+        let engagementExisted = false;
+        try {
+          const { data: healRes, error: healErr } = await supabase.rpc(
+            "ensure_poi_engagement_for_minted_match",
+            { p_match_id: matchId, p_org_id: authCtx.orgId },
+          );
+          if (healErr) {
+            // Non-fatal: the user's POI is already real. Surface in logs only.
+            console.error(`[${requestId}] POI-012 engagement self-heal failed:`, healErr);
+          } else if (healRes && typeof healRes === "object") {
+            engagementCreated = !!(healRes as Record<string, unknown>).engagement_created;
+            engagementExisted = !!(healRes as Record<string, unknown>).engagement_existed;
+            if (engagementCreated) {
+              console.log(`[${requestId}] POI-012 engagement repaired (source=poi_existing_repair) for match ${matchId}`);
+            }
+          }
+        } catch (e) {
+          console.error(`[${requestId}] POI-012 engagement self-heal threw:`, e);
+        }
+
+        console.log(`[${requestId}] POI already generated - returning idempotently (engagement_created=${engagementCreated}, engagement_existed=${engagementExisted})`);
         await logApiRequest({
           supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
           endpoint: endpointLabel, method: "POST", statusCode: 200,
         });
-        return new Response(JSON.stringify(match), {
+        return new Response(JSON.stringify({
+          ...match,
+          idempotent: true,
+          engagement_created: engagementCreated,
+          engagement_existed: engagementExisted,
+        }), {
           status: 200,
           headers: { ...headers, "Content-Type": "application/json" },
         });
