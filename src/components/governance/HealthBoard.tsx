@@ -114,7 +114,7 @@ export function HealthBoard() {
   return (
     <>
       {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-px bg-muted border border-border mb-10">
+      <div className="grid grid-cols-4 gap-px bg-muted border border-border mb-10">
         <div className="bg-card p-5">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Composite</p>
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">99.962%</p>
@@ -132,6 +132,13 @@ export function HealthBoard() {
             {openIncidents > 0
               ? `monitoring · ${shortId(incidents.find(i => i.status !== "resolved")!.id)}`
               : "all clear"}
+          </p>
+        </div>
+        <div className="bg-card p-5" data-testid="healthboard-no-recipient-tile">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">No-Recipient Outreach</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{noRecipient}</p>
+          <p className={`font-mono text-[10px] mt-0.5 ${noRecipient > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
+            {noRecipient > 0 ? "manual follow-up required · today" : "no manual backlog · today"}
           </p>
         </div>
       </div>
