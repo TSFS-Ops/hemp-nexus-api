@@ -53,6 +53,9 @@ const DEMO_MATCH_HASHES = [
   "DEMO-LATE-RECONFIRM-005",
   "DEMO-CLEAN-006",
   "DEMO-RECONFIRM-DUPLICATE-007",
+  // Batch E observability fixtures.
+  "DEMO-BE-CONTACT-INCOMPLETE-001",
+  "DEMO-BE-EMAIL-MISSING-002",
 ];
 
 function json(body: unknown, status = 200): Response {
