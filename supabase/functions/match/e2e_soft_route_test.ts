@@ -320,3 +320,186 @@ Deno.test({
       .eq("match_id", FIXTURE_MATCH_ID);
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// POI-004 #5 — concurrent soft-route inserts must collapse to ONE row.
+//
+// Two requests fire in the same tick with DIFFERENT Idempotency-Keys
+// against a freshly-reset fixture. Whichever transaction wins INSERTs the
+// poi_engagements row; the loser hits the UNIQUE(match_id) constraint
+// (SQLSTATE 23505) and the handler must recover by re-fetching and
+// returning the same row. Acceptance:
+//
+//   • Exactly ONE poi_engagements row exists for the fixture match.
+//   • Either both responses are 202 with the SAME engagement.id, or one
+//     is 202 and the loser is 409 ENGAGEMENT_PENDING (the engagement
+//     guard at the top of the handler raced ahead). Both outcomes are
+//     idempotent and acceptable.
+//   • Zero credits burned (soft-route never charges).
+//   • No 5xx response under any interleaving.
+//
+// This is the runtime backstop for the structural assertions in
+// src/tests/poi-004-idempotency.test.ts.
+// ─────────────────────────────────────────────────────────────────────────
+Deno.test({
+  name:
+    "e2e: POI-004 — concurrent soft-route calls produce exactly one engagement row, no 5xx, no burn",
+  ignore: !allEnvPresent,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    await resetFixture();
+    const jwt = await mintUserJwt();
+
+    const sb = admin();
+    const balanceBefore = await sb
+      .from("token_balances")
+      .select("balance")
+      .eq("org_id", FIXTURE_ORG_ID)
+      .single();
+    const startingBalance = balanceBefore.data!.balance as number;
+
+    // Fire both requests in the same tick, distinct Idempotency-Keys.
+    const keyA = `e2e-soft-route-${crypto.randomUUID()}`;
+    const keyB = `e2e-soft-route-${crypto.randomUUID()}`;
+    const [rA, rB] = await Promise.all([
+      callGeneratePoi({
+        jwt,
+        idemKey: keyA,
+        body: { counterparty_email: "qa-no-such-org@example.invalid" },
+      }),
+      callGeneratePoi({
+        jwt,
+        idemKey: keyB,
+        body: { counterparty_email: "qa-no-such-org@example.invalid" },
+      }),
+    ]);
+
+    // No 5xx under any interleaving.
+    assert(
+      rA.status < 500,
+      `concurrent A returned 5xx: ${rA.status} ${JSON.stringify(rA.body)}`,
+    );
+    assert(
+      rB.status < 500,
+      `concurrent B returned 5xx: ${rB.status} ${JSON.stringify(rB.body)}`,
+    );
+
+    // Acceptable shapes:
+    //   - both 202 with same engagement.id (UNIQUE recovery path), OR
+    //   - one 202 + one 409 ENGAGEMENT_PENDING (engagement guard race).
+    const statuses = [rA.status, rB.status].sort();
+    const ok202Pair = statuses[0] === 202 && statuses[1] === 202;
+    const ok202Plus409 = statuses[0] === 202 && statuses[1] === 409;
+    assert(
+      ok202Pair || ok202Plus409,
+      `unexpected concurrent status pair ${statuses.join(",")} A=${JSON.stringify(rA.body)} B=${JSON.stringify(rB.body)}`,
+    );
+
+    if (ok202Pair) {
+      const idA = (rA.body.engagement as Record<string, unknown>)?.id;
+      const idB = (rB.body.engagement as Record<string, unknown>)?.id;
+      assertEquals(
+        idA,
+        idB,
+        "concurrent 202s must reference the SAME engagement.id (UNIQUE recovery)",
+      );
+    } else {
+      // The 409 loser must carry the canonical ENGAGEMENT_PENDING code.
+      const loser = rA.status === 409 ? rA : rB;
+      assertEquals(loser.body.code, "ENGAGEMENT_PENDING");
+    }
+
+    // Exactly one engagement row in the database for this match.
+    const rows = await sb
+      .from("poi_engagements")
+      .select("id")
+      .eq("match_id", FIXTURE_MATCH_ID);
+    assertEquals(
+      (rows.data ?? []).length,
+      1,
+      `expected exactly 1 poi_engagements row, got ${(rows.data ?? []).length}`,
+    );
+
+    // Zero credits burned.
+    const balanceAfter = await sb
+      .from("token_balances")
+      .select("balance")
+      .eq("org_id", FIXTURE_ORG_ID)
+      .single();
+    assertEquals(
+      balanceAfter.data!.balance,
+      startingBalance,
+      "soft-route concurrent calls MUST NOT burn credits",
+    );
+
+    // Cleanup.
+    await sb
+      .from("poi_engagements")
+      .delete()
+      .eq("match_id", FIXTURE_MATCH_ID);
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// POI-004 #2 — same Idempotency-Key, two concurrent requests.
+//
+// Belt-and-braces over the cache layer: two parallel requests with the
+// SAME Idempotency-Key against the same fixture must both return 202,
+// reference the SAME engagement.id, and produce exactly one DB row. No
+// duplicate burn, no duplicate audit row.
+// ─────────────────────────────────────────────────────────────────────────
+Deno.test({
+  name:
+    "e2e: POI-004 — concurrent calls with SAME Idempotency-Key replay to one engagement",
+  ignore: !allEnvPresent,
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    await resetFixture();
+    const jwt = await mintUserJwt();
+    const sb = admin();
+
+    const sameKey = `e2e-soft-route-${crypto.randomUUID()}`;
+    const [rA, rB] = await Promise.all([
+      callGeneratePoi({
+        jwt,
+        idemKey: sameKey,
+        body: { counterparty_email: "qa-no-such-org@example.invalid" },
+      }),
+      callGeneratePoi({
+        jwt,
+        idemKey: sameKey,
+        body: { counterparty_email: "qa-no-such-org@example.invalid" },
+      }),
+    ]);
+
+    assert(rA.status < 500 && rB.status < 500, "no 5xx allowed");
+    assertEquals(rA.status, 202);
+    assertEquals(rB.status, 202);
+
+    const idA = (rA.body.engagement as Record<string, unknown>)?.id;
+    const idB = (rB.body.engagement as Record<string, unknown>)?.id;
+    assertEquals(idA, idB, "same Idempotency-Key must replay same engagement.id");
+
+    const rows = await sb
+      .from("poi_engagements")
+      .select("id")
+      .eq("match_id", FIXTURE_MATCH_ID);
+    assertEquals((rows.data ?? []).length, 1);
+
+    // Audit: exactly one soft_routed row for this match.
+    const audit = await sb
+      .from("audit_logs")
+      .select("id")
+      .eq("entity_id", FIXTURE_MATCH_ID)
+      .eq("action", "match.poi.soft_routed");
+    assertEquals(
+      (audit.data ?? []).length,
+      1,
+      `expected exactly 1 match.poi.soft_routed audit row, got ${(audit.data ?? []).length}`,
+    );
+
+    await sb.from("poi_engagements").delete().eq("match_id", FIXTURE_MATCH_ID);
+  },
+});
