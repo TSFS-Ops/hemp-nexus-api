@@ -37,8 +37,9 @@ async function deliverWebhook(
   payload: WebhookPayload,
   secret: string,
   webhookEndpointId: string,
-  supabase: SupabaseClient
-): Promise<{ success: boolean; statusCode?: number; error?: string }> {
+  supabase: SupabaseClient,
+  eventIdempotencyKey?: string | null,
+): Promise<{ success: boolean; statusCode?: number; error?: string; idempotent?: boolean }> {
   const body = JSON.stringify(payload);
   const signature = await generateSignature(body, secret);
 
