@@ -82,12 +82,34 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
+  // ── NOT-001 / NOT-006 Fix 6: surface manual-follow-up workload ──
+  // Pending Engagements where the soft-route had no usable recipient are
+  // recorded as `notification_skipped(no_recipient, source=match.soft_route)`.
+  // We count today's distinct rows so admin sees the manual-contact backlog.
+  const { data: noRecipientCount } = useQuery<number>({
+    queryKey: ["healthboard-no-recipient-skips"],
+    queryFn: async () => {
+      const dayStart = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString();
+      const { count, error } = await supabase
+        .from("audit_logs")
+        .select("id", { head: true, count: "exact" })
+        .eq("action", "notification_skipped")
+        .gte("created_at", dayStart)
+        .contains("metadata", { reason: "no_recipient", source_function: "match.soft_route" });
+      if (error) return 0;
+      return count ?? 0;
+    },
+    refetchInterval: 60000,
+    refetchOnWindowFocus: false,
+  });
+
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
 
   const operational = GATES.filter(g => g.status === "operational").length;
   const openIncidents = incidents.filter(i => i.status !== "resolved").length;
   const lastBeat = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : new Date().toISOString();
+  const noRecipient = noRecipientCount ?? 0;
 
   return (
     <>
