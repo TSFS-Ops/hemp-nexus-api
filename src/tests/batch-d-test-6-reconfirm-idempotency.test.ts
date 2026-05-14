@@ -141,7 +141,9 @@ describe("Batch D Test 6 — ReconfirmLateAcceptanceCard sends Idempotency-Key",
   });
 
   it("reuses one stable key per attempt (per dialog open)", () => {
-    expect(CARD).toContain("idempotencyKeys[action] ?? generateIdempotencyKey");
+    expect(CARD).toMatch(
+      /idempotencyKeys\[action\]\s*\?\?\s*generateIdempotencyKey/,
+    );
     // openPending stores the per-action key in state before opening the dialog.
     expect(CARD).toContain("const openPending");
     expect(CARD).toMatch(
