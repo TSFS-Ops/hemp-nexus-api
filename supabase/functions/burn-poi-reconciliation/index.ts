@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
 
   if (burnErr) {
     console.error("[burn-poi-reconciliation] burn fetch failed:", burnErr);
-    return json(500, { error: "BURN_FETCH_FAILED", detail: burnErr.message });
+    throw new Error(`BURN_FETCH_FAILED: ${burnErr.message}`);
   }
 
   const burnsWithoutPoi: Array<Record<string, unknown>> = [];
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
 
     if (poiHitErr) {
       console.error("[burn-poi-reconciliation] poi-by-match fetch failed:", poiHitErr);
-      return json(500, { error: "POI_LOOKUP_FAILED", detail: poiHitErr.message });
+      throw new Error(`POI_LOOKUP_FAILED: ${poiHitErr.message}`);
     }
     const poiMatchIdSet = new Set(
       (poiHits ?? []).map((p) => (p as { match_id: string }).match_id),
@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
 
   if (poiErr) {
     console.error("[burn-poi-reconciliation] poi fetch failed:", poiErr);
-    return json(500, { error: "POI_FETCH_FAILED", detail: poiErr.message });
+    throw new Error(`POI_FETCH_FAILED: ${poiErr.message}`);
   }
 
   const poisWithoutBurn: Array<Record<string, unknown>> = [];
@@ -297,7 +297,7 @@ Deno.serve(async (req) => {
 
   if (mintedErr) {
     console.error("[burn-poi-reconciliation] minted-matches fetch failed:", mintedErr);
-    return json(500, { error: "MINTED_MATCH_FETCH_FAILED", detail: mintedErr.message });
+    throw new Error(`MINTED_MATCH_FETCH_FAILED: ${mintedErr.message}`);
   }
 
   const stateWithoutLedger: Array<Record<string, unknown>> = [];
@@ -312,7 +312,7 @@ Deno.serve(async (req) => {
 
     if (mintedLedgerErr) {
       console.error("[burn-poi-reconciliation] minted-ledger fetch failed:", mintedLedgerErr);
-      return json(500, { error: "MINTED_LEDGER_FETCH_FAILED", detail: mintedLedgerErr.message });
+      throw new Error(`MINTED_LEDGER_FETCH_FAILED: ${mintedLedgerErr.message}`);
     }
 
     const ledgerMatchIds = new Set(
