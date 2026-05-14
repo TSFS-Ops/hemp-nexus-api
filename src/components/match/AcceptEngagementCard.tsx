@@ -199,7 +199,18 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
             const acceptBlocked = engagementStatus === "notification_sent";
             const acceptReason = acceptBlocked
               ? "Accept becomes available once the initiator sends their outreach (or an admin marks the engagement as contacted)."
-              : "Accept this trade engagement";
+              : isExpired
+                ? "Accept after expiry — your acceptance will be sent to the initiator for reconfirmation."
+                : "Accept this trade engagement";
+            const acceptLabel = acceptBlocked
+              ? "Accept (waiting for initiator)"
+              : isExpired
+                ? "Accept (late)"
+                : "Accept Trade";
+            // Server rejects decline on expired rows as an invalid
+            // transition — hide the decline button in that case so the
+            // counterparty isn't offered an action that will fail.
+            const showDecline = !isExpired;
             return (
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button
@@ -214,21 +225,25 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : acceptBlocked ? (
                     <Clock className="h-4 w-4 mr-2" />
+                  ) : isExpired ? (
+                    <Clock className="h-4 w-4 mr-2" />
                   ) : (
                     <Handshake className="h-4 w-4 mr-2" />
                   )}
-                  {acceptBlocked ? "Accept (waiting for initiator)" : "Accept Trade"}
+                  {acceptLabel}
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setPendingAction("declined")}
-                  disabled={isSubmitting}
-                  className="flex-1 sm:flex-none text-destructive border-destructive/30 hover:bg-destructive/5"
-                  title="Decline this trade engagement"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Decline
-                </Button>
+                {showDecline && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setPendingAction("declined")}
+                    disabled={isSubmitting}
+                    className="flex-1 sm:flex-none text-destructive border-destructive/30 hover:bg-destructive/5"
+                    title="Decline this trade engagement"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Decline
+                  </Button>
+                )}
               </div>
             );
           })()}
