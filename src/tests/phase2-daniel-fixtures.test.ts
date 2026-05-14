@@ -82,10 +82,17 @@ describe("Phase 2 — seed-daniel-fixtures invariants", () => {
     expect(SEEDER).toMatch(
       /DEMO-BE-CONTACT-INCOMPLETE-001[\s\S]{0,800}counterparty_org_id:\s*null[\s\S]{0,200}counterparty_email:\s*null/,
     );
-    // Email-missing: org link present, email is .invalid so
-    // isUsableContactEmail returns false → "email_missing".
+    // Email-missing: org link present, named individual contact recorded,
+    // counterparty_email is NULL → getContactState returns "email_missing"
+    // (not "contact_incomplete") and the initiator UI no longer claims
+    // the counterparty name is still required.
     expect(SEEDER).toMatch(
-      /DEMO-BE-EMAIL-MISSING-002[\s\S]{0,800}counterparty_org_id:\s*counterpartyOrgId[\s\S]{0,200}@example\.invalid"/,
+      /DEMO-BE-EMAIL-MISSING-002[\s\S]{0,1200}counterparty_org_id:\s*counterpartyOrgId[\s\S]{0,400}counterparty_email:\s*null[\s\S]{0,400}contact_type:\s*"named_individual"[\s\S]{0,200}contact_name:\s*"DEMO Counterparty Contact"/,
+    );
+    // The match for fixture 002 must carry a seller_name so the
+    // initiator card can render a "Counterparty" label without an email.
+    expect(SEEDER).toMatch(
+      /DEMO-BE-EMAIL-MISSING-002[\s\S]{0,400}seller_name:\s*"DEMO Counterparty Co\."/,
     );
   });
 
