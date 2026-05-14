@@ -44,16 +44,23 @@ export default function DocsMatches() {
 
         <DocH2 id="lifecycle">Lifecycle</DocH2>
         <DocP>
-          Matches advance through five deterministic states. Transitions are guarded server-side
-          and cannot be skipped or reversed.
+          The public <InlineCode>/match</InlineCode> resource exposes five deterministic states.
+          Transitions are guarded server-side and cannot be skipped or reversed. Internally
+          these map onto the POI engine's eight-state machine
+          (<InlineCode>DRAFT → PENDING_APPROVAL → ELIGIBLE → COMPLETION_REQUESTED → COMPLETED</InlineCode>,
+          plus terminal <InlineCode>EXPIRED</InlineCode>, <InlineCode>REJECTED</InlineCode>,
+          <InlineCode>ANNULLED</InlineCode>); the API surfaces the externally-meaningful
+          rollup. See{" "}
+          <a href="/docs/evidence" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">Evidence Packs</a>{" "}
+          for the WaD seal that runs on top.
         </DocP>
         <ParamTable
           rows={[
             { name: "discovery",            type: "initial", desc: "Both party slots identified. Terms may still be amended." },
-            { name: "intent_declared",      type: "next",    desc: "Initiating party (the org that created the match) has confirmed intent. The org in the opposite slot has been notified — this is single-side acknowledgement, not bilateral acceptance." },
-            { name: "counterparty_sighted", type: "next",    desc: "The org in the opposite slot has acknowledged the match. Engagement hold-point cleared. Still single-side; not yet committed." },
-            { name: "committed",            type: "next",    desc: "BOTH parties have signed Proof of Intent (bilateral). Terms are now immutable." },
-            { name: "completed",            type: "final",   desc: "WaD certificate issued. Evidence pack sealed and downloadable." },
+            { name: "intent_declared",      type: "next",    desc: "Initiating party has recorded intent. The opposite-slot org has been notified — single-side acknowledgement, not bilateral acceptance." },
+            { name: "counterparty_sighted", type: "next",    desc: "The opposite-slot org has acknowledged the match. Engagement hold-point cleared. Still single-side; not yet committed." },
+            { name: "committed",            type: "next",    desc: "Both parties have minted Proof of Intent (bilateral). Terms are now immutable." },
+            { name: "completed",            type: "final",   desc: "Without a Doubt (WaD) certificate sealed. Evidence pack downloadable." },
           ]}
         />
 
@@ -106,22 +113,28 @@ export default function DocsMatches() {
           "the counterparty" is always derived relative to the viewer's own slot.
         </DocP>
 
-        <DocH2 id="confirm-intent">Confirm intent</DocH2>
+        <DocH2 id="confirm-intent">Mint Proof of Intent (POI)</DocH2>
         <div className="flex items-center gap-3 mb-3">
           <EndpointBadge method="POST" />
           <code className="text-[13.5px] font-mono text-foreground">/match/:id/settle</code>
         </div>
         <DocP>
-          Advances a match to <InlineCode>completed</InlineCode>. This call burns 1 token from
-          your balance, generates the Proof of Intent, seals the collapse ledger entry, and
-          triggers the <InlineCode>intent.confirmed</InlineCode> webhook.
+          Advances a match to <InlineCode>committed</InlineCode> and, once both sides have
+          minted, on to <InlineCode>completed</InlineCode>. Internally this is a single
+          operation referred to in three places by three names — they are the same call:
+          <strong className="text-foreground font-medium"> POI mint</strong> (engine layer),
+          <strong className="text-foreground font-medium"> /settle</strong> (REST verb), and
+          <strong className="text-foreground font-medium"> Confirm Intent</strong> (UI label).
+          The call burns 1 credit (1 credit = $1 USD) from your balance, generates the Proof
+          of Intent payload + SHA-256 hash, writes the collapse-ledger entry, and triggers the{" "}
+          <InlineCode>poi.generated</InlineCode> webhook. When both sides have minted, the WaD
+          gates run and <InlineCode>wad.sealed</InlineCode> fires.
         </DocP>
         <Callout>
-          Confirm Intent is a hold-point: the call returns <InlineCode>409 ENGAGEMENT_PENDING</InlineCode>{" "}
-          until the org in the opposite slot has acknowledged the match. Acknowledgement is
-          single-side and is <em>not</em> the same as bilateral acceptance — both parties
-          must reach <InlineCode>committed</InlineCode> for the POI/WaD to be considered
-          complete. See{" "}
+          POI mint is a hold-point: the call returns <InlineCode>409 ENGAGEMENT_PENDING</InlineCode>{" "}
+          until the org in the opposite slot has accepted the engagement. Acceptance is
+          single-side and is <em>not</em> the same as bilateral commitment — both parties
+          must mint POI for the match to reach <InlineCode>committed</InlineCode>. See{" "}
           <a href="/docs/counterparties" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">Counterparties</a>{" "}
           for the engagement flow.
         </Callout>
