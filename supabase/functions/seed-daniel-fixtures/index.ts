@@ -266,8 +266,10 @@ interface EngagementShape {
   fixture_id: string;
   match_id: string;
   org_id: string; // initiator
-  counterparty_org_id: string;
-  counterparty_email: string;
+  // Nullable so Batch E "contact_incomplete" fixture can omit the org link.
+  counterparty_org_id: string | null;
+  // Nullable so Batch E fixtures can present an unusable / missing email.
+  counterparty_email: string | null;
   engagement_status:
     | "pending"
     | "notification_sent"
