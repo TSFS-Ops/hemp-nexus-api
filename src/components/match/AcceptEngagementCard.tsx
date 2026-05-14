@@ -49,11 +49,20 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
   // responded and the next action sits with the initiator (reconfirm /
   // decline) — surfacing Accept here again would imply progression that
   // the workflow does not allow.
+  // Batch D Test 7: 'expired' is also respondable from the counterparty
+  // surface — the server routes accept-after-expiry into
+  // atomic_record_late_acceptance and hands the next step (reconfirm /
+  // decline) back to the initiator. We surface a clearly-labelled
+  // "Accept (late)" affordance so the counterparty isn't left looking at
+  // an expired row with no action.
   const canRespond =
-    engagementStatus === "notification_sent" || engagementStatus === "contacted";
+    engagementStatus === "notification_sent" ||
+    engagementStatus === "contacted" ||
+    engagementStatus === "expired";
 
   if (!isCounterparty || !canRespond) return null;
 
+  const isExpired = engagementStatus === "expired";
   const roleLabel = matchRole === "buyer" ? "Buyer" : "Seller";
 
   const handleRespond = async () => {
