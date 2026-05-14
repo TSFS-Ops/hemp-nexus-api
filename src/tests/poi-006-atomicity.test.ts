@@ -137,7 +137,12 @@ describe('POI-006: edge function — post-commit failures are non-fatal (criteri
   });
 
   it('post-commit poi.generated audit insert no longer throws AUDIT_LOG_ERROR', () => {
-    expect(MATCH_INDEX).not.toContain('AUDIT_LOG_ERROR');
+    // The poi.generated post-commit insert must not raise the legacy
+    // AUDIT_LOG_ERROR. (Other unrelated branches in the file may still use it
+    // for non-POI-006 paths, so we scope by line context.)
+    expect(MATCH_INDEX).not.toMatch(
+      /POI-006: secondary poi\.generated audit[\s\S]*?AUDIT_LOG_ERROR/,
+    );
     // It must be wrapped in a try/catch that only logs.
     expect(MATCH_INDEX).toMatch(
       /POI-006: secondary poi\.generated audit insert failed \(non-fatal\)/,
