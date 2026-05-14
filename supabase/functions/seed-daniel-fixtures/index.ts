@@ -90,6 +90,21 @@ const FIXTURES = [
     purpose:
       "Initiator reconfirm — duplicate-click / Idempotency-Key replay test",
   },
+  // Batch E — outreach-blocked observability fixtures. Both rows are
+  // hard-stuck in their blocked state: outreach cannot be sent because
+  // the contact-completeness gate (`getContactState`) refuses, so no
+  // notification path, lifecycle job, or POI side-effect can fire even
+  // before the is_demo isolation kicks in.
+  {
+    id: "DEMO-BE-CONTACT-INCOMPLETE-001",
+    purpose:
+      "Outreach blocked — contact incomplete (no usable email, no org, no named individual)",
+  },
+  {
+    id: "DEMO-BE-EMAIL-MISSING-002",
+    purpose:
+      "Outreach blocked — email missing (organisation known, email unusable)",
+  },
 ];
 
 function json(body: unknown, status = 200): Response {
@@ -251,8 +266,10 @@ interface EngagementShape {
   fixture_id: string;
   match_id: string;
   org_id: string; // initiator
-  counterparty_org_id: string;
-  counterparty_email: string;
+  // Nullable so Batch E "contact_incomplete" fixture can omit the org link.
+  counterparty_org_id: string | null;
+  // Nullable so Batch E fixtures can present an unusable / missing email.
+  counterparty_email: string | null;
   engagement_status:
     | "pending"
     | "notification_sent"
@@ -651,6 +668,80 @@ Deno.serve(async (req) => {
         click:
           "Login as daniel-initiator → Match Details → 'Reconfirm and renew engagement' (then double-click / refresh+retry to verify duplicate-safe replay)",
         route: `/desk/match/${matchId}`,
+      });
+    }
+
+    // H. DEMO-BE-CONTACT-INCOMPLETE-001 — Batch E observability fixture.
+    //    Outreach is hard-blocked by `getContactState` because there is
+    //    no usable email, no linked counterparty org, and no named
+    //    individual. Initiator surface renders the neutral
+    //    "Outreach paused — contact incomplete" amber banner; admin
+    //    panel shows the "Contact incomplete" chip and the Send-outreach
+    //    button is disabled. No email/SMS/POI/credit/lifecycle path is
+    //    reachable: the contact gate refuses before any dispatcher and
+    //    the is_demo flag short-circuits the rest of Phase 1 isolation.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-BE-CONTACT-INCOMPLETE-001",
+        initiatorOrgId,
+        counterpartyOrgId,
+      );
+      const eng = await ensureEngagement(admin, {
+        fixture_id: "DEMO-BE-CONTACT-INCOMPLETE-001",
+        match_id: matchId,
+        org_id: initiatorOrgId,
+        counterparty_org_id: null,
+        counterparty_email: null,
+        engagement_status: "pending",
+        operational_state: null,
+        expires_at: iso(now + 30 * day),
+      });
+      results.push({
+        fixture: "DEMO-BE-CONTACT-INCOMPLETE-001",
+        purpose: "Outreach blocked — contact incomplete",
+        match_id: matchId,
+        engagement_id: eng.id,
+        engagement_status: "pending",
+        operational_state: null,
+        click:
+          "HQ → Engagements → toggle 'Show DEMO rows' → open this row → confirm initiator amber 'Outreach paused — contact incomplete' banner and disabled Send outreach with 'Contact incomplete' chip",
+        route: "/hq/engagements",
+      });
+    }
+
+    // I. DEMO-BE-EMAIL-MISSING-002 — Batch E observability fixture.
+    //    Counterparty organisation is known but the email is unusable
+    //    (`.invalid` domain), so `getContactState` returns
+    //    "email_missing". Initiator sees the neutral "Outreach paused —
+    //    email missing" amber banner; admin Send-outreach is disabled.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-BE-EMAIL-MISSING-002",
+        initiatorOrgId,
+        counterpartyOrgId,
+      );
+      const eng = await ensureEngagement(admin, {
+        fixture_id: "DEMO-BE-EMAIL-MISSING-002",
+        match_id: matchId,
+        org_id: initiatorOrgId,
+        counterparty_org_id: counterpartyOrgId,
+        counterparty_email: "demo-counterparty-no-email@example.invalid",
+        engagement_status: "pending",
+        operational_state: null,
+        expires_at: iso(now + 30 * day),
+      });
+      results.push({
+        fixture: "DEMO-BE-EMAIL-MISSING-002",
+        purpose: "Outreach blocked — email missing",
+        match_id: matchId,
+        engagement_id: eng.id,
+        engagement_status: "pending",
+        operational_state: null,
+        click:
+          "HQ → Engagements → toggle 'Show DEMO rows' → open this row → confirm initiator amber 'Outreach paused — email missing' banner and disabled Send outreach",
+        route: "/hq/engagements",
       });
     }
 

@@ -58,7 +58,7 @@ describe("Phase 2 — seed-daniel-fixtures invariants", () => {
     expect(SEEDER).toMatch(/role:\s*"platform_admin"/);
   });
 
-  it("includes all six stable fixture identifiers", () => {
+  it("includes all stable fixture identifiers (Batch D + Batch E)", () => {
     for (const id of [
       "DEMO-BINDING-001",
       "DEMO-DISPUTED-002",
@@ -66,9 +66,27 @@ describe("Phase 2 — seed-daniel-fixtures invariants", () => {
       "DEMO-LATE-ACCEPT-004",
       "DEMO-LATE-RECONFIRM-005",
       "DEMO-CLEAN-006",
+      "DEMO-RECONFIRM-DUPLICATE-007",
+      // Batch E observability fixtures.
+      "DEMO-BE-CONTACT-INCOMPLETE-001",
+      "DEMO-BE-EMAIL-MISSING-002",
     ]) {
       expect(SEEDER).toContain(id);
+      expect(UNSEEDER).toContain(id);
     }
+  });
+
+  it("Batch E fixtures use the contact-incomplete / email-missing shapes", () => {
+    // Contact-incomplete: explicit null org link AND null email so
+    // getContactState deterministically returns "contact_incomplete".
+    expect(SEEDER).toMatch(
+      /DEMO-BE-CONTACT-INCOMPLETE-001[\s\S]{0,800}counterparty_org_id:\s*null[\s\S]{0,200}counterparty_email:\s*null/,
+    );
+    // Email-missing: org link present, email is .invalid so
+    // isUsableContactEmail returns false → "email_missing".
+    expect(SEEDER).toMatch(
+      /DEMO-BE-EMAIL-MISSING-002[\s\S]{0,800}counterparty_org_id:\s*counterpartyOrgId[\s\S]{0,200}@example\.invalid"/,
+    );
   });
 
   it("uses dispute_source='admin_report' for the disputed fixture", () => {
