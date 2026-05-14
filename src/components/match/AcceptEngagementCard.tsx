@@ -49,11 +49,20 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
   // responded and the next action sits with the initiator (reconfirm /
   // decline) — surfacing Accept here again would imply progression that
   // the workflow does not allow.
+  // Batch D Test 7: 'expired' is also respondable from the counterparty
+  // surface — the server routes accept-after-expiry into
+  // atomic_record_late_acceptance and hands the next step (reconfirm /
+  // decline) back to the initiator. We surface a clearly-labelled
+  // "Accept (late)" affordance so the counterparty isn't left looking at
+  // an expired row with no action.
   const canRespond =
-    engagementStatus === "notification_sent" || engagementStatus === "contacted";
+    engagementStatus === "notification_sent" ||
+    engagementStatus === "contacted" ||
+    engagementStatus === "expired";
 
   if (!isCounterparty || !canRespond) return null;
 
+  const isExpired = engagementStatus === "expired";
   const roleLabel = matchRole === "buyer" ? "Buyer" : "Seller";
 
   const handleRespond = async () => {
@@ -75,7 +84,13 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
       queryClient.invalidateQueries({ queryKey: ["engagement-status-gate"] });
 
       if (pendingAction === "accepted") {
-        toast.success("You have accepted this trade engagement. The deal can now proceed.");
+        if (isExpired) {
+          toast.success(
+            "Late acceptance recorded. The initiator has been notified and must reconfirm within the late-acceptance window.",
+          );
+        } else {
+          toast.success("You have accepted this trade engagement. The deal can now proceed.");
+        }
       } else {
         toast.info("You have declined this trade engagement.");
       }
@@ -160,6 +175,24 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
             </div>
           )}
 
+          {isExpired && (
+            <div
+              role="status"
+              className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10"
+            >
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-sm text-amber-900 dark:text-amber-100 space-y-1">
+                <p className="font-medium">This engagement has expired</p>
+                <p className="text-xs">
+                  Because this engagement has expired, your acceptance will not
+                  complete the workflow immediately. It will be sent back to the
+                  initiator for reconfirmation, and they have a limited window
+                  to confirm or decline.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Button + banner alignment (P3): when the engagement is still
               "notification_sent" the backend will refuse Accept with an
               illegal-transition error, because the initiator has not yet
@@ -172,7 +205,18 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
             const acceptBlocked = engagementStatus === "notification_sent";
             const acceptReason = acceptBlocked
               ? "Accept becomes available once the initiator sends their outreach (or an admin marks the engagement as contacted)."
-              : "Accept this trade engagement";
+              : isExpired
+                ? "Accept after expiry — your acceptance will be sent to the initiator for reconfirmation."
+                : "Accept this trade engagement";
+            const acceptLabel = acceptBlocked
+              ? "Accept (waiting for initiator)"
+              : isExpired
+                ? "Accept (late)"
+                : "Accept Trade";
+            // Server rejects decline on expired rows as an invalid
+            // transition — hide the decline button in that case so the
+            // counterparty isn't offered an action that will fail.
+            const showDecline = !isExpired;
             return (
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button
@@ -187,21 +231,25 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : acceptBlocked ? (
                     <Clock className="h-4 w-4 mr-2" />
+                  ) : isExpired ? (
+                    <Clock className="h-4 w-4 mr-2" />
                   ) : (
                     <Handshake className="h-4 w-4 mr-2" />
                   )}
-                  {acceptBlocked ? "Accept (waiting for initiator)" : "Accept Trade"}
+                  {acceptLabel}
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setPendingAction("declined")}
-                  disabled={isSubmitting}
-                  className="flex-1 sm:flex-none text-destructive border-destructive/30 hover:bg-destructive/5"
-                  title="Decline this trade engagement"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Decline
-                </Button>
+                {showDecline && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setPendingAction("declined")}
+                    disabled={isSubmitting}
+                    className="flex-1 sm:flex-none text-destructive border-destructive/30 hover:bg-destructive/5"
+                    title="Decline this trade engagement"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Decline
+                  </Button>
+                )}
               </div>
             );
           })()}
@@ -212,7 +260,11 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingAction === "accepted" ? "Accept this trade?" : "Decline this trade?"}
+              {pendingAction === "accepted"
+                ? isExpired
+                  ? "Accept this trade after expiry?"
+                  : "Accept this trade?"
+                : "Decline this trade?"}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
@@ -224,7 +276,9 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
                       <strong>{match.commodity}</strong>.
                     </p>
                     <p className="text-sm">
-                      The trade will progress and both parties can negotiate terms.
+                      {isExpired
+                        ? "Because this engagement has already expired, your acceptance will not progress the deal immediately. It will be sent to the initiator for reconfirmation, and they have a limited window to confirm or decline."
+                        : "The trade will progress and both parties can negotiate terms."}
                     </p>
                   </>
                 ) : (
