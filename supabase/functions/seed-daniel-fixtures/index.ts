@@ -85,6 +85,11 @@ const FIXTURES = [
     purpose: "Initiator reconfirm/decline late acceptance",
   },
   { id: "DEMO-CLEAN-006", purpose: "Control row — ordinary engagement" },
+  {
+    id: "DEMO-RECONFIRM-DUPLICATE-007",
+    purpose:
+      "Initiator reconfirm — duplicate-click / Idempotency-Key replay test",
+  },
 ];
 
 function json(body: unknown, status = 200): Response {
