@@ -369,7 +369,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 2 · Ownership (UBO) */}
-        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-md overflow-hidden transition-shadow">
+        <article className="bg-card border border-slate-200 rounded-md overflow-hidden">
           <CardHeader
             index="02"
             title="Ownership (UBO)"
@@ -440,7 +440,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 3 · Regulatory Evidence */}
-        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-md overflow-hidden transition-shadow">
+        <article className="bg-card border border-slate-200 rounded-md overflow-hidden">
           <CardHeader index="03" title="Regulatory Evidence" kicker="Active Licences" />
           <div className="p-6">
             {docs.length === 0 ? (

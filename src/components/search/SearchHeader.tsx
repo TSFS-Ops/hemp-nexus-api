@@ -81,7 +81,7 @@ export function SearchHeader({
                 className={cn(
                   "flex-1 h-10 rounded-md text-xs font-semibold transition-all duration-200 flex flex-col items-center justify-center gap-0",
                   side === "seller"
-                    ? "bg-card text-slate-900 shadow-md ring-1 ring-slate-300"
+                    ? "bg-card text-slate-900 ring-1 ring-slate-300"
                     : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/40",
                   isSearching && "opacity-50 cursor-not-allowed",
                 )}
