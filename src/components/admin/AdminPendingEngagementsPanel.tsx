@@ -679,7 +679,7 @@ export function AdminPendingEngagementsPanel() {
 
   useEffect(() => {
     fetchEngagements();
-    fetchKnownCounts();
+    fetchOffScopeCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 
@@ -697,7 +697,7 @@ export function AdminPendingEngagementsPanel() {
       if (debounce) clearTimeout(debounce);
       debounce = setTimeout(() => {
         fetchEngagements();
-        fetchKnownCounts();
+        fetchOffScopeCounts();
       }, 400);
     };
 
@@ -1299,12 +1299,12 @@ export function AdminPendingEngagementsPanel() {
               </span>
             )}
           </p>
-          {scope === "unknown" && knownRecentCount > 0 && (
+          {scope === "unknown" && offScopeRecentCount > 0 && (
             <div className="mt-3 max-w-2xl rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 flex items-start gap-2">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-sky-700" />
               <div className="flex-1">
                 <strong>Looking for an engagement that disappeared?</strong>{" "}
-                {knownRecentCount} engagement{knownRecentCount === 1 ? "" : "s"} moved out of this view
+                {offScopeRecentCount} engagement{offScopeRecentCount === 1 ? "" : "s"} moved out of this view
                 in the last 7 days because the counterparty email matched a registered organisation.
                 They are still live — they're now visible under <strong>All</strong> (the row is filed
                 under the counterparty's organisation, not as an "unknown outreach" task).
@@ -1337,14 +1337,14 @@ export function AdminPendingEngagementsPanel() {
               title="Include known-counterparty (already-on-platform) engagements. Engagements auto-promote here as soon as their counterparty email matches a registered organisation."
             >
               All
-              {knownTotalCount > 0 && (
+              {offScopeTotalCount > 0 && (
                 <span
                   className={`inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 rounded-full text-[10px] font-semibold ${
                     scope === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
                   }`}
-                  title={`${knownTotalCount} engagement(s) on this platform have a known (registered) counterparty`}
+                  title={`${offScopeTotalCount} engagement(s) on this platform have a known (registered) counterparty`}
                 >
-                  +{knownTotalCount}
+                  +{offScopeTotalCount}
                 </span>
               )}
             </button>
