@@ -7684,6 +7684,10 @@ export type Database = {
           status: string
         }[]
       }
+      admin_record_legacy_detections: {
+        Args: { p_admin_user_id: string; p_match_ids?: string[] }
+        Returns: Json
+      }
       admin_repair_legacy_match: {
         Args: {
           p_admin_user_id: string

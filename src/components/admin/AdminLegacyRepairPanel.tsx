@@ -188,6 +188,43 @@ export function AdminLegacyRepairPanel() {
   const refetchQueue = () =>
     queryClient.invalidateQueries({ queryKey: ["admin-legacy-repair"] });
 
+  const recordDetectionsMutation = useMutation({
+    mutationFn: async (matchIds: string[]) => {
+      const idempotencyKey = crypto.randomUUID();
+      const { data, error } = await supabase.functions.invoke(
+        "admin-match-legacy-record-detections",
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": idempotencyKey },
+          body: { match_ids: matchIds },
+        },
+      );
+      if (error) {
+        const { code, message } = await extractErrorCode(error);
+        const friendly = safeErrorCopy(code, message ?? "Detection scan failed");
+        throw new Error(friendly);
+      }
+      return data as {
+        ok: true;
+        result: {
+          scanned: number;
+          recorded: number;
+          already_recorded: number;
+          skipped: number;
+        };
+      };
+    },
+    onSuccess: (data) => {
+      const r = data.result;
+      toast.success(
+        `Detection audit recorded for ${r.recorded} match${r.recorded === 1 ? "" : "es"}. ${r.already_recorded} already recorded.`,
+      );
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -219,11 +256,25 @@ export function AdminLegacyRepairPanel() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>
           {rows.length} match{rows.length === 1 ? "" : "es"} flagged for repair
         </span>
-        <span className="font-mono">Admin actions: archive · repair</span>
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={rows.length === 0 || recordDetectionsMutation.isPending}
+            onClick={() =>
+              recordDetectionsMutation.mutate(rows.map((r) => r.id))
+            }
+          >
+            {recordDetectionsMutation.isPending
+              ? "Recording…"
+              : "Record detection audit"}
+          </Button>
+          <span className="font-mono">Admin actions: archive · repair</span>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border bg-card">
