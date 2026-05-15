@@ -322,7 +322,7 @@ export function DealWizard({
       title: "No action available",
       description: "Continue when the next step unlocks.",
     };
-  }, [activeStep, steps, poiHoldActive, engagementStatus, commercialTermsComplete, isCompleted, poiComplete, engagementAccepted]);
+  }, [activeStep, steps, poiHoldActive, softRoutePending, engagementStatus, commercialTermsComplete, isCompleted, poiComplete, engagementAccepted]);
 
   return <div className="space-y-5">
       {/* a11y: announce stepper sub-tab interception to screen readers */}
