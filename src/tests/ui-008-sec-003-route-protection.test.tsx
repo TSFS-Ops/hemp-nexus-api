@@ -39,11 +39,16 @@ function renderApp(initialPath: string) {
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
         {/* Mirror of the privileged routes in src/App.tsx */}
+        {/* /desk/* renders LocationDisplay alongside the protected marker so
+            tests can read the denied=1 query string after a role redirect. */}
         <Route
           path="/desk/*"
           element={
             <RequireAuth>
-              <Protected id="desk-content" />
+              <>
+                <Protected id="desk-content" />
+                <LocationDisplay />
+              </>
             </RequireAuth>
           }
         />
