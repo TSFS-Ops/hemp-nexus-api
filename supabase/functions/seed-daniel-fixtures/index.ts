@@ -410,6 +410,58 @@ async function ensureEngagement(
   return { id: data.id, created: true };
 }
 
+/**
+ * Patch an existing demo match row into one of the MT-008 inconsistent
+ * shapes. Idempotent: re-applies the same shape on every seed and merges
+ * metadata so existing demo markers (`fixture_id`, `demo_fixture`) survive.
+ *
+ * SAFETY: hard-gated by `is_demo=true` in the WHERE clause. Touches only
+ * `matches.metadata`, `matches.settled_at`. Does NOT touch POI, WaD, token
+ * ledger, payments, notifications, lifecycle/SLA scheduler, ratings, or
+ * compliance tables.
+ */
+async function applyMt008Shape(
+  admin: SupabaseClient,
+  match_id: string,
+  shape: {
+    fixture_code: string;
+    metadata_markers?: Record<string, unknown>;
+    settled_at?: string | null;
+  },
+): Promise<void> {
+  const { data: row, error: rErr } = await admin
+    .from("matches")
+    .select("metadata, is_demo")
+    .eq("id", match_id)
+    .eq("is_demo", true)
+    .maybeSingle();
+  if (rErr || !row) {
+    throw new Error(
+      `applyMt008Shape: match not found or not is_demo (${shape.fixture_code})`,
+    );
+  }
+  const existing = (row.metadata ?? {}) as Record<string, unknown>;
+  const merged: Record<string, unknown> = {
+    ...existing,
+    demo_fixture: true,
+    batch: "Batch O MT-008",
+    fixture_code: shape.fixture_code,
+    ...(shape.metadata_markers ?? {}),
+  };
+  const upd: Record<string, unknown> = { metadata: merged };
+  if (shape.settled_at !== undefined) upd.settled_at = shape.settled_at;
+  const { error: uErr } = await admin
+    .from("matches")
+    .update(upd)
+    .eq("id", match_id)
+    .eq("is_demo", true);
+  if (uErr) {
+    throw new Error(
+      `applyMt008Shape update failed (${shape.fixture_code}): ${uErr.message}`,
+    );
+  }
+}
+
 async function ensureContactAttemptLog(
   admin: SupabaseClient,
   engagement_id: string,
