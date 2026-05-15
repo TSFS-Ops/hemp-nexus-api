@@ -242,7 +242,8 @@ function useActiveLanes(orgId: string | null, page: number) {
         .order("created_at", { ascending: false })
         .range(0, to);
 
-      const list = matches ?? [];
+      // Batch O Phase 2 (MT-008): hide inconsistent rows from user pipeline.
+      const list = (matches ?? []).filter((m: any) => !isInconsistentMatch(m));
 
       // Resolve engagement status only for matches in POI states; this keeps
       // the secondary query bounded by the page size, not by table size.
