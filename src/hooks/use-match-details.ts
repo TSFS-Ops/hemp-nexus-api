@@ -12,6 +12,8 @@ import { apiFetch, generateIdempotencyKey, ApiError } from "@/lib/api-client";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { handleApiError as toastApiError } from "@/lib/api-error-handler";
 import { queryClient } from "@/lib/query-client";
+import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
+import { publish as publishCrossTab } from "@/lib/cross-tab-bus";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -300,6 +302,8 @@ export function useMatchDetails(matchId: string | undefined) {
           // Pending Engagement section refreshes immediately, instead of
           // waiting for the 30s poll or a hard refresh.
           queryClient.invalidateQueries({ queryKey: ["engagement-status-gate", match.id] });
+          publishCrossTab({ kind: "engagement-status", matchId: match.id });
+          publishCrossTab({ kind: "match", matchId: match.id });
           await fetchMatch();
           const payload = updated as unknown as {
             counterparty_name?: string;
@@ -320,9 +324,13 @@ export function useMatchDetails(matchId: string | undefined) {
 
       if (mountedRef.current) {
         setMatch(updated);
-        queryClient.invalidateQueries({ queryKey: ["token-balance"] });
-        queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
-        queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
+        // UI-004: use the shared invalidator + an immediate refetch so the
+        // credit badge reflects the post-mint balance promptly.
+        invalidateAllCreditBalanceQueries(queryClient);
+        await queryClient.refetchQueries({ queryKey: ["token-balance"], exact: false });
+        // UI-007: tell other tabs to refresh their balance + match views.
+        publishCrossTab({ kind: "credit-balance" });
+        publishCrossTab({ kind: "match", matchId: match.id });
         toast.success("POI sealed. 1 credit deducted. Execution-readiness checks (Signed Deal / WaD) still pending.");
       }
     },
@@ -409,6 +417,8 @@ export function useMatchDetails(matchId: string | undefined) {
           // Engagement panel updates immediately on soft-route, instead
           // of waiting for the 30s poll cycle.
           queryClient.invalidateQueries({ queryKey: ["engagement-status-gate", match.id] });
+          publishCrossTab({ kind: "engagement-status", matchId: match.id });
+          publishCrossTab({ kind: "match", matchId: match.id });
           await fetchMatch();
           const payload = updated as unknown as {
             counterparty_name?: string;
@@ -429,11 +439,17 @@ export function useMatchDetails(matchId: string | undefined) {
 
       if (mountedRef.current) {
         setMatch(updated);
-        queryClient.invalidateQueries({ queryKey: ["token-balance"] });
-        queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
-        queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
+        // UI-004: shared invalidator + immediate refetch so the badge updates
+        // before the success toast clears.
+        invalidateAllCreditBalanceQueries(queryClient);
+        await queryClient.refetchQueries({ queryKey: ["token-balance"], exact: false });
         queryClient.invalidateQueries({ queryKey: ["state-progression-evidence", match.id] });
         queryClient.invalidateQueries({ queryKey: ["evidence-waiver-latest", match.id] });
+        // UI-007: notify other tabs after a successful state action.
+        if (actionPath === "generate-poi") {
+          publishCrossTab({ kind: "credit-balance" });
+        }
+        publishCrossTab({ kind: "match", matchId: match.id });
 
         const labels: Record<string, string> = {
           "generate-poi": "POI sealed. 1 credit deducted. Execution-readiness checks (Signed Deal / WaD) still pending.",
