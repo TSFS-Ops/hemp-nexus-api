@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import { resolveEngagementReadModel, type EngagementRow } from "@/lib/engagement-read-model";
+import { isInconsistentMatch } from "@/lib/match-lifecycle";
 
 /**
  * Deal Pipeline - paginated, column-projected.
@@ -116,7 +117,7 @@ const LANE_PILL_LABEL: Record<string, string> = {
 // Minimal column projection. Anything not on the card or used for routing is excluded.
 // `org_id` was dropped - it is encoded in the `.or()` filter and never read post-fetch.
 const MATCH_COLUMNS =
-  "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, created_at";
+  "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, status, state, poi_state, settled_at, buyer_committed_at, seller_committed_at, buyer_org_id, seller_org_id, created_at, metadata";
 
 function formatVolume(amount: number | null | undefined, unit: string | null | undefined): string {
   if (!amount || !unit) return "-";
@@ -241,7 +242,8 @@ function useActiveLanes(orgId: string | null, page: number) {
         .order("created_at", { ascending: false })
         .range(0, to);
 
-      const list = matches ?? [];
+      // Batch O Phase 2 (MT-008): hide inconsistent rows from user pipeline.
+      const list = (matches ?? []).filter((m: any) => !isInconsistentMatch(m));
 
       // Resolve engagement status only for matches in POI states; this keeps
       // the secondary query bounded by the page size, not by table size.
@@ -326,7 +328,8 @@ function useSealedPage(orgId: string | null, page: number) {
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      const list = matches ?? [];
+      // Batch O Phase 2 (MT-008): hide inconsistent rows from user pipeline.
+      const list = (matches ?? []).filter((m: any) => !isInconsistentMatch(m));
 
       // Only the page in view needs engagement resolution.
       const ids = list.map((m) => m.id);

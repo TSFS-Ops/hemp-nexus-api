@@ -26,6 +26,7 @@ import { downloadCSV } from "@/lib/download-utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useUrlListParams } from "@/hooks/use-url-search-params";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import { isInconsistentMatch } from "@/lib/match-lifecycle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,7 +49,7 @@ type Match = Tables<"matches">;
 const PAGE_SIZE = 25;
 
 // Columns actually needed for the list view - avoids SELECT *
-const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, created_at, settled_at, hash, org_id, match_type, buyer_org_id, seller_org_id" as const;
+const MATCH_LIST_COLUMNS = "id, commodity, buyer_id, buyer_name, seller_id, seller_name, quantity_amount, quantity_unit, price_amount, price_currency, status, state, poi_state, buyer_committed_at, seller_committed_at, created_at, settled_at, hash, org_id, match_type, buyer_org_id, seller_org_id, metadata" as const;
 
 /** Returns display name for buyer/seller based on reveal state */
 function revealGuard(match: Match, field: "buyer_name" | "seller_name"): string {
@@ -162,7 +163,10 @@ export function MatchesList() {
       const { data, error, count } = await query;
       if (error) throw error;
       setPaginationError(false);
-      return { matches: data as Match[], totalCount: count ?? 0 };
+      // Batch O Phase 2 (MT-008): hide inconsistent rows from My Deals list.
+      const filtered = ((data as Match[]) ?? []).filter((m) => !isInconsistentMatch(m as any));
+      const hiddenCount = ((data as Match[]) ?? []).length - filtered.length;
+      return { matches: filtered, totalCount: Math.max(0, (count ?? 0) - hiddenCount) };
     },
   });
 

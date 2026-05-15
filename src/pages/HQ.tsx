@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -61,11 +61,12 @@ import SystemAnalytics from "@/components/admin/SystemAnalytics";
 import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
 import { AdminCanonicalSpinePanel } from "@/components/admin/AdminCanonicalSpinePanel";
 import { AdminLifecycleRunPanel } from "@/components/admin/AdminLifecycleRunPanel";
+import { AdminLegacyRepairPanel } from "@/components/admin/AdminLegacyRepairPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -101,6 +102,11 @@ const TABS: {
   label: "Revenue & Sales",
   icon: TrendingUp,
   blurb: "Credit purchases, daily/monthly revenue, top buyers, per-org timeline."
+}, {
+  id: "legacy-repair",
+  label: "Legacy Repair",
+  icon: Wrench,
+  blurb: "Matches with conflicting status / state / POI fields. Hidden from user views, awaiting admin reconciliation. Read-only — repair/archive actions coming next."
 }, {
   id: "audit",
   label: "Audit & Health",
@@ -284,6 +290,14 @@ function EngagementsTab() {
       </Surface>
       <Surface label="Forensic engagement search · trace any engagement by match, email, org or status">
         <AdminEngagementForensicsPanel />
+      </Surface>
+    </>;
+}
+function LegacyRepairTab() {
+  return <>
+      <TabHeader id="legacy-repair" />
+      <Surface label="Inconsistent matches · public.matches via admin_list_inconsistent_matches RPC · hidden from user views">
+        <AdminLegacyRepairPanel />
       </Surface>
     </>;
 }
@@ -532,6 +546,7 @@ function HQLayout() {
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
+          <TabsContent value="legacy-repair" className="mt-0 animate-section-enter"><LegacyRepairTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
