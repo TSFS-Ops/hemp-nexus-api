@@ -123,6 +123,22 @@ interface Props {
   match?: PendingEngagementMatch | null;
   /** True when the current viewer is the initiator (the POI creator). */
   isInitiator: boolean;
+  /**
+   * UI-006: when the parent's engagement-status query is still in flight
+   * we render a lightweight skeleton placeholder instead of returning null,
+   * so the Pending Engagement panel does not appear to vanish during a
+   * page refresh or slow network. Defaults to false for back-compat.
+   */
+  isLoading?: boolean;
+  /**
+   * UI-006 defensive stub: caller indicates that a Pending Engagement is
+   * known to exist for this match (e.g. the server just returned a
+   * 202 ENGAGEMENT_PENDING soft-route) but the engagement read-model
+   * has not yet caught up. We render a "Pending Engagement status is
+   * loading…" placeholder so the user never sees a contradictory
+   * ready-to-mint state.
+   */
+  softRouteHint?: boolean;
 }
 
 interface StatusMeta {
