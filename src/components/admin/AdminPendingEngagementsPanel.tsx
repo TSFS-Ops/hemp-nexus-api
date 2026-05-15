@@ -1592,9 +1592,27 @@ export function AdminPendingEngagementsPanel() {
       <Card>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-12 text-sm">
-              No engagements match the current filter.
-            </p>
+            <div className="text-center py-12" data-testid="admin-engagements-empty">
+              <p className="text-sm text-muted-foreground">
+                No engagements match the current filter.
+              </p>
+              {scope === "unknown" && offScopeTotalCount > 0 && (
+                <p
+                  data-testid="off-scope-empty-hint"
+                  className="text-xs text-muted-foreground mt-2"
+                >
+                  {offScopeTotalCount} engagement{offScopeTotalCount === 1 ? "" : "s"} exist in other scopes —{" "}
+                  <button
+                    type="button"
+                    onClick={() => setScope("all")}
+                    className="underline font-medium hover:text-foreground"
+                  >
+                    switch to All
+                  </button>
+                  .
+                </p>
+              )}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
