@@ -282,7 +282,7 @@ export default function UsersManagement() {
         </div>
 
         {selectedCount > 0 && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 p-3 bg-muted rounded-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 p-3 bg-muted rounded-md">
             <span className="text-sm font-medium">{selectedCount} selected</span>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => handleBulkStatusUpdate("active")} disabled={bulkActionLoading}>
@@ -308,7 +308,7 @@ export default function UsersManagement() {
             {/* Mobile card view */}
             <div className="space-y-3 md:hidden">
               {filteredUsers.map((user) => (
-                <div key={user.id} className={`border rounded-lg p-3 space-y-2 ${selectedUserIds.has(user.id) ? "bg-muted/50 border-primary/30" : ""}`}>
+                <div key={user.id} className={`border rounded-md p-3 space-y-2 ${selectedUserIds.has(user.id) ? "bg-muted/50 border-primary/30" : ""}`}>
                   <div className="flex items-start gap-2">
                     <Checkbox
                       checked={selectedUserIds.has(user.id)}
@@ -382,7 +382,7 @@ export default function UsersManagement() {
             </div>
 
             {/* Desktop table view */}
-            <div className="border rounded-lg hidden md:block">
+            <div className="border rounded-md hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>

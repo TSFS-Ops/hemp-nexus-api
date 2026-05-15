@@ -254,7 +254,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs uppercase tracking-wide">Submitted</Label>
             {submitted.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
+              <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded-md text-sm">
                 <div className="flex items-center gap-2">
                   {doc.status === "VALIDATED" ? (
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -324,7 +324,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 p-3 rounded-lg">
+              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 p-3 rounded-md">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -337,7 +337,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
             </Button>
           </div>
         ) : registry.length > 0 ? (
-          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg text-sm">
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-md text-sm">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
             <span>All governance documents have been submitted.</span>
           </div>

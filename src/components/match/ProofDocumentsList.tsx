@@ -117,7 +117,7 @@ export function ProofDocumentsList({ matchId }: ProofDocumentsListProps) {
         {documents.map((doc) => (
           <div 
             key={doc.id} 
-            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border"
+            className="flex items-center justify-between p-3 bg-muted/50 rounded-md border"
           >
             <div className="flex items-center gap-3 min-w-0">
               <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />

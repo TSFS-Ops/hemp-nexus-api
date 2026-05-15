@@ -200,7 +200,7 @@ export function AdminTokenManagement() {
               No organisations found
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-md overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -297,7 +297,7 @@ export function AdminTokenManagement() {
                                   />
                                 </div>
                                 {topUpAmount && parseInt(topUpAmount) > 0 && (
-                                  <div className="p-3 bg-muted rounded-lg">
+                                  <div className="p-3 bg-muted rounded-md">
                                     <div className="text-sm text-muted-foreground">
                                       New balance will be:
                                     </div>

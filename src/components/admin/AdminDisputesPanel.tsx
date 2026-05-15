@@ -170,7 +170,7 @@ export function AdminDisputesPanel() {
               {/* Mobile card view */}
               <div className="space-y-3 md:hidden">
                 {disputes.map((d) => (
-                  <div key={d.id} className="border rounded-lg p-3 space-y-2">
+                  <div key={d.id} className="border rounded-md p-3 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium line-clamp-2">{d.reason}</p>

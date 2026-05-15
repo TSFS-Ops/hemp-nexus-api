@@ -514,7 +514,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         </p>
 
         {!isTerminal && nextLabel && (
-          <div className="rounded-lg border border-border p-4 space-y-3">
+          <div className="rounded-md border border-border p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Info className="h-4 w-4 text-muted-foreground shrink-0" />
               <p className="text-sm font-medium">Readiness checklist</p>
@@ -550,7 +550,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         )}
 
         {unilateralBlocked && (
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+          <div className="flex items-start gap-3 p-3 rounded-md border border-primary/20 bg-primary/5">
             <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="space-y-1">
               <p className="text-sm font-medium">Awaiting trading partner</p>
@@ -563,7 +563,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         )}
 
         {engagementBlocked && !isTerminal && nextLabel && (
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+          <div className="flex items-start gap-3 p-3 rounded-md border border-primary/20 bg-primary/5">
             <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="space-y-1">
               <p className="text-sm font-medium">Awaiting trading partner engagement</p>
@@ -576,7 +576,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         )}
 
         {!isTerminal && nextLabel && showNameAdvisory && !profileLoading && (
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+          <div className="flex items-start gap-3 p-3 rounded-md border border-primary/20 bg-primary/5">
             <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="space-y-1">
               <p className="text-sm font-medium">Check your personal legal name on file</p>
@@ -597,7 +597,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             {participantBlocksAction ? (
               <div
                 role="alert"
-                className="flex items-start gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
+                className="flex items-start gap-3 p-3 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
               >
                 <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                 <div className="space-y-1">
@@ -615,7 +615,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             ) : legitimacyBlocksPoi && legitimacy && legitimacy.allowed === false ? (
               <div
                 role="alert"
-                className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10"
+                className="flex items-start gap-3 p-3 rounded-md border border-destructive/30 bg-destructive/10"
               >
                 <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                 <div className="space-y-1">
@@ -638,7 +638,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 </div>
               </div>
             ) : !isFreeAction && isBalancePending ? (
-              <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
+              <div className="flex items-start gap-3 p-3 rounded-md border border-border bg-muted/30">
                 <Loader2 className="h-4 w-4 mt-0.5 shrink-0 animate-spin text-muted-foreground" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Checking available credits</p>
@@ -648,7 +648,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 </div>
               </div>
             ) : !isFreeAction && showInsufficientBalance ? (
-              <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
+              <div className="flex items-start gap-3 p-3 rounded-md border border-destructive/30 bg-destructive/10">
                 <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Insufficient credits</p>
@@ -662,7 +662,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 </div>
               </div>
             ) : !isFreeAction && cannotVerifyBalance ? (
-              <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <div className="flex items-start gap-3 p-3 rounded-md border border-primary/20 bg-primary/5">
                 <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Balance check unavailable on this screen</p>
@@ -674,7 +674,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
             ) : wadGateBlocksComplete ? (
               <div
                 role="alert"
-                className="flex items-start gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
+                className="flex items-start gap-3 p-3 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
               >
                 <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                 <div className="space-y-1">
@@ -728,7 +728,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               const cpSideUnmet = cpCount !== null && cpCount < 1;
 
               return (
-                <div role="alert" className="flex items-start gap-3 p-3 rounded-lg border border-destructive/30 bg-destructive/10">
+                <div role="alert" className="flex items-start gap-3 p-3 rounded-md border border-destructive/30 bg-destructive/10">
                   <ShieldAlert className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">
@@ -858,7 +858,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
               if (!missingBuyerId && !missingSellerId) return null;
 
               return (
-                <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/40">
+                <div className="flex items-start gap-3 p-3 rounded-md border border-border bg-muted/40">
                   <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div className="space-y-2 text-left w-full">
                     <p className="text-sm font-semibold text-foreground">
@@ -894,7 +894,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
         )}
 
         {isTerminal && (
-          <div className="flex items-center gap-2 p-3 rounded-lg border border-primary/20 bg-primary/5">
+          <div className="flex items-center gap-2 p-3 rounded-md border border-primary/20 bg-primary/5">
             <CheckCircle2 className="h-5 w-5 text-primary" />
             <p className="text-sm font-medium text-foreground">Transaction completed - evidence record sealed.</p>
           </div>

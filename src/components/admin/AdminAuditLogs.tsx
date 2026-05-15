@@ -225,7 +225,7 @@ export function AdminAuditLogs() {
               {/* Mobile card view */}
               <div className="space-y-3 md:hidden">
                 {auditLogs.map((log) => (
-                  <div key={log.id} className="border rounded-lg p-3 space-y-2">
+                  <div key={log.id} className="border rounded-md p-3 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       {getActionBadge(log.action)}
                       <span className="text-xs text-muted-foreground">

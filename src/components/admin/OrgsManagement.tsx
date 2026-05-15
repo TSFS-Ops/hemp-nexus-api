@@ -188,7 +188,7 @@ export default function OrgsManagement() {
             {/* Mobile card view */}
             <div className="space-y-3 md:hidden">
               {filteredOrgs.map((org) => (
-                <div key={org.id} className="border rounded-lg p-3 space-y-2">
+                <div key={org.id} className="border rounded-md p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -235,7 +235,7 @@ export default function OrgsManagement() {
             </div>
 
             {/* Desktop table view */}
-            <div className="border rounded-lg hidden md:block overflow-x-auto">
+            <div className="border rounded-md hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

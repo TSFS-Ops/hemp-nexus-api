@@ -864,7 +864,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           </p>
 
           {/* CTA: route the user to a match they can actually act on. */}
-          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+          <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
             <p className="text-sm font-medium text-foreground">
               Looking for one of your trades?
             </p>
@@ -967,7 +967,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           {perSideUnmet && (
             <div
               role="alert"
-              className="flex items-start gap-3 p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
+              className="flex items-start gap-3 p-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-800"
             >
               <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <div className="space-y-1">
@@ -983,7 +983,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
             </div>
           )}
           <UploadAuthzPanel matchId={matchId} />
-          <div className="border rounded-lg p-4 space-y-4">
+          <div className="border rounded-md p-4 space-y-4">
             <h4 className="font-medium flex items-center gap-2">
               <Upload className="h-4 w-4" />
               {replacingDoc ? `Replace: ${replacingDoc.title || replacingDoc.filename} (v${replacingDoc.version || 1})` : "Upload Document"}
@@ -1154,7 +1154,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
                   </div>
                 </div>
               )}
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-md overflow-hidden">
                 <Table>
                 <TableHeader>
                   <TableRow>
@@ -1343,7 +1343,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
               {getVersionChain(historyRootId).reverse().map((doc) => (
                 <div
                   key={doc.id}
-                  className={`border rounded-lg p-3 space-y-1 ${doc.is_current_version !== false ? "border-primary/50 bg-primary/5" : "opacity-70"}`}
+                  className={`border rounded-md p-3 space-y-1 ${doc.is_current_version !== false ? "border-primary/50 bg-primary/5" : "opacity-70"}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

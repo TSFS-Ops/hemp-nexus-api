@@ -468,7 +468,7 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
             {failedFields.length > 0 && (
               <div
                 role="alert"
-                className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 space-y-1.5"
+                className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-1.5"
               >
                 <p className="text-sm font-medium flex items-center gap-2 text-destructive">
                   <AlertTriangle className="h-4 w-4" />
@@ -487,7 +487,7 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
               </div>
             )}
 
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+            <div className="rounded-md border border-primary/20 bg-primary/5 p-4 space-y-3">
               <p className="text-sm font-medium flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-primary" />
                 Commercial Terms (required to proceed to POI)

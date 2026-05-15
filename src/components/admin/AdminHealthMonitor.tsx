@@ -209,19 +209,19 @@ export function AdminHealthMonitor() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div className="text-center p-3 rounded-md bg-muted/50">
               <p className="text-2xl font-bold text-foreground">{uptimePercent}%</p>
               <p className="text-xs text-muted-foreground">Uptime (session)</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div className="text-center p-3 rounded-md bg-muted/50">
               <p className="text-2xl font-bold text-foreground">{avgResponseTime}ms</p>
               <p className="text-xs text-muted-foreground">Avg Response</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div className="text-center p-3 rounded-md bg-muted/50">
               <p className="text-2xl font-bold text-foreground">{current?.summary?.total ?? 0}</p>
               <p className="text-xs text-muted-foreground">Subsystems</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/50">
+            <div className="text-center p-3 rounded-md bg-muted/50">
               <p className="text-2xl font-bold text-foreground">{history.length}</p>
               <p className="text-xs text-muted-foreground">Checks (session)</p>
             </div>

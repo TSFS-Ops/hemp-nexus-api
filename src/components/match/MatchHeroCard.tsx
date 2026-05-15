@@ -180,7 +180,7 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
         <Separator className="my-6" />
 
         {draft ? (
-          <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
+          <div className="p-4 rounded-md border border-amber-500/30 bg-amber-500/5">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div>

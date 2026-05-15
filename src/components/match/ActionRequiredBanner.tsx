@@ -90,7 +90,7 @@ export function ActionRequiredBanner({
         role={tone === "action" ? "alert" : "status"}
         aria-live={tone === "action" ? "assertive" : "polite"}
         className={cn(
-          "rounded-lg border p-4 sm:p-5 transition-all",
+          "rounded-md border p-4 sm:p-5 transition-all",
           s.container,
         )}
       >

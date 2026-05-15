@@ -323,7 +323,7 @@ export function ComplianceProfile() {
       </header>
 
       {/* ── STATUS BANNER ─────────────────────────────────────── */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-card border border-border shadow-sm rounded-lg">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-card border border-border shadow-sm rounded-md">
         <div className="flex items-center gap-3">
           <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
             Entity Status
@@ -344,7 +344,7 @@ export function ComplianceProfile() {
       {/* ── CARDS ─────────────────────────────────────────────── */}
       <div className="space-y-6">
         {/* Card 1 · Registered Identity */}
-        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-md overflow-hidden transition-shadow">
           <CardHeader index="01" title="Registered Identity" kicker="Statutory Record" />
           <div className="p-6">
             <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -369,7 +369,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 2 · Ownership (UBO) */}
-        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-md overflow-hidden transition-shadow">
           <CardHeader
             index="02"
             title="Ownership (UBO)"
@@ -440,7 +440,7 @@ export function ComplianceProfile() {
         </article>
 
         {/* Card 3 · Regulatory Evidence */}
-        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-xl overflow-hidden transition-shadow">
+        <article className="bg-card border border-slate-200 shadow-sm hover:shadow-md rounded-md overflow-hidden transition-shadow">
           <CardHeader index="03" title="Regulatory Evidence" kicker="Active Licences" />
           <div className="p-6">
             {docs.length === 0 ? (
@@ -626,7 +626,7 @@ function EmptyRow({
   onClick: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-4 rounded-lg border border-amber-300/70 bg-amber-50/60 ring-1 ring-inset ring-amber-200/50 shadow-sm">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-4 rounded-md border border-amber-300/70 bg-amber-50/60 ring-1 ring-inset ring-amber-200/50 shadow-sm">
       <div className="flex items-start gap-3 min-w-0">
         <span
           aria-hidden
