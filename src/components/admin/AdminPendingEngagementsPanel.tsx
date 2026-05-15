@@ -15,6 +15,12 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DELIVERY_LABELS,
+  DELIVERY_STYLES,
+  deriveDeliveryMap,
+  type OutreachDelivery,
+} from "./adminDeliveryStatus";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -318,12 +324,9 @@ export function AdminPendingEngagementsPanel() {
   //
   // RLS: `email_send_log` allows SELECT only to `is_admin(auth.uid())`. Failure
   // here must NEVER block the panel — it is enrichment only.
-  type OutreachDelivery = {
-    status: string;
-    created_at: string;
-    error_message: string | null;
-    message_id: string | null;
-  };
+  // OutreachDelivery / DELIVERY_STYLES / DELIVERY_LABELS / deriveDeliveryMap
+  // are imported from ./adminDeliveryStatus so they can be unit-tested in
+  // isolation. Behaviour is unchanged.
   const [delivery, setDelivery] = useState<Record<string, OutreachDelivery>>({});
 
   useEffect(() => {
@@ -348,26 +351,7 @@ export function AdminPendingEngagementsPanel() {
           .limit(2000);
         if (error) throw error;
         if (cancelled || !data) return;
-        const next: Record<string, OutreachDelivery> = {};
-        for (const row of data) {
-          const key = (row as { idempotency_key: string | null }).idempotency_key;
-          if (!key) continue;
-          // outreach-send-<engagementId>-<rest>
-          const match = key.match(/^outreach-send-([0-9a-fA-F-]{36})-/);
-          if (!match) continue;
-          const eid = match[1];
-          if (!visibleIds.has(eid)) continue;
-          // Rows are ordered DESC by created_at; first hit per engagement wins.
-          if (next[eid]) continue;
-          next[eid] = {
-            status: String((row as { status: string }).status),
-            created_at: String((row as { created_at: string }).created_at),
-            error_message:
-              (row as { error_message: string | null }).error_message ?? null,
-            message_id: (row as { message_id: string | null }).message_id ?? null,
-          };
-        }
-        setDelivery(next);
+        setDelivery(deriveDeliveryMap(data as never, visibleIds));
       } catch (err) {
         // Zero swallowed errors — log but keep panel functional.
         console.warn(
@@ -380,26 +364,6 @@ export function AdminPendingEngagementsPanel() {
       cancelled = true;
     };
   }, [engagements]);
-
-  // Status → badge styling/label for the outreach delivery enrichment.
-  const DELIVERY_STYLES: Record<string, string> = {
-    pending: "bg-slate-100 text-slate-700 border-slate-200",
-    sent: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    failed: "bg-rose-50 text-rose-700 border-rose-200",
-    dlq: "bg-rose-100 text-rose-800 border-rose-300",
-    bounced: "bg-rose-50 text-rose-700 border-rose-200",
-    complained: "bg-rose-50 text-rose-700 border-rose-200",
-    suppressed: "bg-amber-50 text-amber-800 border-amber-200",
-  };
-  const DELIVERY_LABELS: Record<string, string> = {
-    pending: "Queued",
-    sent: "Sent",
-    failed: "Failed",
-    dlq: "Dead-letter",
-    bounced: "Bounced",
-    complained: "Complained",
-    suppressed: "Suppressed",
-  };
 
   const openSupportNotes = (e: Engagement) => {
     if (notesOpenId === e.id) {

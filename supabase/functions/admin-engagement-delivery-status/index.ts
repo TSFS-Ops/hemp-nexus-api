@@ -38,22 +38,13 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { mapStatus, type MappedStatus } from "../_shared/admin-delivery-status.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
-
-type MappedStatus =
-  | "queued"
-  | "sent"
-  | "failed"
-  | "dlq"
-  | "bounced"
-  | "complained"
-  | "suppressed"
-  | "not_linked";
 
 interface DeliveryStatus {
   engagement_id: string;
@@ -81,28 +72,9 @@ function jsonResponse(req: Request, body: unknown, status = 200) {
   );
 }
 
-function mapStatus(raw: string | null | undefined): MappedStatus {
-  switch ((raw ?? "").toLowerCase()) {
-    case "pending":
-      return "queued";
-    case "sent":
-      return "sent";
-    case "dlq":
-      return "dlq";
-    case "failed":
-      return "failed";
-    case "bounced":
-      return "bounced";
-    case "complained":
-      return "complained";
-    case "suppressed":
-      return "suppressed";
-    default:
-      // Unknown raw status — treat as not_linked so callers don't render a
-      // green/sent badge for an unrecognised value.
-      return "not_linked";
-  }
-}
+// mapStatus is now imported from ../_shared/admin-delivery-status.ts so it
+// can be unit-tested in isolation. Behaviour is unchanged.
+
 
 function parseIds(req: Request, url: URL): { ids: string[]; error?: string } {
   const collected: string[] = [];
