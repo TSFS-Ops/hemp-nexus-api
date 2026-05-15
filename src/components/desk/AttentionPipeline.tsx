@@ -98,7 +98,7 @@ export function AttentionPipeline() {
       const { data: matches, count } = await supabase
         .from("matches")
         .select(
-          "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, org_id, created_at",
+          "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, status, state, poi_state, settled_at, completed_at, buyer_committed_at, seller_committed_at, buyer_org_id, seller_org_id, org_id, created_at, metadata",
           { count: "exact" }
         )
         .or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`)
@@ -108,7 +108,11 @@ export function AttentionPipeline() {
 
       if (!matches) return { items: [], totalCount: count ?? 0 };
 
-      const items = matches.map((m: any) => {
+      // Batch O Phase 2 (MT-008): inconsistent rows are hidden from user
+      // pipelines and surfaced only in HQ → Legacy Repair.
+      const filtered = matches.filter((m: any) => !isInconsistentMatch(m));
+
+      const items = filtered.map((m: any) => {
         const isBuyer = m.buyer_org_id === profile.org_id;
         const counterparty = isBuyer ? m.seller_name : m.buyer_name;
         const qty = m.quantity_amount && m.quantity_unit
