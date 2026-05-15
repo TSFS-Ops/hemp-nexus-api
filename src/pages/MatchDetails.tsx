@@ -182,6 +182,39 @@ function MatchDetailsContent() {
     );
   }
 
+  // Batch O Phase 2 (MT-008): if this match has inconsistent lifecycle data,
+  // we render only a soft "under admin review" banner. We do not 404, do not
+  // expose internal inconsistency details, and do not surface any
+  // POI/WaD/execution/payment action affordances. Admin repair happens in
+  // HQ → Legacy Repair.
+  if (isInconsistentMatch(match as any)) {
+    return (
+      <PageContainer size="wide" className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Breadcrumbs items={breadcrumbs} />
+          <BackButton fallback={ROUTES.DASHBOARD_MATCHES} label="All Matches" className="self-start sm:self-auto" />
+        </div>
+        <div
+          role="status"
+          data-testid="legacy-repair-banner"
+          className="rounded-md border border-amber-300 bg-amber-50 p-5"
+        >
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="h-5 w-5 mt-0.5 text-amber-700 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-amber-900">
+                This deal is temporarily unavailable
+              </p>
+              <p className="text-sm text-amber-900/90">
+                Izenzo is verifying legacy deal data on this match. No action is required from you at this stage. We will notify you once the review is complete.
+              </p>
+            </div>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
   const isSettled = MatchState.isSettled(match.status);
   const showPrePoiVerification = MatchState.isPrePoi(match.state || match.status);
 
