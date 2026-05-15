@@ -256,11 +256,25 @@ export function AdminLegacyRepairPanel() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>
           {rows.length} match{rows.length === 1 ? "" : "es"} flagged for repair
         </span>
-        <span className="font-mono">Admin actions: archive · repair</span>
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={rows.length === 0 || recordDetectionsMutation.isPending}
+            onClick={() =>
+              recordDetectionsMutation.mutate(rows.map((r) => r.id))
+            }
+          >
+            {recordDetectionsMutation.isPending
+              ? "Recording…"
+              : "Record detection audit"}
+          </Button>
+          <span className="font-mono">Admin actions: archive · repair</span>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border bg-card">
