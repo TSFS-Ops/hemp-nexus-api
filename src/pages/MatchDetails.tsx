@@ -79,7 +79,7 @@ function MatchDetailsContent() {
   // read_model} envelope instead of the old `.maybeSingle()` row. The
   // `parseByMatchResponse` helper accepts either the new or legacy shape
   // so a stale edge-function deployment never blanks the page.
-  const { data: engagementModel } = useQuery({
+  const { data: engagementModel, isLoading: engagementLoading } = useQuery({
     queryKey: ["engagement-status-gate", matchId],
     queryFn: async () => {
       try {
