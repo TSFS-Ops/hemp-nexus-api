@@ -1,4 +1,4 @@
-// Izenzo Civilisation OS palette
+// Izenzo palette
 export const BG = "#F8FAFC";
 export const BG_DEEP = "#0F172A";
 export const SLATE = "#0F172A";
