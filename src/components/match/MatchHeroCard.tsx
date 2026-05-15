@@ -9,16 +9,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertTriangle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
 import { CounterpartyRatingBadge } from "@/components/ratings/CounterpartyRatingBadge";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import { isPendingEngagementActive } from "@/lib/engagement-state";
 import type { Match } from "@/hooks/use-match-details";
 
 interface MatchHeroCardProps {
   match: Match;
   isSettled: boolean;
+  /**
+   * UI-001: when the POI mint soft-routed (counterparty named but not
+   * registered), `match.status` stays `matched` / `match.state` stays
+   * `discovery` even though a non-terminal `poi_engagements` row exists.
+   * Reading "Awaiting Confirmation" alone is misleading; we surface a
+   * second small badge so this hero card matches reality.
+   */
+  engagementStatus?: string | null;
 }
 
 function isDraft(match: Match): boolean {
