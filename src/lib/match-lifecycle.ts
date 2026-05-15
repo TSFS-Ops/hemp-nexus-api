@@ -84,29 +84,44 @@ export function isActiveMatch(m: LifecycleMatch): boolean {
 }
 
 /**
- * Detect contradictory lifecycle data. Conservative: only flag when the
- * contradiction is unambiguous so we do not mass-mark legitimate rows.
+ * Stable ordered list of inconsistency reason codes for a match row.
+ * Pure: deterministic, no I/O, no mutation. Order is fixed so callers
+ * (admin chips, audit signatures) can rely on it.
+ *
+ * Invariant: `isInconsistentMatch(m) === (inconsistencyReasons(m).length > 0)`.
  */
-export function isInconsistentMatch(m: LifecycleMatch | LifecycleChild): boolean {
+export type InconsistencyReason =
+  | "legacy_repair_required"
+  | "state_reconciliation_required"
+  | "settled_with_draft_poi"
+  | "completed_state_with_open_poi"
+  | "settled_at_without_settled_status"
+  | "both_committed_but_still_discovery"
+  | "same_org_both_sides";
+
+export function inconsistencyReasons(
+  m: LifecycleMatch | LifecycleChild,
+): InconsistencyReason[] {
+  const reasons: InconsistencyReason[] = [];
   const status = (m.status ?? "").toString();
   const state = (m.state ?? "").toString();
   const poi = (m.poi_state ?? "").toString();
 
   // Explicit operator markers
-  if (hasMarker(m, "legacy_repair_required")) return true;
-  if (hasMarker(m, "state_reconciliation_required")) return true;
+  if (hasMarker(m, "legacy_repair_required")) reasons.push("legacy_repair_required");
+  if (hasMarker(m, "state_reconciliation_required")) reasons.push("state_reconciliation_required");
 
   // settled status with a draft POI
-  if (status === "settled" && poi === "DRAFT") return true;
+  if (status === "settled" && poi === "DRAFT") reasons.push("settled_with_draft_poi");
 
   // completed state but POI is not in a terminal/post-issue state
   if (state === "completed" && poi !== "" && !TERMINAL_POI_STATES.has(poi) && poi !== "ISSUED") {
-    return true;
+    reasons.push("completed_state_with_open_poi");
   }
 
   // settled_at present but status not settled (and not a later terminal)
   if (m.settled_at != null && status !== "settled" && !TERMINAL_STATUSES.has(status)) {
-    return true;
+    reasons.push("settled_at_without_settled_status");
   }
 
   // both sides committed but state is still discovery
@@ -116,10 +131,30 @@ export function isInconsistentMatch(m: LifecycleMatch | LifecycleChild): boolean
     matchOnly.seller_committed_at != null &&
     state === "discovery"
   ) {
-    return true;
+    reasons.push("both_committed_but_still_discovery");
   }
 
-  return false;
+  // same organisation on both sides of the match (only meaningful on the
+  // parent match row, child rows do not carry org ids)
+  if (
+    matchOnly.buyer_org_id != null &&
+    matchOnly.seller_org_id != null &&
+    matchOnly.buyer_org_id === matchOnly.seller_org_id
+  ) {
+    reasons.push("same_org_both_sides");
+  }
+
+  return reasons;
+}
+
+/**
+ * Detect contradictory lifecycle data. Conservative: only flag when the
+ * contradiction is unambiguous so we do not mass-mark legitimate rows.
+ *
+ * Equivalent to `inconsistencyReasons(m).length > 0`.
+ */
+export function isInconsistentMatch(m: LifecycleMatch | LifecycleChild): boolean {
+  return inconsistencyReasons(m).length > 0;
 }
 
 /**
