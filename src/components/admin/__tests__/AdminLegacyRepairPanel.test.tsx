@@ -96,12 +96,15 @@ describe("AdminLegacyRepairPanel — Step 5 admin actions", () => {
     expect(await screen.findByText(/Settled status with draft POI/i)).toBeInTheDocument();
   });
 
-  it("does not render a detection scan button", async () => {
+  it("renders the Step 6 'Record detection audit' button and does not auto-scan", async () => {
     rpcSpy.mockResolvedValueOnce({ data: [FIXTURE_ROW], error: null });
     renderPanel();
     await screen.findByText(/Copper Cathode/);
-    expect(screen.queryByRole("button", { name: /scan/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /detect/i })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Record detection audit/i }),
+    ).toBeInTheDocument();
+    // Critically: the panel must NOT auto-invoke the detection function on mount.
+    expect(invokeSpy).not.toHaveBeenCalled();
   });
 
   it("opens archive dialog and disables submit until notes are valid", async () => {
