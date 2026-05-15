@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import { resolveEngagementReadModel, type EngagementRow } from "@/lib/engagement-read-model";
+import { isInconsistentMatch } from "@/lib/match-lifecycle";
 
 /**
  * Deal Pipeline - paginated, column-projected.
