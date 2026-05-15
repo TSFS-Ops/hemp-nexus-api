@@ -34,7 +34,9 @@ function migrationsMentioning(pattern: RegExp): { name: string; sql: string }[] 
 }
 
 describe("Batch O Phase 2b Step 2 — match_legacy_detection_emits migration", () => {
-  const matches = migrationsMentioning(/match_legacy_detection_emits/i);
+  const matches = migrationsMentioning(
+    /CREATE\s+TABLE[^;]*public\.match_legacy_detection_emits/i,
+  );
   const latest = matches[matches.length - 1];
 
   it("at least one migration creates match_legacy_detection_emits", () => {
