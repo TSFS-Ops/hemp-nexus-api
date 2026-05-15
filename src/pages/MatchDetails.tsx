@@ -37,6 +37,7 @@ import { useMatchChallenge } from "@/hooks/useMatchChallenge";
 import { ROUTES } from "@/lib/constants";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
+import { isInconsistentMatch } from "@/lib/match-lifecycle";
 import type { EngagementStatus } from "@/components/match/wizard/DealWizard";
 
 function MatchDetailsContent() {
