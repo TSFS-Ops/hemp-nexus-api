@@ -228,6 +228,21 @@ export function DealWizard({
       };
     }
     const activeId = steps[activeStep]?.id;
+    if (softRoutePending) {
+      const statusText =
+        engagementStatus === "notification_sent" ? "queued for outreach"
+        : engagementStatus === "contacted" ? "outreach sent — awaiting reply"
+        : engagementStatus === "declined" ? "counterparty declined"
+        : engagementStatus === "expired" ? "engagement window elapsed"
+        : "in progress";
+      return {
+        tone: "locked",
+        eyebrow: "Waiting on counterparty",
+        title: "Pending Engagement — outreach in progress",
+        description: `A Pending Engagement has been recorded for this trade (${statusText}). No credits have been burned. POI minting will resume once your counterparty accepts. See the Pending Engagement card above for full status.`,
+        helpText: "While a Pending Engagement is active the Generate POI action is held by the server (409 ENGAGEMENT_PENDING). You'll be notified by email when the counterparty responds.",
+      };
+    }
     if (poiHoldActive) {
       const statusText = engagementStatus === "notification_sent" ? "Awaiting outreach"
         : engagementStatus === "contacted" ? "Contacted"
