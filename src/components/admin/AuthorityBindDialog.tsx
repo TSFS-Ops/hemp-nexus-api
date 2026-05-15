@@ -214,7 +214,7 @@ export function AuthorityBindDialog({ open, onOpenChange, companyEntity, onSucce
           )}
 
           {error && (
-            <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 p-3 rounded-lg">
+            <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/5 p-3 rounded-md">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>

@@ -126,7 +126,7 @@ export function DocumentAccessLogs({
             No access history recorded yet
           </div>
         ) : (
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-md overflow-hidden">
             {logsTotal > ACCESS_LOG_LIMIT && (
               <div className="border-b bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 Showing {ACCESS_LOG_LIMIT} of {logsTotal.toLocaleString()} access events - older entries are preserved in the audit trail.

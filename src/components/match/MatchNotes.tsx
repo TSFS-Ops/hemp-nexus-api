@@ -108,7 +108,7 @@ export function MatchNotes({ matchId, orgId }: MatchNotesProps) {
             {notes.map((note) => (
               <div
                 key={note.id}
-                className={`rounded-lg p-3 text-sm ${
+                className={`rounded-md p-3 text-sm ${
                   note.user_id === user?.id
                     ? "bg-primary/10 ml-4"
                     : "bg-muted mr-4"

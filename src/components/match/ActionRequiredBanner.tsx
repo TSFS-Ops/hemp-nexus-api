@@ -51,7 +51,7 @@ const TONE_STYLES: Record<
 > = {
   action: {
     container:
-      "border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 shadow-sm",
+      "border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800",
     eyebrow: "text-amber-700 dark:text-amber-300",
     iconWrap:
       "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/60 dark:text-amber-200 dark:border-amber-700",
@@ -66,7 +66,7 @@ const TONE_STYLES: Record<
     icon: <Lock className="h-4 w-4" />,
   },
   complete: {
-    container: "border-primary/30 bg-primary/5 shadow-sm",
+    container: "border-primary/30 bg-primary/5",
     eyebrow: "text-primary",
     iconWrap: "bg-primary/10 text-primary border-primary/30",
     icon: <CheckCircle2 className="h-4 w-4" />,
@@ -90,7 +90,7 @@ export function ActionRequiredBanner({
         role={tone === "action" ? "alert" : "status"}
         aria-live={tone === "action" ? "assertive" : "polite"}
         className={cn(
-          "rounded-lg border p-4 sm:p-5 transition-all",
+          "rounded-md border p-4 sm:p-5 transition-all",
           s.container,
         )}
       >

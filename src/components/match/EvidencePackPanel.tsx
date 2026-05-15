@@ -324,7 +324,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
         {/* Deal Certificate - only available at Signed Deal (completed) state */}
         {isCompleted && (
-          <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+          <div className="p-4 rounded-md border border-primary/20 bg-primary/5 space-y-3">
             <div className="flex items-center gap-2">
               <Award className="h-5 w-5 text-primary" />
               <span className="font-semibold text-sm">Certificate of Signed Deal</span>

@@ -146,7 +146,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-background">
+          <div className="flex items-start gap-3 p-3 rounded-md border border-primary/20 bg-background">
             <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="text-sm text-muted-foreground space-y-1">
               <p>By accepting, you acknowledge:</p>
@@ -161,7 +161,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
           {engagementStatus === "notification_sent" && (
             <div
               role="status"
-              className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10"
+              className="flex items-start gap-3 p-3 rounded-md border border-amber-500/40 bg-amber-500/10"
             >
               <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <div className="text-sm text-amber-900 dark:text-amber-100 space-y-1">
@@ -178,7 +178,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
           {isExpired && (
             <div
               role="status"
-              className="flex items-start gap-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10"
+              className="flex items-start gap-3 p-3 rounded-md border border-amber-500/40 bg-amber-500/10"
             >
               <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <div className="text-sm text-amber-900 dark:text-amber-100 space-y-1">

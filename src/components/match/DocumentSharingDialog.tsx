@@ -165,7 +165,7 @@ export function DocumentSharingDialog({
           <>
             <div className="space-y-4">
               <RadioGroup value={visibility} onValueChange={setVisibility}>
-                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50">
+                <div className="flex items-start space-x-3 p-3 rounded-md border hover:bg-muted/50">
                   <RadioGroupItem value="private" id="private" className="mt-1" />
                   <div className="flex-1">
                     <Label htmlFor="private" className="flex items-center gap-2 cursor-pointer">
@@ -178,7 +178,7 @@ export function DocumentSharingDialog({
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50">
+                <div className="flex items-start space-x-3 p-3 rounded-md border hover:bg-muted/50">
                   <RadioGroupItem value="share_with_counterparty" id="counterparty" className="mt-1" />
                   <div className="flex-1">
                     <Label htmlFor="counterparty" className="flex items-center gap-2 cursor-pointer">
@@ -191,7 +191,7 @@ export function DocumentSharingDialog({
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50">
+                <div className="flex items-start space-x-3 p-3 rounded-md border hover:bg-muted/50">
                   <RadioGroupItem value="share_with_roles" id="roles" className="mt-1" />
                   <div className="flex-1">
                     <Label htmlFor="roles" className="flex items-center gap-2 cursor-pointer">

@@ -148,7 +148,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-background">
+          <div className="flex items-start gap-3 p-3 rounded-md border border-primary/20 bg-background">
             <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="text-sm text-muted-foreground space-y-1">
               <p>By accepting, you acknowledge:</p>

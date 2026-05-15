@@ -303,7 +303,7 @@ export function DealWizard({
         {stepperAnnouncement}
       </div>
       {/* ── HERO: Macro deal progression ── */}
-      <Card className="shadow-md border-border/80">
+      <Card className="border-border/80">
         <CardContent className="pt-6 pb-5 px-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-1.5">
@@ -490,7 +490,7 @@ function StepMatch({
       </Tabs>
 
       {/* Contextual next-step prompt, only when required commercial fields are complete */}
-      {allComplete && <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+      {allComplete && <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-md border border-primary/30 bg-primary/5">
           <div className="flex items-center gap-2 min-w-0">
             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
             <p className="text-sm font-medium text-foreground">{nextDescription}</p>

@@ -658,7 +658,7 @@ export function DealPipeline() {
             <div
               key={lane.id}
               className={cn(
-                "flex flex-col rounded-xl border border-border shadow-sm overflow-hidden",
+                "flex flex-col rounded-md border border-border overflow-hidden",
                 accent.tint,
                 accent.ring,
               )}
@@ -723,7 +723,7 @@ export function DealPipeline() {
                         {lane.deals.map((deal) => (
                           <li
                             key={deal.id}
-                            className="bg-card rounded-md border border-slate-200/70 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+                            className="bg-card rounded-md border border-slate-200/70 hover:border-slate-300 transition-colors"
                           >
                             <DealDocumentCard
                               deal={deal}
@@ -818,7 +818,7 @@ function FilterBar({
   const inputBase =
     "appearance-none bg-card border border-border hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--emerald))]/30 rounded-md text-[12px] font-medium text-muted-foreground transition-colors";
   return (
-    <div className="mb-5 rounded-lg border border-border bg-muted/60 px-3 py-2.5 flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-3">
+    <div className="mb-5 rounded-md border border-border bg-muted/60 px-3 py-2.5 flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-3">
       {/* Counterparty contains-search */}
       <div className="relative flex-1 min-w-[180px]">
         <Search

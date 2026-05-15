@@ -215,7 +215,7 @@ export function AdminEntitiesPanel() {
               {/* Mobile card view */}
               <div className="space-y-3 md:hidden">
                 {filtered.map((entity) => (
-                  <div key={entity.id} className="border rounded-lg p-3 space-y-3">
+                  <div key={entity.id} className="border rounded-md p-3 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate">{entity.legal_name}</p>

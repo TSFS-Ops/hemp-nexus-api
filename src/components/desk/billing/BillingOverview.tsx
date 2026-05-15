@@ -254,7 +254,7 @@ export function BillingOverview() {
             const isPending = purchasing === pack.id;
             return (
               <div key={pack.id} className="space-y-2">
-                <div className="grid grid-cols-12 gap-6 items-center bg-card border border-slate-200 rounded-md shadow-sm px-6 py-5 hover:shadow-md hover:border-slate-300 hover:bg-slate-50/40 transition-all">
+                <div className="grid grid-cols-12 gap-6 items-center bg-card border border-slate-200 rounded-md px-6 py-5 hover:border-slate-300 hover:bg-slate-50/40 transition-colors">
                   {/* Credits column */}
                   <div className="col-span-12 sm:col-span-3 flex items-baseline gap-2">
                     <span className="font-mono text-2xl font-semibold text-foreground tabular-nums">

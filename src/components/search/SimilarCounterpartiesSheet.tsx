@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Sparkles, Lightbulb } from "lucide-react";
+import { ExternalLink, Lightbulb } from "lucide-react";
 
 interface SearchResult {
   id: string;
@@ -123,7 +123,7 @@ export function SimilarCounterpartiesSheet({
             {similar.map(({ result, reasons, similarityScore }) => (
               <div
                 key={result.id}
-                className="border border-border rounded-lg p-3 space-y-2 hover:border-primary/40 transition-colors"
+                className="border border-border rounded-md p-3 space-y-2 hover:border-primary/40 transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
