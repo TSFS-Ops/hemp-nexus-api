@@ -66,7 +66,7 @@ import { AdminLegacyRepairPanel } from "@/components/admin/AdminLegacyRepairPane
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -102,6 +102,11 @@ const TABS: {
   label: "Revenue & Sales",
   icon: TrendingUp,
   blurb: "Credit purchases, daily/monthly revenue, top buyers, per-org timeline."
+}, {
+  id: "legacy-repair",
+  label: "Legacy Repair",
+  icon: Wrench,
+  blurb: "Matches with conflicting status / state / POI fields. Hidden from user views, awaiting admin reconciliation. Read-only — repair/archive actions coming next."
 }, {
   id: "audit",
   label: "Audit & Health",
