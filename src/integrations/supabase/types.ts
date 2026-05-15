@@ -7639,6 +7639,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_archive_legacy_match: {
+        Args: { p_admin_user_id: string; p_match_id: string; p_notes: string }
+        Returns: Json
+      }
       admin_get_reconciliation_alarms: {
         Args: {
           p_alarm_type?: string
