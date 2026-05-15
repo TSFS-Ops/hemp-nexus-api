@@ -34,6 +34,7 @@ import { Coins, Plus, RefreshCw, Search, AlertCircle, Loader2 } from "lucide-rea
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
+import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
 
 interface Organisation {
   id: string;
