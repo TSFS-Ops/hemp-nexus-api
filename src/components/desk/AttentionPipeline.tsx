@@ -98,7 +98,7 @@ export function AttentionPipeline() {
       const { data: matches, count } = await supabase
         .from("matches")
         .select(
-          "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, status, state, poi_state, settled_at, completed_at, buyer_committed_at, seller_committed_at, buyer_org_id, seller_org_id, org_id, created_at, metadata",
+          "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, status, state, poi_state, settled_at, buyer_committed_at, seller_committed_at, buyer_org_id, seller_org_id, org_id, created_at, metadata",
           { count: "exact" }
         )
         .or(`buyer_org_id.eq.${profile.org_id},seller_org_id.eq.${profile.org_id},org_id.eq.${profile.org_id}`)
