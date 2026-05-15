@@ -1,8 +1,7 @@
-import { Routes, Route, useNavigate, Navigate, useParams } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Routes, Route, useNavigate, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Plus, ShieldAlert, X } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { useAuth } from "@/contexts/AuthContext";
-import Landing from "@/pages/Landing";
 import { DeskLayout } from "@/components/desk/DeskLayout";
 import { DeskSidebar } from "@/components/desk/DeskSidebar";
 import { AttentionPipeline } from "@/components/desk/AttentionPipeline";
@@ -36,11 +35,56 @@ function DeskFullBleed({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** UI-008/SEC-003: persistent "access denied" banner shown when RequireAuth bounces a
+ *  signed-in user without the required role to /desk?denied=1. */
+function DeskDeniedBanner() {
+  const [params, setParams] = useSearchParams();
+  const [open, setOpen] = useState(params.get("denied") === "1");
+
+  useEffect(() => {
+    setOpen(params.get("denied") === "1");
+  }, [params]);
+
+  if (!open) return null;
+
+  const dismiss = () => {
+    const next = new URLSearchParams(params);
+    next.delete("denied");
+    setParams(next, { replace: true });
+    setOpen(false);
+  };
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className="mb-6 flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+    >
+      <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="font-medium">You don't have access to that area.</div>
+        <div className="text-xs opacity-90 mt-0.5">
+          The page you tried to open requires a role your account doesn't currently hold. Contact a platform administrator if you believe this is a mistake.
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dismiss access denied notice"
+        className="shrink-0 rounded p-1 text-amber-900/70 hover:bg-amber-100 hover:text-amber-900"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 function DeskOverview() {
   const navigate = useNavigate();
 
   return (
     <>
+      <DeskDeniedBanner />
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-8 mb-8 sm:mb-12">
         <div className="min-w-0">
@@ -75,14 +119,9 @@ function RedirectDealToMatch() {
 }
 
 export default function Desk() {
-  const { user, isLoading } = useAuth();
-
-  // Guests landing on /desk (or any sub-route) see the public Landing page
-  // instead of being auto-bounced to /auth. Signed-in users get the desk.
-  if (!isLoading && !user) {
-    return <Landing />;
-  }
-
+  // UI-008/SEC-003: every /desk surface is a protected product route.
+  // Logged-out users are redirected to /auth?returnTo=<path> by RequireAuth,
+  // preserving the canonical sign-in deep-link recovery flow.
   return (
     <RequireAuth>
       <Routes>
