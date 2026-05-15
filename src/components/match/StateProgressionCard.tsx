@@ -802,6 +802,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
                 disabled={
                   loading ||
+                  softRoutePending ||
                   (!isFreeAction && recheckingBalance) ||
                   !allRequiredFilled ||
                   wadGateBlocksComplete ||
@@ -809,12 +810,23 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   minBundleBlocksPoi ||
                   participantBlocksAction
                 }
+                title={
+                  softRoutePending
+                    ? "A Pending Engagement is in progress for this trade — POI mint resumes once the counterparty accepts. See the Pending Engagement card above."
+                    : undefined
+                }
+                data-soft-route-pending={softRoutePending ? "true" : undefined}
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Processing…
+                  </>
+                ) : softRoutePending ? (
+                  <>
+                    <ShieldAlert className="h-4 w-4" />
+                    Pending Engagement — outreach in progress
                   </>
                 ) : !isFreeAction && recheckingBalance ? (
                   <>
@@ -853,6 +865,15 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   </>
                 )}
               </button>
+            )}
+
+            {softRoutePending && (
+              <p
+                className="text-xs text-muted-foreground text-center"
+                data-soft-route-pending-note="true"
+              >
+                No credits will be burned — pending engagement in progress. POI minting resumes once the counterparty accepts.
+              </p>
             )}
 
             {/* ── Counterparty-not-yet-registered NOTICE (informational only) ──
