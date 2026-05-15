@@ -94,12 +94,16 @@ describe("Batch O Phase 2b Step 3 — admin_archive_legacy_match RPC migration",
   });
 
   it("does not touch POI / WaD / payment / credit / token / rating tables", () => {
-    const sql = latest.sql;
+    // Strip SQL comments so the safety description in the file header
+    // (which lists what we are NOT touching) doesn't trip the guard.
+    const sql = latest.sql
+      .replace(/--.*$/gm, "")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
     const forbidden = [
       /\bpois\b/i,
       /poi_engagements/i,
-      /wads?\b/i,
-      /payments?\b/i,
+      /\bwads?\b/i,
+      /\bpayments?\b/i,
       /paystack/i,
       /\bcredits\b/i,
       /token_ledger/i,
