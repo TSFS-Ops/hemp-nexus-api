@@ -7684,6 +7684,15 @@ export type Database = {
           status: string
         }[]
       }
+      admin_repair_legacy_match: {
+        Args: {
+          p_admin_user_id: string
+          p_match_id: string
+          p_notes: string
+          p_operation: string
+        }
+        Returns: Json
+      }
       atomic_accept_bind: {
         Args: {
           p_caller_org_id: string
