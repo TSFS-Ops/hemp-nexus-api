@@ -1098,6 +1098,31 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Outreach email sent + state advanced for ${engagementId} → contacted`);
 
+      // ── NOT-002: tag re-sends so duplicate-attempt patterns are observable.
+      // The first send already wrote engagement.outreach_email_queued (or
+      // outreach_followup_email_sent for post-engagement); a 2nd+ send
+      // outside the 30s cooldown gets an additional canonical resend audit.
+      if (isResend) {
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "engagement.outreach_resend_attempted",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              recipient,
+              prior_send_count: (priorSends ?? []).length,
+              current_status: currentStatus,
+              cooldown_seconds: COOLDOWN_SECONDS,
+              request_id: requestId,
+            },
+          });
+        } catch (resendAuditErr) {
+          console.warn(`[${requestId}] Failed to write resend audit row (non-fatal):`, resendAuditErr);
+        }
+      }
+
       const responseBody = {
         ok: true,
         engagement: updated,
