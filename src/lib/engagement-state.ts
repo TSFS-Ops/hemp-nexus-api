@@ -33,6 +33,7 @@ export const ENGAGEMENT_TERMINAL_STATES = [
   "accepted",
   "declined",
   "expired",
+  "cancelled_email_change",
 ] as const;
 
 /**
