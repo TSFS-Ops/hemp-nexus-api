@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Handshake, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
+import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
 import { generateIdempotencyKey } from "@/lib/api-client";
 import {
   AlertDialog,
@@ -121,7 +122,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
         throw e;
       }
 
-      queryClient.invalidateQueries({ queryKey: ["token-balance"] });
+      invalidateAllCreditBalanceQueries(queryClient);
       toast.success("You have accepted this intent. This is now a bilateral intent.");
       onAccepted();
     } catch (error) {

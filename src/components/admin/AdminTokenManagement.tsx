@@ -34,6 +34,7 @@ import { Coins, Plus, RefreshCw, Search, AlertCircle, Loader2 } from "lucide-rea
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
+import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
 
 interface Organisation {
   id: string;
@@ -129,8 +130,7 @@ export function AdminTokenManagement() {
       setTopUpAmount("");
       setSelectedOrg(null);
       // Invalidate to get fresh server-side balance
-      queryClient.invalidateQueries({ queryKey: ["admin-token-balances"] });
-      queryClient.invalidateQueries({ queryKey: ["token-balance"] });
+      invalidateAllCreditBalanceQueries(queryClient);
     } catch (error) {
       console.error("[AdminTokenManagement] top-up failed:", error);
       const message =

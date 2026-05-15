@@ -18,6 +18,7 @@ import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 import { MaintenancePage, MAINTENANCE_MODE } from "@/components/MaintenancePage";
 import { SessionExpiredModal } from "@/components/SessionExpiredModal";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
+import { CrossTabCacheBridge } from "@/lib/cross-tab-bus";
 
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
@@ -100,6 +101,8 @@ function App() {
   }
   return (
     <QueryClientProvider client={queryClient}>
+      {/* UI-007: subscribe this tab to cross-tab cache invalidation events. */}
+      <CrossTabCacheBridge queryClient={queryClient} />
       <AuthProvider>
         <TooltipProvider>
           <Router>
