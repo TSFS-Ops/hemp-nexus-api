@@ -538,6 +538,7 @@ function HQLayout() {
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
+          <TabsContent value="legacy-repair" className="mt-0 animate-section-enter"><LegacyRepairTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
