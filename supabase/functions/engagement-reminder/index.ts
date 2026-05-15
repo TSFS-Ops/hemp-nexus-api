@@ -61,38 +61,91 @@ Deno.serve(async (req) => {
 
     // 2. Create admin notifications for each stale engagement (skip when none)
     if (hasStale) {
-      const notifications = staleEngagements!.map((eng: any) => ({
-        user_id: null, // Admin-targeted (null = system)
-        type: "engagement_reminder",
-        title: "Stale engagement - 7 days without contact",
-        message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
-        metadata: {
-          engagement_id: eng.id,
-          match_id: eng.match_id,
-          org_id: eng.org_id,
-          days_stale: Math.floor((Date.now() - new Date(eng.created_at).getTime()) / (1000 * 60 * 60 * 24)),
-        },
-        read: false,
-      }));
+      // ── NOT-010: TOCTOU recheck ─────────────────────────────────
+      // The fetch above used a stale snapshot. Re-read live status for
+      // each candidate and skip any that have moved out of
+      // 'notification_sent' (e.g. counterparty just accepted). Each
+      // skip is recorded as notification_skipped(lifecycle_noop) so
+      // operators can count silent skips by cause.
+      const candidateIds = staleEngagements!.map((e: any) => e.id);
+      const { data: liveRows } = await supabase
+        .from("poi_engagements")
+        .select("id, engagement_status")
+        .in("id", candidateIds);
+      const liveStatusById = new Map<string, string | null>(
+        (liveRows ?? []).map((r: any) => [r.id, r.engagement_status]),
+      );
 
-      const { error: notifErr } = await supabase
-        .from("notifications")
-        .insert(notifications);
-      if (notifErr) {
-        console.warn(`[${requestId}] Could not insert notifications: ${notifErr.message}`);
+      const stillStale: any[] = [];
+      const skippedStale: { id: string; org_id: string | null; status: string | null }[] = [];
+      for (const e of staleEngagements as any[]) {
+        const live = liveStatusById.get(e.id) ?? null;
+        if (live === "notification_sent") {
+          stillStale.push(e);
+        } else {
+          skippedStale.push({ id: e.id, org_id: e.org_id ?? null, status: live });
+        }
       }
 
-      await supabase.from("admin_audit_logs").insert({
-        admin_user_id: null,
-        action: "engagement.reminder_batch",
-        target_type: "poi_engagement",
-        target_id: null,
-        details: {
-          request_id: requestId,
-          stale_count: staleEngagements!.length,
-          engagement_ids: staleEngagements!.map((e: any) => e.id),
-        },
-      });
+      for (const s of skippedStale) {
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: s.org_id ?? "00000000-0000-0000-0000-000000000000",
+            action: "notification_skipped",
+            entity_type: "notification",
+            entity_id: s.id,
+            metadata: {
+              reason: "lifecycle_noop",
+              source_function: "engagement-reminder",
+              channel: "in_app",
+              target_id: s.id,
+              current_status: s.status,
+              request_id: requestId,
+              timestamp: new Date().toISOString(),
+            },
+          });
+        } catch (auditErr) {
+          console.warn(`[${requestId}] Failed to write lifecycle_noop skip audit for ${s.id}:`, auditErr);
+        }
+      }
+
+      if (stillStale.length === 0) {
+        console.log(`[${requestId}] All ${staleEngagements!.length} fetched stale engagements have since moved status — no reminders inserted.`);
+      } else {
+        const notifications = stillStale.map((eng: any) => ({
+          user_id: null, // Admin-targeted (null = system)
+          type: "engagement_reminder",
+          title: "Stale engagement - 7 days without contact",
+          message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
+          metadata: {
+            engagement_id: eng.id,
+            match_id: eng.match_id,
+            org_id: eng.org_id,
+            days_stale: Math.floor((Date.now() - new Date(eng.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+          },
+          read: false,
+        }));
+
+        const { error: notifErr } = await supabase
+          .from("notifications")
+          .insert(notifications);
+        if (notifErr) {
+          console.warn(`[${requestId}] Could not insert notifications: ${notifErr.message}`);
+        }
+
+        await supabase.from("admin_audit_logs").insert({
+          admin_user_id: null,
+          action: "engagement.reminder_batch",
+          target_type: "poi_engagement",
+          target_id: null,
+          details: {
+            request_id: requestId,
+            stale_count: stillStale.length,
+            skipped_lifecycle_noop_count: skippedStale.length,
+            engagement_ids: stillStale.map((e: any) => e.id),
+          },
+        });
+      }
     }
 
     // 4. Auto-expire engagements past their expires_at date
