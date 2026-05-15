@@ -3,9 +3,9 @@
  * Fetches engagement status and passes it down to enforce the POI hold-point.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/RequireAuth";
 import { ShieldAlert } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
@@ -72,6 +72,35 @@ function MatchDetailsContent() {
       }
     })();
   }, [matchId]);
+
+  // UI-007: per-tab focus refetch. When this tab becomes visible after
+  // being hidden for >5s, re-pull the match and the engagement-status gate
+  // so a stale cache from another tab's mutation is corrected immediately.
+  // We deliberately do NOT enable global `refetchOnWindowFocus` — this is
+  // scoped to the open match page only.
+  const queryClient = useQueryClient();
+  const hiddenSinceRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenSinceRef.current = Date.now();
+        return;
+      }
+      if (document.visibilityState === "visible") {
+        const since = hiddenSinceRef.current;
+        hiddenSinceRef.current = null;
+        if (since && Date.now() - since > 5000) {
+          void fetchMatch();
+          if (matchId) {
+            queryClient.invalidateQueries({ queryKey: ["engagement-status-gate", matchId] });
+          }
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [matchId, fetchMatch, queryClient]);
 
   // Fetch the canonical engagement read-model envelope for this match.
   // Batch B Phase 1: we now consume `current_engagement` from the
