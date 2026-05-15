@@ -289,7 +289,7 @@ function MatchDetailsContent() {
         engagementStatus={engagementStatus}
       />
 
-      <MatchHeroCard match={match} isSettled={isSettled} />
+      <MatchHeroCard match={match} isSettled={isSettled} engagementStatus={engagementStatus} />
 
       {matchId && <ExecutionSection matchId={matchId} />}
     </PageContainer>
