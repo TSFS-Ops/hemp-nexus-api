@@ -275,4 +275,92 @@ describe("AdminLegacyRepairPanel — Step 5 admin actions", () => {
     expect(fromSpy).not.toHaveBeenCalled();
     expect(invokeSpy).not.toHaveBeenCalled();
   });
+
+  // ── Step 6: Record detection audit button ─────────────────────────────
+
+  it("Record detection audit button is hidden when queue is empty", async () => {
+    rpcSpy.mockResolvedValueOnce({ data: [], error: null });
+    renderPanel();
+    await screen.findByText(/No inconsistent matches detected/i);
+    expect(
+      screen.queryByRole("button", { name: /Record detection audit/i }),
+    ).toBeNull();
+  });
+
+  it("Record detection audit calls edge function with current row IDs and Idempotency-Key", async () => {
+    const user = userEvent.setup();
+    rpcSpy.mockResolvedValueOnce({ data: [FIXTURE_ROW], error: null });
+    invokeSpy.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        result: { scanned: 1, recorded: 1, already_recorded: 0, skipped: 0, summary: [] },
+      },
+      error: null,
+    });
+    renderPanel();
+    await screen.findByText(/Copper Cathode/);
+    await user.click(screen.getByRole("button", { name: /Record detection audit/i }));
+
+    await waitFor(() => expect(invokeSpy).toHaveBeenCalledTimes(1));
+    const [name, opts] = invokeSpy.mock.calls[0];
+    expect(name).toBe("admin-match-legacy-record-detections");
+    expect(opts.method).toBe("POST");
+    expect(opts.headers["Idempotency-Key"]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    expect(opts.body).toEqual({ match_ids: [FIXTURE_ROW.id] });
+  });
+
+  it("Record detection audit success toast includes recorded and already-recorded counts", async () => {
+    const user = userEvent.setup();
+    rpcSpy.mockResolvedValueOnce({ data: [FIXTURE_ROW], error: null });
+    invokeSpy.mockResolvedValueOnce({
+      data: {
+        ok: true,
+        result: { scanned: 5, recorded: 3, already_recorded: 2, skipped: 0, summary: [] },
+      },
+      error: null,
+    });
+    renderPanel();
+    await screen.findByText(/Copper Cathode/);
+    await user.click(screen.getByRole("button", { name: /Record detection audit/i }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    const msg = String((toast.success as ReturnType<typeof vi.fn>).mock.calls[0][0]);
+    expect(msg).toMatch(/3/);
+    expect(msg).toMatch(/2 already recorded/i);
+  });
+
+  it("Record detection audit maps errors to safe copy without leaking SQL/stack", async () => {
+    const user = userEvent.setup();
+    rpcSpy.mockResolvedValueOnce({ data: [FIXTURE_ROW], error: null });
+    invokeSpy.mockResolvedValueOnce({
+      data: null,
+      error: {
+        message: "Edge Function returned a non-2xx status code",
+        context: {
+          response: new Response(
+            JSON.stringify({
+              error: "FORBIDDEN",
+              message: "internal: SELECT * FROM auth.users",
+              requestId: "req_y",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } },
+          ),
+        },
+      },
+    });
+    renderPanel();
+    await screen.findByText(/Copper Cathode/);
+    await user.click(screen.getByRole("button", { name: /Record detection audit/i }));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "You do not have permission to perform this action.",
+      ),
+    );
+    const errCalls = (toast.error as ReturnType<typeof vi.fn>).mock.calls
+      .map((c) => String(c[0]))
+      .join(" ");
+    expect(errCalls).not.toMatch(/SELECT/i);
+    expect(errCalls).not.toMatch(/non-2xx/i);
+  });
 });
