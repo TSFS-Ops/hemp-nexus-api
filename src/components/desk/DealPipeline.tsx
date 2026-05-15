@@ -116,7 +116,7 @@ const LANE_PILL_LABEL: Record<string, string> = {
 // Minimal column projection. Anything not on the card or used for routing is excluded.
 // `org_id` was dropped - it is encoded in the `.or()` filter and never read post-fetch.
 const MATCH_COLUMNS =
-  "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, state, buyer_org_id, seller_org_id, created_at";
+  "id, commodity, quantity_amount, quantity_unit, buyer_name, seller_name, status, state, poi_state, settled_at, completed_at, buyer_committed_at, seller_committed_at, buyer_org_id, seller_org_id, created_at, metadata";
 
 function formatVolume(amount: number | null | undefined, unit: string | null | undefined): string {
   if (!amount || !unit) return "-";
