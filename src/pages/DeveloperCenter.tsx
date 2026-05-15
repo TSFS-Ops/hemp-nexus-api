@@ -45,7 +45,7 @@ function DeveloperHeader({ section, badge }: { section: string; badge?: string }
  */
 function KeysIntroBox() {
   return (
-    <section className="rounded-sm border border-slate-800 bg-gradient-to-br from-emerald-500/5 to-slate-900/40 px-5 py-4">
+    <section className="rounded-sm border border-slate-800 bg-slate-900/40 px-5 py-4">
       <div className="flex items-start gap-3">
         <Info className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" strokeWidth={1.75} />
         <div style={{ fontFamily: "Inter, sans-serif" }}>

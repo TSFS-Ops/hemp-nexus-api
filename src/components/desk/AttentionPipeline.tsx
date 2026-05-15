@@ -148,7 +148,7 @@ export function AttentionPipeline() {
   return (
     <section
       className={cn(
-        "border shadow-sm rounded-xl overflow-hidden mb-8 transition-colors",
+        "border rounded-md overflow-hidden mb-8 transition-colors",
         hasUrgent
           ? "bg-amber-50/40 border-amber-300/70 ring-1 ring-inset ring-amber-200/60"
           : "bg-card border-border",
@@ -204,10 +204,10 @@ export function AttentionPipeline() {
                 <li
                   key={item.id}
                   className={cn(
-                    "group flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md transition-all border shadow-sm",
+                    "group flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 rounded-md transition-colors border",
                     isHigh
-                      ? "bg-amber-50 border-amber-300 hover:bg-amber-100/70 hover:shadow-md"
-                      : "bg-card border-slate-200/70 hover:bg-muted hover:shadow-md",
+                      ? "bg-amber-50 border-amber-300 hover:bg-amber-100/70"
+                      : "bg-card border-slate-200/70 hover:bg-muted",
                   )}
                 >
                 {/* Priority dot */}
@@ -264,13 +264,10 @@ export function AttentionPipeline() {
                   </p>
                 </div>
 
-                {/* CTA - high-priority items get a gentle pulsing ring to drive completion */}
+                {/* CTA — flat operational style; severity already conveyed by row chrome */}
                 <button
                   onClick={() => navigate(item.href)}
-                  className={cn(
-                    "shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md bg-[hsl(var(--emerald))] text-white text-xs font-semibold hover:bg-[hsl(var(--emerald))] shadow-sm transition-all",
-                    isHigh && "motion-safe:animate-pulse ring-2 ring-amber-300/70 hover:ring-amber-400 shadow-md",
-                  )}
+                  className="shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md bg-[hsl(var(--emerald))] text-white text-xs font-semibold hover:bg-[hsl(var(--emerald))]/90 transition-colors"
                 >
                   <span className="hidden sm:inline">Review &amp; Seal</span>
                   <span className="sm:hidden">Review</span>
