@@ -105,6 +105,28 @@ const FIXTURES = [
     purpose:
       "Outreach blocked — email missing (organisation known, email unusable)",
   },
+  // Batch O / MT-008 — inconsistent legacy match fixtures. These rows are
+  // shaped so that `inconsistencyReasons()` returns at least one reason,
+  // which makes them: (a) hidden from normal user lists by `isActiveMatch`,
+  // (b) visible in HQ → Legacy Repair via `admin_list_inconsistent_matches`,
+  // (c) safe targets for the archive / repair / record-detection edge fns.
+  // No POI/WaD/payment/credit/notification/lifecycle/SLA path is reachable:
+  // is_demo=true short-circuits Phase 1 isolation, no engagement is attached.
+  {
+    id: "DEMO-MT008-LEGACY-001",
+    purpose:
+      "MT-008 — operator-marker legacy_repair_required (visibility, banner, queue, detection scan)",
+  },
+  {
+    id: "DEMO-MT008-STALESETTLED-002",
+    purpose:
+      "MT-008 — settled_at without terminal status (safe repair op: clear_stale_settled_at)",
+  },
+  {
+    id: "DEMO-MT008-ARCHIVE-003",
+    purpose:
+      "MT-008 — operator-marker state_reconciliation_required (safe archive flow)",
+  },
 ];
 
 function json(body: unknown, status = 200): Response {
