@@ -9,16 +9,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertTriangle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
 import { CounterpartyRatingBadge } from "@/components/ratings/CounterpartyRatingBadge";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
+import { isPendingEngagementActive } from "@/lib/engagement-state";
 import type { Match } from "@/hooks/use-match-details";
 
 interface MatchHeroCardProps {
   match: Match;
   isSettled: boolean;
+  /**
+   * UI-001: when the POI mint soft-routed (counterparty named but not
+   * registered), `match.status` stays `matched` / `match.state` stays
+   * `discovery` even though a non-terminal `poi_engagements` row exists.
+   * Reading "Awaiting Confirmation" alone is misleading; we surface a
+   * second small badge so this hero card matches reality.
+   */
+  engagementStatus?: string | null;
 }
 
 function isDraft(match: Match): boolean {
@@ -52,13 +61,19 @@ function getMatchContext(match: Match): { label: string; value: string }[] {
   return items;
 }
 
-export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
+export function MatchHeroCard({ match, isSettled, engagementStatus }: MatchHeroCardProps) {
   const draft = isDraft(match);
   const contextItems = getMatchContext(match);
   const currentState = match.state || "discovery";
   const matchType = (match as any).match_type || "search";
   const isRevealed = true; // Names are always visible per client requirement
   const isUnilateral = matchType === "unilateral";
+
+  // UI-001: soft-route pending — see DealWizard / StateProgressionCard for
+  // the matching SSOT. We compute it locally so the hero stays a leaf.
+  const softRoutePending =
+    currentState === "discovery" &&
+    isPendingEngagementActive({ engagement_status: engagementStatus ?? null });
 
   // Determine user's role from canonical buyer_org_id / seller_org_id fields.
   const userOrgId = useUserOrg();
@@ -81,6 +96,17 @@ export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
             <CardTitle className="text-2xl mb-2">{match.commodity}</CardTitle>
             <div className="flex items-center gap-2 flex-wrap">
               <MatchStatusBadge status={match.status} />
+              {softRoutePending && (
+                <Badge
+                  variant="outline"
+                  className="text-xs border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 inline-flex items-center gap-1"
+                  data-soft-route-pending="true"
+                  title="A Pending Engagement is open for this trade. POI minting resumes once the counterparty accepts."
+                >
+                  <Clock className="h-3 w-3" />
+                  Pending Engagement
+                </Badge>
+              )}
               {matchType === "unilateral" && (
                 <Badge variant="outline" className="text-xs border-primary/40 text-primary">
                   Unilateral Intent

@@ -45,6 +45,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as MatchState from "@/lib/match-state";
+import { isPendingEngagementActive } from "@/lib/engagement-state";
 import type { Match } from "@/hooks/use-match-details";
 
 import { useOrgLegitimacy } from "@/hooks/use-org-legitimacy";
@@ -209,6 +210,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   const engagementBlocked = currentState === "committed" && engagementStatus !== "accepted";
   // Completion is free, only POI generation costs credits
   const isFreeAction = currentState === "committed";
+
+  // UI-001/005: pre-POI soft-route — server returned 202 ENGAGEMENT_PENDING,
+  // didn't burn credits, didn't progress state. The mint CTA must be
+  // disabled here (otherwise users see "Generate POI — 1 credit" while a
+  // Pending Engagement card is open above), the dialog must show truthful
+  // "no credits will be burned" copy, and the focal banner is owned by
+  // DealWizard (see softRoutePending there).
+  const softRoutePending =
+    currentState === "discovery" &&
+    isPendingEngagementActive({ engagement_status: engagementStatus ?? null });
 
   const unilateralBlocked =
     isUnilateral &&
@@ -791,6 +802,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 onClick={isFreeAction ? () => setShowDialog(true) : handleConfirmClick}
                 disabled={
                   loading ||
+                  softRoutePending ||
                   (!isFreeAction && recheckingBalance) ||
                   !allRequiredFilled ||
                   wadGateBlocksComplete ||
@@ -798,12 +810,23 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   minBundleBlocksPoi ||
                   participantBlocksAction
                 }
+                title={
+                  softRoutePending
+                    ? "A Pending Engagement is in progress for this trade — POI mint resumes once the counterparty accepts. See the Pending Engagement card above."
+                    : undefined
+                }
+                data-soft-route-pending={softRoutePending ? "true" : undefined}
                 className="w-full flex items-center justify-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Processing…
+                  </>
+                ) : softRoutePending ? (
+                  <>
+                    <ShieldAlert className="h-4 w-4" />
+                    Pending Engagement — outreach in progress
                   </>
                 ) : !isFreeAction && recheckingBalance ? (
                   <>
@@ -842,6 +865,15 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   </>
                 )}
               </button>
+            )}
+
+            {softRoutePending && (
+              <p
+                className="text-xs text-muted-foreground text-center"
+                data-soft-route-pending-note="true"
+              >
+                No credits will be burned — pending engagement in progress. POI minting resumes once the counterparty accepts.
+              </p>
             )}
 
             {/* ── Counterparty-not-yet-registered NOTICE (informational only) ──
@@ -913,6 +945,18 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                       <span className="text-muted-foreground">Cost</span>
                       <span className="font-medium text-foreground">Free</span>
                     </div>
+                  </div>
+                ) : softRoutePending ? (
+                  <div
+                    className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm"
+                    data-soft-route-pending-dialog="true"
+                  >
+                    <p className="font-medium text-foreground">
+                      No credits will be burned — pending engagement in progress.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      A Pending Engagement is open for this trade. POI minting resumes once the counterparty accepts. See the Pending Engagement card on the match page for full status.
+                    </p>
                   </div>
                 ) : (
                   <div className="rounded-md border border-border p-3 space-y-2 text-sm">

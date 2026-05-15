@@ -33,6 +33,7 @@ export const ENGAGEMENT_TERMINAL_STATES = [
   "accepted",
   "declined",
   "expired",
+  "cancelled_email_change",
 ] as const;
 
 /**
@@ -64,4 +65,26 @@ export function isEngagementPending(status: string | null | undefined): boolean 
 export function isEngagementTerminal(status: string | null | undefined): boolean {
   if (!status) return false;
   return (ENGAGEMENT_TERMINAL_STATES as readonly string[]).includes(status);
+}
+
+/**
+ * UI-001 / UI-005 SSOT: an engagement row is "active" (i.e. blocks POI
+ * mint and should suppress mint affordances cross-surface) when it exists
+ * and its status is NOT terminal. The server already 409s POI retries
+ * with `ENGAGEMENT_PENDING` while a non-terminal row exists; this helper
+ * lets the client surfaces (DealWizard, StateProgressionCard,
+ * MatchHeroCard) match that contract instead of looking only at
+ * `match.state === 'discovery'`.
+ *
+ * Includes the legacy `'pending'` literal defensively for historical rows.
+ * Treats accepted / declined / expired / cancelled_email_change as
+ * terminal (no longer blocking).
+ */
+export function isPendingEngagementActive(
+  engagement: { engagement_status?: string | null } | null | undefined,
+): boolean {
+  if (!engagement) return false;
+  const status = engagement.engagement_status;
+  if (!status) return false;
+  return !isEngagementTerminal(status);
 }

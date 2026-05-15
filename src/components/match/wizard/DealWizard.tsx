@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import * as MatchState from "@/lib/match-state";
+import { isPendingEngagementActive } from "@/lib/engagement-state";
 import { useMatchSubTab } from "@/hooks/use-match-sub-tab";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -103,6 +104,17 @@ export function DealWizard({
   // Trade request is a hold point. Signed Deal is BLOCKED until trading partner engagement is accepted.
   const engagementAccepted = engagementStatus === "accepted";
   const poiHoldActive = poiComplete && !engagementAccepted && !isCompleted;
+
+  // ── PRE-POI SOFT-ROUTE PENDING ──
+  // UI-001/005: when the POI mint soft-routed (named-but-unregistered
+  // counterparty), the server returned 202 ENGAGEMENT_PENDING, did NOT burn
+  // credits, and did NOT progress `match.state`. The engagement row exists
+  // and is non-terminal, but `match.state` stays `discovery`. Cross-surface
+  // affordances (focal banner, mint CTA, hero badge) must reflect the block
+  // even though the legacy state machine doesn't know about it.
+  const softRoutePending =
+    currentState === "discovery" &&
+    isPendingEngagementActive({ engagement_status: engagementStatus ?? null });
 
   // ── WaD COMPLIANCE GATE ──
   // Query actual wads table to determine if WaD is sealed
@@ -216,6 +228,21 @@ export function DealWizard({
       };
     }
     const activeId = steps[activeStep]?.id;
+    if (softRoutePending) {
+      const statusText =
+        engagementStatus === "notification_sent" ? "queued for outreach"
+        : engagementStatus === "contacted" ? "outreach sent — awaiting reply"
+        : engagementStatus === "declined" ? "counterparty declined"
+        : engagementStatus === "expired" ? "engagement window elapsed"
+        : "in progress";
+      return {
+        tone: "locked",
+        eyebrow: "Waiting on counterparty",
+        title: "Pending Engagement — outreach in progress",
+        description: `A Pending Engagement has been recorded for this trade (${statusText}). No credits have been burned. POI minting will resume once your counterparty accepts. See the Pending Engagement card above for full status.`,
+        helpText: "While a Pending Engagement is active the Generate POI action is held by the server (409 ENGAGEMENT_PENDING). You'll be notified by email when the counterparty responds.",
+      };
+    }
     if (poiHoldActive) {
       const statusText = engagementStatus === "notification_sent" ? "Awaiting outreach"
         : engagementStatus === "contacted" ? "Contacted"
@@ -295,7 +322,7 @@ export function DealWizard({
       title: "No action available",
       description: "Continue when the next step unlocks.",
     };
-  }, [activeStep, steps, poiHoldActive, engagementStatus, commercialTermsComplete, isCompleted, poiComplete, engagementAccepted]);
+  }, [activeStep, steps, poiHoldActive, softRoutePending, engagementStatus, commercialTermsComplete, isCompleted, poiComplete, engagementAccepted]);
 
   return <div className="space-y-5">
       {/* a11y: announce stepper sub-tab interception to screen readers */}
