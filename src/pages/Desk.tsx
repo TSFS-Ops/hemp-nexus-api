@@ -1,8 +1,7 @@
-import { Routes, Route, useNavigate, Navigate, useParams } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Routes, Route, useNavigate, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Plus, ShieldAlert, X } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
-import { useAuth } from "@/contexts/AuthContext";
-import Landing from "@/pages/Landing";
 import { DeskLayout } from "@/components/desk/DeskLayout";
 import { DeskSidebar } from "@/components/desk/DeskSidebar";
 import { AttentionPipeline } from "@/components/desk/AttentionPipeline";
