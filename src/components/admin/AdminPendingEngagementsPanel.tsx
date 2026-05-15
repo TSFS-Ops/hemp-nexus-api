@@ -595,25 +595,28 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
-  // ── Off-scope visibility: count engagements that auto-linked to a known org ──
-  // We query directly (no edge call) for two cheap counts so the "All" bucket is
-  // never invisible. Failures here are non-fatal — we just hide the badge.
-  const fetchKnownCounts = async () => {
+  // ── UI-002 — Off-scope visibility: never silently hide engagements ──
+  // Counts every row that would NOT appear under the current "unknown"
+  // scope. We treat `counterparty_type IN ('known', NULL)` AND any future
+  // non-`'unknown'` literal as off-scope so a forward-compatible value
+  // cannot disappear from the admin landing view. Failures here are
+  // non-fatal — we just hide the badge/banner.
+  const fetchOffScopeCounts = async () => {
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const [totalRes, recentRes] = await Promise.all([
         supabase
           .from("poi_engagements")
           .select("id", { count: "exact", head: true })
-          .eq("counterparty_type", "known"),
+          .or("counterparty_type.neq.unknown,counterparty_type.is.null"),
         supabase
           .from("poi_engagements")
           .select("id", { count: "exact", head: true })
-          .eq("counterparty_type", "known")
+          .or("counterparty_type.neq.unknown,counterparty_type.is.null")
           .gte("updated_at", sevenDaysAgo),
       ]);
-      if (!totalRes.error) setKnownTotalCount(totalRes.count ?? 0);
-      if (!recentRes.error) setKnownRecentCount(recentRes.count ?? 0);
+      if (!totalRes.error) setOffScopeTotalCount(totalRes.count ?? 0);
+      if (!recentRes.error) setOffScopeRecentCount(recentRes.count ?? 0);
     } catch {
       // non-fatal
     }
