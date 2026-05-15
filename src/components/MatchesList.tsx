@@ -163,7 +163,10 @@ export function MatchesList() {
       const { data, error, count } = await query;
       if (error) throw error;
       setPaginationError(false);
-      return { matches: data as Match[], totalCount: count ?? 0 };
+      // Batch O Phase 2 (MT-008): hide inconsistent rows from My Deals list.
+      const filtered = ((data as Match[]) ?? []).filter((m) => !isInconsistentMatch(m as any));
+      const hiddenCount = ((data as Match[]) ?? []).length - filtered.length;
+      return { matches: filtered, totalCount: Math.max(0, (count ?? 0) - hiddenCount) };
     },
   });
 
