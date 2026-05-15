@@ -258,7 +258,7 @@ export function SealedEngagement() {
               Sealed · Tamper-Proof Record
             </p>
 
-            <article className="bg-card rounded-sm shadow-md border border-border p-12">
+            <article className="bg-card rounded-sm border border-border p-12">
               <header className="text-center pb-8 border-b border-border">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground"> Izenzo Governance Infrastructure, Deal Record </p>
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-foreground">

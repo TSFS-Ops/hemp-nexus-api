@@ -209,7 +209,7 @@ export function CreditProvisioningPanel({
                 whileHover={submitting || !billingAvailability.enabled ? undefined : { scale: 0.99 }}
                 whileTap={submitting || !billingAvailability.enabled ? undefined : { scale: 0.985 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {!billingAvailability.enabled
                   ? "Purchases temporarily unavailable"

@@ -30,7 +30,7 @@ export function SearchHeader({
   onSideChange,
 }: SearchHeaderProps) {
   return (
-    <Card className="border-slate-200 shadow-md hover:shadow-lg transition-shadow">
+    <Card className="border-slate-200">
       <CardHeader className="pb-3 sm:pb-4">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <Search className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -64,7 +64,7 @@ export function SearchHeader({
                 className={cn(
                   "flex-1 h-10 rounded-md text-xs font-semibold transition-all duration-200 flex flex-col items-center justify-center gap-0",
                   side === "buyer"
-                    ? "bg-card text-slate-900 shadow-md ring-1 ring-slate-300"
+                    ? "bg-card text-slate-900 ring-1 ring-slate-300"
                     : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/40",
                   isSearching && "opacity-50 cursor-not-allowed",
                 )}

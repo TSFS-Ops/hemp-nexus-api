@@ -492,7 +492,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   };
 
   return (
-    <Card className="shadow-sm">
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center justify-between">
           <span>Readiness check</span>

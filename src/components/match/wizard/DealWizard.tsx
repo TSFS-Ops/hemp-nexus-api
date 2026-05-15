@@ -303,7 +303,7 @@ export function DealWizard({
         {stepperAnnouncement}
       </div>
       {/* ── HERO: Macro deal progression ── */}
-      <Card className="shadow-md border-border/80">
+      <Card className="border-border/80">
         <CardContent className="pt-6 pb-5 px-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-1.5">

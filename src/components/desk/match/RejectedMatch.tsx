@@ -113,7 +113,7 @@ export function RejectedMatch() {
               type: "spring",
               stiffness: 400,
               damping: 30
-            }} onClick={() => navigate("/desk/match/new")} className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow">
+            }} onClick={() => navigate("/desk/match/new")} className="w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground transition-colors">
                 <Pencil className="h-4 w-4" strokeWidth={2} />
                 Modify & Resubmit
                 <span className="font-mono text-[11px] tracking-wider opacity-80">
@@ -145,7 +145,7 @@ export function RejectedMatch() {
 
             {/* Voided document card */}
             <div className="relative">
-              <article className="relative bg-card rounded-sm shadow-md border border-border p-12 overflow-hidden">
+              <article className="relative bg-card rounded-sm border border-border p-12 overflow-hidden">
                 {/* Header */}
                 <header className="text-center pb-8 border-b border-border">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/50"> Izenzo Governance Infrastructure, Deal Record </p>

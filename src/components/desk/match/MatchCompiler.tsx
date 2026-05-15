@@ -325,7 +325,7 @@ export function MatchCompiler({
             type: "spring",
             stiffness: 400,
             damping: 30
-          }} onClick={generateProof} disabled={demoMode || confirming || matchLoading} aria-disabled={demoMode || confirming || matchLoading} tabIndex={demoMode ? -1 : 0} className={`w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground shadow-sm hover:shadow-md transition-shadow disabled:opacity-60 disabled:cursor-not-allowed ${demoMode ? "pointer-events-none" : ""}`}>
+          }} onClick={generateProof} disabled={demoMode || confirming || matchLoading} aria-disabled={demoMode || confirming || matchLoading} tabIndex={demoMode ? -1 : 0} className={`w-full inline-flex items-center justify-center gap-3 rounded-md bg-primary px-6 py-4 text-sm font-medium text-primary-foreground transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${demoMode ? "pointer-events-none" : ""}`}>
               {confirming ? <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Sealing Proof of Intent…
@@ -350,7 +350,7 @@ export function MatchCompiler({
               Live Preview · Mirrors Left Pane
             </p>
 
-            <article className="bg-card rounded-sm shadow-md border border-border p-12">
+            <article className="bg-card rounded-sm border border-border p-12">
               <header className="text-center pb-8 border-b border-border">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground"> Izenzo Governance Infrastructure, Deal Record </p>
                 <h2 className="mt-6 text-xl font-semibold tracking-[0.3em] uppercase text-foreground">

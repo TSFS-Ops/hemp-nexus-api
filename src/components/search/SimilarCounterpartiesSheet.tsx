@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Sparkles, Lightbulb } from "lucide-react";
+import { ExternalLink, Lightbulb } from "lucide-react";
 
 interface SearchResult {
   id: string;

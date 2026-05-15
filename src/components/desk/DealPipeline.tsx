@@ -658,7 +658,7 @@ export function DealPipeline() {
             <div
               key={lane.id}
               className={cn(
-                "flex flex-col rounded-md border border-border shadow-sm overflow-hidden",
+                "flex flex-col rounded-md border border-border overflow-hidden",
                 accent.tint,
                 accent.ring,
               )}
@@ -723,7 +723,7 @@ export function DealPipeline() {
                         {lane.deals.map((deal) => (
                           <li
                             key={deal.id}
-                            className="bg-card rounded-md border border-slate-200/70 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+                            className="bg-card rounded-md border border-slate-200/70 hover:border-slate-300 transition-colors"
                           >
                             <DealDocumentCard
                               deal={deal}
