@@ -946,6 +946,18 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                       <span className="font-medium text-foreground">Free</span>
                     </div>
                   </div>
+                ) : softRoutePending ? (
+                  <div
+                    className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm"
+                    data-soft-route-pending-dialog="true"
+                  >
+                    <p className="font-medium text-foreground">
+                      No credits will be burned — pending engagement in progress.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      A Pending Engagement is open for this trade. POI minting resumes once the counterparty accepts. See the Pending Engagement card on the match page for full status.
+                    </p>
+                  </div>
                 ) : (
                   <div className="rounded-md border border-border p-3 space-y-2 text-sm">
                     <div className="flex justify-between">
