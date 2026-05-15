@@ -23,6 +23,8 @@ import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { cn } from "@/lib/utils";
+import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
+import { publish as publishCrossTab } from "@/lib/cross-tab-bus";
 
 // ==============================================
 // CREDIT PACKAGES — USD-native settlement (cutover 2026-05-01)
@@ -150,10 +152,8 @@ function BillingContent() {
             queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
             queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
             queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
-            queryClient.invalidateQueries({ queryKey: ["token-balance"] });
-            queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
-            queryClient.invalidateQueries({ queryKey: ["token-balance-confirm"] });
-            queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
+            invalidateAllCreditBalanceQueries(queryClient);
+            publishCrossTab({ kind: "credit-balance" });
           } else {
             const paystackStatus = data?.paystackStatus;
             if (paystackStatus === "abandoned") {
@@ -199,9 +199,8 @@ function BillingContent() {
             queryClient.invalidateQueries({ queryKey: ["credit-balance-billing"] });
             queryClient.invalidateQueries({ queryKey: ["recent-credit-transactions"] });
             queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
-            queryClient.invalidateQueries({ queryKey: ["token-balance"] });
-            queryClient.invalidateQueries({ queryKey: ["token-balance-confirm-single"] });
-            queryClient.invalidateQueries({ queryKey: ["token-balance-confirm"] });
+            invalidateAllCreditBalanceQueries(queryClient);
+            publishCrossTab({ kind: "credit-balance" });
             queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
           } else {
             const paystackStatus = data?.paystackStatus;
