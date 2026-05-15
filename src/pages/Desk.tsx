@@ -35,11 +35,56 @@ function DeskFullBleed({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** UI-008/SEC-003: persistent "access denied" banner shown when RequireAuth bounces a
+ *  signed-in user without the required role to /desk?denied=1. */
+function DeskDeniedBanner() {
+  const [params, setParams] = useSearchParams();
+  const [open, setOpen] = useState(params.get("denied") === "1");
+
+  useEffect(() => {
+    setOpen(params.get("denied") === "1");
+  }, [params]);
+
+  if (!open) return null;
+
+  const dismiss = () => {
+    const next = new URLSearchParams(params);
+    next.delete("denied");
+    setParams(next, { replace: true });
+    setOpen(false);
+  };
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className="mb-6 flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+    >
+      <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="font-medium">You don't have access to that area.</div>
+        <div className="text-xs opacity-90 mt-0.5">
+          The page you tried to open requires a role your account doesn't currently hold. Contact a platform administrator if you believe this is a mistake.
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dismiss access denied notice"
+        className="shrink-0 rounded p-1 text-amber-900/70 hover:bg-amber-100 hover:text-amber-900"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 function DeskOverview() {
   const navigate = useNavigate();
 
   return (
     <>
+      <DeskDeniedBanner />
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-8 mb-8 sm:mb-12">
         <div className="min-w-0">
