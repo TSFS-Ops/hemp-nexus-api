@@ -101,18 +101,74 @@ Deno.serve(async (req) => {
     if (queryErr) throw queryErr;
 
     // Filter out items reminded too recently (avoid duplicate digests).
-    const eligible = (overdue ?? []).filter((e) => {
+    const eligibleAfterCadence = (overdue ?? []).filter((e) => {
       if (!e.sla_reminder_sent_at) return true;
       return e.sla_reminder_sent_at <= reReminderCutoffIso;
     });
 
+    // ── NOT-010: TOCTOU recheck ──────────────────────────────────────
+    // Status may have flipped (e.g. counterparty accepted) between the
+    // initial fetch and now. Re-read the live status for every candidate
+    // and drop anything that has left the reminder-eligible set so we
+    // never include an accepted/declined/expired engagement in the
+    // digest or bump its reminder counter.
+    const REMINDER_ELIGIBLE = ["pending", "notification_sent"];
+    const candidateIds = eligibleAfterCadence.map((e) => e.id);
+    let liveStatusById = new Map<string, string | null>();
+    if (candidateIds.length > 0) {
+      const { data: liveRows } = await supabase
+        .from("poi_engagements")
+        .select("id, engagement_status")
+        .in("id", candidateIds);
+      liveStatusById = new Map(
+        (liveRows ?? []).map((r: { id: string; engagement_status: string | null }) => [
+          r.id,
+          r.engagement_status,
+        ]),
+      );
+    }
+    const eligible: typeof eligibleAfterCadence = [];
+    const skippedStale: { id: string; org_id: string | null; status: string | null }[] = [];
+    for (const e of eligibleAfterCadence) {
+      const liveStatus = liveStatusById.get(e.id) ?? null;
+      if (liveStatus && REMINDER_ELIGIBLE.includes(liveStatus)) {
+        eligible.push(e);
+      } else {
+        skippedStale.push({ id: e.id, org_id: e.org_id ?? null, status: liveStatus });
+      }
+    }
+
+    // Audit silent skips so they're observable (idempotent per target/day).
+    for (const s of skippedStale) {
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: s.org_id ?? "00000000-0000-0000-0000-000000000000",
+          action: "notification_skipped",
+          entity_type: "notification",
+          entity_id: s.id,
+          metadata: {
+            reason: "lifecycle_noop",
+            source_function: "outreach-sla-monitor",
+            channel: "email",
+            target_id: s.id,
+            current_status: s.status,
+            request_id: requestId,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      } catch (auditErr) {
+        console.warn(`[${requestId}] Failed to write lifecycle_noop skip audit for ${s.id}:`, auditErr);
+      }
+    }
+
     if (eligible.length === 0) {
-      console.log(`[${requestId}] SLA scan: 0 eligible overdue (${(overdue ?? []).length} overdue total, others recently reminded)`);
+      console.log(`[${requestId}] SLA scan: 0 eligible overdue (${(overdue ?? []).length} overdue total, ${skippedStale.length} stale, others recently reminded)`);
       return new Response(
         JSON.stringify({
           ok: true,
           overdue_total: overdue?.length ?? 0,
           eligible_for_reminder: 0,
+          skipped_stale: skippedStale.length,
           email_sent: false,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -165,6 +221,10 @@ Deno.serve(async (req) => {
     }
 
     // Mark each included engagement as reminded so we don't re-spam next tick.
+    // ── NOT-010: status predicate on the UPDATE ─────────────────────
+    // Even after the recheck above, a final per-row predicate ensures
+    // that if status flipped between the recheck and this UPDATE, the
+    // counter still won't be bumped on a now-ineligible row.
     const ids = eligible.map((e) => e.id);
     const nowIso = new Date().toISOString();
     // Bump counter individually since Supabase JS doesn't support col + 1 in update.
@@ -177,6 +237,7 @@ Deno.serve(async (req) => {
             sla_reminder_count: (e.sla_reminder_count ?? 0) + 1,
           })
           .eq("id", e.id)
+          .in("engagement_status", REMINDER_ELIGIBLE)
       )
     );
 
