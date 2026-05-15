@@ -20,7 +20,7 @@ export function SearchMetricsCard({ metrics }: SearchMetricsCardProps) {
   const totalFound = metrics.baselineCount + metrics.enrichedCount + (metrics.orderBookMatches || 0);
 
   return (
-    <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+    <Card className="bg-card border-border rounded-md shadow-none">
       <CardContent className="py-3 sm:py-4 px-3 sm:px-6">
         <div className="flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
           {/* Source breakdown */}

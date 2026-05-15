@@ -36,7 +36,6 @@ import {
   Loader2,
   RefreshCw,
   ShieldQuestion,
-  Sparkles,
   ExternalLink,
   Newspaper,
   FileText,
@@ -233,10 +232,7 @@ function SidePanel({
       {status === "ready" && (
         <div className="space-y-3">
           {summary && (
-            <div className="flex gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-sm text-foreground/90 leading-relaxed">{summary}</p>
-            </div>
+            <p className="text-sm text-foreground/90 leading-relaxed">{summary}</p>
           )}
 
           {(website || linkedin || sources.length > 0) && (
