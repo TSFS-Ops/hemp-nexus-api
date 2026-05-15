@@ -405,6 +405,10 @@ export function useMatchDetails(matchId: string | undefined) {
 
       if (softRouted && actionPath === "generate-poi") {
         if (mountedRef.current) {
+          // UI-006: invalidate engagement-status-gate so the Pending
+          // Engagement panel updates immediately on soft-route, instead
+          // of waiting for the 30s poll cycle.
+          queryClient.invalidateQueries({ queryKey: ["engagement-status-gate", match.id] });
           await fetchMatch();
           const payload = updated as unknown as {
             counterparty_name?: string;
