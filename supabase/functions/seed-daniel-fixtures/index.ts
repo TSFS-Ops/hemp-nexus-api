@@ -845,7 +845,91 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({
+    // J. DEMO-MT008-LEGACY-001 — Batch O / MT-008 fixture.
+    //    Operator marker `legacy_repair_required=true` flips the row into
+    //    the inconsistent set. Used to prove (a) hidden from Desk, (b)
+    //    direct-link safe banner, (c) appears in HQ Legacy Repair queue,
+    //    (d) detection audit scan records once and is idempotent.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-MT008-LEGACY-001",
+        initiatorOrgId,
+        counterpartyOrgId,
+        { seller_name: "DEMO Counterparty Co." },
+      );
+      await applyMt008Shape(admin, matchId, {
+        fixture_code: "DEMO-MT008-LEGACY-001",
+        metadata_markers: { legacy_repair_required: true },
+      });
+      results.push({
+        fixture: "DEMO-MT008-LEGACY-001",
+        purpose:
+          "MT-008 — operator-marker legacy_repair_required (visibility / banner / queue / detection scan)",
+        match_id: matchId,
+        click:
+          "Login as daniel-initiator → Desk: confirm row is HIDDEN. Open direct URL: confirm legacy-review banner. Login as daniel-platformadmin → HQ → Legacy Repair: confirm row appears with reason chip 'Operator marker: legacy repair required'. Click 'Record detection audit' twice: second click reports 0 newly recorded.",
+        route: `/match/${matchId}`,
+      });
+    }
+
+    // K. DEMO-MT008-STALESETTLED-002 — Batch O / MT-008 safe repair fixture.
+    //    `settled_at` is set but status is still 'matched' (not terminal),
+    //    triggering the `settled_at_without_terminal_status` reason. The
+    //    `clear_stale_settled_at` repair operation nulls settled_at and
+    //    clears the inconsistency without touching POI/credit semantics.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-MT008-STALESETTLED-002",
+        initiatorOrgId,
+        counterpartyOrgId,
+        { seller_name: "DEMO Counterparty Co." },
+      );
+      await applyMt008Shape(admin, matchId, {
+        fixture_code: "DEMO-MT008-STALESETTLED-002",
+        // 14 days ago — clearly stale, not a fresh accidental write.
+        settled_at: iso(now - 14 * day),
+      });
+      results.push({
+        fixture: "DEMO-MT008-STALESETTLED-002",
+        purpose:
+          "MT-008 — settled_at without terminal status (safe repair op clear_stale_settled_at)",
+        match_id: matchId,
+        click:
+          "HQ → Legacy Repair → open this row → Repair → operation 'Clear stale settled_at' → notes ≥10 chars → Confirm. Row leaves the queue; audit log shows match.legacy_state_repaired.",
+        route: "/hq/legacy-repair",
+      });
+    }
+
+    // L. DEMO-MT008-ARCHIVE-003 — Batch O / MT-008 archive fixture.
+    //    Operator marker `state_reconciliation_required=true` flips the row
+    //    into the inconsistent set. The archive flow stamps
+    //    `legacy_archived_admin_hold=true`, which `isActiveMatch` excludes,
+    //    removing the row from both user lists and the queue.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-MT008-ARCHIVE-003",
+        initiatorOrgId,
+        counterpartyOrgId,
+        { seller_name: "DEMO Counterparty Co." },
+      );
+      await applyMt008Shape(admin, matchId, {
+        fixture_code: "DEMO-MT008-ARCHIVE-003",
+        metadata_markers: { state_reconciliation_required: true },
+      });
+      results.push({
+        fixture: "DEMO-MT008-ARCHIVE-003",
+        purpose:
+          "MT-008 — operator-marker state_reconciliation_required (safe archive flow)",
+        match_id: matchId,
+        click:
+          "HQ → Legacy Repair → open this row → Archive → notes ≥10 chars → Confirm. Row leaves the queue; matches.metadata.legacy_archived_admin_hold = true; audit log shows match.legacy_state_archived.",
+        route: "/hq/legacy-repair",
+      });
+    }
+
       ok: true,
       summary: {
         accounts_created: ACCOUNTS.length,
