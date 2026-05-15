@@ -172,9 +172,12 @@ describe("Step 6 — admin-match-legacy-record-detections edge function", () => 
   });
 
   it("imports only cors + idempotency + supabase + zod helpers", () => {
-    const imports = [...edgeSrc.matchAll(/^import .*$/gm)].map((m) => m[0]);
-    for (const line of imports) {
-      expect(line).toMatch(
+    const importSpecifiers = [
+      ...edgeSrc.matchAll(/from\s+["']([^"']+)["']/g),
+    ].map((m) => m[1]);
+    expect(importSpecifiers.length).toBeGreaterThan(0);
+    for (const spec of importSpecifiers) {
+      expect(spec).toMatch(
         /(supabase-js|deno\.land\/x\/zod|_shared\/cors|_shared\/idempotency)/,
       );
     }
