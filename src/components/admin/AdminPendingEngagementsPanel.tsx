@@ -15,6 +15,12 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DELIVERY_LABELS,
+  DELIVERY_STYLES,
+  deriveDeliveryMap,
+  type OutreachDelivery,
+} from "./adminDeliveryStatus";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
