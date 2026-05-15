@@ -7614,6 +7614,29 @@ export type Database = {
           summary: string
         }[]
       }
+      admin_list_inconsistent_matches: {
+        Args: never
+        Returns: {
+          buyer_committed_at: string
+          buyer_name: string
+          buyer_org_id: string
+          commodity: string
+          completed_at: string
+          created_at: string
+          id: string
+          inconsistency_reasons: string[]
+          metadata: Json
+          org_id: string
+          poi_state: string
+          seller_committed_at: string
+          seller_name: string
+          seller_org_id: string
+          settled_at: string
+          state: string
+          status: string
+          updated_at: string
+        }[]
+      }
       atomic_accept_bind: {
         Args: {
           p_caller_org_id: string
