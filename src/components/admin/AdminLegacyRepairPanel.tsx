@@ -188,6 +188,43 @@ export function AdminLegacyRepairPanel() {
   const refetchQueue = () =>
     queryClient.invalidateQueries({ queryKey: ["admin-legacy-repair"] });
 
+  const recordDetectionsMutation = useMutation({
+    mutationFn: async (matchIds: string[]) => {
+      const idempotencyKey = crypto.randomUUID();
+      const { data, error } = await supabase.functions.invoke(
+        "admin-match-legacy-record-detections",
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": idempotencyKey },
+          body: { match_ids: matchIds },
+        },
+      );
+      if (error) {
+        const { code, message } = await extractErrorCode(error);
+        const friendly = safeErrorCopy(code, message ?? "Detection scan failed");
+        throw new Error(friendly);
+      }
+      return data as {
+        ok: true;
+        result: {
+          scanned: number;
+          recorded: number;
+          already_recorded: number;
+          skipped: number;
+        };
+      };
+    },
+    onSuccess: (data) => {
+      const r = data.result;
+      toast.success(
+        `Detection audit recorded for ${r.recorded} match${r.recorded === 1 ? "" : "es"}. ${r.already_recorded} already recorded.`,
+      );
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-2">
