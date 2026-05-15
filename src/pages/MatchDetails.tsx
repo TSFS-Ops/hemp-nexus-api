@@ -238,6 +238,7 @@ function MatchDetailsContent() {
         engagement={displayEngagement}
         match={match as any}
         isInitiator={matchRole === "creator" || userOrgId === (match as any).org_id}
+        isLoading={engagementLoading}
       />
 
       <UnknownCounterpartyStatus
