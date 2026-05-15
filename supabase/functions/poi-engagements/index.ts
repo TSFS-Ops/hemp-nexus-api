@@ -600,6 +600,61 @@ Deno.serve(async (req) => {
       const cached = await lookupIdempotentResponse(idemOpts);
       if (cached) return cachedResponseToHttp(cached, headers);
 
+      // ── NOT-002: 30s per-engagement send cooldown ─────────────────────
+      // Same-body retries already short-circuit via the idempotency cache
+      // above. Edited-body resends within 30s of the last successful send
+      // (queued or post-engagement follow-up) are blocked with 429 +
+      // Retry-After so a flustered admin tweaking the subject line cannot
+      // fire a fresh email at the counterparty inside the cooldown window.
+      // Legitimate later follow-ups outside the window are NOT blocked —
+      // they get tagged as `engagement.outreach_resend_attempted` instead.
+      const COOLDOWN_SECONDS = 30;
+      const cooldownStartIso = new Date(
+        Date.now() - COOLDOWN_SECONDS * 1000,
+      ).toISOString();
+      const SEND_AUDIT_ACTIONS = [
+        "engagement.outreach_email_queued",
+        "engagement.outreach_followup_email_sent",
+      ];
+      const { data: priorSends } = await supabase
+        .from("audit_logs")
+        .select("id, action, created_at")
+        .eq("entity_type", "poi_engagement")
+        .eq("entity_id", engagementId)
+        .in("action", SEND_AUDIT_ACTIONS)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const recentSend = (priorSends ?? []).find(
+        (r: { created_at: string }) => r.created_at >= cooldownStartIso,
+      );
+      if (recentSend) {
+        const ageMs = Date.now() - new Date(recentSend.created_at).getTime();
+        const retryAfter = Math.max(
+          1,
+          Math.ceil((COOLDOWN_SECONDS * 1000 - ageMs) / 1000),
+        );
+        await recordNotificationSkipped(supabase, {
+          reason: "rate_limited",
+          sourceFunction: "poi-engagements/send-outreach",
+          targetId: engagementId,
+          channel: "email",
+          extra: {
+            cooldown_seconds: COOLDOWN_SECONDS,
+            retry_after_seconds: retryAfter,
+            last_send_at: recentSend.created_at,
+            last_send_action: (recentSend as { action: string }).action,
+            request_id: requestId,
+          },
+        });
+        throw new ApiException(
+          "RATE_LIMITED",
+          `Outreach cooldown: another email was sent for this engagement ${Math.round(ageMs / 1000)}s ago. Retry in ${retryAfter}s.`,
+          429,
+          { retryAfter },
+        );
+      }
+      const isResend = (priorSends ?? []).length > 0;
+
       const { data: eng, error: engErr } = await supabase
         .from("poi_engagements")
         .select(`
