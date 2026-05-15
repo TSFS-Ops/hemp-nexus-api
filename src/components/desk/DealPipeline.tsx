@@ -328,7 +328,8 @@ function useSealedPage(orgId: string | null, page: number) {
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      const list = matches ?? [];
+      // Batch O Phase 2 (MT-008): hide inconsistent rows from user pipeline.
+      const list = (matches ?? []).filter((m: any) => !isInconsistentMatch(m));
 
       // Only the page in view needs engagement resolution.
       const ids = list.map((m) => m.id);
