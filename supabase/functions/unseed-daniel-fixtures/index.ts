@@ -56,6 +56,10 @@ const DEMO_MATCH_HASHES = [
   // Batch E observability fixtures.
   "DEMO-BE-CONTACT-INCOMPLETE-001",
   "DEMO-BE-EMAIL-MISSING-002",
+  // Batch O / MT-008 inconsistent legacy match fixtures.
+  "DEMO-MT008-LEGACY-001",
+  "DEMO-MT008-STALESETTLED-002",
+  "DEMO-MT008-ARCHIVE-003",
 ];
 
 function json(body: unknown, status = 200): Response {
