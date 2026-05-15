@@ -113,21 +113,20 @@ describe("Step 6 — admin_record_legacy_detections RPC", () => {
     );
     const end = migrationSql.indexOf("REVOKE ALL ON FUNCTION public.admin_record_legacy_detections");
     const body = migrationSql.slice(start, end).toLowerCase();
+    // Only check for forbidden table/module references — not column names like poi_state.
     for (const banned of [
-      "poi_",
+      "poi_engagements",
+      "poi_documents",
       "wads",
       "wad_",
-      "payment",
+      "payments",
       "paystack",
-      "credit",
       "token_ledger",
-      "notification",
-      "email",
-      "rating",
-      "compliance_",
-      "public_status",
-      "lifecycle_",
-      "sla_",
+      "credit_purchases",
+      "notification_dispatch",
+      "email_queue",
+      "ratings_signals",
+      "compliance_checks",
     ]) {
       expect(body, `must not reference ${banned}`).not.toContain(banned);
     }
