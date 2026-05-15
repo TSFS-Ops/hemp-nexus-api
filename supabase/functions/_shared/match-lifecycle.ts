@@ -80,6 +80,7 @@ export function isActiveMatch(m: LifecycleMatch): boolean {
   if (isTerminalMatch(m)) return false;
   if (isInconsistentMatch(m)) return false;
   if (hasMarker(m, "parent_archived_admin_exception_hold")) return false;
+  if (hasMarker(m, "legacy_archived_admin_hold")) return false;
   return true;
 }
 
