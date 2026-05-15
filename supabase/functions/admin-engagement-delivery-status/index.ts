@@ -38,22 +38,13 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { mapStatus, type MappedStatus } from "../_shared/admin-delivery-status.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
-
-type MappedStatus =
-  | "queued"
-  | "sent"
-  | "failed"
-  | "dlq"
-  | "bounced"
-  | "complained"
-  | "suppressed"
-  | "not_linked";
 
 interface DeliveryStatus {
   engagement_id: string;
