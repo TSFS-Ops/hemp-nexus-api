@@ -193,9 +193,10 @@ export function hasActiveChildMatches(children: ReadonlyArray<LifecycleChild>): 
   for (const c of children) {
     if (isTerminalMatch(c)) continue;
     // Reuse active rules but child rows have no org/contact fields, so we
-    // only check terminal + inconsistent + exception-hold marker.
+    // only check terminal + inconsistent + exception/legacy hold markers.
     if (isInconsistentMatch(c)) continue;
     if (hasMarker(c, "parent_archived_admin_exception_hold")) continue;
+    if (hasMarker(c, "legacy_archived_admin_hold")) continue;
     return true;
   }
   return false;
