@@ -277,11 +277,13 @@ export function AdminPendingEngagementsPanel() {
   // Phase 1 demo isolation: hide is_demo rows by default so admins never
   // confuse Daniel-facing fixture rows with real production engagements.
   const [showDemo, setShowDemo] = useState<boolean>(false);
-  // Off-scope counters: when admin is on "Unknown only", we still surface how many
-  // engagements live in the "All" bucket and how many of those auto-promoted in the
-  // last 7 days. This prevents the "my row vanished after auto-link" support pattern.
-  const [knownTotalCount, setKnownTotalCount] = useState<number>(0);
-  const [knownRecentCount, setKnownRecentCount] = useState<number>(0);
+  // Off-scope counters: UI-002 fix — when admin is on "Unknown only", we
+  // surface every engagement that does NOT match the current scope so a
+  // row with `counterparty_type` of `'known'`, `NULL`, or any future value
+  // is never silently invisible. The recent counter still tracks the
+  // last 7 days for the "engagement disappeared" support pattern.
+  const [offScopeTotalCount, setOffScopeTotalCount] = useState<number>(0);
+  const [offScopeRecentCount, setOffScopeRecentCount] = useState<number>(0);
 
   // ── Reviewer support-notes filter ──
   // notesFilter: "any" (no filter) | "with" (has notes) | "without" (no notes)
@@ -593,25 +595,28 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
-  // ── Off-scope visibility: count engagements that auto-linked to a known org ──
-  // We query directly (no edge call) for two cheap counts so the "All" bucket is
-  // never invisible. Failures here are non-fatal — we just hide the badge.
-  const fetchKnownCounts = async () => {
+  // ── UI-002 — Off-scope visibility: never silently hide engagements ──
+  // Counts every row that would NOT appear under the current "unknown"
+  // scope. We treat `counterparty_type IN ('known', NULL)` AND any future
+  // non-`'unknown'` literal as off-scope so a forward-compatible value
+  // cannot disappear from the admin landing view. Failures here are
+  // non-fatal — we just hide the badge/banner.
+  const fetchOffScopeCounts = async () => {
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const [totalRes, recentRes] = await Promise.all([
         supabase
           .from("poi_engagements")
           .select("id", { count: "exact", head: true })
-          .eq("counterparty_type", "known"),
+          .or("counterparty_type.neq.unknown,counterparty_type.is.null"),
         supabase
           .from("poi_engagements")
           .select("id", { count: "exact", head: true })
-          .eq("counterparty_type", "known")
+          .or("counterparty_type.neq.unknown,counterparty_type.is.null")
           .gte("updated_at", sevenDaysAgo),
       ]);
-      if (!totalRes.error) setKnownTotalCount(totalRes.count ?? 0);
-      if (!recentRes.error) setKnownRecentCount(recentRes.count ?? 0);
+      if (!totalRes.error) setOffScopeTotalCount(totalRes.count ?? 0);
+      if (!recentRes.error) setOffScopeRecentCount(recentRes.count ?? 0);
     } catch {
       // non-fatal
     }
@@ -674,7 +679,7 @@ export function AdminPendingEngagementsPanel() {
 
   useEffect(() => {
     fetchEngagements();
-    fetchKnownCounts();
+    fetchOffScopeCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 
@@ -692,7 +697,7 @@ export function AdminPendingEngagementsPanel() {
       if (debounce) clearTimeout(debounce);
       debounce = setTimeout(() => {
         fetchEngagements();
-        fetchKnownCounts();
+        fetchOffScopeCounts();
       }, 400);
     };
 
@@ -1294,17 +1299,26 @@ export function AdminPendingEngagementsPanel() {
               </span>
             )}
           </p>
-          {scope === "unknown" && knownRecentCount > 0 && (
-            <div className="mt-3 max-w-2xl rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 flex items-start gap-2">
+          {scope === "unknown" && offScopeTotalCount > 0 && (
+            <div
+              data-testid="off-scope-banner"
+              className="mt-3 max-w-2xl rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 flex items-start gap-2"
+            >
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-sky-700" />
               <div className="flex-1">
                 <strong>Looking for an engagement that disappeared?</strong>{" "}
-                {knownRecentCount} engagement{knownRecentCount === 1 ? "" : "s"} moved out of this view
-                in the last 7 days because the counterparty email matched a registered organisation.
-                They are still live — they're now visible under <strong>All</strong> (the row is filed
-                under the counterparty's organisation, not as an "unknown outreach" task).
+                {offScopeTotalCount} engagement{offScopeTotalCount === 1 ? "" : "s"} are not visible in
+                the current "Unknown only" scope (counterparty is registered, unspecified, or otherwise off-scope).
+                {offScopeRecentCount > 0 && (
+                  <>
+                    {" "}
+                    {offScopeRecentCount} of those moved here in the last 7 days because the counterparty
+                    email matched a registered organisation.
+                  </>
+                )}
                 <button
                   type="button"
+                  data-testid="off-scope-view-all"
                   onClick={() => setScope("all")}
                   className="ml-1 underline font-medium hover:text-sky-700"
                 >
@@ -1332,14 +1346,14 @@ export function AdminPendingEngagementsPanel() {
               title="Include known-counterparty (already-on-platform) engagements. Engagements auto-promote here as soon as their counterparty email matches a registered organisation."
             >
               All
-              {knownTotalCount > 0 && (
+              {offScopeTotalCount > 0 && (
                 <span
                   className={`inline-flex items-center justify-center min-w-[1.25rem] h-4 px-1 rounded-full text-[10px] font-semibold ${
                     scope === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
                   }`}
-                  title={`${knownTotalCount} engagement(s) on this platform have a known (registered) counterparty`}
+                  title={`${offScopeTotalCount} engagement(s) on this platform have a known (registered) counterparty`}
                 >
-                  +{knownTotalCount}
+                  +{offScopeTotalCount}
                 </span>
               )}
             </button>
@@ -1578,9 +1592,27 @@ export function AdminPendingEngagementsPanel() {
       <Card>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-12 text-sm">
-              No engagements match the current filter.
-            </p>
+            <div className="text-center py-12" data-testid="admin-engagements-empty">
+              <p className="text-sm text-muted-foreground">
+                No engagements match the current filter.
+              </p>
+              {scope === "unknown" && offScopeTotalCount > 0 && (
+                <p
+                  data-testid="off-scope-empty-hint"
+                  className="text-xs text-muted-foreground mt-2"
+                >
+                  {offScopeTotalCount} engagement{offScopeTotalCount === 1 ? "" : "s"} exist in other scopes —{" "}
+                  <button
+                    type="button"
+                    onClick={() => setScope("all")}
+                    className="underline font-medium hover:text-foreground"
+                  >
+                    switch to All
+                  </button>
+                  .
+                </p>
+              )}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>

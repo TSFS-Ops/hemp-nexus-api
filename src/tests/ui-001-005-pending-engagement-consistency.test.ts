@@ -160,7 +160,7 @@ describe("use-match-details.handleSettle — ENGAGEMENT_PENDING soft-route branc
     expect(start).toBeGreaterThan(-1);
     const end = src.indexOf("\n      }\n", start);
     const branch = src.slice(start, end);
-    expect(branch).not.toMatch(/invalidateQueries\(/);
+    expect(branch).not.toMatch(/queryKey:\s*\["token-balance/);
     expect(branch).not.toMatch(/setMatch\(updated\)/);
     expect(branch).toContain("toast.info");
   });

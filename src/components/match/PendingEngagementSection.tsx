@@ -123,6 +123,22 @@ interface Props {
   match?: PendingEngagementMatch | null;
   /** True when the current viewer is the initiator (the POI creator). */
   isInitiator: boolean;
+  /**
+   * UI-006: when the parent's engagement-status query is still in flight
+   * we render a lightweight skeleton placeholder instead of returning null,
+   * so the Pending Engagement panel does not appear to vanish during a
+   * page refresh or slow network. Defaults to false for back-compat.
+   */
+  isLoading?: boolean;
+  /**
+   * UI-006 defensive stub: caller indicates that a Pending Engagement is
+   * known to exist for this match (e.g. the server just returned a
+   * 202 ENGAGEMENT_PENDING soft-route) but the engagement read-model
+   * has not yet caught up. We render a "Pending Engagement status is
+   * loading…" placeholder so the user never sees a contradictory
+   * ready-to-mint state.
+   */
+  softRouteHint?: boolean;
 }
 
 interface StatusMeta {
@@ -240,9 +256,34 @@ function daysUntil(ts?: string | null): number | null {
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
-export function PendingEngagementSection({ engagement, match, isInitiator }: Props) {
-  if (!engagement) return null;
+export function PendingEngagementSection({ engagement, match, isInitiator, isLoading, softRouteHint }: Props) {
+  // UI-006: while the engagement-status query is loading OR we have a
+  // server-side soft-route hint but no engagement row yet, reserve the
+  // visual slot so the panel does not appear to vanish on refresh.
+  if (!engagement && (isLoading || softRouteHint)) {
+    return (
+      <Card
+        className="border-amber-500/40 bg-amber-500/5"
+        aria-labelledby="pending-engagement-loading-heading"
+        data-testid="pending-engagement-loading"
+      >
+        <CardHeader className="space-y-2">
+          <CardTitle
+            id="pending-engagement-loading-heading"
+            className="flex items-center gap-2 text-lg"
+          >
+            <Clock className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 animate-pulse" />
+            Pending Engagement
+          </CardTitle>
+          <CardDescription>
+            Pending Engagement status is loading…
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
+  if (!engagement) return null;
   // Hide once fully resolved AND linked — other surfaces own that story.
   // Batch B Phase 9 F-B4 exception: when an expired row carries a recorded
   // late acceptance OR a `late_acceptance_resolution`, this card is the
