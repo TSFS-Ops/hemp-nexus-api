@@ -283,6 +283,33 @@ export function useMatchDetails(matchId: string | undefined) {
         handleApiError(err);
       }
 
+      // UI-005: handle the 202 ENGAGEMENT_PENDING soft-route the same way
+      // `handleStateAction` does — no `setMatch`, no token-balance
+      // invalidation, truthful "no credits were used" toast. Without this,
+      // the legacy settle path threw the scary "Server returned an invalid
+      // response. Contact support@izenzo.co.za if credits were deducted"
+      // message even though the soft-route is a known, safe outcome.
+      const settleSoftRouted =
+        updated &&
+        typeof updated === "object" &&
+        (updated as { code?: string }).code === "ENGAGEMENT_PENDING";
+
+      if (settleSoftRouted) {
+        if (mountedRef.current) {
+          await fetchMatch();
+          const payload = updated as unknown as {
+            counterparty_name?: string;
+            missing_party?: string;
+          };
+          const who = payload.counterparty_name || `the ${payload.missing_party ?? "counterparty"}`;
+          toast.info(
+            `Pending engagement created. ${who} is not yet registered on the platform — no credits were used. POI minting will resume once they accept.`,
+            { duration: 8000 },
+          );
+        }
+        return;
+      }
+
       if (!updated || !updated.id || !updated.status) {
         throw new Error("Server returned an invalid response. Contact support@izenzo.co.za if credits were deducted.");
       }
