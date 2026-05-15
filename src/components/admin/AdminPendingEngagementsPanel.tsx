@@ -1702,6 +1702,42 @@ export function AdminPendingEngagementsPanel() {
                                 </Badge>
                               );
                             })()}
+                            {(() => {
+                              // Outreach delivery status from email_send_log.
+                              // Read-only enrichment — absent when no outreach
+                              // has been attempted yet for this engagement.
+                              const d = delivery[e.id];
+                              if (!d) return null;
+                              const label = DELIVERY_LABELS[d.status] ?? d.status;
+                              const cls =
+                                DELIVERY_STYLES[d.status] ??
+                                "bg-slate-100 text-slate-700 border-slate-200";
+                              const ts = new Date(d.created_at).toLocaleString();
+                              const title = `Outreach delivery: ${label} at ${ts}${
+                                d.error_message ? ` — ${d.error_message}` : ""
+                              }`;
+                              const isWarn =
+                                d.status === "failed" ||
+                                d.status === "dlq" ||
+                                d.status === "bounced" ||
+                                d.status === "complained";
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className={`whitespace-nowrap text-[10px] font-medium px-2 py-0.5 ${cls}`}
+                                  title={title}
+                                  aria-label={title}
+                                  data-delivery-status={d.status}
+                                >
+                                  {isWarn ? (
+                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <Mail className="h-3 w-3 mr-1" />
+                                  )}
+                                  Delivery: {label}
+                                </Badge>
+                              );
+                            })()}
                             {/* Batch A — canonical contact-completeness badge.
                                 Mirrors the backend's outreach gate so an
                                 operator can read the state without opening
