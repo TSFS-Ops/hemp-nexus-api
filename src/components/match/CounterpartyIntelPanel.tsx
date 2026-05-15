@@ -36,7 +36,6 @@ import {
   Loader2,
   RefreshCw,
   ShieldQuestion,
-  Sparkles,
   ExternalLink,
   Newspaper,
   FileText,
