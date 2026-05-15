@@ -72,28 +72,9 @@ function jsonResponse(req: Request, body: unknown, status = 200) {
   );
 }
 
-function mapStatus(raw: string | null | undefined): MappedStatus {
-  switch ((raw ?? "").toLowerCase()) {
-    case "pending":
-      return "queued";
-    case "sent":
-      return "sent";
-    case "dlq":
-      return "dlq";
-    case "failed":
-      return "failed";
-    case "bounced":
-      return "bounced";
-    case "complained":
-      return "complained";
-    case "suppressed":
-      return "suppressed";
-    default:
-      // Unknown raw status — treat as not_linked so callers don't render a
-      // green/sent badge for an unrecognised value.
-      return "not_linked";
-  }
-}
+// mapStatus is now imported from ../_shared/admin-delivery-status.ts so it
+// can be unit-tested in isolation. Behaviour is unchanged.
+
 
 function parseIds(req: Request, url: URL): { ids: string[]; error?: string } {
   const collected: string[] = [];
