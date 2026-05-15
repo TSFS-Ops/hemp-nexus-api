@@ -1299,17 +1299,26 @@ export function AdminPendingEngagementsPanel() {
               </span>
             )}
           </p>
-          {scope === "unknown" && offScopeRecentCount > 0 && (
-            <div className="mt-3 max-w-2xl rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 flex items-start gap-2">
+          {scope === "unknown" && offScopeTotalCount > 0 && (
+            <div
+              data-testid="off-scope-banner"
+              className="mt-3 max-w-2xl rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 flex items-start gap-2"
+            >
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-sky-700" />
               <div className="flex-1">
                 <strong>Looking for an engagement that disappeared?</strong>{" "}
-                {offScopeRecentCount} engagement{offScopeRecentCount === 1 ? "" : "s"} moved out of this view
-                in the last 7 days because the counterparty email matched a registered organisation.
-                They are still live — they're now visible under <strong>All</strong> (the row is filed
-                under the counterparty's organisation, not as an "unknown outreach" task).
+                {offScopeTotalCount} engagement{offScopeTotalCount === 1 ? "" : "s"} are not visible in
+                the current "Unknown only" scope (counterparty is registered, unspecified, or otherwise off-scope).
+                {offScopeRecentCount > 0 && (
+                  <>
+                    {" "}
+                    {offScopeRecentCount} of those moved here in the last 7 days because the counterparty
+                    email matched a registered organisation.
+                  </>
+                )}
                 <button
                   type="button"
+                  data-testid="off-scope-view-all"
                   onClick={() => setScope("all")}
                   className="ml-1 underline font-medium hover:text-sky-700"
                 >
