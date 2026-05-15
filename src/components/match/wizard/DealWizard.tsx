@@ -105,6 +105,17 @@ export function DealWizard({
   const engagementAccepted = engagementStatus === "accepted";
   const poiHoldActive = poiComplete && !engagementAccepted && !isCompleted;
 
+  // ── PRE-POI SOFT-ROUTE PENDING ──
+  // UI-001/005: when the POI mint soft-routed (named-but-unregistered
+  // counterparty), the server returned 202 ENGAGEMENT_PENDING, did NOT burn
+  // credits, and did NOT progress `match.state`. The engagement row exists
+  // and is non-terminal, but `match.state` stays `discovery`. Cross-surface
+  // affordances (focal banner, mint CTA, hero badge) must reflect the block
+  // even though the legacy state machine doesn't know about it.
+  const softRoutePending =
+    currentState === "discovery" &&
+    isPendingEngagementActive({ engagement_status: engagementStatus ?? null });
+
   // ── WaD COMPLIANCE GATE ──
   // Query actual wads table to determine if WaD is sealed
   const {
