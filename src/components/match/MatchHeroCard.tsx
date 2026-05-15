@@ -96,6 +96,17 @@ export function MatchHeroCard({ match, isSettled, engagementStatus }: MatchHeroC
             <CardTitle className="text-2xl mb-2">{match.commodity}</CardTitle>
             <div className="flex items-center gap-2 flex-wrap">
               <MatchStatusBadge status={match.status} />
+              {softRoutePending && (
+                <Badge
+                  variant="outline"
+                  className="text-xs border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 inline-flex items-center gap-1"
+                  data-soft-route-pending="true"
+                  title="A Pending Engagement is open for this trade. POI minting resumes once the counterparty accepts."
+                >
+                  <Clock className="h-3 w-3" />
+                  Pending Engagement
+                </Badge>
+              )}
               {matchType === "unilateral" && (
                 <Badge variant="outline" className="text-xs border-primary/40 text-primary">
                   Unilateral Intent
