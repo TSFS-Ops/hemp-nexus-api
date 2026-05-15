@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getMatchEvidenceCounts } from "@/lib/match-evidence-counts-client";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import * as MatchState from "@/lib/match-state";
+import { isPendingEngagementActive } from "@/lib/engagement-state";
 import { useMatchSubTab } from "@/hooks/use-match-sub-tab";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
