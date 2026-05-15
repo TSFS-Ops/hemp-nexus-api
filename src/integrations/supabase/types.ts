@@ -7621,7 +7621,6 @@ export type Database = {
           buyer_name: string
           buyer_org_id: string
           commodity: string
-          completed_at: string
           created_at: string
           id: string
           inconsistency_reasons: string[]
@@ -7634,7 +7633,6 @@ export type Database = {
           settled_at: string
           state: string
           status: string
-          updated_at: string
         }[]
       }
       atomic_accept_bind: {
