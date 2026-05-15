@@ -201,7 +201,7 @@ function BillingContent() {
             queryClient.invalidateQueries({ queryKey: ["credit-usage-stats"] });
             invalidateAllCreditBalanceQueries(queryClient);
             publishCrossTab({ kind: "credit-balance" });
-            queryClient.invalidateQueries({ queryKey: ["token-balance-progression"] });
+            
           } else {
             const paystackStatus = data?.paystackStatus;
             if (paystackStatus === "abandoned") {
