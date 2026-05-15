@@ -211,6 +211,16 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   // Completion is free, only POI generation costs credits
   const isFreeAction = currentState === "committed";
 
+  // UI-001/005: pre-POI soft-route — server returned 202 ENGAGEMENT_PENDING,
+  // didn't burn credits, didn't progress state. The mint CTA must be
+  // disabled here (otherwise users see "Generate POI — 1 credit" while a
+  // Pending Engagement card is open above), the dialog must show truthful
+  // "no credits will be burned" copy, and the focal banner is owned by
+  // DealWizard (see softRoutePending there).
+  const softRoutePending =
+    currentState === "discovery" &&
+    isPendingEngagementActive({ engagement_status: engagementStatus ?? null });
+
   const unilateralBlocked =
     isUnilateral &&
     currentState === "intent_declared" &&
