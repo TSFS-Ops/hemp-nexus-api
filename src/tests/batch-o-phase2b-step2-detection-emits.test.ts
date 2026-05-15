@@ -82,8 +82,17 @@ describe("Batch O Phase 2b Step 2 — match_legacy_detection_emits migration", (
     }
   });
 
-  it("does not modify audit_logs", () => {
-    expect(latest.sql).not.toMatch(/\baudit_logs\b/i);
+  it("does not perform DDL/DML against audit_logs", () => {
+    // The comment header may mention "audit_logs" by name to explain intent;
+    // what we forbid is actual schema or data operations against it.
+    const sql = latest.sql;
+    expect(sql).not.toMatch(/ALTER\s+TABLE[^;]*\baudit_logs\b/i);
+    expect(sql).not.toMatch(/CREATE\s+(UNIQUE\s+)?INDEX[^;]*\baudit_logs\b/i);
+    expect(sql).not.toMatch(/CREATE\s+TRIGGER[^;]*\baudit_logs\b/i);
+    expect(sql).not.toMatch(/INSERT\s+INTO[^;]*\baudit_logs\b/i);
+    expect(sql).not.toMatch(/UPDATE\s+[^;]*\baudit_logs\b/i);
+    expect(sql).not.toMatch(/DELETE\s+FROM[^;]*\baudit_logs\b/i);
+    expect(sql).not.toMatch(/DROP[^;]*\baudit_logs\b/i);
   });
 
   it("adds no triggers or notification fan-out", () => {
