@@ -67,14 +67,15 @@ describe("Step 6 — admin_record_legacy_detections RPC", () => {
   });
 
   it("writes match.legacy_state_reconciliation_required ONLY when insert succeeded", () => {
-    // Audit insert must be inside the IF coalesce(v_inserted, false) THEN block.
-    const auditInsertIdx = migrationSql.indexOf(
-      "'match.legacy_state_reconciliation_required'",
-    );
-    const successGuardIdx = migrationSql.indexOf("IF coalesce(v_inserted, false) THEN");
-    const elseBranchIdx = migrationSql.indexOf("ELSE", successGuardIdx);
-    expect(auditInsertIdx).toBeGreaterThan(successGuardIdx);
-    expect(auditInsertIdx).toBeLessThan(elseBranchIdx);
+    // Slice just the function body to avoid matching docstring mentions.
+    const start = migrationSql.indexOf("BEGIN", migrationSql.indexOf("CREATE OR REPLACE FUNCTION public.admin_record_legacy_detections"));
+    const end = migrationSql.indexOf("END;\n$$", start);
+    const body = migrationSql.slice(start, end);
+    const auditIdx = body.indexOf("'match.legacy_state_reconciliation_required'");
+    const guardIdx = body.indexOf("IF coalesce(v_inserted, false) THEN");
+    const elseIdx = body.indexOf("ELSE", guardIdx);
+    expect(auditIdx).toBeGreaterThan(guardIdx);
+    expect(auditIdx).toBeLessThan(elseIdx);
   });
 
   it("audit row carries required forensic fields", () => {
