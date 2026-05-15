@@ -277,11 +277,13 @@ export function AdminPendingEngagementsPanel() {
   // Phase 1 demo isolation: hide is_demo rows by default so admins never
   // confuse Daniel-facing fixture rows with real production engagements.
   const [showDemo, setShowDemo] = useState<boolean>(false);
-  // Off-scope counters: when admin is on "Unknown only", we still surface how many
-  // engagements live in the "All" bucket and how many of those auto-promoted in the
-  // last 7 days. This prevents the "my row vanished after auto-link" support pattern.
-  const [knownTotalCount, setKnownTotalCount] = useState<number>(0);
-  const [knownRecentCount, setKnownRecentCount] = useState<number>(0);
+  // Off-scope counters: UI-002 fix — when admin is on "Unknown only", we
+  // surface every engagement that does NOT match the current scope so a
+  // row with `counterparty_type` of `'known'`, `NULL`, or any future value
+  // is never silently invisible. The recent counter still tracks the
+  // last 7 days for the "engagement disappeared" support pattern.
+  const [offScopeTotalCount, setOffScopeTotalCount] = useState<number>(0);
+  const [offScopeRecentCount, setOffScopeRecentCount] = useState<number>(0);
 
   // ── Reviewer support-notes filter ──
   // notesFilter: "any" (no filter) | "with" (has notes) | "without" (no notes)
