@@ -293,6 +293,14 @@ function EngagementsTab() {
       </Surface>
     </>;
 }
+function LegacyRepairTab() {
+  return <>
+      <TabHeader id="legacy-repair" />
+      <Surface label="Inconsistent matches · public.matches via admin_list_inconsistent_matches RPC · hidden from user views">
+        <AdminLegacyRepairPanel />
+      </Surface>
+    </>;
+}
 function DisputesTab() {
   // Sub-tabs: Disputes · Challenges · Trade Approvals · Verification Queue (clip-on)
   const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification"]);
