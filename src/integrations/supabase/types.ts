@@ -3615,6 +3615,51 @@ export type Database = {
           },
         ]
       }
+      match_legacy_detection_emits: {
+        Row: {
+          created_at: string
+          emitted_at: string
+          emitted_by_user_id: string | null
+          id: string
+          match_id: string
+          reasons: Json
+          signature: string
+        }
+        Insert: {
+          created_at?: string
+          emitted_at?: string
+          emitted_by_user_id?: string | null
+          id?: string
+          match_id: string
+          reasons?: Json
+          signature: string
+        }
+        Update: {
+          created_at?: string
+          emitted_at?: string
+          emitted_by_user_id?: string | null
+          id?: string
+          match_id?: string
+          reasons?: Json
+          signature?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_legacy_detection_emits_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_legacy_detection_emits_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_notes: {
         Row: {
           content: string
