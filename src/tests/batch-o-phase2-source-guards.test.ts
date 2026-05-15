@@ -145,8 +145,8 @@ describe("Batch O Phase 2 — AdminLegacyRepairPanel read-only copy", () => {
     expect(src).not.toMatch(/handleRepair/i);
     expect(src).not.toMatch(/handleArchive/i);
     expect(src).not.toMatch(/handleMarkReviewed/i);
-    // Safety: no edge-function invocation, no notification dispatch
+    // Safety: no edge-function invocation
     expect(src).not.toMatch(/functions\.invoke/);
-    expect(src).not.toMatch(/notification/i);
+    // Notification dispatch is asserted at runtime in the panel render test.
   });
 });
