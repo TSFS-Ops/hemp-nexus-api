@@ -135,13 +135,16 @@ describe("Batch O Phase 2 — AdminLegacyRepairPanel read-only copy", () => {
     expect(src).not.toMatch(/\.upsert\s*\(/);
   });
 
-  it("declares actions as deferred and ships no repair / archive / mark-reviewed buttons", () => {
+  it("declares actions as deferred and ships no repair/archive/mark-reviewed action elements", () => {
     expect(src).toMatch(/coming next/i);
-    // No primary action buttons in the panel — only a Spine deep link.
-    expect(src).not.toMatch(/\bRepair\b/);
-    expect(src).not.toMatch(/\bArchive\b/);
-    expect(src).not.toMatch(/Mark reviewed/i);
-    expect(src).not.toMatch(/<button/i);
+    // No primary action JSX components in the panel — only a Spine deep <Link>.
+    expect(src).not.toMatch(/<Button[\s/>]/);
+    expect(src).not.toMatch(/<button[\s/>]/);
+    expect(src).not.toMatch(/onClick=/);
+    // No imperative action handlers
+    expect(src).not.toMatch(/handleRepair/i);
+    expect(src).not.toMatch(/handleArchive/i);
+    expect(src).not.toMatch(/handleMarkReviewed/i);
     // Safety: no edge-function invocation, no notification dispatch
     expect(src).not.toMatch(/functions\.invoke/);
     expect(src).not.toMatch(/notification/i);
