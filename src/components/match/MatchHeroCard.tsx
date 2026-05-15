@@ -61,13 +61,19 @@ function getMatchContext(match: Match): { label: string; value: string }[] {
   return items;
 }
 
-export function MatchHeroCard({ match, isSettled }: MatchHeroCardProps) {
+export function MatchHeroCard({ match, isSettled, engagementStatus }: MatchHeroCardProps) {
   const draft = isDraft(match);
   const contextItems = getMatchContext(match);
   const currentState = match.state || "discovery";
   const matchType = (match as any).match_type || "search";
   const isRevealed = true; // Names are always visible per client requirement
   const isUnilateral = matchType === "unilateral";
+
+  // UI-001: soft-route pending — see DealWizard / StateProgressionCard for
+  // the matching SSOT. We compute it locally so the hero stays a leaf.
+  const softRoutePending =
+    currentState === "discovery" &&
+    isPendingEngagementActive({ engagement_status: engagementStatus ?? null });
 
   // Determine user's role from canonical buyer_org_id / seller_org_id fields.
   const userOrgId = useUserOrg();
