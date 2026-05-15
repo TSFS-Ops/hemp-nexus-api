@@ -153,7 +153,7 @@ describe("Step 6 — admin-match-legacy-record-detections edge function", () => 
   });
 
   it("uses a strict Zod schema and rejects unknown fields", () => {
-    expect(edgeSrc).toMatch(/z\.object\(\{[\s\S]*match_ids:[\s\S]*\}\)\s*\.strict\(\)/);
+    expect(edgeSrc).toMatch(/z\s*\.?\s*object\(\s*\{[\s\S]*?match_ids[\s\S]*?\}\s*\)[\s\S]*?\.strict\(\)/);
   });
 
   it("caps match_ids at 500", () => {

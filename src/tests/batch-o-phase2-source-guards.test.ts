@@ -135,18 +135,12 @@ describe("Batch O Phase 2 — AdminLegacyRepairPanel read-only copy", () => {
     expect(src).not.toMatch(/\.upsert\s*\(/);
   });
 
-  it("declares actions as deferred and ships no repair/archive/mark-reviewed action elements", () => {
-    expect(src).toMatch(/coming next/i);
-    // No primary action JSX components in the panel — only a Spine deep <Link>.
-    expect(src).not.toMatch(/<Button[\s/>]/);
-    expect(src).not.toMatch(/<button[\s/>]/);
-    expect(src).not.toMatch(/onClick=/);
-    // No imperative action handlers
-    expect(src).not.toMatch(/handleRepair/i);
-    expect(src).not.toMatch(/handleArchive/i);
-    expect(src).not.toMatch(/handleMarkReviewed/i);
-    // Safety: no edge-function invocation
-    expect(src).not.toMatch(/functions\.invoke/);
-    // Notification dispatch is asserted at runtime in the panel render test.
-  });
+  // NOTE: The original "actions are deferred" assertion was retired in
+  // Batch O Phase 2b Step 5, when the panel was intentionally wired to the
+  // admin archive/repair edge functions. The current action surface is
+  // covered by AdminLegacyRepairPanel.test.tsx (dialog validation,
+  // Idempotency-Key header, error mapping) and by the Step 6 record-
+  // detections tests. We keep the read-only RPC guard above to ensure no
+  // direct mutating table calls are introduced from this component.
+
 });
