@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isInconsistentMatch } from "@/lib/match-lifecycle";
 
 type Priority = "high" | "medium" | "low";
 
