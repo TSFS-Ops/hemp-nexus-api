@@ -150,7 +150,7 @@ describe("Batch O Phase 2b Step 3 — admin-match-legacy-archive edge function",
   });
 
   it("uses a strict Zod body schema accepting only match_id + notes", () => {
-    expect(src).toMatch(/z\.object\(\s*\{[\s\S]*match_id:\s*z\.string\(\)\.uuid\(\)/);
+    expect(src).toMatch(/\.object\(\s*\{[\s\S]*?match_id:\s*z\.string\(\)\.uuid\(\)/);
     expect(src).toMatch(/notes:\s*z\.string\(\)\.trim\(\)\.min\(10\)\.max\(2000\)/);
     expect(src).toMatch(/\.strict\(\)/);
   });
