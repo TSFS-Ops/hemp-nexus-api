@@ -12,7 +12,49 @@
  */
 export type SupabaseLike = {
   rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+  from?: (table: string) => {
+    insert: (row: Record<string, unknown>) => Promise<{ error: unknown }>;
+  };
 };
+
+const SYSTEM_ORG_SENTINEL = "00000000-0000-0000-0000-000000000000";
+
+/**
+ * Best-effort observability row written when the RPC fails or throws. Used
+ * by `infra-alerts` to compute an in-app auto-resolve failure rate over a
+ * rolling window. Never throws.
+ */
+async function recordAutoResolveFailure(
+  admin: SupabaseLike,
+  entityType: string,
+  entityId: string,
+  reason: string,
+  errorMessage: string | null,
+  ctx?: { requestId?: string; source?: string },
+): Promise<void> {
+  if (typeof admin.from !== "function") return;
+  try {
+    await admin.from("audit_logs").insert({
+      org_id: SYSTEM_ORG_SENTINEL,
+      entity_type: "notification",
+      action: "notification.auto_resolve_failed",
+      metadata: {
+        target_entity_type: entityType,
+        target_entity_id: entityId,
+        reason,
+        error_message: errorMessage,
+        source: ctx?.source ?? null,
+        request_id: ctx?.requestId ?? null,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (auditErr) {
+    console.warn(
+      `[${ctx?.requestId ?? "-"}] recordAutoResolveFailure audit insert failed (non-fatal):`,
+      auditErr instanceof Error ? auditErr.message : auditErr,
+    );
+  }
+}
 
 export async function resolveNotificationsFor(
   admin: SupabaseLike,
@@ -29,11 +71,13 @@ export async function resolveNotificationsFor(
       p_entity_id: entityId,
     });
     if (error) {
+      const msg = (error as { message?: string }).message ?? "rpc_error";
       console.warn(
         `[${ctx?.requestId ?? "-"}] resolve_notifications_for(${entityType},${entityId}) failed (non-fatal):`,
-        (error as { message?: string }).message ?? error,
+        msg,
       );
-      return { ok: false, resolved: 0, error: (error as { message?: string }).message ?? "rpc_error" };
+      await recordAutoResolveFailure(admin, entityType, entityId, "rpc_error", msg, ctx);
+      return { ok: false, resolved: 0, error: msg };
     }
     const resolved = typeof data === "number" ? data : Number(data ?? 0) || 0;
     if (resolved > 0) {
@@ -44,10 +88,12 @@ export async function resolveNotificationsFor(
     }
     return { ok: true, resolved };
   } catch (e) {
+    const msg = e instanceof Error ? e.message : "threw";
     console.warn(
       `[${ctx?.requestId ?? "-"}] resolve_notifications_for(${entityType},${entityId}) threw (non-fatal):`,
-      e instanceof Error ? e.message : e,
+      msg,
     );
-    return { ok: false, resolved: 0, error: e instanceof Error ? e.message : "threw" };
+    await recordAutoResolveFailure(admin, entityType, entityId, "threw", msg, ctx);
+    return { ok: false, resolved: 0, error: msg };
   }
 }

@@ -323,6 +323,99 @@ Deno.serve(async (req) => {
     console.error("Email DLQ depth check failed:", err);
   }
 
+  // ── 8. Notification dispatch failure rate (1-hour window) ────────
+  // notification_dispatches.status='failed' is the per-recipient outcome
+  // recorded by notification-dispatch. Sustained failures mean admin alerts
+  // are silently dropping — operators won't know about breaches/disputes.
+  try {
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+
+    const { count: dispatchTotal } = await supabase
+      .from("notification_dispatches")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", oneHourAgo);
+
+    const { count: dispatchFails } = await supabase
+      .from("notification_dispatches")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", oneHourAgo)
+      .eq("status", "failed");
+
+    const dTotal = dispatchTotal ?? 0;
+    const dFails = dispatchFails ?? 0;
+    if (dTotal >= 5) {
+      const failRate = (dFails / dTotal) * 100;
+      if (failRate > 10) {
+        alerts.push({
+          metric: "Notification Dispatch Failure Rate (1 hr)",
+          threshold: "≤ 10%",
+          actual: `${failRate.toFixed(1)}% (${dFails}/${dTotal})`,
+          severity: failRate > 40 || dFails >= 20 ? "critical" : "warning",
+          details:
+            "Per-recipient admin notification dispatches are failing. Inspect notification_dispatches.error_message and the Resend provider status.",
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Notification dispatch failure check failed:", err);
+  }
+
+  // ── 9. Admin routing failures (30-min window) ────────────────────
+  // notification-dispatch writes audit_logs(action='notification_skipped',
+  // metadata.reason='admin_routing_failed') when resolveAdminRecipients
+  // returns zero recipients. Each row means an alert was silently dropped.
+  try {
+    const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
+    const { count: routingFails } = await supabase
+      .from("audit_logs")
+      .select("*", { count: "exact", head: true })
+      .eq("action", "notification_skipped")
+      .gte("created_at", thirtyMinAgo)
+      .filter("metadata->>reason", "eq", "admin_routing_failed");
+
+    const rFails = routingFails ?? 0;
+    if (rFails >= 3) {
+      alerts.push({
+        metric: "Admin Routing Failures (30 min)",
+        threshold: "< 3 admin_routing_failed skips",
+        actual: `${rFails} routing failures`,
+        severity: rFails >= 10 ? "critical" : "warning",
+        details:
+          "notification-dispatch resolved a routing policy but found zero recipients for the target role. Check user_roles assignments for platform_admin / compliance_analyst / billing_admin / legal_reviewer.",
+      });
+    }
+  } catch (err) {
+    console.error("Admin routing failure check failed:", err);
+  }
+
+  // ── 10. In-app auto-resolve failures (1-hour window) ─────────────
+  // resolve-notifications.ts records a `notification.auto_resolve_failed`
+  // audit row when the SECURITY DEFINER RPC errors or throws. If this rate
+  // climbs, stale unread badges accumulate even though their underlying
+  // entity has transitioned to a handled state.
+  try {
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: resolveFails } = await supabase
+      .from("audit_logs")
+      .select("*", { count: "exact", head: true })
+      .eq("action", "notification.auto_resolve_failed")
+      .gte("created_at", oneHourAgo);
+
+    const arFails = resolveFails ?? 0;
+    if (arFails >= 5) {
+      alerts.push({
+        metric: "In-App Auto-Resolve Failures (1 hr)",
+        threshold: "< 5 auto-resolve failures",
+        actual: `${arFails} failures`,
+        severity: arFails >= 25 ? "critical" : "warning",
+        details:
+          "resolve_notifications_for RPC is failing. Stale in-app notifications will not auto-clear when entities are handled. Inspect audit_logs.metadata for error_message.",
+      });
+    }
+  } catch (err) {
+    console.error("In-app auto-resolve failure check failed:", err);
+  }
+
   // ── Dispatch alerts ──────────────────────────────────────────────
   if (alerts.length === 0) {
     return new Response(
