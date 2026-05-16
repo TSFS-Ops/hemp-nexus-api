@@ -706,6 +706,15 @@ async function _serve(req: Request): Promise<Response> {
           role: actingRole,
           completed_roles: newCompleted,
           all_complete: allComplete,
+          outcome: allComplete ? "approved" : "partial",
+          action_taken: allComplete ? "compliance_closure_approved" : "compliance_partial_approval",
+          reason: reason ?? null,
+          before: beforeSnapshot,
+          after: {
+            status: allComplete ? "approved" : "pending",
+            completed_roles: newCompleted,
+            required_roles: requiredRoles,
+          },
         },
       });
 
