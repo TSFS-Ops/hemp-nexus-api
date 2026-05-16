@@ -86,10 +86,12 @@ function sanitiseLinkedIn(u: string | null | undefined): string | null {
 }
 
 async function callIntelModel(
+  admin: ReturnType<typeof createClient>,
+  orgId: string,
   counterpartyName: string,
   contextHint: string,
-): Promise<IntelToolPayload | null> {
-  if (!LOVABLE_API_KEY) return null;
+): Promise<{ outcome: AiGuardOutcome; payload: IntelToolPayload | null }> {
+  if (!LOVABLE_API_KEY) return { outcome: { kind: "not_configured" }, payload: null };
 
   const system = [
     "You are a conservative public-source intelligence assistant for a regulated commodity trading platform.",
@@ -104,13 +106,10 @@ async function callIntelModel(
 
   const user = `Named counterparty: "${counterpartyName}"\nTrade context: ${contextHint}\n\nProduce a light public-source sketch.`;
 
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  const outcome = await guardedAiCall(admin as any, {
+    org_id: orgId,
+    call_type: "counterparty_intel",
+    body: {
       model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: system },
@@ -147,22 +146,19 @@ async function callIntelModel(
         },
       }],
       tool_choice: { type: "function", function: { name: "report_counterparty_intel" } },
-    }),
+    },
   });
 
-  if (!resp.ok) {
-    console.warn(`[counterparty-intel-auto] AI gateway error ${resp.status}: ${await resp.text()}`);
-    return null;
-  }
+  if (outcome.kind !== "ok") return { outcome, payload: null };
 
-  const body = await resp.json();
+  const body = outcome.body as any;
   const args = body?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  if (!args) return null;
+  if (!args) return { outcome, payload: null };
   try {
-    return JSON.parse(args) as IntelToolPayload;
+    return { outcome, payload: JSON.parse(args) as IntelToolPayload };
   } catch (e) {
     console.warn("[counterparty-intel-auto] could not parse tool args:", e);
-    return null;
+    return { outcome, payload: null };
   }
 }
 
