@@ -69,7 +69,9 @@ Deno.serve(async (req) => {
         )
       `)
       .lte("next_retry_at", now)
-      .lt("delivery_attempt", 3)
+      // Batch D — honour per-row max_retries (default 3) so the backoff
+      // schedule in calculateNextRetry can actually be reached.
+      .filter("delivery_attempt", "lt", "max_retries")
       .eq("is_dead_letter", false)
       .eq("webhook_endpoints.status", "active")
       .limit(50);
