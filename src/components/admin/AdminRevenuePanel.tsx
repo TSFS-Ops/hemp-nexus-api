@@ -493,7 +493,11 @@ export function AdminRevenuePanel() {
 
   // ─── CSV export ───────────────────────────────────────────────────────────
 
-  const exportCsv = () => {
+  // Batch T — AUD-017: audited CSV export. Goes through the central
+  // audited helper which writes an `export.csv` row to `audit_logs`
+  // BEFORE any bytes leave the browser and blocks the download if AAL2
+  // is required for sensitive exports.
+  const exportCsv = async () => {
     const header = [
       "created_at",
       "org_id",
@@ -530,15 +534,20 @@ export function AdminRevenuePanel() {
       ];
       lines.push(cells.join(","));
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `revenue-${timeWindow}-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const result = await auditedDownloadCSVRaw(lines.join("\n"), {
+      reportName: "admin-revenue",
+      filename: `revenue-${timeWindow}-${new Date().toISOString().slice(0, 10)}.csv`,
+      target_type: "audit_logs",
+      sensitive: true,
+      rowCount: rows.length,
+      filters: { time_window: timeWindow, granularity, selected_org: selectedOrg },
+    });
+    if (result.aal_required) {
+      toast.error("Multi-factor authentication required for this export.", {
+        description: "Please re-authenticate with MFA to download the revenue report.",
+        duration: 7000,
+      });
+    }
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────
