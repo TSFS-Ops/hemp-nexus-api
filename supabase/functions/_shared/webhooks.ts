@@ -218,20 +218,32 @@ async function deliverWebhook(
  * Trigger webhooks for a specific event
  * This runs in the background and doesn't block the response.
  *
- * `eventIdempotencyKey` (POI-004 stage-2): a stable per-logical-event key
- * (e.g. `poi.generated:<matchId>`). When supplied, the same event cannot
- * produce two `webhook_deliveries` rows for the same endpoint, even if the
- * upstream caller fires twice. Legacy callers that omit it remain
- * unconstrained.
+ * Batch D contract: `eventIdempotencyKey` is REQUIRED. Every callsite
+ * must supply a stable per-logical-event key (e.g.
+ * `poi.generated:<matchId>`). Combined with the partial unique index on
+ * `webhook_deliveries (webhook_endpoint_id, event_idempotency_key)` this
+ * guarantees at-most-one delivery row per (endpoint, logical event), even
+ * across retries or accidental double-fires. A prebuild script
+ * (`scripts/check-webhook-callsite-idempotency.mjs`) fails CI if any
+ * callsite omits it.
  */
 export async function triggerWebhooks(
   supabase: SupabaseClient,
   orgId: string,
   event: string,
   data: Record<string, any>,
-  options?: { eventIdempotencyKey?: string | null }
+  options: { eventIdempotencyKey: string },
 ): Promise<void> {
-  const eventIdempotencyKey = options?.eventIdempotencyKey ?? null;
+  const eventIdempotencyKey = options.eventIdempotencyKey;
+  if (!eventIdempotencyKey || typeof eventIdempotencyKey !== "string" || eventIdempotencyKey.length === 0) {
+    // Defensive runtime guard. The prebuild script makes this unreachable
+    // in supabase/functions/**, but we still want a loud failure rather
+    // than silently dropping the idempotency guarantee.
+    console.error(
+      `[webhooks] REFUSED — triggerWebhooks called for event=${event} org=${orgId} without eventIdempotencyKey`,
+    );
+    return;
+  }
   try {
     // Fetch active webhook endpoints subscribed to this event
     const { data: endpoints, error } = await supabase
@@ -247,7 +259,25 @@ export async function triggerWebhooks(
     }
 
     if (!endpoints || endpoints.length === 0) {
-      console.log(`No webhooks registered for event: ${event}`);
+      // Batch D — no-endpoint auditability. Silent log-only is an
+      // operational gap: a customer could publish poi.generated /
+      // transaction.committed to zero subscribers and never know.
+      console.log(`[webhooks] no endpoint configured — event=${event} org=${orgId}`);
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: orgId,
+          action: "webhook.skipped_no_endpoint",
+          entity_type: "webhook",
+          entity_id: null,
+          metadata: {
+            event,
+            event_idempotency_key: eventIdempotencyKey,
+            reason: "no_active_subscribed_endpoint",
+          },
+        });
+      } catch (auditErr) {
+        console.error("[webhooks] failed to write skip audit row:", auditErr);
+      }
       return;
     }
 
