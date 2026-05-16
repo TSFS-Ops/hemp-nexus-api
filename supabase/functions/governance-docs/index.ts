@@ -141,13 +141,88 @@ Deno.serve(async (req: Request) => {
         };
       if (parsed.document_path) insertPayload.document_path = parsed.document_path;
 
+      // Batch E Required Fix 3: if a document_path was supplied, validate
+      // it is in scope and exists in storage BEFORE inserting, and clean
+      // up + audit on any insert failure. Mirrors finalise-match-document-upload.
+      const auditBase: Record<string, unknown> = {
+        server_request_id: correlationId,
+        user_id: authCtx.isApiKey ? null : authCtx.userId,
+        profile_org_id: orgId,
+        registry_id: parsed.registry_id,
+        deal_reference_id: parsed.deal_reference_id,
+        deal_reference_type: parsed.deal_reference_type,
+        storage_path: parsed.document_path ?? null,
+        bucket: parsed.document_path ? "match-documents" : null,
+      };
+      async function writeGovAudit(phase: string, outcome: "success" | "failure", extra: Record<string, unknown> = {}) {
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: orgId,
+            actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+            action: "document.upload.attempt",
+            entity_type: "governance_document",
+            entity_id: parsed.deal_reference_id,
+            metadata: { ...auditBase, phase, outcome, ...extra },
+          });
+        } catch (_e) { /* best-effort */ }
+      }
+      async function cleanupGovOrphan(reason: string) {
+        if (!parsed.document_path) return { cleanup_attempted: false as const, cleanup_succeeded: false as const };
+        const { error: rmErr } = await admin.storage
+          .from("match-documents")
+          .remove([parsed.document_path]);
+        await writeGovAudit(rmErr ? "orphan_cleanup" : "cleanup", rmErr ? "failure" : "success", {
+          reason,
+          cleanup_attempted: true,
+          cleanup_succeeded: !rmErr,
+          cleanup_error: rmErr?.message ?? null,
+        });
+        return { cleanup_attempted: true, cleanup_succeeded: !rmErr } as const;
+      }
+
+      // Scope check: storage path must live under <orgId>/<deal_reference_id>/...
+      if (parsed.document_path) {
+        const [pathOrg, pathMatch] = parsed.document_path.split("/");
+        if (pathOrg !== orgId || pathMatch !== parsed.deal_reference_id) {
+          await cleanupGovOrphan("storage_path_scope_mismatch");
+          throw new ApiException("STORAGE_PATH_SCOPE_MISMATCH", "Storage path does not belong to this organisation and deal", 400);
+        }
+        const { data: storageHead, error: storageErr } = await admin.storage
+          .from("match-documents")
+          .download(parsed.document_path);
+        if (storageErr || !storageHead) {
+          await writeGovAudit("finalise", "failure", {
+            error_code: "STORAGE_OBJECT_MISSING",
+            error_message: storageErr?.message ?? "Storage object missing",
+            storage_object_exists: false,
+          });
+          throw new ApiException("STORAGE_OBJECT_MISSING", "The uploaded governance file could not be verified.", 409);
+        }
+      }
+
       const { data: govDoc, error } = await admin
         .from("governance_documents")
         .insert(insertPayload)
         .select()
         .single();
 
-      if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
+      if (error) {
+        const cleanupResult = await cleanupGovOrphan("governance_documents_insert_failed");
+        await writeGovAudit("db_insert", "failure", {
+          db_insert_result: "failure",
+          error_code: error.code ?? "DB_INSERT_FAILED",
+          error_message: error.message?.slice(0, 2000) ?? null,
+          storage_object_exists: !!parsed.document_path,
+          ...cleanupResult,
+        });
+        throw new ApiException("INTERNAL_ERROR", error.message, 500);
+      }
+
+      await writeGovAudit("finalise", "success", {
+        db_insert_result: "success",
+        storage_object_exists: !!parsed.document_path,
+        governance_doc_id: govDoc.id,
+      });
 
       // Record event
       await admin.from("event_store").insert({

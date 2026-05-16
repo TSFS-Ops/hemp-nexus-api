@@ -458,8 +458,32 @@ Deno.serve(async (req) => {
           .select("*")
           .single();
         if (insErr) {
-          // Best-effort cleanup of the orphaned object.
-          await admin.storage.from("match-challenge-evidence").remove([storagePath]).catch(() => {});
+          // Best-effort cleanup of the orphaned object + audit row so a
+          // failed cleanup is never silent (Batch E Required Fix 6).
+          const { error: rmErr } = await admin.storage
+            .from("match-challenge-evidence")
+            .remove([storagePath]);
+          await admin.from("audit_logs").insert({
+            org_id: callerOrgId,
+            actor_user_id: userId,
+            action: "document.upload.attempt",
+            entity_type: "match_challenge_evidence",
+            entity_id: challenge.match_id,
+            metadata: {
+              phase: rmErr ? "orphan_cleanup" : "cleanup",
+              outcome: rmErr ? "failure" : "success",
+              storage_path: storagePath,
+              bucket: "match-challenge-evidence",
+              challenge_id: p.challenge_id,
+              db_insert_result: "failure",
+              error_code: "DB_ERROR",
+              error_message: insErr.message?.slice(0, 2000) ?? null,
+              cleanup_attempted: true,
+              cleanup_succeeded: !rmErr,
+              cleanup_error: rmErr?.message ?? null,
+              storage_object_exists: !!rmErr,
+            },
+          }).then(() => {}, () => {});
           return err("DB_ERROR", insErr.message, 400);
         }
         return json({ evidence: row, storage_path: storagePath }, 201);
