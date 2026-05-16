@@ -95,7 +95,63 @@ const MONITORED_JOBS: Array<{ id: string; name: string }> = [
   { id: "C3", name: "burn-poi-reconciliation-daily" },
   { id: "C4", name: "infra-alerts-cron" },
   { id: "C5", name: "cron-heartbeat-reconcile" },
+  { id: "C6", name: "sentry-heartbeat-cron" },
 ];
+
+// OPS-001 Stage 2 — Sentry receiving-events status derived from the
+// singleton `sentry_heartbeats` row. The tile is GREEN only when:
+//   - the DSN is configured,
+//   - the most recent ingest succeeded (HTTP 2xx),
+//   - the last attempt is within the freshness window (2× cron interval).
+// Missing DSN, missing row, stale attempt or any failure → amber/grey/red.
+interface SentryHeartbeatRow {
+  last_attempt_at: string | null;
+  last_success_at: string | null;
+  last_status: "unknown" | "pending" | "success" | "failed" | "dsn_missing";
+  last_http_status: number | null;
+  last_error: string | null;
+  last_event_id: string | null;
+  dsn_configured: boolean;
+  updated_at: string;
+}
+
+type SentryDerived = "operational" | "dsn_missing" | "failed" | "stale" | "never_run" | "not_monitored";
+
+// Cron runs every 15 minutes — freshness window is 2× interval = 30 min.
+const SENTRY_FRESHNESS_MS = 30 * 60 * 1000;
+
+export function deriveSentryStatus(
+  hb: SentryHeartbeatRow | null | undefined,
+  now: number,
+): SentryDerived {
+  if (!hb) return "not_monitored";
+  if (!hb.dsn_configured || hb.last_status === "dsn_missing") return "dsn_missing";
+  if (!hb.last_attempt_at) return "never_run";
+  const ageMs = now - new Date(hb.last_attempt_at).getTime();
+  if (hb.last_status === "failed") return "failed";
+  if (ageMs > SENTRY_FRESHNESS_MS) return "stale";
+  if (hb.last_status === "success") return "operational";
+  return "not_monitored";
+}
+
+function sentryToneFor(s: SentryDerived) {
+  if (s === "operational") return { dot: "bg-[hsl(var(--emerald))]", text: "text-[hsl(var(--emerald))]" };
+  if (s === "stale") return { dot: "bg-amber-500", text: "text-amber-800" };
+  if (s === "failed") return { dot: "bg-rose-600", text: "text-rose-800" };
+  // dsn_missing / never_run / not_monitored — never green.
+  return { dot: "bg-slate-300", text: "text-slate-500" };
+}
+
+function sentryLabel(s: SentryDerived): string {
+  switch (s) {
+    case "operational": return "operational";
+    case "dsn_missing": return "DSN not configured";
+    case "failed":      return "failing";
+    case "stale":       return "stale";
+    case "never_run":   return "never run";
+    case "not_monitored": return "not monitored";
+  }
+}
 
 export function HealthBoard() {
   const INCIDENT_LIMIT = 20;
