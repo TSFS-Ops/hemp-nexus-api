@@ -17,7 +17,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ExportAuditInput {
-  target_type: "audit_logs" | "admin_audit_logs" | "outreach_blocks" | "matches" | "notification_preferences" | "other";
+  target_type: "audit_logs" | "admin_audit_logs" | "outreach_blocks" | "matches" | "notification_preferences" | "programmes" | "programme_participants" | "programme_fund_flows" | "other";
   format?: "csv" | "json";
   row_count: number;
   filters?: Record<string, unknown>;
