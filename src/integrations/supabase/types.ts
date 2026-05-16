@@ -295,6 +295,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_call_meter: {
+        Row: {
+          call_type: string
+          count: number
+          day: string
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          call_type: string
+          count?: number
+          day?: string
+          id?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          call_type?: string
+          count?: number
+          day?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_provider_state: {
+        Row: {
+          cooldown_until: string | null
+          id: string
+          last_error: string | null
+          last_status: string | null
+          last_status_code: number | null
+          org_id: string
+          provider: string
+          retry_after_seconds: number | null
+          updated_at: string
+        }
+        Insert: {
+          cooldown_until?: string | null
+          id?: string
+          last_error?: string | null
+          last_status?: string | null
+          last_status_code?: number | null
+          org_id: string
+          provider?: string
+          retry_after_seconds?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cooldown_until?: string | null
+          id?: string
+          last_error?: string | null
+          last_status?: string | null
+          last_status_code?: number | null
+          org_id?: string
+          provider?: string
+          retry_after_seconds?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -7788,6 +7851,14 @@ export type Database = {
           p_operation: string
         }
         Returns: Json
+      }
+      ai_meter_check_and_increment: {
+        Args: { p_call_type: string; p_daily_cap: number; p_org_id: string }
+        Returns: number
+      }
+      ai_provider_in_cooldown: {
+        Args: { p_org_id: string; p_provider?: string }
+        Returns: string
       }
       atomic_accept_bind: {
         Args: {
