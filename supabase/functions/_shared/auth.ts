@@ -137,11 +137,14 @@ const clearAuthRateLimit = async (
 export const authenticateRequest = async (
   req: Request,
   supabaseUrl: string,
-  supabaseKey: string
+  supabaseKey: string,
 ): Promise<AuthContext> => {
   const authHeader = req.headers.get('authorization');
   const apiKeyHeader = req.headers.get('x-api-key');
   const clientIP = getClientIP(req);
+  const userAgent = extractUserAgent(req);
+  const origin = req.headers.get('origin');
+  const requestId = req.headers.get('x-request-id');
 
   // Create supabase client for rate limiting checks
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -149,20 +152,22 @@ export const authenticateRequest = async (
   // Check for API Key auth
   if (apiKeyHeader) {
     const apiKeyPrefix = getApiKeyPrefix(apiKeyHeader);
-    
-    // Check lockout before attempting authentication
+
     await checkAuthLockout(supabase, apiKeyPrefix, 'api_key_prefix');
     await checkAuthLockout(supabase, clientIP, 'ip');
-    
+
     try {
-      const result = await authenticateApiKey(apiKeyHeader, supabaseUrl, supabaseKey);
-      // Success - clear any rate limits
+      const result = await authenticateApiKey(apiKeyHeader, supabaseUrl, supabaseKey, {
+        actorIp: clientIP === 'unknown' ? null : clientIP,
+        userAgent,
+        origin,
+        requestId,
+      });
       await clearAuthRateLimit(supabase, apiKeyPrefix, 'api_key_prefix');
       await clearAuthRateLimit(supabase, clientIP, 'ip');
       return result;
     } catch (e) {
       if (e instanceof ApiException && e.statusCode === 401) {
-        // Record failed attempt
         await recordAuthFailure(supabase, apiKeyPrefix, 'api_key_prefix');
         await recordAuthFailure(supabase, clientIP, 'ip');
       }
@@ -172,13 +177,18 @@ export const authenticateRequest = async (
 
   // Check for JWT auth
   if (authHeader?.startsWith('Bearer ')) {
-    // JWT auth - only rate limit by IP
     await checkAuthLockout(supabase, clientIP, 'ip');
-    
+
     try {
       const result = await authenticateJwt(authHeader, supabaseUrl, supabaseKey);
       await clearAuthRateLimit(supabase, clientIP, 'ip');
-      return result;
+      return {
+        ...result,
+        actorIp: clientIP === 'unknown' ? null : clientIP,
+        userAgent,
+        origin,
+        requestId,
+      };
     } catch (e) {
       if (e instanceof ApiException && e.statusCode === 401) {
         await recordAuthFailure(supabase, clientIP, 'ip');
@@ -187,48 +197,56 @@ export const authenticateRequest = async (
     }
   }
 
-  // No auth provided - record failure
   await recordAuthFailure(supabase, clientIP, 'ip');
   throw new ApiException('UNAUTHORIZED', 'Missing authentication', 401);
+};
+
+interface AuthRequestMeta {
+  actorIp: string | null;
+  userAgent: string | null;
+  origin: string | null;
+  requestId: string | null;
+}
+
+const GENERIC_UNAUTHORIZED = (): never => {
+  // Generic message — never reveal whether the key exists, is revoked,
+  // is expired or has a bad allowlist match.
+  throw new ApiException('UNAUTHORIZED', 'Invalid API key', 401);
 };
 
 const authenticateApiKey = async (
   apiKey: string,
   supabaseUrl: string,
-  supabaseKey: string
+  supabaseKey: string,
+  meta: AuthRequestMeta = { actorIp: null, userAgent: null, origin: null, requestId: null },
 ): Promise<AuthContext> => {
   const supabase = createClient(supabaseUrl, supabaseKey);
-  
-  // Try to find key using bcrypt comparison (for new keys)
+
+  // Batch N — query ALL keys (any status) so we can detect revoked/expired
+  // use attempts and audit them. Active-only filter happens AFTER match.
   const { data: allKeys, error: fetchError } = await supabase
     .from('api_keys')
-    .select('id, org_id, scopes, status, key_hash')
-    .eq('status', 'active');
+    .select('id, org_id, scopes, status, key_hash, expires_at, allowed_ips, allowed_origins, name');
 
   if (fetchError) {
-    throw new ApiException('UNAUTHORIZED', 'Authentication failed', 401);
+    GENERIC_UNAUTHORIZED();
   }
 
-  let matchedKey = null;
+  let matchedKey: any = null;
   let needsRehash = false;
 
-  // Check ALL keys to prevent timing attacks (constant-time behavior)
-  // Track match but continue checking to avoid early exit timing leaks
   for (const key of allKeys || []) {
     let isMatch = false;
     let requiresRehash = false;
-    
+
     if (key.key_hash.includes('$')) {
-      // Scrypt hash format: salt$hash
       isMatch = await verifyScrypt(apiKey, key.key_hash);
     } else if (key.key_hash.length === 64 && /^[0-9a-f]+$/.test(key.key_hash)) {
-      // Legacy SHA-256 hash - compare and mark for rehashing
       const sha256Hash = await hashApiKeySHA256(apiKey);
       isMatch = sha256Hash === key.key_hash;
       requiresRehash = isMatch;
     }
-    
-    // Only update matchedKey if we haven't found one yet (first match wins)
+
     if (isMatch && !matchedKey) {
       matchedKey = key;
       needsRehash = requiresRehash;
@@ -236,10 +254,78 @@ const authenticateApiKey = async (
   }
 
   if (!matchedKey) {
-    throw new ApiException('UNAUTHORIZED', 'Invalid API key', 401);
+    GENERIC_UNAUTHORIZED();
   }
 
-  // If using legacy hash, rehash with scrypt for future requests
+  // Batch N — revoked-use audit. Do NOT reveal status to caller.
+  if (matchedKey.status === 'revoked') {
+    await writeSecurityAudit({
+      action: 'api_key.revoked_use_attempt',
+      orgId: matchedKey.org_id,
+      apiKeyId: matchedKey.id,
+      actorIp: meta.actorIp,
+      userAgent: meta.userAgent,
+      requestId: meta.requestId,
+      extra: { key_name: matchedKey.name ?? null },
+    }, supabase);
+    GENERIC_UNAUTHORIZED();
+  }
+
+  // Batch N — live expires_at check (independent of the sweeper).
+  if (matchedKey.expires_at) {
+    const exp = new Date(matchedKey.expires_at).getTime();
+    if (Number.isFinite(exp) && exp <= Date.now()) {
+      await writeSecurityAudit({
+        action: 'api_key.expired_use_attempt',
+        orgId: matchedKey.org_id,
+        apiKeyId: matchedKey.id,
+        actorIp: meta.actorIp,
+        userAgent: meta.userAgent,
+        requestId: meta.requestId,
+        extra: { key_name: matchedKey.name ?? null, expires_at: matchedKey.expires_at },
+      }, supabase);
+      GENERIC_UNAUTHORIZED();
+    }
+  }
+
+  if (matchedKey.status !== 'active') {
+    GENERIC_UNAUTHORIZED();
+  }
+
+  // Batch N — IP allowlist (null/empty = unrestricted).
+  const allowedIps: string[] | null = matchedKey.allowed_ips;
+  if (allowedIps && allowedIps.length > 0) {
+    if (!meta.actorIp || !allowedIps.includes(meta.actorIp)) {
+      await writeSecurityAudit({
+        action: 'api_key.ip_blocked',
+        orgId: matchedKey.org_id,
+        apiKeyId: matchedKey.id,
+        actorIp: meta.actorIp,
+        userAgent: meta.userAgent,
+        requestId: meta.requestId,
+        extra: { allowed_ip_count: allowedIps.length },
+      }, supabase);
+      GENERIC_UNAUTHORIZED();
+    }
+  }
+
+  // Batch N — Origin allowlist.
+  const allowedOrigins: string[] | null = matchedKey.allowed_origins;
+  if (allowedOrigins && allowedOrigins.length > 0) {
+    if (!meta.origin || !allowedOrigins.includes(meta.origin)) {
+      await writeSecurityAudit({
+        action: 'api_key.origin_blocked',
+        orgId: matchedKey.org_id,
+        apiKeyId: matchedKey.id,
+        actorIp: meta.actorIp,
+        userAgent: meta.userAgent,
+        requestId: meta.requestId,
+        extra: { origin: meta.origin, allowed_origin_count: allowedOrigins.length },
+      }, supabase);
+      GENERIC_UNAUTHORIZED();
+    }
+  }
+
   if (needsRehash) {
     const newHash = await hashApiKey(apiKey);
     await supabase
@@ -248,14 +334,13 @@ const authenticateApiKey = async (
       .eq('id', matchedKey.id);
   }
 
-  // Update last_used_at
   await supabase
     .from('api_keys')
     .update({ last_used_at: new Date().toISOString() })
     .eq('id', matchedKey.id);
 
   return {
-    userId: matchedKey.id, // Use API key ID as userId for API key auth
+    userId: matchedKey.id,
     orgId: matchedKey.org_id,
     roles: matchedKey.scopes || [],
     isApiKey: true,
