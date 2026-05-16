@@ -327,6 +327,8 @@ function useSealedPage(orgId: string | null, page: number) {
         .select(MATCH_COLUMNS, { count: "exact" })
         .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId},org_id.eq.${orgId}`)
         .in("state", POI_STATES)
+        // Batch T — UI-010: sealed lane must reflect production matches only.
+        .eq("is_demo", false)
         .order("created_at", { ascending: false })
         .range(from, to);
 
