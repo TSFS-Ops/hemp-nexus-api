@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
         action: 'api_key.renamed',
         entity_type: 'api_key',
         entity_id: keyId,
-        metadata: { name: newName, request_id: requestId },
+        metadata: { name: newName, request_id: requestId, actor_ip: authCtx.actorIp ?? null, user_agent: authCtx.userAgent ?? null },
       });
 
       return new Response(
