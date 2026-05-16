@@ -94,8 +94,8 @@ describe('Batch M — preference-change audit + AAL2', () => {
     expect(fn).toMatch(/assertAal2/);
   });
   it('writes notification_preference.changed audit row', () => {
-    expect(fn).toMatch(/'notification_preference\.changed'/);
-    expect(fn).toMatch(/source: isAdminUpdate \? "admin" : "self"/);
+    expect(fn).toMatch(/["']notification_preference\.changed["']/);
+    expect(fn).toMatch(/source:\s*isAdminUpdate\s*\?\s*["']admin["']\s*:\s*["']self["']/);
   });
   it('client tab routes through the edge function (not direct upsert)', () => {
     expect(tab).toMatch(/supabase\.functions\.invoke\("update-notification-preferences"/);
