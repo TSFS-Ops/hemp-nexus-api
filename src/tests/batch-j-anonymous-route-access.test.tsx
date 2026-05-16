@@ -38,10 +38,11 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/components/HostnameRouter", () => ({
   HostnameRouter: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useCrossDomainUrls: () => ({
-    apiUrl: "https://api.example.test",
-    deskUrl: "https://desk.example.test",
-    authUrl: "/auth",
-    homeUrl: "/",
+    getAuthUrl: () => "/auth",
+    getDashboardUrl: () => "/desk",
+    getDocsUrl: () => "/docs",
+    getDevelopersUrl: () => "/developers",
+    isPreview: true,
   }),
 }));
 
