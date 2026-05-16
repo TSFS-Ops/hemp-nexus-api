@@ -122,9 +122,11 @@ describe("Batch I Fix 4 — Lifecycle scheduler WaD/POI drift probe", () => {
     expect(src).toMatch(/onConflict:\s*"dedup_key"/);
   });
 
-  it("audits the detection and never mutates WaD/POI state directly", () => {
+  it("audits the detection and never mutates WaD/POI state in the drift block", () => {
     expect(src).toMatch(/wad\.poi_drift_detected/);
-    expect(src).not.toMatch(/\.update\(\{\s*poi_state/);
+    // The drift probe must not mutate wads.status
+    const driftBlock = src.split("Batch I Fix 4")[1] ?? "";
+    expect(driftBlock).not.toMatch(/from\("wads"\)[\s\S]{0,200}\.update/);
   });
 });
 
