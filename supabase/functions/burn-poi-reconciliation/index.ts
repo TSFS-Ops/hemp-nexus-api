@@ -421,6 +421,140 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── 4a. ENGAGEMENT_WITHOUT_POI (Batch V REC-002, reverse direction) ─
+  // For every poi_engagement whose status implies a POI must exist on the
+  // match (accepted / late-acceptance / disputed), assert that a pois row
+  // exists for that match_id. Soft-route pending statuses (pending,
+  // notification_sent, contacted) are excluded.
+  const engagementWithoutPoi: Array<Record<string, unknown>> = [];
+  {
+    const { data: activeEngagements, error: aeErr } = await admin
+      .from("poi_engagements")
+      .select("id, match_id, org_id, engagement_status, created_at")
+      .in("engagement_status", Array.from(ENGAGEMENT_STATUSES_REQUIRING_POI))
+      .gte("created_at", sinceIso)
+      .order("created_at", { ascending: false })
+      .limit(ROW_LIMIT);
+    if (aeErr) {
+      console.error("[burn-poi-reconciliation] active engagement fetch failed:", aeErr);
+      throw new Error(`ACTIVE_ENGAGEMENT_FETCH_FAILED: ${aeErr.message}`);
+    }
+    const activeMatchIds = Array.from(
+      new Set(
+        (activeEngagements ?? [])
+          .map((e) => (e as { match_id: string | null }).match_id)
+          .filter((v): v is string => !!v),
+      ),
+    );
+    let poiCoverage = new Set<string>();
+    if (activeMatchIds.length > 0) {
+      const { data: poiHits, error: poiCovErr } = await admin
+        .from("pois")
+        .select("match_id")
+        .in("match_id", activeMatchIds);
+      if (poiCovErr) {
+        console.error("[burn-poi-reconciliation] poi coverage fetch failed:", poiCovErr);
+        throw new Error(`POI_COVERAGE_FETCH_FAILED: ${poiCovErr.message}`);
+      }
+      poiCoverage = new Set((poiHits ?? []).map((p) => (p as { match_id: string }).match_id));
+    }
+    for (const e of activeEngagements ?? []) {
+      const row = e as { id: string; match_id: string | null; org_id: string | null; engagement_status: string; created_at: string };
+      if (!row.match_id) continue;
+      if (poiCoverage.has(row.match_id)) continue;
+      engagementWithoutPoi.push({
+        engagement_id: row.id,
+        match_id: row.match_id,
+        org_id: row.org_id,
+        engagement_status: row.engagement_status,
+        created_at: row.created_at,
+      });
+    }
+  }
+
+  // ── 4b. WAD_POI_DRIFT (Batch V REC-003 hardening) ──────────────────
+  // Detect sealed WaDs whose linked POI is missing or whose buyer/seller
+  // org linkage disagrees with the underlying match. Terms-hash drift is
+  // intentionally out of scope (no canonical hash column on pois).
+  const wadPoiDrift: Array<Record<string, unknown>> = [];
+  {
+    const { data: sealedWads, error: wadErr } = await admin
+      .from("wads")
+      .select("id, poi_id, buyer_org_id, seller_org_id, status, sealed_at")
+      .eq("status", "sealed")
+      .gte("sealed_at", sinceIso)
+      .order("sealed_at", { ascending: false })
+      .limit(ROW_LIMIT);
+    if (wadErr) {
+      console.error("[burn-poi-reconciliation] wad fetch failed:", wadErr);
+      throw new Error(`WAD_FETCH_FAILED: ${wadErr.message}`);
+    }
+    const wads = (sealedWads ?? []) as Array<{
+      id: string; poi_id: string | null; buyer_org_id: string | null;
+      seller_org_id: string | null; status: string; sealed_at: string | null;
+    }>;
+    const poiIds = Array.from(new Set(wads.map((w) => w.poi_id).filter((v): v is string => !!v)));
+    const poiById = new Map<string, { id: string; match_id: string | null; state: string | null }>();
+    const matchById = new Map<string, { id: string; buyer_org_id: string | null; seller_org_id: string | null }>();
+    if (poiIds.length > 0) {
+      const { data: poiRows2, error: pErr } = await admin
+        .from("pois")
+        .select("id, match_id, state")
+        .in("id", poiIds);
+      if (pErr) throw new Error(`WAD_POI_LOOKUP_FAILED: ${pErr.message}`);
+      for (const p of (poiRows2 ?? []) as Array<{ id: string; match_id: string | null; state: string | null }>) {
+        poiById.set(p.id, p);
+      }
+      const matchIds2 = Array.from(new Set(
+        Array.from(poiById.values()).map((p) => p.match_id).filter((v): v is string => !!v),
+      ));
+      if (matchIds2.length > 0) {
+        const { data: matchRows, error: mErr } = await admin
+          .from("matches")
+          .select("id, buyer_org_id, seller_org_id")
+          .in("id", matchIds2);
+        if (mErr) throw new Error(`WAD_MATCH_LOOKUP_FAILED: ${mErr.message}`);
+        for (const m of (matchRows ?? []) as Array<{ id: string; buyer_org_id: string | null; seller_org_id: string | null }>) {
+          matchById.set(m.id, m);
+        }
+      }
+    }
+    for (const w of wads) {
+      if (!w.poi_id) {
+        wadPoiDrift.push({ wad_id: w.id, kind: "missing_poi_link", detail: "sealed wad has null poi_id" });
+        continue;
+      }
+      const poi = poiById.get(w.poi_id);
+      if (!poi) {
+        wadPoiDrift.push({ wad_id: w.id, poi_id: w.poi_id, kind: "poi_not_found", detail: "linked POI does not exist" });
+        continue;
+      }
+      if (poi.state && !["ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"].includes(poi.state)) {
+        wadPoiDrift.push({
+          wad_id: w.id, poi_id: w.poi_id, kind: "poi_state_incompatible",
+          detail: `sealed wad linked to POI in non-terminal state ${poi.state}`,
+        });
+      }
+      if (poi.match_id) {
+        const match = matchById.get(poi.match_id);
+        if (match) {
+          if (w.buyer_org_id && match.buyer_org_id && w.buyer_org_id !== match.buyer_org_id) {
+            wadPoiDrift.push({
+              wad_id: w.id, poi_id: w.poi_id, match_id: poi.match_id, kind: "buyer_org_mismatch",
+              detail: `wad.buyer_org_id ${w.buyer_org_id} ≠ match.buyer_org_id ${match.buyer_org_id}`,
+            });
+          }
+          if (w.seller_org_id && match.seller_org_id && w.seller_org_id !== match.seller_org_id) {
+            wadPoiDrift.push({
+              wad_id: w.id, poi_id: w.poi_id, match_id: poi.match_id, kind: "seller_org_mismatch",
+              detail: `wad.seller_org_id ${w.seller_org_id} ≠ match.seller_org_id ${match.seller_org_id}`,
+            });
+          }
+        }
+      }
+    }
+  }
+
   // ── 5. Optional: open admin_risk_items per drift case (idempotent via title) ─
   // admin_risk_items has no external_ref column, so we use a stable title
   // prefix and skip insertion when an open row with the same title exists.
