@@ -334,20 +334,30 @@ Deno.serve(async (req: Request) => {
 
     // ── Test-mode bypass: synthesize a "clear" screening result without touching any provider ──
     if (await isBypassEnabled(adminClient, "sanctions", "dilisense-screen")) {
-      const bypassHash = await computeHash(JSON.stringify({ bypass: true, name, type, ts: new Date().toISOString() }));
+      const bypassedAt = new Date().toISOString();
+      const bypassHash = await computeHash(JSON.stringify({ bypass: true, name, type, ts: bypassedAt }));
       const bypassRecord = {
         org_id,
         screening_type: "sanctions_pep",
         status: "clear",
         matched_entities: [],
         raw_response: { bypass: true, reason: "test_mode_bypass" },
-        screened_at: new Date().toISOString(),
+        screened_at: bypassedAt,
         screened_by: actorUserId || null,
         next_screening_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         provider: "test_mode_bypass",
         provider_config: { screen_type: type, bypass: true },
         response_hash: bypassHash,
         entity_id: entity_id || null,
+        // Batch I Fix 1: stamp bypass at the data layer so a bypassed "clear"
+        // is distinguishable from a real provider clear without joining audit_logs.
+        metadata: {
+          bypass: true,
+          bypass_gate: "sanctions",
+          test_mode: true,
+          bypass_used_at: bypassedAt,
+          bypass_actor: actorUserId || null,
+        },
       };
 
       const { data: savedBypass } = await adminClient
