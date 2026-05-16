@@ -1,5 +1,6 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { ApiException } from "./errors.ts";
+import { validateAndNormaliseScopes } from "./api-scopes.ts";
 
 // Match endpoint validation.
 //
