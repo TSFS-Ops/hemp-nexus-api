@@ -8394,6 +8394,7 @@ export type Database = {
       cleanup_expired_rate_limits: { Args: never; Returns: number }
       cleanup_expired_unsubscribe_tokens: { Args: never; Returns: number }
       cleanup_old_auth_rate_limits: { Args: never; Returns: number }
+      closeout_drift_summary: { Args: never; Returns: Json }
       compute_all_behavioral_kyc_scores: {
         Args: { p_days?: number }
         Returns: {
