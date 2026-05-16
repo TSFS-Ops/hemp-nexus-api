@@ -1126,7 +1126,15 @@ async function handleChargeFailed(
   data: { reference: string; metadata?: { org_id?: string; user_id?: string } }
 ): Promise<void> {
   console.log(`[Webhook] Charge failed: ${data.reference}`);
-  
+
+  // Batch C — Fix 3: transition any pending token_purchases row to failed
+  // so the reconciliation sweeper does not re-check this reference.
+  await supabase
+    .from("token_purchases")
+    .update({ status: "failed", updated_at: new Date().toISOString() })
+    .eq("paystack_reference", data.reference)
+    .eq("status", "pending");
+
   if (data.metadata?.org_id) {
     await supabase.from("audit_logs").insert({
       org_id: data.metadata.org_id,
