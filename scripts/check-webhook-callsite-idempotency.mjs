@@ -22,8 +22,8 @@ try {
   // grep exits non-zero when no match — that's fine.
 }
 
-// The helper file declares the function; skip it.
-files = files.filter((f) => !f.endsWith("_shared/webhooks.ts"));
+// Helper file declares the function; test files use mocks. Skip both.
+files = files.filter((f) => !f.endsWith("_shared/webhooks.ts") && !/(_test|\.test)\.ts$/.test(f));
 
 const failures = [];
 
