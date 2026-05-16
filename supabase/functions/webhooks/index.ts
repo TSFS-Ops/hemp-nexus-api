@@ -251,6 +251,8 @@ Deno.serve(async (req) => {
         metadata: {
           previous_secret_expires_at: previousExpiresAt,
           grace_window_ms: ROTATION_GRACE_MS,
+          actor_ip: authCtx.actorIp ?? null,
+          user_agent: authCtx.userAgent ?? null,
         },
       });
 
