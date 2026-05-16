@@ -51,6 +51,27 @@ describe("UI-011 — mobile-safe classes on touched surfaces", () => {
   it("Confirm dialog (revoke/rotate) also uses viewport gutters + capped width", () => {
     expect(apiKeysPanel).toMatch(/w-full max-w-md/);
   });
+
+  it("Secret reveal copy block stacks on mobile and goes inline on ≥sm (flex-col sm:flex-row)", () => {
+    // The secret-key row (plaintext display + Copy button) must stack
+    // vertically at <640px so the long sk_live_… string does not get
+    // squeezed against the Copy button, and switch to a row on sm+.
+    const reveal = apiKeysPanel.split("function RevealModal")[1]?.split("function ConfirmDialog")[0] ?? "";
+    expect(reveal).toMatch(/flex flex-col sm:flex-row[^"]*items-stretch[^"]*gap-2/);
+    // The Copy button itself must remain visible (icon + accessible label)
+    // and the plaintext display must keep break-all inside the stacked row.
+    expect(reveal).toMatch(/aria-label="Copy key"/);
+    expect(reveal).toMatch(/break-all/);
+  });
+
+  it("Secret reveal footer button row is responsive (flex-col sm:flex-row) so the CTA never clips", () => {
+    // The footer holds the "I've saved it" acknowledgement button. At
+    // 360px it must stack full-width above any future siblings instead
+    // of being pushed off the right edge by gap+padding.
+    const reveal = apiKeysPanel.split("function RevealModal")[1]?.split("function ConfirmDialog")[0] ?? "";
+    expect(reveal).toMatch(/flex flex-col sm:flex-row[^"]*justify-end/);
+    expect(reveal).toMatch(/I&apos;ve saved it|I've saved it/);
+  });
 });
 
 describe("OPS-007 — public surface does not leak admin/HQ chrome", () => {
