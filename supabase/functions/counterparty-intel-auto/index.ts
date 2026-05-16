@@ -244,8 +244,26 @@ Deno.serve(async (req) => {
     { onConflict: "match_id,side" },
   );
 
-  // Run the AI sketch. If the gateway is missing or errors, mark unavailable.
-  const intel = await callIntelModel(counterpartyName, contextHint);
+  // Run the AI sketch. If the guard returns cooldown/quota/provider-error,
+  // surface it as a typed envelope so the UI can stop spamming refresh.
+  const { outcome, payload: intel } = await callIntelModel(admin, match.org_id, counterpartyName, contextHint);
+
+  if (outcome.kind === "cooldown" || outcome.kind === "quota_exceeded") {
+    await admin
+      .from("match_counterparty_intel")
+      .update({
+        auto_status: outcome.kind === "quota_exceeded" ? "quota_exceeded" : "cooldown",
+        auto_generated_at: new Date().toISOString(),
+        auto_summary: outcome.kind === "quota_exceeded"
+          ? `Daily AI quota reached for this organisation. Intel will be available tomorrow.`
+          : `AI provider is temporarily on cooldown for this organisation. Try again shortly.`,
+        auto_sources: [],
+      })
+      .eq("match_id", match.id)
+      .eq("side", body.side);
+    const env = aiGuardEnvelope(outcome);
+    return json(env.status, env.body, origin);
+  }
 
   if (!intel) {
     await admin
