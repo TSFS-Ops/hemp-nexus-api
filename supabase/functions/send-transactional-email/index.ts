@@ -2,6 +2,13 @@ import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2.39.3'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import {
+  getCategoryForTemplate,
+  getPreferenceKeyForTemplate,
+  isBlockedByUnsubscribe,
+} from '../_shared/email-categories.ts'
+import { checkAndAuditPreference } from '../_shared/notification-preferences.ts'
+import { recordNotificationSkipped } from '../_shared/notification-skip-audit.ts'
 
 // Configuration baked in at scaffold time - do NOT change these manually.
 // To update, re-run the email domain setup flow.
