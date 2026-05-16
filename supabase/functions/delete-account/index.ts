@@ -186,6 +186,15 @@ Deno.serve(async (req) => {
   // 6. Revoke all roles.
   await admin.from("user_roles").delete().eq("user_id", user.id);
 
+  // 6b. Batch O DATA-004: scrub PII out of email logs + notifications
+  //     so the deleted user's address/name are not left behind during
+  //     the 30-day grace window.
+  try {
+    await admin.rpc("scrub_user_pii", { p_user_id: user.id });
+  } catch (e) {
+    console.warn("[delete-account] scrub_user_pii warning", e);
+  }
+
   // 7. Audit log.
   await admin.from("admin_audit_logs").insert({
     admin_user_id: user.id,
@@ -199,6 +208,7 @@ Deno.serve(async (req) => {
       grace_period_days: 30,
     },
     ip_address: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+    user_agent: (req.headers.get("user-agent") ?? "").slice(0, 500) || null,
   });
 
   // 8. Sign the user out (best-effort — auth user kept for 30-day grace).
