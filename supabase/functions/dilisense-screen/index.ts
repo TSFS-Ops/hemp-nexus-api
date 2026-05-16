@@ -416,6 +416,37 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[${requestId}] Screening via provider: ${providerName}`);
 
+    // ── Batch I Fix 6: provider retry cooldown ──
+    // Refuse to hammer the provider after repeated failures for the same
+    // (entity, provider) tuple. Audited so admin can see why a click did nothing.
+    const cooldownScope = {
+      gate: "sanctions" as const,
+      provider: providerName,
+      entityId: entity_id || null,
+      orgId: org_id || null,
+    };
+    const cooldown = await checkProviderCooldown(adminClient, cooldownScope);
+    if (cooldown.inCooldown) {
+      await adminClient.from("audit_logs").insert({
+        org_id,
+        actor_user_id: actorUserId || null,
+        action: "screening.provider_retry_cooldown_blocked",
+        entity_type: "screening_results",
+        entity_id: entity_id || null,
+        metadata: {
+          provider: providerName,
+          scope_key: cooldown.scopeKey,
+          cooldown_until: cooldown.cooldownUntil,
+          failure_count: cooldown.failureCount,
+          request_id: requestId,
+        },
+      });
+      return new Response(JSON.stringify(cooldownResponseEnvelope(cooldown, requestId)), {
+        status: 429,
+        headers: { ...headers, "Content-Type": "application/json", "Retry-After": "3600" },
+      });
+    }
+
     // ── Execute screening ──
     let result;
     try {
@@ -439,9 +470,13 @@ Deno.serve(async (req: Request) => {
             provider_config: { screen_type: type, fuzzy_search: fuzzy_search || null, provider_error: true },
             response_hash: errHash,
             entity_id: entity_id || null,
+            metadata: { provider_error: true, provider: err.provider, reason: err.reason },
           })
           .select()
           .single();
+
+        // Batch I Fix 6: bump retry counter (may set 24h cooldown).
+        const post = await recordProviderFailure(adminClient, cooldownScope);
 
         await adminClient.from("audit_logs").insert({
           org_id,
@@ -456,6 +491,8 @@ Deno.serve(async (req: Request) => {
             request_id: requestId,
             name_screened: name,
             entity_id: entity_id || null,
+            failure_count: post.failureCount,
+            cooldown_until: post.cooldownUntil,
           },
         });
 
@@ -467,6 +504,8 @@ Deno.serve(async (req: Request) => {
             reason: err.reason,
             status_code: err.statusCode,
             screening_id: savedErr?.id || null,
+            failure_count: post.failureCount,
+            cooldown_until: post.cooldownUntil,
             message: "The sanctions/PEP provider is currently unavailable. The failure has been recorded and is visible to admins.",
             requestId,
           }),
