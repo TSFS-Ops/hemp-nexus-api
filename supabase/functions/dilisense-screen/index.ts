@@ -147,18 +147,37 @@ async function screenWithDilisense(
   if (dob) params.set("dob", dob);
   if (gender) params.set("gender", gender);
 
-  const res = await fetch(`${DILISENSE_BASE}/${endpoint}?${params.toString()}`, {
-    method: "GET",
-    headers: { "x-api-key": dilisenseKey },
-  });
+  // Batch F: bounded timeout + provider-error mapping (timeout/5xx/429/malformed).
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      "dilisense",
+      `${DILISENSE_BASE}/${endpoint}?${params.toString()}`,
+      { method: "GET", headers: { "x-api-key": dilisenseKey } },
+      10_000,
+    );
+  } catch (err) {
+    if (err instanceof ProviderTimeoutError) {
+      throw new ScreeningProviderError("dilisense", 504, "timeout");
+    }
+    throw new ScreeningProviderError("dilisense", null, (err as Error).message);
+  }
 
   if (!res.ok) {
     const errText = await res.text();
     console.error(`Dilisense API error [${res.status}]:`, errText);
+    if (isProviderFailureStatus(res.status)) {
+      throw new ScreeningProviderError("dilisense", res.status, `upstream_${res.status}`);
+    }
     throw new ApiException("PROVIDER_ERROR", `Screening provider returned ${res.status}`, 502, { providerStatus: res.status });
   }
 
-  const data: DilisenseResponse = await res.json();
+  const rawData = await res.json().catch(() => null);
+  const parsed = DilisenseResponseSchema.safeParse(rawData);
+  if (!parsed.success) {
+    throw new ScreeningProviderError("dilisense", res.status, `malformed_response: ${parsed.error.message.slice(0, 200)}`);
+  }
+  const data = parsed.data;
   const responseHash = await computeHash(JSON.stringify(data));
 
   const classifiedRecords: ClassifiedRecord[] = data.found_records.map((record) => ({
