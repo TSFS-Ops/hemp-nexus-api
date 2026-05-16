@@ -126,14 +126,26 @@ export function isSealed(status: string): boolean {
 
 /**
  * Human-readable label for a WaD status.
+ *
+ * Batch B Fix 6 — unknown / future enum values must not render as the
+ * raw literal. We surface them as an explicit "Unrecognised" badge so
+ * the UI cannot accidentally imply progression for a status the client
+ * does not know how to interpret.
  */
+const WAD_STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  awaiting_attestations: "Awaiting attestations",
+  sealed: "Sealed",
+  revoked: "Revoked",
+  superseded: "Superseded",
+};
+
 export function statusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    draft: "Draft",
-    awaiting_attestations: "Awaiting attestations",
-    sealed: "Sealed",
-    revoked: "Revoked",
-    superseded: "Superseded",
-  };
-  return labels[status] ?? status;
+  if (WAD_STATUS_LABELS[status]) return WAD_STATUS_LABELS[status];
+  if (!status) return "Unrecognised status";
+  return `Unrecognised status (${status})`;
+}
+
+export function isKnownWadStatusLabel(status: string): boolean {
+  return Boolean(WAD_STATUS_LABELS[status]);
 }
