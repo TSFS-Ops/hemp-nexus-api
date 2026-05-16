@@ -348,24 +348,41 @@ async function _serve(req: Request): Promise<Response> {
       }
 
 
-      await supabase.from("audit_logs").insert({
-        org_id: orgId,
-        actor_user_id: userData.user.id,
-        action: "credits.purchased",
-        entity_type: "token_balance",
-        entity_id: orgId,
-        metadata: {
-          credits_added: credits,
-          new_balance: newBalance,
-          payment_reference: reference,
-          package_id: meta.package_id,
-          // USD-native settlement record — exposed in HQ Revenue.
-          price_usd: meta.price_usd ?? null,
-          currency: "USD",
-          fx_basis: "native_usd",
-          verification_fallback: true,
-        },
-      });
+      // Batch C — Fix 1: this insert is now guarded by a partial UNIQUE
+      // INDEX on (metadata->>'payment_reference') WHERE action='credits.purchased'.
+      // If the webhook path won the race, the duplicate insert raises
+      // 23505 — treat that as success (the audit row already exists).
+      {
+        const { error: auditErr } = await supabase.from("audit_logs").insert({
+          org_id: orgId,
+          actor_user_id: userData.user.id,
+          action: "credits.purchased",
+          entity_type: "token_balance",
+          entity_id: orgId,
+          metadata: {
+            credits_added: credits,
+            new_balance: newBalance,
+            payment_reference: reference,
+            package_id: meta.package_id,
+            // USD-native settlement record — exposed in HQ Revenue.
+            price_usd: meta.price_usd ?? null,
+            currency: "USD",
+            fx_basis: "native_usd",
+            verification_fallback: true,
+          },
+        });
+        if (auditErr && auditErr.code !== "23505") throw auditErr;
+        if (auditErr?.code === "23505") {
+          console.log(`[Verify] credits.purchased audit row already exists for ${reference} (webhook won)`);
+        }
+      }
+
+      // Batch C — Fix 3: mark the token_purchases pending row as completed.
+      await supabase
+        .from("token_purchases")
+        .update({ status: "completed", updated_at: new Date().toISOString() })
+        .eq("paystack_reference", reference)
+        .eq("status", "pending");
 
       // Revenue notification → support@izenzo.co.za. Idempotency key uses
       // the Paystack reference, so if the webhook path also fires for the
