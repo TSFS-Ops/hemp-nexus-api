@@ -177,7 +177,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [docType, setDocType] = useState("other");
+  const [docType, setDocType] = useState<string>("");
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [visibility, setVisibility] = useState("private");
