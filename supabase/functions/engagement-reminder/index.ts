@@ -211,6 +211,16 @@ Deno.serve(async (req) => {
             failed_ids: failedIds,
           },
         });
+
+        // NOT-008: resolve any unread in-app notifications (stale-reminder
+        // admin alerts, counterparty "respond" pings) attached to these
+        // now-expired engagements.
+        for (const id of expiredIds) {
+          await resolveNotificationsFor(supabase, "poi_engagement", id, {
+            requestId,
+            source: "engagement-reminder:auto_expired",
+          });
+        }
       }
     }
 
