@@ -303,16 +303,29 @@ export function HealthBoard() {
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{openIncidents}</p>
           <p className={`font-mono text-[10px] mt-0.5 ${openIncidents > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
             {openIncidents > 0
-              ? `monitoring · ${shortId(incidents.find(i => i.status !== "resolved")!.id)}`
+              ? `monitoring · ${shortId(openIncidentList[0].id)}`
               : "all clear"}
           </p>
         </div>
         <div className="bg-card p-5" data-testid="healthboard-no-recipient-tile">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">No-Recipient Outreach</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{noRecipient}</p>
-          <p className={`font-mono text-[10px] mt-0.5 ${noRecipient > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
-            {noRecipient > 0 ? "manual follow-up required · today" : "no manual backlog · today"}
-          </p>
+          {noRecipientError ? (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-rose-700 tracking-tight" data-testid="healthboard-no-recipient-error">
+                error
+              </p>
+              <p className="font-mono text-[10px] mt-0.5 text-rose-700" title={(noRecipientErrorObj as Error)?.message}>
+                query failed · check audit_logs access
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{noRecipient}</p>
+              <p className={`font-mono text-[10px] mt-0.5 ${noRecipient > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
+                {noRecipient > 0 ? "manual follow-up required · today" : "no manual backlog · today"}
+              </p>
+            </>
+          )}
         </div>
       </div>
 
