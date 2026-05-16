@@ -398,6 +398,7 @@ function AuditTab() {
             <div className="space-y-4">
               <AdminHealthMonitor />
               <EmailRetentionHealth />
+              <AiQuotaHealth />
               <AdminLifecycleRunPanel />
             </div>
           </Surface>
