@@ -203,6 +203,21 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
+  const { data: sentryHb } = useQuery<SentryHeartbeatRow | null>({
+    queryKey: ["sentry-heartbeat"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sentry_heartbeats")
+        .select("last_attempt_at, last_success_at, last_status, last_http_status, last_error, last_event_id, dsn_configured, updated_at")
+        .eq("id", true)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as SentryHeartbeatRow | null) ?? null;
+    },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
+  });
+
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
   const openIncidents = incidents.filter(i => i.status !== "resolved").length;
@@ -212,6 +227,8 @@ export function HealthBoard() {
   const hbByName = new Map<string, Heartbeat>();
   for (const h of heartbeats ?? []) hbByName.set(h.job_name, h);
   const now = Date.now();
+  const sentryStatus = deriveSentryStatus(sentryHb, now);
+  const sentryTone = sentryToneFor(sentryStatus);
 
   const rows = MONITORED_JOBS.map(j => {
     const hb = hbByName.get(j.name);
