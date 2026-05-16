@@ -187,10 +187,12 @@ Deno.serve(async (req) => {
         action: 'api_key.rotated',
         entity_type: 'api_key',
         entity_id: newKey.id,
-        metadata: { 
+        metadata: {
           previous_key_id: keyId,
           new_key_id: newKey.id,
           request_id: requestId,
+          actor_ip: authCtx.actorIp ?? null,
+          user_agent: authCtx.userAgent ?? null,
         },
       });
 
