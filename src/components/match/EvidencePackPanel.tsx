@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
 import { downloadFile } from "@/lib/download-utils";
+import { recordExportAudit } from "@/lib/export-audit";
 
 interface EvidencePackPanelProps {
   matchId: string;
