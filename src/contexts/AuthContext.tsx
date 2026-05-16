@@ -67,29 +67,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const previousRolesRef = useRef<AppRole[] | null>(null);
+  const previousOrgIdRef = useRef<string | null | undefined>(undefined);
+
+  const invalidateRoleScopedCaches = useCallback(() => {
+    // Force-refetch anything that depends on the caller's role/org context.
+    // Backend remains the final authority — this only keeps the UI honest.
+    queryClient.invalidateQueries();
+  }, []);
 
   const fetchRoles = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-      
-      if (error) {
-        console.error("[AuthContext] Failed to fetch roles:", error.message);
+      const [{ data: rolesData, error: rolesErr }, { data: profileData }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("profiles").select("org_id").eq("id", userId).maybeSingle(),
+      ]);
+
+      if (rolesErr) {
+        console.error("[AuthContext] Failed to fetch roles:", rolesErr.message);
         setRoles([]);
         return;
       }
 
-      const userRoles = (data || []).map(r => r.role as AppRole);
+      const userRoles = (rolesData || []).map(r => r.role as AppRole);
+      const currentOrgId = (profileData?.org_id ?? null) as string | null;
 
-      // Detect mid-session role changes and surface them to the user.
-      // Only fires after the first successful fetch so initial sign-in is silent.
+      // Detect mid-session role changes.
       const prev = previousRolesRef.current;
+      let rolesChanged = false;
       if (prev !== null) {
         const added = userRoles.filter(r => !prev.includes(r));
         const removed = prev.filter(r => !userRoles.includes(r));
         if (added.length > 0 || removed.length > 0) {
+          rolesChanged = true;
           toast.info("Your access level was updated by an administrator. Please refresh the page to see the latest options.", {
             duration: 10000,
           });
@@ -97,18 +106,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       previousRolesRef.current = userRoles;
 
+      // Detect mid-session org membership change.
+      const prevOrg = previousOrgIdRef.current;
+      let orgChanged = false;
+      if (prevOrg !== undefined && prevOrg !== currentOrgId) {
+        orgChanged = true;
+        if (currentOrgId === null) {
+          toast.warning("You were removed from your organisation. You will be signed out.", {
+            duration: 8000,
+          });
+          // Defer to next tick so toast renders, then sign out.
+          setTimeout(() => { void supabase.auth.signOut(); }, 50);
+        } else {
+          toast.info("Your organisation membership changed. Reloading…", { duration: 6000 });
+          setTimeout(() => window.location.reload(), 1500);
+        }
+      }
+      previousOrgIdRef.current = currentOrgId;
+
       setRoles(userRoles);
 
-      // Set Sentry user context for error attribution
-      const profile = await supabase.from("profiles").select("org_id").eq("id", userId).maybeSingle();
-      if (profile.data?.org_id) {
-        setSentryUser(userId, profile.data.org_id, userRoles);
+      if (rolesChanged || orgChanged) {
+        invalidateRoleScopedCaches();
+      }
+
+      if (currentOrgId) {
+        setSentryUser(userId, currentOrgId, userRoles);
       }
     } catch (err) {
       console.error("[AuthContext] Unexpected error fetching roles:", err);
       setRoles([]);
     }
-  }, []);
+  }, [invalidateRoleScopedCaches]);
 
   const refreshSession = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
