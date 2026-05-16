@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
         action: 'api_key.revoked',
         entity_type: 'api_key',
         entity_id: keyId,
-        metadata: { request_id: requestId },
+        metadata: { request_id: requestId, actor_ip: authCtx.actorIp ?? null, user_agent: authCtx.userAgent ?? null },
       });
 
       return new Response(null, { status: 204, headers });
