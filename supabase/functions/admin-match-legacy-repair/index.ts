@@ -32,9 +32,49 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
+import { assertAal2 } from "../_shared/aal.ts";
+import { ApiException } from "../_shared/errors.ts";
 
 const ENDPOINT = "POST /admin-match-legacy-repair";
 const SYSTEM_ORG_ID = "00000000-0000-0000-0000-000000000000";
+
+async function upsertRepairFollowupRiskItem(admin: any, payload: {
+  matchId: string;
+  operation: string;
+  reason: string;
+  actorUserId: string;
+  requestId: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  severity?: "low" | "medium" | "high" | "critical";
+}) {
+  const dedupKey = `legacy_repair_followup:${payload.matchId}:${payload.operation}:${payload.reason}`;
+  try {
+    await admin.from("admin_risk_items").upsert(
+      {
+        title: `Legacy match repair follow-up: ${payload.reason}`,
+        description: `Repair operation '${payload.operation}' on match ${payload.matchId} was not completed (${payload.reason}). Admin must follow up.`,
+        severity: payload.severity ?? "high",
+        status: "open",
+        kind: "legacy_repair_followup_required",
+        dedup_key: dedupKey,
+        metadata: {
+          match_id: payload.matchId,
+          operation: payload.operation,
+          reason: payload.reason,
+          actor_user_id: payload.actorUserId,
+          request_id: payload.requestId,
+          before: payload.before ?? null,
+          after: payload.after ?? null,
+          detected_at: new Date().toISOString(),
+        },
+      },
+      { onConflict: "dedup_key", ignoreDuplicates: false },
+    );
+  } catch (err) {
+    console.error("[admin-match-legacy-repair] risk item upsert failed:", err);
+  }
+}
 
 const baseHeaders = {
   "Access-Control-Allow-Headers":
@@ -113,6 +153,25 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "FORBIDDEN", requestId }, 403);
     }
 
+    // Batch K Fix 3: AAL2 / MFA required for manual state repair.
+    try {
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: caller.id,
+        action: "admin.match_legacy_repair",
+        context: { endpoint: ENDPOINT, request_id: requestId },
+      });
+    } catch (err) {
+      if (err instanceof ApiException) {
+        return jsonResponse(
+          req,
+          { error: err.code, message: err.message, requestId, observed_aal: (err as any).details?.observed_aal },
+          err.statusCode,
+        );
+      }
+      throw err;
+    }
+
     // 3. Strict body validation (rejects unknown fields).
     let parsedBody: z.infer<typeof BodySchema>;
     try {
@@ -158,12 +217,39 @@ Deno.serve(async (req) => {
     if (rpcError) {
       const msg = (rpcError.message ?? "").toLowerCase();
       if (msg.includes("operation_deferred")) {
+        await upsertRepairFollowupRiskItem(admin, {
+          matchId: parsedBody.match_id,
+          operation: parsedBody.operation,
+          reason: "operation_deferred",
+          actorUserId: caller.id,
+          requestId,
+        });
         return jsonResponse(
           req,
           {
             error: "OPERATION_DEFERRED",
             message:
               "force_terminal_for_orphan_settled is intentionally deferred pending business sign-off.",
+            requestId,
+          },
+          409,
+        );
+      }
+      if (msg.includes("completed_without_sealed_wad")) {
+        await upsertRepairFollowupRiskItem(admin, {
+          matchId: parsedBody.match_id,
+          operation: parsedBody.operation,
+          reason: "completed_without_sealed_wad",
+          actorUserId: caller.id,
+          requestId,
+          severity: "critical",
+        });
+        return jsonResponse(
+          req,
+          {
+            error: "COMPLETED_WITHOUT_SEALED_WAD",
+            message:
+              "Cannot restore COMPLETED poi_state without a sealed WaD for this match. A follow-up risk item has been created.",
             requestId,
           },
           409,
@@ -182,6 +268,13 @@ Deno.serve(async (req) => {
         );
       }
       if (msg.includes("still_inconsistent_after_repair")) {
+        await upsertRepairFollowupRiskItem(admin, {
+          matchId: parsedBody.match_id,
+          operation: parsedBody.operation,
+          reason: "still_inconsistent_after_repair",
+          actorUserId: caller.id,
+          requestId,
+        });
         return jsonResponse(
           req,
           {
