@@ -4090,9 +4090,11 @@ export type Database = {
           opened_at: string | null
           recipient_address: string | null
           recipient_org_id: string | null
+          recipient_role: string | null
           recipient_user_id: string | null
           reference_id: string
           reference_type: string
+          routing_policy_key: string | null
           status: string
           template_name: string | null
           updated_at: string
@@ -4111,9 +4113,11 @@ export type Database = {
           opened_at?: string | null
           recipient_address?: string | null
           recipient_org_id?: string | null
+          recipient_role?: string | null
           recipient_user_id?: string | null
           reference_id: string
           reference_type: string
+          routing_policy_key?: string | null
           status?: string
           template_name?: string | null
           updated_at?: string
@@ -4132,9 +4136,11 @@ export type Database = {
           opened_at?: string | null
           recipient_address?: string | null
           recipient_org_id?: string | null
+          recipient_role?: string | null
           recipient_user_id?: string | null
           reference_id?: string
           reference_type?: string
+          routing_policy_key?: string | null
           status?: string
           template_name?: string | null
           updated_at?: string
@@ -4166,10 +4172,13 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
           id: string
           link: string | null
           org_id: string | null
           read: boolean | null
+          resolved_at: string | null
           title: string
           type: string
           user_id: string
@@ -4177,10 +4186,13 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           link?: string | null
           org_id?: string | null
           read?: boolean | null
+          resolved_at?: string | null
           title: string
           type: string
           user_id: string
@@ -4188,10 +4200,13 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           link?: string | null
           org_id?: string | null
           read?: boolean | null
+          resolved_at?: string | null
           title?: string
           type?: string
           user_id?: string
@@ -8510,6 +8525,10 @@ export type Database = {
       reset_auth_rate_limit: {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: undefined
+      }
+      resolve_notifications_for: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: number
       }
       run_data_integrity_checks: { Args: never; Returns: Json }
       safe_transition_match_state: {
