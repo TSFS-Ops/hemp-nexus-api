@@ -597,7 +597,93 @@ Deno.serve(async (req) => {
       const title = `Reconciliation: minted match without engagement [match ${String(drift.match_id).slice(0, 8)}]`;
       const description = `Match ${drift.match_id} (state=${drift.state ?? 'unknown'}) for org ${drift.org_id ?? 'unknown'} has been minted/burned but has no current poi_engagements row. Engagement self-heal did not run; manual investigation required. No silent repair performed.`;
       try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
+    for (const drift of engagementWithoutPoi) {
+      const title = `Reconciliation: engagement without POI [match ${String(drift.match_id).slice(0, 8)}]`;
+      const description = `Engagement ${drift.engagement_id} (status=${drift.engagement_status}) for org ${drift.org_id ?? 'unknown'} on match ${drift.match_id} has no POI row. Soft-route pending statuses are excluded; this is real drift. No auto-repair.`;
+      try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
     }
+    for (const drift of wadPoiDrift) {
+      const title = `Reconciliation: wad-poi ${drift.kind} [wad ${String(drift.wad_id).slice(0, 8)}]`;
+      const description = `Sealed WaD ${drift.wad_id} drift kind=${drift.kind}. ${drift.detail ?? ''} No auto-repair.`;
+      try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
+    }
+  }
+
+  // ── 5b. Stale-risk auto-close (Batch V REC-005) ────────────────────
+  // For deterministic, machine-created kinds whose source condition is no
+  // longer present this run, auto-resolve and audit. Only for our own
+  // title-prefix patterns; manual/support-created items are untouched.
+  let autoClosed = 0;
+  try {
+    const stillBurnLedger = new Set(burnsWithoutPoi.map((d) => String(d.ledger_id).slice(0, 8)));
+    const stillPoi = new Set(poisWithoutBurn.map((d) => String(d.poi_id).slice(0, 8)));
+    const stillState = new Set(stateWithoutLedger.map((d) => String(d.match_id).slice(0, 8)));
+    const stillMintedNoEng = new Set(mintedWithoutEngagement.map((d) => String(d.match_id).slice(0, 8)));
+    const stillEngNoPoi = new Set(engagementWithoutPoi.map((d) => String(d.match_id).slice(0, 8)));
+    const stillWadPoi = new Set(wadPoiDrift.map((d) => `${d.kind}:${String(d.wad_id).slice(0, 8)}`));
+    const prefixes: Array<{ prefix: string; stillSet: Set<string>; keyAfter: (t: string) => string | null }> = [
+      { prefix: "Reconciliation: burn without POI [ledger ", stillSet: stillBurnLedger, keyAfter: (t) => t.match(/\[ledger ([0-9a-f]+)\]/)?.[1] ?? null },
+      { prefix: "Reconciliation: POI without burn [poi ", stillSet: stillPoi, keyAfter: (t) => t.match(/\[poi ([0-9a-f]+)\]/)?.[1] ?? null },
+      { prefix: "Reconciliation: minted state without ledger event [match ", stillSet: stillState, keyAfter: (t) => t.match(/\[match ([0-9a-f]+)\]/)?.[1] ?? null },
+      { prefix: "Reconciliation: minted match without engagement [match ", stillSet: stillMintedNoEng, keyAfter: (t) => t.match(/\[match ([0-9a-f]+)\]/)?.[1] ?? null },
+      { prefix: "Reconciliation: engagement without POI [match ", stillSet: stillEngNoPoi, keyAfter: (t) => t.match(/\[match ([0-9a-f]+)\]/)?.[1] ?? null },
+    ];
+    for (const { prefix, stillSet, keyAfter } of prefixes) {
+      const { data: openItems } = await admin
+        .from("admin_risk_items")
+        .select("id, title")
+        .eq("status", "open")
+        .like("title", `${prefix}%`)
+        .limit(500);
+      for (const it of (openItems ?? []) as Array<{ id: string; title: string }>) {
+        const key = keyAfter(it.title);
+        if (!key || stillSet.has(key)) continue;
+        const { error: updErr } = await admin
+          .from("admin_risk_items")
+          .update({ status: "resolved", resolved_at: new Date().toISOString(), resolved_by: null })
+          .eq("id", it.id)
+          .eq("status", "open");
+        if (updErr) continue;
+        autoClosed++;
+        await admin.from("admin_audit_logs").insert({
+          admin_user_id: null,
+          action: "risk_item.auto_resolved",
+          target_type: "admin_risk_item",
+          target_id: it.id,
+          details: { source: "burn-poi-reconciliation", reason: "reconciliation_auto_close", run_id: runId },
+        });
+        await resolveNotificationsFor(admin as any, "admin_risk_item", it.id, {
+          requestId: runId, source: "burn-poi-reconciliation",
+        });
+      }
+    }
+    // wad-poi has compound key (kind+id); separate pass.
+    const { data: openWad } = await admin
+      .from("admin_risk_items")
+      .select("id, title")
+      .eq("status", "open")
+      .like("title", "Reconciliation: wad-poi %")
+      .limit(500);
+    for (const it of (openWad ?? []) as Array<{ id: string; title: string }>) {
+      const m = it.title.match(/wad-poi (\S+) \[wad ([0-9a-f]+)\]/);
+      if (!m) continue;
+      const key = `${m[1]}:${m[2]}`;
+      if (stillWadPoi.has(key)) continue;
+      const { error: updErr } = await admin
+        .from("admin_risk_items")
+        .update({ status: "resolved", resolved_at: new Date().toISOString(), resolved_by: null })
+        .eq("id", it.id).eq("status", "open");
+      if (updErr) continue;
+      autoClosed++;
+      await admin.from("admin_audit_logs").insert({
+        admin_user_id: null, action: "risk_item.auto_resolved",
+        target_type: "admin_risk_item", target_id: it.id,
+        details: { source: "burn-poi-reconciliation", reason: "reconciliation_auto_close", run_id: runId },
+      });
+      await resolveNotificationsFor(admin as any, "admin_risk_item", it.id, { requestId: runId, source: "burn-poi-reconciliation" });
+    }
+  } catch (e) {
+    console.error("[burn-poi-reconciliation] stale auto-close failed:", e);
   }
 
   // ── 6. Audit row ───────────────────────────────────────────────────
@@ -614,7 +700,10 @@ Deno.serve(async (req) => {
         pois_without_burn: poisWithoutBurn.length,
         state_without_ledger: stateWithoutLedger.length,
         minted_without_engagement: mintedWithoutEngagement.length,
+        engagement_without_poi: engagementWithoutPoi.length,
+        wad_poi_drift: wadPoiDrift.length,
         opened_risk_items: openedRiskItems,
+        auto_closed: autoClosed,
         source: "burn-poi-reconciliation",
       },
     });
@@ -627,23 +716,14 @@ Deno.serve(async (req) => {
     started_at: startedAt,
     finished_at: new Date().toISOString(),
     window_days: windowDays,
-    burns_without_poi: {
-      count: burnsWithoutPoi.length,
-      samples: burnsWithoutPoi.slice(0, SAMPLE_CAP),
-    },
-    pois_without_burn: {
-      count: poisWithoutBurn.length,
-      samples: poisWithoutBurn.slice(0, SAMPLE_CAP),
-    },
-    state_without_ledger: {
-      count: stateWithoutLedger.length,
-      samples: stateWithoutLedger.slice(0, SAMPLE_CAP),
-    },
-    minted_without_engagement: {
-      count: mintedWithoutEngagement.length,
-      samples: mintedWithoutEngagement.slice(0, SAMPLE_CAP),
-    },
+    burns_without_poi: { count: burnsWithoutPoi.length, samples: burnsWithoutPoi.slice(0, SAMPLE_CAP) },
+    pois_without_burn: { count: poisWithoutBurn.length, samples: poisWithoutBurn.slice(0, SAMPLE_CAP) },
+    state_without_ledger: { count: stateWithoutLedger.length, samples: stateWithoutLedger.slice(0, SAMPLE_CAP) },
+    minted_without_engagement: { count: mintedWithoutEngagement.length, samples: mintedWithoutEngagement.slice(0, SAMPLE_CAP) },
+    engagement_without_poi: { count: engagementWithoutPoi.length, samples: engagementWithoutPoi.slice(0, SAMPLE_CAP) },
+    wad_poi_drift: { count: wadPoiDrift.length, samples: wadPoiDrift.slice(0, SAMPLE_CAP) },
     opened_risk_items: openedRiskItems,
+    auto_closed: autoClosed,
   });
   } catch (err) {
     // AUD-003 Fix 2: outer catch — surface reconciliation failure to admin.
