@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
           message_id: logProof.message_id ?? messageId,
           delivered_at: new Date().toISOString(),
         },
-      })
+      }, { eventIdempotencyKey: `acceptance_receipt.created:${r.id}:${r.receipt_version}` })
     } catch (whErr) {
       // Non-fatal: webhook failures are logged inside triggerWebhooks and
       // tracked via webhook_deliveries / circuit breaker. Receipt email is

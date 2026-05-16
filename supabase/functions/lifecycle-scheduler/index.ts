@@ -529,13 +529,16 @@ Deno.serve(async (req: Request) => {
         }
 
         // Also fire org-level webhooks
+        // Stable per-day key so the daily sweeper does not duplicate
+        // the same stale notification across runs.
+        const staleDay = new Date().toISOString().slice(0, 10);
         triggerWebhooks(admin, intent.org_id, "unilateral.stale", {
           match_id: intent.id,
           commodity: intent.commodity,
           age_days: ageDays,
           state: intent.state,
           missing_party: intent.buyer_id == null ? "buyer" : "seller",
-        }).catch(() => {});
+        }, { eventIdempotencyKey: `unilateral.stale:${intent.id}:${staleDay}` }).catch(() => {});
       }
     }
 

@@ -69,7 +69,10 @@ Deno.serve(async (req) => {
         )
       `)
       .lte("next_retry_at", now)
-      .lt("delivery_attempt", 3)
+      // Batch D — fetch up to attempt 10 (the longest configured
+      // schedule); the per-row `max_retries` cap is enforced in JS below
+      // because PostgREST cannot compare two columns directly.
+      .lt("delivery_attempt", 10)
       .eq("is_dead_letter", false)
       .eq("webhook_endpoints.status", "active")
       .limit(50);
@@ -93,7 +96,18 @@ Deno.serve(async (req) => {
     for (const delivery of deliveries) {
       const endpoint = delivery.webhook_endpoints;
       const attempt = delivery.delivery_attempt + 1;
-      
+      const rowMaxRetries = delivery.max_retries ?? 3;
+      // Batch D — per-row cap. If the row already hit its configured
+      // ceiling, mark dead-letter and skip without re-POSTing.
+      if (delivery.delivery_attempt >= rowMaxRetries) {
+        await supabase
+          .from("webhook_deliveries")
+          .update({ is_dead_letter: true, next_retry_at: null, error_message: `Max retries (${rowMaxRetries}) exceeded` })
+          .eq("id", delivery.id);
+        deadLetterCount++;
+        continue;
+      }
+
       try {
         // Reconstruct payload
         const payload = {

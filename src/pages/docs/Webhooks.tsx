@@ -115,27 +115,51 @@ export default function DocsWebhooks() {
 
         <DocH2 id="delivery">Delivery & retries</DocH2>
         <DocP>
-          A delivery is considered successful if your endpoint returns a 2xx within 10 seconds.
-          On any other response (or no response at all), the platform retries with exponential
-          backoff: <InlineCode>5m, 15m, 1h, 6h, 24h</InlineCode>. After the final retry the
-          delivery is moved to the dead-letter queue, visible in the Developer Centre.
+          A delivery is considered successful if your endpoint returns a 2xx within{" "}
+          <InlineCode>10 seconds</InlineCode>. On any other response (or a timeout), the
+          platform retries with bounded exponential backoff. The default ceiling is{" "}
+          <InlineCode>max_retries = 3</InlineCode> per delivery; the backoff schedule is
+          <InlineCode>+5m, +30m, +24h</InlineCode>. Once the ceiling is reached the
+          delivery is moved to the dead-letter state (<InlineCode>is_dead_letter = true</InlineCode>),
+          visible in the Developer Centre. Repeated consecutive failures across deliveries
+          also trip a per-endpoint circuit breaker after{" "}
+          <InlineCode>10 consecutive failures</InlineCode>, which auto-disables the
+          endpoint until you re-activate it.
+        </DocP>
+        <DocP>
+          Every delivery carries a stable{" "}
+          <InlineCode>X-Webhook-Idempotency-Key</InlineCode> header. Treat it as the
+          canonical deduplication identifier on your side; the platform will never send
+          two deliveries with the same key to the same endpoint.
         </DocP>
 
         <DocH3>Headers on every delivery</DocH3>
         <ParamTable
           rows={[
-            { name: "X-Webhook-Signature", type: "hex sha256", desc: "HMAC-SHA256 of the raw body, keyed by your endpoint secret." },
-            { name: "X-Webhook-Event",     type: "string",     desc: "Event name, e.g. intent.confirmed. Mirrors the payload's event field." },
-            { name: "X-Webhook-Timestamp", type: "ISO-8601",   desc: "Server time at which the event was emitted." },
-            { name: "Content-Type",        type: "string",     desc: "Always application/json." },
+            { name: "X-Webhook-Signature",       type: "hex sha256", desc: "HMAC-SHA256 of the raw body, keyed by your endpoint secret." },
+            { name: "X-Webhook-Event",           type: "string",     desc: "Event name, e.g. intent.confirmed. Mirrors the payload's event field." },
+            { name: "X-Webhook-Timestamp",       type: "ISO-8601",   desc: "Server time at which the event was emitted." },
+            { name: "X-Webhook-Idempotency-Key", type: "string",     desc: "Stable per-logical-event key. Identical across retries; use it to deduplicate on your side." },
+            { name: "Content-Type",              type: "string",     desc: "Always application/json." },
           ]}
         />
 
+        <DocH2 id="rotation">Secret rotation</DocH2>
+        <DocP>
+          Call <InlineCode>POST /webhooks/:id/rotate</InlineCode> to generate a new
+          signing secret. The new secret is returned <strong>once</strong> in the
+          response. The previous secret remains valid for inbound signature checks for
+          a <InlineCode>24-hour grace window</InlineCode>; after that it is removed.
+          Your audit log records a <InlineCode>webhook.secret_rotated</InlineCode>
+          entry with the grace expiry.
+        </DocP>
+
         <DocH2 id="best-practices">Best practices</DocH2>
         <DocP>
-          Make your handler idempotent - the platform may retry a delivery you've already
-          processed. Key your processing on <InlineCode>data.matchId</InlineCode> (or the most
-          specific identifier in the payload) and skip duplicates. Respond 2xx as soon as the
+          Make your handler idempotent — the platform may retry a delivery you've already
+          processed. Key your processing on{" "}
+          <InlineCode>X-Webhook-Idempotency-Key</InlineCode> (or the most specific
+          identifier in the payload) and skip duplicates. Respond 2xx as soon as the
           payload is persisted; do downstream work asynchronously.
         </DocP>
       </div>
