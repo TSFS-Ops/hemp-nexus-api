@@ -235,8 +235,12 @@ export type Database = {
       admin_risk_items: {
         Row: {
           created_at: string
+          dedup_key: string | null
           description: string | null
           id: string
+          kind: string | null
+          metadata: Json
+          org_id: string | null
           resolved_at: string | null
           resolved_by: string | null
           severity: string
@@ -246,8 +250,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dedup_key?: string | null
           description?: string | null
           id?: string
+          kind?: string | null
+          metadata?: Json
+          org_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: string
@@ -257,8 +265,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dedup_key?: string | null
           description?: string | null
           id?: string
+          kind?: string | null
+          metadata?: Json
+          org_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: string
@@ -1753,7 +1765,10 @@ export type Database = {
         Row: {
           completed_roles: string[]
           created_at: string
+          dedup_key: string | null
           id: string
+          kind: string | null
+          metadata: Json
           reason: string | null
           requesting_org_id: string
           required_roles: string[]
@@ -1765,7 +1780,10 @@ export type Database = {
         Insert: {
           completed_roles?: string[]
           created_at?: string
+          dedup_key?: string | null
           id?: string
+          kind?: string | null
+          metadata?: Json
           reason?: string | null
           requesting_org_id: string
           required_roles?: string[]
@@ -1777,7 +1795,10 @@ export type Database = {
         Update: {
           completed_roles?: string[]
           created_at?: string
+          dedup_key?: string | null
           id?: string
+          kind?: string | null
+          metadata?: Json
           reason?: string | null
           requesting_org_id?: string
           required_roles?: string[]
@@ -2457,6 +2478,7 @@ export type Database = {
           id: string
           jurisdiction_code: string
           legal_name: string
+          metadata: Json
           org_id: string
           registration_number: string | null
           status: string
@@ -2469,6 +2491,7 @@ export type Database = {
           id?: string
           jurisdiction_code: string
           legal_name: string
+          metadata?: Json
           org_id: string
           registration_number?: string | null
           status?: string
@@ -2481,6 +2504,7 @@ export type Database = {
           id?: string
           jurisdiction_code?: string
           legal_name?: string
+          metadata?: Json
           org_id?: string
           registration_number?: string | null
           status?: string
@@ -5350,6 +5374,48 @@ export type Database = {
           },
         ]
       }
+      provider_retry_state: {
+        Row: {
+          cooldown_until: string | null
+          created_at: string
+          entity_id: string | null
+          failure_count: number
+          gate: string
+          id: string
+          last_failure_at: string
+          org_id: string | null
+          provider: string
+          scope_key: string
+          updated_at: string
+        }
+        Insert: {
+          cooldown_until?: string | null
+          created_at?: string
+          entity_id?: string | null
+          failure_count?: number
+          gate: string
+          id?: string
+          last_failure_at?: string
+          org_id?: string | null
+          provider: string
+          scope_key: string
+          updated_at?: string
+        }
+        Update: {
+          cooldown_until?: string | null
+          created_at?: string
+          entity_id?: string | null
+          failure_count?: number
+          gate?: string
+          id?: string
+          last_failure_at?: string
+          org_id?: string | null
+          provider?: string
+          scope_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           api_key_id: string | null
@@ -5799,6 +5865,7 @@ export type Database = {
           entity_id: string | null
           id: string
           matched_entities: Json | null
+          metadata: Json
           next_screening_at: string | null
           org_id: string
           provider: string
@@ -5815,6 +5882,7 @@ export type Database = {
           entity_id?: string | null
           id?: string
           matched_entities?: Json | null
+          metadata?: Json
           next_screening_at?: string | null
           org_id: string
           provider?: string
@@ -5831,6 +5899,7 @@ export type Database = {
           entity_id?: string | null
           id?: string
           matched_entities?: Json | null
+          metadata?: Json
           next_screening_at?: string | null
           org_id?: string
           provider?: string
@@ -8031,6 +8100,36 @@ export type Database = {
       }
       bill_clip_on_request: { Args: { p_request_id: string }; Returns: Json }
       bill_clip_on_subscriptions_monthly: { Args: never; Returns: Json }
+      bump_provider_retry: {
+        Args: {
+          _cooldown_seconds?: number
+          _entity_id: string
+          _gate: string
+          _org_id: string
+          _provider: string
+          _scope_key: string
+          _threshold?: number
+        }
+        Returns: {
+          cooldown_until: string | null
+          created_at: string
+          entity_id: string | null
+          failure_count: number
+          gate: string
+          id: string
+          last_failure_at: string
+          org_id: string | null
+          provider: string
+          scope_key: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "provider_retry_state"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       can_delete_match_document_object: {
         Args: { _object_name: string; _owner_id?: string; _user_id: string }
         Returns: boolean
