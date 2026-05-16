@@ -1376,6 +1376,39 @@ export type Database = {
           },
         ]
       }
+      cron_heartbeats: {
+        Row: {
+          expected_interval_seconds: number
+          job_name: string
+          last_error: string | null
+          last_http_status: number | null
+          last_request_id: number | null
+          last_run_at: string | null
+          last_status: string
+          updated_at: string
+        }
+        Insert: {
+          expected_interval_seconds?: number
+          job_name: string
+          last_error?: string | null
+          last_http_status?: number | null
+          last_request_id?: number | null
+          last_run_at?: string | null
+          last_status?: string
+          updated_at?: string
+        }
+        Update: {
+          expected_interval_seconds?: number
+          job_name?: string
+          last_error?: string | null
+          last_http_status?: number | null
+          last_request_id?: number | null
+          last_run_at?: string | null
+          last_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       data_source_performance: {
         Row: {
           created_at: string
@@ -7950,6 +7983,11 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: string
       }
+      cron_invoke: {
+        Args: { p_body?: Json; p_job_name: string; p_url: string }
+        Returns: number
+      }
+      cron_reconcile_heartbeats: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
