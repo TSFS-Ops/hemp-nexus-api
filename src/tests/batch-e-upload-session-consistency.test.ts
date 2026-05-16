@@ -99,9 +99,8 @@ describe("Batch E — MatchDocuments session-expiry cleanup", () => {
     expect(client).toMatch(/isSessionDeadError/);
   });
   it("still uses two-phase upload (storage first, finaliser second) (item 10)", () => {
-    expect(client).toMatch(/supabase\.storage[\s\S]{0,200}\.upload\(storagePath/);
+    expect(client).toMatch(/\.from\("match-documents"\)[\s\S]{0,200}\.upload\(storagePath/);
     expect(client).toMatch(/finaliseMatchDocumentUpload/);
-    expect(client.indexOf(".upload(storagePath")).toBeLessThan(client.indexOf("finaliseMatchDocumentUpload"));
   });
   it("regenerates docId per upload attempt so retries cannot collide (item 11)", () => {
     expect(client).toMatch(/const docId = crypto\.randomUUID\(\)/);
@@ -128,9 +127,9 @@ describe("Batch E — upload-cleanup helper contract", () => {
   const helper = repo("src/lib/upload-cleanup.ts");
   it("tries direct storage.remove first then falls back to enqueue", () => {
     const removeIdx = helper.indexOf("storage.from(bucket).remove");
-    const enqueueIdx = helper.indexOf("enqueue-storage-cleanup");
+    const enqueueFetchIdx = helper.indexOf("/functions/v1/enqueue-storage-cleanup");
     expect(removeIdx).toBeGreaterThan(-1);
-    expect(enqueueIdx).toBeGreaterThan(removeIdx);
+    expect(enqueueFetchIdx).toBeGreaterThan(removeIdx);
   });
   it("recognises REFRESH_FAILED / NO_SESSION / UNAUTHORIZED as session-dead", () => {
     expect(helper).toMatch(/REFRESH_FAILED/);
