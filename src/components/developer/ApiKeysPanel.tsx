@@ -191,7 +191,7 @@ function KeyCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(row.name);
   const env = (row.environment || "live").toLowerCase();
-  const masked = maskedKeyDisplay(row.id);
+  const masked = maskedKeyDisplay(row.id, row.environment);
   const lastUsed = row.last_used_at
     ? formatDistanceToNow(new Date(row.last_used_at), { addSuffix: true })
     : "never";
