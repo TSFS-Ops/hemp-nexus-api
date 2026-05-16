@@ -115,7 +115,7 @@ export function AdminVerificationQueuePanel() {
     };
   }, [session]);
 
-  const { data: rows = [], isLoading, refetch } = useQuery({
+  const { data: rows = [], isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["admin-verification-queue", filter],
     enabled: isAdmin === true,
     queryFn: async () => {
