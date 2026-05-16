@@ -153,6 +153,25 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "FORBIDDEN", requestId }, 403);
     }
 
+    // Batch K Fix 3: AAL2 / MFA required for manual state repair.
+    try {
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: caller.id,
+        action: "admin.match_legacy_repair",
+        context: { endpoint: ENDPOINT, request_id: requestId },
+      });
+    } catch (err) {
+      if (err instanceof ApiException) {
+        return jsonResponse(
+          req,
+          { error: err.code, message: err.message, requestId, observed_aal: (err as any).details?.observed_aal },
+          err.statusCode,
+        );
+      }
+      throw err;
+    }
+
     // 3. Strict body validation (rejects unknown fields).
     let parsedBody: z.infer<typeof BodySchema>;
     try {
