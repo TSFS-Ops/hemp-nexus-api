@@ -32,9 +32,49 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
+import { assertAal2 } from "../_shared/aal.ts";
+import { ApiException } from "../_shared/errors.ts";
 
 const ENDPOINT = "POST /admin-match-legacy-repair";
 const SYSTEM_ORG_ID = "00000000-0000-0000-0000-000000000000";
+
+async function upsertRepairFollowupRiskItem(admin: any, payload: {
+  matchId: string;
+  operation: string;
+  reason: string;
+  actorUserId: string;
+  requestId: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  severity?: "low" | "medium" | "high" | "critical";
+}) {
+  const dedupKey = `legacy_repair_followup:${payload.matchId}:${payload.operation}:${payload.reason}`;
+  try {
+    await admin.from("admin_risk_items").upsert(
+      {
+        title: `Legacy match repair follow-up: ${payload.reason}`,
+        description: `Repair operation '${payload.operation}' on match ${payload.matchId} was not completed (${payload.reason}). Admin must follow up.`,
+        severity: payload.severity ?? "high",
+        status: "open",
+        kind: "legacy_repair_followup_required",
+        dedup_key: dedupKey,
+        metadata: {
+          match_id: payload.matchId,
+          operation: payload.operation,
+          reason: payload.reason,
+          actor_user_id: payload.actorUserId,
+          request_id: payload.requestId,
+          before: payload.before ?? null,
+          after: payload.after ?? null,
+          detected_at: new Date().toISOString(),
+        },
+      },
+      { onConflict: "dedup_key", ignoreDuplicates: false },
+    );
+  } catch (err) {
+    console.error("[admin-match-legacy-repair] risk item upsert failed:", err);
+  }
+}
 
 const baseHeaders = {
   "Access-Control-Allow-Headers":
