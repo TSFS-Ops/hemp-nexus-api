@@ -53,9 +53,11 @@ async function callKeysFn<T = unknown>(
   return json as T;
 }
 
-function maskedKeyDisplay(name: string) {
+function maskedKeyDisplay(id: string, environment: string | null = "live") {
   // We never store plaintext, so always show a stable visual placeholder
-  return `iz_live_••••••••••••••••${name.slice(0, 4).padEnd(4, "x").toLowerCase()}`;
+  // that mirrors the real key contract (sk_live_ / sk_test_).
+  const env = (environment || "live").toLowerCase() === "sandbox" ? "test" : "live";
+  return `sk_${env}_••••••••••••••••${id.slice(0, 4).padEnd(4, "x").toLowerCase()}`;
 }
 
 function RevealModal({ data, onClose }: { data: RevealedKey; onClose: () => void }) {
