@@ -1786,6 +1786,30 @@ export function AdminPendingEngagementsPanel() {
                                 </Badge>
                               );
                             })()}
+                            {(() => {
+                              // Batch F UI surfacing — strict UUID-linked
+                              // bounce/complaint audit. Only renders when an
+                              // audit_logs row with entity_type='poi_engagement'
+                              // and entity_id === e.id exists. No inference.
+                              const a = bounceAudit[e.id];
+                              if (!a) return null;
+                              const label = a.kind === "complained" ? "Complaint" : "Bounced";
+                              const ts = new Date(a.at).toLocaleString();
+                              const title = `Outreach ${a.kind} (suppressed — future sends to this address are blocked) at ${ts}`;
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className="whitespace-nowrap text-[10px] font-medium px-2 py-0.5 bg-rose-50 text-rose-700 border-rose-300"
+                                  title={title}
+                                  aria-label={title}
+                                  data-bounce-audit={a.kind}
+                                  data-engagement-id={e.id}
+                                >
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  {label} · suppressed
+                                </Badge>
+                              );
+                            })()}
                             {/* Batch A — canonical contact-completeness badge.
                                 Mirrors the backend's outreach gate so an
                                 operator can read the state without opening
