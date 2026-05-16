@@ -101,16 +101,19 @@ function RevealModal({ data, onClose }: { data: RevealedKey; onClose: () => void
             <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-2">
               Secret Key (one-time display)
             </div>
-            <div className="flex items-stretch gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch gap-2">
               <div className="flex-1 bg-black border border-slate-800 px-3 py-2.5 font-mono text-[12px] text-green-400 break-all rounded-sm">
                 {data.key}
               </div>
               <button
                 onClick={copy}
-                className="px-3 bg-black border border-slate-700 text-slate-400 hover:text-green-400 hover:border-slate-600 transition-colors rounded-sm"
+                className="px-3 py-2 sm:py-0 bg-black border border-slate-700 text-slate-400 hover:text-green-400 hover:border-slate-600 transition-colors rounded-sm inline-flex items-center justify-center gap-1.5"
                 aria-label="Copy key"
               >
                 {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+                <span className="sm:hidden font-mono text-[11px] uppercase tracking-[0.16em]">
+                  {copied ? "Copied" : "Copy"}
+                </span>
               </button>
             </div>
           </div>
