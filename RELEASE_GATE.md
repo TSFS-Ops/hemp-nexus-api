@@ -8,10 +8,26 @@
 
 ```bash
 # Must all exit 0
-npm run build              # TypeScript + Vite compilation
+npm run build              # TypeScript + Vite compilation (runs all prebuild guards below)
 npm run check:drift        # Layout/footer/back-button drift guard
 npx vitest run             # Unit + integration tests
 ```
+
+Prebuild guards enforced automatically by `npm run build`:
+
+- `check-routes.mjs` — route registry vs source drift
+- `check-edge-function-paths.mjs` — edge invoke paths exist
+- `check-no-inline-subject-truncate.mjs` — email subject clamping
+- `check-docs-no-zar-billing.mjs` / `check-docs-staleness.mjs` — docs hygiene
+- `check-operational-visual-tokens.mjs` — design token usage
+- `check-match-lifecycle-mirror.mjs` — lifecycle helper drift
+- `check-legacy-admin-rls.mjs` — legacy `admin` role RLS guard
+- `check-webhook-callsite-idempotency.mjs` — webhook idempotency
+- `check-fx-no-importers.mjs` — FX layer not re-introduced
+- `check-bypass-callsites.mjs` — test-mode bypass audit coverage
+- `check-public-page-imports.mjs` — public pages don't import auth code
+- `check-edge-function-rpc-coverage.mjs` — edge RPCs are migration-backed (Batch U)
+- `check-csv-export-audit.mjs` — sensitive CSV exports are audited (Batch U)
 
 **Blocker:** Any command exits non-zero.
 
