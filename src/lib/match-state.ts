@@ -224,17 +224,35 @@ export function isPrePoi(stateOrStatus: string | null | undefined): boolean {
   return stateOrStatus === "discovery" || stateOrStatus === MATCH_STATUS.MATCHED;
 }
 
-/** Human-readable label for a match state or status */
+/**
+ * Canonical set of legacy status labels recognised by this renderer. Kept
+ * alongside STATE_LABELS so `statusLabel` can detect a truly unknown /
+ * future value rather than silently echoing the raw enum literal.
+ * See Batch B Fix 6 — unknown enum display contract.
+ */
+const LEGACY_STATUS_LABELS: Record<string, string> = {
+  matched: "Awaiting Confirmation",
+  settled: "Intent Confirmed",
+  confirmed: "Intent Confirmed",
+  disputed: "Dispute Raised",
+  cancelled: "Cancelled",
+};
+
+/** Human-readable label for a match state or status. */
 export function statusLabel(statusOrState: string): string {
   if (STATE_LABELS[statusOrState]) return STATE_LABELS[statusOrState];
-  const labels: Record<string, string> = {
-    matched: "Awaiting Confirmation",
-    settled: "Intent Confirmed",
-    confirmed: "Intent Confirmed",
-    disputed: "Dispute Raised",
-    cancelled: "Cancelled",
-  };
-  return labels[statusOrState] ?? statusOrState.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  if (LEGACY_STATUS_LABELS[statusOrState]) return LEGACY_STATUS_LABELS[statusOrState];
+  // Batch B Fix 6 — unknown / future enum values must not render as the
+  // raw literal. Surface them as an explicit "Unrecognised" badge so
+  // operators and customers see "this is unknown" rather than a confusing
+  // backend identifier masquerading as a friendly label.
+  if (!statusOrState) return "Unrecognised status";
+  return `Unrecognised status (${statusOrState})`;
+}
+
+/** Strict known-set check used by tests / badge fallbacks. */
+export function isKnownStatusLabel(statusOrState: string): boolean {
+  return Boolean(STATE_LABELS[statusOrState] || LEGACY_STATUS_LABELS[statusOrState]);
 }
 
 /** Short plain-English explanation */
