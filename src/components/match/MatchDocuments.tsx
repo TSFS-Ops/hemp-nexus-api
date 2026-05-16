@@ -633,7 +633,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
   const resetForm = () => {
     setSelectedFile(null);
-    setDocType("other");
+    setDocType("");
     setTitle("");
     setNotes("");
     setChangeNotes("");
