@@ -154,23 +154,54 @@ Deno.serve(async (req: Request) => {
 
     // 1c. Expire stale draft/pending matches - only update poi_state (avoid status constraint violation)
     // Phase 1 demo isolation: never expire demo matches via lifecycle.
-    const { data: expiredMatches, error: matchErr } = dryRun
-      ? await admin
-          .from("matches")
-          .select("id")
-          .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
-          .lt("created_at", thirtyDaysAgo)
-          .eq("is_demo", false)
-      : await admin
-          .from("matches")
-          .update({ poi_state: "EXPIRED" })
-          .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
-          .lt("created_at", thirtyDaysAgo)
-          .eq("is_demo", false)
-          .select("id");
+    // Batch K Fix 6/7: capture before-snapshot per match and write per-match audit on apply runs.
+    const { data: matchesToExpire, error: matchSelectErr } = await admin
+      .from("matches")
+      .select("id, org_id, state, status, poi_state")
+      .in("poi_state", ["DRAFT", "PENDING_APPROVAL"])
+      .lt("created_at", thirtyDaysAgo)
+      .eq("is_demo", false);
+
+    let expiredMatches: Array<{ id: string }> = [];
+    let matchErr: { message?: string } | null = matchSelectErr ?? null;
+    if (!dryRun && matchesToExpire && matchesToExpire.length > 0) {
+      const ids = matchesToExpire.map((m: any) => m.id);
+      const { data: updated, error: updErr } = await admin
+        .from("matches")
+        .update({ poi_state: "EXPIRED" })
+        .in("id", ids)
+        .select("id");
+      expiredMatches = updated ?? [];
+      matchErr = updErr ?? matchErr;
+
+      // Per-match audit rows (Fix 6).
+      const auditRows = matchesToExpire
+        .filter((m: any) => expiredMatches.some((u) => u.id === m.id))
+        .map((m: any) => ({
+          org_id: m.org_id ?? "00000000-0000-0000-0000-000000000000",
+          action: "match.expired_by_lifecycle",
+          entity_type: "match",
+          entity_id: m.id,
+          metadata: {
+            request_id: runRequestId,
+            cutoff: thirtyDaysAgo,
+            reason: "poi_pending_age_exceeded",
+            before: { state: m.state, status: m.status, poi_state: m.poi_state },
+            after: { state: m.state, status: m.status, poi_state: "EXPIRED" },
+            note: "matches.state/status retained — schema has no 'expired' value; UI must derive from poi_state. (Fix 7)",
+          },
+        }));
+      if (auditRows.length > 0) {
+        try { await admin.from("audit_logs").insert(auditRows); } catch (e) {
+          console.error("[lifecycle-scheduler] per-match expiry audit failed:", e);
+        }
+      }
+    } else if (dryRun) {
+      expiredMatches = (matchesToExpire ?? []).map((m: any) => ({ id: m.id }));
+    }
 
     results.expired_matches = {
-      count: (expiredMatches || []).length,
+      count: expiredMatches.length,
       error: matchErr?.message || null,
     };
 
