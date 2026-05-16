@@ -67,6 +67,7 @@ import { apiFetch } from "@/lib/api-client";
 import { sanitizeStorageFilename } from "@/lib/storage-filenames";
 import { logMatchDocumentUploadAttempt } from "@/lib/match-document-upload-log";
 import { finaliseMatchDocumentUpload } from "@/lib/finalise-match-document-upload";
+import { cleanupOrphanUpload, isSessionDeadError } from "@/lib/upload-cleanup";
 import { UploadAuthzPanel } from "./UploadAuthzPanel";
 
 /** Detect MIME from first bytes of a file - client-side magic-byte check */
