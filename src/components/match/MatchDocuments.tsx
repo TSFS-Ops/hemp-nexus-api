@@ -414,7 +414,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         }
       }
 
-      const effectiveDocType = docType || "other";
+      const effectiveDocType = docType; // validated above against ALLOWED_DOC_TYPES
       const sha256Hash = await computeFileHash(selectedFile);
 
       // Check for duplicate hash
