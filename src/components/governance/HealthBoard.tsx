@@ -116,6 +116,9 @@ const MONITORED_JOBS: Array<{ id: string; name: string }> = [
   { id: "C4", name: "infra-alerts-cron" },
   { id: "C5", name: "cron-heartbeat-reconcile" },
   { id: "C6", name: "sentry-heartbeat-cron" },
+  { id: "C7", name: "balance-drift-reconciliation-daily" },
+  { id: "C8", name: "side-effect-reconciliation-daily" },
+  { id: "C9", name: "transaction-reconciliation-job" },
 ];
 
 // OPS-001 Stage 2 — Sentry receiving-events status derived from the
@@ -245,6 +248,21 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
+  // Batch V — closeout drift summary (RPC). Never renders green on error.
+  const {
+    data: closeout,
+    isError: closeoutError,
+  } = useQuery<{ open_total: number; critical: number; balance_drift: number; burn_poi_drift: number; wad_poi_drift: number; missing_side_effect: number; generated_at: string } | null>({
+    queryKey: ["closeout-drift-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("closeout_drift_summary");
+      if (error) throw error;
+      return (data as any) ?? null;
+    },
+    refetchInterval: 60000,
+    refetchOnWindowFocus: false,
+  });
+
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
   // Batch T — UI-014: explicit allow-list of "open" statuses rather than
@@ -286,7 +304,30 @@ export function HealthBoard() {
   return (
     <>
       {/* Summary strip — every tile is derived from real rows. */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-muted border border-border mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-px bg-muted border border-border mb-10">
+        <div className="bg-card p-5" data-testid="healthboard-closeout-tile" data-closeout-error={closeoutError ? "true" : "false"}>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Closeout Drift</p>
+          {closeoutError ? (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-rose-700 tracking-tight">error</p>
+              <p className="font-mono text-[10px] mt-0.5 text-rose-700">query failed · cannot prove closeout</p>
+            </>
+          ) : !closeout ? (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-slate-500 tracking-tight">—</p>
+              <p className="font-mono text-[10px] mt-0.5 text-slate-500">unknown · degraded</p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{closeout.critical}</p>
+              <p className={`font-mono text-[10px] mt-0.5 ${closeout.critical > 0 ? "text-rose-700" : "text-[hsl(var(--emerald))]"}`}>
+                {closeout.critical > 0
+                  ? `${closeout.balance_drift}b · ${closeout.burn_poi_drift}bp · ${closeout.wad_poi_drift}wp · ${closeout.missing_side_effect}sf`
+                  : "no critical drift"}
+              </p>
+            </>
+          )}
+        </div>
         <div className="bg-card p-5" data-testid="healthboard-monitored-tile">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Jobs Healthy</p>
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">

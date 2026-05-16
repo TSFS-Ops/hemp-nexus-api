@@ -47,8 +47,40 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { webhookCorsHeaders } from "../_shared/cors.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 
 const corsHeaders = { ...webhookCorsHeaders() };
+
+/**
+ * Engagement statuses that imply a POI is expected to exist on the match.
+ * Soft-route pending states (pending, notification_sent, contacted) are
+ * legitimately POI-less and MUST NOT be flagged as drift.
+ */
+const ENGAGEMENT_STATUSES_REQUIRING_POI = new Set<string>([
+  "accepted",
+  "late_acceptance_pending_initiator_reconfirmation",
+  "disputed_being_named",
+]);
+
+/**
+ * WaD/POI consistency note:
+ *
+ *   wads has poi_id, buyer_org_id, seller_org_id, canonical_payload_json, status.
+ *   pois has match_id, org_id, state.
+ *   matches has buyer_org_id, seller_org_id.
+ *
+ * The schema does not currently materialise a terms-hash on pois that we can
+ * compare against wads.canonical_payload_json deterministically — POI terms
+ * live on matches (commodity, price, quantity, terms). For this reason the
+ * WaD/POI detector below covers only the linkage-and-state drift that the
+ * schema can prove:
+ *   - sealed wad whose linked poi_id no longer exists
+ *   - sealed wad linked to a poi in a non-terminal state (not COMPLETED/ELIGIBLE)
+ *   - sealed wad whose buyer/seller_org_id disagree with the poi.match
+ *     buyer/seller_org_id
+ * Terms-hash drift is intentionally not asserted; it would produce false
+ * positives without a canonical hash column. Documented in tests.
+ */
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -389,6 +421,140 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── 4a. ENGAGEMENT_WITHOUT_POI (Batch V REC-002, reverse direction) ─
+  // For every poi_engagement whose status implies a POI must exist on the
+  // match (accepted / late-acceptance / disputed), assert that a pois row
+  // exists for that match_id. Soft-route pending statuses (pending,
+  // notification_sent, contacted) are excluded.
+  const engagementWithoutPoi: Array<Record<string, unknown>> = [];
+  {
+    const { data: activeEngagements, error: aeErr } = await admin
+      .from("poi_engagements")
+      .select("id, match_id, org_id, engagement_status, created_at")
+      .in("engagement_status", Array.from(ENGAGEMENT_STATUSES_REQUIRING_POI))
+      .gte("created_at", sinceIso)
+      .order("created_at", { ascending: false })
+      .limit(ROW_LIMIT);
+    if (aeErr) {
+      console.error("[burn-poi-reconciliation] active engagement fetch failed:", aeErr);
+      throw new Error(`ACTIVE_ENGAGEMENT_FETCH_FAILED: ${aeErr.message}`);
+    }
+    const activeMatchIds = Array.from(
+      new Set(
+        (activeEngagements ?? [])
+          .map((e) => (e as { match_id: string | null }).match_id)
+          .filter((v): v is string => !!v),
+      ),
+    );
+    let poiCoverage = new Set<string>();
+    if (activeMatchIds.length > 0) {
+      const { data: poiHits, error: poiCovErr } = await admin
+        .from("pois")
+        .select("match_id")
+        .in("match_id", activeMatchIds);
+      if (poiCovErr) {
+        console.error("[burn-poi-reconciliation] poi coverage fetch failed:", poiCovErr);
+        throw new Error(`POI_COVERAGE_FETCH_FAILED: ${poiCovErr.message}`);
+      }
+      poiCoverage = new Set((poiHits ?? []).map((p) => (p as { match_id: string }).match_id));
+    }
+    for (const e of activeEngagements ?? []) {
+      const row = e as { id: string; match_id: string | null; org_id: string | null; engagement_status: string; created_at: string };
+      if (!row.match_id) continue;
+      if (poiCoverage.has(row.match_id)) continue;
+      engagementWithoutPoi.push({
+        engagement_id: row.id,
+        match_id: row.match_id,
+        org_id: row.org_id,
+        engagement_status: row.engagement_status,
+        created_at: row.created_at,
+      });
+    }
+  }
+
+  // ── 4b. WAD_POI_DRIFT (Batch V REC-003 hardening) ──────────────────
+  // Detect sealed WaDs whose linked POI is missing or whose buyer/seller
+  // org linkage disagrees with the underlying match. Terms-hash drift is
+  // intentionally out of scope (no canonical hash column on pois).
+  const wadPoiDrift: Array<Record<string, unknown>> = [];
+  {
+    const { data: sealedWads, error: wadErr } = await admin
+      .from("wads")
+      .select("id, poi_id, buyer_org_id, seller_org_id, status, sealed_at")
+      .eq("status", "sealed")
+      .gte("sealed_at", sinceIso)
+      .order("sealed_at", { ascending: false })
+      .limit(ROW_LIMIT);
+    if (wadErr) {
+      console.error("[burn-poi-reconciliation] wad fetch failed:", wadErr);
+      throw new Error(`WAD_FETCH_FAILED: ${wadErr.message}`);
+    }
+    const wads = (sealedWads ?? []) as Array<{
+      id: string; poi_id: string | null; buyer_org_id: string | null;
+      seller_org_id: string | null; status: string; sealed_at: string | null;
+    }>;
+    const poiIds = Array.from(new Set(wads.map((w) => w.poi_id).filter((v): v is string => !!v)));
+    const poiById = new Map<string, { id: string; match_id: string | null; state: string | null }>();
+    const matchById = new Map<string, { id: string; buyer_org_id: string | null; seller_org_id: string | null }>();
+    if (poiIds.length > 0) {
+      const { data: poiRows2, error: pErr } = await admin
+        .from("pois")
+        .select("id, match_id, state")
+        .in("id", poiIds);
+      if (pErr) throw new Error(`WAD_POI_LOOKUP_FAILED: ${pErr.message}`);
+      for (const p of (poiRows2 ?? []) as Array<{ id: string; match_id: string | null; state: string | null }>) {
+        poiById.set(p.id, p);
+      }
+      const matchIds2 = Array.from(new Set(
+        Array.from(poiById.values()).map((p) => p.match_id).filter((v): v is string => !!v),
+      ));
+      if (matchIds2.length > 0) {
+        const { data: matchRows, error: mErr } = await admin
+          .from("matches")
+          .select("id, buyer_org_id, seller_org_id")
+          .in("id", matchIds2);
+        if (mErr) throw new Error(`WAD_MATCH_LOOKUP_FAILED: ${mErr.message}`);
+        for (const m of (matchRows ?? []) as Array<{ id: string; buyer_org_id: string | null; seller_org_id: string | null }>) {
+          matchById.set(m.id, m);
+        }
+      }
+    }
+    for (const w of wads) {
+      if (!w.poi_id) {
+        wadPoiDrift.push({ wad_id: w.id, kind: "missing_poi_link", detail: "sealed wad has null poi_id" });
+        continue;
+      }
+      const poi = poiById.get(w.poi_id);
+      if (!poi) {
+        wadPoiDrift.push({ wad_id: w.id, poi_id: w.poi_id, kind: "poi_not_found", detail: "linked POI does not exist" });
+        continue;
+      }
+      if (poi.state && !["ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"].includes(poi.state)) {
+        wadPoiDrift.push({
+          wad_id: w.id, poi_id: w.poi_id, kind: "poi_state_incompatible",
+          detail: `sealed wad linked to POI in non-terminal state ${poi.state}`,
+        });
+      }
+      if (poi.match_id) {
+        const match = matchById.get(poi.match_id);
+        if (match) {
+          if (w.buyer_org_id && match.buyer_org_id && w.buyer_org_id !== match.buyer_org_id) {
+            wadPoiDrift.push({
+              wad_id: w.id, poi_id: w.poi_id, match_id: poi.match_id, kind: "buyer_org_mismatch",
+              detail: `wad.buyer_org_id ${w.buyer_org_id} ≠ match.buyer_org_id ${match.buyer_org_id}`,
+            });
+          }
+          if (w.seller_org_id && match.seller_org_id && w.seller_org_id !== match.seller_org_id) {
+            wadPoiDrift.push({
+              wad_id: w.id, poi_id: w.poi_id, match_id: poi.match_id, kind: "seller_org_mismatch",
+              detail: `wad.seller_org_id ${w.seller_org_id} ≠ match.seller_org_id ${match.seller_org_id}`,
+            });
+          }
+        }
+      }
+    }
+  }
+
   // ── 5. Optional: open admin_risk_items per drift case (idempotent via title) ─
   // admin_risk_items has no external_ref column, so we use a stable title
   // prefix and skip insertion when an open row with the same title exists.
@@ -431,7 +597,93 @@ Deno.serve(async (req) => {
       const title = `Reconciliation: minted match without engagement [match ${String(drift.match_id).slice(0, 8)}]`;
       const description = `Match ${drift.match_id} (state=${drift.state ?? 'unknown'}) for org ${drift.org_id ?? 'unknown'} has been minted/burned but has no current poi_engagements row. Engagement self-heal did not run; manual investigation required. No silent repair performed.`;
       try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
+    for (const drift of engagementWithoutPoi) {
+      const title = `Reconciliation: engagement without POI [match ${String(drift.match_id).slice(0, 8)}]`;
+      const description = `Engagement ${drift.engagement_id} (status=${drift.engagement_status}) for org ${drift.org_id ?? 'unknown'} on match ${drift.match_id} has no POI row. Soft-route pending statuses are excluded; this is real drift. No auto-repair.`;
+      try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
     }
+    for (const drift of wadPoiDrift) {
+      const title = `Reconciliation: wad-poi ${drift.kind} [wad ${String(drift.wad_id).slice(0, 8)}]`;
+      const description = `Sealed WaD ${drift.wad_id} drift kind=${drift.kind}. ${drift.detail ?? ''} No auto-repair.`;
+      try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
+    }
+  }
+
+  // ── 5b. Stale-risk auto-close (Batch V REC-005) ────────────────────
+  // For deterministic, machine-created kinds whose source condition is no
+  // longer present this run, auto-resolve and audit. Only for our own
+  // title-prefix patterns; manual/support-created items are untouched.
+  let autoClosed = 0;
+  try {
+    const stillBurnLedger = new Set(burnsWithoutPoi.map((d) => String(d.ledger_id).slice(0, 8)));
+    const stillPoi = new Set(poisWithoutBurn.map((d) => String(d.poi_id).slice(0, 8)));
+    const stillState = new Set(stateWithoutLedger.map((d) => String(d.match_id).slice(0, 8)));
+    const stillMintedNoEng = new Set(mintedWithoutEngagement.map((d) => String(d.match_id).slice(0, 8)));
+    const stillEngNoPoi = new Set(engagementWithoutPoi.map((d) => String(d.match_id).slice(0, 8)));
+    const stillWadPoi = new Set(wadPoiDrift.map((d) => `${d.kind}:${String(d.wad_id).slice(0, 8)}`));
+    const prefixes: Array<{ prefix: string; stillSet: Set<string>; keyAfter: (t: string) => string | null }> = [
+      { prefix: "Reconciliation: burn without POI [ledger ", stillSet: stillBurnLedger, keyAfter: (t) => t.match(/\[ledger ([0-9a-f]+)\]/)?.[1] ?? null },
+      { prefix: "Reconciliation: POI without burn [poi ", stillSet: stillPoi, keyAfter: (t) => t.match(/\[poi ([0-9a-f]+)\]/)?.[1] ?? null },
+      { prefix: "Reconciliation: minted state without ledger event [match ", stillSet: stillState, keyAfter: (t) => t.match(/\[match ([0-9a-f]+)\]/)?.[1] ?? null },
+      { prefix: "Reconciliation: minted match without engagement [match ", stillSet: stillMintedNoEng, keyAfter: (t) => t.match(/\[match ([0-9a-f]+)\]/)?.[1] ?? null },
+      { prefix: "Reconciliation: engagement without POI [match ", stillSet: stillEngNoPoi, keyAfter: (t) => t.match(/\[match ([0-9a-f]+)\]/)?.[1] ?? null },
+    ];
+    for (const { prefix, stillSet, keyAfter } of prefixes) {
+      const { data: openItems } = await admin
+        .from("admin_risk_items")
+        .select("id, title")
+        .eq("status", "open")
+        .like("title", `${prefix}%`)
+        .limit(500);
+      for (const it of (openItems ?? []) as Array<{ id: string; title: string }>) {
+        const key = keyAfter(it.title);
+        if (!key || stillSet.has(key)) continue;
+        const { error: updErr } = await admin
+          .from("admin_risk_items")
+          .update({ status: "resolved", resolved_at: new Date().toISOString(), resolved_by: null })
+          .eq("id", it.id)
+          .eq("status", "open");
+        if (updErr) continue;
+        autoClosed++;
+        await admin.from("admin_audit_logs").insert({
+          admin_user_id: null,
+          action: "risk_item.auto_resolved",
+          target_type: "admin_risk_item",
+          target_id: it.id,
+          details: { source: "burn-poi-reconciliation", reason: "reconciliation_auto_close", run_id: runId },
+        });
+        await resolveNotificationsFor(admin as any, "admin_risk_item", it.id, {
+          requestId: runId, source: "burn-poi-reconciliation",
+        });
+      }
+    }
+    // wad-poi has compound key (kind+id); separate pass.
+    const { data: openWad } = await admin
+      .from("admin_risk_items")
+      .select("id, title")
+      .eq("status", "open")
+      .like("title", "Reconciliation: wad-poi %")
+      .limit(500);
+    for (const it of (openWad ?? []) as Array<{ id: string; title: string }>) {
+      const m = it.title.match(/wad-poi (\S+) \[wad ([0-9a-f]+)\]/);
+      if (!m) continue;
+      const key = `${m[1]}:${m[2]}`;
+      if (stillWadPoi.has(key)) continue;
+      const { error: updErr } = await admin
+        .from("admin_risk_items")
+        .update({ status: "resolved", resolved_at: new Date().toISOString(), resolved_by: null })
+        .eq("id", it.id).eq("status", "open");
+      if (updErr) continue;
+      autoClosed++;
+      await admin.from("admin_audit_logs").insert({
+        admin_user_id: null, action: "risk_item.auto_resolved",
+        target_type: "admin_risk_item", target_id: it.id,
+        details: { source: "burn-poi-reconciliation", reason: "reconciliation_auto_close", run_id: runId },
+      });
+      await resolveNotificationsFor(admin as any, "admin_risk_item", it.id, { requestId: runId, source: "burn-poi-reconciliation" });
+    }
+  } catch (e) {
+    console.error("[burn-poi-reconciliation] stale auto-close failed:", e);
   }
 
   // ── 6. Audit row ───────────────────────────────────────────────────
@@ -448,7 +700,10 @@ Deno.serve(async (req) => {
         pois_without_burn: poisWithoutBurn.length,
         state_without_ledger: stateWithoutLedger.length,
         minted_without_engagement: mintedWithoutEngagement.length,
+        engagement_without_poi: engagementWithoutPoi.length,
+        wad_poi_drift: wadPoiDrift.length,
         opened_risk_items: openedRiskItems,
+        auto_closed: autoClosed,
         source: "burn-poi-reconciliation",
       },
     });
@@ -461,23 +716,14 @@ Deno.serve(async (req) => {
     started_at: startedAt,
     finished_at: new Date().toISOString(),
     window_days: windowDays,
-    burns_without_poi: {
-      count: burnsWithoutPoi.length,
-      samples: burnsWithoutPoi.slice(0, SAMPLE_CAP),
-    },
-    pois_without_burn: {
-      count: poisWithoutBurn.length,
-      samples: poisWithoutBurn.slice(0, SAMPLE_CAP),
-    },
-    state_without_ledger: {
-      count: stateWithoutLedger.length,
-      samples: stateWithoutLedger.slice(0, SAMPLE_CAP),
-    },
-    minted_without_engagement: {
-      count: mintedWithoutEngagement.length,
-      samples: mintedWithoutEngagement.slice(0, SAMPLE_CAP),
-    },
+    burns_without_poi: { count: burnsWithoutPoi.length, samples: burnsWithoutPoi.slice(0, SAMPLE_CAP) },
+    pois_without_burn: { count: poisWithoutBurn.length, samples: poisWithoutBurn.slice(0, SAMPLE_CAP) },
+    state_without_ledger: { count: stateWithoutLedger.length, samples: stateWithoutLedger.slice(0, SAMPLE_CAP) },
+    minted_without_engagement: { count: mintedWithoutEngagement.length, samples: mintedWithoutEngagement.slice(0, SAMPLE_CAP) },
+    engagement_without_poi: { count: engagementWithoutPoi.length, samples: engagementWithoutPoi.slice(0, SAMPLE_CAP) },
+    wad_poi_drift: { count: wadPoiDrift.length, samples: wadPoiDrift.slice(0, SAMPLE_CAP) },
     opened_risk_items: openedRiskItems,
+    auto_closed: autoClosed,
   });
   } catch (err) {
     // AUD-003 Fix 2: outer catch — surface reconciliation failure to admin.
