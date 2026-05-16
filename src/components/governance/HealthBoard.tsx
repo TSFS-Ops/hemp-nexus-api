@@ -24,6 +24,25 @@ interface RiskItem {
   status: string;
   created_at: string;
   resolved_at: string | null;
+  metadata: Record<string, any> | null;
+}
+
+/**
+ * Batch U SEC-012 — demo/test risk items must not inflate production
+ * incident counts. `admin_risk_items` has no dedicated is_demo column,
+ * so we infer from `metadata` flags written by fixture seeders /
+ * test-mode tooling. Items flagged demo/test are still listed in the
+ * ledger but excluded from the open-incident counter.
+ */
+function isDemoRiskItem(r: { metadata: Record<string, any> | null }): boolean {
+  const m = r.metadata ?? {};
+  return (
+    m.is_demo === true ||
+    m.demo === true ||
+    m.demo_fixture === true ||
+    m.test_mode === true ||
+    m.fixture === true
+  );
 }
 
 interface Heartbeat {
@@ -163,7 +182,7 @@ export function HealthBoard() {
       queryFn: async () => {
         const { data, error, count } = await supabase
           .from("admin_risk_items")
-          .select("id, title, description, severity, status, created_at, resolved_at", { count: "exact" })
+          .select("id, title, description, severity, status, created_at, resolved_at, metadata", { count: "exact" })
           .order("created_at", { ascending: false })
           .limit(INCIDENT_LIMIT);
         if (error) throw error;
@@ -239,7 +258,11 @@ export function HealthBoard() {
     "monitoring",
     "escalated",
   ]);
-  const openIncidentList = incidents.filter(i => OPEN_RISK_STATUSES.has(i.status));
+  // Batch U SEC-012 — exclude demo/test rows from the open-incident counter.
+  const openIncidentList = incidents.filter(
+    (i) => OPEN_RISK_STATUSES.has(i.status) && !isDemoRiskItem(i),
+  );
+  const demoIncidentCount = incidents.filter(isDemoRiskItem).length;
   const openIncidents = openIncidentList.length;
   const lastBeat = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : new Date().toISOString();
   const noRecipient = noRecipientCount ?? 0;

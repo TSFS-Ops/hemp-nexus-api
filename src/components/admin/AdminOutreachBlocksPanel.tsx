@@ -59,7 +59,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2, RefreshCw, Download } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
+import { auditedDownloadCSV, timestampedFilename } from "@/lib/download-utils";
+import { toast } from "sonner";
 
 // Canonical actions — must match the three Batch E catalogue entries.
 export const OUTREACH_BLOCKED_ACTIONS = [
@@ -478,7 +479,7 @@ export function AdminOutreachBlocksPanel() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
+          onClick={async () => {
             const headers = [
               "Created At",
               "Reason",
@@ -497,11 +498,17 @@ export function AdminOutreachBlocksPanel() {
               r.entity_id ?? "",
               r.surface ?? "",
             ]);
-            downloadCSV(
-              headers,
-              csvRows,
-              timestampedFilename("izenzo-outreach-blocks", "csv"),
-            );
+            // Batch U AUD-018: audited CSV — audit row written before bytes leave.
+            const result = await auditedDownloadCSV(headers, csvRows, {
+              reportName: "outreach-blocks",
+              filename: timestampedFilename("izenzo-outreach-blocks", "csv"),
+              target_type: "outreach_blocks",
+              sensitive: true,
+              filters: { demo_excluded: true },
+            });
+            if (result.aal_required) {
+              toast.error("MFA required to export outreach blocks.");
+            }
           }}
           disabled={rows.length === 0 || query.isFetching}
         >

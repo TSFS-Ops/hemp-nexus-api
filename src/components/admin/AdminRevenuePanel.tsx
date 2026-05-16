@@ -292,6 +292,16 @@ export function AdminRevenuePanel() {
   const { data, isLoading, isFetching, refetch, isError, error, dataUpdatedAt } = useQuery({
     queryKey: ["admin-revenue", timeWindow],
     queryFn: async () => {
+      // Batch U SEC-012 — exclude demo orgs from revenue totals. Fixture
+      // seeders flag organizations.is_demo=true; production financial
+      // counters must never include them.
+      const { data: demoOrgRows, error: demoErr } = await supabase
+        .from("organizations")
+        .select("id")
+        .eq("is_demo", true);
+      if (demoErr) throw demoErr;
+      const demoOrgIds = new Set<string>((demoOrgRows ?? []).map((r: any) => r.id as string));
+
       // ── 1) Canonical settled revenue from audit_logs ─────────────────────
       let auditQ = supabase
         .from("audit_logs")
@@ -325,16 +335,27 @@ export function AdminRevenuePanel() {
       const { data: initRows, error: initErr } = await initQ;
       if (initErr) throw initErr;
 
+      // ── 3b) Drop any rows tied to a demo org (Batch U SEC-012). ─────────
+      const notDemo = (row: { org_id: string | null; entity_id?: string | null }) => {
+        const id = row.org_id ?? row.entity_id ?? null;
+        return !id || !demoOrgIds.has(id);
+      };
+      const auditRowsClean = ((auditRows ?? []) as AuditLogRow[]).filter(notDemo);
+      const ledgerRowsClean = ((ledgerRows ?? []) as LedgerRow[]).filter(
+        (r) => !r.org_id || !demoOrgIds.has(r.org_id),
+      );
+      const initRowsClean = ((initRows ?? []) as AuditLogRow[]).filter(notDemo);
+
       // ── 4) Resolve org names in one round-trip ───────────────────────────
       const orgIds = new Set<string>();
-      for (const r of (auditRows ?? []) as AuditLogRow[]) {
+      for (const r of auditRowsClean) {
         const id = r.org_id ?? r.entity_id;
         if (id) orgIds.add(id);
       }
-      for (const r of (ledgerRows ?? []) as LedgerRow[]) {
+      for (const r of ledgerRowsClean) {
         if (r.org_id) orgIds.add(r.org_id);
       }
-      for (const r of (initRows ?? []) as AuditLogRow[]) {
+      for (const r of initRowsClean) {
         const id = r.org_id ?? r.entity_id;
         if (id) orgIds.add(id);
       }
@@ -358,13 +379,13 @@ export function AdminRevenuePanel() {
       // ── 5) Normalise + dedup. Audit-log rows always win on payment_reference.
       const byRef = new Map<string, PurchaseEnriched>();
       const noRef: PurchaseEnriched[] = [];
-      for (const r of (auditRows ?? []) as AuditLogRow[]) {
+      for (const r of auditRowsClean) {
         const p = purchaseFromAuditLog(r, orgNameById);
         if (!p) continue;
         if (p.payment_reference) byRef.set(p.payment_reference, p);
         else noRef.push(p);
       }
-      for (const r of (ledgerRows ?? []) as LedgerRow[]) {
+      for (const r of ledgerRowsClean) {
         const p = purchaseFromLedger(r, orgNameById);
         if (!p) continue;
         if (p.payment_reference) {
@@ -383,7 +404,7 @@ export function AdminRevenuePanel() {
         purchases.map((p) => p.payment_reference).filter((x): x is string => !!x),
       );
       const pending: PendingSettlement[] = [];
-      for (const r of (initRows ?? []) as AuditLogRow[]) {
+      for (const r of initRowsClean) {
         const meta = r.metadata ?? {};
         const ref = str(meta.reference) ?? str(meta.payment_reference);
         if (!ref || settledRefs.has(ref)) continue;
@@ -404,9 +425,10 @@ export function AdminRevenuePanel() {
       return {
         rows: purchases,
         pending,
-        auditCount: (auditRows ?? []).length,
-        ledgerCount: (ledgerRows ?? []).length,
-        initCount: (initRows ?? []).length,
+        auditCount: auditRowsClean.length,
+        ledgerCount: ledgerRowsClean.length,
+        initCount: initRowsClean.length,
+        demoExcluded: demoOrgIds.size,
       };
     },
     staleTime: 30_000,
@@ -540,7 +562,9 @@ export function AdminRevenuePanel() {
       target_type: "audit_logs",
       sensitive: true,
       rowCount: rows.length,
-      filters: { time_window: timeWindow, granularity, selected_org: selectedOrg },
+      // Batch U SEC-012: explicit demo_excluded=true so an auditor inspecting
+      // the file preamble can confirm the totals are production-only.
+      filters: { time_window: timeWindow, granularity, selected_org: selectedOrg, demo_excluded: true },
     });
     if (result.aal_required) {
       toast.error("Multi-factor authentication required for this export.", {

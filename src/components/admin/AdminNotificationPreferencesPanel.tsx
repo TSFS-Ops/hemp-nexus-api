@@ -29,7 +29,7 @@ import { Download, Loader2, RefreshCw, Search, Shield } from "lucide-react";
 import { EmptyState } from "@/components/ui/error-state";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
+import { auditedDownloadCSV, timestampedFilename } from "@/lib/download-utils";
 import { recordExportAudit } from "@/lib/export-audit";
 
 type PrefsRow = {
@@ -154,7 +154,16 @@ export function AdminNotificationPreferencesPanel() {
         disabledChannels(r.preferences).join("|"),
         JSON.stringify(r.preferences ?? {}),
       ]);
-      downloadCSV(headers, data, timestampedFilename("notification-preferences", "csv"));
+      // Batch U AUD-018: route through auditedDownloadCSV so prebuild guard
+      // cannot regress. AAL2 already enforced via recordExportAudit above;
+      // sensitive=false here avoids a duplicate audit row.
+      await auditedDownloadCSV(headers, data, {
+        reportName: "notification-preferences",
+        filename: timestampedFilename("notification-preferences", "csv"),
+        target_type: "notification_preferences",
+        sensitive: false,
+        filters: { search, org_id: orgIdFilter, suppression, channel, demo_excluded: true },
+      });
       toast.success(`Exported ${rows.length} row${rows.length === 1 ? "" : "s"}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
