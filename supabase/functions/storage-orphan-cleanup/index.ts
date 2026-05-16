@@ -3,14 +3,70 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse } from "../_shared/errors.ts";
 
 /**
- * Storage Orphan Cleanup
- * 
- * Scans storage buckets for files that have no corresponding database record
- * in match_documents or governance_docs tables. Files older than 24 hours
- * without a DB reference are considered orphans and are deleted.
- * 
- * Designed to run as a scheduled cron job (e.g., daily at 03:00 UTC).
+ * Storage Orphan Cleanup — Batch E hardened
+ *
+ * Scans known storage buckets for files that have no corresponding DB
+ * record. Files older than 24 h without a DB reference are considered
+ * orphans and are deleted.
+ *
+ * Bucket → reconciliation source map:
+ *   match-documents          → match_documents.storage_path
+ *                              + governance_documents.document_path
+ *                              (governance uploads land in the same bucket
+ *                              under <org_id>/<match_id>/gov_*.<ext>)
+ *   match-challenge-evidence → match_challenge_evidence.storage_path
+ *   kyc-documents            → kyc_documents.storage_path
+ *
+ * Designed to run as a scheduled cron job (e.g. daily at 03:00 UTC) AND
+ * to be triggered ad-hoc with a shorter `cutoff_minutes` to pick up
+ * session-expiry orphans queued via `enqueue-storage-cleanup`.
  */
+
+type ReconcileFn = (
+  admin: ReturnType<typeof createClient>,
+  storagePath: string,
+) => Promise<boolean>;
+
+interface BucketCfg {
+  bucket: string;
+  reconcilers: ReconcileFn[];
+}
+
+async function existsIn(
+  admin: ReturnType<typeof createClient>,
+  table: string,
+  column: string,
+  value: string,
+): Promise<boolean> {
+  const { count } = await admin
+    .from(table)
+    .select("id", { count: "exact", head: true })
+    .eq(column, value);
+  return (count ?? 0) > 0;
+}
+
+const BUCKETS: BucketCfg[] = [
+  {
+    bucket: "match-documents",
+    reconcilers: [
+      (a, p) => existsIn(a, "match_documents", "storage_path", p),
+      (a, p) => existsIn(a, "governance_documents", "document_path", p),
+    ],
+  },
+  {
+    bucket: "match-challenge-evidence",
+    reconcilers: [
+      (a, p) => existsIn(a, "match_challenge_evidence", "storage_path", p),
+    ],
+  },
+  {
+    bucket: "kyc-documents",
+    reconcilers: [
+      (a, p) => existsIn(a, "kyc_documents", "storage_path", p),
+    ],
+  },
+];
+
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
@@ -21,7 +77,6 @@ Deno.serve(async (req) => {
     const corsResponse = handleCors(req, allowedOrigins);
     if (corsResponse) return corsResponse;
 
-    // ── Auth: internal cron key required ──
     const cronKey = Deno.env.get("INTERNAL_CRON_KEY");
     const providedKey = req.headers.get("x-internal-key");
     if (!cronKey || providedKey !== cronKey) {
@@ -31,104 +86,85 @@ Deno.serve(async (req) => {
       });
     }
 
+    let cutoffMinutes = 24 * 60;
+    try {
+      if (req.method === "POST") {
+        const body = await req.json().catch(() => ({}));
+        if (typeof body?.cutoff_minutes === "number" && body.cutoff_minutes >= 1) {
+          cutoffMinutes = Math.min(body.cutoff_minutes, 24 * 60);
+        }
+      }
+    } catch { /* ignore */ }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    const buckets = ["match-documents", "governance-docs", "kyc-documents"];
-    const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+    const cutoffDate = new Date(Date.now() - cutoffMinutes * 60 * 1000);
     let totalOrphans = 0;
     let totalDeleted = 0;
     const errors: string[] = [];
 
-    for (const bucket of buckets) {
-      try {
-        // List all files in the bucket (top-level folders = org IDs)
-        const { data: folders, error: listError } = await adminClient.storage
-          .from(bucket)
-          .list("", { limit: 1000 });
-
-        if (listError) {
-          errors.push(`${bucket}: ${listError.message}`);
-          continue;
+    // Recursive lister — caps each directory at 1000 entries to avoid
+    // pathological scans.
+    async function listAllFiles(bucket: string, prefix: string): Promise<{ path: string; created_at: string }[]> {
+      const { data, error } = await adminClient.storage.from(bucket).list(prefix, { limit: 1000 });
+      if (error || !data) {
+        if (error) errors.push(`${bucket}:list:${prefix}: ${error.message}`);
+        return [];
+      }
+      const out: { path: string; created_at: string }[] = [];
+      for (const entry of data) {
+        const subPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        // A storage "folder" placeholder has no id; a file has id + created_at.
+        if (entry.id && entry.created_at) {
+          out.push({ path: subPath, created_at: entry.created_at });
+        } else {
+          // It's a folder — recurse one level deeper.
+          const nested = await listAllFiles(bucket, subPath);
+          out.push(...nested);
         }
+      }
+      return out;
+    }
 
-        if (!folders || folders.length === 0) continue;
+    for (const cfg of BUCKETS) {
+      try {
+        // List top-level entries then recurse so nested paths like
+        // <org>/<match>/poi/<doc>/<file> are reachable.
+        const files = await listAllFiles(cfg.bucket, "");
+        for (const file of files) {
+          if (new Date(file.created_at) > cutoffDate) continue;
 
-        for (const folder of folders) {
-          if (!folder.id) continue; // skip if not a real folder
+          let hasRecord = false;
+          for (const fn of cfg.reconcilers) {
+            if (await fn(adminClient, file.path)) { hasRecord = true; break; }
+          }
+          if (hasRecord) continue;
 
-          // List files inside each org folder
-          const { data: files, error: filesError } = await adminClient.storage
-            .from(bucket)
-            .list(folder.name, { limit: 1000 });
+          totalOrphans++;
 
-          if (filesError || !files) continue;
+          const { count: queueCount } = await adminClient
+            .from("storage_deletion_queue")
+            .select("id", { count: "exact", head: true })
+            .eq("bucket_id", cfg.bucket)
+            .eq("file_path", file.path);
+          if ((queueCount ?? 0) > 0) continue;
 
-          for (const file of files) {
-            if (!file.id || !file.created_at) continue;
-
-            const fileCreated = new Date(file.created_at);
-            if (fileCreated > cutoffDate) continue; // Too recent, skip
-
-            const storagePath = `${folder.name}/${file.name}`;
-
-            // Check if this file has a corresponding DB record
-            let hasRecord = false;
-
-            if (bucket === "match-documents") {
-              const { count } = await adminClient
-                .from("match_documents")
-                .select("id", { count: "exact", head: true })
-                .eq("storage_path", storagePath);
-              hasRecord = (count ?? 0) > 0;
-            } else if (bucket === "governance-docs") {
-              const { count } = await adminClient
-                .from("governance_docs")
-                .select("id", { count: "exact", head: true })
-                .eq("storage_path", storagePath);
-              hasRecord = (count ?? 0) > 0;
-            } else if (bucket === "kyc-documents") {
-              const { count } = await adminClient
-                .from("kyc_documents")
-                .select("id", { count: "exact", head: true })
-                .eq("storage_path", storagePath);
-              hasRecord = (count ?? 0) > 0;
-            }
-
-            if (!hasRecord) {
-              totalOrphans++;
-
-              // Also check the storage_deletion_queue to avoid double-processing
-              const { count: queueCount } = await adminClient
-                .from("storage_deletion_queue")
-                .select("id", { count: "exact", head: true })
-                .eq("bucket_id", bucket)
-                .eq("file_path", storagePath);
-
-              if ((queueCount ?? 0) > 0) continue; // Already queued for deletion
-
-              // Delete the orphan file
-              const { error: deleteError } = await adminClient.storage
-                .from(bucket)
-                .remove([storagePath]);
-
-              if (deleteError) {
-                errors.push(`Delete failed: ${bucket}/${storagePath}: ${deleteError.message}`);
-              } else {
-                totalDeleted++;
-              }
-            }
+          const { error: deleteError } = await adminClient.storage.from(cfg.bucket).remove([file.path]);
+          if (deleteError) {
+            errors.push(`Delete failed: ${cfg.bucket}/${file.path}: ${deleteError.message}`);
+          } else {
+            totalDeleted++;
           }
         }
       } catch (bucketError) {
-        errors.push(`${bucket}: ${(bucketError as Error).message}`);
+        errors.push(`${cfg.bucket}: ${(bucketError as Error).message}`);
       }
     }
 
-    // Log the cleanup run
     await adminClient.from("admin_audit_logs").insert({
-      admin_user_id: "00000000-0000-0000-0000-000000000000", // system actor
+      admin_user_id: "00000000-0000-0000-0000-000000000000",
       action: "storage.orphan_cleanup",
       target_type: "system",
       details: {
@@ -136,8 +172,9 @@ Deno.serve(async (req) => {
         orphans_found: totalOrphans,
         files_deleted: totalDeleted,
         errors: errors.length > 0 ? errors : undefined,
-        buckets_scanned: buckets,
+        buckets_scanned: BUCKETS.map((b) => b.bucket),
         cutoff_date: cutoffDate.toISOString(),
+        cutoff_minutes: cutoffMinutes,
       },
     });
 
@@ -147,10 +184,9 @@ Deno.serve(async (req) => {
       files_deleted: totalDeleted,
       errors: errors.length > 0 ? errors : undefined,
       request_id: requestId,
-    }), {
-      status: 200,
-      headers: { ...headers, "Content-Type": "application/json" },
-    });
+      buckets_scanned: BUCKETS.map((b) => b.bucket),
+      cutoff_minutes: cutoffMinutes,
+    }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
   } catch (error) {
     console.error(`[${requestId}] Orphan cleanup error:`, error);
     return errorResponse(error as Error, requestId, headers);
