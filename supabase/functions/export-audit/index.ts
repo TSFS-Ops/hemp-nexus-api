@@ -22,7 +22,7 @@ const corsHeaders = {
 };
 
 const BodySchema = z.object({
-  target_type: z.enum(["audit_logs", "admin_audit_logs", "outreach_blocks", "matches", "notification_preferences", "other"]),
+  target_type: z.enum(["audit_logs", "admin_audit_logs", "outreach_blocks", "matches", "notification_preferences", "programmes", "programme_participants", "programme_fund_flows", "other"]),
   format: z.enum(["csv", "json"]).default("csv"),
   row_count: z.number().int().nonnegative().max(1_000_000),
   filters: z.record(z.unknown()).optional().default({}),
