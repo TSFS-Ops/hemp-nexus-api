@@ -749,9 +749,14 @@ async function handleWebhook(req: Request): Promise<Response> {
       signature,
       fnName: "token-purchase/webhook",
       requestId: req.headers.get("x-request-id") ?? null,
+      // Batch C — Fix 2: Paystack treats any non-2xx as failure and will
+      // keep retrying. A known-safe duplicate delivery is not a failure,
+      // so we return 200 with `replayed/idempotent: true` in the body.
+      // Monitoring continues to count replays via the WEBHOOK_REPLAY code.
+      replayResponseStatus: 200,
     });
     if (!replay.ok) {
-      console.warn("[Webhook] Rejected replay/duplicate delivery");
+      console.warn("[Webhook] Acknowledged replay/duplicate delivery (200 idempotent)");
       return replay.response;
     }
 
