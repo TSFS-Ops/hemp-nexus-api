@@ -9,6 +9,7 @@ import {
 } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "@/components/desk/billing/CheckoutErrorNotice";
 import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
+import { PendingPurchaseNotice } from "@/components/desk/billing/PendingPurchaseNotice";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 
 interface LedgerEntry {
@@ -69,6 +70,7 @@ export function TokenBalanceTab() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
   // Per-pack initiation error — surfaced inline beside the failing
   // Purchase button (with Retry) instead of a transient toast.
   const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
@@ -85,6 +87,7 @@ export function TokenBalanceTab() {
       setLoading(false);
       return;
     }
+    setOrgId(profile.org_id);
     const [walletRes, ledgerRes] = await Promise.all([
       // Read from `token_balances` (canonical wallet mutated by the
       // atomic credit/burn RPCs), not the stale `token_wallets` table.
@@ -208,6 +211,8 @@ export function TokenBalanceTab() {
             <BillingUnavailableNotice message={billingAvailability.message} />
           </div>
         )}
+        {/* Batch C — Fix 4: two-tab pending purchase notice */}
+        <PendingPurchaseNotice orgId={orgId} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {PACKS.map((pack) => {
             const error = packErrors[pack.id];
