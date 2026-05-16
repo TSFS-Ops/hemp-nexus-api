@@ -304,7 +304,30 @@ export function HealthBoard() {
   return (
     <>
       {/* Summary strip — every tile is derived from real rows. */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-muted border border-border mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-px bg-muted border border-border mb-10">
+        <div className="bg-card p-5" data-testid="healthboard-closeout-tile" data-closeout-error={closeoutError ? "true" : "false"}>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Closeout Drift</p>
+          {closeoutError ? (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-rose-700 tracking-tight">error</p>
+              <p className="font-mono text-[10px] mt-0.5 text-rose-700">query failed · cannot prove closeout</p>
+            </>
+          ) : !closeout ? (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-slate-500 tracking-tight">—</p>
+              <p className="font-mono text-[10px] mt-0.5 text-slate-500">unknown · degraded</p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{closeout.critical}</p>
+              <p className={`font-mono text-[10px] mt-0.5 ${closeout.critical > 0 ? "text-rose-700" : "text-[hsl(var(--emerald))]"}`}>
+                {closeout.critical > 0
+                  ? `${closeout.balance_drift}b · ${closeout.burn_poi_drift}bp · ${closeout.wad_poi_drift}wp · ${closeout.missing_side_effect}sf`
+                  : "no critical drift"}
+              </p>
+            </>
+          )}
+        </div>
         <div className="bg-card p-5" data-testid="healthboard-monitored-tile">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Jobs Healthy</p>
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">
