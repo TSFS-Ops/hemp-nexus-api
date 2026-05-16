@@ -87,7 +87,7 @@ export function AdminRiskAlarmsPanel() {
     [windowHours],
   );
 
-  const { data: alarms = [], isFetching, isError, error, refetch } = useQuery<AlarmRow[]>({
+  const { data: alarms = [], isFetching, isError, error, refetch, dataUpdatedAt } = useQuery<AlarmRow[]>({
     queryKey: ["admin-reconciliation-alarms", since],
     queryFn: async () => {
       const { data, error: rpcError } = await supabase.rpc("admin_get_reconciliation_alarms", {
@@ -204,14 +204,26 @@ export function AdminRiskAlarmsPanel() {
               </SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-5 flex items-center justify-between gap-3">
+          <div className="md:col-span-5 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
               Showing <span className="font-medium text-foreground">{filtered.length}</span> of {alarms.length} alarms · auto-refreshes every 60s
             </p>
-            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-3">
+              {/* Batch T — UI-012: visible last-updated chip. */}
+              <p
+                className="font-mono text-[10px] tracking-wider uppercase text-muted-foreground"
+                data-testid="risk-alarms-last-updated"
+              >
+                Last updated{" "}
+                {dataUpdatedAt
+                  ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })
+                  : "—"}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+                <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

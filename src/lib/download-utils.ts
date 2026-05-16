@@ -144,6 +144,126 @@ export function downloadCSV(
 }
 
 /**
+ * Build the standard CSV preamble that every audited export prepends.
+ * Lines are prefixed with `#` so spreadsheet tools can skip them, and
+ * carry the same provenance information that gets written to
+ * `audit_logs` via `recordExportAudit`. Operators (and auditors) must
+ * be able to glance at the file and see when it was generated, what
+ * filters were applied, and how many rows it contains.
+ */
+export function buildExportPreamble(opts: {
+  reportName: string;
+  rowCount: number;
+  filters?: Record<string, unknown>;
+  generatedAt?: string;
+}): string[] {
+  return [
+    `# report: ${opts.reportName}`,
+    `# generated_at: ${opts.generatedAt ?? new Date().toISOString()}`,
+    `# row_count: ${opts.rowCount}`,
+    `# filters: ${opts.filters ? JSON.stringify(opts.filters) : "{}"}`,
+  ];
+}
+
+/**
+ * Batch T — AUD-017: audited CSV download.
+ *
+ * Single entry point every sensitive CSV export in the app must use.
+ *  1. Calls `recordExportAudit` BEFORE any bytes leave the browser, so the
+ *     server-side `audit_logs` row is written with trusted actor + IP/UA.
+ *  2. If the export is declared `sensitive` and the audit edge function
+ *     responds with `aal_required: true`, the download is blocked and the
+ *     caller surfaces an MFA-required toast. Non-sensitive exports
+ *     proceed even when the audit write itself errored (best-effort).
+ *  3. Prepends a `# generated_at` / `# report` / `# filters` preamble so
+ *     a downloaded file can never be mistaken for live data.
+ */
+export interface AuditedExportOptions {
+  reportName: string;
+  filename: string;
+  target_type:
+    | "audit_logs"
+    | "admin_audit_logs"
+    | "outreach_blocks"
+    | "matches"
+    | "notification_preferences"
+    | "programmes"
+    | "programme_participants"
+    | "programme_fund_flows"
+    | "other";
+  sensitive?: boolean;
+  filters?: Record<string, unknown>;
+  reason?: string;
+}
+
+export async function auditedDownloadCSV(
+  headers: string[],
+  rows: (string | number | null | undefined)[][],
+  options: AuditedExportOptions,
+): Promise<{ ok: boolean; aal_required?: boolean; error?: string }> {
+  // Lazy-import to keep this module free of supabase-client cycles in tests
+  // that import download-utils in isolation.
+  const { recordExportAudit } = await import("@/lib/export-audit");
+  const audit = await recordExportAudit({
+    target_type: options.target_type,
+    format: "csv",
+    row_count: rows.length,
+    filters: options.filters,
+    sensitive: !!options.sensitive,
+    reason: options.reason,
+  });
+
+  if (options.sensitive && audit.aal_required) {
+    return { ok: false, aal_required: true };
+  }
+
+  const preamble = buildExportPreamble({
+    reportName: options.reportName,
+    rowCount: rows.length,
+    filters: options.filters,
+  });
+  const csv = [...preamble, generateCSV(headers, rows)].join("\n");
+  downloadFile(csv, options.filename, "text/csv;charset=utf-8;");
+  return { ok: true };
+}
+
+/**
+ * Audited variant for callers that have already serialised their CSV
+ * body (multi-section reports, BOM-prefixed exports, custom delimiters).
+ * Same audit + AAL2 gate; the preamble is prepended to the supplied
+ * body string.
+ */
+export async function auditedDownloadCSVRaw(
+  body: string,
+  options: AuditedExportOptions & { rowCount: number; bom?: boolean },
+): Promise<{ ok: boolean; aal_required?: boolean; error?: string }> {
+  const { recordExportAudit } = await import("@/lib/export-audit");
+  const audit = await recordExportAudit({
+    target_type: options.target_type,
+    format: "csv",
+    row_count: options.rowCount,
+    filters: options.filters,
+    sensitive: !!options.sensitive,
+    reason: options.reason,
+  });
+  if (options.sensitive && audit.aal_required) {
+    return { ok: false, aal_required: true };
+  }
+  const preamble = buildExportPreamble({
+    reportName: options.reportName,
+    rowCount: options.rowCount,
+    filters: options.filters,
+  });
+  const out = [...preamble, body].join("\n");
+  downloadFile(
+    (options.bom ? "\uFEFF" : "") + out,
+    options.filename,
+    "text/csv;charset=utf-8;",
+  );
+  return { ok: true };
+}
+
+/**
  * Download data as JSON file
  */
 export function downloadJSON(data: unknown, filename: string): void {

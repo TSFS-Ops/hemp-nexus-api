@@ -22,7 +22,7 @@ import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { downloadCSV } from "@/lib/download-utils";
+import { downloadCSV, auditedDownloadCSV } from "@/lib/download-utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useUrlListParams } from "@/hooks/use-url-search-params";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";

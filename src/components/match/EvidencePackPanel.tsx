@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import * as MatchState from "@/lib/match-state";
 import { downloadFile } from "@/lib/download-utils";
+import { recordExportAudit } from "@/lib/export-audit";
 
 interface EvidencePackPanelProps {
   matchId: string;
@@ -208,7 +209,31 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
         const mime = variant === "json" ? "application/json" : "text/csv";
         const stamp = new Date().toISOString().replace(/[:.]/g, "-").replace(/Z$/, "Z");
         const filename = `audit-trail-${matchId}-${stamp}.${ext}`;
-        downloadFile(body, filename, mime);
+
+        // Batch T — AUD-017: standalone audit-trail export is sensitive
+        // (it leaks the per-match chronological action log). Audit BEFORE
+        // any bytes leave the browser, and block on AAL2 if required.
+        const auditResult = await recordExportAudit({
+          target_type: "audit_logs",
+          format: variant,
+          row_count: body.split(/\r?\n/).filter(Boolean).length,
+          sensitive: true,
+          filters: { match_id: matchId },
+          reason: "evidence-pack standalone audit trail",
+        });
+        if (auditResult.aal_required) {
+          toast.error("Multi-factor authentication required for this export.", {
+            description: "Please re-authenticate with MFA to download audit trails.",
+            duration: 7000,
+          });
+          return;
+        }
+
+        // Prepend a provenance preamble for CSV (JSON keeps its own shape).
+        const finalBody = variant === "csv"
+          ? `# report: evidence-pack-audit-trail\n# generated_at: ${new Date().toISOString()}\n# match_id: ${matchId}\n${body}`
+          : body;
+        downloadFile(finalBody, filename, mime);
         toast.success("Audit trail exported", {
           description: `Saved as ${filename} — standalone audit log for compliance review.`,
           duration: 7000,

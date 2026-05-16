@@ -75,6 +75,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { format, formatDistanceToNow, subDays } from "date-fns";
+import { auditedDownloadCSVRaw } from "@/lib/download-utils";
+import { toast } from "sonner";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -287,7 +289,7 @@ export function AdminRevenuePanel() {
     return subDays(new Date(), w.days).toISOString();
   }, [timeWindow]);
 
-  const { data, isLoading, isFetching, refetch, isError, error } = useQuery({
+  const { data, isLoading, isFetching, refetch, isError, error, dataUpdatedAt } = useQuery({
     queryKey: ["admin-revenue", timeWindow],
     queryFn: async () => {
       // ── 1) Canonical settled revenue from audit_logs ─────────────────────
@@ -491,7 +493,11 @@ export function AdminRevenuePanel() {
 
   // ─── CSV export ───────────────────────────────────────────────────────────
 
-  const exportCsv = () => {
+  // Batch T — AUD-017: audited CSV export. Goes through the central
+  // audited helper which writes an `export.csv` row to `audit_logs`
+  // BEFORE any bytes leave the browser and blocks the download if AAL2
+  // is required for sensitive exports.
+  const exportCsv = async () => {
     const header = [
       "created_at",
       "org_id",
@@ -528,15 +534,20 @@ export function AdminRevenuePanel() {
       ];
       lines.push(cells.join(","));
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `revenue-${timeWindow}-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const result = await auditedDownloadCSVRaw(lines.join("\n"), {
+      reportName: "admin-revenue",
+      filename: `revenue-${timeWindow}-${new Date().toISOString().slice(0, 10)}.csv`,
+      target_type: "audit_logs",
+      sensitive: true,
+      rowCount: rows.length,
+      filters: { time_window: timeWindow, granularity, selected_org: selectedOrg },
+    });
+    if (result.aal_required) {
+      toast.error("Multi-factor authentication required for this export.", {
+        description: "Please re-authenticate with MFA to download the revenue report.",
+        duration: 7000,
+      });
+    }
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -612,6 +623,18 @@ export function AdminRevenuePanel() {
               </Button>
             </div>
           </div>
+
+          {/* Batch T — UI-012: visible freshness chip so a stale tab is
+              obviously stale, not silently presented as live. */}
+          <p
+            className="font-mono text-[10px] tracking-wider uppercase text-muted-foreground"
+            data-testid="revenue-last-updated"
+          >
+            Last updated{" "}
+            {dataUpdatedAt
+              ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })
+              : "—"}
+          </p>
 
           {/* Truncation disclosure — three source queries each cap at 2000 rows.
               If any returned exactly 2000 rows the totals shown above understate
