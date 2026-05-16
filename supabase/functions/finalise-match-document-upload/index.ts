@@ -196,6 +196,25 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError || !doc) {
+      // Batch L DOC-005: duplicate-document DB guard
+      // idx_match_documents_dedup_active = UNIQUE(match_id, uploader_org_id, sha256_hash)
+      // WHERE status NOT IN ('deleted','archived')
+      if (insertError?.code === "23505") {
+        const cleanupResult = await cleanup("duplicate_document_blocked");
+        await writeAudit("db_insert", "failure", {
+          db_insert_result: "duplicate",
+          error_code: "DUPLICATE_DOCUMENT",
+          error_message: "An identical document is already attached to this match by your organisation.",
+          sha256_hash: body.sha256_hash,
+          constraint: insertError?.message ?? null,
+          ...cleanupResult,
+        });
+        throw new ApiException(
+          "DUPLICATE_DOCUMENT",
+          "This exact file is already attached to this match by your organisation. Remove the existing copy first if you need to re-upload.",
+          409,
+        );
+      }
       const cleanupResult = await cleanup("match_documents_insert_failed");
       await writeAudit("db_insert", "failure", { db_insert_result: "failure", error_code: insertError?.code ?? "DB_INSERT_FAILED", error_message: clip(insertError?.message ?? "DB insert failed"), storage_object_exists: true, ...cleanupResult });
       throw new ApiException("DB_INSERT_FAILED", "The file was uploaded but could not be attached to this match. The stored file was cleaned up or logged for reconciliation.", 500);
