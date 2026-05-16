@@ -22,7 +22,45 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { assertAal2 } from "../_shared/aal.ts";
+import { readAal } from "../_shared/aal.ts";
+
+/**
+ * Batch J Required Fix 2 — AAL2 gate.
+ * Returns null on pass; an `err()` Response on fail. Best-effort audit
+ * is written when failing so denials are visible to compliance.
+ */
+async function requireAal2(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  authHeader: string | null,
+  callerUserId: string,
+  action: string,
+  context: Record<string, unknown>,
+): Promise<Response | null> {
+  const aal = readAal(authHeader);
+  if (aal === "aal2") return null;
+  try {
+    await admin.from("admin_audit_logs").insert({
+      admin_user_id: callerUserId,
+      action: "match_challenge.mfa_required_denied",
+      target_type: "match_challenge",
+      target_id: (context.challenge_id as string | null) ?? null,
+      details: {
+        attempted_action: action,
+        observed_aal: aal,
+        ...context,
+      },
+    });
+  } catch (e) {
+    console.error("[match-challenges] aal2 denial audit failed:", e);
+  }
+  return err(
+    "MFA_REQUIRED",
+    "This action requires multi-factor authentication. Enrol an authenticator app and complete an MFA challenge before retrying.",
+    403,
+    { observed_aal: aal },
+  );
+}
 
 /**
  * Batch J Required Fix 1 — edge-level admin_audit_logs writer.
@@ -330,6 +368,16 @@ Deno.serve(async (req) => {
           }
           return err("DB_ERROR", insErr.message, 400);
         }
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.raised",
+          challengeId: row.id,
+          matchId: p.match_id,
+          actorUserId: userId,
+          actorOrgId: orgId,
+          afterStatus: "open",
+          requestId,
+          extra: { subject_code: p.subject_code, raised_by_role: p.raised_by_role },
+        });
         return json({ challenge: row }, 201);
       }
 
@@ -366,6 +414,15 @@ Deno.serve(async (req) => {
           .select("*")
           .single();
         if (insErr) return err("DB_ERROR", insErr.message, 400);
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.commented",
+          challengeId: p.challenge_id,
+          matchId: challenge.match_id,
+          actorUserId: userId,
+          actorOrgId: p.author_org_id ?? orgId,
+          requestId,
+          extra: { author_role: p.author_role, comment_id: row.id, body_length: p.body.length },
+        });
         return json({ comment: row }, 201);
       }
 
@@ -397,6 +454,21 @@ Deno.serve(async (req) => {
           if (!isPlatformAdmin) {
             return err("FORBIDDEN", "Only platform_admin may move a challenge through review/outcome states", 403);
           }
+        }
+
+        // AAL2 enforcement: any platform_admin-driven transition + any
+        // closure (outcome_recorded / closed_no_action) requires MFA.
+        const sensitive =
+          p.to_status === "outcome_recorded" ||
+          p.to_status === "closed_no_action" ||
+          (isPlatformAdmin && p.to_status !== "withdrawn");
+        if (sensitive) {
+          const denial = await requireAal2(admin, authHeader, userId, "match_challenge.transition", {
+            challenge_id: p.challenge_id,
+            match_id: challenge.match_id,
+            to_status: p.to_status,
+          });
+          if (denial) return denial;
         }
 
         // Outcome shape rules (mirrors DB triggers, surfaced as friendly 400s).
@@ -440,6 +512,20 @@ Deno.serve(async (req) => {
         if (!row) {
           return err("CONFLICT", "Challenge state changed concurrently; please reload", 409);
         }
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.transitioned",
+          challengeId: p.challenge_id,
+          matchId: challenge.match_id,
+          actorUserId: userId,
+          actorOrgId: orgId,
+          beforeStatus: challenge.status,
+          afterStatus: p.to_status,
+          requestId,
+          extra: {
+            outcome_code: (update.outcome_code as string | undefined) ?? null,
+            via_platform_admin: isPlatformAdmin,
+          },
+        });
         return json({ challenge: row }, 200);
       }
 
@@ -542,6 +628,22 @@ Deno.serve(async (req) => {
           }).then(() => {}, () => {});
           return err("DB_ERROR", insErr.message, 400);
         }
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.evidence_uploaded",
+          challengeId: p.challenge_id,
+          matchId: challenge.match_id,
+          actorUserId: userId,
+          actorOrgId: callerOrgId,
+          requestId,
+          extra: {
+            evidence_id: row.id,
+            filename: safeName,
+            sha256: computedSha,
+            size_bytes: bytes.length,
+            mime_type: p.mime_type,
+            storage_path: storagePath,
+          },
+        });
         return json({ evidence: row, storage_path: storagePath }, 201);
       }
 
@@ -554,6 +656,16 @@ Deno.serve(async (req) => {
         if (!isPlatformAdmin) {
           return err("FORBIDDEN", "Break-glass is restricted to platform admins", 403);
         }
+        // AAL2 is mandatory on break-glass in addition to the in-RPC
+        // governance checks. Break-glass is the most sensitive override
+        // surface in the system.
+        const denial = await requireAal2(admin, authHeader, userId, "match_challenge.break_glass", {
+          match_id: parsed.data.match_id,
+          reason_category: parsed.data.reason_category ?? null,
+          internal_approval_reference: parsed.data.internal_approval_reference ?? null,
+        });
+        if (denial) return denial;
+
         const regulatorRef = (parsed.data.regulator_reference ?? "").trim();
         const { data, error: rpcErr } = await admin.rpc("platform_admin_break_glass_progress", {
           p_match_id: parsed.data.match_id,
@@ -576,6 +688,21 @@ Deno.serve(async (req) => {
           }
           return err("DB_ERROR", msg, 400);
         }
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.break_glass",
+          challengeId: (data as { id?: string } | null)?.id ?? null,
+          matchId: parsed.data.match_id,
+          actorUserId: userId,
+          actorOrgId: orgId,
+          afterStatus: (data as { status?: string } | null)?.status ?? null,
+          requestId,
+          extra: {
+            reason_category: parsed.data.reason_category ?? null,
+            internal_approval_reference: parsed.data.internal_approval_reference ?? null,
+            regulator_reference: regulatorRef.length === 0 ? null : regulatorRef,
+            reason_length: parsed.data.reason.length,
+          },
+        });
         return json({ challenge: data }, 200);
       }
 

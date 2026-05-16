@@ -117,12 +117,55 @@ function evaluateOutreachGate(
   return null;
 }
 
-/**
- * Batch A — fields the helper needs from the joined match row to derive
- * the organisation-name fallback (matches.buyer_name / seller_name when
- * the corresponding *_org_id is null).
- */
-const MATCH_CONTACT_SELECT = "buyer_name,seller_name,buyer_org_id,seller_org_id";
+// ── Batch J — Supersession + initiator-cancellation gates ──────────────
+//
+// SUPERSEDED_ENGAGEMENT_STATUSES — any incoming respond/decline/dispute
+// against an engagement whose lifecycle has been wound down by a
+// replacement or initiator-side withdrawal MUST be rejected with a
+// stable, typed code (`ENGAGEMENT_SUPERSEDED`). The DB enum carries
+// these terminal-by-supersession values; this constant keeps the edge
+// gate in lockstep with `engagement_status` so a new value cannot drift
+// past us silently.
+const SUPERSEDED_ENGAGEMENT_STATUSES = new Set<string>([
+  "cancelled_email_change",
+  "cancelled_by_initiator",
+]);
+
+function evaluateSupersessionGate(
+  eng: { engagement_status?: string | null; superseded_by_engagement_id?: string | null },
+): { code: "ENGAGEMENT_SUPERSEDED"; message: string } | null {
+  const status = eng.engagement_status ?? "";
+  if (SUPERSEDED_ENGAGEMENT_STATUSES.has(status) || eng.superseded_by_engagement_id) {
+    return {
+      code: "ENGAGEMENT_SUPERSEDED",
+      message:
+        "This engagement has been replaced or cancelled by the initiator. Use the current engagement for this match.",
+    };
+  }
+  return null;
+}
+
+// Cancel-by-initiator: states from which the initiator can still
+// unilaterally withdraw without invoking dispute or refund machinery.
+// Once the counterparty has accepted (POI provisional) or the engagement
+// is already in a terminal/refund-relevant state, cancellation must be
+// refused — the initiator instead has to dispute, settle, or run the
+// admin refund-decision workflow.
+const INITIATOR_CANCELLABLE_STATUSES = new Set<string>([
+  "pending",
+  "notification_sent",
+  "contacted",
+]);
+
+// POI / WaD states from which initiator-cancellation is IRREVERSIBLE-
+// blocked. Computed from match.poi_state when the engagement is linked.
+const IRREVERSIBLE_POI_STATES = new Set<string>([
+  "ELIGIBLE",
+  "PENDING_APPROVAL",
+  "COMPLETION_REQUESTED",
+  "COMPLETED",
+  "SETTLED",
+]);
 
 // ── Process-level safety net ────────────────────────────────────────────────
 // If anything escapes the Deno.serve try/catch (e.g. a stray async without
@@ -2028,6 +2071,18 @@ Deno.serve(async (req) => {
           409,
         );
       }
+      // Batch J F4 — supersession gate: dispute against a replaced /
+      // initiator-cancelled engagement is rejected with a stable code.
+      {
+        const sup = evaluateSupersessionGate(current as Record<string, unknown>);
+        if (sup) {
+          throw new ApiException(sup.code, sup.message, 409, {
+            current_status: current.engagement_status,
+            superseded_by_engagement_id:
+              (current as { superseded_by_engagement_id?: string | null }).superseded_by_engagement_id ?? null,
+          });
+        }
+      }
 
       const { data: adminProfile } = await supabase
         .from("profiles")
@@ -2169,6 +2224,264 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── POST /poi-engagements/:id/cancel-by-initiator — Batch J F3 ──
+    // The initiator (org admin of poi_engagements.org_id) withdraws an
+    // engagement BEFORE the counterparty has accepted. Refund treatment
+    // is intentionally NOT automatic — when credits or commercial state
+    // may be implicated we file an `admin_risk_items` row of kind
+    // `engagement_refund_decision_required` instead. Counterparty is
+    // notified via the existing D4c initiator-alert dispatcher (which
+    // resolves recipients ONLY from the initiating org_id, so we add a
+    // dedicated event id rather than reuse a counterparty channel).
+    if (req.method === "POST" && engagementId && parts[1] === "cancel-by-initiator") {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
+      }
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `POST /poi-engagements/${engagementId}/cancel-by-initiator`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
+      const CancelByInitiatorSchema = z.object({
+        reason: z.string().trim().min(10).max(1000),
+        refund_decision_required: z.boolean().optional().default(false),
+      });
+      const body = await req.json().catch(() => ({}));
+      const parsed = CancelByInitiatorSchema.safeParse(body);
+      if (!parsed.success) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          JSON.stringify(parsed.error.flatten().fieldErrors),
+          400,
+        );
+      }
+
+      const { data: current, error: fetchErr } = await supabase
+        .from("poi_engagements")
+        .select("*")
+        .eq("id", engagementId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+      if (!current) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+
+      // Caller must be an org admin of the initiating org OR platform_admin.
+      const initiatingOrgId = (current as { org_id?: string | null }).org_id ?? null;
+      const isPlatformAdminCaller = authCtx.roles?.includes("platform_admin");
+      let isInitiatorOrgAdmin = false;
+      if (!isPlatformAdminCaller && initiatingOrgId && authCtx.userId) {
+        const { data: orgAdminCheck } = await supabase.rpc("is_org_admin", {
+          _user_id: authCtx.userId,
+          _org_id: initiatingOrgId,
+        });
+        isInitiatorOrgAdmin = !!orgAdminCheck;
+      }
+      if (!isPlatformAdminCaller && !isInitiatorOrgAdmin) {
+        throw new ApiException(
+          "FORBIDDEN",
+          "Only an admin of the initiating organisation (or a platform admin) may cancel this engagement.",
+          403,
+        );
+      }
+
+      // State guards.
+      const currentStatus = (current as { engagement_status?: string }).engagement_status ?? "";
+      if (SUPERSEDED_ENGAGEMENT_STATUSES.has(currentStatus)) {
+        throw new ApiException(
+          "ALREADY_CANCELLED",
+          `This engagement is already in a cancelled/superseded state (${currentStatus}).`,
+          409,
+        );
+      }
+      if (!INITIATOR_CANCELLABLE_STATUSES.has(currentStatus)) {
+        throw new ApiException(
+          "ENGAGEMENT_NOT_CANCELLABLE",
+          `Initiator cancellation is not allowed from engagement_status='${currentStatus}'. Use dispute, settlement, or the admin refund-decision workflow instead.`,
+          409,
+          { current_status: currentStatus },
+        );
+      }
+
+      // Irreversible POI/WaD state check via the linked match.
+      const matchIdLinked = (current as { match_id?: string | null }).match_id ?? null;
+      let poiState: string | null = null;
+      if (matchIdLinked) {
+        const { data: m } = await supabase
+          .from("matches")
+          .select("poi_state, status, state")
+          .eq("id", matchIdLinked)
+          .maybeSingle();
+        poiState = ((m as { poi_state?: string | null } | null)?.poi_state ?? "").toString().toUpperCase() || null;
+        if (poiState && IRREVERSIBLE_POI_STATES.has(poiState)) {
+          throw new ApiException(
+            "POI_STATE_IRREVERSIBLE",
+            `The underlying POI is in irreversible state '${poiState}'. Initiator cancellation is blocked; use dispute or the admin refund workflow.`,
+            409,
+            { poi_state: poiState },
+          );
+        }
+      }
+
+      const { data: actorProfile } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", authCtx.userId)
+        .maybeSingle();
+
+      const nowIso = new Date().toISOString();
+      const { data: updated, error: updErr } = await supabase
+        .from("poi_engagements")
+        .update({
+          engagement_status: "cancelled_by_initiator",
+          operational_state: "cancelled_by_initiator",
+          operational_state_set_by: authCtx.userId,
+          operational_state_set_at: nowIso,
+          cancelled_at: nowIso,
+          cancelled_reason: `initiator_cancellation: ${parsed.data.reason}`,
+          cancelled_by_user_id: authCtx.userId,
+        })
+        .eq("id", engagementId)
+        // Optimistic guard — refuse if state changed since fetch.
+        .eq("engagement_status", currentStatus)
+        .select()
+        .maybeSingle();
+      if (updErr) throw updErr;
+      if (!updated) {
+        throw new ApiException(
+          "CONFLICT",
+          "Engagement state changed concurrently; please reload and retry.",
+          409,
+        );
+      }
+
+      // Mandatory audit row (AUD-006).
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: initiatingOrgId,
+          actor_user_id: authCtx.userId,
+          action: "engagement.cancelled_by_initiator",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            previous_status: currentStatus,
+            reason: parsed.data.reason,
+            refund_decision_required: !!parsed.data.refund_decision_required,
+            poi_state: poiState,
+            match_id: matchIdLinked,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(`[${requestId}] initiator-cancel audit insert failed (non-fatal):`, e);
+      }
+      try {
+        await supabase.from("engagement_outreach_logs").insert({
+          engagement_id: engagementId,
+          actor_type: isPlatformAdminCaller ? "admin" : "initiator",
+          admin_user_id: isPlatformAdminCaller ? authCtx.userId : null,
+          admin_email: actorProfile?.email ?? "unknown",
+          admin_name: actorProfile?.full_name ?? null,
+          previous_status: currentStatus,
+          new_status: "cancelled_by_initiator",
+          entry_type: "cancelled",
+          notes: JSON.stringify({
+            event: "cancelled_by_initiator",
+            reason: parsed.data.reason,
+            refund_decision_required: !!parsed.data.refund_decision_required,
+            request_id: requestId,
+          }),
+        });
+      } catch (logErr) {
+        console.warn(`[${requestId}] initiator-cancel outreach log insert failed (non-fatal):`, logErr);
+      }
+
+      // Optional admin_risk_items row — NO automatic refund, manual decision.
+      let riskItemId: string | null = null;
+      if (parsed.data.refund_decision_required) {
+        try {
+          const { data: risk } = await supabase
+            .from("admin_risk_items")
+            .insert({
+              org_id: initiatingOrgId,
+              kind: "engagement_refund_decision_required",
+              title: "Refund decision required after initiator-cancelled engagement",
+              description:
+                "An engagement was cancelled by the initiator after credits / commercial state may have been impacted. " +
+                "Manual review required — no automatic refund has been issued.",
+              severity: "medium",
+              status: "open",
+              dedup_key: `engagement_refund_decision_required:${engagementId}`,
+              metadata: {
+                engagement_id: engagementId,
+                match_id: matchIdLinked,
+                previous_status: currentStatus,
+                reason: parsed.data.reason,
+                request_id: requestId,
+              },
+            })
+            .select("id")
+            .maybeSingle();
+          riskItemId = (risk as { id?: string } | null)?.id ?? null;
+        } catch (e) {
+          console.warn(`[${requestId}] admin_risk_items insert failed (non-fatal):`, e);
+        }
+      }
+
+      // Best-effort initiator-side operational notice. The counterparty
+      // is informed via the existing notification pipeline keyed off
+      // engagement_status transitions (no PII in metadata).
+      try {
+        const d4cResult = await dispatchD4cInitiatorAlert(supabase, {
+          eventType: "engagement.cancelled_by_initiator",
+          engagementId,
+          actorUserId: authCtx.userId ?? null,
+          sourceFunction: "poi-engagements",
+          dedupeKey: `cancelled_by_initiator:${engagementId}`,
+          metadata: {
+            request_id: requestId,
+            previous_status: currentStatus,
+            refund_decision_required: !!parsed.data.refund_decision_required,
+          },
+        });
+        if (!d4cResult.ok) {
+          console.warn(
+            `[${requestId}] d4c initiator alert skipped (non-fatal): reason=${d4cResult.reason}`,
+          );
+        }
+      } catch (e) {
+        console.warn(
+          `[${requestId}] d4c initiator alert dispatch threw (non-fatal):`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+
+      const responseBody = {
+        engagement: updated,
+        refund_decision: {
+          required: !!parsed.data.refund_decision_required,
+          risk_item_id: riskItemId,
+          auto_refund_issued: false,
+        },
+      };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
     // ── POST /poi-engagements/:id/cancel-for-email-change — Admin cancels ──
     // D2a: when the recorded counterparty email turns out to be wrong and
     // outreach has already begun (so PATCH /counterparty_email is refused),
@@ -2232,6 +2545,39 @@ Deno.serve(async (req) => {
           "This engagement has already been cancelled for an email change.",
           409,
         );
+      }
+      // Batch J F5 — duplicate-recreate guard. The DB carries a partial
+      // unique index `uniq_poi_engagements_active_match_email` on
+      // (match_id, lower(counterparty_email)) for active rows. We
+      // pre-check here so the client gets a typed code instead of a
+      // raw 23505. Service-role client bypasses RLS by design.
+      {
+        const matchIdForCheck = (current as { match_id?: string | null }).match_id ?? null;
+        const newEmailLc = parsed.data.new_email.trim().toLowerCase();
+        if (matchIdForCheck) {
+          const { data: dupRow } = await supabase
+            .from("poi_engagements")
+            .select("id, engagement_status")
+            .eq("match_id", matchIdForCheck)
+            .eq("counterparty_email", newEmailLc)
+            .not("id", "eq", engagementId)
+            .in("engagement_status", [
+              "pending",
+              "notification_sent",
+              "contacted",
+              "accepted",
+              "late_acceptance_pending_initiator_reconfirmation",
+            ])
+            .maybeSingle();
+          if (dupRow?.id) {
+            throw new ApiException(
+              "ENGAGEMENT_ALREADY_REPLACED",
+              "An active engagement for this match and counterparty email already exists. The DB unique-index backstop will refuse a second concurrent active row.",
+              409,
+              { existing_engagement_id: dupRow.id, existing_status: dupRow.engagement_status },
+            );
+          }
+        }
       }
 
       const { data: adminProfile } = await supabase
@@ -2770,6 +3116,19 @@ Deno.serve(async (req) => {
       if (engErr) throw engErr;
       if (!engagement) {
         throw new ApiException("NOT_FOUND", "No engagement found for this match", 404);
+      }
+      // Batch J F4 — supersession gate covers accept + decline. The
+      // counterparty cannot transition a replaced or initiator-cancelled
+      // engagement; the new replacement carries the live token.
+      {
+        const sup = evaluateSupersessionGate(engagement as Record<string, unknown>);
+        if (sup) {
+          throw new ApiException(sup.code, sup.message, 409, {
+            current_status: (engagement as { engagement_status?: string }).engagement_status ?? null,
+            superseded_by_engagement_id:
+              (engagement as { superseded_by_engagement_id?: string | null }).superseded_by_engagement_id ?? null,
+          });
+        }
       }
 
       // Verify the caller is the counterparty (their org_id matches counterparty_org_id,
