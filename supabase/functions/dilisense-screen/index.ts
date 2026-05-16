@@ -6,6 +6,7 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
 import { fetchWithTimeout, ProviderTimeoutError, isProviderFailureStatus } from "../_shared/fetch-with-timeout.ts";
+import { checkProviderCooldown, recordProviderFailure, cooldownResponseEnvelope } from "../_shared/provider-retry.ts";
 
 /** Batch F: typed error for provider-down / malformed paths. */
 class ScreeningProviderError extends Error {
