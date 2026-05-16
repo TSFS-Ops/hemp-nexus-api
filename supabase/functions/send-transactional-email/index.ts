@@ -172,46 +172,101 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 2. Check suppression list (fail-closed: if we can't verify, don't send)
-  const { data: suppressed, error: suppressionError } = await supabase
-    .from('suppressed_emails')
-    .select('id')
-    .eq('email', effectiveRecipient.toLowerCase())
-    .maybeSingle()
+  // ── Batch M Fix 1+3: resolve template category for suppression/preference ──
+  const category = getCategoryForTemplate(templateName)
+  const prefKey = getPreferenceKeyForTemplate(templateName)
 
-  if (suppressionError) {
-    console.error('Suppression check failed - refusing to send', {
-      error: suppressionError,
-      effectiveRecipient,
-    })
-    return wrap(new Response(
-      JSON.stringify({ error: 'Failed to verify suppression status' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    ))
+  // 2. Check suppression list, honouring category. Security/compliance bypass.
+  if (isBlockedByUnsubscribe(category)) {
+    const { data: suppressed, error: suppressionError } = await supabase
+      .from('suppressed_emails')
+      .select('id')
+      .eq('email', effectiveRecipient.toLowerCase())
+      .maybeSingle()
+
+    if (suppressionError) {
+      console.error('Suppression check failed - refusing to send', {
+        error: suppressionError,
+        effectiveRecipient,
+      })
+      return wrap(new Response(
+        JSON.stringify({ error: 'Failed to verify suppression status' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      ))
+    }
+
+    if (suppressed) {
+      await supabase.from('email_send_log').insert({
+        message_id: messageId,
+        idempotency_key: callerSuppliedKey,
+        template_name: templateName,
+        recipient_email: effectiveRecipient,
+        status: 'suppressed',
+      })
+      await recordNotificationSkipped(supabase, {
+        reason: 'category_unsubscribed',
+        sourceFunction: 'send-transactional-email',
+        sourceEventType: templateName,
+        channel: 'email',
+        recipientEmail: effectiveRecipient,
+        extra: { category, pref_key: prefKey },
+      })
+      console.log('Email suppressed', { effectiveRecipient, templateName, category })
+      return wrap(new Response(
+        JSON.stringify({ success: false, reason: 'email_suppressed', category }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      ))
+    }
+  } else {
+    console.log('Suppression bypassed for safety-critical category', { templateName, category })
   }
 
-  if (suppressed) {
-    // Log the suppressed attempt
-    await supabase.from('email_send_log').insert({
-      message_id: messageId,
-      idempotency_key: callerSuppliedKey,
-      template_name: templateName,
-      recipient_email: effectiveRecipient,
-      status: 'suppressed',
-    })
-
-    console.log('Email suppressed', { effectiveRecipient, templateName })
-    return wrap(new Response(
-      JSON.stringify({ success: false, reason: 'email_suppressed' }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  // 2b. Per-user notification preference enforcement (Batch M Fix 2).
+  // Best-effort recipient → user lookup via profiles.email; failure to find
+  // a user is not an error (e.g. external counterparty addresses).
+  if (prefKey) {
+    const { data: recipientProfile } = await supabase
+      .from('profiles')
+      .select('id, org_id')
+      .eq('email', effectiveRecipient.toLowerCase())
+      .maybeSingle()
+    if (recipientProfile?.id) {
+      const decision = await checkAndAuditPreference(supabase, {
+        userId: recipientProfile.id as string,
+        prefKey,
+        category,
+        sourceFunction: 'send-transactional-email',
+        sourceEventType: templateName,
+        channel: 'email',
+        orgId: (recipientProfile.org_id as string) ?? null,
+      })
+      if (!decision.allowed) {
+        await supabase.from('email_send_log').insert({
+          message_id: messageId,
+          idempotency_key: callerSuppliedKey,
+          template_name: templateName,
+          recipient_email: effectiveRecipient,
+          status: 'suppressed',
+        })
+        return wrap(new Response(
+          JSON.stringify({
+            success: false,
+            reason: 'preference_disabled',
+            pref_key: prefKey,
+            category,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        ))
       }
-    ))
+    }
   }
+
 
   // 3. Get or create unsubscribe token (one token per email address)
   const normalizedEmail = effectiveRecipient.toLowerCase()
