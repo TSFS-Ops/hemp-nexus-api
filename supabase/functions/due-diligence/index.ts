@@ -2,6 +2,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
+// Batch S SUP-004: AAL2 + reason floor + before/after for compliance closure.
+import { assertAal2 } from "../_shared/aal.ts";
+import { ApiException } from "../_shared/errors.ts";
 
 // Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
 // with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
@@ -510,6 +513,35 @@ async function _serve(req: Request): Promise<Response> {
       if (!approval_request_id || !decision) {
         return json({ error: "approval_request_id and decision (approve/reject) are required" }, 400);
       }
+      if (decision !== "approve" && decision !== "reject") {
+        return json({ error: "decision must be approve or reject" }, 400);
+      }
+
+      // Batch S SUP-004: rejection is a compliance closure — must be reasoned
+      // and MFA-challenged. Reject reasons < 10 chars are not acceptable.
+      if (decision === "reject") {
+        if (typeof reason !== "string" || reason.trim().length < 10) {
+          return json({ error: "REASON_REQUIRED", message: "Reject reason must be at least 10 characters." }, 400);
+        }
+        const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorisation");
+        try {
+          await assertAal2(authHeader, {
+            adminClient: admin,
+            callerUserId: user.id,
+            action: "dd.approval_rejected",
+            context: { approval_request_id },
+          });
+        } catch (err) {
+          if (err instanceof ApiException) {
+            return json({
+              error: err.code,
+              message: err.message,
+              observed_aal: (err as { details?: { observed_aal?: string } }).details?.observed_aal,
+            }, err.statusCode);
+          }
+          throw err;
+        }
+      }
 
       const { data: request, error: reqErr } = await admin
         .from("dd_approval_requests")
@@ -519,6 +551,14 @@ async function _serve(req: Request): Promise<Response> {
 
       if (reqErr || !request) return json({ error: "Approval request not found" }, 404);
       if (request.status !== "pending") return json({ error: "Request is no longer pending" }, 422);
+
+      // Snapshot BEFORE any mutation so audit can record state transition.
+      const beforeSnapshot = {
+        status: request.status,
+        completed_roles: request.completed_roles,
+        required_roles: request.required_roles,
+        updated_at: request.updated_at,
+      };
 
       // Determine actor's DD role for the requesting org
       const { data: ddRoles } = await admin
@@ -558,8 +598,9 @@ async function _serve(req: Request): Promise<Response> {
       });
 
       if (decision === "reject") {
+        const newRow = { status: "rejected", updated_at: new Date().toISOString() };
         await admin.from("dd_approval_requests")
-          .update({ status: "rejected", updated_at: new Date().toISOString() })
+          .update(newRow)
           .eq("id", approval_request_id);
 
         await admin.from("audit_logs").insert({
@@ -568,7 +609,19 @@ async function _serve(req: Request): Promise<Response> {
           action: "dd.approval_rejected",
           entity_type: "dd_approval_requests",
           entity_id: approval_request_id,
-          metadata: { role: actingRole, reason },
+          metadata: {
+            role: actingRole,
+            reason,
+            outcome: "rejected",
+            action_taken: "compliance_closure_rejected",
+            before: beforeSnapshot,
+            after: {
+              status: "rejected",
+              completed_roles: completedRoles,
+              required_roles: requiredRoles,
+              updated_at: newRow.updated_at,
+            },
+          },
         });
 
         // ── Notify requester of rejection ──
