@@ -459,3 +459,54 @@ export async function verifyWebhookSignature(
 
   return { ok: true };
 }
+
+/**
+ * Batch N — Required Fix 6: verify an inbound webhook signature against
+ * the current secret and, if still within the rotation grace window, also
+ * against the previous secret.
+ *
+ *   - Accepts the current secret unconditionally.
+ *   - Accepts `previousSecret` ONLY when `previousSecretExpiresAt` is in
+ *     the future.
+ *   - Rejects the previous secret after the grace expires.
+ *   - Returns { ok, usedPrevious } so callers can audit grace-only hits.
+ *
+ * Both signatures are checked in constant-time-ish (length-then-XOR);
+ * no early exit on the current-secret path can leak which secret matched.
+ */
+export async function verifyWebhookSignatureWithGrace(
+  payload: string,
+  signature: string,
+  currentSecret: string,
+  previousSecret: string | null,
+  previousSecretExpiresAt: string | null,
+): Promise<{ ok: boolean; usedPrevious: boolean }> {
+  if (!signature) return { ok: false, usedPrevious: false };
+
+  const cmp = (a: string, b: string): boolean => {
+    if (a.length !== b.length) return false;
+    let mismatch = 0;
+    for (let i = 0; i < a.length; i++) {
+      mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return mismatch === 0;
+  };
+
+  const expectedCurrent = await generateSignature(payload, currentSecret);
+  if (cmp(signature, expectedCurrent)) {
+    return { ok: true, usedPrevious: false };
+  }
+
+  // Grace path — only when a previous secret exists AND has not expired.
+  if (previousSecret && previousSecretExpiresAt) {
+    const expiresAt = new Date(previousSecretExpiresAt).getTime();
+    if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
+      const expectedPrev = await generateSignature(payload, previousSecret);
+      if (cmp(signature, expectedPrev)) {
+        return { ok: true, usedPrevious: true };
+      }
+    }
+  }
+
+  return { ok: false, usedPrevious: false };
+}
