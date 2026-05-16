@@ -191,9 +191,48 @@ Deno.serve(async (req) => {
     creditsRequested = credits;
     parsedReason = reason;
 
+    // ── 3b. Demo-org detection (Batch G Fix 4) ────────────────────────
+    // Manual top-ups against demo orgs are allowed but must be stamped
+    // so investor / revenue reporting can exclude them without joining
+    // organizations on every query.
+    let isDemo = false;
+    {
+      const { data: orgRow, error: orgErr } = await admin
+        .from('organizations')
+        .select('is_demo')
+        .eq('id', org_id)
+        .maybeSingle();
+      if (orgErr) {
+        console.error('[admin-credit-org] org lookup failed:', orgErr);
+        // Fail closed on the demo flag: treat as not-demo only if we
+        // actually got a row back. A missing row is rejected.
+      }
+      if (!orgRow) {
+        await writeAudit(admin, callerId, targetOrgId, 'failure', {
+          stage: 'org_lookup',
+          error: 'org_not_found',
+        });
+        return jsonResponse(req, { error: 'Target organisation not found' }, 404);
+      }
+      isDemo = (orgRow as { is_demo?: boolean }).is_demo === true;
+    }
+
     // ── 4. Service-role credit ─────────────────────────────────────────
     const referenceId =
       reference_id ?? `admin-credit-${callerId}-${Date.now()}`;
+
+    // Batch G Fix 3: explicit ledger metadata so manual credits are
+    // distinguishable from paid purchases in token_ledger.
+    const creditKind = isDemo ? 'admin_manual_demo' : 'admin_manual';
+    const extraMetadata: Record<string, unknown> = {
+      credit_kind: creditKind,
+      reference_id: referenceId,
+      payment_reference: referenceId,
+      reason,
+      actor_user_id: callerId,
+      target_org_id: org_id,
+      demo: isDemo,
+    };
 
     const { data: creditResult, error: creditError } = await admin.rpc(
       'atomic_token_credit',
@@ -202,6 +241,7 @@ Deno.serve(async (req) => {
         p_amount: credits,
         p_reason: `admin_top_up:${reason}`.slice(0, 500),
         p_reference_id: referenceId,
+        p_extra_metadata: extraMetadata,
       },
     );
 
@@ -240,6 +280,9 @@ Deno.serve(async (req) => {
       credits,
       reason,
       reference_id: referenceId,
+      payment_reference: referenceId,
+      credit_kind: creditKind,
+      demo: isDemo,
       new_balance: result.new_balance,
     });
 
@@ -247,6 +290,8 @@ Deno.serve(async (req) => {
       success: true,
       new_balance: result.new_balance,
       reference_id: referenceId,
+      credit_kind: creditKind,
+      demo: isDemo,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown error';

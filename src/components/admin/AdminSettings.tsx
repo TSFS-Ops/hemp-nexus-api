@@ -115,7 +115,14 @@ export function AdminSettings() {
       toast.success("Settings saved successfully");
     } catch (error) {
       console.error("Error saving settings:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to save settings");
+      const msg = error instanceof Error ? error.message : "Failed to save settings";
+      if (/AAL2_REQUIRED/.test(msg)) {
+        toast.error(
+          "MFA required: changing this setting needs a fresh authenticator (MFA) challenge. Re-authenticate and retry.",
+        );
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setSaving(false);
     }

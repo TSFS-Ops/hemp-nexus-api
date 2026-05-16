@@ -123,7 +123,14 @@ export function TestModeBypassPanel() {
       toast.success("Test-mode settings saved");
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "Failed to save");
+      const msg = err instanceof Error ? err.message : "Failed to save";
+      if (/AAL2_REQUIRED/.test(msg)) {
+        toast.error(
+          "MFA required: changing test-mode bypass needs a fresh authenticator challenge. Re-authenticate and retry.",
+        );
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setSaving(false);
     }
