@@ -479,6 +479,10 @@ async function _serve(req: Request): Promise<Response> {
           body: `A ${riskBand}-risk due diligence approval request requires your ${u.role} sign-off.`,
           link: `/due-diligence`,
           read: false,
+          // NOT-008: link to the dd_approval_request so a later
+          // resolve/reject auto-clears the unread row.
+          entity_type: "dd_approval_request",
+          entity_id: request.id,
         }));
         await admin.from("notifications").insert(notifRows).catch((err: any) =>
           console.error("[due-diligence] Approval notification insert failed:", err.message)
