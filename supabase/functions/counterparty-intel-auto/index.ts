@@ -32,6 +32,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { guardedAiCall, aiGuardEnvelope, type AiGuardOutcome } from "../_shared/ai-guard.ts";
 
 // ── Body ─────────────────────────────────────────────────────────────────
 interface RunBody {
