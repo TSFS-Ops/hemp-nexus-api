@@ -498,7 +498,7 @@ export function AdminPendingEngagementsPanel() {
     });
   };
 
-  const handleExportCsv = () => {
+  const handleExportCsv = async () => {
     if (filtered.length === 0) {
       toast.error("No engagements to export with the current filters.");
       return;
@@ -510,16 +510,24 @@ export function AdminPendingEngagementsPanel() {
       ...rows.map((r) => headers.map((h) => csvEscape((r as Record<string, unknown>)[h])).join(",")),
     ].join("\r\n");
 
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    link.href = url;
-    link.download = `pending-engagements-${stamp}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Batch T — AUD-017: pending-engagements export is sensitive
+    // (counterparty emails + support notes). Audited helper with BOM
+    // preserved for Excel compatibility.
+    const result = await auditedDownloadCSVRaw(csv, {
+      reportName: "admin-pending-engagements",
+      filename: `pending-engagements-${stamp}.csv`,
+      target_type: "other",
+      sensitive: true,
+      rowCount: rows.length,
+      bom: true,
+      filters: { count: rows.length },
+      reason: "pending engagements export",
+    });
+    if (result.aal_required) {
+      toast.error("Multi-factor authentication required for this export.");
+      return;
+    }
     toast.success(`Exported ${rows.length} engagement${rows.length === 1 ? "" : "s"} to CSV.`);
   };
 
