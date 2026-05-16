@@ -24,6 +24,10 @@ import {
 export function AdminAuditLogs() {
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [entityFilter, setEntityFilter] = useState<string>("all");
+  // Batch S Fix 8: curated action-group filter so support-hardening actions
+  // (manual overrides, risk-item resolution, programme, due diligence) are
+  // searchable as a group, not just by exact action name.
+  const [groupFilter, setGroupFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
