@@ -201,7 +201,7 @@ export default function UsersManagement() {
     setSelectedUserIds(newSelected);
   };
 
-  const exportToCSV = (usersToExport: User[]) => {
+  const exportToCSV = async (usersToExport: User[]) => {
     const headers = ["Email", "Name", "Organisation", "Registered", "Last Sign In", "Email Verified", "Roles", "Status", "Deletion Requested", "Deletion Category", "Deletion Reason"];
     const rows = usersToExport.map((user) => [
       user.email,
@@ -217,18 +217,27 @@ export default function UsersManagement() {
       user.deletion_reason || "",
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `users_export_${new Date().toISOString().split("T")[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    // Batch T — AUD-017: users CSV is sensitive (PII + roles).
+    // Route through audited helper so the row count, filters and
+    // sensitivity are captured BEFORE bytes leave the browser, and
+    // AAL2 can block the download for non-MFA admins.
+    const result = await auditedDownloadCSV(headers, rows, {
+      reportName: "admin-users",
+      filename: `users_export_${new Date().toISOString().split("T")[0]}.csv`,
+      target_type: "other",
+      sensitive: true,
+      filters: {
+        scope: usersToExport.length === filteredUsers.length ? "all_filtered" : "selected",
+        count: usersToExport.length,
+      },
+      reason: "admin users export",
+    });
+    if (result.aal_required) {
+      toast.error("Multi-factor authentication required for this export.", {
+        description: "Please re-authenticate with MFA to download the users CSV.",
+      });
+      return;
+    }
 
     toast.success(`Exported ${usersToExport.length} users to CSV`);
   };
