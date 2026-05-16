@@ -2408,6 +2408,11 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] initiator-cancel outreach log insert failed (non-fatal):`, logErr);
       }
 
+      // NOT-008: resolve any unread in-app notifications attached to this engagement.
+      await resolveNotificationsFor(supabase, "poi_engagement", engagementId, {
+        requestId,
+        source: "poi-engagements:initiator_cancel",
+      });
       // Optional admin_risk_items row — NO automatic refund, manual decision.
       let riskItemId: string | null = null;
       if (parsed.data.refund_decision_required) {
