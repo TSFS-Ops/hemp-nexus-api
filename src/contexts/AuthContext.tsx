@@ -7,6 +7,7 @@ import { setSentryUser, clearSentryUser } from "@/lib/sentry";
 import { notifySessionExpired } from "@/lib/session-expiry-bus";
 import { recordSessionFailure } from "@/lib/session-failure-metrics";
 import { refreshSessionOnce } from "@/lib/edge-invoke";
+import { queryClient } from "@/lib/query-client";
 
 interface AuthContextType {
   user: User | null;
