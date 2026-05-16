@@ -47,8 +47,40 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { webhookCorsHeaders } from "../_shared/cors.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 
 const corsHeaders = { ...webhookCorsHeaders() };
+
+/**
+ * Engagement statuses that imply a POI is expected to exist on the match.
+ * Soft-route pending states (pending, notification_sent, contacted) are
+ * legitimately POI-less and MUST NOT be flagged as drift.
+ */
+const ENGAGEMENT_STATUSES_REQUIRING_POI = new Set<string>([
+  "accepted",
+  "late_acceptance_pending_initiator_reconfirmation",
+  "disputed_being_named",
+]);
+
+/**
+ * WaD/POI consistency note:
+ *
+ *   wads has poi_id, buyer_org_id, seller_org_id, canonical_payload_json, status.
+ *   pois has match_id, org_id, state.
+ *   matches has buyer_org_id, seller_org_id.
+ *
+ * The schema does not currently materialise a terms-hash on pois that we can
+ * compare against wads.canonical_payload_json deterministically — POI terms
+ * live on matches (commodity, price, quantity, terms). For this reason the
+ * WaD/POI detector below covers only the linkage-and-state drift that the
+ * schema can prove:
+ *   - sealed wad whose linked poi_id no longer exists
+ *   - sealed wad linked to a poi in a non-terminal state (not COMPLETED/ELIGIBLE)
+ *   - sealed wad whose buyer/seller_org_id disagree with the poi.match
+ *     buyer/seller_org_id
+ * Terms-hash drift is intentionally not asserted; it would produce false
+ * positives without a canonical hash column. Documented in tests.
+ */
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
