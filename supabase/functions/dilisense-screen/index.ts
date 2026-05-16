@@ -1,9 +1,40 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://esm.sh/zod@3.23.8";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
+import { fetchWithTimeout, ProviderTimeoutError, isProviderFailureStatus } from "../_shared/fetch-with-timeout.ts";
+
+/** Batch F: typed error for provider-down / malformed paths. */
+class ScreeningProviderError extends Error {
+  constructor(public readonly provider: string, public readonly statusCode: number | null, public readonly reason: string) {
+    super(`${provider} provider_error: ${reason}`);
+  }
+}
+
+// Batch F: Dilisense response schema (loose — only fields we use are required).
+const DilisenseRecordSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  source_type: z.string(),
+  pep_type: z.string().nullable().optional(),
+  source_id: z.string().optional().default(""),
+  entity_type: z.string().optional().default(""),
+  alias_names: z.array(z.string()).optional(),
+  date_of_birth: z.array(z.string()).optional(),
+  citizenship: z.array(z.string()).optional(),
+  sanction_details: z.array(z.string()).optional(),
+  description: z.array(z.string()).optional(),
+  positions: z.array(z.string()).optional(),
+}).passthrough();
+
+const DilisenseResponseSchema = z.object({
+  timestamp: z.string(),
+  total_hits: z.number(),
+  found_records: z.array(DilisenseRecordSchema),
+});
 
 /**
  * Configurable AML/Sanctions/PEP Screening Edge Function
@@ -116,18 +147,37 @@ async function screenWithDilisense(
   if (dob) params.set("dob", dob);
   if (gender) params.set("gender", gender);
 
-  const res = await fetch(`${DILISENSE_BASE}/${endpoint}?${params.toString()}`, {
-    method: "GET",
-    headers: { "x-api-key": dilisenseKey },
-  });
+  // Batch F: bounded timeout + provider-error mapping (timeout/5xx/429/malformed).
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      "dilisense",
+      `${DILISENSE_BASE}/${endpoint}?${params.toString()}`,
+      { method: "GET", headers: { "x-api-key": dilisenseKey } },
+      10_000,
+    );
+  } catch (err) {
+    if (err instanceof ProviderTimeoutError) {
+      throw new ScreeningProviderError("dilisense", 504, "timeout");
+    }
+    throw new ScreeningProviderError("dilisense", null, (err as Error).message);
+  }
 
   if (!res.ok) {
     const errText = await res.text();
     console.error(`Dilisense API error [${res.status}]:`, errText);
+    if (isProviderFailureStatus(res.status)) {
+      throw new ScreeningProviderError("dilisense", res.status, `upstream_${res.status}`);
+    }
     throw new ApiException("PROVIDER_ERROR", `Screening provider returned ${res.status}`, 502, { providerStatus: res.status });
   }
 
-  const data: DilisenseResponse = await res.json();
+  const rawData = await res.json().catch(() => null);
+  const parsed = DilisenseResponseSchema.safeParse(rawData);
+  if (!parsed.success) {
+    throw new ScreeningProviderError("dilisense", res.status, `malformed_response: ${parsed.error.message.slice(0, 200)}`);
+  }
+  const data = parsed.data;
   const responseHash = await computeHash(JSON.stringify(data));
 
   const classifiedRecords: ClassifiedRecord[] = data.found_records.map((record) => ({
@@ -356,7 +406,64 @@ Deno.serve(async (req: Request) => {
     console.log(`[${requestId}] Screening via provider: ${providerName}`);
 
     // ── Execute screening ──
-    const result = await screenFn(name, type, fuzzy_search, dob, gender);
+    let result;
+    try {
+      result = await screenFn(name, type, fuzzy_search, dob, gender);
+    } catch (err) {
+      if (err instanceof ScreeningProviderError) {
+        // Batch F: persist provider_error so the failure is visible later, not just a toast.
+        const errHash = await computeHash(JSON.stringify({ provider_error: true, provider: err.provider, reason: err.reason, ts: new Date().toISOString() }));
+        const { data: savedErr } = await adminClient
+          .from("screening_results")
+          .insert({
+            org_id,
+            screening_type: "sanctions_pep",
+            status: "provider_error",
+            matched_entities: [],
+            raw_response: { provider_error: true, provider: err.provider, status_code: err.statusCode, reason: err.reason },
+            screened_at: new Date().toISOString(),
+            screened_by: actorUserId || null,
+            next_screening_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            provider: providerName,
+            provider_config: { screen_type: type, fuzzy_search: fuzzy_search || null, provider_error: true },
+            response_hash: errHash,
+            entity_id: entity_id || null,
+          })
+          .select()
+          .single();
+
+        await adminClient.from("audit_logs").insert({
+          org_id,
+          actor_user_id: actorUserId || null,
+          action: "screening.provider_error",
+          entity_type: "screening_results",
+          entity_id: savedErr?.id || null,
+          metadata: {
+            provider: err.provider,
+            status_code: err.statusCode,
+            reason: err.reason,
+            request_id: requestId,
+            name_screened: name,
+            entity_id: entity_id || null,
+          },
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "PROVIDER_ERROR",
+            provider: err.provider,
+            reason: err.reason,
+            status_code: err.statusCode,
+            screening_id: savedErr?.id || null,
+            message: "The sanctions/PEP provider is currently unavailable. The failure has been recorded and is visible to admins.",
+            requestId,
+          }),
+          { status: 502, headers: { ...headers, "Content-Type": "application/json" } }
+        );
+      }
+      throw err;
+    }
 
     // ── Store screening result ──
     const screeningRecord = {
