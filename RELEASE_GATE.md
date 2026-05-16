@@ -8,10 +8,18 @@
 
 ```bash
 # Must all exit 0
+npm run test:regression    # vitest run on src/tests/batch-*.test.ts (batch proof suite)
 npm run build              # TypeScript + Vite compilation (runs all prebuild guards below)
 npm run check:drift        # Layout/footer/back-button drift guard
-npx vitest run             # Unit + integration tests
+npx vitest run             # Full unit + integration sweep
+node scripts/closeout-snapshot.mjs   # Writes dated artefact under docs/closeout/ when DB env present
 ```
+
+After the snapshot script runs against the live DB tier, confirm the
+HealthBoard **Closeout Drift** tile is green (`closeout_drift_summary()`
+returns zero critical drift) and review
+`docs/deferred-policy-register.md` for any items still requiring client
+sign-off.
 
 Prebuild guards enforced automatically by `npm run build`:
 
