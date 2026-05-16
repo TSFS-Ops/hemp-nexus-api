@@ -704,6 +704,84 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ── Batch I Fix 4: WaD / POI drift reconciliation ──
+    // Read-only probe. Sealed WaDs whose underlying POI later became
+    // terminal/disputed/cancelled, or that have a missing POI, are surfaced as
+    // idempotent admin_risk_items (deduped via stable dedup_key) so an admin
+    // can investigate. The probe NEVER mutates WaD/POI state itself.
+    try {
+      const driftStates = ["EXPIRED", "REJECTED", "ANNULLED"];
+      const { data: sealedWads } = await admin
+        .from("wads")
+        .select("id, poi_id, status, sealed_at, org_id")
+        .not("sealed_at", "is", null)
+        .neq("status", "revoked")
+        .neq("status", "superseded")
+        .limit(500);
+
+      let driftDetected = 0;
+      let driftSkipped = 0;
+      for (const w of sealedWads ?? []) {
+        const { data: poi } = await admin
+          .from("matches")
+          .select("id, poi_state")
+          .eq("id", w.poi_id)
+          .maybeSingle();
+
+        let driftKind: string | null = null;
+        let driftDetail: Record<string, unknown> = {};
+        if (!poi) {
+          driftKind = "wad_missing_poi";
+          driftDetail = { wad_id: w.id, poi_id: w.poi_id };
+        } else if (driftStates.includes(poi.poi_state)) {
+          driftKind = "wad_poi_terminal_drift";
+          driftDetail = { wad_id: w.id, poi_id: poi.id, poi_state: poi.poi_state };
+        }
+
+        if (!driftKind) continue;
+
+        if (dryRun) { driftSkipped++; continue; }
+        const dedupKey = `${driftKind}:${w.id}`;
+        const { error: riskErr } = await admin
+          .from("admin_risk_items")
+          .upsert(
+            {
+              title: `WaD/POI drift: ${driftKind}`,
+              description: `Sealed WaD ${w.id} has drifted from its POI: ${JSON.stringify(driftDetail)}`,
+              severity: "high",
+              status: "open",
+              org_id: w.org_id ?? null,
+              kind: driftKind,
+              dedup_key: dedupKey,
+              metadata: driftDetail,
+            },
+            { onConflict: "dedup_key", ignoreDuplicates: true },
+          );
+        if (riskErr) {
+          console.warn(`[wad-poi-drift] upsert failed for ${w.id}:`, riskErr.message);
+          continue;
+        }
+        await admin.from("audit_logs").insert({
+          org_id: w.org_id ?? "00000000-0000-0000-0000-000000000000",
+          action: "wad.poi_drift_detected",
+          entity_type: "wad",
+          entity_id: w.id,
+          metadata: { ...driftDetail, dedup_key: dedupKey },
+        });
+        driftDetected++;
+      }
+      results.wad_poi_drift = {
+        scanned: sealedWads?.length ?? 0,
+        drift_detected: driftDetected,
+        drift_skipped_dry_run: driftSkipped,
+      };
+    } catch (err) {
+      results.wad_poi_drift = {
+        scanned: 0,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+
     // ── Audit ──
     // Production runs write a completion row. Dry-runs write NOTHING to the
     // database (true zero-mutation contract); the manifest is returned in the
