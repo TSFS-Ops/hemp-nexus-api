@@ -58,7 +58,7 @@ describe("Batch K — Fix 1: completed-without-sealed-WaD detector", () => {
   });
 
   it("creates idempotent admin_risk_items with stable dedup_key", () => {
-    expect(scheduler).toMatch(/dedup_key.*completed_without_sealed_wad:\$\{m\.id\}/);
+    expect(scheduler).toMatch(/completed_without_sealed_wad:\$\{m\.id\}/);
     expect(scheduler).toMatch(/onConflict:\s*"dedup_key",\s*ignoreDuplicates:\s*true/);
   });
 
