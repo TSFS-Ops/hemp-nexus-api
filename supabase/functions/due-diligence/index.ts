@@ -713,6 +713,8 @@ async function _serve(req: Request): Promise<Response> {
             body: `${actingRole} has approved. Your ${u.role} sign-off is still needed to complete the approval.`,
             link: `/due-diligence`,
             read: false,
+            entity_type: "dd_approval_request",
+            entity_id: approval_request_id,
           }));
           await admin.from("notifications").insert(partialNotifs).catch((err: any) =>
             console.error("[due-diligence] Partial approval notification failed:", err.message)
