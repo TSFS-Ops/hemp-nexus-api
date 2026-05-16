@@ -129,7 +129,16 @@ export function AdminAuditLogs() {
       JSON.stringify(redactExportMetadata(log.metadata ?? {})),
     ]);
 
-    downloadCSV(headers, rows, `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
+    // Batch U AUD-018: route through auditedDownloadCSV so the prebuild
+    // CSV-audit guard cannot regress. AAL2 gate already enforced above;
+    // mark sensitive=false here to avoid writing a duplicate audit row.
+    await auditedDownloadCSV(headers, rows, {
+      reportName: "admin-audit-logs",
+      filename: `audit-logs-${new Date().toISOString().split('T')[0]}.csv`,
+      target_type: "audit_logs",
+      sensitive: false,
+      filters: { actionFilter, entityFilter, search, page: auditPage, demo_excluded: true },
+    });
 
     if (auditLogTotalCount > (auditLogs?.length ?? 0)) {
       toast.success(
