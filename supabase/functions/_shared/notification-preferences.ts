@@ -126,7 +126,7 @@ export async function checkAndAuditPreference(
 
   if (!decision.allowed) {
     await recordNotificationSkipped(supabase, {
-      reason: "preference_disabled" as never, // extending union; canonical reason added in helper
+      reason: "preference_disabled",
       sourceFunction: args.sourceFunction,
       sourceEventType: args.sourceEventType ?? null,
       channel: args.channel,
