@@ -178,8 +178,8 @@ describe("Batch K — Fix 6: per-match expiry audit", () => {
     const block = scheduler.split("// 1c. Expire stale draft/pending matches")[1] ?? "";
     const sliceBeforeNext = block.split("// 1d. Expire trade_orders")[0] ?? block;
     expect(sliceBeforeNext).toMatch(/if \(!dryRun && matchesToExpire/);
-    // audit insert is inside the !dryRun branch
-    expect(sliceBeforeNext).toMatch(/!dryRun[\s\S]{0,1500}audit_logs[\s\S]{0,200}match\.expired_by_lifecycle/);
+    // audit insert is inside the !dryRun branch — auditRows is only declared inside that branch
+    expect(sliceBeforeNext).toMatch(/!dryRun[\s\S]+const auditRows[\s\S]+from\("audit_logs"\)\.insert\(auditRows\)/);
   });
 });
 
