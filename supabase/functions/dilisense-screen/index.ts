@@ -1,9 +1,40 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://esm.sh/zod@3.23.8";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
+import { fetchWithTimeout, ProviderTimeoutError, isProviderFailureStatus } from "../_shared/fetch-with-timeout.ts";
+
+/** Batch F: typed error for provider-down / malformed paths. */
+class ScreeningProviderError extends Error {
+  constructor(public readonly provider: string, public readonly statusCode: number | null, public readonly reason: string) {
+    super(`${provider} provider_error: ${reason}`);
+  }
+}
+
+// Batch F: Dilisense response schema (loose — only fields we use are required).
+const DilisenseRecordSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  source_type: z.string(),
+  pep_type: z.string().nullable().optional(),
+  source_id: z.string().optional().default(""),
+  entity_type: z.string().optional().default(""),
+  alias_names: z.array(z.string()).optional(),
+  date_of_birth: z.array(z.string()).optional(),
+  citizenship: z.array(z.string()).optional(),
+  sanction_details: z.array(z.string()).optional(),
+  description: z.array(z.string()).optional(),
+  positions: z.array(z.string()).optional(),
+}).passthrough();
+
+const DilisenseResponseSchema = z.object({
+  timestamp: z.string(),
+  total_hits: z.number(),
+  found_records: z.array(DilisenseRecordSchema),
+});
 
 /**
  * Configurable AML/Sanctions/PEP Screening Edge Function
