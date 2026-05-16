@@ -490,12 +490,45 @@ async function ensureContactAttemptLog(
   });
 }
 
+// Batch U SEC-014 — production lockout. Mirror of isProductionTier in
+// _shared/test-mode-bypass.ts (kept inline so this file has no transitive
+// import surprises at edge runtime).
+function isProductionTier(): boolean {
+  const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
+  return tier === "production" || tier === "live" || tier === "prod";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });
+
+  // Batch U SEC-014 — refuse production tier BEFORE auth + body parse so
+  // the seeder can never mutate live rows even with a valid internal key.
+  if (isProductionTier()) {
+    try {
+      await admin.from("admin_audit_logs").insert({
+        admin_user_id: null,
+        action: "seed.production_refused",
+        target_type: "system",
+        target_id: null,
+        details: {
+          function: "seed-daniel-fixtures",
+          environment_tier: Deno.env.get("ENVIRONMENT_TIER") ?? null,
+        },
+      });
+    } catch (_e) { /* best-effort */ }
+    return json(
+      {
+        error: "SEED_PRODUCTION_REFUSED",
+        message:
+          "Fixture seeders are blocked in production. Run only against test/staging tiers.",
+      },
+      403,
+    );
+  }
 
   const authResult = await authorise(req, admin);
   if (!authResult.ok) return authResult.resp;
