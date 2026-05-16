@@ -1141,6 +1141,8 @@ Deno.serve(async (req) => {
                 body: `${creatorOrgName} generated a POI for ${match.commodity || 'a trade'} with ${counterpartyName}, who is not registered. Manual outreach required.`,
                 link: `/desk/match/${matchId}`,
                 org_id: creatorOrgId,
+                entity_type: "match",
+                entity_id: matchId,
               }));
               await supabase.from("notifications").upsert(notifRows, { onConflict: 'user_id,type,link', ignoreDuplicates: true });
             }
