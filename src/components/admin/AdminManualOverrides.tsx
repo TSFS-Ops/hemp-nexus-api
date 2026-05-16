@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+// Batch S: client no longer issues direct DB writes — all overrides go via
+// the admin-manual-overrides edge function which is the only audited path.
 import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,117 +37,46 @@ export function AdminManualOverrides() {
       toast.error("All fields are required");
       return;
     }
+    // Batch S SUP-001: client-side floor must mirror server (>=10 chars).
+    // Server is authoritative — this is just UX feedback.
+    if (reason.trim().length < 10) {
+      toast.error("Reason must be at least 10 characters");
+      return;
+    }
 
     setExecuting(true);
     try {
-      const adminUserId = (await supabase.auth.getUser()).data.user?.id ?? "";
-
-      switch (action) {
-        case "force_status": {
-          // Use safe_transition_match_state to enforce state guards
-          // First read current state to populate expected_state
-          const { data: currentMatch, error: fetchError } = await supabase
-            .from("matches")
-            .select("state, org_id")
-            .eq("id", targetId.trim())
-            .maybeSingle();
-          if (fetchError) throw fetchError;
-          if (!currentMatch) throw new Error("Match not found");
-
-          const { data: result, error: rpcError } = await supabase.rpc(
-            "safe_transition_match_state",
-            {
-              p_match_id: targetId.trim(),
-              p_org_id: currentMatch.org_id,
-              p_expected_state: currentMatch.state ?? "discovery",
-              p_new_state: newStatus,
-              p_update_fields: { status: newStatus },
-            }
-          );
-          if (rpcError) throw rpcError;
-          const rpcResult = result as any;
-          if (rpcResult && !rpcResult.success) {
-            throw new Error(rpcResult.message || "State transition rejected");
-          }
-
-          // Log admin action
-          await supabase.from("admin_audit_logs").insert({
-            admin_user_id: adminUserId,
-            action: "force_status_change",
-            target_type: "match",
-            target_id: targetId.trim(),
-            details: { new_status: newStatus, previous_state: currentMatch.state, reason } as any,
-          });
-          toast.success(`Match status forced to "${newStatus}"`);
-          break;
-        }
-        case "rerun_screening": {
-          await apiFetch("dilisense-screen", {
-            method: "POST",
-            body: JSON.stringify({ entity_id: targetId.trim(), force: true }),
-          });
-          await supabase.from("admin_audit_logs").insert({
-            admin_user_id: adminUserId,
-            action: "rerun_screening",
-            target_type: "entity",
-            target_id: targetId.trim(),
-            details: { reason } as any,
-          });
-          toast.success("Screening re-run initiated");
-          break;
-        }
-        case "regenerate_evidence": {
-          await apiFetch("evidence-pack", {
-            method: "POST",
-            body: JSON.stringify({ match_id: targetId.trim(), force_regenerate: true }),
-          });
-          await supabase.from("admin_audit_logs").insert({
-            admin_user_id: adminUserId,
-            action: "regenerate_evidence_pack",
-            target_type: "match",
-            target_id: targetId.trim(),
-            details: { reason } as any,
-          });
-          toast.success("Evidence pack regeneration initiated");
-          break;
-        }
-        case "void_match": {
-          // Read current state, then use safe RPC
-          const { data: voidMatch, error: voidFetchErr } = await supabase
-            .from("matches")
-            .select("state, org_id")
-            .eq("id", targetId.trim())
-            .maybeSingle();
-          if (voidFetchErr) throw voidFetchErr;
-          if (!voidMatch) throw new Error("Match not found");
-
-          const { data: voidResult, error: voidRpcErr } = await supabase.rpc(
-            "safe_transition_match_state",
-            {
-              p_match_id: targetId.trim(),
-              p_org_id: voidMatch.org_id,
-              p_expected_state: voidMatch.state ?? "discovery",
-              p_new_state: "voided",
-              p_update_fields: { status: "voided" },
-            }
-          );
-          if (voidRpcErr) throw voidRpcErr;
-          const voidRes = voidResult as any;
-          if (voidRes && !voidRes.success) {
-            throw new Error(voidRes.message || "Void transition rejected");
-          }
-
-          await supabase.from("admin_audit_logs").insert({
-            admin_user_id: adminUserId,
-            action: "void_match",
-            target_type: "match",
-            target_id: targetId.trim(),
-            details: { previous_state: voidMatch.state, reason } as any,
-          });
-          toast.success("Match voided");
-          break;
-        }
+      // Batch S SUP-001 / AUD-016: ALL manual overrides go through the
+      // server route. Server enforces is_admin + AAL2 + reason floor +
+      // before/after snapshot and writes admin_audit_logs server-side.
+      // Direct client RPC + client-side admin_audit_logs inserts are
+      // no longer used here.
+      const body: Record<string, unknown> = { operation: action, reason: reason.trim() };
+      if (action === "force_status") {
+        body.match_id = targetId.trim();
+        body.new_status = newStatus;
+      } else if (action === "void_match") {
+        body.match_id = targetId.trim();
+      } else if (action === "rerun_screening") {
+        body.entity_id = targetId.trim();
+      } else if (action === "regenerate_evidence") {
+        body.match_id = targetId.trim();
       }
+
+      const res = await apiFetch("admin-manual-overrides", {
+        method: "POST",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify(body),
+      });
+
+      const successCopy: Record<OverrideAction, string> = {
+        force_status: `Match status forced to "${newStatus}"`,
+        rerun_screening: "Screening re-run initiated",
+        regenerate_evidence: "Evidence pack regeneration initiated",
+        void_match: "Match voided",
+      };
+      toast.success(successCopy[action as OverrideAction]);
+      void res;
 
       setTargetId("");
       setReason("");

@@ -8656,6 +8656,18 @@ export type Database = {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: undefined
       }
+      resolve_admin_risk_item: {
+        Args: {
+          p_actor_ip?: string
+          p_admin_user_id: string
+          p_new_status: string
+          p_reason: string
+          p_request_id?: string
+          p_risk_item_id: string
+          p_user_agent?: string
+        }
+        Returns: Json
+      }
       resolve_notifications_for: {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: number
