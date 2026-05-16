@@ -628,6 +628,37 @@ async function _serve(req: Request): Promise<Response> {
       },
     });
 
+    // Batch C — Fix 3: persist a `pending` token_purchases row so the
+    // `transaction-reconciliation` cron can sweep stuck checkouts. The
+    // table has UNIQUE(paystack_reference); ON CONFLICT DO NOTHING makes
+    // a retried initiation idempotent. Failures here must NOT abort
+    // checkout — the audit_log + token_ledger guards already protect
+    // money integrity.
+    {
+      const { error: pendingErr } = await supabase
+        .from("token_purchases")
+        .insert({
+          org_id: profile.org_id,
+          user_id: userData.user.id,
+          paystack_reference: paystackData.data.reference,
+          package_id: packageId,
+          token_amount: pkg.credits,
+          amount_usd: pkg.price_usd,
+          currency: "USD",
+          status: "pending",
+          metadata: {
+            fx_basis: "native_usd",
+            client_ip: clientIp,
+            package_label: pkg.label,
+          },
+        });
+      if (pendingErr && pendingErr.code !== "23505") {
+        console.warn(
+          `[token-purchase] token_purchases pending insert failed (non-fatal): ${pendingErr.message}`,
+        );
+      }
+    }
+
     const responseBody = {
         success: true,
         checkoutUrl: paystackData.data.authorization_url,
