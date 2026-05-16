@@ -1,15 +1,13 @@
 /**
  * Public /status — Batch A Stage 1.
  *
- * Previously rendered hardcoded service rows and a mocked 90-day uptime bar
- * (`generateBars()`), and unconditionally claimed "All Systems Operational".
- *
- * Until Izenzo approves a public-incident-disclosure policy, this page
- * displays only a conservative, evidence-free configuration notice. No
- * uptime metrics, no per-service status, no synthetic green claims.
+ * Previously displayed hardcoded service rows with mocked uptime bars and
+ * unconditional health claims. Until a public-incident-disclosure policy is
+ * finalised, this page only shows a conservative configuration notice — no
+ * uptime metrics, no per-service indicators, no synthetic green claims.
  *
  * Truthful operational state lives behind auth on the admin HealthBoard,
- * which is driven by `cron_heartbeats` and `admin_risk_items`.
+ * driven by cron_heartbeats and admin_risk_items.
  */
 import { Wrench } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
