@@ -656,6 +656,16 @@ Deno.serve(async (req) => {
         if (!isPlatformAdmin) {
           return err("FORBIDDEN", "Break-glass is restricted to platform admins", 403);
         }
+        // AAL2 is mandatory on break-glass in addition to the in-RPC
+        // governance checks. Break-glass is the most sensitive override
+        // surface in the system.
+        const denial = await requireAal2(admin, authHeader, userId, "match_challenge.break_glass", {
+          match_id: parsed.data.match_id,
+          reason_category: parsed.data.reason_category ?? null,
+          internal_approval_reference: parsed.data.internal_approval_reference ?? null,
+        });
+        if (denial) return denial;
+
         const regulatorRef = (parsed.data.regulator_reference ?? "").trim();
         const { data, error: rpcErr } = await admin.rpc("platform_admin_break_glass_progress", {
           p_match_id: parsed.data.match_id,
@@ -678,6 +688,21 @@ Deno.serve(async (req) => {
           }
           return err("DB_ERROR", msg, 400);
         }
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.break_glass",
+          challengeId: (data as { id?: string } | null)?.id ?? null,
+          matchId: parsed.data.match_id,
+          actorUserId: userId,
+          actorOrgId: orgId,
+          afterStatus: (data as { status?: string } | null)?.status ?? null,
+          requestId,
+          extra: {
+            reason_category: parsed.data.reason_category ?? null,
+            internal_approval_reference: parsed.data.internal_approval_reference ?? null,
+            regulator_reference: regulatorRef.length === 0 ? null : regulatorRef,
+            reason_length: parsed.data.reason.length,
+          },
+        });
         return json({ challenge: data }, 200);
       }
 
