@@ -456,6 +456,21 @@ Deno.serve(async (req) => {
           }
         }
 
+        // AAL2 enforcement: any platform_admin-driven transition + any
+        // closure (outcome_recorded / closed_no_action) requires MFA.
+        const sensitive =
+          p.to_status === "outcome_recorded" ||
+          p.to_status === "closed_no_action" ||
+          (isPlatformAdmin && p.to_status !== "withdrawn");
+        if (sensitive) {
+          const denial = await requireAal2(admin, authHeader, userId, "match_challenge.transition", {
+            challenge_id: p.challenge_id,
+            match_id: challenge.match_id,
+            to_status: p.to_status,
+          });
+          if (denial) return denial;
+        }
+
         // Outcome shape rules (mirrors DB triggers, surfaced as friendly 400s).
         const update: Record<string, unknown> = { status: p.to_status };
         if (p.to_status === "outcome_recorded") {
@@ -497,6 +512,20 @@ Deno.serve(async (req) => {
         if (!row) {
           return err("CONFLICT", "Challenge state changed concurrently; please reload", 409);
         }
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.transitioned",
+          challengeId: p.challenge_id,
+          matchId: challenge.match_id,
+          actorUserId: userId,
+          actorOrgId: orgId,
+          beforeStatus: challenge.status,
+          afterStatus: p.to_status,
+          requestId,
+          extra: {
+            outcome_code: (update.outcome_code as string | undefined) ?? null,
+            via_platform_admin: isPlatformAdmin,
+          },
+        });
         return json({ challenge: row }, 200);
       }
 
