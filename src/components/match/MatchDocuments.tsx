@@ -601,6 +601,8 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // or "Unauthorized". Treat those as a participant/permission failure.
       const lower = `${raw} ${serverBody}`.toLowerCase();
       const isFinaliseParticipantBlock = lower.includes("org_not_participant");
+      const isDuplicate = lower.includes("duplicate_document");
+      const isUnreadable = lower.includes("file_unreadable");
       const isPermission =
         isFinaliseParticipantBlock ||
         lower.includes("row-level security") ||
@@ -610,7 +612,11 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         lower.includes("not allowed") ||
         lower.includes("permission denied") ||
         lower.includes("403");
-      const friendly = isFinaliseParticipantBlock
+      const friendly = isDuplicate
+        ? "This exact file is already attached to this match by your organisation."
+        : isUnreadable
+        ? "The file appears corrupt or truncated and cannot be accepted as evidence."
+        : isFinaliseParticipantBlock
         ? "Your organisation is not a participant on this match, so this document cannot be attached."
         : isPermission
         ? "Your organisation is not a participant on this match, so this document cannot be attached."
