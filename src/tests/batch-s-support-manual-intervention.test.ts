@@ -168,6 +168,7 @@ describe("Batch S — Support manual intervention hardening", () => {
     ];
     const allowlist = (p: string) =>
       /\b(test|tests|__tests__|\.test\.)\b/.test(p) ||
+      /_test\.ts$/.test(p) ||
       p.endsWith("batch-s-support-manual-intervention.test.ts");
     for (const f of files) {
       if (allowlist(f)) continue;
