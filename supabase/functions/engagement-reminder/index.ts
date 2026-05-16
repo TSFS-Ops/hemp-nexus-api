@@ -118,6 +118,11 @@ Deno.serve(async (req) => {
           type: "engagement_reminder",
           title: "Stale engagement - 7 days without contact",
           message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
+          // NOT-008: link the in-app row to the engagement so that
+          // resolve_notifications_for('poi_engagement', id) can auto-clear it
+          // when the engagement is accepted / declined / cancelled / expired.
+          entity_type: "poi_engagement",
+          entity_id: eng.id,
           metadata: {
             engagement_id: eng.id,
             match_id: eng.match_id,
