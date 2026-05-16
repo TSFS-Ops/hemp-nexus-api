@@ -111,6 +111,7 @@ export function readRecentPendingAttempts(creditedRefs: Set<string> = new Set())
     if (!Number.isFinite(started)) return false;
     return now - started < PENDING_WARN_WINDOW_MS;
   });
+}
 
 function readAttempts(): PaystackAttempt[] {
   try {
