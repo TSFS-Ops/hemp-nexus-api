@@ -3,6 +3,8 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
+import { assertAal2 } from "../_shared/aal.ts";
+import { extractClientIp, extractUserAgent } from "../_shared/security-audit.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -64,6 +66,15 @@ Deno.serve(async (req) => {
         throw new ApiException("FORBIDDEN", "Break-glass actions require Director role", 403);
       }
 
+      // Batch U AUD-018 — require AAL2 (MFA) in addition to password reauth
+      // and the existing reason capture. Fails closed if the JWT is aal1.
+      await assertAal2(req.headers.get("authorization"), {
+        adminClient,
+        callerUserId: authCtx.userId,
+        action: "break-glass.post",
+        context: { request_id: requestId },
+      });
+
       const body = await req.json();
       const { action_type, reason, target_org_id, reauth_password } = body;
 
@@ -74,6 +85,11 @@ Deno.serve(async (req) => {
       if (!reauth_password || typeof reauth_password !== "string" || reauth_password.length < 1) {
         throw new ApiException("REAUTH_REQUIRED", "Password re-verification is required for break-glass actions", 401);
       }
+
+      // Batch U AUD-018 — capture caller IP/UA so the break_glass_actions
+      // ledger and the audit_log row both preserve operator context.
+      const actorIp = extractClientIp(req);
+      const userAgent = extractUserAgent(req);
 
       // ── Server-side re-authentication ──
       // Verify the caller's password via GoTrue token endpoint.
@@ -171,7 +187,12 @@ Deno.serve(async (req) => {
         action_type,
         reason,
         target_org_id: target_org_id || null,
-        metadata: { request_id: requestId },
+        metadata: {
+          request_id: requestId,
+          actor_ip: actorIp,
+          user_agent: userAgent,
+          aal: "aal2",
+        },
       });
 
       // Audit log
@@ -181,7 +202,14 @@ Deno.serve(async (req) => {
         action: `break-glass.${action_type}`,
         entity_type: "system",
         entity_id: target_org_id || null,
-        metadata: { reason, action_type, request_id: requestId },
+        metadata: {
+          reason,
+          action_type,
+          request_id: requestId,
+          actor_ip: actorIp,
+          user_agent: userAgent,
+          aal: "aal2",
+        },
       });
 
       return new Response(JSON.stringify({
