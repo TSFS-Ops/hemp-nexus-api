@@ -234,8 +234,22 @@ export function MatchesList() {
     };
   }, []);
 
-  const getStatusBadge = (status: string) => {
-    return <MatchStatusBadge status={status} />;
+  // Batch T — UI-013: derive truthfulness qualifiers from row metadata so
+  // operators never see a clean "settled" label when the row was actually
+  // produced via a test-mode bypass or a failed provider attempt.
+  const getStatusBadge = (status: string, metadata?: Record<string, unknown> | null) => {
+    const md = (metadata ?? {}) as Record<string, unknown>;
+    const testMode =
+      md.test_mode === true ||
+      md.test_mode_bypass === true ||
+      md.is_test_mode === true ||
+      (typeof md.source === "string" && md.source.toLowerCase().includes("test_mode"));
+    const providerError =
+      md.provider_status === "provider_error" ||
+      md.provider_status === "failed" ||
+      md.dispatch_status === "failed" ||
+      md.last_status === "failed";
+    return <MatchStatusBadge status={status} testMode={testMode} providerError={providerError} />;
   };
 
   const toggleMatchSelection = (matchId: string) => {
