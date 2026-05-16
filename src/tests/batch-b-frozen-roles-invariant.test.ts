@@ -40,11 +40,13 @@ describe("Batch B Fix 4 — frozen role live-data invariant", () => {
   }
 
   it("public.user_roles contains zero rows for any frozen role", async () => {
-    // Lazy, dynamic import so this file type-checks and loads even when
-    // `pg` is not installed. We only reach this branch when PG* env vars
-    // are present, which implies the runtime has `pg` available.
+    // Runtime-only import hidden from Vite's static analyser via Function
+    // so the file type-checks and loads even when `pg` is not installed
+    // (it is an optional CI-only dependency).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-new-func
+    const dynamicImport = new Function("m", "return import(m)") as (m: string) => Promise<any>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pg: any = await import(/* @vite-ignore */ ("pg" as string)).catch(() => null);
+    const pg: any = await dynamicImport("pg").catch(() => null);
     if (!pg) {
       console.warn("[batch-b/fix-4] `pg` module unavailable at runtime; skipping live check.");
       return;
