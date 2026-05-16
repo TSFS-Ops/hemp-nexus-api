@@ -1188,6 +1188,8 @@ Deno.serve(async (req) => {
                 body: `A Proof of Intent has been issued for ${match.commodity || 'a trade'} by ${creatorOrgName}. Your organisation is the ${counterpartySide}. Review and respond.`,
                 link: `/desk/match/${matchId}`,
                 org_id: counterpartyOrgId,
+                entity_type: "match",
+                entity_id: matchId,
               }));
               await supabase.from("notifications").upsert(notifRows, { onConflict: 'user_id,type,link', ignoreDuplicates: true });
 
