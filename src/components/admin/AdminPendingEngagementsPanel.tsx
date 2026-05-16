@@ -331,13 +331,27 @@ export function AdminPendingEngagementsPanel() {
   // isolation. Behaviour is unchanged.
   const [delivery, setDelivery] = useState<Record<string, OutreachDelivery>>({});
 
+  // Batch F UI surfacing — engagement-linked bounce/complaint audit signal.
+  // Source-of-truth: audit_logs rows written by handle-email-suppression with
+  //   entity_type='poi_engagement', action in ('engagement.outreach_bounced',
+  //   'engagement.outreach_complained'), entity_id = <engagement_id>.
+  // Strict UUID-linked — no inference. Latest row per engagement wins.
+  type EngagementBounceAudit = {
+    kind: "bounced" | "complained";
+    at: string;
+    message_id: string | null;
+  };
+  const [bounceAudit, setBounceAudit] = useState<Record<string, EngagementBounceAudit>>({});
+
   useEffect(() => {
     if (engagements.length === 0) {
       setDelivery({});
+      setBounceAudit({});
       return;
     }
     let cancelled = false;
     const visibleIds = new Set(engagements.map((e) => e.id));
+    const visibleIdList = Array.from(visibleIds);
     const oldest = engagements.reduce(
       (min, e) => (e.created_at < min ? e.created_at : min),
       engagements[0].created_at,
@@ -358,6 +372,44 @@ export function AdminPendingEngagementsPanel() {
         // Zero swallowed errors — log but keep panel functional.
         console.warn(
           "[AdminPendingEngagementsPanel] failed to load email_send_log delivery status:",
+          err,
+        );
+      }
+    })();
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("audit_logs")
+          .select("action,entity_id,created_at,metadata")
+          .eq("entity_type", "poi_engagement")
+          .in("action", ["engagement.outreach_bounced", "engagement.outreach_complained"])
+          .in("entity_id", visibleIdList)
+          .order("created_at", { ascending: false })
+          .limit(1000);
+        if (error) throw error;
+        if (cancelled || !data) return;
+        const next: Record<string, EngagementBounceAudit> = {};
+        for (const row of data as Array<{
+          action: string;
+          entity_id: string | null;
+          created_at: string;
+          metadata: Record<string, unknown> | null;
+        }>) {
+          const eid = row.entity_id;
+          // Strict UUID-linked: only accept rows whose entity_id is an
+          // engagement actually visible in this panel render.
+          if (!eid || !visibleIds.has(eid)) continue;
+          if (next[eid]) continue;
+          next[eid] = {
+            kind: row.action === "engagement.outreach_complained" ? "complained" : "bounced",
+            at: row.created_at,
+            message_id: ((row.metadata ?? {}) as Record<string, unknown>).message_id as string ?? null,
+          };
+        }
+        setBounceAudit(next);
+      } catch (err) {
+        console.warn(
+          "[AdminPendingEngagementsPanel] failed to load engagement bounce audit:",
           err,
         );
       }
