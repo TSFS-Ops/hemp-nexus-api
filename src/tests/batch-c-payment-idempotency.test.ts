@@ -209,8 +209,10 @@ describe("Batch C — Fix 4: two-tab pending notice", () => {
     // Must not call any disabling/blocking helper.
     expect(PENDING_NOTICE).toMatch(/role="status"/);
     expect(PENDING_NOTICE).not.toMatch(/disabled\s*=/);
-    // Must NOT claim the previous purchase failed.
-    expect(PENDING_NOTICE).not.toMatch(/failed/i);
+    // Must NOT claim the previous purchase failed (rendered copy only —
+    // doc-comments may discuss the constraint).
+    const renderBlock = PENDING_NOTICE.split("return (")[1] ?? "";
+    expect(renderBlock).not.toMatch(/failed/i);
   });
 
   it("PendingPurchaseNotice is mounted near Purchase CTAs in both surfaces", () => {
