@@ -69,6 +69,17 @@ export interface ReplayGuardOptions {
   fnName?: string;
   /** Caller's own request id, threaded into the decision log. */
   requestId?: string | null;
+  /**
+   * Override the HTTP status returned on a detected replay.
+   *
+   * Default `409` is correct for most signed-webhook senders that treat
+   * 4xx as "do not retry". Some providers (notably Paystack) treat any
+   * non-2xx as failure and keep retrying — which is wasteful when we
+   * already know the event is a known-safe duplicate. Pass `200` for
+   * those providers; the body still carries `code: WEBHOOK_REPLAY` so
+   * monitoring continues to count replays correctly.
+   */
+  replayResponseStatus?: number;
 }
 
 export type ReplayGuardResult =
@@ -238,7 +249,11 @@ export async function assertNotReplayed(
       });
       return {
         ok: false,
-        response: jsonResponse(REPLAY_RESPONSE_BODY, 409, extraResponseHeaders),
+        response: jsonResponse(
+          { ...REPLAY_RESPONSE_BODY, replayed: true, idempotent: true },
+          opts.replayResponseStatus ?? 409,
+          extraResponseHeaders,
+        ),
       };
     }
     // Unexpected DB error. Fail CLOSED — a webhook we can't replay-check
