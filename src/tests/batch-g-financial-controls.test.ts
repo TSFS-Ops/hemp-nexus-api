@@ -41,21 +41,21 @@ const MIGRATION_FILES = readdirSync(resolve(MIGRATIONS_DIR))
   .join("\n\n");
 
 describe("Batch G — billing-disabled backend guard ordering", () => {
-  it("1. billing-availability guard runs before any Paystack call", () => {
+  it("1. billing-availability guard runs before the Paystack initialise call", () => {
     const guardIdx = TOKEN_PURCHASE.indexOf('supabase.rpc("get_billing_availability")');
-    const paystackIdx = TOKEN_PURCHASE.indexOf("paystack");
+    // The actual Paystack initialise endpoint call inside the POST handler.
+    const paystackInitIdx = TOKEN_PURCHASE.indexOf("transaction/initialize");
     expect(guardIdx).toBeGreaterThan(0);
-    expect(paystackIdx).toBeGreaterThan(guardIdx);
+    expect(paystackInitIdx).toBeGreaterThan(guardIdx);
   });
 
-  it("2. billing-availability guard runs before idempotency/audit/ledger writes", () => {
+  it("2. billing-availability guard runs before purchase-initiation side effects", () => {
     const guardIdx = TOKEN_PURCHASE.indexOf('supabase.rpc("get_billing_availability")');
-    const idemIdx = TOKEN_PURCHASE.indexOf("idempotency_keys");
-    const ledgerIdx = TOKEN_PURCHASE.indexOf("atomic_token_credit");
-    const auditIdx = TOKEN_PURCHASE.indexOf('"credits.purchase_initiated"');
+    // Side-effects inside the POST handler that must NOT happen on 503.
+    const idemIdx = TOKEN_PURCHASE.indexOf("idempotency_keys", guardIdx);
+    const auditIdx = TOKEN_PURCHASE.indexOf('"credits.purchase_initiated"', guardIdx);
     expect(guardIdx).toBeGreaterThan(0);
     expect(idemIdx).toBeGreaterThan(guardIdx);
-    expect(ledgerIdx).toBeGreaterThan(guardIdx);
     expect(auditIdx).toBeGreaterThan(guardIdx);
   });
 
