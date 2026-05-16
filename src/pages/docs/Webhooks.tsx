@@ -136,18 +136,30 @@ export default function DocsWebhooks() {
         <DocH3>Headers on every delivery</DocH3>
         <ParamTable
           rows={[
-            { name: "X-Webhook-Signature", type: "hex sha256", desc: "HMAC-SHA256 of the raw body, keyed by your endpoint secret." },
-            { name: "X-Webhook-Event",     type: "string",     desc: "Event name, e.g. intent.confirmed. Mirrors the payload's event field." },
-            { name: "X-Webhook-Timestamp", type: "ISO-8601",   desc: "Server time at which the event was emitted." },
-            { name: "Content-Type",        type: "string",     desc: "Always application/json." },
+            { name: "X-Webhook-Signature",       type: "hex sha256", desc: "HMAC-SHA256 of the raw body, keyed by your endpoint secret." },
+            { name: "X-Webhook-Event",           type: "string",     desc: "Event name, e.g. intent.confirmed. Mirrors the payload's event field." },
+            { name: "X-Webhook-Timestamp",       type: "ISO-8601",   desc: "Server time at which the event was emitted." },
+            { name: "X-Webhook-Idempotency-Key", type: "string",     desc: "Stable per-logical-event key. Identical across retries; use it to deduplicate on your side." },
+            { name: "Content-Type",              type: "string",     desc: "Always application/json." },
           ]}
         />
 
+        <DocH2 id="rotation">Secret rotation</DocH2>
+        <DocP>
+          Call <InlineCode>POST /webhooks/:id/rotate</InlineCode> to generate a new
+          signing secret. The new secret is returned <strong>once</strong> in the
+          response. The previous secret remains valid for inbound signature checks for
+          a <InlineCode>24-hour grace window</InlineCode>; after that it is removed.
+          Your audit log records a <InlineCode>webhook.secret_rotated</InlineCode>
+          entry with the grace expiry.
+        </DocP>
+
         <DocH2 id="best-practices">Best practices</DocH2>
         <DocP>
-          Make your handler idempotent - the platform may retry a delivery you've already
-          processed. Key your processing on <InlineCode>data.matchId</InlineCode> (or the most
-          specific identifier in the payload) and skip duplicates. Respond 2xx as soon as the
+          Make your handler idempotent — the platform may retry a delivery you've already
+          processed. Key your processing on{" "}
+          <InlineCode>X-Webhook-Idempotency-Key</InlineCode> (or the most specific
+          identifier in the payload) and skip duplicates. Respond 2xx as soon as the
           payload is persisted; do downstream work asynchronously.
         </DocP>
       </div>
