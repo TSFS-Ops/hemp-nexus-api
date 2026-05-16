@@ -51,6 +51,7 @@ import { AdminOutreachBlocksPanel } from "@/components/admin/AdminOutreachBlocks
 
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
 import { EmailRetentionHealth } from "@/components/admin/EmailRetentionHealth";
+import { AiQuotaHealth } from "@/components/admin/AiQuotaHealth";
 import { AdminEventStorePanel } from "@/components/admin/AdminEventStorePanel";
 import { AdminRiskAlarmsPanel } from "@/components/admin/AdminRiskAlarmsPanel";
 import { AdminRatingAppealsPanel } from "@/components/admin/AdminRatingAppealsPanel";
