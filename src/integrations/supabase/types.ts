@@ -5347,9 +5347,17 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
+          contact_completeness_state: string
           created_at: string
+          email: string | null
           entity_id: string
           id: string
+          manual_follow_up_reason: string | null
+          notes: string | null
+          phone: string | null
           programme_id: string
           role: string
           status: string
@@ -5358,9 +5366,17 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          contact_completeness_state?: string
           created_at?: string
+          email?: string | null
           entity_id: string
           id?: string
+          manual_follow_up_reason?: string | null
+          notes?: string | null
+          phone?: string | null
           programme_id: string
           role?: string
           status?: string
@@ -5369,9 +5385,17 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          contact_completeness_state?: string
           created_at?: string
+          email?: string | null
           entity_id?: string
           id?: string
+          manual_follow_up_reason?: string | null
+          notes?: string | null
+          phone?: string | null
           programme_id?: string
           role?: string
           status?: string
@@ -8087,6 +8111,16 @@ export type Database = {
       }
       anonymise_old_email_send_log: {
         Args: { p_days?: number; p_dry_run?: boolean }
+        Returns: Json
+      }
+      archive_programme_participant: {
+        Args: {
+          p_actor_org_id: string
+          p_actor_user_id: string
+          p_override_linked?: boolean
+          p_participant_id: string
+          p_reason: string
+        }
         Returns: Json
       }
       atomic_accept_bind: {
