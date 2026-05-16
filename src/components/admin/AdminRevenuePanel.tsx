@@ -562,7 +562,9 @@ export function AdminRevenuePanel() {
       target_type: "audit_logs",
       sensitive: true,
       rowCount: rows.length,
-      filters: { time_window: timeWindow, granularity, selected_org: selectedOrg },
+      // Batch U SEC-012: explicit demo_excluded=true so an auditor inspecting
+      // the file preamble can confirm the totals are production-only.
+      filters: { time_window: timeWindow, granularity, selected_org: selectedOrg, demo_excluded: true },
     });
     if (result.aal_required) {
       toast.error("Multi-factor authentication required for this export.", {
