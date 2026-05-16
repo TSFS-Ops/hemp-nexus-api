@@ -94,12 +94,12 @@ async function deliverWebhook(
   const body = JSON.stringify(payload);
   const signature = await generateSignature(body, secret);
 
-  // POI-004 stage-2: structural dedupe by (endpoint, event idempotency key).
+  // POI-004 stage-2 / Batch D: structural dedupe by (endpoint, event idempotency key).
   // If a row already exists for this endpoint + key, we have already
   // delivered (or attempted to deliver) this logical event — do NOT POST
   // again. Returns idempotent:true so callers can distinguish from a fresh
   // delivery in metrics.
-  if (eventIdempotencyKey) {
+  {
     const { data: prior } = await supabase
       .from("webhook_deliveries")
       .select("id, response_status_code")
@@ -131,12 +131,18 @@ async function deliverWebhook(
         "X-Webhook-Signature": signature,
         "X-Webhook-Event": payload.event,
         "X-Webhook-Timestamp": payload.timestamp,
+        "X-Webhook-Idempotency-Key": eventIdempotencyKey,
       },
       body,
+      // Batch D — bounded fetch. Without this, a hung receiver could
+      // block the parent function for its entire wall-clock budget.
+      signal: AbortSignal.timeout(PRIMARY_DELIVERY_TIMEOUT_MS),
     });
 
     responseStatusCode = response.status;
-    responseBody = await response.text();
+    // Batch D — read at most MAX_RESPONSE_BODY_BYTES before aborting the
+    // stream. Persisted body is then truncated to 1000 chars as before.
+    responseBody = await readBoundedResponseBody(response);
 
     // Calculate next retry time if failed
     let nextRetry = null;
@@ -154,7 +160,7 @@ async function deliverWebhook(
       webhook_endpoint_id: webhookEndpointId,
       org_id: payload.orgId,
       event_type: payload.event,
-      event_idempotency_key: eventIdempotencyKey ?? null,
+      event_idempotency_key: eventIdempotencyKey,
       payload: payload.data,
       response_status_code: responseStatusCode,
       response_body: responseBody.substring(0, 1000),
@@ -175,6 +181,11 @@ async function deliverWebhook(
   } catch (error) {
     console.error(`Webhook delivery failed to ${url}:`, error);
     errorMessage = error instanceof Error ? error.message : "Unknown error";
+    // Batch D — surface timeout in the error_message so operators can
+    // distinguish hung receivers from refused/5xx ones in logs.
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      errorMessage = `timeout after ${PRIMARY_DELIVERY_TIMEOUT_MS}ms`;
+    }
 
     // Schedule retry on network error
     const retryDate = new Date();
@@ -185,7 +196,7 @@ async function deliverWebhook(
       webhook_endpoint_id: webhookEndpointId,
       org_id: payload.orgId,
       event_type: payload.event,
-      event_idempotency_key: eventIdempotencyKey ?? null,
+      event_idempotency_key: eventIdempotencyKey,
       payload: payload.data,
       response_status_code: 0,
       error_message: errorMessage,
