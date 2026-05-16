@@ -704,7 +704,7 @@ export function MatchesList() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                                onClick={() => {
+                                onClick={async () => {
                                   const row = [
                                     match.id, match.commodity, match.buyer_id, match.buyer_name,
                                     match.seller_id, match.seller_name, match.quantity_amount,
@@ -715,7 +715,22 @@ export function MatchesList() {
                                     "ID", "Commodity", "Buyer ID", "Buyer Name", "Seller ID", "Seller Name",
                                     "Quantity", "Unit", "Price", "Currency", "Status", "Created At", "Settled At", "Hash",
                                   ];
-                                  downloadCSV(headers, [row], `match-${match.id.slice(0, 8)}.csv`);
+                                  // Batch T — AUD-017: single-row export is also audited.
+                                  const result = await auditedDownloadCSV(headers, [row], {
+                                    reportName: "matches.single_export",
+                                    filename: `match-${match.id.slice(0, 8)}.csv`,
+                                    target_type: "matches",
+                                    sensitive: true,
+                                    filters: { match_id: match.id },
+                                  });
+                                  if (!result.ok) {
+                                    if (result.aal_required) {
+                                      toast.error("Step-up authentication required to export this match.");
+                                    } else {
+                                      toast.error(result.error ?? "Failed to export match");
+                                    }
+                                    return;
+                                  }
                                   toast.success("Match exported");
                                 }}
                               >
