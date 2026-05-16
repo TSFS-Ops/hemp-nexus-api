@@ -33,7 +33,6 @@ describe("Batch T — UI truthfulness static guards", () => {
       "src/components/admin/AdminRevenuePanel.tsx",
       "src/components/admin/UsersManagement.tsx",
       "src/components/admin/AdminPendingEngagementsPanel.tsx",
-      "src/components/match/EvidencePackPanel.tsx",
     ];
 
     it.each(SENSITIVE_EXPORTERS)(
@@ -41,8 +40,6 @@ describe("Batch T — UI truthfulness static guards", () => {
       (file) => {
         const src = read(file);
         expect(src).toMatch(/auditedDownloadCSV(Raw)?/);
-        // The raw import must not appear — `downloadCSV` on its own would
-        // bypass the audit + AAL2 gate.
         const importLine = src
           .split("\n")
           .find((l) => l.includes("from \"@/lib/download-utils\""));
@@ -50,6 +47,19 @@ describe("Batch T — UI truthfulness static guards", () => {
         expect(importLine!).not.toMatch(/\bdownloadCSV\b/);
       },
     );
+
+    it("EvidencePackPanel routes its audit-trail export through recordExportAudit", () => {
+      // EvidencePackPanel emits a non-CSV evidence bundle, so it uses the
+      // lower-level helper directly. AUD-017 still requires the audit
+      // row to be written before the file is downloaded.
+      const src = read("src/components/match/EvidencePackPanel.tsx");
+      expect(src).toMatch(/recordExportAudit/);
+      const auditIdx = src.indexOf("recordExportAudit");
+      const downloadIdx = src.indexOf("downloadFile(");
+      expect(auditIdx).toBeGreaterThan(-1);
+      expect(downloadIdx).toBeGreaterThan(-1);
+      expect(auditIdx).toBeLessThan(downloadIdx);
+    });
 
     it("auditedDownloadCSV writes the audit row BEFORE the file is downloaded", () => {
       const src = read("src/lib/download-utils.ts");
