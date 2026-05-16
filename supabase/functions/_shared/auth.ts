@@ -344,6 +344,10 @@ const authenticateApiKey = async (
     orgId: matchedKey.org_id,
     roles: matchedKey.scopes || [],
     isApiKey: true,
+    actorIp: meta.actorIp,
+    userAgent: meta.userAgent,
+    origin: meta.origin,
+    requestId: meta.requestId,
   };
 };
 
