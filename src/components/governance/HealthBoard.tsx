@@ -378,6 +378,8 @@ export function HealthBoard() {
           )}
         </ul>
       </section>
+
+      <RecentSensitiveSettingsTile />
     </>
   );
 }
