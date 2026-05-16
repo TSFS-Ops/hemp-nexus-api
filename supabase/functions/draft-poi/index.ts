@@ -24,6 +24,22 @@ serve(async (req) => {
 async function _serve(req: Request): Promise<Response> {
 
   try {
+    // Batch F: require auth so we can scope the AI guard meter per org.
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    let orgId: string;
+    try {
+      const authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
+      if (!authCtx.orgId) throw new Error("no org");
+      orgId = authCtx.orgId;
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized — sign in to draft a POI." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const admin = createClient(supabaseUrl, serviceKey);
+
     const { rawText } = await req.json();
 
     if (!rawText || typeof rawText !== "string" || rawText.trim().length < 10) {
