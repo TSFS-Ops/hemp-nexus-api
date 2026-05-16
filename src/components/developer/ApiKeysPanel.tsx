@@ -53,9 +53,11 @@ async function callKeysFn<T = unknown>(
   return json as T;
 }
 
-function maskedKeyDisplay(name: string) {
+function maskedKeyDisplay(id: string, environment: string | null = "live") {
   // We never store plaintext, so always show a stable visual placeholder
-  return `iz_live_••••••••••••••••${name.slice(0, 4).padEnd(4, "x").toLowerCase()}`;
+  // that mirrors the real key contract (sk_live_ / sk_test_).
+  const env = (environment || "live").toLowerCase() === "sandbox" ? "test" : "live";
+  return `sk_${env}_••••••••••••••••${id.slice(0, 4).padEnd(4, "x").toLowerCase()}`;
 }
 
 function RevealModal({ data, onClose }: { data: RevealedKey; onClose: () => void }) {
@@ -189,7 +191,7 @@ function KeyCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(row.name);
   const env = (row.environment || "live").toLowerCase();
-  const masked = maskedKeyDisplay(row.id);
+  const masked = maskedKeyDisplay(row.id, row.environment);
   const lastUsed = row.last_used_at
     ? formatDistanceToNow(new Date(row.last_used_at), { addSuffix: true })
     : "never";
