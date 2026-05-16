@@ -197,6 +197,15 @@ Deno.serve(async (req: Request) => {
           console.error("[lifecycle-scheduler] per-match expiry audit failed:", e);
         }
       }
+
+      // NOT-008: resolve any unread in-app notifications attached to these
+      // now-expired matches (e.g. "POI pending" reminders, counterparty pings).
+      for (const m of expiredMatches) {
+        await resolveNotificationsFor(admin, "match", m.id, {
+          requestId: runRequestId,
+          source: "lifecycle-scheduler:match_expired",
+        });
+      }
     } else if (dryRun) {
       expiredMatches = (matchesToExpire ?? []).map((m: any) => ({ id: m.id }));
     }
