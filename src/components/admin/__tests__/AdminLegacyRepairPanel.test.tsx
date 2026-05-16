@@ -96,6 +96,17 @@ describe("AdminLegacyRepairPanel — Step 5 admin actions", () => {
     expect(await screen.findByText(/Settled status with draft POI/i)).toBeInTheDocument();
   });
 
+  it("surfaces Legacy Repair queue RPC failures without generic masking", async () => {
+    rpcSpy.mockResolvedValueOnce({
+      data: null,
+      error: { message: "function public.is_admin() does not exist" },
+    });
+    renderPanel();
+    expect(
+      await screen.findByText(/function public\.is_admin\(\) does not exist/i),
+    ).toBeInTheDocument();
+  });
+
   it("renders the Step 6 'Record detection audit' button and does not auto-scan", async () => {
     rpcSpy.mockResolvedValueOnce({ data: [FIXTURE_ROW], error: null });
     renderPanel();
