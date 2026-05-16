@@ -268,22 +268,52 @@ Deno.serve(async (req: Request) => {
 
       const providerConfig = (providerSetting?.value as any) || {};
       const isCompany = entity.entity_type === "company" || entity.entity_type === "corporate" || verification_type === "company";
+      const resolvedProvider = isCompany
+        ? (providerConfig.company_provider || "stub")
+        : (providerConfig.individual_provider || "stub");
+
+      // ── Batch I Fix 6: provider retry cooldown ──
+      const cooldownScope = {
+        gate: "idv" as const,
+        provider: resolvedProvider,
+        entityId: entity_id,
+        orgId,
+      };
+      const cooldown = await checkProviderCooldown(admin, cooldownScope);
+      if (cooldown.inCooldown) {
+        await admin.from("audit_logs").insert({
+          org_id: orgId,
+          actor_user_id: actorUserId,
+          action: "idv.provider_retry_cooldown_blocked",
+          entity_type: "entity",
+          entity_id,
+          metadata: {
+            provider: resolvedProvider,
+            scope_key: cooldown.scopeKey,
+            cooldown_until: cooldown.cooldownUntil,
+            failure_count: cooldown.failureCount,
+            request_id: requestId,
+          },
+        });
+        return new Response(JSON.stringify(cooldownResponseEnvelope(cooldown, requestId)), {
+          status: 429,
+          headers: { ...headers, "Content-Type": "application/json", "Retry-After": "3600" },
+        });
+      }
 
       let result: VerificationResult;
 
       try {
         if (isCompany) {
-          const companyProvider = providerConfig.company_provider || "stub";
-          if (companyProvider === "companies_house") {
+          if (resolvedProvider === "companies_house") {
             result = await verifyWithCompaniesHouse(entity.registration_number || "", entity.legal_name);
-          } else if (companyProvider === "cipc") {
+          } else if (resolvedProvider === "cipc") {
             result = await verifyWithCIPC(entity_id, entity.registration_number || "", entity.legal_name);
           } else {
             result = await verifyWithStub(entity_id, entity.entity_type, entity.legal_name);
           }
         } else {
-          const individualProvider = providerConfig.individual_provider || "stub";
-          if (individualProvider === "onfido") {
+          if (resolvedProvider === "onfido") {
             result = await verifyWithOnfido(entity_id, entity.entity_type, entity.legal_name);
           } else {
             result = await verifyWithStub(entity_id, entity.entity_type, entity.legal_name);
@@ -292,6 +322,8 @@ Deno.serve(async (req: Request) => {
       } catch (err) {
         // Batch F: provider-down → audit, do NOT promote entity, return typed envelope.
         if (err instanceof IdvProviderError) {
+          // Batch I Fix 6: bump retry counter (may set 24h cooldown).
+          const post = await recordProviderFailure(admin, cooldownScope);
           await admin.from("audit_logs").insert({
             org_id: orgId,
             actor_user_id: actorUserId,
@@ -304,6 +336,8 @@ Deno.serve(async (req: Request) => {
               reason: err.reason,
               request_id: requestId,
               verification_type: isCompany ? "company" : "individual",
+              failure_count: post.failureCount,
+              cooldown_until: post.cooldownUntil,
             },
           });
           return new Response(
@@ -313,6 +347,8 @@ Deno.serve(async (req: Request) => {
               provider: err.provider,
               reason: err.reason,
               status_code: err.statusCode,
+              failure_count: post.failureCount,
+              cooldown_until: post.cooldownUntil,
               message:
                 "The identity verification provider is currently unavailable. The entity remains pending and an admin can review the failure.",
               entity_id,
@@ -324,9 +360,39 @@ Deno.serve(async (req: Request) => {
         throw err;
       }
 
-      // Update entity status based on result
+      // Update entity status based on result.
+      // NOTE: Batch I Fix 2 — "review" must NEVER promote to verified. Instead
+      // we open a dd_approval_requests row (idempotent per entity/provider/day)
+      // so admins can clear or reject the case from the existing compliance UI.
       if (result.status === "verified") {
         await admin.from("entities").update({ status: "verified" }).eq("id", entity_id);
+      } else if (result.status === "review") {
+        const todayUtc = new Date().toISOString().slice(0, 10);
+        const dedupKey = `idv_review:${entity_id}:${result.provider}:${todayUtc}`;
+        await admin
+          .from("dd_approval_requests")
+          .upsert(
+            {
+              target_org_id: orgId,
+              requesting_org_id: orgId,
+              status: "pending",
+              required_roles: ["compliance_analyst"],
+              reason: `IDV provider returned 'review' for entity ${entity.legal_name} — manual verification required.`,
+              kind: "idv_review",
+              dedup_key: dedupKey,
+              metadata: {
+                entity_id,
+                entity_type: entity.entity_type,
+                provider: result.provider,
+                provider_reference: result.provider_reference ?? null,
+                raw_status: result.status,
+                details: result.details,
+                request_id: requestId,
+                created_by: actorUserId,
+              },
+            },
+            { onConflict: "dedup_key", ignoreDuplicates: true },
+          );
       }
 
       // Audit
@@ -340,6 +406,7 @@ Deno.serve(async (req: Request) => {
           provider: result.provider,
           status: result.status,
           provider_reference: result.provider_reference,
+          manual_review_queued: result.status === "review",
         },
       });
 
@@ -347,6 +414,7 @@ Deno.serve(async (req: Request) => {
         success: true,
         entity_id,
         verification: result,
+        manual_review_queued: result.status === "review",
       }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
     }
 
