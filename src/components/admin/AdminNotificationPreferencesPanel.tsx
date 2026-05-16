@@ -258,7 +258,7 @@ export function AdminNotificationPreferencesPanel() {
                   <TableCell colSpan={5}>
                     <EmptyState
                       title="No users match"
-                      description="Adjust the filters or clear the search to broaden the result set."
+                      message="Adjust the filters or clear the search to broaden the result set."
                     />
                   </TableCell>
                 </TableRow>
