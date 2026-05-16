@@ -59,7 +59,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2, RefreshCw, Download } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
+import { auditedDownloadCSV, timestampedFilename } from "@/lib/download-utils";
+import { toast } from "sonner";
 
 // Canonical actions — must match the three Batch E catalogue entries.
 export const OUTREACH_BLOCKED_ACTIONS = [

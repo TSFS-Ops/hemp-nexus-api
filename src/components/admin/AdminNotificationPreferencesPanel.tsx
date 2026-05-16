@@ -29,7 +29,7 @@ import { Download, Loader2, RefreshCw, Search, Shield } from "lucide-react";
 import { EmptyState } from "@/components/ui/error-state";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { downloadCSV, timestampedFilename } from "@/lib/download-utils";
+import { auditedDownloadCSV, timestampedFilename } from "@/lib/download-utils";
 import { recordExportAudit } from "@/lib/export-audit";
 
 type PrefsRow = {
