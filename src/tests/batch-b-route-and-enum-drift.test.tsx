@@ -101,6 +101,29 @@ describe("Batch B Fix 1 — privileged routes are guarded in App.tsx", () => {
   it("/billing is a hard Navigate into the guarded /desk/billing shell", () => {
     expect(APP_TSX).toMatch(/path="\/billing"\s+element=\{<Navigate to="\/desk\/billing" replace \/>\}/);
   });
+
+  // denied=1 contract — same fallbackRoute="/desk" is shared by /hq AND
+  // every /governance/* route, so the RoleRedirect helper in RequireAuth
+  // appends ?denied=1 (or &denied=1) uniformly. AuthRedirectNoticeBanner
+  // surfaces that flag. Pin both ends so a regression can't silently strip
+  // the denial notice for one route family but not the other.
+  it("RequireAuth role-redirect appends denied=1 to its fallbackRoute (shared by /hq + /governance)", () => {
+    const src = readFileSync(path.resolve(process.cwd(), "src/components/RequireAuth.tsx"), "utf-8");
+    expect(src).toMatch(/denied=1/);
+    expect(src).toMatch(/fallbackRoute\.includes\("\?"\)\s*\?\s*"&"\s*:\s*"\?"/);
+  });
+
+  it("every privileged RequireAuth in App.tsx that takes a role uses fallbackRoute=\"/desk\"", () => {
+    // Pin every RequireAuth invocation that has a `role=` prop — they must
+    // ALL declare fallbackRoute="/desk" so the denied=1 notice path is
+    // uniform across HQ and Governance. New privileged routes can't quietly
+    // skip the fallback and dump the user on a blank /.
+    const guards = Array.from(APP_TSX.matchAll(/<RequireAuth\s+role=[^>]+>/g)).map((m) => m[0]);
+    expect(guards.length).toBeGreaterThanOrEqual(6); // /hq, /hq/:tab, 4× governance
+    for (const g of guards) {
+      expect(g, `guard missing fallbackRoute="/desk": ${g}`).toMatch(/fallbackRoute="\/desk"/);
+    }
+  });
 });
 
 // ─── Fix 2 — Legacy /admin/* redirects land on guarded /hq/* targets ───
