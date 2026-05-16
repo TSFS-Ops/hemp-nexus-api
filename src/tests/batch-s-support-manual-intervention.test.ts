@@ -121,7 +121,8 @@ describe("Batch S — Support manual intervention hardening", () => {
     expect(src).toMatch(/beforeSnapshot\s*=\s*\{[\s\S]*status: request\.status/);
     expect(src).toMatch(/before:\s*beforeSnapshot/);
     expect(src).toMatch(/action_taken:\s*"compliance_closure_rejected"/);
-    expect(src).toMatch(/action_taken:\s*("compliance_closure_approved"|"compliance_partial_approval")/);
+    expect(src).toMatch(/"compliance_closure_approved"/);
+    expect(src).toMatch(/"compliance_partial_approval"/);
   });
 
   // 17: audit immutability triggers still present
