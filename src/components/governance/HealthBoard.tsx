@@ -187,7 +187,14 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
-  const { data: noRecipientCount } = useQuery<number>({
+  // Batch T — UI-014: surface query errors rather than silently swallowing
+  // them to 0. A failed audit_logs query previously produced a misleading
+  // green "no manual backlog" tile.
+  const {
+    data: noRecipientCount,
+    isError: noRecipientError,
+    error: noRecipientErrorObj,
+  } = useQuery<number>({
     queryKey: ["healthboard-no-recipient-skips"],
     queryFn: async () => {
       const dayStart = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString();
@@ -197,7 +204,7 @@ export function HealthBoard() {
         .eq("action", "notification_skipped")
         .gte("created_at", dayStart)
         .contains("metadata", { reason: "no_recipient", source_function: "match.soft_route" });
-      if (error) return 0;
+      if (error) throw error;
       return count ?? 0;
     },
     refetchInterval: 60000,
