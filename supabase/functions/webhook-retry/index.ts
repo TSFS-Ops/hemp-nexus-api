@@ -69,9 +69,10 @@ Deno.serve(async (req) => {
         )
       `)
       .lte("next_retry_at", now)
-      // Batch D — honour per-row max_retries (default 3) so the backoff
-      // schedule in calculateNextRetry can actually be reached.
-      .filter("delivery_attempt", "lt", "max_retries")
+      // Batch D — fetch up to attempt 10 (the longest configured
+      // schedule); the per-row `max_retries` cap is enforced in JS below
+      // because PostgREST cannot compare two columns directly.
+      .lt("delivery_attempt", 10)
       .eq("is_dead_letter", false)
       .eq("webhook_endpoints.status", "active")
       .limit(50);
