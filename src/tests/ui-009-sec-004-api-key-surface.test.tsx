@@ -36,8 +36,10 @@ const DOC_FILES = [
 ];
 
 describe("UI-009 / SEC-004 — public docs ↔ app contract", () => {
-  it("every public doc / developer surface references the canonical X-API-Key header", () => {
-    for (const f of DOC_FILES) {
+  it("every public doc / developer surface that shows auth uses the canonical X-API-Key header", () => {
+    // Errors.tsx is an error-code reference page and intentionally does not show auth.
+    const authDocs = DOC_FILES.filter((f) => !/Errors\.tsx$/.test(f));
+    for (const f of authDocs) {
       const src = read(f);
       expect(src, `${f} must mention X-API-Key`).toMatch(/X-API-Key/);
     }
