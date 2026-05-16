@@ -7199,6 +7199,8 @@ export type Database = {
           is_primary: boolean
           last_delivery_at: string | null
           org_id: string
+          previous_secret_expires_at: string | null
+          previous_secret_hash: string | null
           secret_hash: string
           status: string
           updated_at: string
@@ -7213,6 +7215,8 @@ export type Database = {
           is_primary?: boolean
           last_delivery_at?: string | null
           org_id: string
+          previous_secret_expires_at?: string | null
+          previous_secret_hash?: string | null
           secret_hash: string
           status?: string
           updated_at?: string
@@ -7227,6 +7231,8 @@ export type Database = {
           is_primary?: boolean
           last_delivery_at?: string | null
           org_id?: string
+          previous_secret_expires_at?: string | null
+          previous_secret_hash?: string | null
           secret_hash?: string
           status?: string
           updated_at?: string
