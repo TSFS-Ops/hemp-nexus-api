@@ -42,7 +42,8 @@ const BodySchema = z.object({
     .int('credits must be an integer')
     .positive('credits must be positive')
     .max(MAX_CREDITS_PER_CALL, `credits cannot exceed ${MAX_CREDITS_PER_CALL} per call`),
-  reason: z.string().trim().min(1, 'reason is required').max(500, 'reason too long'),
+  // Batch S Fix 2: raise floor from 1 to 10 chars for parity with corrections/overrides.
+  reason: z.string().trim().min(10, 'reason must be at least 10 characters').max(500, 'reason too long'),
   reference_id: z.string().trim().max(200).optional(),
 });
 
