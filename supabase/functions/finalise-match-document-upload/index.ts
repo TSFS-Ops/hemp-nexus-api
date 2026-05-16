@@ -4,7 +4,12 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
-import { validateMagicBytes } from "../_shared/magic-bytes.ts";
+import { validateMagicBytes, inspectStructuralReadability } from "../_shared/magic-bytes.ts";
+
+// Batch L DOC-001: conservative initial document taxonomy. Final Izenzo-specific
+// taxonomy is policy-pending; mirrored in the match_documents_doc_type_check
+// DB constraint. Unknown values are rejected at validation time.
+const DOC_TYPES = ["bill_of_lading", "invoice", "letter_of_credit", "kyc", "licence", "other"] as const;
 
 const BodySchema = z.object({
   match_id: z.string().uuid(),
@@ -14,7 +19,7 @@ const BodySchema = z.object({
   file_size: z.number().int().nonnegative().nullable().optional(),
   mime_type: z.string().max(255).nullable().optional(),
   sha256_hash: z.string().min(16).max(256),
-  doc_type: z.string().min(1).max(100).default("other"),
+  doc_type: z.enum(DOC_TYPES).default("other"),
   title: z.string().max(500).nullable().optional(),
   notes: z.string().max(4000).nullable().optional(),
   visibility: z.enum(["private", "share_with_counterparty", "share_with_roles"]).default("private"),
@@ -139,12 +144,28 @@ Deno.serve(async (req) => {
       await writeAudit("finalise", "failure", { error_code: "STORAGE_OBJECT_MISSING", error_message: clip(storageReadError?.message ?? "Storage object missing"), storage_object_exists: false });
       throw new ApiException("STORAGE_OBJECT_MISSING", "Upload could not be completed because the stored file could not be verified.", 409);
     }
-    const headerBytes = new Uint8Array(await storageFile.slice(0, 16).arrayBuffer());
+    const fullBuffer = new Uint8Array(await storageFile.arrayBuffer());
+    const headerBytes = fullBuffer.subarray(0, 16);
     const magicResult = validateMagicBytes(headerBytes, body.mime_type || "application/octet-stream", body.file_size ?? storageFile.size);
     if (magicResult.blocked) {
       const cleanupResult = await cleanup("server_magic_byte_validation_failed");
       await writeAudit("validation", "failure", { error_code: "FILE_VALIDATION_FAILED", error_message: magicResult.blockReason ?? "File validation failed", storage_object_exists: true, detected_mime: magicResult.detectedMime, ...cleanupResult });
       throw new ApiException("FILE_VALIDATION_FAILED", magicResult.blockReason ?? "File validation failed", 400);
+    }
+
+    // Batch L DOC-002: structural readability — catches files that pass the
+    // 16-byte header check but are truncated/corrupt in the body.
+    const readability = inspectStructuralReadability(fullBuffer, magicResult.detectedMime ?? body.mime_type ?? "");
+    if (!readability.readable) {
+      const cleanupResult = await cleanup("server_readability_check_failed");
+      await writeAudit("validation", "failure", {
+        error_code: "FILE_UNREADABLE",
+        error_message: readability.reason ?? "File appears corrupt or truncated",
+        storage_object_exists: true,
+        detected_mime: magicResult.detectedMime,
+        ...cleanupResult,
+      });
+      throw new ApiException("FILE_UNREADABLE", readability.reason ?? "File appears corrupt or truncated and cannot be accepted as evidence.", 400);
     }
 
     const { data: doc, error: insertError } = await admin
@@ -175,6 +196,25 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError || !doc) {
+      // Batch L DOC-005: duplicate-document DB guard
+      // idx_match_documents_dedup_active = UNIQUE(match_id, uploader_org_id, sha256_hash)
+      // WHERE status NOT IN ('deleted','archived')
+      if (insertError?.code === "23505") {
+        const cleanupResult = await cleanup("duplicate_document_blocked");
+        await writeAudit("db_insert", "failure", {
+          db_insert_result: "duplicate",
+          error_code: "DUPLICATE_DOCUMENT",
+          error_message: "An identical document is already attached to this match by your organisation.",
+          sha256_hash: body.sha256_hash,
+          constraint: insertError?.message ?? null,
+          ...cleanupResult,
+        });
+        throw new ApiException(
+          "DUPLICATE_DOCUMENT",
+          "This exact file is already attached to this match by your organisation. Remove the existing copy first if you need to re-upload.",
+          409,
+        );
+      }
       const cleanupResult = await cleanup("match_documents_insert_failed");
       await writeAudit("db_insert", "failure", { db_insert_result: "failure", error_code: insertError?.code ?? "DB_INSERT_FAILED", error_message: clip(insertError?.message ?? "DB insert failed"), storage_object_exists: true, ...cleanupResult });
       throw new ApiException("DB_INSERT_FAILED", "The file was uploaded but could not be attached to this match. The stored file was cleaned up or logged for reconciliation.", 500);

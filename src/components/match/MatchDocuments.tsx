@@ -121,9 +121,18 @@ interface MatchDocumentsProps {
   orgId: string;
 }
 
+// Batch L DOC-001: conservative initial taxonomy — mirrors the
+// match_documents_doc_type_check DB constraint. Final taxonomy is
+// policy-pending; legacy/unknown values render as "Unrecognised".
 const DOC_TYPES = [
-  { value: "other", label: "Document" },
-];
+  { value: "bill_of_lading", label: "Bill of Lading" },
+  { value: "invoice", label: "Invoice" },
+  { value: "letter_of_credit", label: "Letter of Credit" },
+  { value: "kyc", label: "KYC Document" },
+  { value: "licence", label: "Licence" },
+  { value: "other", label: "Other" },
+] as const;
+const ALLOWED_DOC_TYPES: ReadonlySet<string> = new Set(DOC_TYPES.map((t) => t.value));
 
 const VISIBILITY_OPTIONS = [
   { value: "private", label: "Private", icon: Lock, description: "Only your organisation" },
@@ -168,7 +177,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [docType, setDocType] = useState("other");
+  const [docType, setDocType] = useState<string>("");
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [visibility, setVisibility] = useState("private");
@@ -376,7 +385,12 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       toast.error("Please select a file");
       return;
     }
-    if (!docType) setDocType("other");
+    // Batch L DOC-001: doc type is now required and constrained to the
+    // server-side taxonomy.
+    if (!docType || !ALLOWED_DOC_TYPES.has(docType)) {
+      setError("Please choose a document type before uploading.");
+      return;
+    }
     if (uploading) return;
 
     try {
@@ -400,7 +414,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         }
       }
 
-      const effectiveDocType = docType || "other";
+      const effectiveDocType = docType; // validated above against ALLOWED_DOC_TYPES
       const sha256Hash = await computeFileHash(selectedFile);
 
       // Check for duplicate hash
@@ -587,6 +601,8 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // or "Unauthorized". Treat those as a participant/permission failure.
       const lower = `${raw} ${serverBody}`.toLowerCase();
       const isFinaliseParticipantBlock = lower.includes("org_not_participant");
+      const isDuplicate = lower.includes("duplicate_document");
+      const isUnreadable = lower.includes("file_unreadable");
       const isPermission =
         isFinaliseParticipantBlock ||
         lower.includes("row-level security") ||
@@ -596,7 +612,11 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         lower.includes("not allowed") ||
         lower.includes("permission denied") ||
         lower.includes("403");
-      const friendly = isFinaliseParticipantBlock
+      const friendly = isDuplicate
+        ? "This exact file is already attached to this match by your organisation."
+        : isUnreadable
+        ? "The file appears corrupt or truncated and cannot be accepted as evidence."
+        : isFinaliseParticipantBlock
         ? "Your organisation is not a participant on this match, so this document cannot be attached."
         : isPermission
         ? "Your organisation is not a participant on this match, so this document cannot be attached."
@@ -613,7 +633,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
   const resetForm = () => {
     setSelectedFile(null);
-    setDocType("other");
+    setDocType("");
     setTitle("");
     setNotes("");
     setChangeNotes("");
@@ -1022,6 +1042,20 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
             )}
             
             <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="doc-type">Document type *</Label>
+                <Select value={docType} onValueChange={setDocType} disabled={uploading}>
+                  <SelectTrigger id="doc-type">
+                    <SelectValue placeholder="Select document type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOC_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="file">Select File</Label>
                 <Input

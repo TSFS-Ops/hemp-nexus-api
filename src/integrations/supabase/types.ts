@@ -3543,7 +3543,7 @@ export type Database = {
         Insert: {
           change_notes?: string | null
           created_at?: string
-          doc_type: string
+          doc_type?: string
           expiry_date?: string | null
           file_size?: number | null
           filename: string
