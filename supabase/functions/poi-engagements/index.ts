@@ -117,12 +117,55 @@ function evaluateOutreachGate(
   return null;
 }
 
-/**
- * Batch A — fields the helper needs from the joined match row to derive
- * the organisation-name fallback (matches.buyer_name / seller_name when
- * the corresponding *_org_id is null).
- */
-const MATCH_CONTACT_SELECT = "buyer_name,seller_name,buyer_org_id,seller_org_id";
+// ── Batch J — Supersession + initiator-cancellation gates ──────────────
+//
+// SUPERSEDED_ENGAGEMENT_STATUSES — any incoming respond/decline/dispute
+// against an engagement whose lifecycle has been wound down by a
+// replacement or initiator-side withdrawal MUST be rejected with a
+// stable, typed code (`ENGAGEMENT_SUPERSEDED`). The DB enum carries
+// these terminal-by-supersession values; this constant keeps the edge
+// gate in lockstep with `engagement_status` so a new value cannot drift
+// past us silently.
+const SUPERSEDED_ENGAGEMENT_STATUSES = new Set<string>([
+  "cancelled_email_change",
+  "cancelled_by_initiator",
+]);
+
+function evaluateSupersessionGate(
+  eng: { engagement_status?: string | null; superseded_by_engagement_id?: string | null },
+): { code: "ENGAGEMENT_SUPERSEDED"; message: string } | null {
+  const status = eng.engagement_status ?? "";
+  if (SUPERSEDED_ENGAGEMENT_STATUSES.has(status) || eng.superseded_by_engagement_id) {
+    return {
+      code: "ENGAGEMENT_SUPERSEDED",
+      message:
+        "This engagement has been replaced or cancelled by the initiator. Use the current engagement for this match.",
+    };
+  }
+  return null;
+}
+
+// Cancel-by-initiator: states from which the initiator can still
+// unilaterally withdraw without invoking dispute or refund machinery.
+// Once the counterparty has accepted (POI provisional) or the engagement
+// is already in a terminal/refund-relevant state, cancellation must be
+// refused — the initiator instead has to dispute, settle, or run the
+// admin refund-decision workflow.
+const INITIATOR_CANCELLABLE_STATUSES = new Set<string>([
+  "pending",
+  "notification_sent",
+  "contacted",
+]);
+
+// POI / WaD states from which initiator-cancellation is IRREVERSIBLE-
+// blocked. Computed from match.poi_state when the engagement is linked.
+const IRREVERSIBLE_POI_STATES = new Set<string>([
+  "ELIGIBLE",
+  "PENDING_APPROVAL",
+  "COMPLETION_REQUESTED",
+  "COMPLETED",
+  "SETTLED",
+]);
 
 // ── Process-level safety net ────────────────────────────────────────────────
 // If anything escapes the Deno.serve try/catch (e.g. a stray async without
