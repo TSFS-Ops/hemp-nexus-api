@@ -1042,27 +1042,45 @@ async function handleChargeSuccess(
 
 
   // Audit log — USD-native settlement record for HQ Revenue.
-  await supabase.from("audit_logs").insert({
-    org_id: orgId,
-    actor_user_id: userId || null,
-    action: "credits.purchased",
-    entity_type: "token_balance",
-    entity_id: orgId,
-    metadata: {
-      credits_added: credits,
-      new_balance: newBalance,
-      payment_reference: reference,
-      package_id: metadata.package_id,
-      price_usd: metadata.price_usd ?? null,
-      currency: metadata.currency ?? "USD",
-      fx_basis: metadata.fx_basis ?? "native_usd",
-      // Legacy ZAR fields preserved when received (pre-cutover replays).
-      legacy_price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
-      legacy_fx_rate: metadata.fx_rate ?? null,
-      paid_at,
-      customer_email: customer?.email ?? null,
-    },
-  });
+  // Batch C — Fix 1: guarded by partial UNIQUE INDEX on
+  // (metadata->>'payment_reference') WHERE action='credits.purchased'. If
+  // the verify path won the race, a 23505 means "already audited" — log
+  // and continue, do not throw.
+  {
+    const { error: auditErr } = await supabase.from("audit_logs").insert({
+      org_id: orgId,
+      actor_user_id: userId || null,
+      action: "credits.purchased",
+      entity_type: "token_balance",
+      entity_id: orgId,
+      metadata: {
+        credits_added: credits,
+        new_balance: newBalance,
+        payment_reference: reference,
+        package_id: metadata.package_id,
+        price_usd: metadata.price_usd ?? null,
+        currency: metadata.currency ?? "USD",
+        fx_basis: metadata.fx_basis ?? "native_usd",
+        // Legacy ZAR fields preserved when received (pre-cutover replays).
+        legacy_price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+        legacy_fx_rate: metadata.fx_rate ?? null,
+        paid_at,
+        customer_email: customer?.email ?? null,
+      },
+    });
+    if (auditErr && auditErr.code !== "23505") {
+      console.error(`[Webhook] credits.purchased audit insert failed:`, auditErr);
+    } else if (auditErr?.code === "23505") {
+      console.log(`[Webhook] credits.purchased audit row already exists for ${reference} (verify won)`);
+    }
+  }
+
+  // Batch C — Fix 3: mark the token_purchases pending row as completed.
+  await supabase
+    .from("token_purchases")
+    .update({ status: "completed", updated_at: new Date().toISOString() })
+    .eq("paystack_reference", reference)
+    .eq("status", "pending");
 
   // Revenue notification → support@izenzo.co.za. Idempotency key is the
   // Paystack reference, which is unique per charge — webhook + verify-fallback
