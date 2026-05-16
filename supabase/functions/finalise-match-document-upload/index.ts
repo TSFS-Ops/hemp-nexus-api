@@ -144,12 +144,28 @@ Deno.serve(async (req) => {
       await writeAudit("finalise", "failure", { error_code: "STORAGE_OBJECT_MISSING", error_message: clip(storageReadError?.message ?? "Storage object missing"), storage_object_exists: false });
       throw new ApiException("STORAGE_OBJECT_MISSING", "Upload could not be completed because the stored file could not be verified.", 409);
     }
-    const headerBytes = new Uint8Array(await storageFile.slice(0, 16).arrayBuffer());
+    const fullBuffer = new Uint8Array(await storageFile.arrayBuffer());
+    const headerBytes = fullBuffer.subarray(0, 16);
     const magicResult = validateMagicBytes(headerBytes, body.mime_type || "application/octet-stream", body.file_size ?? storageFile.size);
     if (magicResult.blocked) {
       const cleanupResult = await cleanup("server_magic_byte_validation_failed");
       await writeAudit("validation", "failure", { error_code: "FILE_VALIDATION_FAILED", error_message: magicResult.blockReason ?? "File validation failed", storage_object_exists: true, detected_mime: magicResult.detectedMime, ...cleanupResult });
       throw new ApiException("FILE_VALIDATION_FAILED", magicResult.blockReason ?? "File validation failed", 400);
+    }
+
+    // Batch L DOC-002: structural readability — catches files that pass the
+    // 16-byte header check but are truncated/corrupt in the body.
+    const readability = inspectStructuralReadability(fullBuffer, magicResult.detectedMime ?? body.mime_type ?? "");
+    if (!readability.readable) {
+      const cleanupResult = await cleanup("server_readability_check_failed");
+      await writeAudit("validation", "failure", {
+        error_code: "FILE_UNREADABLE",
+        error_message: readability.reason ?? "File appears corrupt or truncated",
+        storage_object_exists: true,
+        detected_mime: magicResult.detectedMime,
+        ...cleanupResult,
+      });
+      throw new ApiException("FILE_UNREADABLE", readability.reason ?? "File appears corrupt or truncated and cannot be accepted as evidence.", 400);
     }
 
     const { data: doc, error: insertError } = await admin
