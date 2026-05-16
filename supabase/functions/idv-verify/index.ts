@@ -252,22 +252,57 @@ Deno.serve(async (req: Request) => {
 
       let result: VerificationResult;
 
-      if (isCompany) {
-        const companyProvider = providerConfig.company_provider || "stub";
-        if (companyProvider === "companies_house") {
-          result = await verifyWithCompaniesHouse(entity.registration_number || "", entity.legal_name);
-        } else if (companyProvider === "cipc") {
-          result = await verifyWithCIPC(entity_id, entity.registration_number || "", entity.legal_name);
+      try {
+        if (isCompany) {
+          const companyProvider = providerConfig.company_provider || "stub";
+          if (companyProvider === "companies_house") {
+            result = await verifyWithCompaniesHouse(entity.registration_number || "", entity.legal_name);
+          } else if (companyProvider === "cipc") {
+            result = await verifyWithCIPC(entity_id, entity.registration_number || "", entity.legal_name);
+          } else {
+            result = await verifyWithStub(entity_id, entity.entity_type, entity.legal_name);
+          }
         } else {
-          result = await verifyWithStub(entity_id, entity.entity_type, entity.legal_name);
+          const individualProvider = providerConfig.individual_provider || "stub";
+          if (individualProvider === "onfido") {
+            result = await verifyWithOnfido(entity_id, entity.entity_type, entity.legal_name);
+          } else {
+            result = await verifyWithStub(entity_id, entity.entity_type, entity.legal_name);
+          }
         }
-      } else {
-        const individualProvider = providerConfig.individual_provider || "stub";
-        if (individualProvider === "onfido") {
-          result = await verifyWithOnfido(entity_id, entity.entity_type, entity.legal_name);
-        } else {
-          result = await verifyWithStub(entity_id, entity.entity_type, entity.legal_name);
+      } catch (err) {
+        // Batch F: provider-down → audit, do NOT promote entity, return typed envelope.
+        if (err instanceof IdvProviderError) {
+          await admin.from("audit_logs").insert({
+            org_id: orgId,
+            actor_user_id: actorUserId,
+            action: "idv.failed",
+            entity_type: "entity",
+            entity_id,
+            metadata: {
+              provider: err.provider,
+              status_code: err.statusCode,
+              reason: err.reason,
+              request_id: requestId,
+              verification_type: isCompany ? "company" : "individual",
+            },
+          });
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "PROVIDER_ERROR",
+              provider: err.provider,
+              reason: err.reason,
+              status_code: err.statusCode,
+              message:
+                "The identity verification provider is currently unavailable. The entity remains pending and an admin can review the failure.",
+              entity_id,
+              requestId,
+            }),
+            { status: 502, headers: { ...headers, "Content-Type": "application/json" } },
+          );
         }
+        throw err;
       }
 
       // Update entity status based on result
