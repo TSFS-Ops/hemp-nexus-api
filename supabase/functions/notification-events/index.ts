@@ -160,12 +160,7 @@ Deno.serve(async (req) => {
     // Org-sentinel rows (auto_resolve_failed) are returned only to
     // platform-tier callers; otherwise scope strictly to the caller's org.
     const orgScope: string[] = [authCtx.orgId];
-    if (isPlatform || authCtx.isApiKey === false && isAdminTier === false ? false : isPlatform) {
-      orgScope.push(SYSTEM_ORG_SENTINEL);
-    }
-    if (isPlatform && !orgScope.includes(SYSTEM_ORG_SENTINEL)) {
-      orgScope.push(SYSTEM_ORG_SENTINEL);
-    }
+    if (isPlatform) orgScope.push(SYSTEM_ORG_SENTINEL);
 
     let q = supabase
       .from("audit_logs")
