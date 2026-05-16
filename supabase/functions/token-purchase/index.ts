@@ -348,24 +348,41 @@ async function _serve(req: Request): Promise<Response> {
       }
 
 
-      await supabase.from("audit_logs").insert({
-        org_id: orgId,
-        actor_user_id: userData.user.id,
-        action: "credits.purchased",
-        entity_type: "token_balance",
-        entity_id: orgId,
-        metadata: {
-          credits_added: credits,
-          new_balance: newBalance,
-          payment_reference: reference,
-          package_id: meta.package_id,
-          // USD-native settlement record — exposed in HQ Revenue.
-          price_usd: meta.price_usd ?? null,
-          currency: "USD",
-          fx_basis: "native_usd",
-          verification_fallback: true,
-        },
-      });
+      // Batch C — Fix 1: this insert is now guarded by a partial UNIQUE
+      // INDEX on (metadata->>'payment_reference') WHERE action='credits.purchased'.
+      // If the webhook path won the race, the duplicate insert raises
+      // 23505 — treat that as success (the audit row already exists).
+      {
+        const { error: auditErr } = await supabase.from("audit_logs").insert({
+          org_id: orgId,
+          actor_user_id: userData.user.id,
+          action: "credits.purchased",
+          entity_type: "token_balance",
+          entity_id: orgId,
+          metadata: {
+            credits_added: credits,
+            new_balance: newBalance,
+            payment_reference: reference,
+            package_id: meta.package_id,
+            // USD-native settlement record — exposed in HQ Revenue.
+            price_usd: meta.price_usd ?? null,
+            currency: "USD",
+            fx_basis: "native_usd",
+            verification_fallback: true,
+          },
+        });
+        if (auditErr && auditErr.code !== "23505") throw auditErr;
+        if (auditErr?.code === "23505") {
+          console.log(`[Verify] credits.purchased audit row already exists for ${reference} (webhook won)`);
+        }
+      }
+
+      // Batch C — Fix 3: mark the token_purchases pending row as completed.
+      await supabase
+        .from("token_purchases")
+        .update({ status: "completed", updated_at: new Date().toISOString() })
+        .eq("paystack_reference", reference)
+        .eq("status", "pending");
 
       // Revenue notification → support@izenzo.co.za. Idempotency key uses
       // the Paystack reference, so if the webhook path also fires for the
@@ -628,6 +645,37 @@ async function _serve(req: Request): Promise<Response> {
       },
     });
 
+    // Batch C — Fix 3: persist a `pending` token_purchases row so the
+    // `transaction-reconciliation` cron can sweep stuck checkouts. The
+    // table has UNIQUE(paystack_reference); ON CONFLICT DO NOTHING makes
+    // a retried initiation idempotent. Failures here must NOT abort
+    // checkout — the audit_log + token_ledger guards already protect
+    // money integrity.
+    {
+      const { error: pendingErr } = await supabase
+        .from("token_purchases")
+        .insert({
+          org_id: profile.org_id,
+          user_id: userData.user.id,
+          paystack_reference: paystackData.data.reference,
+          package_id: packageId,
+          token_amount: pkg.credits,
+          amount_usd: pkg.price_usd,
+          currency: "USD",
+          status: "pending",
+          metadata: {
+            fx_basis: "native_usd",
+            client_ip: clientIp,
+            package_label: pkg.label,
+          },
+        });
+      if (pendingErr && pendingErr.code !== "23505") {
+        console.warn(
+          `[token-purchase] token_purchases pending insert failed (non-fatal): ${pendingErr.message}`,
+        );
+      }
+    }
+
     const responseBody = {
         success: true,
         checkoutUrl: paystackData.data.authorization_url,
@@ -749,9 +797,14 @@ async function handleWebhook(req: Request): Promise<Response> {
       signature,
       fnName: "token-purchase/webhook",
       requestId: req.headers.get("x-request-id") ?? null,
+      // Batch C — Fix 2: Paystack treats any non-2xx as failure and will
+      // keep retrying. A known-safe duplicate delivery is not a failure,
+      // so we return 200 with `replayed/idempotent: true` in the body.
+      // Monitoring continues to count replays via the WEBHOOK_REPLAY code.
+      replayResponseStatus: 200,
     });
     if (!replay.ok) {
-      console.warn("[Webhook] Rejected replay/duplicate delivery");
+      console.warn("[Webhook] Acknowledged replay/duplicate delivery (200 idempotent)");
       return replay.response;
     }
 
@@ -989,27 +1042,45 @@ async function handleChargeSuccess(
 
 
   // Audit log — USD-native settlement record for HQ Revenue.
-  await supabase.from("audit_logs").insert({
-    org_id: orgId,
-    actor_user_id: userId || null,
-    action: "credits.purchased",
-    entity_type: "token_balance",
-    entity_id: orgId,
-    metadata: {
-      credits_added: credits,
-      new_balance: newBalance,
-      payment_reference: reference,
-      package_id: metadata.package_id,
-      price_usd: metadata.price_usd ?? null,
-      currency: metadata.currency ?? "USD",
-      fx_basis: metadata.fx_basis ?? "native_usd",
-      // Legacy ZAR fields preserved when received (pre-cutover replays).
-      legacy_price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
-      legacy_fx_rate: metadata.fx_rate ?? null,
-      paid_at,
-      customer_email: customer?.email ?? null,
-    },
-  });
+  // Batch C — Fix 1: guarded by partial UNIQUE INDEX on
+  // (metadata->>'payment_reference') WHERE action='credits.purchased'. If
+  // the verify path won the race, a 23505 means "already audited" — log
+  // and continue, do not throw.
+  {
+    const { error: auditErr } = await supabase.from("audit_logs").insert({
+      org_id: orgId,
+      actor_user_id: userId || null,
+      action: "credits.purchased",
+      entity_type: "token_balance",
+      entity_id: orgId,
+      metadata: {
+        credits_added: credits,
+        new_balance: newBalance,
+        payment_reference: reference,
+        package_id: metadata.package_id,
+        price_usd: metadata.price_usd ?? null,
+        currency: metadata.currency ?? "USD",
+        fx_basis: metadata.fx_basis ?? "native_usd",
+        // Legacy ZAR fields preserved when received (pre-cutover replays).
+        legacy_price_zar: metadata.price_zar ?? metadata.zar_amount_charged ?? null,
+        legacy_fx_rate: metadata.fx_rate ?? null,
+        paid_at,
+        customer_email: customer?.email ?? null,
+      },
+    });
+    if (auditErr && auditErr.code !== "23505") {
+      console.error(`[Webhook] credits.purchased audit insert failed:`, auditErr);
+    } else if (auditErr?.code === "23505") {
+      console.log(`[Webhook] credits.purchased audit row already exists for ${reference} (verify won)`);
+    }
+  }
+
+  // Batch C — Fix 3: mark the token_purchases pending row as completed.
+  await supabase
+    .from("token_purchases")
+    .update({ status: "completed", updated_at: new Date().toISOString() })
+    .eq("paystack_reference", reference)
+    .eq("status", "pending");
 
   // Revenue notification → support@izenzo.co.za. Idempotency key is the
   // Paystack reference, which is unique per charge — webhook + verify-fallback
@@ -1055,7 +1126,15 @@ async function handleChargeFailed(
   data: { reference: string; metadata?: { org_id?: string; user_id?: string } }
 ): Promise<void> {
   console.log(`[Webhook] Charge failed: ${data.reference}`);
-  
+
+  // Batch C — Fix 3: transition any pending token_purchases row to failed
+  // so the reconciliation sweeper does not re-check this reference.
+  await supabase
+    .from("token_purchases")
+    .update({ status: "failed", updated_at: new Date().toISOString() })
+    .eq("paystack_reference", data.reference)
+    .eq("status", "pending");
+
   if (data.metadata?.org_id) {
     await supabase.from("audit_logs").insert({
       org_id: data.metadata.org_id,

@@ -6310,6 +6310,59 @@ export type Database = {
           },
         ]
       }
+      token_purchases: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json
+          org_id: string
+          package_id: string
+          paystack_reference: string
+          status: string
+          token_amount: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          org_id: string
+          package_id: string
+          paystack_reference: string
+          status?: string
+          token_amount: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          org_id?: string
+          package_id?: string
+          paystack_reference?: string
+          status?: string
+          token_amount?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_purchases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       token_transactions: {
         Row: {
           amount: number

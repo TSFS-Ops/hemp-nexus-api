@@ -17,6 +17,7 @@ import {
 } from "@/lib/credit-checkout";
 import { CheckoutErrorNotice } from "./CheckoutErrorNotice";
 import { PaymentReferenceStatus } from "./PaymentReferenceStatus";
+import { PendingPurchaseNotice } from "./PendingPurchaseNotice";
 import { BillingUnavailableNotice } from "./BillingUnavailableNotice";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
@@ -247,6 +248,9 @@ export function BillingOverview() {
             <BillingUnavailableNotice message={billingAvailability.message} />
           </div>
         )}
+
+        {/* Batch C — Fix 4: soft warning if a recent attempt is pending. */}
+        <PendingPurchaseNotice orgId={orgId} />
 
         <div className="space-y-3">
           {PACKS.map((pack) => {
