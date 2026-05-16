@@ -22,6 +22,59 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { assertAal2 } from "../_shared/aal.ts";
+
+/**
+ * Batch J Required Fix 1 — edge-level admin_audit_logs writer.
+ *
+ * Every challenge mutation produces one application-level audit row from
+ * this function — independent of any RPC-level audit and independent of
+ * the storage/document audit trail used by Required Fix 6 (orphan cleanup).
+ * The row is best-effort: insert errors are logged and swallowed so the
+ * user-visible response is never blocked by an audit write failure.
+ */
+async function writeChallengeAudit(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  args: {
+    action:
+      | "match_challenge.raised"
+      | "match_challenge.commented"
+      | "match_challenge.transitioned"
+      | "match_challenge.evidence_uploaded"
+      | "match_challenge.break_glass";
+    challengeId: string | null;
+    matchId: string | null;
+    actorUserId: string;
+    actorOrgId: string | null;
+    beforeStatus?: string | null;
+    afterStatus?: string | null;
+    requestId?: string | null;
+    extra?: Record<string, unknown>;
+  },
+): Promise<void> {
+  try {
+    await admin.from("admin_audit_logs").insert({
+      admin_user_id: args.actorUserId,
+      action: args.action,
+      target_type: "match_challenge",
+      target_id: args.challengeId,
+      details: {
+        challenge_id: args.challengeId,
+        match_id: args.matchId,
+        actor_user_id: args.actorUserId,
+        actor_org_id: args.actorOrgId,
+        before_status: args.beforeStatus ?? null,
+        after_status: args.afterStatus ?? null,
+        request_id: args.requestId ?? null,
+        source: "match-challenges",
+        ...(args.extra ?? {}),
+      },
+    });
+  } catch (e) {
+    console.error("[match-challenges] audit insert failed (non-fatal):", e);
+  }
+}
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
