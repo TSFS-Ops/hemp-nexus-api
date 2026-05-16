@@ -1,5 +1,11 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { ApiException } from './errors.ts';
+import { scopeSatisfies } from './api-scopes.ts';
+import {
+  writeSecurityAudit,
+  extractClientIp,
+  extractUserAgent,
+} from './security-audit.ts';
 
 export interface AuthContext {
   userId: string;
