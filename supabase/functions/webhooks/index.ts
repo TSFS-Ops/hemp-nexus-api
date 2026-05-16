@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
         action: "webhook.created",
         entity_type: "webhook",
         entity_id: webhook.id,
-        metadata: { url: body.url, events: body.events },
+        metadata: { url: body.url, events: body.events, actor_ip: authCtx.actorIp ?? null, user_agent: authCtx.userAgent ?? null },
       });
 
       const responsePayload = {
@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
         action: "webhook.updated",
         entity_type: "webhook",
         entity_id: webhookId,
-        metadata: body,
+        metadata: { ...body, actor_ip: authCtx.actorIp ?? null, user_agent: authCtx.userAgent ?? null },
       });
 
       return new Response(
@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
         action: "webhook.deleted",
         entity_type: "webhook",
         entity_id: webhookId,
-        metadata: {},
+        metadata: { actor_ip: authCtx.actorIp ?? null, user_agent: authCtx.userAgent ?? null },
       });
 
       return new Response(null, { status: 204, headers });
