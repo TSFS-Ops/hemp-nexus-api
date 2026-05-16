@@ -1,5 +1,6 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { ApiException } from "./errors.ts";
+import { validateAndNormaliseScopes } from "./api-scopes.ts";
 
 // Match endpoint validation.
 //
@@ -62,12 +63,46 @@ export const signalSelectSchema = z.object({
   option_id: z.string().uuid(),
 });
 
-// API Keys endpoint validation
-export const apiKeyCreateSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  scopes: z.array(z.string().max(50)).optional(),
-  expires_at: z.string().datetime().nullish(), // Accept null, undefined, or valid datetime string
-});
+// API Keys endpoint validation.
+//
+// Batch N — Required Fix 2: scopes are validated against the canonical
+// VALID_SCOPES catalogue (see _shared/api-scopes.ts). Unknown scopes,
+// '*', 'admin' and empty strings are rejected at create time, and the
+// final array is de-duplicated. allowed_ips / allowed_origins (Required
+// Fix 3) are nullable: null/empty = unrestricted.
+const ipOrCidr = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[0-9a-fA-F:.\/]+$/, "must be an IP address or CIDR block");
+const originString = z
+  .string()
+  .trim()
+  .min(1)
+  .max(200)
+  .regex(/^https?:\/\//i, "origin must start with http(s)://");
+
+export const apiKeyCreateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100),
+    scopes: z.array(z.unknown()).optional(),
+    expires_at: z.string().datetime().nullish(),
+    allowed_ips: z.array(ipOrCidr).max(100).nullish(),
+    allowed_origins: z.array(originString).max(100).nullish(),
+  })
+  .transform((raw) => {
+    const normalisedScopes = raw.scopes
+      ? validateAndNormaliseScopes(raw.scopes)
+      : [];
+    return {
+      name: raw.name,
+      scopes: normalisedScopes,
+      expires_at: raw.expires_at ?? null,
+      allowed_ips: raw.allowed_ips && raw.allowed_ips.length > 0 ? raw.allowed_ips : null,
+      allowed_origins: raw.allowed_origins && raw.allowed_origins.length > 0 ? raw.allowed_origins : null,
+    };
+  });
 
 // Consent endpoint validation
 export const consentCreateSchema = z.object({

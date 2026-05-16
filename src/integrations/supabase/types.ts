@@ -372,6 +372,8 @@ export type Database = {
       }
       api_keys: {
         Row: {
+          allowed_ips: string[] | null
+          allowed_origins: string[] | null
           created_at: string
           created_by: string | null
           environment: string | null
@@ -388,6 +390,8 @@ export type Database = {
           status: string
         }
         Insert: {
+          allowed_ips?: string[] | null
+          allowed_origins?: string[] | null
           created_at?: string
           created_by?: string | null
           environment?: string | null
@@ -404,6 +408,8 @@ export type Database = {
           status?: string
         }
         Update: {
+          allowed_ips?: string[] | null
+          allowed_origins?: string[] | null
           created_at?: string
           created_by?: string | null
           environment?: string | null

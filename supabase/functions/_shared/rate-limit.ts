@@ -1,5 +1,6 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { ApiException } from "./errors.ts";
+import { writeSecurityAudit } from "./security-audit.ts";
 
 export interface RateLimitConfig {
   requestsPerMinute?: number;
@@ -128,29 +129,68 @@ const CIRCUIT_BREAKER_MULTIPLIER = 10;
 const CIRCUIT_BREAKER_COOLDOWN_MS = 60_000; // 1 minute cooldown
 const circuitBreakerState = new Map<string, { trippedAt: number }>();
 
+// Batch N — Required Fix 5: audit every 429 (and every circuit-breaker
+// trip). The audit is best-effort and never blocks the response. The
+// action is `webhook.rate_limited` when the endpoint mentions "webhook",
+// otherwise `api_key.rate_limited`.
+function rateLimitAuditAction(endpoint: string):
+  | "webhook.rate_limited"
+  | "api_key.rate_limited" {
+  return endpoint.toLowerCase().includes("webhook")
+    ? "webhook.rate_limited"
+    : "api_key.rate_limited";
+}
+
+interface RateLimitMeta {
+  actorIp?: string | null;
+  userAgent?: string | null;
+  requestId?: string | null;
+}
+
 export async function checkRateLimit(
   supabase: SupabaseClient,
   orgId: string,
   apiKeyId: string | null,
   endpoint: string,
-  scope?: string
+  scope?: string,
+  meta: RateLimitMeta = {},
 ): Promise<void> {
   const limits = scope && SCOPE_LIMITS[scope] ? SCOPE_LIMITS[scope] : DEFAULT_LIMITS;
+  const auditAction = rateLimitAuditAction(endpoint);
 
-  // Circuit breaker check - if tripped, reject immediately
+  const auditTrip = (window: "minute" | "hour" | "day", limit: number, retryAfter: number) => {
+    // Fire-and-forget — never block the 429.
+    writeSecurityAudit({
+      action: auditAction,
+      orgId,
+      apiKeyId,
+      actorIp: meta.actorIp ?? null,
+      userAgent: meta.userAgent ?? null,
+      requestId: meta.requestId ?? null,
+      endpoint,
+      extra: { window, limit, retry_after: retryAfter, scope: scope ?? null },
+    }, supabase).catch(() => {});
+  };
+
+  // Circuit breaker check - if tripped, reject immediately.
+  // NOTE (Batch N — Required Fix 8): this in-memory breaker is per edge
+  // instance. The DB-backed atomic rate limit below is the AUTHORITATIVE
+  // throttle; this breaker is advisory only and exists to short-circuit
+  // obviously abusive callers within a single instance.
   const cbKey = `${orgId}:${endpoint}`;
   const cbState = circuitBreakerState.get(cbKey);
   if (cbState) {
     const elapsed = Date.now() - cbState.trippedAt;
     if (elapsed < CIRCUIT_BREAKER_COOLDOWN_MS) {
+      const retryAfter = Math.ceil((CIRCUIT_BREAKER_COOLDOWN_MS - elapsed) / 1000);
+      auditTrip("minute", limits.requestsPerMinute ?? 0, retryAfter);
       throw new ApiException(
         "CIRCUIT_BREAKER_OPEN",
-        `Circuit breaker tripped for this endpoint. Try again in ${Math.ceil((CIRCUIT_BREAKER_COOLDOWN_MS - elapsed) / 1000)}s.`,
+        `Circuit breaker tripped for this endpoint. Try again in ${retryAfter}s.`,
         429,
-        { retryAfter: Math.ceil((CIRCUIT_BREAKER_COOLDOWN_MS - elapsed) / 1000) }
+        { retryAfter },
       );
     }
-    // Cooldown expired - reset
     circuitBreakerState.delete(cbKey);
   }
 
@@ -161,11 +201,11 @@ export async function checkRateLimit(
       supabase, orgId, `${endpoint}:minute`, minuteWindow.windowEnd, limits.requestsPerMinute
     );
     if (result === -1) {
-      // Trip circuit breaker if massively over limit (check current count)
       if (minuteWindow.requestCount >= limits.requestsPerMinute * CIRCUIT_BREAKER_MULTIPLIER) {
         circuitBreakerState.set(cbKey, { trippedAt: Date.now() });
       }
       const resetTime = Math.ceil((minuteWindow.windowEnd.getTime() - Date.now()) / 1000);
+      auditTrip("minute", limits.requestsPerMinute, resetTime);
       throw new ApiException(
         "RATE_LIMIT_EXCEEDED",
         `Rate limit exceeded: ${limits.requestsPerMinute} requests per minute. Try again in ${resetTime} seconds.`,
@@ -175,7 +215,6 @@ export async function checkRateLimit(
     }
   }
 
-  // ── Per-hour check ──
   if (limits.requestsPerHour) {
     const hourWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:hour`, 60);
     const result = await atomicCheckAndIncrement(
@@ -183,6 +222,7 @@ export async function checkRateLimit(
     );
     if (result === -1) {
       const resetTime = Math.ceil((hourWindow.windowEnd.getTime() - Date.now()) / 1000);
+      auditTrip("hour", limits.requestsPerHour, resetTime);
       throw new ApiException(
         "RATE_LIMIT_EXCEEDED",
         `Rate limit exceeded: ${limits.requestsPerHour} requests per hour. Try again in ${resetTime} seconds.`,
@@ -192,7 +232,6 @@ export async function checkRateLimit(
     }
   }
 
-  // ── Per-day check ──
   if (limits.requestsPerDay) {
     const dayWindow = await getOrCreateRateLimit(supabase, orgId, apiKeyId, `${endpoint}:day`, 1440);
     const result = await atomicCheckAndIncrement(
@@ -200,6 +239,7 @@ export async function checkRateLimit(
     );
     if (result === -1) {
       const resetTime = Math.ceil((dayWindow.windowEnd.getTime() - Date.now()) / 1000);
+      auditTrip("day", limits.requestsPerDay, resetTime);
       throw new ApiException(
         "RATE_LIMIT_EXCEEDED",
         `Rate limit exceeded: ${limits.requestsPerDay} requests per day. Try again in ${resetTime} seconds.`,
