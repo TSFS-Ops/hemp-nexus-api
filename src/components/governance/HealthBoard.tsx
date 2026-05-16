@@ -228,7 +228,19 @@ export function HealthBoard() {
 
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
-  const openIncidents = incidents.filter(i => i.status !== "resolved").length;
+  // Batch T — UI-014: explicit allow-list of "open" statuses rather than
+  // `!== "resolved"`. Any new terminal status (e.g. dismissed/withdrawn)
+  // must be added here on purpose; otherwise it stays open.
+  const OPEN_RISK_STATUSES = new Set<string>([
+    "open",
+    "investigating",
+    "acknowledged",
+    "in_progress",
+    "monitoring",
+    "escalated",
+  ]);
+  const openIncidentList = incidents.filter(i => OPEN_RISK_STATUSES.has(i.status));
+  const openIncidents = openIncidentList.length;
   const lastBeat = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : new Date().toISOString();
   const noRecipient = noRecipientCount ?? 0;
 
