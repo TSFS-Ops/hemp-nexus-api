@@ -404,7 +404,7 @@ export function MatchesList() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     if (!matches || matches.length === 0) {
       toast.error("No matches to export");
       return;
@@ -421,7 +421,24 @@ export function MatchesList() {
       m.status, m.created_at, m.settled_at || "", m.hash,
     ]);
 
-    downloadCSV(headers, rows, `matches-${new Date().toISOString().split('T')[0]}.csv`);
+    // Batch T — AUD-017: route through audited export so audit_logs is
+    // written before any rows leave the browser, and so the file carries
+    // a `# generated_at` provenance preamble.
+    const result = await auditedDownloadCSV(headers, rows, {
+      reportName: "matches.bulk_export",
+      filename: `matches-${new Date().toISOString().split("T")[0]}.csv`,
+      target_type: "matches",
+      sensitive: true,
+      filters: { page: page + 1, totalPages, rowCount: matches.length },
+    });
+    if (!result.ok) {
+      if (result.aal_required) {
+        toast.error("Step-up authentication required to export matches.");
+      } else {
+        toast.error(result.error ?? "Failed to export matches");
+      }
+      return;
+    }
 
     // Explicit scope disclosure
     if (totalPages > 1) {
