@@ -147,7 +147,25 @@ Deno.serve(async (req: Request) => {
 
       // ── Test-mode bypass: report a complete, fully-verified ownership chain ──
       if (await isBypassEnabled(admin, "ubo", "ubo-verify")) {
-        await admin.from("entities").update({ status: "verified" }).eq("id", entity_id);
+        // Batch I Fix 1: stamp entity.metadata so a bypassed UBO-verified entity
+        // is distinguishable from a real verification without joining audit logs.
+        const bypassedAt = new Date().toISOString();
+        const existingMeta = (entity.metadata as Record<string, unknown> | null) ?? {};
+        const existingGates = Array.isArray((existingMeta as { bypass_gates?: unknown }).bypass_gates)
+          ? ((existingMeta as { bypass_gates?: string[] }).bypass_gates as string[])
+          : [];
+        const nextGates = Array.from(new Set([...existingGates, "ubo"]));
+        await admin.from("entities").update({
+          status: "verified",
+          metadata: {
+            ...existingMeta,
+            bypass: true,
+            bypass_gates: nextGates,
+            test_mode: true,
+            last_bypass_at: bypassedAt,
+            last_bypass_actor: authCtx.userId || null,
+          },
+        }).eq("id", entity_id);
 
         await recordBypassUsage(admin, {
           gate: "ubo",

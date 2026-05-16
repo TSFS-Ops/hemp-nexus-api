@@ -6,6 +6,7 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
 import { fetchWithTimeout, ProviderTimeoutError, isProviderFailureStatus } from "../_shared/fetch-with-timeout.ts";
+import { checkProviderCooldown, recordProviderFailure, cooldownResponseEnvelope } from "../_shared/provider-retry.ts";
 
 /** Batch F: typed error for provider-down / malformed paths. */
 class ScreeningProviderError extends Error {
@@ -333,20 +334,30 @@ Deno.serve(async (req: Request) => {
 
     // ── Test-mode bypass: synthesize a "clear" screening result without touching any provider ──
     if (await isBypassEnabled(adminClient, "sanctions", "dilisense-screen")) {
-      const bypassHash = await computeHash(JSON.stringify({ bypass: true, name, type, ts: new Date().toISOString() }));
+      const bypassedAt = new Date().toISOString();
+      const bypassHash = await computeHash(JSON.stringify({ bypass: true, name, type, ts: bypassedAt }));
       const bypassRecord = {
         org_id,
         screening_type: "sanctions_pep",
         status: "clear",
         matched_entities: [],
         raw_response: { bypass: true, reason: "test_mode_bypass" },
-        screened_at: new Date().toISOString(),
+        screened_at: bypassedAt,
         screened_by: actorUserId || null,
         next_screening_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         provider: "test_mode_bypass",
         provider_config: { screen_type: type, bypass: true },
         response_hash: bypassHash,
         entity_id: entity_id || null,
+        // Batch I Fix 1: stamp bypass at the data layer so a bypassed "clear"
+        // is distinguishable from a real provider clear without joining audit_logs.
+        metadata: {
+          bypass: true,
+          bypass_gate: "sanctions",
+          test_mode: true,
+          bypass_used_at: bypassedAt,
+          bypass_actor: actorUserId || null,
+        },
       };
 
       const { data: savedBypass } = await adminClient
@@ -405,6 +416,37 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[${requestId}] Screening via provider: ${providerName}`);
 
+    // ── Batch I Fix 6: provider retry cooldown ──
+    // Refuse to hammer the provider after repeated failures for the same
+    // (entity, provider) tuple. Audited so admin can see why a click did nothing.
+    const cooldownScope = {
+      gate: "sanctions" as const,
+      provider: providerName,
+      entityId: entity_id || null,
+      orgId: org_id || null,
+    };
+    const cooldown = await checkProviderCooldown(adminClient, cooldownScope);
+    if (cooldown.inCooldown) {
+      await adminClient.from("audit_logs").insert({
+        org_id,
+        actor_user_id: actorUserId || null,
+        action: "screening.provider_retry_cooldown_blocked",
+        entity_type: "screening_results",
+        entity_id: entity_id || null,
+        metadata: {
+          provider: providerName,
+          scope_key: cooldown.scopeKey,
+          cooldown_until: cooldown.cooldownUntil,
+          failure_count: cooldown.failureCount,
+          request_id: requestId,
+        },
+      });
+      return new Response(JSON.stringify(cooldownResponseEnvelope(cooldown, requestId)), {
+        status: 429,
+        headers: { ...headers, "Content-Type": "application/json", "Retry-After": "3600" },
+      });
+    }
+
     // ── Execute screening ──
     let result;
     try {
@@ -428,9 +470,13 @@ Deno.serve(async (req: Request) => {
             provider_config: { screen_type: type, fuzzy_search: fuzzy_search || null, provider_error: true },
             response_hash: errHash,
             entity_id: entity_id || null,
+            metadata: { provider_error: true, provider: err.provider, reason: err.reason },
           })
           .select()
           .single();
+
+        // Batch I Fix 6: bump retry counter (may set 24h cooldown).
+        const post = await recordProviderFailure(adminClient, cooldownScope);
 
         await adminClient.from("audit_logs").insert({
           org_id,
@@ -445,6 +491,8 @@ Deno.serve(async (req: Request) => {
             request_id: requestId,
             name_screened: name,
             entity_id: entity_id || null,
+            failure_count: post.failureCount,
+            cooldown_until: post.cooldownUntil,
           },
         });
 
@@ -456,6 +504,8 @@ Deno.serve(async (req: Request) => {
             reason: err.reason,
             status_code: err.statusCode,
             screening_id: savedErr?.id || null,
+            failure_count: post.failureCount,
+            cooldown_until: post.cooldownUntil,
             message: "The sanctions/PEP provider is currently unavailable. The failure has been recorded and is visible to admins.",
             requestId,
           }),
