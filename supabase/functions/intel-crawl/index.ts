@@ -4,6 +4,7 @@ import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { aiGuardPrecheck, guardedAiCall, aiGuardEnvelope } from "../_shared/ai-guard.ts";
 
 /**
  * DISC-002 OSINT Discovery Crawler
