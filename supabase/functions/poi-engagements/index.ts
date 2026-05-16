@@ -2071,6 +2071,18 @@ Deno.serve(async (req) => {
           409,
         );
       }
+      // Batch J F4 — supersession gate: dispute against a replaced /
+      // initiator-cancelled engagement is rejected with a stable code.
+      {
+        const sup = evaluateSupersessionGate(current as Record<string, unknown>);
+        if (sup) {
+          throw new ApiException(sup.code, sup.message, 409, {
+            current_status: current.engagement_status,
+            superseded_by_engagement_id:
+              (current as { superseded_by_engagement_id?: string | null }).superseded_by_engagement_id ?? null,
+          });
+        }
+      }
 
       const { data: adminProfile } = await supabase
         .from("profiles")
