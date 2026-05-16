@@ -1334,6 +1334,7 @@ export type Database = {
       }
       counterparties: {
         Row: {
+          canonical_key: string | null
           company_name: string
           contact_email: string | null
           created_at: string
@@ -1341,6 +1342,11 @@ export type Database = {
           fts: unknown
           id: string
           jurisdiction: string | null
+          linked_org_id: string | null
+          merged_at: string | null
+          merged_by: string | null
+          merged_into_id: string | null
+          merged_reason: string | null
           org_id: string
           product_categories: string[] | null
           registration_number: string | null
@@ -1349,6 +1355,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          canonical_key?: string | null
           company_name: string
           contact_email?: string | null
           created_at?: string
@@ -1356,6 +1363,11 @@ export type Database = {
           fts?: unknown
           id?: string
           jurisdiction?: string | null
+          linked_org_id?: string | null
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into_id?: string | null
+          merged_reason?: string | null
           org_id: string
           product_categories?: string[] | null
           registration_number?: string | null
@@ -1364,6 +1376,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          canonical_key?: string | null
           company_name?: string
           contact_email?: string | null
           created_at?: string
@@ -1371,6 +1384,11 @@ export type Database = {
           fts?: unknown
           id?: string
           jurisdiction?: string | null
+          linked_org_id?: string | null
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into_id?: string | null
+          merged_reason?: string | null
           org_id?: string
           product_categories?: string[] | null
           registration_number?: string | null
@@ -1379,6 +1397,20 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "counterparties_linked_org_id_fkey"
+            columns: ["linked_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "counterparties_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "counterparties"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "counterparties_org_id_fkey"
             columns: ["org_id"]
@@ -7940,8 +7972,27 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_archive_duplicate_match: {
+        Args: {
+          p_admin_user_id: string
+          p_duplicate_of_match_id: string
+          p_match_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       admin_archive_legacy_match: {
         Args: { p_admin_user_id: string; p_match_id: string; p_notes: string }
+        Returns: Json
+      }
+      admin_correct_match_jurisdiction: {
+        Args: {
+          p_admin_user_id: string
+          p_destination_country: string
+          p_match_id: string
+          p_origin_country: string
+          p_reason: string
+        }
         Returns: Json
       }
       admin_get_reconciliation_alarms: {
@@ -7964,6 +8015,15 @@ export type Database = {
           summary: string
         }[]
       }
+      admin_link_counterparty_to_org: {
+        Args: {
+          p_admin_user_id: string
+          p_counterparty_id: string
+          p_org_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       admin_list_inconsistent_matches: {
         Args: never
         Returns: {
@@ -7985,8 +8045,27 @@ export type Database = {
           status: string
         }[]
       }
+      admin_merge_counterparties: {
+        Args: {
+          p_admin_user_id: string
+          p_duplicate_id: string
+          p_primary_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       admin_record_legacy_detections: {
         Args: { p_admin_user_id: string; p_match_ids?: string[] }
+        Returns: Json
+      }
+      admin_relink_match_counterparty: {
+        Args: {
+          p_admin_user_id: string
+          p_match_id: string
+          p_new_org_id: string
+          p_reason: string
+          p_side: string
+        }
         Returns: Json
       }
       admin_repair_legacy_match: {
@@ -8312,6 +8391,10 @@ export type Database = {
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
+      }
+      detect_match_quality_warnings: {
+        Args: { p_match_id: string }
+        Returns: Json
       }
       dry_run_legacy_reconciliation: { Args: never; Returns: Json }
       enqueue_email: {
