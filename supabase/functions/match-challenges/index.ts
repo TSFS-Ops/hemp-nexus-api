@@ -22,7 +22,45 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { assertAal2 } from "../_shared/aal.ts";
+import { readAal } from "../_shared/aal.ts";
+
+/**
+ * Batch J Required Fix 2 — AAL2 gate.
+ * Returns null on pass; an `err()` Response on fail. Best-effort audit
+ * is written when failing so denials are visible to compliance.
+ */
+async function requireAal2(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  authHeader: string | null,
+  callerUserId: string,
+  action: string,
+  context: Record<string, unknown>,
+): Promise<Response | null> {
+  const aal = readAal(authHeader);
+  if (aal === "aal2") return null;
+  try {
+    await admin.from("admin_audit_logs").insert({
+      admin_user_id: callerUserId,
+      action: "match_challenge.mfa_required_denied",
+      target_type: "match_challenge",
+      target_id: (context.challenge_id as string | null) ?? null,
+      details: {
+        attempted_action: action,
+        observed_aal: aal,
+        ...context,
+      },
+    });
+  } catch (e) {
+    console.error("[match-challenges] aal2 denial audit failed:", e);
+  }
+  return err(
+    "MFA_REQUIRED",
+    "This action requires multi-factor authentication. Enrol an authenticator app and complete an MFA challenge before retrying.",
+    403,
+    { observed_aal: aal },
+  );
+}
 
 /**
  * Batch J Required Fix 1 — edge-level admin_audit_logs writer.
