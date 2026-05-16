@@ -12,6 +12,12 @@ export interface AuthContext {
   orgId: string;
   roles: string[];
   isApiKey: boolean;
+  /** Batch N — request origin/IP carried through for IP-allowlist + audit. */
+  actorIp?: string | null;
+  userAgent?: string | null;
+  origin?: string | null;
+  /** Live request id for audit correlation (set by caller when available). */
+  requestId?: string | null;
 }
 
 // Auth rate limiting configuration
