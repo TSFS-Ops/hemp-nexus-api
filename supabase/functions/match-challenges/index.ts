@@ -628,6 +628,22 @@ Deno.serve(async (req) => {
           }).then(() => {}, () => {});
           return err("DB_ERROR", insErr.message, 400);
         }
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.evidence_uploaded",
+          challengeId: p.challenge_id,
+          matchId: challenge.match_id,
+          actorUserId: userId,
+          actorOrgId: callerOrgId,
+          requestId,
+          extra: {
+            evidence_id: row.id,
+            filename: safeName,
+            sha256: computedSha,
+            size_bytes: bytes.length,
+            mime_type: p.mime_type,
+            storage_path: storagePath,
+          },
+        });
         return json({ evidence: row, storage_path: storagePath }, 201);
       }
 
