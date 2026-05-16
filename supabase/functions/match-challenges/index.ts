@@ -527,6 +527,15 @@ Deno.serve(async (req) => {
             via_platform_admin: isPlatformAdmin,
           },
         });
+        // NOT-008: when a challenge reaches a terminal status, resolve any
+        // unread in-app notifications attached to this challenge so the bell
+        // doesn't keep nagging after withdrawal / outcome / no-action close.
+        if (TERMINAL_STATUSES.has(p.to_status)) {
+          await resolveNotificationsFor(admin, "match_challenge", p.challenge_id, {
+            requestId,
+            source: `match-challenges:transitioned_${p.to_status}`,
+          });
+        }
         return json({ challenge: row }, 200);
       }
 
