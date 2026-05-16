@@ -82,21 +82,77 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Refuse to enqueue paths that already have a DB row — only orphans
-    // may be scheduled.
+    // Batch O DATA-002: active-evidence guard. Refuse to enqueue paths
+    // that are still referenced by an active record in any of the
+    // recognised tables. We hit `match_documents`, `governance_documents`,
+    // `match_challenge_evidence`, `kyc_documents` *and* check WaD
+    // evidence_bundle JSON for embedded storage paths. A blocked attempt
+    // writes an admin audit row tagged ACTIVE_EVIDENCE_PROTECTED so
+    // operators can see retention/orphan jobs trying to remove live
+    // evidence.
     for (const r of RECONCILERS[bucket] ?? []) {
       const { count } = await admin
         .from(r.table)
         .select("id", { count: "exact", head: true })
         .eq(r.column, file_path);
       if ((count ?? 0) > 0) {
+        await admin.from("admin_audit_logs").insert({
+          admin_user_id: null,
+          action: "storage.cleanup_blocked",
+          target_type: "storage_object",
+          details: {
+            code: "ACTIVE_EVIDENCE_PROTECTED",
+            request_id: requestId,
+            bucket,
+            file_path,
+            table: r.table,
+            column: r.column,
+          },
+        });
         return new Response(JSON.stringify({
           ok: false,
+          code: "ACTIVE_EVIDENCE_PROTECTED",
           skipped: "has_db_row",
           table: r.table,
           request_id: requestId,
-        }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+        }), { status: 409, headers: { ...headers, "Content-Type": "application/json" } });
       }
+    }
+
+    // WaD evidence_bundle may embed storage paths. Treat any wads row
+    // (draft, awaiting_attestations, sealed) that mentions this path as
+    // an active reference — never delete files tied to a WaD bundle.
+    try {
+      const { data: wadHits } = await admin
+        .from("wads")
+        .select("id, status")
+        .filter("evidence_bundle::text", "ilike", `%${file_path.replace(/%/g, "")}%`)
+        .limit(1);
+      if (wadHits && wadHits.length > 0) {
+        await admin.from("admin_audit_logs").insert({
+          admin_user_id: null,
+          action: "storage.cleanup_blocked",
+          target_type: "storage_object",
+          details: {
+            code: "ACTIVE_EVIDENCE_PROTECTED",
+            request_id: requestId,
+            bucket,
+            file_path,
+            table: "wads",
+            wad_id: wadHits[0].id,
+            wad_status: wadHits[0].status,
+          },
+        });
+        return new Response(JSON.stringify({
+          ok: false,
+          code: "ACTIVE_EVIDENCE_PROTECTED",
+          skipped: "wad_reference",
+          request_id: requestId,
+        }), { status: 409, headers: { ...headers, "Content-Type": "application/json" } });
+      }
+    } catch (e) {
+      // Non-fatal: if WaD probe fails we still apply the per-table guard above.
+      console.warn("[enqueue-storage-cleanup] wad probe warning", (e as Error).message);
     }
 
     // De-dupe against the queue itself.

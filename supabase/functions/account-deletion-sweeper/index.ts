@@ -229,6 +229,27 @@ Deno.serve(async (req) => {
 
     // Destructive path: hard-delete the auth.users row. Profile stays for audit.
     try {
+      // Batch O DATA-004 + Fix 5: anonymise auth.users.email BEFORE physical
+      // deletion. This narrows the PII residency window and ensures that
+      // even if a downstream backup catches the row mid-flight, it carries
+      // a placeholder rather than the live address.
+      const placeholderEmail = `hard-deleted+${userId}@deleted.izenzo.local`;
+      try {
+        await supabase.auth.admin.updateUserById(userId, {
+          email: placeholderEmail,
+          user_metadata: { hard_delete_in_progress: true },
+        });
+      } catch (anonErr) {
+        console.warn(`[account-deletion-sweeper] anon-pre-delete warning for ${userId}`, anonErr);
+      }
+
+      // Final PII scrub (idempotent — safe to re-run after delete-account).
+      try {
+        await supabase.rpc("scrub_user_pii", { p_user_id: userId });
+      } catch (scrubErr) {
+        console.warn(`[account-deletion-sweeper] scrub_user_pii warning for ${userId}`, scrubErr);
+      }
+
       const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
       if (delErr) throw delErr;
 
@@ -238,6 +259,7 @@ Deno.serve(async (req) => {
         days_pending: daysPending,
         deletion_reason: row.deletion_reason,
         deletion_category: row.deletion_category,
+        email_anonymised: true,
       });
       result.deleted++;
       if (result.samples.length < 5) {

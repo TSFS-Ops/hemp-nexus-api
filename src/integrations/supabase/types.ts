@@ -209,6 +209,7 @@ export type Database = {
           ip_address: string | null
           target_id: string | null
           target_type: string
+          user_agent: string | null
         }
         Insert: {
           action: string
@@ -219,6 +220,7 @@ export type Database = {
           ip_address?: string | null
           target_id?: string | null
           target_type: string
+          user_agent?: string | null
         }
         Update: {
           action?: string
@@ -229,6 +231,7 @@ export type Database = {
           ip_address?: string | null
           target_id?: string | null
           target_type?: string
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -8003,6 +8006,10 @@ export type Database = {
         Args: { p_org_id: string; p_provider?: string }
         Returns: string
       }
+      anonymise_old_email_send_log: {
+        Args: { p_days?: number; p_dry_run?: boolean }
+        Returns: Json
+      }
       atomic_accept_bind: {
         Args: {
           p_caller_org_id: string
@@ -8556,6 +8563,7 @@ export type Database = {
         }
         Returns: Json
       }
+      scrub_user_pii: { Args: { p_user_id: string }; Returns: Json }
       set_org_data_residency: { Args: { _region: string }; Returns: Json }
       touch_match_view: { Args: { _match_id: string }; Returns: string }
       try_lifecycle_lock: { Args: never; Returns: boolean }

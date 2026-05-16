@@ -11,7 +11,8 @@ import { Loader2, Search, RefreshCw, Download, Shield } from "lucide-react";
 import { EmptyState } from "@/components/ui/error-state";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { downloadCSV } from "@/lib/download-utils";
+import { downloadCSV, redactExportMetadata } from "@/lib/download-utils";
+import { recordExportAudit } from "@/lib/export-audit";
 import {
   Dialog,
   DialogContent,
@@ -77,9 +78,27 @@ export function AdminAuditLogs() {
   const adminAuditTotalCount = adminAuditLogData?.totalCount ?? 0;
   const adminAuditTruncated = adminAuditTotalCount > ADMIN_ACTION_LIMIT;
 
-  const exportLogs = () => {
+  const exportLogs = async () => {
     if (!auditLogs || auditLogs.length === 0) {
       toast.error("No logs to export");
+      return;
+    }
+
+    // Batch O AUD-012: write audit row + AAL2 gate BEFORE handing rows to the
+    // operator. If the gate rejects, we never serialise the CSV.
+    const audit = await recordExportAudit({
+      target_type: "audit_logs",
+      format: "csv",
+      row_count: auditLogs.length,
+      sensitive: true,
+      filters: { actionFilter, entityFilter, search, page: auditPage },
+    });
+    if (!audit.ok) {
+      if (audit.aal_required) {
+        toast.error("Step-up authentication (AAL2) required for audit-log export.");
+        return;
+      }
+      toast.error(`Export blocked: ${audit.error ?? "audit write failed"}`);
       return;
     }
 
@@ -91,7 +110,8 @@ export function AdminAuditLogs() {
       log.entity_id || "",
       log.actor_user_id || log.actor_api_key_id || "",
       log.created_at,
-      JSON.stringify(log.metadata),
+      // Batch O DATA-005: never dump raw metadata — strip ip/user_agent/tokens/secrets/etc.
+      JSON.stringify(redactExportMetadata(log.metadata ?? {})),
     ]);
 
     downloadCSV(headers, rows, `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
