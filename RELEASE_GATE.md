@@ -36,6 +36,15 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-public-page-imports.mjs` — public pages don't import auth code
 - `check-edge-function-rpc-coverage.mjs` — edge RPCs are migration-backed (Batch U)
 - `check-csv-export-audit.mjs` — sensitive CSV exports are audited (Batch U)
+- `check-batch-suite-presence.mjs` — every closeout-report batch row has a matching test (Batch W)
+- `check-release-gate-sync.mjs` — prebuild scripts + critical cron jobs are documented (Batch W)
+
+Closeout & handover artefacts (must be reviewed before client sign-off):
+
+- `docs/closeout-report.md` — batch A–V completion table with test pins
+- `docs/deferred-policy-register.md` — client-owned policy decisions
+- `docs/launch-runbook.md` — go-live procedure, cron heartbeats, Sentry, demo exclusion, seeders refused in prod, rollback, sign-off matrix
+- `docs/handover.md` — non-technical client summary
 
 **Blocker:** Any command exits non-zero.
 
