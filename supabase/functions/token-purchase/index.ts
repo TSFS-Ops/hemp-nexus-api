@@ -1756,6 +1756,10 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
           resolved_at: new Date().toISOString(),
         })
         .eq("id", hold.admin_risk_item_id);
+      // NOT-008: clear unread in-app notifications attached to this risk item.
+      await resolveNotificationsFor(supabase, "admin_risk_item", hold.admin_risk_item_id, {
+        source: "token-purchase:chargeback_won",
+      });
     }
 
     await notifyOrgBilling(
