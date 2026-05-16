@@ -586,11 +586,19 @@ async function _serve(req: Request): Promise<Response> {
             body: `Your due diligence approval request was rejected by ${actingRole}. Reason: ${reason || "No reason provided"}.`,
             link: `/due-diligence`,
             read: false,
+            entity_type: "dd_approval_request",
+            entity_id: approval_request_id,
           }));
           await admin.from("notifications").insert(rejectNotifs).catch((err: any) =>
             console.error("[due-diligence] Rejection notification failed:", err.message)
           );
         }
+
+        // NOT-008: rejection is terminal — clear all unread "approval_required"
+        // rows for this request across every approver.
+        await resolveNotificationsFor(admin, "dd_approval_request", approval_request_id, {
+          source: "due-diligence:rejected",
+        });
 
         await admin.functions.invoke("notification-dispatch", {
           body: {
