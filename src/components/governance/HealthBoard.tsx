@@ -95,7 +95,63 @@ const MONITORED_JOBS: Array<{ id: string; name: string }> = [
   { id: "C3", name: "burn-poi-reconciliation-daily" },
   { id: "C4", name: "infra-alerts-cron" },
   { id: "C5", name: "cron-heartbeat-reconcile" },
+  { id: "C6", name: "sentry-heartbeat-cron" },
 ];
+
+// OPS-001 Stage 2 — Sentry receiving-events status derived from the
+// singleton `sentry_heartbeats` row. The tile is GREEN only when:
+//   - the DSN is configured,
+//   - the most recent ingest succeeded (HTTP 2xx),
+//   - the last attempt is within the freshness window (2× cron interval).
+// Missing DSN, missing row, stale attempt or any failure → amber/grey/red.
+interface SentryHeartbeatRow {
+  last_attempt_at: string | null;
+  last_success_at: string | null;
+  last_status: "unknown" | "pending" | "success" | "failed" | "dsn_missing";
+  last_http_status: number | null;
+  last_error: string | null;
+  last_event_id: string | null;
+  dsn_configured: boolean;
+  updated_at: string;
+}
+
+type SentryDerived = "operational" | "dsn_missing" | "failed" | "stale" | "never_run" | "not_monitored";
+
+// Cron runs every 15 minutes — freshness window is 2× interval = 30 min.
+const SENTRY_FRESHNESS_MS = 30 * 60 * 1000;
+
+export function deriveSentryStatus(
+  hb: SentryHeartbeatRow | null | undefined,
+  now: number,
+): SentryDerived {
+  if (!hb) return "not_monitored";
+  if (!hb.dsn_configured || hb.last_status === "dsn_missing") return "dsn_missing";
+  if (!hb.last_attempt_at) return "never_run";
+  const ageMs = now - new Date(hb.last_attempt_at).getTime();
+  if (hb.last_status === "failed") return "failed";
+  if (ageMs > SENTRY_FRESHNESS_MS) return "stale";
+  if (hb.last_status === "success") return "operational";
+  return "not_monitored";
+}
+
+function sentryToneFor(s: SentryDerived) {
+  if (s === "operational") return { dot: "bg-[hsl(var(--emerald))]", text: "text-[hsl(var(--emerald))]" };
+  if (s === "stale") return { dot: "bg-amber-500", text: "text-amber-800" };
+  if (s === "failed") return { dot: "bg-rose-600", text: "text-rose-800" };
+  // dsn_missing / never_run / not_monitored — never green.
+  return { dot: "bg-slate-300", text: "text-slate-500" };
+}
+
+function sentryLabel(s: SentryDerived): string {
+  switch (s) {
+    case "operational": return "operational";
+    case "dsn_missing": return "DSN not configured";
+    case "failed":      return "failing";
+    case "stale":       return "stale";
+    case "never_run":   return "never run";
+    case "not_monitored": return "not monitored";
+  }
+}
 
 export function HealthBoard() {
   const INCIDENT_LIMIT = 20;
@@ -147,6 +203,21 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
+  const { data: sentryHb } = useQuery<SentryHeartbeatRow | null>({
+    queryKey: ["sentry-heartbeat"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sentry_heartbeats")
+        .select("last_attempt_at, last_success_at, last_status, last_http_status, last_error, last_event_id, dsn_configured, updated_at")
+        .eq("id", true)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as SentryHeartbeatRow | null) ?? null;
+    },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
+  });
+
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
   const openIncidents = incidents.filter(i => i.status !== "resolved").length;
@@ -156,6 +227,8 @@ export function HealthBoard() {
   const hbByName = new Map<string, Heartbeat>();
   for (const h of heartbeats ?? []) hbByName.set(h.job_name, h);
   const now = Date.now();
+  const sentryStatus = deriveSentryStatus(sentryHb, now);
+  const sentryTone = sentryToneFor(sentryStatus);
 
   const rows = MONITORED_JOBS.map(j => {
     const hb = hbByName.get(j.name);
@@ -170,7 +243,7 @@ export function HealthBoard() {
   return (
     <>
       {/* Summary strip — every tile is derived from real rows. */}
-      <div className="grid grid-cols-4 gap-px bg-muted border border-border mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-muted border border-border mb-10">
         <div className="bg-card p-5" data-testid="healthboard-monitored-tile">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Jobs Healthy</p>
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">
@@ -185,6 +258,24 @@ export function HealthBoard() {
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">—</p>
           <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
             uptime monitor not configured
+          </p>
+        </div>
+        <div className="bg-card p-5" data-testid="healthboard-sentry-tile" data-sentry-status={sentryStatus}>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Sentry Receiving Events</p>
+          <div className="mt-1 flex items-center gap-2">
+            <span className={`h-1.5 w-1.5 rounded-full ${sentryTone.dot}`} aria-hidden />
+            <span className={`font-mono text-[11px] tracking-[0.2em] uppercase ${sentryTone.text}`}>
+              {sentryLabel(sentryStatus)}
+            </span>
+          </div>
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+            {sentryHb?.last_attempt_at
+              ? `last attempt ${formatTs(sentryHb.last_attempt_at)}${
+                  sentryHb.last_http_status != null ? ` · HTTP ${sentryHb.last_http_status}` : ""
+                }`
+              : sentryStatus === "dsn_missing"
+                ? "configure SENTRY_BACKEND_DSN"
+                : "no heartbeat recorded"}
           </p>
         </div>
         <div className="bg-card p-5">

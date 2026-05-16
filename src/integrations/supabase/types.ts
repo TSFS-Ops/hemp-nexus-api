@@ -6006,6 +6006,42 @@ export type Database = {
           },
         ]
       }
+      sentry_heartbeats: {
+        Row: {
+          dsn_configured: boolean
+          id: boolean
+          last_attempt_at: string | null
+          last_error: string | null
+          last_event_id: string | null
+          last_http_status: number | null
+          last_status: string
+          last_success_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          dsn_configured?: boolean
+          id?: boolean
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_event_id?: string | null
+          last_http_status?: number | null
+          last_status?: string
+          last_success_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          dsn_configured?: boolean
+          id?: boolean
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_event_id?: string | null
+          last_http_status?: number | null
+          last_status?: string
+          last_success_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       signals: {
         Row: {
           content: Json
