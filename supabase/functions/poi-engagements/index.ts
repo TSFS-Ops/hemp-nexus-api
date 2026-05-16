@@ -3434,6 +3434,13 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Counterparty ${authCtx.orgId} responded '${parsed.data.action}' on engagement ${engagement.id}`);
 
+      // NOT-008: terminal counterparty response — resolve any unread in-app
+      // notifications attached to this engagement (e.g. "respond to engagement").
+      await resolveNotificationsFor(supabase, "poi_engagement", engagement.id, {
+        requestId,
+        source: `poi-engagements:counterparty_${parsed.data.action}`,
+      });
+
       return new Response(JSON.stringify({ engagement: updated }), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
