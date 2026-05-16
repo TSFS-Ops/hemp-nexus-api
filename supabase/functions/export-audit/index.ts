@@ -30,7 +30,7 @@ const BodySchema = z.object({
   reason: z.string().max(500).nullable().optional(),
 });
 
-const SENSITIVE_TARGETS = new Set(["audit_logs", "admin_audit_logs", "notification_preferences"]);
+const SENSITIVE_TARGETS = new Set(["audit_logs", "admin_audit_logs", "notification_preferences", "programme_fund_flows"]);
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
