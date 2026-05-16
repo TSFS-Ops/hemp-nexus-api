@@ -6,6 +6,7 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
 import { isBypassEnabled, recordBypassUsage, bypassEnvelope, checkMaintenanceMode } from "../_shared/test-mode-bypass.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { fetchWithTimeout, ProviderTimeoutError, isProviderFailureStatus } from "../_shared/fetch-with-timeout.ts";
+import { checkProviderCooldown, recordProviderFailure, cooldownResponseEnvelope } from "../_shared/provider-retry.ts";
 
 /** Batch F: thrown by provider helpers when the provider is unreachable/degraded. */
 class IdvProviderError extends Error {
