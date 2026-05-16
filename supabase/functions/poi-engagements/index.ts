@@ -3089,6 +3089,14 @@ Deno.serve(async (req) => {
         `[${requestId}] Initiator ${authCtx.orgId} ${action} on engagement ${engagementId} (role=${isInitiatorOrgAdmin ? "org_admin" : "platform_admin_override"})`,
       );
 
+      // NOT-008: terminal initiator decision — resolve any unread in-app
+      // notifications attached to the parent engagement (and the renewed
+      // child, if late_acceptance reconfirm spawned one).
+      await resolveNotificationsFor(supabase, "poi_engagement", engagementId, {
+        requestId,
+        source: `poi-engagements:initiator_${action}`,
+      });
+
       const responseBody = {
         parent_engagement: parentAfter,
         renewed_engagement: renewedChild,
