@@ -36,7 +36,7 @@ export function AdminAuditLogs() {
   const ADMIN_LOG_LIMIT = 200;
 
   const { data: auditLogData, isLoading, refetch } = useQuery({
-    queryKey: ["admin-audit-logs", actionFilter, entityFilter, search, auditPage],
+    queryKey: ["admin-audit-logs", actionFilter, entityFilter, groupFilter, search, auditPage],
     queryFn: async () => {
       let query = supabase
         .from("audit_logs")
@@ -50,6 +50,17 @@ export function AdminAuditLogs() {
 
       if (entityFilter !== "all") {
         query = query.eq("entity_type", entityFilter);
+      }
+
+      // Batch S Fix 8: group filter — prefix match on action.
+      const ACTION_GROUPS: Record<string, string> = {
+        admin_risk_item: "admin_risk_item.",
+        admin_manual_override: "admin.manual_override.",
+        programme: "programme.",
+        due_diligence: "dd.",
+      };
+      if (groupFilter !== "all" && ACTION_GROUPS[groupFilter]) {
+        query = query.like("action", `${ACTION_GROUPS[groupFilter]}%`);
       }
 
       const { data, error, count } = await query;
@@ -228,6 +239,18 @@ export function AdminAuditLogs() {
                   {uniqueEntities.map(entity => (
                     <SelectItem key={entity} value={entity}>{entity}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              <Select value={groupFilter} onValueChange={(v) => { setGroupFilter(v); setAuditPage(0); }}>
+                <SelectTrigger className="w-full sm:w-[200px]" aria-label="Support action group filter">
+                  <SelectValue placeholder="Support group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All groups</SelectItem>
+                  <SelectItem value="admin_risk_item">admin_risk_item.*</SelectItem>
+                  <SelectItem value="admin_manual_override">admin.manual_override.*</SelectItem>
+                  <SelectItem value="programme">programme.*</SelectItem>
+                  <SelectItem value="due_diligence">due_diligence (dd.*)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
