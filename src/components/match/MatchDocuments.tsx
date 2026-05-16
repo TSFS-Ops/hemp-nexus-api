@@ -1043,6 +1043,20 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
             
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
+                <Label htmlFor="doc-type">Document type *</Label>
+                <Select value={docType} onValueChange={setDocType} disabled={uploading}>
+                  <SelectTrigger id="doc-type">
+                    <SelectValue placeholder="Select document type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOC_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="file">Select File</Label>
                 <Input
                   id="file"
