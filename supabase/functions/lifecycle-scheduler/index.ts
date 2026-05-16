@@ -344,6 +344,10 @@ Deno.serve(async (req: Request) => {
           await admin.from("breaches")
             .update({ status: "remediated", resolved_at: nowIso, resolution_note: "Milestone completed during grace period" })
             .eq("id", breach.id);
+          // NOT-008: resolve any in-app notifications attached to this breach.
+          await resolveNotificationsFor(admin, "breach", breach.id, {
+            source: "lifecycle-scheduler:breach_remediated",
+          });
           breachesRemediated++;
         } else {
           // Not remediated - escalate to finalised, increase severity
