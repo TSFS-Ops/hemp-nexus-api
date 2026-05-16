@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     if (req.method === 'GET' && parts.length === 0) {
       const { data, error } = await supabase
         .from('api_keys')
-        .select('id, name, scopes, last_used_at, created_at, status, expires_at, environment')
+        .select('id, name, scopes, last_used_at, created_at, status, expires_at, environment, allowed_ips, allowed_origins')
         .eq('org_id', authCtx.orgId)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
