@@ -116,6 +116,9 @@ const MONITORED_JOBS: Array<{ id: string; name: string }> = [
   { id: "C4", name: "infra-alerts-cron" },
   { id: "C5", name: "cron-heartbeat-reconcile" },
   { id: "C6", name: "sentry-heartbeat-cron" },
+  { id: "C7", name: "balance-drift-reconciliation-daily" },
+  { id: "C8", name: "side-effect-reconciliation-daily" },
+  { id: "C9", name: "transaction-reconciliation-job" },
 ];
 
 // OPS-001 Stage 2 — Sentry receiving-events status derived from the
