@@ -121,9 +121,18 @@ interface MatchDocumentsProps {
   orgId: string;
 }
 
+// Batch L DOC-001: conservative initial taxonomy — mirrors the
+// match_documents_doc_type_check DB constraint. Final taxonomy is
+// policy-pending; legacy/unknown values render as "Unrecognised".
 const DOC_TYPES = [
-  { value: "other", label: "Document" },
-];
+  { value: "bill_of_lading", label: "Bill of Lading" },
+  { value: "invoice", label: "Invoice" },
+  { value: "letter_of_credit", label: "Letter of Credit" },
+  { value: "kyc", label: "KYC Document" },
+  { value: "licence", label: "Licence" },
+  { value: "other", label: "Other" },
+] as const;
+const ALLOWED_DOC_TYPES = new Set(DOC_TYPES.map((t) => t.value));
 
 const VISIBILITY_OPTIONS = [
   { value: "private", label: "Private", icon: Lock, description: "Only your organisation" },
