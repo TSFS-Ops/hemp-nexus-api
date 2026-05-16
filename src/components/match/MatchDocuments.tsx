@@ -485,22 +485,34 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       const sanitisedFilename = safeStorageName;
 
       currentPhase = "db_insert";
-      const finaliseResult = await finaliseMatchDocumentUpload({
-        match_id: matchId,
-        document_id: docId,
-        storage_path: storagePath,
-        filename: sanitisedFilename,
-        file_size: selectedFile.size,
-        mime_type: selectedFile.type,
-        sha256_hash: sha256Hash,
-        doc_type: effectiveDocType,
-        title: title || null,
-        notes: notes || null,
-        visibility: visibility as "private" | "share_with_counterparty" | "share_with_roles",
-        magic_bytes_verified: !!detectedMime,
-        server_detected_mime: detectedMime || null,
-        client_request_id: clientRequestId,
-      });
+      let finaliseResult: Awaited<ReturnType<typeof finaliseMatchDocumentUpload>> | null = null;
+      try {
+        finaliseResult = await finaliseMatchDocumentUpload({
+          match_id: matchId,
+          document_id: docId,
+          storage_path: storagePath,
+          filename: sanitisedFilename,
+          file_size: selectedFile.size,
+          mime_type: selectedFile.type,
+          sha256_hash: sha256Hash,
+          doc_type: effectiveDocType,
+          title: title || null,
+          notes: notes || null,
+          visibility: visibility as "private" | "share_with_counterparty" | "share_with_roles",
+          magic_bytes_verified: !!detectedMime,
+          server_detected_mime: detectedMime || null,
+          client_request_id: clientRequestId,
+        });
+      } catch (finaliseErr) {
+        // Batch E SEC-012: if finaliser fails because the session died
+        // (REFRESH_FAILED / NO_SESSION / UNAUTHORIZED) the storage object
+        // is now an orphan the server-side finaliser cleanup never ran on.
+        // Best-effort delete first, then enqueue for the sweeper.
+        if (isSessionDeadError(finaliseErr)) {
+          await cleanupOrphanUpload("match-documents", storagePath, "finaliser_session_dead").catch(() => {});
+        }
+        throw finaliseErr;
+      }
       if (!finaliseResult?.ok) throw new Error("Document upload finalisation failed");
 
       currentPhase = "success";
