@@ -26,6 +26,7 @@ import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_shared/idempotency.ts";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertNotReplayed } from "../_shared/replay-guard.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
@@ -1755,6 +1756,10 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
           resolved_at: new Date().toISOString(),
         })
         .eq("id", hold.admin_risk_item_id);
+      // NOT-008: clear unread in-app notifications attached to this risk item.
+      await resolveNotificationsFor(supabase, "admin_risk_item", hold.admin_risk_item_id, {
+        source: "token-purchase:chargeback_won",
+      });
     }
 
     await notifyOrgBilling(
@@ -1834,6 +1839,10 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
           resolved_at: new Date().toISOString(),
         })
         .eq("id", hold.admin_risk_item_id);
+      // NOT-008: clear unread in-app notifications attached to this risk item.
+      await resolveNotificationsFor(supabase, "admin_risk_item", hold.admin_risk_item_id, {
+        source: "token-purchase:chargeback_lost",
+      });
     }
 
     await notifyOrgBilling(

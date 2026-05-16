@@ -2925,6 +2925,17 @@ Deno.serve(async (req) => {
         }
       }
 
+      // NOT-008: when a binding-review dispute is actually resolved
+      // (confirmed_canonical or deferred_no_review_needed — NOT "rejected",
+      // which keeps the engagement parked), clear any unread admin / initiator
+      // in-app notifications attached to this engagement.
+      if (parsed.data.resolution !== "rejected") {
+        await resolveNotificationsFor(supabase, "poi_engagement", engagementId, {
+          requestId,
+          source: `poi-engagements:binding_review_${parsed.data.resolution}`,
+        });
+      }
+
       const responseBody = { engagement: updated };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
