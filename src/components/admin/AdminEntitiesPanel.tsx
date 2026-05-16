@@ -360,6 +360,7 @@ export function AdminEntitiesPanel() {
                         </div>
                       </div>
                     </div>
+                    <ProviderErrorBadges errors={providerErrors[entity.id]} />
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-muted-foreground">Reg. No.</span>
