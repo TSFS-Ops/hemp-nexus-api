@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/generate-routes.mjs && node scripts/check-routes.mjs && node scripts/check-edge-function-paths.mjs && node scripts/check-no-inline-subject-truncate.mjs && node scripts/check-docs-no-zar-billing.mjs && node scripts/check-docs-staleness.mjs && node scripts/check-operational-visual-tokens.mjs && node scripts/check-match-lifecycle-mirror.mjs",
+    "prebuild": "node scripts/generate-routes.mjs && node scripts/check-routes.mjs && node scripts/check-edge-function-paths.mjs && node scripts/check-no-inline-subject-truncate.mjs && node scripts/check-docs-no-zar-billing.mjs && node scripts/check-docs-staleness.mjs && node scripts/check-operational-visual-tokens.mjs && node scripts/check-match-lifecycle-mirror.mjs && node scripts/check-legacy-admin-rls.mjs",
+    "check:legacy-admin-rls": "node scripts/check-legacy-admin-rls.mjs",
     "check:match-lifecycle-mirror": "node scripts/check-match-lifecycle-mirror.mjs",
     "test:match-lifecycle": "node scripts/test-match-lifecycle.mjs",
     "check:visual-tokens": "node scripts/check-operational-visual-tokens.mjs",
