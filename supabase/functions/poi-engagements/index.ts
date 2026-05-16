@@ -2288,6 +2288,39 @@ Deno.serve(async (req) => {
           409,
         );
       }
+      // Batch J F5 — duplicate-recreate guard. The DB carries a partial
+      // unique index `uniq_poi_engagements_active_match_email` on
+      // (match_id, lower(counterparty_email)) for active rows. We
+      // pre-check here so the client gets a typed code instead of a
+      // raw 23505. Service-role client bypasses RLS by design.
+      {
+        const matchIdForCheck = (current as { match_id?: string | null }).match_id ?? null;
+        const newEmailLc = parsed.data.new_email.trim().toLowerCase();
+        if (matchIdForCheck) {
+          const { data: dupRow } = await supabase
+            .from("poi_engagements")
+            .select("id, engagement_status")
+            .eq("match_id", matchIdForCheck)
+            .eq("counterparty_email", newEmailLc)
+            .not("id", "eq", engagementId)
+            .in("engagement_status", [
+              "pending",
+              "notification_sent",
+              "contacted",
+              "accepted",
+              "late_acceptance_pending_initiator_reconfirmation",
+            ])
+            .maybeSingle();
+          if (dupRow?.id) {
+            throw new ApiException(
+              "ENGAGEMENT_ALREADY_REPLACED",
+              "An active engagement for this match and counterparty email already exists. The DB unique-index backstop will refuse a second concurrent active row.",
+              409,
+              { existing_engagement_id: dupRow.id, existing_status: dupRow.engagement_status },
+            );
+          }
+        }
+      }
 
       const { data: adminProfile } = await supabase
         .from("profiles")
