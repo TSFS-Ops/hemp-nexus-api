@@ -49,11 +49,15 @@ export interface SecretHealthResult {
   required_ok: boolean;
 }
 
+// Deno is the runtime in production; declare for TS so this module can
+// also be imported by vitest (Node) for static guard tests without pulling
+// in the @types/deno toolchain.
+declare const Deno: { env: { get(name: string): string | undefined } } | undefined;
+
 function read(name: string): string | undefined {
   try {
-    const v = Deno.env.get(name);
+    const v = typeof Deno !== "undefined" ? Deno.env.get(name) : process.env[name];
     if (v === undefined || v === null) return undefined;
-    // Treat blank as missing — env vars sometimes resolve to "".
     return v.length === 0 ? undefined : v;
   } catch {
     return undefined;
