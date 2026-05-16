@@ -496,11 +496,22 @@ export const requireRole = (ctx: AuthContext, role: string) => {
 };
 
 export const requireScope = (ctx: AuthContext, scope: string) => {
-  if (ctx.isApiKey) {
-    // Check for exact match or prefix match (e.g., 'signals' matches 'signals:read')
-    const hasScope = ctx.roles.some(r => r === scope || r.startsWith(`${scope}:`));
-    if (!hasScope) {
-      throw new ApiException('FORBIDDEN', `Missing required scope: ${scope}`, 403);
-    }
-  }
+  if (!ctx.isApiKey) return;
+  // Batch N — Required Fix 2: exact match (or explicit `${parent}:*`
+  // wildcard) only. The legacy "naked parent satisfies all children" /
+  // "child satisfies parent" prefix logic is REMOVED.
+  if (scopeSatisfies(ctx.roles, scope)) return;
+
+  // Fire-and-forget scope denied audit. Never blocks the 403.
+  writeSecurityAudit({
+    action: 'api_key.scope_denied',
+    orgId: ctx.orgId,
+    apiKeyId: ctx.userId,
+    actorIp: ctx.actorIp ?? null,
+    userAgent: ctx.userAgent ?? null,
+    requestId: ctx.requestId ?? null,
+    extra: { required_scope: scope, held_scopes: ctx.roles },
+  }).catch((e) => console.error('[requireScope] audit failed:', e));
+
+  throw new ApiException('FORBIDDEN', `Missing required scope: ${scope}`, 403);
 };
