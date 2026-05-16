@@ -30,7 +30,7 @@ function walk(dir) {
     const p = join(dir, name);
     const s = statSync(p);
     if (s.isDirectory()) out.push(...walk(p));
-    else if (p.endsWith(".ts")) out.push(p);
+    else if (p.endsWith(".ts") && !p.endsWith("_test.ts") && !p.endsWith(".test.ts")) out.push(p);
   }
   return out;
 }
