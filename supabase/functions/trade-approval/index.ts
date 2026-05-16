@@ -291,6 +291,10 @@ Deno.serve(async (req: Request) => {
           body: `A ${riskBand}-risk trade approval for this organisation requires ${u.role} review.`,
           link: `/dashboard/compliance`,
           read: false,
+          // NOT-008: link to the trade_approval row so it can be auto-resolved
+          // when the approval reaches a terminal state.
+          entity_type: "trade_approval",
+          entity_id: approval.id,
         }));
         const { error: notifErr } = await admin.from("notifications").insert(notificationRows);
         if (notifErr) {

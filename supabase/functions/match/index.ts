@@ -1082,6 +1082,8 @@ Deno.serve(async (req) => {
                 body: `A Proof of Intent has been generated for ${match.commodity || 'a trade'} by ${creatorOrgName}. The counterparty is not yet on the platform — please facilitate contact.`,
                 link: `/desk/match/${matchId}`,
                 org_id: creatorOrgId,
+                entity_type: "match",
+                entity_id: matchId,
               }));
               await supabase.from("notifications").upsert(notifRows, { onConflict: 'user_id,type,link', ignoreDuplicates: true });
             }
@@ -1139,6 +1141,8 @@ Deno.serve(async (req) => {
                 body: `${creatorOrgName} generated a POI for ${match.commodity || 'a trade'} with ${counterpartyName}, who is not registered. Manual outreach required.`,
                 link: `/desk/match/${matchId}`,
                 org_id: creatorOrgId,
+                entity_type: "match",
+                entity_id: matchId,
               }));
               await supabase.from("notifications").upsert(notifRows, { onConflict: 'user_id,type,link', ignoreDuplicates: true });
             }
@@ -1184,6 +1188,8 @@ Deno.serve(async (req) => {
                 body: `A Proof of Intent has been issued for ${match.commodity || 'a trade'} by ${creatorOrgName}. Your organisation is the ${counterpartySide}. Review and respond.`,
                 link: `/desk/match/${matchId}`,
                 org_id: counterpartyOrgId,
+                entity_type: "match",
+                entity_id: matchId,
               }));
               await supabase.from("notifications").upsert(notifRows, { onConflict: 'user_id,type,link', ignoreDuplicates: true });
 

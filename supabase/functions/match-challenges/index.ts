@@ -23,6 +23,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { readAal } from "../_shared/aal.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 
 /**
  * Batch J Required Fix 2 — AAL2 gate.
@@ -526,6 +527,15 @@ Deno.serve(async (req) => {
             via_platform_admin: isPlatformAdmin,
           },
         });
+        // NOT-008: when a challenge reaches a terminal status, resolve any
+        // unread in-app notifications attached to this challenge so the bell
+        // doesn't keep nagging after withdrawal / outcome / no-action close.
+        if (TERMINAL_STATUSES.has(p.to_status)) {
+          await resolveNotificationsFor(admin, "match_challenge", p.challenge_id, {
+            requestId,
+            source: `match-challenges:transitioned_${p.to_status}`,
+          });
+        }
         return json({ challenge: row }, 200);
       }
 

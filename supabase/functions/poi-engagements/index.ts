@@ -15,6 +15,7 @@ import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE }
 import { clampSubject } from "../_shared/email-subject.ts";
 import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
 import { dispatchD4cInitiatorAlert } from "../_shared/batch-d-initiator-notify.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 import { evaluateCounterpartyEmailBinding } from "../_shared/binding-resolver.ts";
 import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
 // Batch A — single source of truth for contact-completeness gating.
@@ -2407,6 +2408,11 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] initiator-cancel outreach log insert failed (non-fatal):`, logErr);
       }
 
+      // NOT-008: resolve any unread in-app notifications attached to this engagement.
+      await resolveNotificationsFor(supabase, "poi_engagement", engagementId, {
+        requestId,
+        source: "poi-engagements:initiator_cancel",
+      });
       // Optional admin_risk_items row — NO automatic refund, manual decision.
       let riskItemId: string | null = null;
       if (parsed.data.refund_decision_required) {
@@ -2677,6 +2683,12 @@ Deno.serve(async (req) => {
           e instanceof Error ? e.message : e,
         );
       }
+
+      // NOT-008: resolve any unread in-app notifications attached to this engagement.
+      await resolveNotificationsFor(supabase, "poi_engagement", engagementId, {
+        requestId,
+        source: "poi-engagements:cancelled_email_change",
+      });
 
       const responseBody = { engagement: updated };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
@@ -3077,6 +3089,14 @@ Deno.serve(async (req) => {
         `[${requestId}] Initiator ${authCtx.orgId} ${action} on engagement ${engagementId} (role=${isInitiatorOrgAdmin ? "org_admin" : "platform_admin_override"})`,
       );
 
+      // NOT-008: terminal initiator decision — resolve any unread in-app
+      // notifications attached to the parent engagement (and the renewed
+      // child, if late_acceptance reconfirm spawned one).
+      await resolveNotificationsFor(supabase, "poi_engagement", engagementId, {
+        requestId,
+        source: `poi-engagements:initiator_${action}`,
+      });
+
       const responseBody = {
         parent_engagement: parentAfter,
         renewed_engagement: renewedChild,
@@ -3421,6 +3441,13 @@ Deno.serve(async (req) => {
         .single();
 
       console.log(`[${requestId}] Counterparty ${authCtx.orgId} responded '${parsed.data.action}' on engagement ${engagement.id}`);
+
+      // NOT-008: terminal counterparty response — resolve any unread in-app
+      // notifications attached to this engagement (e.g. "respond to engagement").
+      await resolveNotificationsFor(supabase, "poi_engagement", engagement.id, {
+        requestId,
+        source: `poi-engagements:counterparty_${parsed.data.action}`,
+      });
 
       return new Response(JSON.stringify({ engagement: updated }), {
         status: 200,

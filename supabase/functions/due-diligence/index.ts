@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 
 // Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
 // with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
@@ -478,6 +479,10 @@ async function _serve(req: Request): Promise<Response> {
           body: `A ${riskBand}-risk due diligence approval request requires your ${u.role} sign-off.`,
           link: `/due-diligence`,
           read: false,
+          // NOT-008: link to the dd_approval_request so a later
+          // resolve/reject auto-clears the unread row.
+          entity_type: "dd_approval_request",
+          entity_id: request.id,
         }));
         await admin.from("notifications").insert(notifRows).catch((err: any) =>
           console.error("[due-diligence] Approval notification insert failed:", err.message)
@@ -581,11 +586,19 @@ async function _serve(req: Request): Promise<Response> {
             body: `Your due diligence approval request was rejected by ${actingRole}. Reason: ${reason || "No reason provided"}.`,
             link: `/due-diligence`,
             read: false,
+            entity_type: "dd_approval_request",
+            entity_id: approval_request_id,
           }));
           await admin.from("notifications").insert(rejectNotifs).catch((err: any) =>
             console.error("[due-diligence] Rejection notification failed:", err.message)
           );
         }
+
+        // NOT-008: rejection is terminal — clear all unread "approval_required"
+        // rows for this request across every approver.
+        await resolveNotificationsFor(admin, "dd_approval_request", approval_request_id, {
+          source: "due-diligence:rejected",
+        });
 
         await admin.functions.invoke("notification-dispatch", {
           body: {
@@ -660,11 +673,19 @@ async function _serve(req: Request): Promise<Response> {
             body: "All required approvals have been completed. The organisation is now approved to trade.",
             link: `/due-diligence`,
             read: false,
+            entity_type: "dd_approval_request",
+            entity_id: approval_request_id,
           }));
           await admin.from("notifications").insert(completeNotifs).catch((err: any) =>
             console.error("[due-diligence] Completion notification failed:", err.message)
           );
         }
+
+        // NOT-008: completion is terminal — clear all unread "approval_required"
+        // rows for this request across every approver.
+        await resolveNotificationsFor(admin, "dd_approval_request", approval_request_id, {
+          source: "due-diligence:completed",
+        });
 
         await admin.functions.invoke("notification-dispatch", {
           body: {
@@ -692,6 +713,8 @@ async function _serve(req: Request): Promise<Response> {
             body: `${actingRole} has approved. Your ${u.role} sign-off is still needed to complete the approval.`,
             link: `/due-diligence`,
             read: false,
+            entity_type: "dd_approval_request",
+            entity_id: approval_request_id,
           }));
           await admin.from("notifications").insert(partialNotifs).catch((err: any) =>
             console.error("[due-diligence] Partial approval notification failed:", err.message)

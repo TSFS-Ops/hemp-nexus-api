@@ -7,6 +7,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -117,6 +118,11 @@ Deno.serve(async (req) => {
           type: "engagement_reminder",
           title: "Stale engagement - 7 days without contact",
           message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
+          // NOT-008: link the in-app row to the engagement so that
+          // resolve_notifications_for('poi_engagement', id) can auto-clear it
+          // when the engagement is accepted / declined / cancelled / expired.
+          entity_type: "poi_engagement",
+          entity_id: eng.id,
           metadata: {
             engagement_id: eng.id,
             match_id: eng.match_id,
@@ -210,6 +216,16 @@ Deno.serve(async (req) => {
             failed_ids: failedIds,
           },
         });
+
+        // NOT-008: resolve any unread in-app notifications (stale-reminder
+        // admin alerts, counterparty "respond" pings) attached to these
+        // now-expired engagements.
+        for (const id of expiredIds) {
+          await resolveNotificationsFor(supabase, "poi_engagement", id, {
+            requestId,
+            source: "engagement-reminder:auto_expired",
+          });
+        }
       }
     }
 

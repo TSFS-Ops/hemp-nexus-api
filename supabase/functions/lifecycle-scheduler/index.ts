@@ -4,6 +4,7 @@ import { triggerWebhooks } from "../_shared/webhooks.ts";
 import { cacheHeaders } from "../_shared/cache.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
 import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 
 /**
  * Lifecycle Scheduler - handles periodic tasks:
@@ -196,6 +197,15 @@ Deno.serve(async (req: Request) => {
           console.error("[lifecycle-scheduler] per-match expiry audit failed:", e);
         }
       }
+
+      // NOT-008: resolve any unread in-app notifications attached to these
+      // now-expired matches (e.g. "POI pending" reminders, counterparty pings).
+      for (const m of expiredMatches) {
+        await resolveNotificationsFor(admin, "match", m.id, {
+          requestId: runRequestId,
+          source: "lifecycle-scheduler:match_expired",
+        });
+      }
     } else if (dryRun) {
       expiredMatches = (matchesToExpire ?? []).map((m: any) => ({ id: m.id }));
     }
@@ -343,6 +353,10 @@ Deno.serve(async (req: Request) => {
           await admin.from("breaches")
             .update({ status: "remediated", resolved_at: nowIso, resolution_note: "Milestone completed during grace period" })
             .eq("id", breach.id);
+          // NOT-008: resolve any in-app notifications attached to this breach.
+          await resolveNotificationsFor(admin, "breach", breach.id, {
+            source: "lifecycle-scheduler:breach_remediated",
+          });
           breachesRemediated++;
         } else {
           // Not remediated - escalate to finalised, increase severity
