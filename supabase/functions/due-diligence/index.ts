@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { validateMagicBytes } from "../_shared/magic-bytes.ts";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 
 // Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
 // with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
