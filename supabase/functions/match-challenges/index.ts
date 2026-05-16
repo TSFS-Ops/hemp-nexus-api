@@ -414,6 +414,15 @@ Deno.serve(async (req) => {
           .select("*")
           .single();
         if (insErr) return err("DB_ERROR", insErr.message, 400);
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.commented",
+          challengeId: p.challenge_id,
+          matchId: challenge.match_id,
+          actorUserId: userId,
+          actorOrgId: p.author_org_id ?? orgId,
+          requestId,
+          extra: { author_role: p.author_role, comment_id: row.id, body_length: p.body.length },
+        });
         return json({ comment: row }, 201);
       }
 
