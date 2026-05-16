@@ -4851,6 +4851,7 @@ export type Database = {
           sla_reminder_count: number
           sla_reminder_sent_at: string | null
           source: string
+          superseded_by_engagement_id: string | null
           support_notes: string | null
           support_notes_updated_at: string | null
           support_notes_updated_by: string | null
@@ -4901,6 +4902,7 @@ export type Database = {
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
           source?: string
+          superseded_by_engagement_id?: string | null
           support_notes?: string | null
           support_notes_updated_at?: string | null
           support_notes_updated_by?: string | null
@@ -4951,6 +4953,7 @@ export type Database = {
           sla_reminder_count?: number
           sla_reminder_sent_at?: string | null
           source?: string
+          superseded_by_engagement_id?: string | null
           support_notes?: string | null
           support_notes_updated_at?: string | null
           support_notes_updated_by?: string | null
@@ -5023,6 +5026,20 @@ export type Database = {
           {
             foreignKeyName: "poi_engagements_replacement_fk"
             columns: ["replacement_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "poi_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_superseded_by_engagement_id_fkey"
+            columns: ["superseded_by_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "poi_engagements_superseded_by_engagement_id_fkey"
+            columns: ["superseded_by_engagement_id"]
             isOneToOne: false
             referencedRelation: "poi_engagements"
             referencedColumns: ["id"]
@@ -8567,6 +8584,7 @@ export type Database = {
         | "late_acceptance_pending_initiator_reconfirmation"
         | "cancelled_email_change"
         | "disputed_being_named"
+        | "cancelled_by_initiator"
       gate_position: "entry" | "poi_mint" | "wad_only"
       revenue_notification_status: "sent" | "failed" | "skipped"
       signal_type: "buyer" | "seller"
@@ -8723,6 +8741,7 @@ export const Constants = {
         "late_acceptance_pending_initiator_reconfirmation",
         "cancelled_email_change",
         "disputed_being_named",
+        "cancelled_by_initiator",
       ],
       gate_position: ["entry", "poi_mint", "wad_only"],
       revenue_notification_status: ["sent", "failed", "skipped"],
