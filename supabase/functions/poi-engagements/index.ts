@@ -2826,6 +2826,19 @@ Deno.serve(async (req) => {
       if (!engagement) {
         throw new ApiException("NOT_FOUND", "No engagement found for this match", 404);
       }
+      // Batch J F4 — supersession gate covers accept + decline. The
+      // counterparty cannot transition a replaced or initiator-cancelled
+      // engagement; the new replacement carries the live token.
+      {
+        const sup = evaluateSupersessionGate(engagement as Record<string, unknown>);
+        if (sup) {
+          throw new ApiException(sup.code, sup.message, 409, {
+            current_status: (engagement as { engagement_status?: string }).engagement_status ?? null,
+            superseded_by_engagement_id:
+              (engagement as { superseded_by_engagement_id?: string | null }).superseded_by_engagement_id ?? null,
+          });
+        }
+      }
 
       // Verify the caller is the counterparty (their org_id matches counterparty_org_id,
       // or they are listed as buyer/seller on the match but are NOT the initiating org)
