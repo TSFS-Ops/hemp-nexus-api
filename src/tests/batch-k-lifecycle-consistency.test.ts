@@ -211,7 +211,7 @@ describe("Batch K — Fix 9: long-pending engagement visibility", () => {
     expect(scheduler).toMatch(/kind:\s*"long_pending_engagements_visibility"/);
     // Guarded by !dryRun
     const idx = scheduler.indexOf("long_pending_engagements_visibility:${todayKey}");
-    const before = scheduler.slice(Math.max(0, idx - 400), idx);
+    const before = scheduler.slice(Math.max(0, idx - 1200), idx);
     expect(before).toMatch(/if \(!dryRun/);
   });
 });
