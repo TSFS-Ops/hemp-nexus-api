@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,131 @@ interface Entity {
   created_at: string;
 }
 
+/**
+ * Batch F UI surfacing — provider error signal per entity.
+ * Sourced strictly from:
+ *   - audit_logs (action='idv.failed', entity_type='entity', entity_id=<id>)
+ *   - screening_results (status='provider_error', entity_id=<id>)
+ * Latest-wins per entity, per source. Never inferred.
+ */
+type EntityProviderError = {
+  source: "idv" | "screening";
+  provider: string | null;
+  reason: string | null;
+  status_code: number | null;
+  at: string;
+};
+
+function useEntityProviderErrors(entityIds: string[]) {
+  const [map, setMap] = useState<Record<string, EntityProviderError[]>>({});
+  const key = useMemo(() => entityIds.slice().sort().join(","), [entityIds]);
+  useEffect(() => {
+    if (entityIds.length === 0) {
+      setMap({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [idvRes, screenRes] = await Promise.all([
+          supabase
+            .from("audit_logs")
+            .select("entity_id,action,created_at,metadata")
+            .eq("action", "idv.failed")
+            .eq("entity_type", "entity")
+            .in("entity_id", entityIds)
+            .order("created_at", { ascending: false })
+            .limit(500),
+          supabase
+            .from("screening_results")
+            .select("entity_id,provider,status,screened_at,raw_response")
+            .eq("status", "provider_error")
+            .in("entity_id", entityIds)
+            .order("screened_at", { ascending: false })
+            .limit(500),
+        ]);
+        if (cancelled) return;
+        const next: Record<string, EntityProviderError[]> = {};
+        const seenIdv = new Set<string>();
+        for (const row of (idvRes.data ?? []) as Array<{
+          entity_id: string | null;
+          created_at: string;
+          metadata: Record<string, unknown> | null;
+        }>) {
+          const eid = row.entity_id;
+          if (!eid || seenIdv.has(eid)) continue;
+          seenIdv.add(eid);
+          const md = (row.metadata ?? {}) as Record<string, unknown>;
+          (next[eid] ??= []).push({
+            source: "idv",
+            provider: (md.provider as string) ?? null,
+            reason: (md.reason as string) ?? null,
+            status_code: (md.status_code as number) ?? null,
+            at: row.created_at,
+          });
+        }
+        const seenScreen = new Set<string>();
+        for (const row of (screenRes.data ?? []) as Array<{
+          entity_id: string | null;
+          provider: string;
+          screened_at: string;
+          raw_response: Record<string, unknown> | null;
+        }>) {
+          const eid = row.entity_id;
+          if (!eid || seenScreen.has(eid)) continue;
+          seenScreen.add(eid);
+          const raw = (row.raw_response ?? {}) as Record<string, unknown>;
+          (next[eid] ??= []).push({
+            source: "screening",
+            provider: row.provider ?? null,
+            reason: (raw.reason as string) ?? (raw.error as string) ?? null,
+            status_code: (raw.status_code as number) ?? null,
+            at: row.screened_at,
+          });
+        }
+        setMap(next);
+      } catch (err) {
+        console.warn("[AdminEntitiesPanel] provider-error enrichment failed:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return map;
+}
+
+function ProviderErrorBadges({ errors }: { errors: EntityProviderError[] | undefined }) {
+  if (!errors || errors.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mt-1" data-provider-error-region>
+      {errors.map((e, i) => {
+        const label = e.source === "idv" ? "IDV provider error" : "Screening provider error";
+        const ts = new Date(e.at).toLocaleString();
+        const pieces = [
+          e.provider ? `provider=${e.provider}` : null,
+          e.status_code != null ? `status=${e.status_code}` : null,
+          e.reason ? `reason=${e.reason}` : null,
+          `at ${ts}`,
+        ].filter(Boolean) as string[];
+        return (
+          <Badge
+            key={`${e.source}-${i}`}
+            variant="outline"
+            className="bg-amber-50 text-amber-800 border-amber-300 text-[10px] font-medium"
+            title={`${label} — manual review required. ${pieces.join(" · ")}`}
+            data-provider-error={e.source}
+          >
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            {label}
+          </Badge>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AdminEntitiesPanel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -47,6 +172,8 @@ export function AdminEntitiesPanel() {
       return query;
     },
   });
+
+  const providerErrors = useEntityProviderErrors(entities.map((e) => e.id));
 
   const runScreening = async (entityId: string) => {
     setScreeningEntity(entityId);
@@ -233,6 +360,7 @@ export function AdminEntitiesPanel() {
                         </div>
                       </div>
                     </div>
+                    <ProviderErrorBadges errors={providerErrors[entity.id]} />
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-muted-foreground">Reg. No.</span>
@@ -327,7 +455,10 @@ export function AdminEntitiesPanel() {
                         <TableCell className="font-mono text-xs">{entity.jurisdiction_code}</TableCell>
                         <TableCell className="text-xs">{entity.registration_number || "-"}</TableCell>
                         <TableCell>
-                          <StatusBadge status={entity.status} />
+                          <div className="space-y-1">
+                            <StatusBadge status={entity.status} />
+                            <ProviderErrorBadges errors={providerErrors[entity.id]} />
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {new Date(entity.created_at).toLocaleDateString()}
