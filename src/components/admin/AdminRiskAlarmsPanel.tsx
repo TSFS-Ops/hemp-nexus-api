@@ -87,7 +87,7 @@ export function AdminRiskAlarmsPanel() {
     [windowHours],
   );
 
-  const { data: alarms = [], isFetching, isError, error, refetch } = useQuery<AlarmRow[]>({
+  const { data: alarms = [], isFetching, isError, error, refetch, dataUpdatedAt } = useQuery<AlarmRow[]>({
     queryKey: ["admin-reconciliation-alarms", since],
     queryFn: async () => {
       const { data, error: rpcError } = await supabase.rpc("admin_get_reconciliation_alarms", {
