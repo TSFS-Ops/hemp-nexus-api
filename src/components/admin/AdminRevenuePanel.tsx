@@ -289,7 +289,7 @@ export function AdminRevenuePanel() {
     return subDays(new Date(), w.days).toISOString();
   }, [timeWindow]);
 
-  const { data, isLoading, isFetching, refetch, isError, error } = useQuery({
+  const { data, isLoading, isFetching, refetch, isError, error, dataUpdatedAt } = useQuery({
     queryKey: ["admin-revenue", timeWindow],
     queryFn: async () => {
       // ── 1) Canonical settled revenue from audit_logs ─────────────────────
