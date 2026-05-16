@@ -13,7 +13,7 @@
  *   • The banner branch suppresses Hero / Wizard / Execution / Spine /
  *     Action / POI / WaD affordances (item 8) — none of those component
  *     names appear inside the inconsistent-branch JSX block.
- *   • The admin RPC migration encodes `is_admin()` + REVOKE ... FROM
+ *   • The admin RPC migration encodes `is_admin(auth.uid())` + REVOKE ... FROM
  *     PUBLIC, anon + GRANT TO authenticated + SECURITY DEFINER (item 12).
  *   • AdminLegacyRepairPanel ships read-only copy and no
  *     repair/archive/mark-reviewed mutation buttons (item 11).
@@ -113,13 +113,24 @@ describe("Batch O Phase 2 — admin RPC permission encoding (MT-008)", () => {
     const latest = matching[matching.length - 1];
     const sql = readFileSync(join(migrationsDir, latest), "utf8");
     expect(sql).toMatch(/SECURITY DEFINER/);
-    expect(sql).toMatch(/is_admin\s*\(\s*\)/);
+    expect(sql).toMatch(/public\.is_admin\s*\(\s*auth\.uid\s*\(\s*\)\s*\)/i);
+    expect(sql).not.toMatch(/public\.is_admin\s*\(\s*\)/i);
     // Must reject non-admin callers
     expect(sql).toMatch(/RAISE EXCEPTION\s+'forbidden'/);
     // Must revoke from PUBLIC + anon
     expect(sql).toMatch(/REVOKE\s+ALL\s+ON\s+FUNCTION\s+public\.admin_list_inconsistent_matches[^;]*FROM[^;]*PUBLIC[^;]*anon/i);
     // Must grant only to authenticated
     expect(sql).toMatch(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.admin_list_inconsistent_matches[^;]*TO\s+authenticated/i);
+  });
+
+  it("policy and service-role admin RPCs use the existing one-argument is_admin signature", () => {
+    const allSql = candidates
+      .map((f) => readFileSync(join(migrationsDir, f), "utf8"))
+      .join("\n");
+    expect(allSql).toMatch(/match_legacy_detection_emits[\s\S]*public\.is_admin\s*\(\s*auth\.uid\s*\(\s*\)\s*\)/i);
+    expect(allSql).toMatch(/admin_archive_legacy_match[\s\S]*public\.is_admin\s*\(\s*p_admin_user_id\s*\)/i);
+    expect(allSql).toMatch(/admin_repair_legacy_match[\s\S]*public\.is_admin\s*\(\s*p_admin_user_id\s*\)/i);
+    expect(allSql).toMatch(/admin_record_legacy_detections[\s\S]*public\.is_admin\s*\(\s*p_admin_user_id\s*\)/i);
   });
 });
 
