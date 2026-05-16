@@ -68,13 +68,20 @@ Deno.serve(async (req) => {
 
     // Per-side document counts (for the 1-doc-per-side POI gate). Counted by
     // uploader org_id matching the side's organisation.
+    // Batch L DOC-003: expired (expiry_date < now) and deleted/archived/expired-
+    // status rows are excluded — they cannot satisfy the floor. expiry_date IS NULL
+    // is preserved (legacy/non-expiring evidence).
+    const nowIso = new Date().toISOString();
+    const activeDocFilter = (q: any) =>
+      q.not("status", "in", "(deleted,archived,expired)")
+        .or(`expiry_date.is.null,expiry_date.gt.${nowIso}`);
     const [matchDocsAll, buyerDocs, sellerDocs, govDocs, notes] = await Promise.all([
-      admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId),
+      activeDocFilter(admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId)),
       match.buyer_org_id
-        ? admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId).eq("org_id", match.buyer_org_id)
+        ? activeDocFilter(admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId).eq("org_id", match.buyer_org_id))
         : Promise.resolve({ count: 0, error: null } as any),
       match.seller_org_id
-        ? admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId).eq("org_id", match.seller_org_id)
+        ? activeDocFilter(admin.from("match_documents").select("id", { count: "exact", head: true }).eq("match_id", matchId).eq("org_id", match.seller_org_id))
         : Promise.resolve({ count: 0, error: null } as any),
       admin.from("governance_documents").select("id", { count: "exact", head: true }).eq("deal_reference_id", matchId),
       admin.from("match_notes").select("id", { count: "exact", head: true }).eq("match_id", matchId),
