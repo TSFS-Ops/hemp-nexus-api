@@ -1,14 +1,19 @@
+/**
+ * HealthBoard — Batch A Stage 1 (operational truthfulness).
+ *
+ * Previously rendered a hardcoded list of 9 "operational" gates and a
+ * hardcoded composite SLA. That implementation could (and did) show green
+ * while edge functions, cron jobs, queues, or Sentry were broken.
+ *
+ * This rewrite removes ALL static green claims and drives the board from:
+ *   - public.cron_heartbeats (real per-job last-run / HTTP status)
+ *   - public.admin_risk_items (open incidents)
+ *   - public.audit_logs (today's manual-follow-up backlog)
+ *
+ * A monitor with no row is rendered as "Not monitored", never as Operational.
+ */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Gate {
-  id: string;
-  name: string;
-  status: "operational" | "degraded" | "incident";
-  uptime: string;
-  p99: string;
-  series: number[];
-}
 
 interface RiskItem {
   id: string;
@@ -20,22 +25,49 @@ interface RiskItem {
   resolved_at: string | null;
 }
 
-const GATES: Gate[] = [
-  { id: "G1", name: "Identity Verification",   status: "operational", uptime: "99.998%", p99: "62ms",  series: [88, 90, 87, 91, 89, 92, 90, 93, 91, 92, 90, 91] },
-  { id: "G2", name: "UBO Resolution",          status: "operational", uptime: "99.992%", p99: "118ms", series: [80, 82, 79, 84, 83, 85, 82, 86, 84, 85, 83, 86] },
-  { id: "G3", name: "Authority Binding",       status: "operational", uptime: "99.991%", p99: "94ms",  series: [85, 87, 86, 88, 87, 89, 86, 90, 88, 89, 87, 89] },
-  { id: "G4", name: "Sanctions Screening",     status: "operational", uptime: "99.999%", p99: "44ms",  series: [92, 93, 91, 94, 93, 95, 92, 96, 94, 95, 93, 95] },
-  { id: "G5", name: "POI Issuance Engine",     status: "operational", uptime: "99.973%", p99: "212ms", series: [80, 82, 79, 84, 78, 85, 76, 86, 78, 82, 80, 84] },
-  { id: "G6", name: "Match Sealing Service",   status: "operational", uptime: "99.994%", p99: "184ms", series: [78, 82, 80, 84, 83, 85, 82, 86, 84, 85, 83, 86] },
-  { id: "G7", name: "Webhook Delivery",        status: "operational", uptime: "99.987%", p99: "211ms", series: [76, 79, 77, 81, 80, 82, 79, 83, 81, 82, 80, 83] },
-  { id: "G8", name: "Audit Log Ledger",        status: "operational", uptime: "100.000%",p99: "28ms",  series: [95, 96, 95, 97, 96, 97, 96, 98, 97, 97, 96, 97] },
-  { id: "G9", name: "Regulator Export Bridge", status: "operational", uptime: "99.996%", p99: "76ms",  series: [86, 88, 87, 89, 88, 90, 87, 91, 89, 90, 88, 90] },
-];
+interface Heartbeat {
+  job_name: string;
+  last_run_at: string | null;
+  last_request_id: number | null;
+  last_http_status: number | null;
+  last_status: "unknown" | "pending" | "success" | "failed";
+  last_error: string | null;
+  expected_interval_seconds: number;
+  updated_at: string;
+}
 
-function statusTone(s: Gate["status"]) {
+type DerivedStatus = "operational" | "pending" | "stale" | "failed" | "never_run" | "not_monitored";
+
+function deriveStatus(hb: Heartbeat | undefined, now: number): DerivedStatus {
+  if (!hb) return "not_monitored";
+  if (!hb.last_run_at) return "never_run";
+  const ageMs = now - new Date(hb.last_run_at).getTime();
+  const staleMs = hb.expected_interval_seconds * 1000 * 2;
+  if (hb.last_status === "failed") return "failed";
+  if (hb.last_status === "pending" && ageMs < staleMs) return "pending";
+  if (ageMs > staleMs) return "stale";
+  if (hb.last_status === "success") return "operational";
+  return "not_monitored";
+}
+
+function statusTone(s: DerivedStatus) {
   if (s === "operational") return { dot: "bg-[hsl(var(--emerald))]", text: "text-[hsl(var(--emerald))]" };
-  if (s === "degraded")    return { dot: "bg-amber-500",   text: "text-amber-800"   };
+  if (s === "pending") return { dot: "bg-slate-400", text: "text-slate-600" };
+  if (s === "never_run" || s === "not_monitored")
+    return { dot: "bg-slate-300", text: "text-slate-500" };
+  if (s === "stale") return { dot: "bg-amber-500", text: "text-amber-800" };
   return { dot: "bg-rose-600", text: "text-rose-800" };
+}
+
+function statusLabel(s: DerivedStatus): string {
+  switch (s) {
+    case "operational": return "operational";
+    case "pending":     return "pending";
+    case "stale":       return "stale";
+    case "failed":      return "failed";
+    case "never_run":   return "never run";
+    case "not_monitored": return "not monitored";
+  }
 }
 
 function severityTone(sev: string, status: string) {
@@ -45,7 +77,8 @@ function severityTone(sev: string, status: string) {
   return "text-muted-foreground";
 }
 
-function formatTs(iso: string) {
+function formatTs(iso: string | null): string {
+  if (!iso) return "never";
   return iso.replace("T", " ").slice(0, 16);
 }
 
@@ -53,39 +86,50 @@ function shortId(uuid: string) {
   return `INC-${uuid.slice(0, 8).toUpperCase()}`;
 }
 
-function Sparkline({ series }: { series: number[] }) {
-  const w = 96, h = 24, max = 100, min = 40;
-  const step = w / (series.length - 1);
-  const pts = series.map((v, i) => `${i * step},${h - ((v - min) / (max - min)) * h}`).join(" ");
-  return (
-    <svg width={w} height={h} className="text-muted-foreground/70">
-      <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="1" />
-    </svg>
-  );
-}
+// The set of jobs we expect to find heartbeats for. Drives the board even
+// when the DB row has never been written, so a missing row reads as
+// "not monitored" / "never run" rather than silently disappearing.
+const MONITORED_JOBS: Array<{ id: string; name: string }> = [
+  { id: "C1", name: "webhook-retry-job" },
+  { id: "C2", name: "engagement-reminder-daily" },
+  { id: "C3", name: "burn-poi-reconciliation-daily" },
+  { id: "C4", name: "infra-alerts-cron" },
+  { id: "C5", name: "cron-heartbeat-reconcile" },
+];
 
 export function HealthBoard() {
   const INCIDENT_LIMIT = 20;
-  const { data: incidentResult, isLoading, dataUpdatedAt } = useQuery<{ items: RiskItem[]; totalCount: number }>({
-    queryKey: ["governance-risk-items"],
+
+  const { data: incidentResult, isLoading: incidentsLoading, dataUpdatedAt } =
+    useQuery<{ items: RiskItem[]; totalCount: number }>({
+      queryKey: ["governance-risk-items"],
+      queryFn: async () => {
+        const { data, error, count } = await supabase
+          .from("admin_risk_items")
+          .select("id, title, description, severity, status, created_at, resolved_at", { count: "exact" })
+          .order("created_at", { ascending: false })
+          .limit(INCIDENT_LIMIT);
+        if (error) throw error;
+        const items = (data ?? []) as RiskItem[];
+        return { items, totalCount: count ?? items.length };
+      },
+      refetchInterval: 30000,
+      refetchOnWindowFocus: false,
+    });
+
+  const { data: heartbeats, isLoading: hbLoading } = useQuery<Heartbeat[]>({
+    queryKey: ["cron-heartbeats"],
     queryFn: async () => {
-      const { data, error, count } = await supabase
-        .from("admin_risk_items")
-        .select("id, title, description, severity, status, created_at, resolved_at", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .limit(INCIDENT_LIMIT);
+      const { data, error } = await supabase
+        .from("cron_heartbeats")
+        .select("job_name, last_run_at, last_request_id, last_http_status, last_status, last_error, expected_interval_seconds, updated_at");
       if (error) throw error;
-      const items = (data ?? []) as RiskItem[];
-      return { items, totalCount: count ?? items.length };
+      return (data ?? []) as Heartbeat[];
     },
     refetchInterval: 30000,
     refetchOnWindowFocus: false,
   });
 
-  // ── NOT-001 / NOT-006 Fix 6: surface manual-follow-up workload ──
-  // Pending Engagements where the soft-route had no usable recipient are
-  // recorded as `notification_skipped(no_recipient, source=match.soft_route)`.
-  // We count today's distinct rows so admin sees the manual-contact backlog.
   const { data: noRecipientCount } = useQuery<number>({
     queryKey: ["healthboard-no-recipient-skips"],
     queryFn: async () => {
@@ -105,25 +149,43 @@ export function HealthBoard() {
 
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
-
-  const operational = GATES.filter(g => g.status === "operational").length;
   const openIncidents = incidents.filter(i => i.status !== "resolved").length;
   const lastBeat = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : new Date().toISOString();
   const noRecipient = noRecipientCount ?? 0;
 
+  const hbByName = new Map<string, Heartbeat>();
+  for (const h of heartbeats ?? []) hbByName.set(h.job_name, h);
+  const now = Date.now();
+
+  const rows = MONITORED_JOBS.map(j => {
+    const hb = hbByName.get(j.name);
+    const status = deriveStatus(hb, now);
+    return { ...j, hb, status };
+  });
+
+  const operationalCount = rows.filter(r => r.status === "operational").length;
+  const failingCount = rows.filter(r => r.status === "failed" || r.status === "stale").length;
+  const unknownCount = rows.filter(r => r.status === "never_run" || r.status === "not_monitored").length;
+
   return (
     <>
-      {/* Summary strip */}
+      {/* Summary strip — every tile is derived from real rows. */}
       <div className="grid grid-cols-4 gap-px bg-muted border border-border mb-10">
-        <div className="bg-card p-5">
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Composite</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">99.962%</p>
-          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">trailing 30 days</p>
+        <div className="bg-card p-5" data-testid="healthboard-monitored-tile">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Jobs Healthy</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">
+            {operationalCount}/{rows.length}
+          </p>
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+            {failingCount} failing · {unknownCount} unmonitored
+          </p>
         </div>
-        <div className="bg-card p-5">
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Gates Operational</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{operational}/9</p>
-          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">{9 - operational} degraded · 0 incident</p>
+        <div className="bg-card p-5" data-testid="healthboard-composite-tile">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Composite SLA</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">—</p>
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+            uptime monitor not configured
+          </p>
         </div>
         <div className="bg-card p-5">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Open Incidents</p>
@@ -143,26 +205,44 @@ export function HealthBoard() {
         </div>
       </div>
 
-      {/* 9-gate board */}
-      <section>
+      {/* Scheduled-job heartbeat board */}
+      <section data-testid="healthboard-cron-board">
         <div className="flex items-baseline justify-between pb-3 border-b border-border mb-0">
-          <h2 className="text-base font-medium text-foreground tracking-tight">9-Gate Service Board</h2>
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">polled every 30s</p>
+          <h2 className="text-base font-medium text-foreground tracking-tight">Scheduled Job Heartbeats</h2>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">
+            {hbLoading ? "loading…" : "polled every 30s · backed by cron_heartbeats"}
+          </p>
         </div>
         <ul className="divide-y divide-border border border-border border-t-0 bg-card">
-          {GATES.map((g) => {
-            const tone = statusTone(g.status);
+          {rows.map(r => {
+            const tone = statusTone(r.status);
+            const httpStatus = r.hb?.last_http_status;
             return (
-              <li key={g.id} className="grid grid-cols-[60px_1fr_120px_100px_90px_120px] gap-5 items-center px-5 py-4">
-                <p className="font-mono text-[11px] tracking-wider text-muted-foreground">{g.id}</p>
-                <p className="text-sm text-foreground">{g.name}</p>
+              <li
+                key={r.id}
+                className="grid grid-cols-[60px_1fr_140px_120px_140px_1fr] gap-5 items-center px-5 py-4"
+                data-testid={`healthboard-row-${r.name}`}
+              >
+                <p className="font-mono text-[11px] tracking-wider text-muted-foreground">{r.id}</p>
+                <p className="text-sm text-foreground">{r.name}</p>
                 <div className="flex items-center gap-2">
                   <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} aria-hidden />
-                  <span className={`font-mono text-[10px] tracking-[0.2em] uppercase ${tone.text}`}>{g.status}</span>
+                  <span className={`font-mono text-[10px] tracking-[0.2em] uppercase ${tone.text}`}>
+                    {statusLabel(r.status)}
+                  </span>
                 </div>
-                <p className="font-mono text-[12px] text-foreground">{g.uptime}</p>
-                <p className="font-mono text-[12px] text-foreground">{g.p99}</p>
-                <Sparkline series={g.series} />
+                <p className="font-mono text-[11px] text-foreground">
+                  {httpStatus != null ? `HTTP ${httpStatus}` : "—"}
+                </p>
+                <p className="font-mono text-[11px] text-muted-foreground">
+                  {formatTs(r.hb?.last_run_at ?? null)}
+                </p>
+                <p
+                  className="font-mono text-[11px] text-muted-foreground truncate"
+                  title={r.hb?.last_error ?? ""}
+                >
+                  {r.hb?.last_error ?? ""}
+                </p>
               </li>
             );
           })}
@@ -180,13 +260,13 @@ export function HealthBoard() {
           </p>
         </div>
         <ul className="divide-y divide-border border border-border border-t-0 bg-card">
-          {isLoading ? (
+          {incidentsLoading ? (
             <li className="px-5 py-6 text-sm text-muted-foreground">loading risk telemetry…</li>
           ) : incidents.length === 0 ? (
             <li className="px-5 py-6">
-              <p className="text-sm text-muted-foreground">Zero recorded incidents.</p>
+              <p className="text-sm text-muted-foreground">No open incidents recorded.</p>
               <p className="font-mono text-[10px] text-muted-foreground mt-1">
-                last heartbeat: {formatTs(lastBeat)} · all 9 gates reporting nominal
+                last refresh: {formatTs(lastBeat)}
               </p>
             </li>
           ) : (
