@@ -2684,6 +2684,12 @@ Deno.serve(async (req) => {
         );
       }
 
+      // NOT-008: resolve any unread in-app notifications attached to this engagement.
+      await resolveNotificationsFor(supabase, "poi_engagement", engagementId, {
+        requestId,
+        source: "poi-engagements:cancelled_email_change",
+      });
+
       const responseBody = { engagement: updated };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
