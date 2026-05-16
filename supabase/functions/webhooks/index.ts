@@ -205,6 +205,66 @@ Deno.serve(async (req) => {
       );
     }
 
+    // POST /:id/rotate - Rotate webhook signing secret
+    // Batch D — secret rotation with bounded grace window.
+    // The new secret is returned ONCE in the response body. The old
+    // secret is preserved in `previous_secret_hash` and remains valid
+    // for inbound signature verification (when wired) for ROTATION_GRACE_MS.
+    if (req.method === "POST" && parts.length === 2 && parts[1] === "rotate") {
+      const webhookId = parts[0];
+
+      const { data: existing, error: lookupErr } = await supabase
+        .from("webhook_endpoints")
+        .select("id, secret_hash")
+        .eq("id", webhookId)
+        .eq("org_id", authCtx.orgId)
+        .maybeSingle();
+
+      if (lookupErr || !existing) {
+        throw new ApiException("NOT_FOUND", "Webhook not found", 404);
+      }
+
+      const ROTATION_GRACE_MS = 24 * 60 * 60 * 1000; // 24h
+      const newSecret = crypto.randomUUID();
+      const newEncrypted = await encryptSecret(newSecret);
+      const previousExpiresAt = new Date(Date.now() + ROTATION_GRACE_MS).toISOString();
+
+      const { error: updateErr } = await supabase
+        .from("webhook_endpoints")
+        .update({
+          secret_hash: newEncrypted,
+          previous_secret_hash: existing.secret_hash,
+          previous_secret_expires_at: previousExpiresAt,
+        })
+        .eq("id", webhookId)
+        .eq("org_id", authCtx.orgId);
+
+      if (updateErr) handleDatabaseError(updateErr, requestId);
+
+      await supabase.from("audit_logs").insert({
+        org_id: authCtx.orgId,
+        actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+        actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+        action: "webhook.secret_rotated",
+        entity_type: "webhook",
+        entity_id: webhookId,
+        metadata: {
+          previous_secret_expires_at: previousExpiresAt,
+          grace_window_ms: ROTATION_GRACE_MS,
+        },
+      });
+
+      return new Response(
+        JSON.stringify({
+          id: webhookId,
+          secret: newSecret,
+          previous_secret_expires_at: previousExpiresAt,
+          message: "Secret rotated. Save it — you won't see it again. The previous secret remains valid for 24h.",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...headers } },
+      );
+    }
+
     // DELETE /:id - Delete webhook endpoint
     if (req.method === "DELETE" && parts.length === 1) {
       const webhookId = parts[0];
