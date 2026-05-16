@@ -28,8 +28,11 @@ const MIGRATIONS_DIR = join(process.cwd(), "supabase", "migrations");
 const BASELINE_PATH = join(process.cwd(), "scripts", ".legacy-admin-rls-baseline.json");
 
 // Patterns that MUST count as legacy app_role 'admin' usage.
+// Note: has_role's first argument is typically `auth.uid()` which itself
+// contains parens, so we cannot use `[^)]*?` as a stand-in for the first
+// argument. Instead we anchor on the literal `, 'admin'` second argument.
 const PATTERNS = [
-  /has_role\s*\([^)]*?,\s*'admin'\s*(?:::\s*app_role)?\s*\)/gi,
+  /has_role\s*\([^;]{0,200}?,\s*'admin'\s*(?:::\s*app_role)?\s*\)/gi,
   /\brole\s*=\s*'admin'::app_role\b/gi,
 ];
 
