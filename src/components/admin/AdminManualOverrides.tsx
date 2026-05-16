@@ -48,9 +48,8 @@ export function AdminManualOverrides() {
     try {
       // Batch S SUP-001 / AUD-016: ALL manual overrides go through the
       // server route. Server enforces is_admin + AAL2 + reason floor +
-      // before/after snapshot and writes admin_audit_logs server-side.
-      // Direct client RPC + client-side admin_audit_logs inserts are
-      // no longer used here.
+      // before/after snapshot and writes the audit row server-side.
+      // Direct client RPC + client-side audit inserts are no longer used here.
       const body: Record<string, unknown> = { operation: action, reason: reason.trim() };
       if (action === "force_status") {
         body.match_id = targetId.trim();
