@@ -596,7 +596,7 @@ export function MatchesList() {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      {getStatusBadge(match.status)}
+                      {getStatusBadge(match.status, match.metadata as Record<string, unknown> | null | undefined)}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -701,7 +701,7 @@ export function MatchesList() {
                               </Tooltip>
                             </TooltipProvider>
                           )}
-                          {getStatusBadge(match.status)}
+                          {getStatusBadge(match.status, match.metadata as Record<string, unknown> | null | undefined)}
                         </div>
                       </TableCell>
                       <TableCell className="hidden xl:table-cell px-4 py-3">
