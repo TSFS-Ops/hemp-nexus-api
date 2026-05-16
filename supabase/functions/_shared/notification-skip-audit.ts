@@ -31,7 +31,10 @@ export type NotificationSkipReason =
   | "dry_run"
   | "concurrent_run_blocked"
   | "slack_not_configured"
-  | "no_channels_configured";
+  | "no_channels_configured"
+  | "preference_disabled"
+  | "admin_routing_failed"
+  | "category_unsubscribed";
 
 const SYSTEM_ORG_SENTINEL = "00000000-0000-0000-0000-000000000000";
 
