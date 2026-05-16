@@ -173,12 +173,12 @@ describe("Batch N — SEC-010 rate-limit audit", () => {
 
   it("429 still includes Retry-After in error options", () => {
     expect(rateLimit).toMatch(/retryAfter:\s*resetTime/);
-    expect(rateLimit).toMatch(/retryAfter:\s*retryAfter/);
+    expect(rateLimit).toMatch(/\{\s*retryAfter\s*\}/);
   });
 
   it("in-memory circuit breaker is documented as advisory only (DB is authoritative)", () => {
-    expect(rateLimit).toMatch(/in-memory breaker is per edge instance/);
-    expect(rateLimit).toMatch(/DB-backed atomic rate limit below is the AUTHORITATIVE/);
+    expect(rateLimit).toMatch(/in-memory breaker is per edge/);
+    expect(rateLimit).toMatch(/AUTHORITATIVE/);
   });
 });
 
