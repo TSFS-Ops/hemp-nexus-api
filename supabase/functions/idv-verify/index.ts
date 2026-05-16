@@ -212,7 +212,25 @@ Deno.serve(async (req: Request) => {
       // ── Test-mode bypass: short-circuit any provider call when admin has flipped the flag ──
       if (await isBypassEnabled(admin, "idv", "idv-verify", requestId)) {
         const isCompanyBypass = entity.entity_type === "company" || entity.entity_type === "corporate" || verification_type === "company";
-        await admin.from("entities").update({ status: "verified" }).eq("id", entity_id);
+        const bypassedAt = new Date().toISOString();
+        // Batch I Fix 1: stamp entity.metadata so a bypassed VERIFIED entity is
+        // distinguishable from a real provider VERIFIED without joining audit_logs.
+        const existingMeta = (entity.metadata as Record<string, unknown> | null) ?? {};
+        const existingGates = Array.isArray((existingMeta as { bypass_gates?: unknown }).bypass_gates)
+          ? ((existingMeta as { bypass_gates?: string[] }).bypass_gates as string[])
+          : [];
+        const nextGates = Array.from(new Set([...existingGates, "idv"]));
+        await admin.from("entities").update({
+          status: "verified",
+          metadata: {
+            ...existingMeta,
+            bypass: true,
+            bypass_gates: nextGates,
+            test_mode: true,
+            last_bypass_at: bypassedAt,
+            last_bypass_actor: actorUserId || null,
+          },
+        }).eq("id", entity_id);
 
         await recordBypassUsage(admin, {
           gate: "idv",
