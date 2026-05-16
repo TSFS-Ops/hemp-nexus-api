@@ -248,6 +248,21 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
+  // Batch V — closeout drift summary (RPC). Never renders green on error.
+  const {
+    data: closeout,
+    isError: closeoutError,
+  } = useQuery<{ open_total: number; critical: number; balance_drift: number; burn_poi_drift: number; wad_poi_drift: number; missing_side_effect: number; generated_at: string } | null>({
+    queryKey: ["closeout-drift-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("closeout_drift_summary");
+      if (error) throw error;
+      return (data as any) ?? null;
+    },
+    refetchInterval: 60000,
+    refetchOnWindowFocus: false,
+  });
+
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
   // Batch T — UI-014: explicit allow-list of "open" statuses rather than
