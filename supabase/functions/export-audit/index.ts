@@ -22,7 +22,7 @@ const corsHeaders = {
 };
 
 const BodySchema = z.object({
-  target_type: z.enum(["audit_logs", "admin_audit_logs", "outreach_blocks", "matches", "other"]),
+  target_type: z.enum(["audit_logs", "admin_audit_logs", "outreach_blocks", "matches", "notification_preferences", "other"]),
   format: z.enum(["csv", "json"]).default("csv"),
   row_count: z.number().int().nonnegative().max(1_000_000),
   filters: z.record(z.unknown()).optional().default({}),
@@ -30,7 +30,7 @@ const BodySchema = z.object({
   reason: z.string().max(500).nullable().optional(),
 });
 
-const SENSITIVE_TARGETS = new Set(["audit_logs", "admin_audit_logs"]);
+const SENSITIVE_TARGETS = new Set(["audit_logs", "admin_audit_logs", "notification_preferences"]);
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
