@@ -243,7 +243,7 @@ export function HealthBoard() {
   return (
     <>
       {/* Summary strip — every tile is derived from real rows. */}
-      <div className="grid grid-cols-4 gap-px bg-muted border border-border mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-muted border border-border mb-10">
         <div className="bg-card p-5" data-testid="healthboard-monitored-tile">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Jobs Healthy</p>
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">
@@ -258,6 +258,24 @@ export function HealthBoard() {
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">—</p>
           <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
             uptime monitor not configured
+          </p>
+        </div>
+        <div className="bg-card p-5" data-testid="healthboard-sentry-tile" data-sentry-status={sentryStatus}>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Sentry Receiving Events</p>
+          <div className="mt-1 flex items-center gap-2">
+            <span className={`h-1.5 w-1.5 rounded-full ${sentryTone.dot}`} aria-hidden />
+            <span className={`font-mono text-[11px] tracking-[0.2em] uppercase ${sentryTone.text}`}>
+              {sentryLabel(sentryStatus)}
+            </span>
+          </div>
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+            {sentryHb?.last_attempt_at
+              ? `last attempt ${formatTs(sentryHb.last_attempt_at)}${
+                  sentryHb.last_http_status != null ? ` · HTTP ${sentryHb.last_http_status}` : ""
+                }`
+              : sentryStatus === "dsn_missing"
+                ? "configure SENTRY_BACKEND_DSN"
+                : "no heartbeat recorded"}
           </p>
         </div>
         <div className="bg-card p-5">
