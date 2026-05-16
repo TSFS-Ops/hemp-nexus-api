@@ -97,16 +97,30 @@ async function verifyWithCompaniesHouse(regNumber: string, name: string): Promis
     );
   }
 
-  // Real Companies House API call
-  const res = await fetch(`https://api.company-information.service.gov.uk/company/${encodeURIComponent(regNumber)}`, {
-    headers: { Authorization: `Basic ${btoa(apiKey + ":")}` },
-  });
+  // Batch F: bounded timeout + provider-error mapping (timeout/5xx/429).
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      "companies_house",
+      `https://api.company-information.service.gov.uk/company/${encodeURIComponent(regNumber)}`,
+      { headers: { Authorization: `Basic ${btoa(apiKey + ":")}` } },
+      10_000,
+    );
+  } catch (err) {
+    if (err instanceof ProviderTimeoutError) {
+      throw new IdvProviderError("companies_house", 504, "timeout");
+    }
+    throw new IdvProviderError("companies_house", null, (err as Error).message);
+  }
 
   if (!res.ok) {
     if (res.status === 404) {
       return { provider: "companies_house", status: "rejected", details: { reason: "Company not found" } };
     }
-    throw new ApiException("PROVIDER_ERROR", `Companies House API returned ${res.status}`, 502);
+    if (isProviderFailureStatus(res.status)) {
+      throw new IdvProviderError("companies_house", res.status, `upstream_${res.status}`);
+    }
+    throw new IdvProviderError("companies_house", res.status, `unexpected_${res.status}`);
   }
 
   const data = await res.json();
