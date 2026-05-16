@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, AlertCircle, CheckCircle2, Clock, ShieldCheck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch, generateIdempotencyKey } from "@/lib/api-client";
+import { cleanupOrphanUpload, isSessionDeadError } from "@/lib/upload-cleanup";
 
 interface RegistryEntry {
   id: string;
@@ -170,7 +171,19 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
     setError(null);
     setSubmitting(true);
 
+    // Batch E Required Fix 5: getSession pre-flight so a logged-out user
+    // never uploads a governance file they cannot register.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setSubmitting(false);
+      const msg = "Your session has ended. Please sign in again before uploading.";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+
     let storagePath = "";
+    let storageUploaded = false;
     try {
       // 1. Upload file to storage
       const ext = selectedFile.name.split(".").pop() || "pdf";
@@ -184,11 +197,9 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
         });
 
       if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+      storageUploaded = true;
 
       // 2. Register governance doc via apiFetch (proper error surfacing).
-      // The governance-docs edge function hard-enforces Idempotency-Key on
-      // mutating requests via assertIdempotencyKey — generate one per submit
-      // so retries from the user clicking twice are safely deduplicated.
       await apiFetch("governance-docs", {
         method: "POST",
         idempotencyKey: generateIdempotencyKey("gov_doc"),
@@ -208,11 +219,19 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       loadData();
       queryClient.invalidateQueries({ queryKey: ["gov-doc-count", matchId] });
     } catch (err) {
-      // Clean up orphaned file if upload succeeded but registration failed
-      if (storagePath) {
-        supabase.storage.from("match-documents").remove([storagePath]).catch((cleanupErr) => {
-          console.error("[GovernanceDocSubmit] Failed to clean up orphaned file:", storagePath, cleanupErr);
-        });
+      // Batch E Required Fix 3/4: storage object is now an orphan because
+      // the governance-docs finaliser failed. The server cleans up its own
+      // insert failures, but a session-dead error or a network blip never
+      // reaches the server — fall back to direct delete + enqueue.
+      if (storageUploaded && storagePath) {
+        if (isSessionDeadError(err)) {
+          await cleanupOrphanUpload("match-documents", storagePath, "gov_finaliser_session_dead").catch(() => {});
+        } else {
+          // Server may have already cleaned up; this is a defensive last-mile.
+          supabase.storage.from("match-documents").remove([storagePath]).catch((cleanupErr) => {
+            console.error("[GovernanceDocSubmit] Failed to clean up orphaned file:", storagePath, cleanupErr);
+          });
+        }
       }
       const msg = err instanceof Error ? err.message : "Failed to submit governance document";
       setError(msg);
