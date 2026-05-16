@@ -81,17 +81,19 @@ export function NotificationRulesTab() {
     const next = { ...state, [key]: !state[key] };
     setState(next);
     setSavingKey(key);
-    const { error } = await supabase
-      .from("notification_preferences")
-      .upsert(
-        { user_id: user.id, preferences: next },
-        { onConflict: "user_id" },
-      );
+    // Batch M Fix 6: route through edge function so audit + AAL2 gates apply.
+    const { error } = await supabase.functions.invoke("update-notification-preferences", {
+      body: { preferences: { [key]: next[key] } },
+    });
     setSavingKey(null);
     if (error) {
-      // Revert on failure
       setState(state);
-      toast.error("Could not save preference");
+      const msg = (error as { message?: string }).message || "Could not save preference";
+      if (msg.toLowerCase().includes("mfa")) {
+        toast.error("This preference requires MFA. Enrol an authenticator app and retry.");
+      } else {
+        toast.error(msg);
+      }
       return;
     }
     toast.success("Preference saved");
