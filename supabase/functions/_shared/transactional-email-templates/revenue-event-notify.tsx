@@ -50,6 +50,10 @@ const LABELS: Record<RevenueEventType, { tag: string; intro: string }> = {
     tag: 'Credits purchased',
     intro: 'A credit top-up was successfully paid via Paystack.',
   },
+  credits_refunded: {
+    tag: 'Credits refunded',
+    intro: 'A Paystack refund was processed and credits were reversed from the org balance.',
+  },
   wad_sealed: {
     tag: 'WaD sealed',
     intro: 'A Without-a-Doubt certificate was sealed — the trade has been certified.',
