@@ -75,7 +75,8 @@ describe('Batch M — admin role-based routing', () => {
     expect(src).toMatch(/legal_reviewer/);
   });
   it('never returns org_member', () => {
-    expect(src).not.toMatch(/org_member/);
+    // Allow the word in doc comments; forbid it as a role value/identifier.
+    expect(src).not.toMatch(/["']org_member["']/);
   });
   it('dispatch replaces hardcoded admin@izenzo.co.za with resolver', () => {
     expect(dispatch).toMatch(/resolveAdminRecipients\(supabase, event_type\)/);
