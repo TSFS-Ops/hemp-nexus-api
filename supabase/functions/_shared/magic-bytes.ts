@@ -66,6 +66,77 @@ export interface MagicByteResult {
   clientMimeMatch: boolean;
   blocked: boolean;
   blockReason?: string;
+  /** Batch L DOC-002: structural readability verdict for known formats. */
+  readable?: boolean;
+  unreadableReason?: string;
+}
+
+/**
+ * Batch L DOC-002: lightweight structural readability check on the FULL file
+ * bytes. Currently:
+ *  - PDF: requires `%PDF-` header AND `%%EOF` somewhere in the last 2 KB.
+ *  - PNG/JPEG: requires their canonical end-of-stream marker.
+ *  - Other types: returns { readable: true } (no deep parse performed).
+ *
+ * This is intentionally conservative — it catches truncated/corrupt files
+ * that pass the 16-byte header check, without attempting full parsing.
+ */
+export function inspectStructuralReadability(
+  fullBytes: Uint8Array,
+  detectedOrClientMime: string,
+): { readable: boolean; reason?: string } {
+  const mime = (detectedOrClientMime || "").toLowerCase();
+
+  if (mime === "application/pdf") {
+    // %PDF- header
+    if (
+      fullBytes.length < 5 ||
+      fullBytes[0] !== 0x25 || fullBytes[1] !== 0x50 ||
+      fullBytes[2] !== 0x44 || fullBytes[3] !== 0x46 ||
+      fullBytes[4] !== 0x2D
+    ) {
+      return { readable: false, reason: "PDF header missing or corrupt" };
+    }
+    // %%EOF in last 2 KB
+    const tailSize = Math.min(2048, fullBytes.length);
+    const tail = fullBytes.subarray(fullBytes.length - tailSize);
+    // Scan for %%EOF (0x25 0x25 0x45 0x4F 0x46)
+    let found = false;
+    for (let i = 0; i <= tail.length - 5; i++) {
+      if (
+        tail[i] === 0x25 && tail[i + 1] === 0x25 &&
+        tail[i + 2] === 0x45 && tail[i + 3] === 0x4F && tail[i + 4] === 0x46
+      ) { found = true; break; }
+    }
+    if (!found) {
+      return { readable: false, reason: "PDF trailer (%%EOF) missing — file is truncated or corrupt" };
+    }
+    return { readable: true };
+  }
+
+  if (mime === "image/png") {
+    // PNG ends with IEND chunk: 0x49 0x45 0x4E 0x44 0xAE 0x42 0x60 0x82
+    if (fullBytes.length < 12) return { readable: false, reason: "PNG too small to be valid" };
+    const tail = fullBytes.subarray(fullBytes.length - 8);
+    const iendOk =
+      tail[0] === 0x49 && tail[1] === 0x45 && tail[2] === 0x4E && tail[3] === 0x44 &&
+      tail[4] === 0xAE && tail[5] === 0x42 && tail[6] === 0x60 && tail[7] === 0x82;
+    if (!iendOk) return { readable: false, reason: "PNG IEND marker missing — file is truncated" };
+    return { readable: true };
+  }
+
+  if (mime === "image/jpeg") {
+    // JPEG ends with FFD9 (EOI marker)
+    if (fullBytes.length < 4) return { readable: false, reason: "JPEG too small to be valid" };
+    const last = fullBytes.length - 1;
+    if (!(fullBytes[last - 1] === 0xFF && fullBytes[last] === 0xD9)) {
+      return { readable: false, reason: "JPEG EOI (FFD9) marker missing — file is truncated" };
+    }
+    return { readable: true };
+  }
+
+  // Office / ZIP / text / other: no deep structural validation
+  return { readable: true };
 }
 
 /**
