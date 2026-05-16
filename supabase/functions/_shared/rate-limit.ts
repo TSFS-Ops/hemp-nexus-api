@@ -1,5 +1,6 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { ApiException } from "./errors.ts";
+import { writeSecurityAudit } from "./security-audit.ts";
 
 export interface RateLimitConfig {
   requestsPerMinute?: number;
