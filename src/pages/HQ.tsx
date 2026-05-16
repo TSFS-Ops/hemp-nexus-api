@@ -47,6 +47,7 @@ import { AdminGovernancePosturePanel } from "@/components/admin/AdminGovernanceP
 import { AdminRedirectOriginBanner } from "@/components/admin/AdminRedirectOriginBanner";
 // ── Audit & Health (compliance / observability) ─────────────────────
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
+import { AdminNotificationPreferencesPanel } from "@/components/admin/AdminNotificationPreferencesPanel";
 import { AdminOutreachBlocksPanel } from "@/components/admin/AdminOutreachBlocksPanel";
 
 import { AdminHealthMonitor } from "@/components/admin/AdminHealthMonitor";
@@ -347,7 +348,7 @@ function RevenueTab() {
 }
 function AuditTab() {
   // Compliance & observability: immutable audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "upload-audit", "revenue-notifications", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "notification-prefs", "outreach-blocks", "upload-audit", "revenue-notifications", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -355,6 +356,7 @@ function AuditTab() {
           <TabsTrigger value="risk-alarms">Risk Alarms</TabsTrigger>
           <TabsTrigger value="rating-appeals">Rating Appeals</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="notification-prefs">Notification Preferences</TabsTrigger>
           <TabsTrigger value="outreach-blocks">Outreach Blocks</TabsTrigger>
           <TabsTrigger value="upload-audit">Upload Audit</TabsTrigger>
           <TabsTrigger value="revenue-notifications">Revenue Notifications</TabsTrigger>
@@ -376,6 +378,11 @@ function AuditTab() {
         <TabsContent value="audit-logs">
           <Surface label="Immutable audit trail · public.audit_logs">
             <AdminAuditLogs />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="notification-prefs">
+          <Surface label="Notification preferences · public.notification_preferences ⨝ public.suppressed_emails · org-scoped for org_admin, cross-org for platform_admin/auditor">
+            <AdminNotificationPreferencesPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="outreach-blocks">
