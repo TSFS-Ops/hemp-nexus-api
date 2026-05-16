@@ -92,6 +92,26 @@ export function recordPaystackAttempt(attempt: PaystackAttempt): void {
   }
 }
 
+/**
+ * Batch C — Fix 4: read recent Paystack attempts that look "pending"
+ * to the local device (started within the window, no ledger evidence
+ * has reached this tab yet). Used to render a soft two-tab warning
+ * near the Purchase CTAs.
+ *
+ * Pure-localStorage; intentionally does not hit the network. The
+ * caller can cross-check against credited references to suppress
+ * false positives once a ledger row arrives.
+ */
+const PENDING_WARN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+export function readRecentPendingAttempts(creditedRefs: Set<string> = new Set()): PaystackAttempt[] {
+  const now = Date.now();
+  return readAttempts().filter((a) => {
+    if (creditedRefs.has(a.reference)) return false;
+    const started = Date.parse(a.startedAt);
+    if (!Number.isFinite(started)) return false;
+    return now - started < PENDING_WARN_WINDOW_MS;
+  });
+
 function readAttempts(): PaystackAttempt[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
