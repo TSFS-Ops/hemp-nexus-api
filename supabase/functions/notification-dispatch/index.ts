@@ -190,52 +190,26 @@ Deno.serve(async (req) => {
 
     // Email dispatch via Resend (if configured)
     if (settings.emailAlerts) {
+      // Batch M Fix 5: resolve recipients by role policy. Never hardcode
+      // admin@izenzo.co.za. Never route platform-admin alerts to org_member.
+      const routing = await resolveAdminRecipients(supabase, event_type);
       const resendKey = Deno.env.get("RESEND_API_KEY");
-      if (resendKey) {
-        try {
-          const emailRes = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${resendKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: "Izenzo Alerts <alerts@notify.izenzo.co.za>",
-              to: ["admin@izenzo.co.za"],
-              subject: subject || `[Alert] ${event_type}`,
-              text: `${message}\n\nEvent: ${event_type}\nTime: ${new Date().toISOString()}\n${
-                metadata ? `\nDetails: ${JSON.stringify(metadata, null, 2)}` : ""
-              }`,
-            }),
-          });
-          if (emailRes.ok) {
-            dispatched.push("email");
-          } else {
-            console.error("[notification-dispatch] Resend error:", await emailRes.text());
-            await recordNotificationSkipped(supabase, {
-              reason: "dispatcher_unavailable",
-              sourceFunction: "notification-dispatch",
-              sourceEventType: event_type,
-              channel: "email",
-              orgId: orgIdForAudit,
-              extra: { http_status: emailRes.status },
-            });
-            skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
-          }
-        } catch (emailErr) {
-          console.error("[notification-dispatch] Email dispatch failed:", emailErr);
-          await recordNotificationSkipped(supabase, {
-            reason: "dispatcher_unavailable",
-            sourceFunction: "notification-dispatch",
-            sourceEventType: event_type,
-            channel: "email",
-            orgId: orgIdForAudit,
-            extra: { error: emailErr instanceof Error ? emailErr.message : String(emailErr) },
-          });
-          skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
-        }
-      } else {
-        // No RESEND_API_KEY configured — silent skip without audit before D-07
+
+      if (routing.routingFailed || routing.recipients.length === 0) {
+        await recordNotificationSkipped(supabase, {
+          reason: "admin_routing_failed",
+          sourceFunction: "notification-dispatch",
+          sourceEventType: event_type,
+          channel: "email",
+          orgId: orgIdForAudit,
+          extra: {
+            policy_key: routing.policy.policyKey,
+            primary_role: routing.policy.primary,
+            fallback_role: routing.policy.fallback,
+          },
+        });
+        skipped.push({ channel: "email", reason: "admin_routing_failed" });
+      } else if (!resendKey) {
         await recordNotificationSkipped(supabase, {
           reason: "dispatcher_unavailable",
           sourceFunction: "notification-dispatch",
@@ -245,6 +219,83 @@ Deno.serve(async (req) => {
           extra: { detail: "RESEND_API_KEY not configured" },
         });
         skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
+      } else {
+        for (const recip of routing.recipients) {
+          if (!recip.email) continue;
+          let dispatchStatus: "dispatched" | "failed" = "failed";
+          let errMsg: string | null = null;
+          try {
+            const emailRes = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${resendKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                from: "Izenzo Alerts <alerts@notify.izenzo.co.za>",
+                to: [recip.email],
+                subject: subject || `[Alert] ${event_type}`,
+                text:
+                  `${message}\n\nEvent: ${event_type}\nTime: ${new Date().toISOString()}\n` +
+                  (metadata ? `\nDetails: ${JSON.stringify(metadata, null, 2)}` : ""),
+              }),
+            });
+            if (emailRes.ok) {
+              dispatchStatus = "dispatched";
+              dispatched.push("email");
+            } else {
+              errMsg = `http_${emailRes.status}`;
+              await recordNotificationSkipped(supabase, {
+                reason: "dispatcher_unavailable",
+                sourceFunction: "notification-dispatch",
+                sourceEventType: event_type,
+                channel: "email",
+                orgId: orgIdForAudit,
+                recipientId: recip.userId,
+                recipientEmail: recip.email,
+                extra: { http_status: emailRes.status, role: recip.role },
+              });
+              skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
+            }
+          } catch (emailErr) {
+            errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+            await recordNotificationSkipped(supabase, {
+              reason: "dispatcher_unavailable",
+              sourceFunction: "notification-dispatch",
+              sourceEventType: event_type,
+              channel: "email",
+              orgId: orgIdForAudit,
+              recipientId: recip.userId,
+              recipientEmail: recip.email,
+              extra: { error: errMsg, role: recip.role },
+            });
+            skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
+          }
+
+          // Persist per-recipient dispatch row with role + policy.
+          try {
+            await supabase.from("notification_dispatches").insert({
+              event_type,
+              reference_type: "admin_alert",
+              reference_id: crypto.randomUUID(),
+              recipient_user_id: recip.userId,
+              recipient_address: recip.email,
+              recipient_role: recip.role,
+              routing_policy_key: routing.policy.policyKey,
+              channel: "email",
+              status: dispatchStatus === "dispatched" ? "dispatched" : "failed",
+              dispatched_at: dispatchStatus === "dispatched" ? new Date().toISOString() : null,
+              failed_at: dispatchStatus === "failed" ? new Date().toISOString() : null,
+              error_message: errMsg,
+              metadata: {
+                policy_fallback: recip.fallback,
+                event_type,
+              },
+            });
+          } catch (insErr) {
+            console.error("[notification-dispatch] dispatch insert failed", insErr);
+          }
+        }
       }
     } else {
       // emailAlerts toggle disabled in admin_settings.notifications
