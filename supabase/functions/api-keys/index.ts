@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
         throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
       }
 
-      const { name, scopes, expires_at } = validatedData;
+      const { name, scopes, expires_at, allowed_ips, allowed_origins } = validatedData;
 
       const apiKey = `sk_${crypto.randomUUID().replace(/-/g, '')}`;
       const keyHash = await hashApiKey(apiKey);
@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
           scopes: scopes || [],
           created_by: actorUserId,
           expires_at: expires_at || null,
+          allowed_ips: allowed_ips ?? null,
+          allowed_origins: allowed_origins ?? null,
         })
         .select()
         .single();
@@ -75,7 +77,15 @@ Deno.serve(async (req) => {
         action: 'api_key.created',
         entity_type: 'api_key',
         entity_id: data.id,
-        metadata: { name, scopes, request_id: requestId },
+        metadata: {
+          name,
+          scopes,
+          allowed_ips: allowed_ips ?? null,
+          allowed_origins: allowed_origins ?? null,
+          request_id: requestId,
+          actor_ip: authCtx.actorIp ?? null,
+          user_agent: authCtx.userAgent ?? null,
+        },
       });
 
       return new Response(
