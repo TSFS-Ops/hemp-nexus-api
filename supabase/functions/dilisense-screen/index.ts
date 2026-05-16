@@ -406,7 +406,64 @@ Deno.serve(async (req: Request) => {
     console.log(`[${requestId}] Screening via provider: ${providerName}`);
 
     // ── Execute screening ──
-    const result = await screenFn(name, type, fuzzy_search, dob, gender);
+    let result;
+    try {
+      result = await screenFn(name, type, fuzzy_search, dob, gender);
+    } catch (err) {
+      if (err instanceof ScreeningProviderError) {
+        // Batch F: persist provider_error so the failure is visible later, not just a toast.
+        const errHash = await computeHash(JSON.stringify({ provider_error: true, provider: err.provider, reason: err.reason, ts: new Date().toISOString() }));
+        const { data: savedErr } = await adminClient
+          .from("screening_results")
+          .insert({
+            org_id,
+            screening_type: "sanctions_pep",
+            status: "provider_error",
+            matched_entities: [],
+            raw_response: { provider_error: true, provider: err.provider, status_code: err.statusCode, reason: err.reason },
+            screened_at: new Date().toISOString(),
+            screened_by: actorUserId || null,
+            next_screening_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            provider: providerName,
+            provider_config: { screen_type: type, fuzzy_search: fuzzy_search || null, provider_error: true },
+            response_hash: errHash,
+            entity_id: entity_id || null,
+          })
+          .select()
+          .single();
+
+        await adminClient.from("audit_logs").insert({
+          org_id,
+          actor_user_id: actorUserId || null,
+          action: "screening.provider_error",
+          entity_type: "screening_results",
+          entity_id: savedErr?.id || null,
+          metadata: {
+            provider: err.provider,
+            status_code: err.statusCode,
+            reason: err.reason,
+            request_id: requestId,
+            name_screened: name,
+            entity_id: entity_id || null,
+          },
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "PROVIDER_ERROR",
+            provider: err.provider,
+            reason: err.reason,
+            status_code: err.statusCode,
+            screening_id: savedErr?.id || null,
+            message: "The sanctions/PEP provider is currently unavailable. The failure has been recorded and is visible to admins.",
+            requestId,
+          }),
+          { status: 502, headers: { ...headers, "Content-Type": "application/json" } }
+        );
+      }
+      throw err;
+    }
 
     // ── Store screening result ──
     const screeningRecord = {
