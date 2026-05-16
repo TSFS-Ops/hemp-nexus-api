@@ -368,6 +368,16 @@ Deno.serve(async (req) => {
           }
           return err("DB_ERROR", insErr.message, 400);
         }
+        await writeChallengeAudit(admin, {
+          action: "match_challenge.raised",
+          challengeId: row.id,
+          matchId: p.match_id,
+          actorUserId: userId,
+          actorOrgId: orgId,
+          afterStatus: "open",
+          requestId,
+          extra: { subject_code: p.subject_code, raised_by_role: p.raised_by_role },
+        });
         return json({ challenge: row }, 201);
       }
 
