@@ -820,16 +820,161 @@ Deno.serve(async (req: Request) => {
       };
     }
 
-    // ── Audit ──
+    // ── Batch K Fix 1: completed-without-sealed-WaD detector ──
+    // Scans matches that are marked completed (state='completed' OR poi_state='COMPLETED')
+    // but have no sealed WaD row. Surfaces each as an idempotent admin_risk_items
+    // entry. Never mutates match or WaD state.
+    try {
+      const { data: completedRows } = await admin
+        .from("matches")
+        .select("id, org_id, state, poi_state")
+        .or("state.eq.completed,poi_state.eq.COMPLETED")
+        .limit(1000);
+
+      let cwswDetected = 0;
+      let cwswSkipped = 0;
+      for (const m of completedRows ?? []) {
+        const { data: sealedWad } = await admin
+          .from("wads")
+          .select("id")
+          .eq("poi_id", m.id)
+          .eq("status", "sealed")
+          .not("sealed_at", "is", null)
+          .limit(1)
+          .maybeSingle();
+        if (sealedWad) continue;
+
+        if (dryRun) { cwswSkipped++; continue; }
+        const dedupKey = `completed_without_sealed_wad:${m.id}`;
+        const { error: riskErr } = await admin
+          .from("admin_risk_items")
+          .upsert(
+            {
+              title: `Match completed without sealed WaD`,
+              description: `Match ${m.id} shows completed (state='${m.state}', poi_state='${m.poi_state}') but no sealed WaD exists.`,
+              severity: "high",
+              status: "open",
+              org_id: m.org_id ?? null,
+              kind: "completed_without_sealed_wad",
+              dedup_key: dedupKey,
+              metadata: {
+                match_id: m.id,
+                state: m.state,
+                poi_state: m.poi_state,
+                detected_at: nowIso,
+                request_id: runRequestId,
+              },
+            },
+            { onConflict: "dedup_key", ignoreDuplicates: true },
+          );
+        if (riskErr) {
+          console.warn(`[completed-without-sealed-wad] upsert failed for ${m.id}:`, riskErr.message);
+          continue;
+        }
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: m.org_id ?? "00000000-0000-0000-0000-000000000000",
+            action: "match.completed_without_sealed_wad_detected",
+            entity_type: "match",
+            entity_id: m.id,
+            metadata: { dedup_key: dedupKey, request_id: runRequestId },
+          });
+        } catch (e) { /* best-effort */ }
+        cwswDetected++;
+      }
+      results.completed_without_sealed_wad = {
+        scanned: (completedRows ?? []).length,
+        detected: cwswDetected,
+        skipped_dry_run: cwswSkipped,
+      };
+    } catch (err) {
+      results.completed_without_sealed_wad = {
+        scanned: 0,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+
+    // ── Batch K Fix 9: long-pending engagement visibility ──
+    // We do NOT auto-expire generic pending engagements (no approved policy).
+    // Instead surface a single aggregate risk tile when long-pending rows exist.
+    try {
+      const longPendingCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: longPending, count: longPendingCount } = await admin
+        .from("poi_engagements")
+        .select("id, match_id, created_at", { count: "exact" })
+        .eq("status", "pending")
+        .lt("created_at", longPendingCutoff)
+        .limit(50);
+
+      results.long_pending_engagements = {
+        count: longPendingCount ?? (longPending?.length ?? 0),
+        sample_ids: (longPending ?? []).map((r: any) => r.id),
+        cutoff: longPendingCutoff,
+        policy: "visibility_only_no_auto_expiry",
+      };
+
+      if (!dryRun && (longPendingCount ?? 0) > 0) {
+        const todayKey = nowIso.slice(0, 10);
+        await admin.from("admin_risk_items").upsert(
+          {
+            title: `${longPendingCount} long-pending engagement(s) > 30d`,
+            description: `Generic pending engagements exist beyond the 30-day visibility threshold. No auto-expiry policy is approved — admin review required.`,
+            severity: "medium",
+            status: "open",
+            kind: "long_pending_engagements_visibility",
+            dedup_key: `long_pending_engagements_visibility:${todayKey}`,
+            metadata: {
+              count: longPendingCount,
+              cutoff: longPendingCutoff,
+              sample_ids: (longPending ?? []).slice(0, 20).map((r: any) => r.id),
+              request_id: runRequestId,
+            },
+          },
+          { onConflict: "dedup_key", ignoreDuplicates: true },
+        );
+      }
+    } catch (err) {
+      results.long_pending_engagements = {
+        count: 0,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+
+    // ── Audit (Batch K Fix 5: richer run_summary envelope) ──
     // Production runs write a completion row. Dry-runs write NOTHING to the
     // database (true zero-mutation contract); the manifest is returned in the
     // HTTP response only.
     if (!dryRun) {
+      const completedAt = new Date().toISOString();
       await admin.from("audit_logs").insert({
         org_id: "00000000-0000-0000-0000-000000000000",
         action: "lifecycle.scheduler.completed",
         entity_type: "system",
-        metadata: results,
+        metadata: { ...results, completed_at: completedAt },
+      }).then(() => {}).catch(() => {});
+      await admin.from("audit_logs").insert({
+        org_id: "00000000-0000-0000-0000-000000000000",
+        action: "lifecycle_scheduler.run_summary",
+        entity_type: "system",
+        metadata: {
+          request_id: runRequestId,
+          dry_run: false,
+          actor: "system:lifecycle-scheduler",
+          started_at: startedAtIso,
+          completed_at: completedAt,
+          duration_ms: Date.now() - startedAt.getTime(),
+          counts: {
+            expired_invites: (results as any).expired_invites?.count ?? 0,
+            expired_signals: (results as any).expired_signals?.count ?? 0,
+            expired_matches: (results as any).expired_matches?.count ?? 0,
+            expired_trade_orders: (results as any).expired_trade_orders?.count ?? 0,
+            completed_without_sealed_wad_detected:
+              (results as any).completed_without_sealed_wad?.detected ?? 0,
+            wad_poi_drift_detected: (results as any).wad_poi_drift?.drift_detected ?? 0,
+            long_pending_engagements: (results as any).long_pending_engagements?.count ?? 0,
+          },
+          failure: null,
+        },
       }).then(() => {}).catch(() => {});
     }
 
