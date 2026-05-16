@@ -261,6 +261,9 @@ Deno.serve(async (req) => {
   const auth = await authenticate(req);
   if (!auth.ok) return auth.resp;
   const { userId, orgId, isPlatformAdmin } = auth;
+  const authHeader = req.headers.get("authorization");
+  const requestId =
+    req.headers.get("x-request-id") ?? crypto.randomUUID();
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
