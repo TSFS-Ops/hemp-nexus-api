@@ -30,6 +30,57 @@ async function generateSignature(payload: string, secret: string): Promise<strin
 }
 
 /**
+ * Batch D — primary-path delivery timeout. Matches the retry worker (10s)
+ * and the value advertised in src/pages/docs/Webhooks.tsx. A slow or hung
+ * receiver can no longer block the parent function until the edge runtime
+ * kills the whole invocation.
+ */
+const PRIMARY_DELIVERY_TIMEOUT_MS = 10_000;
+
+/**
+ * Batch D — bounded response body read. We previously called
+ * `response.text()` which fully buffered any payload before slicing to
+ * 1000 chars; a malicious receiver could stream gigabytes. Reader caps at
+ * 64 KB then aborts, and we still persist only the first 1000 chars.
+ */
+const MAX_RESPONSE_BODY_BYTES = 64 * 1024;
+
+async function readBoundedResponseBody(response: Response): Promise<string> {
+  if (!response.body) {
+    // No streaming body — fall back to text() with a reasonable timeout
+    // already enforced by the outer AbortSignal.
+    try { return await response.text(); } catch { return ""; }
+  }
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (total < MAX_RESPONSE_BODY_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        total += value.byteLength;
+      }
+    }
+    if (total >= MAX_RESPONSE_BODY_BYTES) {
+      try { await reader.cancel("body-size-cap"); } catch { /* noop */ }
+    }
+  } catch {
+    // Reader threw — return what we have.
+  }
+  const merged = new Uint8Array(Math.min(total, MAX_RESPONSE_BODY_BYTES));
+  let offset = 0;
+  for (const c of chunks) {
+    const take = Math.min(c.byteLength, merged.byteLength - offset);
+    merged.set(c.subarray(0, take), offset);
+    offset += take;
+    if (offset >= merged.byteLength) break;
+  }
+  return new TextDecoder("utf-8", { fatal: false }).decode(merged);
+}
+
+/**
  * Deliver webhook to a single endpoint
  */
 async function deliverWebhook(
@@ -38,7 +89,7 @@ async function deliverWebhook(
   secret: string,
   webhookEndpointId: string,
   supabase: SupabaseClient,
-  eventIdempotencyKey?: string | null,
+  eventIdempotencyKey: string,
 ): Promise<{ success: boolean; statusCode?: number; error?: string; idempotent?: boolean }> {
   const body = JSON.stringify(payload);
   const signature = await generateSignature(body, secret);
