@@ -365,18 +365,37 @@ export function AdminVerificationQueuePanel() {
           <Badge variant="secondary" className="text-[10px]">In progress: {counts.in_progress ?? 0}</Badge>
           <Badge variant="default" className="text-[10px]">Completed (loaded): {counts.completed ?? 0}</Badge>
         </div>
-        <div className="min-w-[260px]">
-          <Label className="text-xs text-muted-foreground">Filter</Label>
-          <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <SelectTrigger className="h-9 mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTERS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-end gap-3">
+          {/* Batch T — UI-012: visible last-updated chip + manual refresh
+              so a stale tab cannot read as live. */}
+          <div className="flex items-center gap-2">
+            <p
+              className="font-mono text-[10px] tracking-wider uppercase text-muted-foreground"
+              data-testid="verification-queue-last-updated"
+            >
+              Last updated{" "}
+              {dataUpdatedAt
+                ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })
+                : "—"}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
+          <div className="min-w-[260px]">
+            <Label className="text-xs text-muted-foreground">Filter</Label>
+            <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+              <SelectTrigger className="h-9 mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_FILTERS.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
