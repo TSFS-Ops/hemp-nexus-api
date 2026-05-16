@@ -455,7 +455,10 @@ export function AdminEntitiesPanel() {
                         <TableCell className="font-mono text-xs">{entity.jurisdiction_code}</TableCell>
                         <TableCell className="text-xs">{entity.registration_number || "-"}</TableCell>
                         <TableCell>
-                          <StatusBadge status={entity.status} />
+                          <div className="space-y-1">
+                            <StatusBadge status={entity.status} />
+                            <ProviderErrorBadges errors={providerErrors[entity.id]} />
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {new Date(entity.created_at).toLocaleDateString()}
