@@ -73,8 +73,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const results: Record<string, unknown> = { dry_run: dryRun };
+    const runRequestId = (typeof crypto !== "undefined" && (crypto as any).randomUUID)
+      ? (crypto as any).randomUUID()
+      : `lcs-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const startedAt = new Date();
+    const startedAtIso = startedAt.toISOString();
     const now = new Date();
     const nowIso = now.toISOString();
+    results.request_id = runRequestId;
+    results.started_at = startedAtIso;
 
     // CONCURRENCY GUARD: Advisory lock prevents duplicate scheduler runs
     const { data: lockAcquired, error: lockErr } = await admin.rpc('try_lifecycle_lock');
