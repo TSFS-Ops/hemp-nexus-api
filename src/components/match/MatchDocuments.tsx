@@ -385,7 +385,12 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       toast.error("Please select a file");
       return;
     }
-    if (!docType) setDocType("other");
+    // Batch L DOC-001: doc type is now required and constrained to the
+    // server-side taxonomy.
+    if (!docType || !ALLOWED_DOC_TYPES.has(docType)) {
+      setError("Please choose a document type before uploading.");
+      return;
+    }
     if (uploading) return;
 
     try {
