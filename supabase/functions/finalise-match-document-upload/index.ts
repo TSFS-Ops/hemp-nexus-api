@@ -4,7 +4,12 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
-import { validateMagicBytes } from "../_shared/magic-bytes.ts";
+import { validateMagicBytes, inspectStructuralReadability } from "../_shared/magic-bytes.ts";
+
+// Batch L DOC-001: conservative initial document taxonomy. Final Izenzo-specific
+// taxonomy is policy-pending; mirrored in the match_documents_doc_type_check
+// DB constraint. Unknown values are rejected at validation time.
+const DOC_TYPES = ["bill_of_lading", "invoice", "letter_of_credit", "kyc", "licence", "other"] as const;
 
 const BodySchema = z.object({
   match_id: z.string().uuid(),
@@ -14,7 +19,7 @@ const BodySchema = z.object({
   file_size: z.number().int().nonnegative().nullable().optional(),
   mime_type: z.string().max(255).nullable().optional(),
   sha256_hash: z.string().min(16).max(256),
-  doc_type: z.string().min(1).max(100).default("other"),
+  doc_type: z.enum(DOC_TYPES).default("other"),
   title: z.string().max(500).nullable().optional(),
   notes: z.string().max(4000).nullable().optional(),
   visibility: z.enum(["private", "share_with_counterparty", "share_with_roles"]).default("private"),
