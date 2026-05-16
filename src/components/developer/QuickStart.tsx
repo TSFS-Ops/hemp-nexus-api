@@ -71,9 +71,6 @@ curl -X GET ${HOST[env]}/healthz \\
             <K>curl</K> -X <M>GET</M> {HOST[env]}/healthz \
           </Line>
           <Line>{"  "}-H <S>"X-API-Key: $IZENZO_KEY"</S> \</Line>
-          <Line>
-            {"  "}-H <S>"X-Org-Id: {ORG_ID[env]}"</S> \
-          </Line>
           <Line>{"  "}-H <S>"Content-Type: application/json"</S></Line>
           <Line> </Line>
           <Line>
