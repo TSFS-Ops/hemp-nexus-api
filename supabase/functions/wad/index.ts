@@ -152,7 +152,25 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "POI must be confirmed before creating WaD", 400);
       }
 
-      // ── Hard-gate: Intent state must be COMPLETED ──
+      // ── Batch I Fix 3: assert POI state is compatible for WaD issuance ──
+      // WaD requires status='settled' AND poi_state in a closed allow-list.
+      // Terminal failure / disputed / cancelled / annulled states MUST reject
+      // with a typed POI_STATE_INCOMPATIBLE error so callers and the admin UI
+      // can distinguish a state-machine mismatch from a generic gate failure.
+      const COMPATIBLE_POI_STATES = new Set<string>([
+        "COMPLETED",
+        "COMPLETION_REQUESTED",
+        "ELIGIBLE",
+      ]);
+      if (!COMPATIBLE_POI_STATES.has(poi.poi_state)) {
+        throw new ApiException(
+          "POI_STATE_INCOMPATIBLE",
+          `WaD cannot be created against POI in state '${poi.poi_state}'. Compatible states: ${[...COMPATIBLE_POI_STATES].join(", ")}.`,
+          422,
+          { poi_id, poi_state: poi.poi_state, compatible_states: [...COMPATIBLE_POI_STATES] },
+        );
+      }
+      // ── Hard-gate: Intent state must be COMPLETED before WaD ──
       if (poi.poi_state !== "COMPLETED") {
         throw new ApiException("HARD_GATE_FAILED", `Intent state must be COMPLETED, currently: ${poi.poi_state}`, 422);
       }
