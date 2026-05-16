@@ -239,6 +239,8 @@ function useActiveLanes(orgId: string | null, page: number) {
         .select(MATCH_COLUMNS, { count: "exact" })
         .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId},org_id.eq.${orgId}`)
         .in("state", activeStates)
+        // Batch T — UI-010: never inflate the desk pipeline with demo seeds.
+        .eq("is_demo", false)
         .order("created_at", { ascending: false })
         .range(0, to);
 
