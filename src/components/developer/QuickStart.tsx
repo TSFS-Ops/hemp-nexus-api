@@ -9,10 +9,6 @@ const HOST = {
   production: "https://api.trade.izenzo.co.za/functions/v1",
   sandbox: "https://api.trade.izenzo.co.za/functions/v1"
 };
-const ORG_ID = {
-  production: "org_4Lp2ZA",
-  sandbox: "org_sbx_demo"
-};
 export function QuickStart() {
   const {
     env
@@ -24,7 +20,6 @@ export IZENZO_KEY="${SAMPLE_KEY[env]}"
 # 2. Verify the ledger is reachable from your network
 curl -X GET ${HOST[env]}/healthz \\
   -H "X-API-Key: $IZENZO_KEY" \\
-  -H "X-Org-Id: ${ORG_ID[env]}" \\
   -H "Content-Type: application/json"
 
 # Expect: { "status": "ok", "ledger": "synchronised" }`;
