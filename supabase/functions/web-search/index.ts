@@ -123,13 +123,10 @@ Format each result as JSON:
   "sourceLink": "url where found"
 }`;
 
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const aiOutcome = await guardedAiCall(supabase as any, {
+        org_id: authCtx.orgId,
+        call_type: "web_search",
+        body: {
           model: "google/gemini-2.5-flash",
           messages: [
             {
@@ -172,23 +169,30 @@ Format each result as JSON:
             }
           ],
           tool_choice: { type: "function", function: { name: "extract_search_results" } }
-        })
+        },
       });
 
-      if (!aiResponse.ok) {
-        console.error(`[${requestId}] AI search failed: ${aiResponse.status}`);
-        if (aiResponse.status === 429) {
-          throw new ApiException('AI_RATE_LIMIT', 'AI service rate limit exceeded', 429);
-        }
-        if (aiResponse.status === 402) {
-          throw new ApiException('AI_PAYMENT_REQUIRED', 'AI service credits exhausted', 402);
-        }
+      if (aiOutcome.kind === "cooldown" || aiOutcome.kind === "quota_exceeded") {
+        // Stop the loop — return what we have so far with a typed envelope.
+        const env = aiGuardEnvelope(aiOutcome);
+        return new Response(
+          JSON.stringify({
+            ...(env.body as Record<string, unknown>),
+            partial_results: rankResults(deduplicateResults(allResults), signal),
+            requestId,
+          }),
+          { status: env.status, headers: { ...headers, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (aiOutcome.kind !== "ok") {
+        console.error(`[${requestId}] AI search failed: ${aiOutcome.kind}`);
         continue;
       }
 
-      const aiData = await aiResponse.json();
+      const aiData = aiOutcome.body as any;
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-      
+
       if (toolCall?.function?.arguments) {
         const parsed = JSON.parse(toolCall.function.arguments);
         if (parsed.results && Array.isArray(parsed.results)) {
