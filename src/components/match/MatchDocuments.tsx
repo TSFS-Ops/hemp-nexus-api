@@ -132,7 +132,7 @@ const DOC_TYPES = [
   { value: "licence", label: "Licence" },
   { value: "other", label: "Other" },
 ] as const;
-const ALLOWED_DOC_TYPES = new Set(DOC_TYPES.map((t) => t.value));
+const ALLOWED_DOC_TYPES: ReadonlySet<string> = new Set(DOC_TYPES.map((t) => t.value));
 
 const VISIBILITY_OPTIONS = [
   { value: "private", label: "Private", icon: Lock, description: "Only your organisation" },
