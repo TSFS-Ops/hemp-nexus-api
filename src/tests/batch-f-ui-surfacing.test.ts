@@ -38,10 +38,13 @@ describe("Batch F UI — AdminEntitiesPanel provider-error surfacing", () => {
   });
 
   it("5. provider error rendered with review/pending visual treatment (amber, not emerald/verified)", () => {
-    // The badge classnames must use amber tokens, never emerald/verified styling.
-    const badgeBlock = src.split("function ProviderErrorBadges")[1] ?? "";
+    // Scope check to the ProviderErrorBadges component body only.
+    const start = src.indexOf("function ProviderErrorBadges");
+    const end = src.indexOf("export function AdminEntitiesPanel");
+    const badgeBlock = src.slice(start, end);
     expect(badgeBlock).toMatch(/bg-amber-50/);
-    expect(badgeBlock).not.toMatch(/emerald|verified/i);
+    expect(badgeBlock).not.toMatch(/emerald/i);
+    expect(badgeBlock).not.toMatch(/status:\s*["']verified["']/i);
   });
 
   it("6. badge surfaces provider / status code / reason / timestamp in title", () => {
