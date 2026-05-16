@@ -1403,7 +1403,7 @@ Deno.serve(async (req) => {
 
       triggerWebhooks(supabase, match.org_id, "counterparty.sighted", {
         matchId, state: 'counterparty_sighted', tokensCharged: ACTION_TOKEN_COSTS.counterparty_sighting
-      }).catch(err => console.error(`Webhook error:`, err));
+      }, { eventIdempotencyKey: `counterparty.sighted:${matchId}` }).catch(err => console.error(`Webhook error:`, err));
 
       await logApiRequest({
         supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
@@ -1505,7 +1505,7 @@ Deno.serve(async (req) => {
 
       triggerWebhooks(supabase, match.org_id, "transaction.committed", {
         matchId, state: 'committed', commitTokens: commitCost,
-      }).catch(err => console.error(`Webhook error:`, err));
+      }, { eventIdempotencyKey: `transaction.committed:${matchId}` }).catch(err => console.error(`Webhook error:`, err));
 
       await logApiRequest({
         supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
@@ -1655,7 +1655,7 @@ Deno.serve(async (req) => {
 
       triggerWebhooks(supabase, match.org_id, "transaction.completed", {
         matchId, state: 'completed', completedAt,
-      }).catch(err => console.error(`Webhook error:`, err));
+      }, { eventIdempotencyKey: `transaction.completed:${matchId}` }).catch(err => console.error(`Webhook error:`, err));
 
       await logApiRequest({
         supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,
@@ -2043,7 +2043,7 @@ Deno.serve(async (req) => {
         quantity: body.quantity,
         price: body.price,
         hash,
-      }).catch(err => console.error(`Webhook trigger error:`, err));
+      }, { eventIdempotencyKey: `match.created:${match.id}` }).catch(err => console.error(`Webhook trigger error:`, err));
 
       return new Response(JSON.stringify(match), {
         status: 201,
@@ -2148,7 +2148,7 @@ Deno.serve(async (req) => {
         matchId: patchMatchId,
         boundOrgId: counterparty.org_id,
         boundRole: counterparty.role,
-      }).catch(err => console.error(`Webhook trigger error:`, err));
+      }, { eventIdempotencyKey: `match.counterparty_bound:${patchMatchId}` }).catch(err => console.error(`Webhook trigger error:`, err));
 
       await logApiRequest({
         supabase, orgId: authCtx.orgId, apiKeyId: actorApiKeyId,

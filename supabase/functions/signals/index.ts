@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         quantity,
         unit,
         status: signal.status,
-      }).catch(err => console.error(`Webhook trigger error:`, err));
+      }, { eventIdempotencyKey: `signal.created:${signal.id}` }).catch(err => console.error(`Webhook trigger error:`, err));
 
       return new Response(
         JSON.stringify({
@@ -334,7 +334,7 @@ Deno.serve(async (req) => {
         selectionId: selection.id,
         dataSourceType: option.data_source.type,
         sourceLink: option.source_link,
-      }).catch(err => console.error(`Webhook trigger error:`, err));
+      }, { eventIdempotencyKey: `option.selected:${selection.id}` }).catch(err => console.error(`Webhook trigger error:`, err));
 
       return new Response(
         JSON.stringify({
