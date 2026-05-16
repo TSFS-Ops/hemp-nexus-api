@@ -15,6 +15,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { auditedDownloadCSVRaw } from "@/lib/download-utils";
 import {
   DELIVERY_LABELS,
   DELIVERY_STYLES,
