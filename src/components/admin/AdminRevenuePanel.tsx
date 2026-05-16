@@ -624,6 +624,18 @@ export function AdminRevenuePanel() {
             </div>
           </div>
 
+          {/* Batch T — UI-012: visible freshness chip so a stale tab is
+              obviously stale, not silently presented as live. */}
+          <p
+            className="font-mono text-[10px] tracking-wider uppercase text-muted-foreground"
+            data-testid="revenue-last-updated"
+          >
+            Last updated{" "}
+            {dataUpdatedAt
+              ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })
+              : "—"}
+          </p>
+
           {/* Truncation disclosure — three source queries each cap at 2000 rows.
               If any returned exactly 2000 rows the totals shown above understate
               true revenue and an admin must narrow the time window. */}
