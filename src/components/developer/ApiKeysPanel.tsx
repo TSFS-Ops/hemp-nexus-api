@@ -119,7 +119,7 @@ function RevealModal({ data, onClose }: { data: RevealedKey; onClose: () => void
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-slate-800 px-6 py-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 border-t border-slate-800 px-6 py-3">
           <button
             onClick={onClose}
             className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-100 bg-green-600/20 border border-green-500/40 hover:bg-green-600/30 px-4 py-1.5 rounded-sm transition-colors"
