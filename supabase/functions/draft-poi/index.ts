@@ -134,20 +134,15 @@ async function _serve(req: Request): Promise<Response> {
       },
     };
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            {
-              role: "system",
-              content: `You are an expert commodity trade analyst. You extract structured trade intent data from raw unstructured text such as emails, WhatsApp messages, meeting notes, or verbal descriptions.
+    const outcome = await guardedAiCall(admin as any, {
+      org_id: orgId,
+      call_type: "draft_poi",
+      body: {
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert commodity trade analyst. You extract structured trade intent data from raw unstructured text such as emails, WhatsApp messages, meeting notes, or verbal descriptions.
 
 Rules:
 - Always determine if the person is a BUYER or SELLER based on context clues.
@@ -156,40 +151,29 @@ Rules:
 - Default currency to "USD" if not clearly stated. If ZAR/Rand is mentioned, use "ZAR".
 - Be conservative: if something is truly not mentioned, leave the field as an empty string.
 - Put delivery terms, quality specs, and timeline info in the notes field.`,
-            },
-            {
-              role: "user",
-              content: rawText.trim(),
-            },
-          ],
-          tools: [tool],
-          tool_choice: {
-            type: "function",
-            function: { name: "extract_trade_intent" },
           },
-        }),
+          {
+            role: "user",
+            content: rawText.trim(),
+          },
+        ],
+        tools: [tool],
+        tool_choice: {
+          type: "function",
+          function: { name: "extract_trade_intent" },
+        },
       },
-    );
+    });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "AI rate limit reached. Please wait a moment and try again." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please contact support." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      throw new Error("AI extraction failed");
+    if (outcome.kind !== "ok") {
+      const env = aiGuardEnvelope(outcome);
+      return new Response(JSON.stringify(env.body), {
+        status: env.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const result = await response.json();
+    const result = outcome.body as any;
 
     // Extract tool call arguments
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
