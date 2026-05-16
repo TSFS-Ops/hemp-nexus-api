@@ -280,6 +280,9 @@ Deno.serve(async (req) => {
       credits,
       reason,
       reference_id: referenceId,
+      payment_reference: referenceId,
+      credit_kind: creditKind,
+      demo: isDemo,
       new_balance: result.new_balance,
     });
 
@@ -287,6 +290,8 @@ Deno.serve(async (req) => {
       success: true,
       new_balance: result.new_balance,
       reference_id: referenceId,
+      credit_kind: creditKind,
+      demo: isDemo,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown error';
