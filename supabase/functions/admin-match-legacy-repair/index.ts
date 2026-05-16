@@ -217,12 +217,39 @@ Deno.serve(async (req) => {
     if (rpcError) {
       const msg = (rpcError.message ?? "").toLowerCase();
       if (msg.includes("operation_deferred")) {
+        await upsertRepairFollowupRiskItem(admin, {
+          matchId: parsedBody.match_id,
+          operation: parsedBody.operation,
+          reason: "operation_deferred",
+          actorUserId: caller.id,
+          requestId,
+        });
         return jsonResponse(
           req,
           {
             error: "OPERATION_DEFERRED",
             message:
               "force_terminal_for_orphan_settled is intentionally deferred pending business sign-off.",
+            requestId,
+          },
+          409,
+        );
+      }
+      if (msg.includes("completed_without_sealed_wad")) {
+        await upsertRepairFollowupRiskItem(admin, {
+          matchId: parsedBody.match_id,
+          operation: parsedBody.operation,
+          reason: "completed_without_sealed_wad",
+          actorUserId: caller.id,
+          requestId,
+          severity: "critical",
+        });
+        return jsonResponse(
+          req,
+          {
+            error: "COMPLETED_WITHOUT_SEALED_WAD",
+            message:
+              "Cannot restore COMPLETED poi_state without a sealed WaD for this match. A follow-up risk item has been created.",
             requestId,
           },
           409,
@@ -241,6 +268,13 @@ Deno.serve(async (req) => {
         );
       }
       if (msg.includes("still_inconsistent_after_repair")) {
+        await upsertRepairFollowupRiskItem(admin, {
+          matchId: parsedBody.match_id,
+          operation: parsedBody.operation,
+          reason: "still_inconsistent_after_repair",
+          actorUserId: caller.id,
+          requestId,
+        });
         return jsonResponse(
           req,
           {
