@@ -439,6 +439,49 @@ Deno.serve(async (req: Request) => {
           denial_reasons: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
         });
 
+        // ── Batch I Fix 5: UBO incomplete → durable compliance follow-up ──
+        // Create an idempotent dd_approval_requests row + audit so admins have
+        // a queue item, not just a 422 toast for the end user.
+        const uboFailed = failedGates.find((g) => g.gate === "UBO_COMPLETENESS");
+        if (uboFailed) {
+          const todayUtc = new Date().toISOString().slice(0, 10);
+          const dedupKey = `ubo_incomplete:${orgId}:${parsed.poi_id}:${todayUtc}`;
+          await admin
+            .from("dd_approval_requests")
+            .upsert(
+              {
+                target_org_id: orgId,
+                requesting_org_id: orgId,
+                status: "pending",
+                required_roles: ["compliance_analyst"],
+                reason: `UBO completeness gate failed at WaD time: ${uboFailed.reason}`,
+                kind: "ubo_incomplete",
+                dedup_key: dedupKey,
+                metadata: {
+                  poi_id: parsed.poi_id,
+                  buyer_entity_id: poi.buyer_entity_id,
+                  seller_entity_id: poi.seller_entity_id,
+                  reason: uboFailed.reason,
+                  correlation_id: correlationId,
+                },
+              },
+              { onConflict: "dedup_key", ignoreDuplicates: true },
+            );
+
+          await admin.from("audit_logs").insert({
+            org_id: orgId,
+            actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+            action: "wad.ubo_incomplete.queued",
+            entity_type: "poi",
+            entity_id: parsed.poi_id,
+            metadata: {
+              reason: uboFailed.reason,
+              dedup_key: dedupKey,
+              correlation_id: correlationId,
+            },
+          });
+        }
+
         // Record event
         await admin.from("event_store").insert({
           org_id: orgId,
