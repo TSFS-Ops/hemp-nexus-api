@@ -8566,6 +8566,14 @@ export type Database = {
       scrub_user_pii: { Args: { p_user_id: string }; Returns: Json }
       set_org_data_residency: { Args: { _region: string }; Returns: Json }
       touch_match_view: { Args: { _match_id: string }; Returns: string }
+      transfer_org_admin: {
+        Args: {
+          p_demote_self?: boolean
+          p_reason: string
+          p_to_user_id: string
+        }
+        Returns: Json
+      }
       try_lifecycle_lock: { Args: never; Returns: boolean }
       verify_acceptance_receipt: {
         Args: { p_receipt_id: string }
