@@ -22,7 +22,7 @@ import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { TableSkeleton } from "@/components/ui/loading-skeletons";
 import { ErrorState } from "@/components/ui/error-state";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { downloadCSV, auditedDownloadCSV } from "@/lib/download-utils";
+import { auditedDownloadCSV } from "@/lib/download-utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useUrlListParams } from "@/hooks/use-url-search-params";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
@@ -234,8 +234,22 @@ export function MatchesList() {
     };
   }, []);
 
-  const getStatusBadge = (status: string) => {
-    return <MatchStatusBadge status={status} />;
+  // Batch T — UI-013: derive truthfulness qualifiers from row metadata so
+  // operators never see a clean "settled" label when the row was actually
+  // produced via a test-mode bypass or a failed provider attempt.
+  const getStatusBadge = (status: string, metadata?: Record<string, unknown> | null) => {
+    const md = (metadata ?? {}) as Record<string, unknown>;
+    const testMode =
+      md.test_mode === true ||
+      md.test_mode_bypass === true ||
+      md.is_test_mode === true ||
+      (typeof md.source === "string" && md.source.toLowerCase().includes("test_mode"));
+    const providerError =
+      md.provider_status === "provider_error" ||
+      md.provider_status === "failed" ||
+      md.dispatch_status === "failed" ||
+      md.last_status === "failed";
+    return <MatchStatusBadge status={status} testMode={testMode} providerError={providerError} />;
   };
 
   const toggleMatchSelection = (matchId: string) => {
@@ -404,7 +418,7 @@ export function MatchesList() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     if (!matches || matches.length === 0) {
       toast.error("No matches to export");
       return;
@@ -421,7 +435,24 @@ export function MatchesList() {
       m.status, m.created_at, m.settled_at || "", m.hash,
     ]);
 
-    downloadCSV(headers, rows, `matches-${new Date().toISOString().split('T')[0]}.csv`);
+    // Batch T — AUD-017: route through audited export so audit_logs is
+    // written before any rows leave the browser, and so the file carries
+    // a `# generated_at` provenance preamble.
+    const result = await auditedDownloadCSV(headers, rows, {
+      reportName: "matches.bulk_export",
+      filename: `matches-${new Date().toISOString().split("T")[0]}.csv`,
+      target_type: "matches",
+      sensitive: true,
+      filters: { page: page + 1, totalPages, rowCount: matches.length },
+    });
+    if (!result.ok) {
+      if (result.aal_required) {
+        toast.error("Step-up authentication required to export matches.");
+      } else {
+        toast.error(result.error ?? "Failed to export matches");
+      }
+      return;
+    }
 
     // Explicit scope disclosure
     if (totalPages > 1) {
@@ -565,7 +596,7 @@ export function MatchesList() {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      {getStatusBadge(match.status)}
+                      {getStatusBadge(match.status, match.metadata as Record<string, unknown> | null | undefined)}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -670,7 +701,7 @@ export function MatchesList() {
                               </Tooltip>
                             </TooltipProvider>
                           )}
-                          {getStatusBadge(match.status)}
+                          {getStatusBadge(match.status, match.metadata as Record<string, unknown> | null | undefined)}
                         </div>
                       </TableCell>
                       <TableCell className="hidden xl:table-cell px-4 py-3">
@@ -687,7 +718,7 @@ export function MatchesList() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                                onClick={() => {
+                                onClick={async () => {
                                   const row = [
                                     match.id, match.commodity, match.buyer_id, match.buyer_name,
                                     match.seller_id, match.seller_name, match.quantity_amount,
@@ -698,7 +729,22 @@ export function MatchesList() {
                                     "ID", "Commodity", "Buyer ID", "Buyer Name", "Seller ID", "Seller Name",
                                     "Quantity", "Unit", "Price", "Currency", "Status", "Created At", "Settled At", "Hash",
                                   ];
-                                  downloadCSV(headers, [row], `match-${match.id.slice(0, 8)}.csv`);
+                                  // Batch T — AUD-017: single-row export is also audited.
+                                  const result = await auditedDownloadCSV(headers, [row], {
+                                    reportName: "matches.single_export",
+                                    filename: `match-${match.id.slice(0, 8)}.csv`,
+                                    target_type: "matches",
+                                    sensitive: true,
+                                    filters: { match_id: match.id },
+                                  });
+                                  if (!result.ok) {
+                                    if (result.aal_required) {
+                                      toast.error("Step-up authentication required to export this match.");
+                                    } else {
+                                      toast.error(result.error ?? "Failed to export match");
+                                    }
+                                    return;
+                                  }
                                   toast.success("Match exported");
                                 }}
                               >

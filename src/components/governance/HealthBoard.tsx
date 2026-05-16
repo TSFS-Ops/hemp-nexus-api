@@ -187,7 +187,14 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
-  const { data: noRecipientCount } = useQuery<number>({
+  // Batch T — UI-014: surface query errors rather than silently swallowing
+  // them to 0. A failed audit_logs query previously produced a misleading
+  // green "no manual backlog" tile.
+  const {
+    data: noRecipientCount,
+    isError: noRecipientError,
+    error: noRecipientErrorObj,
+  } = useQuery<number>({
     queryKey: ["healthboard-no-recipient-skips"],
     queryFn: async () => {
       const dayStart = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString();
@@ -197,7 +204,7 @@ export function HealthBoard() {
         .eq("action", "notification_skipped")
         .gte("created_at", dayStart)
         .contains("metadata", { reason: "no_recipient", source_function: "match.soft_route" });
-      if (error) return 0;
+      if (error) throw error;
       return count ?? 0;
     },
     refetchInterval: 60000,
@@ -221,7 +228,19 @@ export function HealthBoard() {
 
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
-  const openIncidents = incidents.filter(i => i.status !== "resolved").length;
+  // Batch T — UI-014: explicit allow-list of "open" statuses rather than
+  // `!== "resolved"`. Any new terminal status (e.g. dismissed/withdrawn)
+  // must be added here on purpose; otherwise it stays open.
+  const OPEN_RISK_STATUSES = new Set<string>([
+    "open",
+    "investigating",
+    "acknowledged",
+    "in_progress",
+    "monitoring",
+    "escalated",
+  ]);
+  const openIncidentList = incidents.filter(i => OPEN_RISK_STATUSES.has(i.status));
+  const openIncidents = openIncidentList.length;
   const lastBeat = dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : new Date().toISOString();
   const noRecipient = noRecipientCount ?? 0;
 
@@ -284,16 +303,29 @@ export function HealthBoard() {
           <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{openIncidents}</p>
           <p className={`font-mono text-[10px] mt-0.5 ${openIncidents > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
             {openIncidents > 0
-              ? `monitoring · ${shortId(incidents.find(i => i.status !== "resolved")!.id)}`
+              ? `monitoring · ${shortId(openIncidentList[0].id)}`
               : "all clear"}
           </p>
         </div>
         <div className="bg-card p-5" data-testid="healthboard-no-recipient-tile">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">No-Recipient Outreach</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{noRecipient}</p>
-          <p className={`font-mono text-[10px] mt-0.5 ${noRecipient > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
-            {noRecipient > 0 ? "manual follow-up required · today" : "no manual backlog · today"}
-          </p>
+          {noRecipientError ? (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-rose-700 tracking-tight" data-testid="healthboard-no-recipient-error">
+                error
+              </p>
+              <p className="font-mono text-[10px] mt-0.5 text-rose-700" title={(noRecipientErrorObj as Error)?.message}>
+                query failed · check audit_logs access
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">{noRecipient}</p>
+              <p className={`font-mono text-[10px] mt-0.5 ${noRecipient > 0 ? "text-amber-700" : "text-[hsl(var(--emerald))]"}`}>
+                {noRecipient > 0 ? "manual follow-up required · today" : "no manual backlog · today"}
+              </p>
+            </>
+          )}
         </div>
       </div>
 
