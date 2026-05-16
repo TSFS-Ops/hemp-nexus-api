@@ -8,10 +8,18 @@
 
 ```bash
 # Must all exit 0
+npm run test:regression    # vitest run on src/tests/batch-*.test.ts (batch proof suite)
 npm run build              # TypeScript + Vite compilation (runs all prebuild guards below)
 npm run check:drift        # Layout/footer/back-button drift guard
-npx vitest run             # Unit + integration tests
+npx vitest run             # Full unit + integration sweep
+node scripts/closeout-snapshot.mjs   # Writes dated artefact under docs/closeout/ when DB env present
 ```
+
+After the snapshot script runs against the live DB tier, confirm the
+HealthBoard **Closeout Drift** tile is green (`closeout_drift_summary()`
+returns zero critical drift) and review
+`docs/deferred-policy-register.md` for any items still requiring client
+sign-off.
 
 Prebuild guards enforced automatically by `npm run build`:
 
@@ -28,6 +36,15 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-public-page-imports.mjs` — public pages don't import auth code
 - `check-edge-function-rpc-coverage.mjs` — edge RPCs are migration-backed (Batch U)
 - `check-csv-export-audit.mjs` — sensitive CSV exports are audited (Batch U)
+- `check-batch-suite-presence.mjs` — every closeout-report batch row has a matching test (Batch W)
+- `check-release-gate-sync.mjs` — prebuild scripts + critical cron jobs are documented (Batch W)
+
+Closeout & handover artefacts (must be reviewed before client sign-off):
+
+- `docs/closeout-report.md` — batch A–V completion table with test pins
+- `docs/deferred-policy-register.md` — client-owned policy decisions
+- `docs/launch-runbook.md` — go-live procedure, cron heartbeats, Sentry, demo exclusion, seeders refused in prod, rollback, sign-off matrix
+- `docs/handover.md` — non-technical client summary
 
 **Blocker:** Any command exits non-zero.
 
