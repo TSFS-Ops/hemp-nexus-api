@@ -4,6 +4,7 @@ import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { aiGuardPrecheck, guardedAiCall, aiGuardEnvelope } from "../_shared/ai-guard.ts";
 
 /**
  * DISC-002 OSINT Discovery Crawler
@@ -255,6 +256,18 @@ Deno.serve(async (req: Request) => {
         payload: { entity_id: parsed.entity_id, entity_name: parsed.entity_name },
         event_hash: await computeHash(JSON.stringify({ crawl_id: crawlRun.id, entity_id: parsed.entity_id })),
       });
+
+      // Batch F: AI guard precheck (cooldown + daily meter) before delegating
+      // to web-search. Prevents refresh-spam from tunneling through.
+      const guard = await aiGuardPrecheck(admin, { org_id: orgId, call_type: "intel_crawl" });
+      if (guard.kind === "cooldown" || guard.kind === "quota_exceeded") {
+        const env = aiGuardEnvelope(guard);
+        return new Response(JSON.stringify({
+          status: "ERROR", correlation_id: correlationId,
+          error: { code: guard.kind === "quota_exceeded" ? "QUOTA_EXCEEDED" : "AI_PROVIDER_COOLDOWN",
+                   message: (env.body as any).message },
+        }), { status: env.status, headers });
+      }
 
       // Execute crawl (synchronous for now - can be async in production)
       try {

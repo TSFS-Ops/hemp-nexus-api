@@ -203,6 +203,41 @@ export async function guardedAiCall(
   return { kind: "ok", body, status: 200 };
 }
 
+/**
+ * Precheck-only helper for callers that delegate AI work to another internal
+ * function (e.g. intel-crawl → web-search). Runs cooldown + daily-meter
+ * gates without actually performing the outbound request, so refresh-spam
+ * cannot tunnel through an intermediate function.
+ *
+ * Returns "ok" when the caller may proceed, otherwise the typed quota /
+ * cooldown outcome.
+ */
+export async function aiGuardPrecheck(
+  admin: SupabaseClient,
+  opts: { org_id: string; call_type: string; dailyCap?: number },
+): Promise<AiGuardOutcome> {
+  const cooldownUntil = await readCooldown(admin, opts.org_id);
+  if (cooldownUntil) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((new Date(cooldownUntil).getTime() - Date.now()) / 1000));
+    return { kind: "cooldown", cooldownUntil, retryAfterSeconds };
+  }
+  const cap = opts.dailyCap ?? DEFAULT_DAILY_CAP_BY_CALL_TYPE[opts.call_type] ?? DEFAULT_DAILY_CAP_BY_CALL_TYPE._default;
+  const { data: meterResult, error: meterError } = await admin.rpc("ai_meter_check_and_increment", {
+    p_org_id: opts.org_id,
+    p_call_type: opts.call_type,
+    p_daily_cap: cap,
+  });
+  if (meterError) {
+    console.warn("[ai-guard] precheck meter failed; failing open", meterError);
+    return { kind: "ok", body: { precheck: true }, status: 200 };
+  }
+  if (typeof meterResult === "number" && meterResult === -1) {
+    await stampCooldown(admin, opts.org_id, 3600, 429, "quota_exceeded", `daily cap ${cap} reached`);
+    return { kind: "quota_exceeded", reason: "daily_cap", cap, retryAfterSeconds: 3600 };
+  }
+  return { kind: "ok", body: { precheck: true }, status: 200 };
+}
+
 /** Typed error envelope helpers for HTTP responders. */
 export function aiGuardEnvelope(o: AiGuardOutcome) {
   switch (o.kind) {

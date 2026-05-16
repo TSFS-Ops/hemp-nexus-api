@@ -140,12 +140,49 @@ Deno.serve(async (req) => {
     })
   }
 
+  // ── Batch F: link bounce/complaint to POI engagement when safe ──
+  // Idempotency-key pattern: `outreach-send-{engagementId}-{token}`
+  // where engagementId is a UUID. Only link when the pattern matches
+  // exactly — never guess.
+  const messageId = payload.message_id ?? ''
+  const engagementMatch = messageId.match(
+    /^outreach-send-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-/i,
+  )
+  if (engagementMatch && (payload.reason === 'bounce' || payload.reason === 'complaint')) {
+    const engagementId = engagementMatch[1]
+    const action =
+      payload.reason === 'bounce'
+        ? 'engagement.outreach_bounced'
+        : 'engagement.outreach_complained'
+    const { error: auditErr } = await supabase.from('audit_logs').insert({
+      org_id: null,
+      actor_user_id: null,
+      action,
+      entity_type: 'poi_engagement',
+      entity_id: engagementId,
+      metadata: {
+        message_id: messageId,
+        reason: payload.reason,
+        source: 'handle-email-suppression',
+        email_redacted:
+          normalizedEmail[0] + '***@' + normalizedEmail.split('@')[1],
+      },
+    })
+    if (auditErr) {
+      console.warn('Failed to link suppression to engagement', {
+        error: auditErr,
+        engagement_id: engagementId,
+      })
+    }
+  }
+
   console.log('Suppression processed', {
     email_redacted: normalizedEmail[0] + '***@' + normalizedEmail.split('@')[1],
     reason: payload.reason,
     is_retry: payload.is_retry,
     retry_count: payload.retry_count,
     has_message_id: !!payload.message_id,
+    linked_engagement: !!engagementMatch,
   })
 
   return jsonResponse({ success: true })

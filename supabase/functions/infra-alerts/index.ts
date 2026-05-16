@@ -296,6 +296,33 @@ Deno.serve(async (req) => {
     console.error("Email dispatcher heartbeat check failed:", err);
   }
 
+  // ── 7. Batch F: Email DLQ depth / recent DLQ rate ────────────────
+  // email_send_log.status='dlq' is the source of truth for messages that
+  // exhausted retries. Any recent DLQ row is a warning; sustained volume
+  // is critical even when the dispatcher heartbeat is healthy.
+  try {
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: recentDlq } = await supabase
+      .from("email_send_log")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "dlq")
+      .gte("created_at", oneHourAgo);
+
+    const dlqCount = recentDlq ?? 0;
+    if (dlqCount > 0) {
+      alerts.push({
+        metric: "Email DLQ Depth (1 hr)",
+        threshold: "0 dead-lettered messages",
+        actual: `${dlqCount} dead-lettered`,
+        severity: dlqCount >= 10 ? "critical" : "warning",
+        details:
+          "One or more email messages exhausted retries and moved to the dead-letter queue. Investigate process-email-queue and provider deliverability.",
+      });
+    }
+  } catch (err) {
+    console.error("Email DLQ depth check failed:", err);
+  }
+
   // ── Dispatch alerts ──────────────────────────────────────────────
   if (alerts.length === 0) {
     return new Response(
