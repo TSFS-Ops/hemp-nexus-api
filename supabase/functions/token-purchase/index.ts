@@ -1149,41 +1149,198 @@ async function handleChargeFailed(
 // ==============================================
 // refund.processed handler
 // ==============================================
+// Batch H — Refund hardening (2026-05-16).
+//
+// Safety layers (defence in depth):
+//   1. Outer webhook: HMAC verify + `webhook_replay_guard` (same body+signature
+//      cannot be processed twice).
+//   2. SOFT idempotency: SELECT on token_ledger WHERE request_id=refund_ref
+//      AND action_type='credit_refund' — returns early on second delivery
+//      even if Paystack ever sends a fresh signature for the same refund id
+//      (e.g. dashboard manual retry).
+//   3. HARD idempotency: `token_ledger.request_id` UNIQUE index — last-line
+//      defence; insert errors are caught and treated as success, never thrown.
+//   4. Validation: refund must match a prior `credit_purchase` ledger row
+//      (same org_id, same payment_reference); otherwise a risk item is
+//      opened and the balance is NOT mutated.
+//   5. Partial refunds (Paystack `data.amount` < original USD amount) are
+//      parked for manual review per the published full-refund-only policy —
+//      no proportional auto-deduction.
 // deno-lint-ignore no-explicit-any
 async function handleRefundProcessed(
   supabase: any,
-  data: { 
+  data: {
     reference: string;
     transaction_reference?: string;
+    amount?: number; // Paystack refund amount in minor units (USD cents post-cutover)
+    currency?: string;
     metadata?: { org_id?: string; credits?: number };
   }
 ): Promise<void> {
   console.log(`[Webhook] Refund processed: ${data.reference}`);
-  
+
+  const refundRef = data.reference;
+  if (!refundRef || refundRef.trim() === "") {
+    console.error("[Webhook] Refund missing reference; skipping");
+    return;
+  }
+
+  // ── Layer 2: soft idempotency guard ─────────────────────────────────
+  // If a credit_refund row already exists for this refund reference, the
+  // refund has already been processed end-to-end. Return success without
+  // touching balance, ledger, audit, or notification.
+  const { data: priorRefund } = await supabase
+    .from("token_ledger")
+    .select("id, org_id, remaining_balance")
+    .eq("request_id", refundRef)
+    .eq("action_type", "credit_refund")
+    .maybeSingle();
+  if (priorRefund) {
+    console.log(`[Webhook] Refund ${refundRef} already processed — idempotent skip`);
+    return;
+  }
+
   if (!data.metadata?.org_id || !data.metadata?.credits) {
     console.log("[Webhook] Refund missing metadata, skipping credit deduction");
     return;
   }
 
   const orgId = data.metadata.org_id;
-  const creditsToDeduct = data.metadata.credits;
+  const originalCredits = data.metadata.credits;
+  const originalTxRef = data.transaction_reference ?? null;
 
-  // Atomic balance deduction (negative credit)
+  // ── Validation: match a prior credit_purchase ledger row ────────────
+  // Lookup by org_id + payment_reference (the original Paystack reference).
+  // Without a matching purchase we never mutate balance — this protects
+  // against spoofed metadata, stale webhook replays for unrelated charges,
+  // or test-environment refunds for purchases that never reached us.
+  const { data: originalPurchase } = originalTxRef
+    ? await supabase
+        .from("token_ledger")
+        .select("id, org_id, request_id, metadata")
+        .eq("request_id", originalTxRef)
+        .eq("action_type", "credit_purchase")
+        .maybeSingle()
+    : { data: null };
+
+  if (!originalPurchase) {
+    console.error(`[Webhook] Refund ${refundRef}: no matching credit_purchase for tx=${originalTxRef}`);
+    await supabase.from("audit_logs").insert({
+      org_id: orgId,
+      action: "credits.refund_rejected",
+      entity_type: "token_balance",
+      metadata: {
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        reason: "no_matching_purchase",
+      },
+    });
+    await supabase.from("admin_risk_items").insert({
+      title: `Refund without matching purchase: ${refundRef}`,
+      description: `Paystack refund ${refundRef} references original tx ${originalTxRef ?? "(missing)"} for org ${orgId} but no credit_purchase ledger row was found. Balance NOT mutated. Investigate manually.`,
+      severity: "high",
+      status: "open",
+    });
+    return;
+  }
+
+  if (originalPurchase.org_id !== orgId) {
+    console.error(`[Webhook] Refund ${refundRef}: org_id mismatch (refund=${orgId} purchase=${originalPurchase.org_id})`);
+    await supabase.from("audit_logs").insert({
+      org_id: orgId,
+      action: "credits.refund_rejected",
+      entity_type: "token_balance",
+      metadata: {
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        reason: "org_mismatch",
+        refund_org_id: orgId,
+        purchase_org_id: originalPurchase.org_id,
+      },
+    });
+    await supabase.from("admin_risk_items").insert({
+      title: `Refund org mismatch: ${refundRef}`,
+      description: `Refund metadata.org_id=${orgId} does not match the org on credit_purchase ${originalTxRef} (${originalPurchase.org_id}). Balance NOT mutated.`,
+      severity: "high",
+      status: "open",
+    });
+    return;
+  }
+
+  const purchaseMeta = (originalPurchase.metadata ?? {}) as Record<string, unknown>;
+  const originalPriceUsd = Number(purchaseMeta.price_usd);
+  const originalCurrency = (purchaseMeta.currency as string) || "USD";
+  const refundUsd = typeof data.amount === "number" ? data.amount / 100 : null;
+  const refundCurrency = (data.currency as string) || "USD";
+
+  // ── Partial refund handling ─────────────────────────────────────────
+  // Policy (REFUND_POLICY): full refund of unused credits within 7 days.
+  // We do NOT auto-prorate. Any amount that is meaningfully less than the
+  // original USD price is parked for manual review and acknowledged 200 to
+  // Paystack (preventing infinite retries) without mutating balance.
+  if (
+    refundUsd !== null &&
+    Number.isFinite(originalPriceUsd) &&
+    originalPriceUsd > 0 &&
+    refundUsd + 0.01 < originalPriceUsd
+  ) {
+    console.warn(
+      `[Webhook] Refund ${refundRef}: PARTIAL (${refundUsd} ${refundCurrency} of ${originalPriceUsd} ${originalCurrency}). Parking for manual review.`
+    );
+    await supabase.from("audit_logs").insert({
+      org_id: orgId,
+      action: "credits.refund_partial_parked",
+      entity_type: "token_balance",
+      metadata: {
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        refund_amount_usd: refundUsd,
+        original_price_usd: originalPriceUsd,
+        currency: refundCurrency,
+        original_credits: originalCredits,
+        reason: "partial_refund_manual_review",
+      },
+    });
+    await supabase.from("admin_risk_items").insert({
+      title: `refund.partial_manual_review: ${refundRef}`,
+      description: `Partial refund (${refundUsd} ${refundCurrency} of ${originalPriceUsd} ${originalCurrency}) for org ${orgId}. Published policy is full refund only; no automatic proportional deduction. Resolve manually via admin-credit-org if needed.`,
+      severity: "medium",
+      status: "open",
+    });
+    return;
+  }
+
+  // ── Full refund: atomic balance deduction ───────────────────────────
+  const creditsToDeduct = originalCredits;
   const { data: debitResult, error: debitError } = await supabase.rpc("atomic_token_credit", {
     p_org_id: orgId,
     p_amount: -creditsToDeduct,
     p_reason: "credit_refund",
-    p_reference_id: data.reference,
+    p_reference_id: refundRef,
   });
 
   if (debitError) {
+    // Race with another refund delivery — if the RPC's ledger insert hit
+    // the UNIQUE(request_id) index, the prior delivery already processed
+    // this refund. Re-check and exit cleanly.
+    const { data: raceWinner } = await supabase
+      .from("token_ledger")
+      .select("id")
+      .eq("request_id", refundRef)
+      .eq("action_type", "credit_refund")
+      .maybeSingle();
+    if (raceWinner) {
+      console.log(`[Webhook] Refund ${refundRef}: hard-guard race — already processed by concurrent delivery`);
+      return;
+    }
     console.error(`[Webhook] Refund debit failed for org ${orgId}:`, debitError);
     throw new Error(`Refund balance update failed: ${debitError.message}`);
   }
 
   const newBalance = Math.max(0, debitResult?.new_balance ?? 0);
 
-  // If balance went negative, clamp to 0
+  // Clamp negative balance to zero (defensive — atomic_token_credit may
+  // have allowed it; the visible balance must never be negative).
   if ((debitResult?.new_balance ?? 0) < 0) {
     await supabase
       .from("token_balances")
@@ -1191,29 +1348,89 @@ async function handleRefundProcessed(
       .eq("org_id", orgId);
   }
 
-  // Record in ledger
-  await supabase.from("token_ledger").insert({
-    org_id: orgId,
-    endpoint: "refund:paystack",
-    tokens_burned: creditsToDeduct,
-    remaining_balance: newBalance,
-    outcome: "allowed",
-    request_id: data.reference,
-    action_type: "credit_refund",
-    metadata: { original_reference: data.transaction_reference },
-  });
+  // Promote the RPC's auto-written ledger row (action_type='credit') to
+  // the canonical 'credit_refund' state. Mirrors the credit_purchase
+  // pattern — exactly one settlement row per refund reference. The
+  // UNIQUE(request_id) index guarantees no duplicate is possible.
+  const { error: promoteErr } = await supabase
+    .from("token_ledger")
+    .update({
+      endpoint: "refund:paystack",
+      action_type: "credit_refund",
+      metadata: {
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        original_purchase_ledger_id: originalPurchase.id,
+        credits_reversed: creditsToDeduct,
+        balance_after: newBalance,
+        refund_amount_usd: refundUsd,
+        currency: refundCurrency,
+      },
+    })
+    .eq("org_id", orgId)
+    .eq("request_id", refundRef)
+    .eq("action_type", "credit");
+  if (promoteErr) {
+    console.error(`[Webhook] Refund ledger promotion failed for ${refundRef}:`, promoteErr);
+    await supabase.from("admin_risk_items").insert({
+      title: `Refund ledger promotion failure: ${refundRef}`,
+      description: `Credits (${creditsToDeduct}) were deducted from org ${orgId} but the ledger row could not be promoted to credit_refund. Manual reconciliation required.`,
+      severity: "high",
+      status: "open",
+    });
+  }
 
-  // Audit log
-  await supabase.from("audit_logs").insert({
-    org_id: orgId,
-    action: "credits.refunded",
-    entity_type: "token_balance",
-    metadata: {
-      credits_refunded: creditsToDeduct,
-      new_balance: newBalance,
-      refund_reference: data.reference,
-    },
-  });
+  // Audit row — guarded against duplicate inserts by application-level
+  // soft guard above. If a race ever slips through we tolerate 23505.
+  {
+    const { error: auditErr } = await supabase.from("audit_logs").insert({
+      org_id: orgId,
+      action: "credits.refunded",
+      entity_type: "token_balance",
+      metadata: {
+        credits_refunded: creditsToDeduct,
+        credits_reversed: creditsToDeduct,
+        new_balance: newBalance,
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        refund_amount_usd: refundUsd,
+        currency: refundCurrency,
+      },
+    });
+    if (auditErr && auditErr.code !== "23505") {
+      console.error(`[Webhook] credits.refunded audit insert failed:`, auditErr);
+    }
+  }
+
+  // Revenue notification (idempotent by refund reference — duplicate
+  // deliveries dedupe in the email queue).
+  try {
+    const { data: orgRow } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .maybeSingle();
+    const orgName = (orgRow?.name as string) || `Org ${orgId.slice(0, 8)}`;
+    await emitRevenueNotification(supabase, {
+      eventType: "credits_refunded",
+      idempotencyKey: `revenue-credits-refunded-${refundRef}`,
+      referenceId: refundRef,
+      orgId,
+      orgName,
+      headline: `${orgName} refunded ${creditsToDeduct} credit${creditsToDeduct === 1 ? "" : "s"}`,
+      details: {
+        "Credits reversed": creditsToDeduct,
+        "Refund amount (USD)": refundUsd != null ? `$${refundUsd.toFixed(2)}` : "—",
+        "Original payment reference": originalTxRef ?? "—",
+        "Refund reference": refundRef,
+        "New balance": newBalance,
+      },
+      consoleUrl: `https://api.trade.izenzo.co.za/admin/billing`,
+      consoleLabel: "Open billing console",
+    });
+  } catch (notifyErr) {
+    console.error(`[Webhook] Refund notification failed (non-fatal):`, notifyErr);
+  }
 
   console.log(`[Webhook] Deducted ${creditsToDeduct} credits for refund (atomic). New balance: ${newBalance}`);
 }

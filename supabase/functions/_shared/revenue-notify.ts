@@ -12,7 +12,7 @@
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-export type RevenueEventType = "poi_minted" | "credits_purchased" | "wad_sealed";
+export type RevenueEventType = "poi_minted" | "credits_purchased" | "credits_refunded" | "wad_sealed";
 
 export interface RevenueNotifyArgs {
   eventType: RevenueEventType;

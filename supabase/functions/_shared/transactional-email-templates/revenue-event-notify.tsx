@@ -19,7 +19,7 @@ import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Izenzo'
 
-type RevenueEventType = 'poi_minted' | 'credits_purchased' | 'wad_sealed'
+type RevenueEventType = 'poi_minted' | 'credits_purchased' | 'credits_refunded' | 'wad_sealed'
 
 interface RevenueEventNotifyProps {
   eventType: RevenueEventType
@@ -49,6 +49,10 @@ const LABELS: Record<RevenueEventType, { tag: string; intro: string }> = {
   credits_purchased: {
     tag: 'Credits purchased',
     intro: 'A credit top-up was successfully paid via Paystack.',
+  },
+  credits_refunded: {
+    tag: 'Credits refunded',
+    intro: 'A Paystack refund was processed and credits were reversed from the org balance.',
   },
   wad_sealed: {
     tag: 'WaD sealed',

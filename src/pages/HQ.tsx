@@ -340,7 +340,7 @@ function DisputesTab() {
 function RevenueTab() {
   return <>
       <TabHeader id="revenue" />
-      <Surface label="Credit purchases · public.token_ledger ⨝ public.organizations · ZAR revenue, top buyers, per-org timeline">
+      <Surface label="Credit purchases · public.token_ledger ⨝ public.organizations · USD revenue · legacy ZAR preserved, top buyers, per-org timeline">
         <AdminRevenuePanel />
       </Surface>
     </>;
