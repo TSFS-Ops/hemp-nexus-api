@@ -673,11 +673,19 @@ async function _serve(req: Request): Promise<Response> {
             body: "All required approvals have been completed. The organisation is now approved to trade.",
             link: `/due-diligence`,
             read: false,
+            entity_type: "dd_approval_request",
+            entity_id: approval_request_id,
           }));
           await admin.from("notifications").insert(completeNotifs).catch((err: any) =>
             console.error("[due-diligence] Completion notification failed:", err.message)
           );
         }
+
+        // NOT-008: completion is terminal — clear all unread "approval_required"
+        // rows for this request across every approver.
+        await resolveNotificationsFor(admin, "dd_approval_request", approval_request_id, {
+          source: "due-diligence:completed",
+        });
 
         await admin.functions.invoke("notification-dispatch", {
           body: {
