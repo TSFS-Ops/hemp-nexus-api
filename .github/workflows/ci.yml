@@ -65,7 +65,8 @@ jobs:
             src/tests/not-008-resolve-notifications-wiring.test.ts \
             src/tests/notification-delivery-metrics-and-alerts.test.ts \
             src/tests/unsubscribe-race-and-stale-tab.test.ts \
-            src/tests/notification-preference-audit-row-shape.test.ts
+            src/tests/notification-preference-audit-row-shape.test.ts \
+            src/tests/notification-dispatch-concurrent-load.test.ts
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
