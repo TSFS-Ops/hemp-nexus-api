@@ -167,7 +167,7 @@ export function SecurityTab() {
         code: clean,
       });
       if (verifyErr) throw verifyErr;
-      toast.success("Session upgraded to MFA-verified (AAL2).");
+      toast.success("Extra security code verified for this session.");
       setCode("");
       await refresh();
     } catch (e) {
@@ -179,7 +179,7 @@ export function SecurityTab() {
 
   const removeFactor = async () => {
     if (!verifiedFactor) return;
-    if (!window.confirm("Remove this authenticator? You will lose AAL2 access to protected admin actions until you enrol again.")) {
+    if (!window.confirm("Remove this authenticator? You will lose access to protected admin actions until you enrol an authenticator app again.")) {
       return;
     }
     setBusy(true);
@@ -203,23 +203,39 @@ export function SecurityTab() {
     <div className="space-y-8 md:space-y-10 max-w-2xl">
       <section className="space-y-3">
         <h2 className="text-sm font-medium tracking-wider uppercase text-muted-foreground">
-          Multi-factor authentication (MFA)
+          Two-step verification
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Sensitive platform-admin actions (legacy match repair, manual state
-          overrides) require an authenticator-app (TOTP) MFA challenge in the
-          current browser session. Enrol an authenticator app below, then
-          complete an MFA challenge whenever you receive an{" "}
-          <span className="font-mono text-foreground">MFA_REQUIRED</span> error.
+          overrides) require an authenticator app to generate a 6-digit
+          security code for this browser session. Enrol an authenticator app
+          below, then enter the current code whenever the system asks you to
+          verify again. If you see a message saying extra verification is
+          required (error code{" "}
+          <span className="font-mono text-foreground">MFA_REQUIRED</span>),
+          return to this tab and enter the 6-digit code from your authenticator
+          app to continue.
         </p>
         <StatusRow
           label="This session"
-          value={currentAal === "aal2" ? "MFA-verified (AAL2)" : "Not MFA-verified (AAL1)"}
+          value={
+            currentAal === "aal2"
+              ? "Extra security code verified for this session"
+              : "Extra security code not verified for this session"
+          }
           ok={currentAal === "aal2"}
         />
         <StatusRow
-          label="Verified authenticator"
-          value={hasVerifiedFactor ? `Enabled — ${verifiedFactor!.friendly_name ?? "TOTP"}` : "None enrolled"}
+          label="Authenticator app"
+          value={
+            hasVerifiedFactor
+              ? `Authenticator app enabled${
+                  verifiedFactor!.friendly_name
+                    ? ` — ${verifiedFactor!.friendly_name}`
+                    : ""
+                }`
+              : "Authenticator app not yet enabled"
+          }
           ok={hasVerifiedFactor}
         />
       </section>
@@ -302,9 +318,9 @@ export function SecurityTab() {
         <section className="space-y-3 border border-border rounded-md p-4 md:p-6 bg-card">
           <h3 className="text-sm font-medium text-foreground">Verify MFA for this session</h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            You have an authenticator enrolled, but this session has not
-            completed an MFA challenge yet. Enter the current 6-digit code from
-            your authenticator app to upgrade this session.
+            Your authenticator app is enabled, but you have not yet entered a
+            6-digit code in this browser session. Enter the current code from
+            your authenticator app to unlock protected admin actions.
           </p>
           <input
             value={code}
