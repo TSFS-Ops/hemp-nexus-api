@@ -32,10 +32,17 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
-import { assertAal2 } from "../_shared/aal.ts";
+import { assertAal2, readAal } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
+import {
+  writeAdminAudit,
+  extractIp,
+  extractUserAgent,
+  type AdminAuditAal,
+} from "../_shared/admin-audit.ts";
 
 const ENDPOINT = "POST /admin-match-legacy-repair";
+const ACTION = "admin.match.legacy_repair";
 const SYSTEM_ORG_ID = "00000000-0000-0000-0000-000000000000";
 
 async function upsertRepairFollowupRiskItem(admin: any, payload: {
@@ -116,6 +123,25 @@ Deno.serve(async (req) => {
   }
 
   const requestId = crypto.randomUUID();
+  const ip = extractIp(req);
+  const userAgent = extractUserAgent(req);
+
+  // Service-role client created up-front so failure-path audits can write.
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const auditBase = {
+    admin,
+    action: ACTION,
+    targetType: "match",
+    requestId,
+    endpoint: ENDPOINT,
+    ipAddress: ip,
+    userAgent,
+  } as const;
 
   try {
     // 1. Mandatory Idempotency-Key.
@@ -125,31 +151,51 @@ Deno.serve(async (req) => {
     } catch (err) {
       const code = (err as { code?: string }).code ?? "IDEMPOTENCY_KEY_REQUIRED";
       const status = (err as { statusCode?: number }).statusCode ?? 400;
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        reason: code,
+        aal: { required: true, observed: null, outcome: "not_evaluated" },
+      });
       return jsonResponse(req, { error: code, requestId }, status);
     }
 
     // 2. Auth: caller must be authenticated and is_admin.
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const admin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
     const authHeader =
       req.headers.get("Authorization") ?? req.headers.get("authorisation");
     if (!authHeader) {
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        reason: "UNAUTHORISED",
+        aal: { required: true, observed: null, outcome: "not_evaluated" },
+      });
       return jsonResponse(req, { error: "UNAUTHORISED", requestId }, 401);
     }
     const token = authHeader.replace(/^Bearer\s+/i, "");
     const { data: { user: caller }, error: authError } =
       await admin.auth.getUser(token);
     if (authError || !caller) {
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        reason: "INVALID_TOKEN",
+        aal: { required: true, observed: readAal(authHeader), outcome: "not_evaluated" },
+      });
       return jsonResponse(req, { error: "INVALID_TOKEN", requestId }, 401);
     }
+    const observedAal = readAal(authHeader);
     const { data: isAdmin } = await admin.rpc("is_admin", {
       user_id: caller.id,
     });
     if (!isAdmin) {
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        actorUserId: caller.id,
+        reason: "FORBIDDEN",
+        aal: { required: true, observed: observedAal, outcome: "not_evaluated" },
+      });
       return jsonResponse(req, { error: "FORBIDDEN", requestId }, 403);
     }
 
@@ -163,6 +209,17 @@ Deno.serve(async (req) => {
       });
     } catch (err) {
       if (err instanceof ApiException) {
+        await writeAdminAudit({
+          ...auditBase,
+          status: "denied",
+          actorUserId: caller.id,
+          reason: err.code,
+          aal: {
+            required: true,
+            observed: observedAal,
+            outcome: "denied",
+          },
+        });
         return jsonResponse(
           req,
           { error: err.code, message: err.message, requestId, observed_aal: (err as any).details?.observed_aal },
@@ -171,6 +228,12 @@ Deno.serve(async (req) => {
       }
       throw err;
     }
+
+    const aalSatisfied: AdminAuditAal = {
+      required: true,
+      observed: observedAal,
+      outcome: "satisfied",
+    };
 
     // 3. Strict body validation (rejects unknown fields).
     let parsedBody: z.infer<typeof BodySchema>;
@@ -182,6 +245,14 @@ Deno.serve(async (req) => {
         err instanceof z.ZodError
           ? err.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")
           : "Invalid JSON body";
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        actorUserId: caller.id,
+        reason: "VALIDATION_ERROR",
+        aal: aalSatisfied,
+        extra: { detail },
+      });
       return jsonResponse(
         req,
         { error: "VALIDATION_ERROR", message: detail, requestId },
@@ -200,6 +271,15 @@ Deno.serve(async (req) => {
       requestId,
     });
     if (cached) {
+      await writeAdminAudit({
+        ...auditBase,
+        status: "info",
+        actorUserId: caller.id,
+        targetId: parsedBody.match_id,
+        reason: "IDEMPOTENT_REPLAY",
+        aal: aalSatisfied,
+        extra: { operation: parsedBody.operation },
+      });
       return cachedResponseToHttp(cached, baseHeaders);
     }
 
@@ -214,103 +294,81 @@ Deno.serve(async (req) => {
       },
     );
 
+    // Helper to emit the rpc-failure audit and return a typed response.
+    const failure = async (
+      errorCode: string,
+      httpStatus: number,
+      message: string,
+      reasonExtra?: Record<string, unknown>,
+    ) => {
+      await writeAdminAudit({
+        ...auditBase,
+        status: errorCode === "INTERNAL_ERROR" ? "error" : "denied",
+        actorUserId: caller.id,
+        targetId: parsedBody.match_id,
+        reason: errorCode,
+        aal: aalSatisfied,
+        extra: { operation: parsedBody.operation, ...(reasonExtra ?? {}) },
+      });
+      return jsonResponse(req, { error: errorCode, message, requestId }, httpStatus);
+    };
+
     if (rpcError) {
       const msg = (rpcError.message ?? "").toLowerCase();
       if (msg.includes("operation_deferred")) {
         await upsertRepairFollowupRiskItem(admin, {
-          matchId: parsedBody.match_id,
-          operation: parsedBody.operation,
-          reason: "operation_deferred",
-          actorUserId: caller.id,
-          requestId,
+          matchId: parsedBody.match_id, operation: parsedBody.operation,
+          reason: "operation_deferred", actorUserId: caller.id, requestId,
         });
-        return jsonResponse(
-          req,
-          {
-            error: "OPERATION_DEFERRED",
-            message:
-              "force_terminal_for_orphan_settled is intentionally deferred pending business sign-off.",
-            requestId,
-          },
-          409,
+        return failure(
+          "OPERATION_DEFERRED", 409,
+          "force_terminal_for_orphan_settled is intentionally deferred pending business sign-off.",
         );
       }
       if (msg.includes("completed_without_sealed_wad")) {
         await upsertRepairFollowupRiskItem(admin, {
-          matchId: parsedBody.match_id,
-          operation: parsedBody.operation,
-          reason: "completed_without_sealed_wad",
-          actorUserId: caller.id,
-          requestId,
-          severity: "critical",
+          matchId: parsedBody.match_id, operation: parsedBody.operation,
+          reason: "completed_without_sealed_wad", actorUserId: caller.id,
+          requestId, severity: "critical",
         });
-        return jsonResponse(
-          req,
-          {
-            error: "COMPLETED_WITHOUT_SEALED_WAD",
-            message:
-              "Cannot restore COMPLETED poi_state without a sealed WaD for this match. A follow-up risk item has been created.",
-            requestId,
-          },
-          409,
+        return failure(
+          "COMPLETED_WITHOUT_SEALED_WAD", 409,
+          "Cannot restore COMPLETED poi_state without a sealed WaD for this match. A follow-up risk item has been created.",
         );
       }
       if (msg.includes("operation_not_applicable")) {
-        return jsonResponse(
-          req,
-          {
-            error: "OPERATION_NOT_APPLICABLE",
-            message:
-              "The selected operation does not address an inconsistency reason currently present on this match.",
-            requestId,
-          },
-          409,
+        return failure(
+          "OPERATION_NOT_APPLICABLE", 409,
+          "The selected operation does not address an inconsistency reason currently present on this match.",
         );
       }
       if (msg.includes("still_inconsistent_after_repair")) {
         await upsertRepairFollowupRiskItem(admin, {
-          matchId: parsedBody.match_id,
-          operation: parsedBody.operation,
-          reason: "still_inconsistent_after_repair",
-          actorUserId: caller.id,
-          requestId,
+          matchId: parsedBody.match_id, operation: parsedBody.operation,
+          reason: "still_inconsistent_after_repair", actorUserId: caller.id, requestId,
         });
-        return jsonResponse(
-          req,
-          {
-            error: "STILL_INCONSISTENT_AFTER_REPAIR",
-            message:
-              "Repair completed but the match remains inconsistent — additional reasons present, choose another operation.",
-            requestId,
-          },
-          409,
+        return failure(
+          "STILL_INCONSISTENT_AFTER_REPAIR", 409,
+          "Repair completed but the match remains inconsistent — additional reasons present, choose another operation.",
         );
       }
       if (msg.includes("not_inconsistent")) {
-        return jsonResponse(
-          req,
-          {
-            error: "NOT_INCONSISTENT",
-            message: "Match is no longer in an inconsistent legacy state.",
-            requestId,
-          },
-          409,
-        );
+        return failure("NOT_INCONSISTENT", 409, "Match is no longer in an inconsistent legacy state.");
       }
       if (msg.includes("operation_invalid") || msg.includes("operation_required")) {
-        return jsonResponse(req, { error: "VALIDATION_ERROR", message: rpcError.message, requestId }, 400);
+        return failure("VALIDATION_ERROR", 400, rpcError.message);
       }
       if (msg.includes("notes_too_short") || msg.includes("notes_too_long")) {
-        return jsonResponse(req, { error: "VALIDATION_ERROR", message: rpcError.message, requestId }, 400);
+        return failure("VALIDATION_ERROR", 400, rpcError.message);
       }
       if (msg.includes("match_not_found")) {
-        return jsonResponse(req, { error: "MATCH_NOT_FOUND", requestId }, 404);
+        return failure("MATCH_NOT_FOUND", 404, "Match not found.");
       }
       if (msg.includes("not_admin")) {
-        return jsonResponse(req, { error: "FORBIDDEN", requestId }, 403);
+        return failure("FORBIDDEN", 403, "Not admin.");
       }
       console.error(`[admin-match-legacy-repair][${requestId}] rpc failed:`, rpcError);
-      return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
+      return failure("INTERNAL_ERROR", 500, "Internal error.", { rpc_message: rpcError.message });
     }
 
     const responseBody = { ok: true, result: rpcResult, requestId };
@@ -326,9 +384,25 @@ Deno.serve(async (req) => {
       { status: 200, body: responseBody },
     );
 
+    await writeAdminAudit({
+      ...auditBase,
+      status: "success",
+      actorUserId: caller.id,
+      targetId: parsedBody.match_id,
+      aal: aalSatisfied,
+      extra: { operation: parsedBody.operation },
+    });
+
     return jsonResponse(req, responseBody, 200);
   } catch (err) {
     console.error(`[admin-match-legacy-repair][${requestId}] unhandled:`, err);
+    await writeAdminAudit({
+      ...auditBase,
+      status: "error",
+      reason: "UNHANDLED",
+      aal: { required: true, observed: null, outcome: "not_evaluated" },
+      extra: { message: (err as Error)?.message ?? String(err) },
+    });
     return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
   }
 });
