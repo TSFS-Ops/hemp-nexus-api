@@ -83,6 +83,15 @@ describe("SEC-001 follow-up — MFA UI presence", () => {
   it("SecurityTab guides the user with MFA_REQUIRED copy", () => {
     expect(securityTab).toMatch(/MFA_REQUIRED/);
   });
+
+  it("SecurityTab does not surface technical AAL1/AAL2 jargon to users", () => {
+    // Internal SDK string comparisons use lowercase "aal1"/"aal2" — those
+    // are values, not user-facing copy. Uppercase AAL1/AAL2 only ever
+    // appeared in rendered labels/toasts, so guard against that form.
+    expect(securityTab).not.toMatch(/AAL1/);
+    expect(securityTab).not.toMatch(/AAL2/);
+    expect(securityTab).not.toMatch(/assurance level/i);
+  });
 });
 
 describe("SEC-001 follow-up — AAL2 contract preserved", () => {
