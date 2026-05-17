@@ -123,6 +123,17 @@ describe("Batch O Phase 2 — admin RPC permission encoding (MT-008)", () => {
     expect(sql).toMatch(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\.admin_list_inconsistent_matches[^;]*TO\s+authenticated/i);
   });
 
+  // MT-008 Test 4 regression: archived rows must be excluded from the active queue.
+  it("the latest definition excludes rows held by metadata.legacy_archived_admin_hold=true", () => {
+    const latest = matching[matching.length - 1];
+    const sql = readFileSync(join(migrationsDir, latest), "utf8");
+    expect(sql).toMatch(/legacy_archived_admin_hold/);
+    // Must appear inside the WHERE clause as a hard exclusion (not just in a comment).
+    expect(sql).toMatch(
+      /COALESCE\s*\(\s*\(\s*m\.metadata\s*->>\s*'legacy_archived_admin_hold'\s*\)\s*::\s*boolean\s*,\s*false\s*\)\s*=\s*false/i,
+    );
+  });
+
   it("policy and service-role admin RPCs use the existing one-argument is_admin signature", () => {
     const allSql = candidates
       .map((f) => readFileSync(join(migrationsDir, f), "utf8"))
