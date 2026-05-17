@@ -347,6 +347,36 @@ async function handleWebhook(req: Request): Promise<Response> {
 
   console.log('Auth email enqueued', { emailType, email: payload.data.email, run_id })
 
+  // Structured admin audit. password-reset (recovery), signup, magiclink,
+  // reauthentication etc. all land in admin_audit_logs with a normalised
+  // envelope so HQ can filter by action_type + status.
+  try {
+    const action = emailType === 'recovery'
+      ? 'auth.password_reset_email'
+      : `auth.${emailType}_email`
+    await supabase.from('admin_audit_logs').insert({
+      admin_user_id: null,
+      action,
+      target_type: 'auth_user',
+      target_id: null,
+      details: {
+        request_id: run_id,
+        action_type: action,
+        status: 'success',
+        org_id: null,
+        aal: { required: false, observed: null, outcome: 'not_required' },
+        endpoint: 'POST /auth-email-hook',
+        extra: {
+          email_type: emailType,
+          recipient: payload.data.email,
+          message_id: messageId,
+        },
+      },
+    })
+  } catch (auditErr) {
+    console.error('[auth-email-hook] admin audit insert failed:', auditErr)
+  }
+
   return new Response(
     JSON.stringify({ success: true, queued: true }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
