@@ -123,6 +123,25 @@ Deno.serve(async (req) => {
   }
 
   const requestId = crypto.randomUUID();
+  const ip = extractIp(req);
+  const userAgent = extractUserAgent(req);
+
+  // Service-role client created up-front so failure-path audits can write.
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const auditBase = {
+    admin,
+    action: ACTION,
+    targetType: "match",
+    requestId,
+    endpoint: ENDPOINT,
+    ipAddress: ip,
+    userAgent,
+  } as const;
 
   try {
     // 1. Mandatory Idempotency-Key.
@@ -132,31 +151,51 @@ Deno.serve(async (req) => {
     } catch (err) {
       const code = (err as { code?: string }).code ?? "IDEMPOTENCY_KEY_REQUIRED";
       const status = (err as { statusCode?: number }).statusCode ?? 400;
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        reason: code,
+        aal: { required: true, observed: null, outcome: "not_evaluated" },
+      });
       return jsonResponse(req, { error: code, requestId }, status);
     }
 
     // 2. Auth: caller must be authenticated and is_admin.
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const admin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
     const authHeader =
       req.headers.get("Authorization") ?? req.headers.get("authorisation");
     if (!authHeader) {
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        reason: "UNAUTHORISED",
+        aal: { required: true, observed: null, outcome: "not_evaluated" },
+      });
       return jsonResponse(req, { error: "UNAUTHORISED", requestId }, 401);
     }
     const token = authHeader.replace(/^Bearer\s+/i, "");
     const { data: { user: caller }, error: authError } =
       await admin.auth.getUser(token);
     if (authError || !caller) {
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        reason: "INVALID_TOKEN",
+        aal: { required: true, observed: readAal(authHeader), outcome: "not_evaluated" },
+      });
       return jsonResponse(req, { error: "INVALID_TOKEN", requestId }, 401);
     }
+    const observedAal = readAal(authHeader);
     const { data: isAdmin } = await admin.rpc("is_admin", {
       user_id: caller.id,
     });
     if (!isAdmin) {
+      await writeAdminAudit({
+        ...auditBase,
+        status: "denied",
+        actorUserId: caller.id,
+        reason: "FORBIDDEN",
+        aal: { required: true, observed: observedAal, outcome: "not_evaluated" },
+      });
       return jsonResponse(req, { error: "FORBIDDEN", requestId }, 403);
     }
 
@@ -170,6 +209,17 @@ Deno.serve(async (req) => {
       });
     } catch (err) {
       if (err instanceof ApiException) {
+        await writeAdminAudit({
+          ...auditBase,
+          status: "denied",
+          actorUserId: caller.id,
+          reason: err.code,
+          aal: {
+            required: true,
+            observed: observedAal,
+            outcome: "denied",
+          },
+        });
         return jsonResponse(
           req,
           { error: err.code, message: err.message, requestId, observed_aal: (err as any).details?.observed_aal },
@@ -178,6 +228,12 @@ Deno.serve(async (req) => {
       }
       throw err;
     }
+
+    const aalSatisfied: AdminAuditAal = {
+      required: true,
+      observed: observedAal,
+      outcome: "satisfied",
+    };
 
     // 3. Strict body validation (rejects unknown fields).
     let parsedBody: z.infer<typeof BodySchema>;
