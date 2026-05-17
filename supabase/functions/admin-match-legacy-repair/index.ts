@@ -32,10 +32,17 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
-import { assertAal2 } from "../_shared/aal.ts";
+import { assertAal2, readAal } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
+import {
+  writeAdminAudit,
+  extractIp,
+  extractUserAgent,
+  type AdminAuditAal,
+} from "../_shared/admin-audit.ts";
 
 const ENDPOINT = "POST /admin-match-legacy-repair";
+const ACTION = "admin.match.legacy_repair";
 const SYSTEM_ORG_ID = "00000000-0000-0000-0000-000000000000";
 
 async function upsertRepairFollowupRiskItem(admin: any, payload: {
