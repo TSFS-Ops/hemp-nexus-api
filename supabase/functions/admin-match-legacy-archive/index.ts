@@ -1,20 +1,18 @@
 /**
  * Batch O Phase 2b Step 3 — admin-match-legacy-archive
  *
- * Smallest safe MT-008 admin mutation: marks an inconsistent legacy match
- * as archived/held by writing the `legacy_archived_admin_hold` lifecycle
- * marker into `matches.metadata` and emitting a single
- * `match.legacy_state_archived` audit row. All real work happens inside
- * the SECURITY DEFINER RPC `public.admin_archive_legacy_match` — this
- * edge function is only the auth + idempotency + validation envelope.
+ * Companion to admin-match-legacy-repair. Marks an inconsistent legacy
+ * match as archived/held. Real work happens in the SECURITY DEFINER RPC
+ * `public.admin_archive_legacy_match`; this edge function is the
+ * auth + idempotency + validation envelope and emits structured
+ * admin-audit rows on every terminal branch.
  *
  * Hard scope:
- *   • Accepts ONLY { match_id, notes }. Strict Zod schema rejects anything
- *     else so an attacker cannot smuggle arbitrary patch fields.
+ *   • Accepts ONLY { match_id, notes } (Zod .strict).
  *   • Requires authenticated platform admin (verified via is_admin RPC).
  *   • Requires Idempotency-Key header (assertIdempotencyKey).
- *   • No notification dispatch, no email helper, no POI/WaD/payment/credit
- *     /rating/compliance/public-status/lifecycle/SLA imports.
+ *   • Emits `admin.match.legacy_archive` audit rows tagged with
+ *     request_id, action_type, status, aal evaluation, reason.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
@@ -26,8 +24,15 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
+import { readAal } from "../_shared/aal.ts";
+import {
+  writeAdminAudit,
+  extractIp,
+  extractUserAgent,
+} from "../_shared/admin-audit.ts";
 
 const ENDPOINT = "POST /admin-match-legacy-archive";
+const ACTION = "admin.match.legacy_archive";
 const SYSTEM_ORG_ID = "00000000-0000-0000-0000-000000000000";
 
 const baseHeaders = {
@@ -62,42 +67,67 @@ Deno.serve(async (req) => {
   }
 
   const requestId = crypto.randomUUID();
+  const ip = extractIp(req);
+  const userAgent = extractUserAgent(req);
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const auditBase = {
+    admin,
+    action: ACTION,
+    targetType: "match",
+    requestId,
+    endpoint: ENDPOINT,
+    ipAddress: ip,
+    userAgent,
+  } as const;
+
+  // Archive is NOT currently aal2-gated; audit reflects "not_required".
+  const aalInfo = { required: false as const, observed: null, outcome: "not_required" as const };
 
   try {
-    // 1. Idempotency-Key header is mandatory for this mutation.
+    // 1. Idempotency-Key.
     let idempotencyKey: string;
     try {
       idempotencyKey = assertIdempotencyKey(req);
     } catch (err) {
       const code = (err as { code?: string }).code ?? "IDEMPOTENCY_KEY_REQUIRED";
       const status = (err as { statusCode?: number }).statusCode ?? 400;
+      await writeAdminAudit({ ...auditBase, status: "denied", reason: code, aal: aalInfo });
       return jsonResponse(req, { error: code, requestId }, status);
     }
 
-    // 2. Auth: caller must be authenticated and is_admin.
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const admin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
+    // 2. Auth.
     const authHeader =
       req.headers.get("Authorization") ?? req.headers.get("authorisation");
     if (!authHeader) {
+      await writeAdminAudit({ ...auditBase, status: "denied", reason: "UNAUTHORISED", aal: aalInfo });
       return jsonResponse(req, { error: "UNAUTHORISED", requestId }, 401);
     }
     const token = authHeader.replace(/^Bearer\s+/i, "");
-    const { data: { user: caller }, error: authError } =
-      await admin.auth.getUser(token);
+    const observedAal = readAal(authHeader);
+    const { data: { user: caller }, error: authError } = await admin.auth.getUser(token);
     if (authError || !caller) {
+      await writeAdminAudit({
+        ...auditBase, status: "denied", reason: "INVALID_TOKEN",
+        aal: { required: false, observed: observedAal, outcome: "not_required" },
+      });
       return jsonResponse(req, { error: "INVALID_TOKEN", requestId }, 401);
     }
-    const { data: isAdmin } = await admin.rpc("is_admin", {
-      user_id: caller.id,
-    });
+    const { data: isAdmin } = await admin.rpc("is_admin", { user_id: caller.id });
     if (!isAdmin) {
+      await writeAdminAudit({
+        ...auditBase, status: "denied", actorUserId: caller.id, reason: "FORBIDDEN",
+        aal: { required: false, observed: observedAal, outcome: "not_required" },
+      });
       return jsonResponse(req, { error: "FORBIDDEN", requestId }, 403);
     }
+
+    const aalEvaluated = { required: false as const, observed: observedAal, outcome: "not_required" as const };
 
     // 3. Strict body validation.
     let parsedBody: z.infer<typeof BodySchema>;
@@ -109,29 +139,27 @@ Deno.serve(async (req) => {
         err instanceof z.ZodError
           ? err.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")
           : "Invalid JSON body";
-      return jsonResponse(
-        req,
-        { error: "VALIDATION_ERROR", message: detail, requestId },
-        400,
-      );
+      await writeAdminAudit({
+        ...auditBase, status: "denied", actorUserId: caller.id,
+        reason: "VALIDATION_ERROR", aal: aalEvaluated, extra: { detail },
+      });
+      return jsonResponse(req, { error: "VALIDATION_ERROR", message: detail, requestId }, 400);
     }
 
-    // 4. Idempotency cache lookup. Scope by SYSTEM_ORG_ID since this is a
-    //    cross-org admin action (the match's own org might not be the
-    //    caller's org). The unique key is still (org_id, key, endpoint).
+    // 4. Idempotency cache lookup.
     const cached = await lookupIdempotentResponse({
-      supabase: admin,
-      orgId: SYSTEM_ORG_ID,
-      endpoint: ENDPOINT,
-      idempotencyKey,
-      required: true,
-      requestId,
+      supabase: admin, orgId: SYSTEM_ORG_ID, endpoint: ENDPOINT,
+      idempotencyKey, required: true, requestId,
     });
     if (cached) {
+      await writeAdminAudit({
+        ...auditBase, status: "info", actorUserId: caller.id,
+        targetId: parsedBody.match_id, reason: "IDEMPOTENT_REPLAY", aal: aalEvaluated,
+      });
       return cachedResponseToHttp(cached, baseHeaders);
     }
 
-    // 5. Call the SECURITY DEFINER RPC. All real work + audit happens here.
+    // 5. SECURITY DEFINER RPC.
     const { data: rpcResult, error: rpcError } = await admin.rpc(
       "admin_archive_legacy_match",
       {
@@ -141,44 +169,57 @@ Deno.serve(async (req) => {
       },
     );
 
+    const failure = async (errorCode: string, httpStatus: number, message: string) => {
+      await writeAdminAudit({
+        ...auditBase,
+        status: errorCode === "INTERNAL_ERROR" ? "error" : "denied",
+        actorUserId: caller.id,
+        targetId: parsedBody.match_id,
+        reason: errorCode,
+        aal: aalEvaluated,
+      });
+      return jsonResponse(req, { error: errorCode, message, requestId }, httpStatus);
+    };
+
     if (rpcError) {
       const msg = (rpcError.message ?? "").toLowerCase();
       if (msg.includes("not_inconsistent")) {
-        return jsonResponse(
-          req,
-          { error: "NOT_INCONSISTENT", message: "Match is no longer in an inconsistent legacy state.", requestId },
-          409,
-        );
+        return failure("NOT_INCONSISTENT", 409, "Match is no longer in an inconsistent legacy state.");
       }
       if (msg.includes("match_not_found")) {
-        return jsonResponse(req, { error: "MATCH_NOT_FOUND", requestId }, 404);
+        return failure("MATCH_NOT_FOUND", 404, "Match not found.");
       }
       if (msg.includes("notes_too_short") || msg.includes("notes_too_long")) {
-        return jsonResponse(req, { error: "VALIDATION_ERROR", message: rpcError.message, requestId }, 400);
+        return failure("VALIDATION_ERROR", 400, rpcError.message);
       }
       if (msg.includes("not_admin")) {
-        return jsonResponse(req, { error: "FORBIDDEN", requestId }, 403);
+        return failure("FORBIDDEN", 403, "Not admin.");
       }
       console.error(`[admin-match-legacy-archive][${requestId}] rpc failed:`, rpcError);
-      return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
+      return failure("INTERNAL_ERROR", 500, "Internal error.");
     }
 
     const responseBody = { ok: true, result: rpcResult, requestId };
     await storeIdempotentResponse(
       {
-        supabase: admin,
-        orgId: SYSTEM_ORG_ID,
-        endpoint: ENDPOINT,
-        idempotencyKey,
-        required: true,
-        requestId,
+        supabase: admin, orgId: SYSTEM_ORG_ID, endpoint: ENDPOINT,
+        idempotencyKey, required: true, requestId,
       },
       { status: 200, body: responseBody },
     );
 
+    await writeAdminAudit({
+      ...auditBase, status: "success", actorUserId: caller.id,
+      targetId: parsedBody.match_id, aal: aalEvaluated,
+    });
+
     return jsonResponse(req, responseBody, 200);
   } catch (err) {
     console.error(`[admin-match-legacy-archive][${requestId}] unhandled:`, err);
+    await writeAdminAudit({
+      ...auditBase, status: "error", reason: "UNHANDLED", aal: aalInfo,
+      extra: { message: (err as Error)?.message ?? String(err) },
+    });
     return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
   }
 });
