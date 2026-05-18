@@ -8568,6 +8568,20 @@ export type Database = {
           status: string
         }[]
       }
+      get_match_named_contact_status: {
+        Args: { p_match_id: string }
+        Returns: {
+          assigned_at: string
+          assigned_by_role: string
+          contact_email: string
+          contact_name: string
+          id: string
+          match_id: string
+          org_id: string
+          side: string
+          status: string
+        }[]
+      }
       get_org_gate_position: {
         Args: { _org_id: string }
         Returns: Database["public"]["Enums"]["gate_position"]
