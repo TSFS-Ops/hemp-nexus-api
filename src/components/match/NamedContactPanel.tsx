@@ -67,7 +67,17 @@ function deriveSideStatus(
   return { kind: "missing" };
 }
 
-function SideRow({ label, status }: { label: string; status: SideStatus }) {
+function SideRow({
+  label,
+  status,
+  canAssign,
+  onAssign,
+}: {
+  label: string;
+  status: SideStatus;
+  canAssign: boolean;
+  onAssign: () => void;
+}) {
   if (status.kind === "not_required") {
     return (
       <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
@@ -111,9 +121,21 @@ function SideRow({ label, status }: { label: string; status: SideStatus }) {
             </div>
           </div>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          <CheckCircle2 className="h-3 w-3 mr-1" /> Controlled contact
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">
+            <CheckCircle2 className="h-3 w-3 mr-1" /> Controlled contact
+          </Badge>
+          {canAssign && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAssign}
+              data-testid={`replace-${label.toLowerCase()}-contact`}
+            >
+              Replace
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -128,9 +150,20 @@ function SideRow({ label, status }: { label: string; status: SideStatus }) {
           </div>
         </div>
       </div>
-      <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 dark:text-amber-400">
-        Missing
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 dark:text-amber-400">
+          Missing
+        </Badge>
+        {canAssign && (
+          <Button
+            size="sm"
+            onClick={onAssign}
+            data-testid={`assign-${label.toLowerCase()}-contact`}
+          >
+            <UserPlus className="h-3 w-3 mr-1" /> Assign
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
