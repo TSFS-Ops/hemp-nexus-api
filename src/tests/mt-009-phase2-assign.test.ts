@@ -32,12 +32,12 @@ describe("MT-009 Phase 2 — edge function envelope", () => {
   });
 
   it("requires AAL2 only on the platform-admin override branch", () => {
-    expect(src).toMatch(/isPlatformAdmin\) \{[\s\S]*assertAal2/);
-    // Org-admin branch precedes AAL2 path.
+    expect(src).toMatch(/isPlatformAdmin\) \{[\s\S]*?assertAal2\(authHeader/);
+    // Org-admin branch precedes the AAL2 call (not the import).
     const orgAdminIdx = src.indexOf("org_admin_self_service");
-    const aalIdx = src.indexOf("assertAal2");
+    const aalCallIdx = src.indexOf("assertAal2(authHeader");
     expect(orgAdminIdx).toBeGreaterThan(0);
-    expect(aalIdx).toBeGreaterThan(orgAdminIdx);
+    expect(aalCallIdx).toBeGreaterThan(orgAdminIdx);
   });
 
   it("calls assign_match_named_contact RPC with assignedByRole", () => {
