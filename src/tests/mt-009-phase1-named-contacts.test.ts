@@ -122,6 +122,13 @@ describe("MT-009 Phase 1 — read-model isolation", () => {
     join(process.cwd(), "src/lib/match-named-contacts.ts"),
     "utf8",
   );
+  const rpcMigration = readFileSync(
+    join(
+      process.cwd(),
+      "supabase/migrations/20260518170226_58c08639-c33c-4101-90c7-8025c7bcb8c2.sql",
+    ),
+    "utf8",
+  );
 
   it("does not import POI, WaD, payment, credit, or notification modules", () => {
     // Check imports only — comments may reference these names to explain policy.
@@ -139,6 +146,15 @@ describe("MT-009 Phase 1 — read-model isolation", () => {
     expect(src).not.toMatch(/from\("match_named_contacts"\)\s*\.\s*update/);
     expect(src).not.toMatch(/from\("match_named_contacts"\)\s*\.\s*delete/);
     expect(src).not.toMatch(/from\("match_named_contacts"\)\s*\.\s*upsert/);
+  });
+
+  it("keeps base-table RLS narrow while granting the cross-side read RPC", () => {
+    expect(rpcMigration).toMatch(/SECURITY DEFINER/);
+    expect(rpcMigration).toMatch(/GRANT EXECUTE ON FUNCTION public\.get_match_named_contact_status\(uuid\) TO authenticated/);
+    expect(rpcMigration).toMatch(/v_caller_org IS DISTINCT FROM v_buyer/);
+    expect(rpcMigration).toMatch(/v_caller_org IS DISTINCT FROM v_seller/);
+    expect(rpcMigration).not.toMatch(/CREATE POLICY[\s\S]*match_named_contacts[\s\S]*buyer_org_id/);
+    expect(rpcMigration).not.toMatch(/CREATE POLICY[\s\S]*match_named_contacts[\s\S]*seller_org_id/);
   });
 });
 
