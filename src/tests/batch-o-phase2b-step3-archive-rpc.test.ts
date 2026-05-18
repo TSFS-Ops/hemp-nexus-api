@@ -202,6 +202,34 @@ describe("Batch O Phase 2b Step 3 — admin-match-legacy-archive edge function",
     expect(src).not.toMatch(/\.passthrough\(/);
     expect(src).not.toMatch(/\.catchall\(/);
   });
+
+  // MT-008 post-closeout hardening — Archive AAL2 parity with Repair.
+  it("imports and invokes assertAal2 from the shared aal helper", () => {
+    expect(src).toMatch(/from\s+["']\.\.\/_shared\/aal\.ts["']/);
+    expect(src).toMatch(/\bassertAal2\b/);
+    expect(src).toMatch(/await\s+assertAal2\(\s*authHeader/);
+  });
+
+  it("enforces AAL2 AFTER the is_admin check and BEFORE the archive RPC", () => {
+    const isAdminIdx = src.search(/rpc\(\s*["']is_admin["']/);
+    const assertIdx = src.search(/await\s+assertAal2\(/);
+    const archiveRpcIdx = src.search(/rpc\(\s*["']admin_archive_legacy_match["']/);
+    expect(isAdminIdx).toBeGreaterThan(-1);
+    expect(assertIdx).toBeGreaterThan(isAdminIdx);
+    expect(archiveRpcIdx).toBeGreaterThan(assertIdx);
+  });
+
+  it("maps the AAL2 failure to the shared MFA_REQUIRED response shape (no bypass)", () => {
+    expect(src).toMatch(/ApiException/);
+    expect(src).toMatch(/observed_aal/);
+    expect(src).not.toMatch(/AAL2_BYPASS|MFA_BYPASS|skip[_-]?aal2/i);
+  });
+
+  it("records the AAL2 denial in the admin audit with outcome 'denied'", () => {
+    expect(src).toMatch(/outcome:\s*["']denied["']/);
+    expect(src).toMatch(/outcome:\s*["']satisfied["']/);
+    expect(src).toMatch(/outcome:\s*["']not_evaluated["']/);
+  });
 });
 
 describe("Batch O Phase 2b Step 3 — legacy_archived_admin_hold marker excludes from isActiveMatch", () => {
