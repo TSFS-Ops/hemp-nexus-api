@@ -8212,6 +8212,18 @@ export type Database = {
         }
         Returns: Json
       }
+      assign_match_named_contact: {
+        Args: {
+          p_assigned_by_role: string
+          p_assigned_by_user_id: string
+          p_contact_email: string
+          p_contact_name: string
+          p_match_id: string
+          p_notes?: string
+          p_side: string
+        }
+        Returns: Json
+      }
       atomic_accept_bind: {
         Args: {
           p_caller_org_id: string
