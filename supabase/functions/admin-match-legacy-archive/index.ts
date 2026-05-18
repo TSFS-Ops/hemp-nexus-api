@@ -24,11 +24,13 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
-import { readAal } from "../_shared/aal.ts";
+import { assertAal2, readAal } from "../_shared/aal.ts";
+import { ApiException } from "../_shared/errors.ts";
 import {
   writeAdminAudit,
   extractIp,
   extractUserAgent,
+  type AdminAuditAal,
 } from "../_shared/admin-audit.ts";
 
 const ENDPOINT = "POST /admin-match-legacy-archive";
