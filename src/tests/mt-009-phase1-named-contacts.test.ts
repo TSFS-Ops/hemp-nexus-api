@@ -130,12 +130,15 @@ describe("MT-009 Phase 1 — read-model isolation", () => {
     expect(joined).not.toMatch(/poi-|wad|payment|credit|notification|resend|invite|email-/i);
   });
 
-  it("only reads active rows and never mutates", () => {
-    expect(src).toMatch(/\.eq\("status", "active"\)/);
-    expect(src).not.toMatch(/\.insert\(/);
-    expect(src).not.toMatch(/\.update\(/);
-    expect(src).not.toMatch(/\.delete\(/);
-    expect(src).not.toMatch(/\.upsert\(/);
+  it("uses the SECURITY DEFINER RPC and never mutates the table", () => {
+    // MT-009 Phase 2: read goes through get_match_named_contact_status so
+    // both sides of a match are visible to authorised participants.
+    expect(src).toMatch(/rpc\(\s*"get_match_named_contact_status"/);
+    expect(src).not.toMatch(/from\("match_named_contacts"\)\s*\.\s*select/);
+    expect(src).not.toMatch(/from\("match_named_contacts"\)\s*\.\s*insert/);
+    expect(src).not.toMatch(/from\("match_named_contacts"\)\s*\.\s*update/);
+    expect(src).not.toMatch(/from\("match_named_contacts"\)\s*\.\s*delete/);
+    expect(src).not.toMatch(/from\("match_named_contacts"\)\s*\.\s*upsert/);
   });
 });
 

@@ -37,13 +37,16 @@ export async function fetchActiveNamedContacts(
   matchId: string,
 ): Promise<MatchNamedContactRow[]> {
   if (!matchId) return [];
-  const { data, error } = await supabase
-    .from("match_named_contacts")
-    .select(
-      "id, match_id, side, org_id, contact_name, contact_email, assigned_by_role, assigned_at, status",
-    )
-    .eq("match_id", matchId)
-    .eq("status", "active");
+  // MT-009 Phase 2 fix: use the SECURITY DEFINER RPC so authorised match
+  // participants (buyer org member, seller org member, or platform admin)
+  // can see the contact status for BOTH sides of the match. Reading the
+  // table directly under base-table RLS only returns rows belonging to the
+  // caller's own org, which caused the panel to falsely report the
+  // opposite-side controlled contact as missing.
+  const { data, error } = await supabase.rpc(
+    "get_match_named_contact_status",
+    { p_match_id: matchId },
+  );
 
   if (error) {
     // Detection-only: never throw upward; banner just won't show controlled-contact satisfaction.
@@ -51,7 +54,7 @@ export async function fetchActiveNamedContacts(
     return [];
   }
   // Defensive side filter — DB CHECK guarantees this but cheap to verify.
-  return (data ?? []).filter(
+  return ((data ?? []) as MatchNamedContactRow[]).filter(
     (r): r is MatchNamedContactRow =>
       r.side === "buyer" || r.side === "seller",
   );
