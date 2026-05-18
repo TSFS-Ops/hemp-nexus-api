@@ -18,6 +18,7 @@ import { PageContainer } from "@/components/ui/page-container";
 import * as MatchState from "@/lib/match-state";
 import { useMatchDetails } from "@/hooks/use-match-details";
 import { MatchHeroCard } from "@/components/match/MatchHeroCard";
+import { NamedContactPanel } from "@/components/match/NamedContactPanel";
 import { DealWizard } from "@/components/match/wizard/DealWizard";
 import { AcceptBindCard } from "@/components/match/AcceptBindCard";
 import { EngagementTracker } from "@/components/match/EngagementTracker";
@@ -320,6 +321,8 @@ function MatchDetailsContent() {
       />
 
       <MatchHeroCard match={match} isSettled={isSettled} engagementStatus={engagementStatus} />
+
+      {matchId && <NamedContactPanel matchId={matchId} match={match as any} />}
 
       {matchId && <ExecutionSection matchId={matchId} />}
     </PageContainer>
