@@ -127,6 +127,36 @@ const FIXTURES = [
     purpose:
       "MT-008 — operator-marker state_reconciliation_required (safe archive flow)",
   },
+  // MT-009 Phase 2 — controlled named contact assignment fixtures.
+  // Each row is a bare demo match with no engagement, no POI, no WaD, no
+  // payment/credit/notification side effect. Some carry pre-seeded active
+  // `match_named_contacts` rows so the Match Details panel renders the
+  // expected gap pattern (buyer / seller / both / replace / clean).
+  {
+    id: "DEMO-MT009-NC-BUYERMISSING-001",
+    purpose:
+      "MT-009 — buyer side missing, seller satisfied via controlled contact (buyer org_admin assigns)",
+  },
+  {
+    id: "DEMO-MT009-NC-SELLERMISSING-002",
+    purpose:
+      "MT-009 — seller side missing, buyer satisfied via controlled contact (seller org_admin assigns)",
+  },
+  {
+    id: "DEMO-MT009-NC-BOTHMISSING-003",
+    purpose:
+      "MT-009 — both sides missing (platform_admin assigns one side with AAL2)",
+  },
+  {
+    id: "DEMO-MT009-NC-REPLACEBUYER-004",
+    purpose:
+      "MT-009 — buyer has active controlled contact, seller satisfied (replacement test)",
+  },
+  {
+    id: "DEMO-MT009-NC-CLEAN-005",
+    purpose:
+      "MT-009 — control row, both sides satisfied via controlled contacts (no warning)",
+  },
 ];
 
 function json(body: unknown, status = 200): Response {
