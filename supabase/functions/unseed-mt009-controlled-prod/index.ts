@@ -1,0 +1,206 @@
+/**
+ * unseed-mt009-controlled-prod — Controlled production cleanup for the
+ * five MT-009 Phase 2 demo fixtures only.
+ *
+ * Hard-gates every delete on:
+ *   - hash IN ALLOWED_FIXTURE_HASHES, AND
+ *   - is_demo = true, AND
+ *   - metadata.fixture_scope = "MT-009 Phase 2 Daniel UAT".
+ *
+ * Does NOT delete auth users, profiles, orgs (those are reused by the rest
+ * of the Daniel fixture system). `match_named_contacts` rows cascade via
+ * the existing ON DELETE CASCADE on match_named_contacts.match_id.
+ *
+ * Production cleanup requires the same controlled flag as the seeder.
+ */
+
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const INTERNAL_CRON_KEY = Deno.env.get("INTERNAL_CRON_KEY") ?? "";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, content-type, apikey, x-internal-key",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
+};
+
+const ALLOWED_FIXTURE_SCOPE = "MT-009 Phase 2 Daniel UAT";
+const ALLOWED_FIXTURE_HASHES = [
+  "DEMO-MT009-NC-BUYERMISSING-001",
+  "DEMO-MT009-NC-SELLERMISSING-002",
+  "DEMO-MT009-NC-BOTHMISSING-003",
+  "DEMO-MT009-NC-REPLACEBUYER-004",
+  "DEMO-MT009-NC-CLEAN-005",
+] as const;
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body, null, 2), {
+    status,
+    headers: corsHeaders,
+  });
+}
+
+function isProductionTier(): boolean {
+  const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
+  return tier === "production" || tier === "live" || tier === "prod";
+}
+
+async function authorise(
+  req: Request,
+  admin: SupabaseClient,
+): Promise<{ ok: true; actor: string | null } | { ok: false; resp: Response }> {
+  const internal = req.headers.get("x-internal-key");
+  if (INTERNAL_CRON_KEY && internal && internal === INTERNAL_CRON_KEY) {
+    return { ok: true, actor: "internal_cron" };
+  }
+  const auth = req.headers.get("authorization") ?? "";
+  if (auth === `Bearer ${SERVICE_ROLE}`) return { ok: true, actor: "service_role" };
+  if (auth.startsWith("Bearer ")) {
+    const token = auth.slice("Bearer ".length);
+    const { data, error } = await admin.auth.getUser(token);
+    if (!error && data.user) {
+      const { data: roleRow } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .eq("role", "platform_admin")
+        .maybeSingle();
+      if (roleRow) return { ok: true, actor: data.user.email ?? data.user.id };
+    }
+  }
+  return { ok: false, resp: json({ error: "unauthorised" }, 401) };
+}
+
+async function isControlledFlagEnabled(admin: SupabaseClient): Promise<boolean> {
+  const { data } = await admin
+    .from("admin_settings")
+    .select("value")
+    .eq("key", "allow_controlled_production_demo_fixtures")
+    .maybeSingle();
+  const v = (data?.value ?? {}) as { enabled?: boolean };
+  return v.enabled === true;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+    auth: { persistSession: false },
+  });
+
+  const authResult = await authorise(req, admin);
+  if (!authResult.ok) return authResult.resp;
+  const actor = authResult.actor;
+
+  let body: { confirm?: string; scope?: string; hashes?: string[] } = {};
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "invalid_json_body" }, 400);
+  }
+  if (body.confirm !== "RUN_UNSEED_MT009_CONTROLLED_PROD") {
+    return json({ error: "confirm token missing or wrong" }, 400);
+  }
+  if (body.scope !== ALLOWED_FIXTURE_SCOPE) {
+    return json(
+      { error: "SCOPE_NOT_ALLOWED", expected: ALLOWED_FIXTURE_SCOPE },
+      400,
+    );
+  }
+  const requested = (Array.isArray(body.hashes) && body.hashes.length > 0)
+    ? body.hashes
+    : [...ALLOWED_FIXTURE_HASHES];
+  for (const h of requested) {
+    if (!ALLOWED_FIXTURE_HASHES.includes(h as typeof ALLOWED_FIXTURE_HASHES[number])) {
+      return json(
+        { error: "HASH_NOT_ALLOWED", hash: h, allowed: ALLOWED_FIXTURE_HASHES },
+        400,
+      );
+    }
+  }
+
+  if (isProductionTier()) {
+    if (!(await isControlledFlagEnabled(admin))) {
+      return json(
+        {
+          error: "CONTROLLED_PRODUCTION_FLAG_DISABLED",
+          message:
+            "admin_settings.allow_controlled_production_demo_fixtures.enabled must be true to clean MT-009 fixtures in production.",
+        },
+        403,
+      );
+    }
+  }
+
+  const deleted: Record<string, number> = { matches: 0 };
+  const details: Array<Record<string, unknown>> = [];
+
+  try {
+    // Find demo matches matching allowlist AND is_demo AND scope-tag.
+    const { data: rows } = await admin
+      .from("matches")
+      .select("id, hash, is_demo, metadata")
+      .in("hash", requested)
+      .eq("is_demo", true);
+    const eligible = (rows ?? []).filter((r) => {
+      const m = (r.metadata ?? {}) as Record<string, unknown>;
+      return m.fixture_scope === ALLOWED_FIXTURE_SCOPE;
+    });
+    const eligibleIds = eligible.map((r) => r.id);
+
+    for (const r of eligible) {
+      details.push({ hash: r.hash, match_id: r.id });
+    }
+
+    if (eligibleIds.length) {
+      // Cascade removes match_named_contacts via FK ON DELETE CASCADE.
+      const { count } = await admin
+        .from("matches")
+        .delete({ count: "exact" })
+        .in("id", eligibleIds)
+        .eq("is_demo", true);
+      deleted.matches = count ?? 0;
+    }
+
+    try {
+      await admin.from("admin_audit_logs").insert({
+        admin_user_id: null,
+        action: "demo.fixture_unseeded_controlled_production",
+        target_type: "system",
+        target_id: null,
+        details: {
+          function: "unseed-mt009-controlled-prod",
+          fixture_scope: ALLOWED_FIXTURE_SCOPE,
+          fixture_hashes: requested,
+          actor,
+          deleted,
+          environment_tier: Deno.env.get("ENVIRONMENT_TIER") ?? null,
+          production_demo_mode: true,
+        },
+      });
+    } catch (e) {
+      console.error("[unseed-mt009-controlled-prod] audit insert failed:", e);
+    }
+
+    return json({
+      ok: true,
+      scope: ALLOWED_FIXTURE_SCOPE,
+      requested,
+      deleted,
+      details,
+      notes: [
+        "Hard-gated by hash allowlist + is_demo=true + metadata.fixture_scope match.",
+        "match_named_contacts cascades via FK; no auth users / orgs / profiles removed.",
+      ],
+    });
+  } catch (err) {
+    return json(
+      { ok: false, error: (err as Error).message, partial_deleted: deleted },
+      500,
+    );
+  }
+});
