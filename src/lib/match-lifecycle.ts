@@ -169,21 +169,43 @@ export function isInconsistentMatch(m: LifecycleMatch | LifecycleChild): boolean
 
 /**
  * MT-009: detect organisation-attached rows missing a named buyer/seller
- * authorised user (or contact). Returns which side is missing.
+ * authorised contact. Returns which side is missing.
+ *
+ * A side is satisfied when ANY of:
+ *   1. `{side}_authorised_user_id` (registered Izenzo user — strongest);
+ *   2. legacy optional `{side}_contact_user_id`;
+ *   3. an active controlled named contact for that side in
+ *      `activeNamedContacts` (status === 'active').
+ *
+ * Pure: caller supplies pre-fetched active named contacts. The predicate
+ * does NOT read the DB.
  *
  * Returns null when no organisation is attached on either side — there is
  * no named-contact requirement for fully unattached rows.
  */
-export function requiresNamedContact(m: LifecycleMatch): NamedContactGap {
+export function requiresNamedContact(
+  m: LifecycleMatch,
+  activeNamedContacts: ReadonlyArray<ActiveNamedContact> = [],
+): NamedContactGap {
   const buyerOrg = m.buyer_org_id ?? null;
   const sellerOrg = m.seller_org_id ?? null;
   if (!buyerOrg && !sellerOrg) return null;
 
-  const buyerNamed = m.buyer_authorised_user_id ?? m.buyer_contact_user_id ?? null;
-  const sellerNamed = m.seller_authorised_user_id ?? m.seller_contact_user_id ?? null;
+  let buyerHasControlled = false;
+  let sellerHasControlled = false;
+  for (const c of activeNamedContacts) {
+    if ((c.status ?? "active") !== "active") continue;
+    if (c.side === "buyer") buyerHasControlled = true;
+    else if (c.side === "seller") sellerHasControlled = true;
+  }
 
-  const buyerMissing = !!buyerOrg && !buyerNamed;
-  const sellerMissing = !!sellerOrg && !sellerNamed;
+  const buyerNamed =
+    m.buyer_authorised_user_id ?? m.buyer_contact_user_id ?? null;
+  const sellerNamed =
+    m.seller_authorised_user_id ?? m.seller_contact_user_id ?? null;
+
+  const buyerMissing = !!buyerOrg && !buyerNamed && !buyerHasControlled;
+  const sellerMissing = !!sellerOrg && !sellerNamed && !sellerHasControlled;
 
   if (buyerMissing && sellerMissing) return "both";
   if (buyerMissing) return "buyer";
