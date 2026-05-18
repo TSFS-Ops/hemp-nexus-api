@@ -9,8 +9,8 @@
  *   - reads from `match_named_contacts` via the read-model helper.
  */
 
-import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, UserCheck, UsersRound } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { AlertTriangle, CheckCircle2, UserCheck, UserPlus, UsersRound } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   requiresNamedContact,
@@ -30,6 +31,9 @@ import {
   type MatchNamedContactRow,
   type NamedContactSide,
 } from "@/lib/match-named-contacts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserOrg } from "@/hooks/use-user-org";
+import { AssignNamedContactDialog } from "./AssignNamedContactDialog";
 
 interface NamedContactPanelProps {
   matchId: string;
@@ -63,7 +67,17 @@ function deriveSideStatus(
   return { kind: "missing" };
 }
 
-function SideRow({ label, status }: { label: string; status: SideStatus }) {
+function SideRow({
+  label,
+  status,
+  canAssign,
+  onAssign,
+}: {
+  label: string;
+  status: SideStatus;
+  canAssign: boolean;
+  onAssign: () => void;
+}) {
   if (status.kind === "not_required") {
     return (
       <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
@@ -107,9 +121,21 @@ function SideRow({ label, status }: { label: string; status: SideStatus }) {
             </div>
           </div>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          <CheckCircle2 className="h-3 w-3 mr-1" /> Controlled contact
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">
+            <CheckCircle2 className="h-3 w-3 mr-1" /> Controlled contact
+          </Badge>
+          {canAssign && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAssign}
+              data-testid={`replace-${label.toLowerCase()}-contact`}
+            >
+              Replace
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -124,9 +150,20 @@ function SideRow({ label, status }: { label: string; status: SideStatus }) {
           </div>
         </div>
       </div>
-      <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 dark:text-amber-400">
-        Missing
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 dark:text-amber-400">
+          Missing
+        </Badge>
+        {canAssign && (
+          <Button
+            size="sm"
+            onClick={onAssign}
+            data-testid={`assign-${label.toLowerCase()}-contact`}
+          >
+            <UserPlus className="h-3 w-3 mr-1" /> Assign
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -134,6 +171,11 @@ function SideRow({ label, status }: { label: string; status: SideStatus }) {
 export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
   const [rows, setRows] = useState<MatchNamedContactRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogSide, setDialogSide] = useState<NamedContactSide | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const { isPlatformAdmin, isOrgAdmin } = useAuth();
+  const userOrgId = useUserOrg();
 
   useEffect(() => {
     let cancelled = false;
@@ -148,16 +190,37 @@ export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [matchId]);
+  }, [matchId, reloadKey]);
 
   const gap = requiresNamedContact(match, toActiveNamedContacts(rows));
   const buyerStatus = deriveSideStatus("buyer", match, rows);
   const sellerStatus = deriveSideStatus("seller", match, rows);
 
+  const canAssignSide = useCallback(
+    (side: NamedContactSide, status: SideStatus): boolean => {
+      // Registered-user paths are stronger and not editable in Phase 2.
+      if (status.kind === "satisfied_registered" || status.kind === "not_required") {
+        return false;
+      }
+      if (isPlatformAdmin) return true;
+      if (!isOrgAdmin || !userOrgId) return false;
+      const sideOrg = side === "buyer" ? match.buyer_org_id : match.seller_org_id;
+      return !!sideOrg && sideOrg === userOrgId;
+    },
+    [isPlatformAdmin, isOrgAdmin, userOrgId, match.buyer_org_id, match.seller_org_id],
+  );
+
   // If no org attached on either side, nothing to show.
   if (buyerStatus.kind === "not_required" && sellerStatus.kind === "not_required") {
     return null;
   }
+
+  const isReplacement =
+    dialogSide === "buyer"
+      ? buyerStatus.kind === "satisfied_controlled"
+      : dialogSide === "seller"
+        ? sellerStatus.kind === "satisfied_controlled"
+        : false;
 
   return (
     <Card data-testid="named-contact-panel">
@@ -168,8 +231,8 @@ export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
         </CardTitle>
         <CardDescription>
           Each side with an attached organisation must have either a registered
-          Izenzo user or a controlled named contact. This is informational in
-          Phase 1 — progression is not blocked yet.
+          Izenzo user or a controlled named contact. This is informational —
+          progression is not blocked yet.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -186,17 +249,38 @@ export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
                 : gap === "buyer"
                   ? "Buyer side is missing a named authorised contact."
                   : "Seller side is missing a named authorised contact."}{" "}
-              Assignment UI will be available in the next phase. No emails or
-              invites are sent when a controlled contact is added.
+              Recording a controlled contact does not invite, email, or notify them.
             </AlertDescription>
           </Alert>
         )}
-        <SideRow label="Buyer" status={buyerStatus} />
-        <SideRow label="Seller" status={sellerStatus} />
+        <SideRow
+          label="Buyer"
+          status={buyerStatus}
+          canAssign={canAssignSide("buyer", buyerStatus)}
+          onAssign={() => setDialogSide("buyer")}
+        />
+        <SideRow
+          label="Seller"
+          status={sellerStatus}
+          canAssign={canAssignSide("seller", sellerStatus)}
+          onAssign={() => setDialogSide("seller")}
+        />
         {loading && (
           <p className="text-xs text-muted-foreground">Checking contacts…</p>
         )}
       </CardContent>
+      {dialogSide && (
+        <AssignNamedContactDialog
+          open={dialogSide !== null}
+          onOpenChange={(open) => {
+            if (!open) setDialogSide(null);
+          }}
+          matchId={matchId}
+          side={dialogSide}
+          isReplacement={isReplacement}
+          onSaved={() => setReloadKey((k) => k + 1)}
+        />
+      )}
     </Card>
   );
 }
