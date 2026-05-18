@@ -56,9 +56,11 @@ describe("MT-009 controlled-prod seeder — scope + allowlist", () => {
       expect(SEEDER).toContain(h);
       expect(UNSEEDER).toContain(h);
     }
-    // No other DEMO-MT009 hash should leak in.
-    const otherMt009 = SEEDER.match(/DEMO-MT009-[A-Z0-9-]+/g) ?? [];
-    for (const m of otherMt009) {
+    // No other DEMO-MT009 hash should leak in. Quoted occurrences only
+    // (skips the JSDoc `["DEMO-MT009-NC-...", ...]` example).
+    const otherMt009 = SEEDER.match(/"(DEMO-MT009-[A-Z0-9-]+)"/g) ?? [];
+    for (const raw of otherMt009) {
+      const m = raw.slice(1, -1);
       expect(ALL_FIVE).toContain(m);
     }
   });
