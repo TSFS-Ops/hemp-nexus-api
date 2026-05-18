@@ -520,6 +520,77 @@ async function ensureContactAttemptLog(
   });
 }
 
+/**
+ * MT-009 Phase 2 — ensure exactly one ACTIVE controlled named contact for
+ * (match_id, side). Idempotent: if an active row already exists with the
+ * same email, returns it; otherwise leaves any other active row in place
+ * (the partial unique index `idx_mnc_one_active_per_side` enforces ≤1).
+ *
+ * SAFETY: only ever runs against demo matches (is_demo=true gate enforced
+ * by the caller via ensureMatch). assigned_by_role is
+ * `platform_admin_override` because the seeder runs with the platform
+ * admin identity. No email, invite, notification, POI, WaD, payment, or
+ * credit side effect.
+ */
+async function ensureSeededNamedContact(
+  admin: SupabaseClient,
+  args: {
+    match_id: string;
+    side: "buyer" | "seller";
+    org_id: string;
+    contact_name: string;
+    contact_email: string;
+    assigned_by_user_id: string;
+    fixture_code: string;
+  },
+): Promise<string> {
+  // Re-assert the match is a demo row before writing — defence in depth.
+  const { data: m } = await admin
+    .from("matches")
+    .select("id, is_demo")
+    .eq("id", args.match_id)
+    .eq("is_demo", true)
+    .maybeSingle();
+  if (!m) {
+    throw new Error(
+      `ensureSeededNamedContact: match not found or not is_demo (${args.fixture_code})`,
+    );
+  }
+  const { data: existing } = await admin
+    .from("match_named_contacts")
+    .select("id, contact_email")
+    .eq("match_id", args.match_id)
+    .eq("side", args.side)
+    .eq("status", "active")
+    .maybeSingle();
+  if (existing) return existing.id;
+  const { data: inserted, error } = await admin
+    .from("match_named_contacts")
+    .insert({
+      match_id: args.match_id,
+      side: args.side,
+      org_id: args.org_id,
+      contact_name: args.contact_name,
+      contact_email: args.contact_email,
+      assigned_by_user_id: args.assigned_by_user_id,
+      assigned_by_role: "platform_admin_override",
+      status: "active",
+      metadata: {
+        demo_fixture: true,
+        fixture_code: args.fixture_code,
+        seeded_by: "seed-daniel-fixtures",
+      },
+    })
+    .select("id")
+    .single();
+  if (error) {
+    throw new Error(
+      `ensureSeededNamedContact insert failed (${args.fixture_code}/${args.side}): ${error.message}`,
+    );
+  }
+  return inserted.id;
+}
+
 // Batch U SEC-014 — production lockout. Mirror of isProductionTier in
 // _shared/test-mode-bypass.ts (kept inline so this file has no transitive
 // import surprises at edge runtime).
