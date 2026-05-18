@@ -3821,6 +3821,95 @@ export type Database = {
           },
         ]
       }
+      match_named_contacts: {
+        Row: {
+          assigned_at: string
+          assigned_by_role: string
+          assigned_by_user_id: string
+          contact_email: string
+          contact_name: string
+          converted_at: string | null
+          converted_user_id: string | null
+          id: string
+          match_id: string
+          metadata: Json
+          org_id: string
+          replaced_by_id: string | null
+          revoked_at: string | null
+          revoked_by_user_id: string | null
+          revoked_reason: string | null
+          side: string
+          status: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by_role: string
+          assigned_by_user_id: string
+          contact_email: string
+          contact_name: string
+          converted_at?: string | null
+          converted_user_id?: string | null
+          id?: string
+          match_id: string
+          metadata?: Json
+          org_id: string
+          replaced_by_id?: string | null
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+          revoked_reason?: string | null
+          side: string
+          status?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by_role?: string
+          assigned_by_user_id?: string
+          contact_email?: string
+          contact_name?: string
+          converted_at?: string | null
+          converted_user_id?: string | null
+          id?: string
+          match_id?: string
+          metadata?: Json
+          org_id?: string
+          replaced_by_id?: string | null
+          revoked_at?: string | null
+          revoked_by_user_id?: string | null
+          revoked_reason?: string | null
+          side?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_named_contacts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "match_named_contacts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_named_contacts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_named_contacts_replaced_by_id_fkey"
+            columns: ["replaced_by_id"]
+            isOneToOne: false
+            referencedRelation: "match_named_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_notes: {
         Row: {
           content: string
