@@ -40,6 +40,15 @@ export type LifecycleChild = {
 
 export type NamedContactGap = "buyer" | "seller" | "both" | null;
 
+/**
+ * MT-009 Phase 1: controlled named contact record (subset used by the
+ * predicate). Pure: only the fields needed to evaluate satisfaction.
+ */
+export type ActiveNamedContact = {
+  side: "buyer" | "seller";
+  status?: string | null;
+};
+
 const TERMINAL_POI_STATES = new Set([
   "EXPIRED",
   "REJECTED",
