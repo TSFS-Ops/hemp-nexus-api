@@ -60,6 +60,15 @@ const DEMO_MATCH_HASHES = [
   "DEMO-MT008-LEGACY-001",
   "DEMO-MT008-STALESETTLED-002",
   "DEMO-MT008-ARCHIVE-003",
+  // MT-009 Phase 2 — controlled named contact fixtures.
+  // match_named_contacts rows are removed automatically via the
+  // ON DELETE CASCADE on match_named_contacts.match_id when the
+  // parent demo match is deleted in step 3.
+  "DEMO-MT009-NC-BUYERMISSING-001",
+  "DEMO-MT009-NC-SELLERMISSING-002",
+  "DEMO-MT009-NC-BOTHMISSING-003",
+  "DEMO-MT009-NC-REPLACEBUYER-004",
+  "DEMO-MT009-NC-CLEAN-005",
 ];
 
 function json(body: unknown, status = 200): Response {
