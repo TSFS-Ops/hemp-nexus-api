@@ -9,8 +9,8 @@
  *   - reads from `match_named_contacts` via the read-model helper.
  */
 
-import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, UserCheck, UsersRound } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { AlertTriangle, CheckCircle2, UserCheck, UserPlus, UsersRound } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   requiresNamedContact,
@@ -30,6 +31,9 @@ import {
   type MatchNamedContactRow,
   type NamedContactSide,
 } from "@/lib/match-named-contacts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserOrg } from "@/hooks/use-user-org";
+import { AssignNamedContactDialog } from "./AssignNamedContactDialog";
 
 interface NamedContactPanelProps {
   matchId: string;
