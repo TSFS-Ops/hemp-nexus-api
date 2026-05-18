@@ -1064,7 +1064,202 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({
+    // ── MT-009 Phase 2 — controlled named contact fixtures ───────────────
+    // Common shape: bare demo match (no engagement, no POI, no WaD, no
+    // payment/credit). Some sides are pre-seeded with an ACTIVE controlled
+    // contact so the Match Details NamedContactPanel renders the expected
+    // gap pattern (buyer / seller / both / replace / clean).
+    //
+    // Daniel account mapping:
+    //   - daniel-initiator       = buyer org_admin   (initiatorOrgId  = buyer_org_id)
+    //   - daniel-counterparty    = seller org_admin  (counterpartyOrgId = seller_org_id)
+    //   - daniel-platformadmin   = platform_admin (AAL2 required for overrides)
+
+    // M. DEMO-MT009-NC-BUYERMISSING-001 — buyer missing, seller satisfied.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-MT009-NC-BUYERMISSING-001",
+        initiatorOrgId,
+        counterpartyOrgId,
+        { buyer_name: "DEMO Daniel Initiator Org", seller_name: "DEMO Counterparty Co." },
+      );
+      const sellerContactId = await ensureSeededNamedContact(admin, {
+        match_id: matchId,
+        side: "seller",
+        org_id: counterpartyOrgId,
+        contact_name: "DEMO Seller Authorised Contact",
+        contact_email: "demo-seller-nc-001@example.invalid",
+        assigned_by_user_id: platformAdminUserId,
+        fixture_code: "DEMO-MT009-NC-BUYERMISSING-001",
+      });
+      results.push({
+        fixture: "DEMO-MT009-NC-BUYERMISSING-001",
+        purpose:
+          "MT-009 — buyer side missing, seller satisfied via controlled contact",
+        match_id: matchId,
+        seller_named_contact_id: sellerContactId,
+        expected_panel: { buyer: "missing", seller: "satisfied_controlled" },
+        expected_requires_named_contact: "buyer",
+        daniel_account: "daniel-initiator (buyer org_admin) — clicks 'Assign named contact' on the buyer row",
+        click:
+          "Login as daniel-initiator → /desk/match/<id> → NamedContactPanel: buyer row shows 'Missing' with 'Assign named contact' button → fill name + email → Save. Panel flips to 'Satisfied (controlled)'.",
+        route: `/desk/match/${matchId}`,
+        reusable: false,
+      });
+    }
+
+    // N. DEMO-MT009-NC-SELLERMISSING-002 — seller missing, buyer satisfied.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-MT009-NC-SELLERMISSING-002",
+        initiatorOrgId,
+        counterpartyOrgId,
+        { buyer_name: "DEMO Daniel Initiator Org", seller_name: "DEMO Counterparty Co." },
+      );
+      const buyerContactId = await ensureSeededNamedContact(admin, {
+        match_id: matchId,
+        side: "buyer",
+        org_id: initiatorOrgId,
+        contact_name: "DEMO Buyer Authorised Contact",
+        contact_email: "demo-buyer-nc-002@example.invalid",
+        assigned_by_user_id: platformAdminUserId,
+        fixture_code: "DEMO-MT009-NC-SELLERMISSING-002",
+      });
+      results.push({
+        fixture: "DEMO-MT009-NC-SELLERMISSING-002",
+        purpose:
+          "MT-009 — seller side missing, buyer satisfied via controlled contact",
+        match_id: matchId,
+        buyer_named_contact_id: buyerContactId,
+        expected_panel: { buyer: "satisfied_controlled", seller: "missing" },
+        expected_requires_named_contact: "seller",
+        daniel_account: "daniel-counterparty (seller org_admin) — clicks 'Assign named contact' on the seller row",
+        click:
+          "Login as daniel-counterparty → /desk/match/<id> → NamedContactPanel: seller row shows 'Missing' with 'Assign named contact' button → fill name + email → Save. Panel flips to 'Satisfied (controlled)'.",
+        route: `/desk/match/${matchId}`,
+        reusable: false,
+      });
+    }
+
+    // O. DEMO-MT009-NC-BOTHMISSING-003 — both sides missing (platform-admin AAL2).
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-MT009-NC-BOTHMISSING-003",
+        initiatorOrgId,
+        counterpartyOrgId,
+        { buyer_name: "DEMO Daniel Initiator Org", seller_name: "DEMO Counterparty Co." },
+      );
+      // No pre-seeded contacts — both sides are bare on purpose.
+      results.push({
+        fixture: "DEMO-MT009-NC-BOTHMISSING-003",
+        purpose:
+          "MT-009 — both sides missing (platform_admin AAL2 override path)",
+        match_id: matchId,
+        expected_panel: { buyer: "missing", seller: "missing" },
+        expected_requires_named_contact: "both",
+        daniel_account: "daniel-platformadmin (platform_admin) — must satisfy AAL2 (6-digit TOTP) to assign either side",
+        click:
+          "Login as daniel-platformadmin → /desk/match/<id> → NamedContactPanel: both rows show 'Missing' → click 'Assign named contact' on the buyer row → AAL2 step-up prompt appears → enter 6-digit code → fill name + email → Save. Repeat for seller row.",
+        route: `/desk/match/${matchId}`,
+        reusable: false,
+      });
+    }
+
+    // P. DEMO-MT009-NC-REPLACEBUYER-004 — buyer already has active controlled
+    //    contact; seller satisfied. Used to test the replacement transaction
+    //    (existing row flips to 'replaced', new active row inserted, linked
+    //    via replaced_by_id, audit row match_named_contact.replaced).
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-MT009-NC-REPLACEBUYER-004",
+        initiatorOrgId,
+        counterpartyOrgId,
+        { buyer_name: "DEMO Daniel Initiator Org", seller_name: "DEMO Counterparty Co." },
+      );
+      const buyerExistingId = await ensureSeededNamedContact(admin, {
+        match_id: matchId,
+        side: "buyer",
+        org_id: initiatorOrgId,
+        contact_name: "DEMO Buyer Initial Contact (to be replaced)",
+        contact_email: "demo-buyer-initial-004@example.invalid",
+        assigned_by_user_id: platformAdminUserId,
+        fixture_code: "DEMO-MT009-NC-REPLACEBUYER-004",
+      });
+      const sellerExistingId = await ensureSeededNamedContact(admin, {
+        match_id: matchId,
+        side: "seller",
+        org_id: counterpartyOrgId,
+        contact_name: "DEMO Seller Authorised Contact",
+        contact_email: "demo-seller-nc-004@example.invalid",
+        assigned_by_user_id: platformAdminUserId,
+        fixture_code: "DEMO-MT009-NC-REPLACEBUYER-004",
+      });
+      results.push({
+        fixture: "DEMO-MT009-NC-REPLACEBUYER-004",
+        purpose:
+          "MT-009 — replacement test: buyer has active controlled contact, seller satisfied",
+        match_id: matchId,
+        buyer_existing_named_contact_id: buyerExistingId,
+        seller_named_contact_id: sellerExistingId,
+        expected_panel: { buyer: "satisfied_controlled", seller: "satisfied_controlled" },
+        expected_requires_named_contact: null,
+        daniel_account: "daniel-initiator (buyer org_admin) — clicks 'Replace' on the buyer row",
+        click:
+          "Login as daniel-initiator → /desk/match/<id> → NamedContactPanel: buyer row shows current contact with 'Replace' button → fill new name + email → Save. Old row status flips to 'replaced'; new active row appears.",
+        route: `/desk/match/${matchId}`,
+        reusable: false,
+      });
+    }
+
+    // Q. DEMO-MT009-NC-CLEAN-005 — clean control row, both sides satisfied.
+    //    Panel should NOT render the missing-contact amber banner.
+    {
+      const matchId = await ensureMatch(
+        admin,
+        "DEMO-MT009-NC-CLEAN-005",
+        initiatorOrgId,
+        counterpartyOrgId,
+        { buyer_name: "DEMO Daniel Initiator Org", seller_name: "DEMO Counterparty Co." },
+      );
+      const buyerContactId = await ensureSeededNamedContact(admin, {
+        match_id: matchId,
+        side: "buyer",
+        org_id: initiatorOrgId,
+        contact_name: "DEMO Buyer Authorised Contact",
+        contact_email: "demo-buyer-nc-005@example.invalid",
+        assigned_by_user_id: platformAdminUserId,
+        fixture_code: "DEMO-MT009-NC-CLEAN-005",
+      });
+      const sellerContactId = await ensureSeededNamedContact(admin, {
+        match_id: matchId,
+        side: "seller",
+        org_id: counterpartyOrgId,
+        contact_name: "DEMO Seller Authorised Contact",
+        contact_email: "demo-seller-nc-005@example.invalid",
+        assigned_by_user_id: platformAdminUserId,
+        fixture_code: "DEMO-MT009-NC-CLEAN-005",
+      });
+      results.push({
+        fixture: "DEMO-MT009-NC-CLEAN-005",
+        purpose:
+          "MT-009 — control row: both sides satisfied, no missing-contact warning",
+        match_id: matchId,
+        buyer_named_contact_id: buyerContactId,
+        seller_named_contact_id: sellerContactId,
+        expected_panel: { buyer: "satisfied_controlled", seller: "satisfied_controlled" },
+        expected_requires_named_contact: null,
+        daniel_account: "any (read-only verification)",
+        click:
+          "Login as daniel-initiator → /desk/match/<id> → confirm NamedContactPanel shows both rows 'Satisfied (controlled)' and NO amber missing-contact banner.",
+        route: `/desk/match/${matchId}`,
+        reusable: true,
+      });
+    }
+
       ok: true,
       summary: {
         accounts_created: ACCOUNTS.length,
