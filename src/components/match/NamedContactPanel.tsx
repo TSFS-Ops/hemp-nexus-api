@@ -171,6 +171,11 @@ function SideRow({
 export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
   const [rows, setRows] = useState<MatchNamedContactRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogSide, setDialogSide] = useState<NamedContactSide | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const { isPlatformAdmin, isOrgAdmin } = useAuth();
+  const userOrgId = useUserOrg();
 
   useEffect(() => {
     let cancelled = false;
@@ -185,16 +190,37 @@ export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [matchId]);
+  }, [matchId, reloadKey]);
 
   const gap = requiresNamedContact(match, toActiveNamedContacts(rows));
   const buyerStatus = deriveSideStatus("buyer", match, rows);
   const sellerStatus = deriveSideStatus("seller", match, rows);
 
+  const canAssignSide = useCallback(
+    (side: NamedContactSide, status: SideStatus): boolean => {
+      // Registered-user paths are stronger and not editable in Phase 2.
+      if (status.kind === "satisfied_registered" || status.kind === "not_required") {
+        return false;
+      }
+      if (isPlatformAdmin) return true;
+      if (!isOrgAdmin || !userOrgId) return false;
+      const sideOrg = side === "buyer" ? match.buyer_org_id : match.seller_org_id;
+      return !!sideOrg && sideOrg === userOrgId;
+    },
+    [isPlatformAdmin, isOrgAdmin, userOrgId, match.buyer_org_id, match.seller_org_id],
+  );
+
   // If no org attached on either side, nothing to show.
   if (buyerStatus.kind === "not_required" && sellerStatus.kind === "not_required") {
     return null;
   }
+
+  const isReplacement =
+    dialogSide === "buyer"
+      ? buyerStatus.kind === "satisfied_controlled"
+      : dialogSide === "seller"
+        ? sellerStatus.kind === "satisfied_controlled"
+        : false;
 
   return (
     <Card data-testid="named-contact-panel">
@@ -205,8 +231,8 @@ export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
         </CardTitle>
         <CardDescription>
           Each side with an attached organisation must have either a registered
-          Izenzo user or a controlled named contact. This is informational in
-          Phase 1 — progression is not blocked yet.
+          Izenzo user or a controlled named contact. This is informational —
+          progression is not blocked yet.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -223,17 +249,38 @@ export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
                 : gap === "buyer"
                   ? "Buyer side is missing a named authorised contact."
                   : "Seller side is missing a named authorised contact."}{" "}
-              Assignment UI will be available in the next phase. No emails or
-              invites are sent when a controlled contact is added.
+              Recording a controlled contact does not invite, email, or notify them.
             </AlertDescription>
           </Alert>
         )}
-        <SideRow label="Buyer" status={buyerStatus} />
-        <SideRow label="Seller" status={sellerStatus} />
+        <SideRow
+          label="Buyer"
+          status={buyerStatus}
+          canAssign={canAssignSide("buyer", buyerStatus)}
+          onAssign={() => setDialogSide("buyer")}
+        />
+        <SideRow
+          label="Seller"
+          status={sellerStatus}
+          canAssign={canAssignSide("seller", sellerStatus)}
+          onAssign={() => setDialogSide("seller")}
+        />
         {loading && (
           <p className="text-xs text-muted-foreground">Checking contacts…</p>
         )}
       </CardContent>
+      {dialogSide && (
+        <AssignNamedContactDialog
+          open={dialogSide !== null}
+          onOpenChange={(open) => {
+            if (!open) setDialogSide(null);
+          }}
+          matchId={matchId}
+          side={dialogSide}
+          isReplacement={isReplacement}
+          onSaved={() => setReloadKey((k) => k + 1)}
+        />
+      )}
     </Card>
   );
 }
