@@ -24,11 +24,13 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
-import { readAal } from "../_shared/aal.ts";
+import { assertAal2, readAal } from "../_shared/aal.ts";
+import { ApiException } from "../_shared/errors.ts";
 import {
   writeAdminAudit,
   extractIp,
   extractUserAgent,
+  type AdminAuditAal,
 } from "../_shared/admin-audit.ts";
 
 const ENDPOINT = "POST /admin-match-legacy-archive";
@@ -86,8 +88,10 @@ Deno.serve(async (req) => {
     userAgent,
   } as const;
 
-  // Archive is NOT currently aal2-gated; audit reflects "not_required".
-  const aalInfo = { required: false as const, observed: null, outcome: "not_required" as const };
+  // MT-008 post-closeout hardening: Archive now requires AAL2 / MFA parity
+  // with Repair. Until the AAL2 check passes, audit rows record the gate as
+  // "not_evaluated" — matching the Repair convention.
+  const aalInfo: AdminAuditAal = { required: true, observed: null, outcome: "not_evaluated" };
 
   try {
     // 1. Idempotency-Key.
@@ -114,7 +118,7 @@ Deno.serve(async (req) => {
     if (authError || !caller) {
       await writeAdminAudit({
         ...auditBase, status: "denied", reason: "INVALID_TOKEN",
-        aal: { required: false, observed: observedAal, outcome: "not_required" },
+        aal: { required: true, observed: observedAal, outcome: "not_evaluated" },
       });
       return jsonResponse(req, { error: "INVALID_TOKEN", requestId }, 401);
     }
@@ -122,12 +126,45 @@ Deno.serve(async (req) => {
     if (!isAdmin) {
       await writeAdminAudit({
         ...auditBase, status: "denied", actorUserId: caller.id, reason: "FORBIDDEN",
-        aal: { required: false, observed: observedAal, outcome: "not_required" },
+        aal: { required: true, observed: observedAal, outcome: "not_evaluated" },
       });
       return jsonResponse(req, { error: "FORBIDDEN", requestId }, 403);
     }
 
-    const aalEvaluated = { required: false as const, observed: observedAal, outcome: "not_required" as const };
+    // MT-008 post-closeout hardening: AAL2 / MFA required for legacy archive,
+    // mirroring admin-match-legacy-repair. Runs AFTER authentication and the
+    // platform-admin check, and BEFORE calling admin_archive_legacy_match.
+    try {
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: caller.id,
+        action: "admin.match_legacy_archive",
+        context: { endpoint: ENDPOINT, request_id: requestId },
+      });
+    } catch (err) {
+      if (err instanceof ApiException) {
+        await writeAdminAudit({
+          ...auditBase,
+          status: "denied",
+          actorUserId: caller.id,
+          reason: err.code,
+          aal: { required: true, observed: observedAal, outcome: "denied" },
+        });
+        return jsonResponse(
+          req,
+          {
+            error: err.code,
+            message: err.message,
+            requestId,
+            observed_aal: (err as any).details?.observed_aal,
+          },
+          err.statusCode,
+        );
+      }
+      throw err;
+    }
+
+    const aalEvaluated: AdminAuditAal = { required: true, observed: observedAal, outcome: "satisfied" };
 
     // 3. Strict body validation.
     let parsedBody: z.infer<typeof BodySchema>;
