@@ -55,23 +55,38 @@ describe("MT-009 Phase 2 — Daniel fixture source guards", () => {
 
   it("seeder calls ensureSeededNamedContact for each fixture that needs seeded contacts", () => {
     // Buyer-missing seeds seller side only.
-    expect(SEEDER).toMatch(
-      /fixture_code:\s*"DEMO-MT009-NC-BUYERMISSING-001"[\s\S]{0,200}side:\s*"seller"/,
-    );
+    const buyerMissingBlock = SEEDER.match(
+      /\/\/ M\. DEMO-MT009-NC-BUYERMISSING-001[\s\S]*?\/\/ N\. DEMO-MT009-NC-SELLERMISSING-002/,
+    )?.[0] ?? "";
+    expect(buyerMissingBlock).toMatch(/side:\s*"seller"/);
+    expect(buyerMissingBlock).not.toMatch(/side:\s*"buyer"/);
+
     // Seller-missing seeds buyer side only.
-    expect(SEEDER).toMatch(
-      /fixture_code:\s*"DEMO-MT009-NC-SELLERMISSING-002"[\s\S]{0,200}side:\s*"buyer"/,
-    );
+    const sellerMissingBlock = SEEDER.match(
+      /\/\/ N\. DEMO-MT009-NC-SELLERMISSING-002[\s\S]*?\/\/ O\. DEMO-MT009-NC-BOTHMISSING-003/,
+    )?.[0] ?? "";
+    expect(sellerMissingBlock).toMatch(/side:\s*"buyer"/);
+    expect(sellerMissingBlock).not.toMatch(/side:\s*"seller"/);
+
     // Both-missing fixture must NOT pre-seed any contact rows.
     const bothBlock = SEEDER.match(
-      /DEMO-MT009-NC-BOTHMISSING-003[\s\S]*?\/\/ P\. DEMO-MT009-NC-REPLACEBUYER-004/,
-    );
-    expect(bothBlock, "expected both-missing block to exist").not.toBeNull();
-    expect(bothBlock![0]).not.toContain("ensureSeededNamedContact(admin,");
+      /\/\/ O\. DEMO-MT009-NC-BOTHMISSING-003[\s\S]*?\/\/ P\. DEMO-MT009-NC-REPLACEBUYER-004/,
+    )?.[0] ?? "";
+    expect(bothBlock).not.toContain("ensureSeededNamedContact(admin,");
+
+    // Replace fixture seeds buyer (to be replaced) AND seller.
+    const replaceBlock = SEEDER.match(
+      /\/\/ P\. DEMO-MT009-NC-REPLACEBUYER-004[\s\S]*?\/\/ Q\. DEMO-MT009-NC-CLEAN-005/,
+    )?.[0] ?? "";
+    expect(replaceBlock).toMatch(/side:\s*"buyer"/);
+    expect(replaceBlock).toMatch(/side:\s*"seller"/);
+
     // Clean control seeds BOTH sides.
-    expect(SEEDER).toMatch(
-      /fixture_code:\s*"DEMO-MT009-NC-CLEAN-005"[\s\S]{0,2000}side:\s*"buyer"[\s\S]{0,2000}side:\s*"seller"/,
-    );
+    const cleanBlock = SEEDER.match(
+      /\/\/ Q\. DEMO-MT009-NC-CLEAN-005[\s\S]*?return json\(\{/,
+    )?.[0] ?? "";
+    expect(cleanBlock).toMatch(/side:\s*"buyer"/);
+    expect(cleanBlock).toMatch(/side:\s*"seller"/);
   });
 
   it("seeder MT-009 blocks do NOT add MT-008 markers", () => {
