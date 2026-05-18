@@ -124,14 +124,10 @@ describe("MT-009 Phase 1 — read-model isolation", () => {
   );
 
   it("does not import POI, WaD, payment, credit, or notification modules", () => {
-    expect(src).not.toMatch(/poi-/i);
-    expect(src).not.toMatch(/wad/i);
-    expect(src).not.toMatch(/payment/i);
-    expect(src).not.toMatch(/credit/i);
-    expect(src).not.toMatch(/notification/i);
-    expect(src).not.toMatch(/resend/i);
-    expect(src).not.toMatch(/invite/i);
-    expect(src).not.toMatch(/email-/i);
+    // Check imports only — comments may reference these names to explain policy.
+    const imports = src.match(/^import .+from .+$/gm) ?? [];
+    const joined = imports.join("\n");
+    expect(joined).not.toMatch(/poi-|wad|payment|credit|notification|resend|invite|email-/i);
   });
 
   it("only reads active rows and never mutates", () => {
