@@ -322,6 +322,8 @@ function MatchDetailsContent() {
 
       <MatchHeroCard match={match} isSettled={isSettled} engagementStatus={engagementStatus} />
 
+      {matchId && <NamedContactPanel matchId={matchId} match={match as any} />}
+
       {matchId && <ExecutionSection matchId={matchId} />}
     </PageContainer>
   );
