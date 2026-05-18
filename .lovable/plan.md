@@ -6,11 +6,11 @@ Narrow, audited, allowlisted production exception for the **five MT-009 Phase 2 
 
 `ALLOWED_FIXTURE_SCOPE = "MT-009 Phase 2 Daniel UAT"`
 `ALLOWED_FIXTURE_HASHES = [`
-`  "DEMO-MT009-NC-BUYERMISSING-001",`
-`  "DEMO-MT009-NC-SELLERMISSING-002",`
-`  "DEMO-MT009-NC-BOTHMISSING-003",`
-`  "DEMO-MT009-NC-REPLACEBUYER-004",`
-`  "DEMO-MT009-NC-CLEAN-005",`
+  `"DEMO-MT009-NC-BUYERMISSING-001",`
+  `"DEMO-MT009-NC-SELLERMISSING-002",`
+  `"DEMO-MT009-NC-BOTHMISSING-003",`
+  `"DEMO-MT009-NC-REPLACEBUYER-004",`
+  `"DEMO-MT009-NC-CLEAN-005",`
 `]`
 
 Anything outside these constants is rejected at the function boundary in production — no exceptions.
@@ -18,11 +18,13 @@ Anything outside these constants is rejected at the function boundary in product
 ## What gets built
 
 ### 1. DB migration
+
 - Add row to `admin_settings`: `key='allow_controlled_production_demo_fixtures'`, `value={ enabled: false, scope: 'MT-009 Phase 2 Daniel UAT', allowed_hashes: [...5...] }`.
 - Default **disabled**. Operator must explicitly flip `enabled=true` to seed in production.
 - No schema changes, no new tables, no RLS changes, no triggers, no functions.
 
 ### 2. New edge function `seed-mt009-controlled-prod`
+
 - Auth: identical to `seed-daniel-fixtures` (INTERNAL_CRON_KEY OR service-role OR platform_admin JWT).
 - Body: `{ confirm: "RUN_SEED_MT009_CONTROLLED_PROD", password: <>=12 chars>, scope: "MT-009 Phase 2 Daniel UAT", hashes: [<subset of the 5>] }`.
 - Production path: allowed **only** if `admin_settings.allow_controlled_production_demo_fixtures.enabled === true` AND `scope` exact-match AND every `hashes[i]` is in the allowlist.
@@ -39,6 +41,7 @@ Anything outside these constants is rejected at the function boundary in product
 - Audit log: `demo.fixture_seeded_controlled_production` with `{ fixture_scope, fixture_hashes, seeded_by, seeded_at, expires_at, production_demo_mode: true, request_id }`.
 
 ### 3. New edge function `unseed-mt009-controlled-prod`
+
 - Symmetric to the seeder.
 - Production cleanup gated by the same flag.
 - Deletes **only** rows where `hash IN (5 allowlist)` AND `is_demo=true` AND `metadata->>'fixture_scope' = 'MT-009 Phase 2 Daniel UAT'`.
@@ -47,7 +50,9 @@ Anything outside these constants is rejected at the function boundary in product
 - Audit log: `demo.fixture_unseeded_controlled_production`.
 
 ### 4. Tests (`src/tests/mt009-controlled-prod.test.ts`)
+
 Source-pin tests in the same style as `phase2-daniel-fixtures.test.ts`:
+
 1. Production seeding refused when flag disabled.
 2. Production seeding works when flag enabled AND scope+hashes match.
 3. Only the five hashes are accepted; any other hash returns 400.
@@ -58,6 +63,7 @@ Source-pin tests in the same style as `phase2-daniel-fixtures.test.ts`:
 8. Unseeder only deletes the five allowlisted hashes with both `is_demo=true` and metadata scope match.
 
 ### 5. Readiness report (returned in chat, no seeding yet)
+
 - Files changed
 - Exact safeguards
 - Tests run + pass/fail
@@ -68,6 +74,7 @@ Source-pin tests in the same style as `phase2-daniel-fixtures.test.ts`:
 - OPS-010 controlled demo-data compliance confirmation
 
 ## Out of scope (explicit)
+
 - No change to `seed-daniel-fixtures` production guard.
 - No change to `unseed-daniel-fixtures` production guard.
 - No change to `is_production_environment()`.
@@ -79,4 +86,45 @@ Source-pin tests in the same style as `phase2-daniel-fixtures.test.ts`:
 - No hard MT-009 progression blocking.
 
 ## Stop condition
-After implementation: return readiness report. **Do not seed until explicit approval.**
+
+After implementation: return readiness report. **Do not seed until explicit approval.**  
+  
+Approved with two additions.
+
+Proceed to implement the controlled production demo mode exactly as designed.
+
+Add these two requirements:
+
+1. Expiry guard
+
+- Every seeded match must have `metadata.expires_at`.
+
+- Default expiry is now + 30 days.
+
+- Seeder must reject any requested expiry beyond 30 days.
+
+- Readiness report must include how to find expired controlled demo fixtures.
+
+- Unseed function must support cleaning the five allowlisted MT-009 fixtures.
+
+2. Post-seed verification response
+
+Seeder response must return, per fixture:
+
+- fixture hash;
+
+- match_id;
+
+- route path `/desk/match/<match_id>`;
+
+- whether created or reused;
+
+- active named-contact count;
+
+- requiresNamedContact result if available.
+
+Proceed with implementation.
+
+Still do not seed production.
+
+Return readiness report only after tests pass.
