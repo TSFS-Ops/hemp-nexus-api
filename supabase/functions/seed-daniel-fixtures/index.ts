@@ -1260,6 +1260,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    return json({
       ok: true,
       summary: {
         accounts_created: ACCOUNTS.length,
