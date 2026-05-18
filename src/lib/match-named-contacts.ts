@@ -63,3 +63,71 @@ export function toActiveNamedContacts(
 ): ActiveNamedContact[] {
   return rows.map((r) => ({ side: r.side, status: r.status }));
 }
+
+/**
+ * MT-009 Phase 2: assign or replace a controlled named contact via the
+ * `match-named-contacts-assign` edge function. Caller authorisation is
+ * enforced server-side (org-admin own-org OR platform-admin with AAL2).
+ *
+ * NEVER sends email/invite/notification — the edge function and RPC are
+ * source-guarded against any such import.
+ */
+export type AssignNamedContactInput = {
+  matchId: string;
+  side: NamedContactSide;
+  contactName: string;
+  contactEmail: string;
+  notes?: string;
+};
+
+export type AssignNamedContactResult = {
+  contact_id: string;
+  replaced_prior_id: string | null;
+  side: NamedContactSide;
+};
+
+export class AssignNamedContactError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly status?: number,
+  ) {
+    super(message);
+    this.name = "AssignNamedContactError";
+  }
+}
+
+export async function assignNamedContact(
+  input: AssignNamedContactInput,
+): Promise<AssignNamedContactResult> {
+  const idempotencyKey =
+    globalThis.crypto?.randomUUID?.() ??
+    `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const { data, error } = await supabase.functions.invoke(
+    "match-named-contacts-assign",
+    {
+      body: {
+        match_id: input.matchId,
+        side: input.side,
+        contact_name: input.contactName.trim(),
+        contact_email: input.contactEmail.trim().toLowerCase(),
+        ...(input.notes && input.notes.trim().length > 0
+          ? { notes: input.notes.trim() }
+          : {}),
+      },
+      headers: { "Idempotency-Key": idempotencyKey },
+    },
+  );
+  if (error) {
+    const ctx = (error as { context?: { error?: string; message?: string } }).context;
+    const code = ctx?.error ?? "ASSIGN_FAILED";
+    throw new AssignNamedContactError(code, ctx?.message ?? error.message);
+  }
+  if (!data?.ok) {
+    throw new AssignNamedContactError(
+      data?.error ?? "ASSIGN_FAILED",
+      data?.message ?? "Failed to save named contact.",
+    );
+  }
+  return data.result as AssignNamedContactResult;
+}
