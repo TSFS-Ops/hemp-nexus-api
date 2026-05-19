@@ -1,0 +1,9 @@
+{
+  "$schema_note": "Deploy-coverage manifest. Read scripts/check-edge-function-deploy-coverage.mjs for rules.",
+  "required": [
+    "match-named-contacts-assign",
+    "seed-mt009-controlled-prod",
+    "unseed-mt009-controlled-prod"
+  ],
+  "exempt_invokes": []
+}
