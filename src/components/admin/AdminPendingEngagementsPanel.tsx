@@ -1724,9 +1724,10 @@ export function AdminPendingEngagementsPanel() {
                             <p className="text-xs text-muted-foreground break-all">{e.counterparty_email}</p>
                           ) : (
                             !isTerminal && (
-                              <p className="text-[11px] text-amber-700 mt-0.5 leading-snug">
-                                No contact details yet. Research this counterparty, add a valid email, then send outreach.
-                              </p>
+                              <div className="text-[11px] text-amber-700 mt-0.5 leading-snug space-y-0.5">
+                                <p>No contact details yet. Research this counterparty, add a valid email, then send outreach.</p>
+                                <p>Send outreach is disabled until a valid email is added.</p>
+                              </div>
                             )
                           )}
                         </TableCell>
