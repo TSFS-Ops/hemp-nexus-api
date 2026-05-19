@@ -1,0 +1,38 @@
+{
+  "_comment": [
+    "Deploy-coverage manifest for edge functions whose absence in the",
+    "deployed runtime causes a user-visible failure.",
+    "",
+    "MOTIVATION (MT-009 Test 1 incident, 2026-05-18):",
+    "  src/lib/match-named-contacts.ts called",
+    "    supabase.functions.invoke('match-named-contacts-assign')",
+    "  The directory existed under supabase/functions/, so the existing",
+    "  check-edge-function-paths.mjs source-drift guard passed. However,",
+    "  the function was not deployed to production, so Daniel saw a save",
+    "  failure at runtime.",
+    "",
+    "RULES (enforced by scripts/check-edge-function-deploy-coverage.mjs):",
+    "  1. Every function name invoked from src/ MUST appear in 'required'.",
+    "  2. Every name in 'required' MUST have a matching supabase/functions/<name>/ directory.",
+    "  3. New invoke call sites added in src/ without a matching entry here",
+    "     fail the prebuild — forcing the author to acknowledge the deploy.",
+    "",
+    "HOW TO ADD A FUNCTION:",
+    "  • Create supabase/functions/<name>/index.ts (Lovable auto-deploys backend changes).",
+    "  • Add the name to 'required' below.",
+    "  • Mention it under the 'Edge functions requiring deploy' section in RELEASE_GATE.md.",
+    "",
+    "WHAT THIS DOES NOT CHECK:",
+    "  • Live production deploy state. Source-level guard only — CI does",
+    "    not have prod access. Backend deploy is automatic on Lovable, but",
+    "    this manifest documents intent + catches forgotten release-note items."
+  ],
+  "required": [
+    "match-named-contacts-assign",
+    "seed-mt009-controlled-prod",
+    "unseed-mt009-controlled-prod"
+  ],
+  "exempt_invokes": [
+    "_comment_exempt": "Dynamic / templated invoke names that cannot be statically resolved."
+  ]
+}
