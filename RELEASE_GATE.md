@@ -38,6 +38,17 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-csv-export-audit.mjs` — sensitive CSV exports are audited (Batch U)
 - `check-batch-suite-presence.mjs` — every closeout-report batch row has a matching test (Batch W)
 - `check-release-gate-sync.mjs` — prebuild scripts + critical cron jobs are documented (Batch W)
+- `check-edge-function-deploy-coverage.mjs` — deploy-critical edge functions are backed by source AND named on this page (post-MT-009 Test 1 incident)
+
+### Edge functions requiring deploy
+
+Every name below is enforced by `scripts/check-edge-function-deploy-coverage.mjs`
+against `scripts/edge-function-deploy-manifest.json`. Confirm each one is
+live in the production runtime before publishing.
+
+- `match-named-contacts-assign` — MT-009 Phase 2 controlled named-contact assign (frontend-invoked from `AssignNamedContactDialog`)
+- `seed-mt009-controlled-prod` — MT-009 controlled-production demo seeder (admin/curl only)
+- `unseed-mt009-controlled-prod` — MT-009 controlled-production demo cleanup (admin/curl only)
 
 Closeout & handover artefacts (must be reviewed before client sign-off):
 
