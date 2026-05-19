@@ -511,6 +511,33 @@ Deno.serve(async (req) => {
               request_id: requestId,
             },
           });
+          // CP-002 / DEC-002 (signed): emit the specific
+          // missing-email block alongside the canonical event so
+          // dashboards can split "email missing" from the broader
+          // "contact incomplete" without losing the canonical row.
+          if (previewState === "email_missing") {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "pending_engagement.outreach_blocked_missing_email",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                actor_role: "platform_admin",
+                surface: "preview-outreach",
+                state: previewState,
+                code,
+                engagement_id: engagementId,
+                match_id: (eng as { match_id?: string }).match_id ?? null,
+                counterparty_name: ((eng as { contact_name?: string | null }).contact_name ?? null),
+                counterparty_email_present: false,
+                outreach_enabled: false,
+                outreach_sent: false,
+                credit_burned: false,
+                request_id: requestId,
+              },
+            });
+          }
         } catch (_e) { /* non-fatal */ }
         throw new ApiException(code, reason, 409);
       }
