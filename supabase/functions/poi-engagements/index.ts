@@ -1967,6 +1967,87 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.warn(`[${requestId}] Failed to insert ${action} audit row (non-fatal):`, e);
           }
+
+          // ── CP-002 / DEC-002 (signed) — emit additional named events
+          // alongside the canonical contact.assigned/updated row, without
+          // removing it. Two cases:
+          //   • prev state had no usable contact AND new state is usable
+          //     → `pending_engagement.contact_details_added`
+          //   • new state is `email_missing` (name on file, no usable email)
+          //     → `pending_engagement.no_contact_details_detected`
+          try {
+            const prevEng = {
+              counterparty_email: prevEmail,
+              counterparty_org_id: (current as { counterparty_org_id?: string | null }).counterparty_org_id ?? null,
+              contact_name: prevName,
+              contact_type: prevType,
+              counterparty_org: (current as any).counterparty_org ?? null,
+            };
+            const nextEng = {
+              counterparty_email: nextEmail,
+              counterparty_org_id: (current as { counterparty_org_id?: string | null }).counterparty_org_id ?? null,
+              contact_name: nextName,
+              contact_type: nextType,
+              counterparty_org: (current as any).counterparty_org ?? null,
+            };
+            const matchForState = (current as any).matches ?? null;
+            const prevState = getContactState(prevEng as any, matchForState);
+            const nextState = getContactState(nextEng as any, matchForState);
+            const matchIdForAudit = (current as { match_id?: string | null }).match_id ?? null;
+            const baseMeta = {
+              actor_role: actorRole,
+              actor_org_id: authCtx.orgId ?? null,
+              engagement_id: engagementId,
+              match_id: matchIdForAudit,
+              organisation_id: current.org_id,
+              created_by_user_id: authCtx.userId,
+              request_id: requestId,
+            };
+            const prevBlocked = prevState === "email_missing" || prevState === "contact_incomplete";
+            const nextUsable = nextState === "organisation_contact" || nextState === "named_individual_contact";
+            if (prevBlocked && nextUsable) {
+              await supabase.from("audit_logs").insert({
+                org_id: current.org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.contact_details_added",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  ...baseMeta,
+                  previous_state: prevState,
+                  new_state: nextState,
+                  counterparty_name: nextName,
+                  counterparty_email_present: !!nextEmail,
+                  contact_state: nextState,
+                  outreach_enabled: true,
+                  outreach_sent: false,
+                  credit_burned: false,
+                },
+              });
+            }
+            if (nextState === "email_missing") {
+              await supabase.from("audit_logs").insert({
+                org_id: current.org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.no_contact_details_detected",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  ...baseMeta,
+                  counterparty_name: nextName,
+                  counterparty_email_present: false,
+                  counterparty_registration_status: "unregistered",
+                  status: "pending",
+                  contact_state: "no_contact",
+                  outreach_enabled: false,
+                  outreach_sent: false,
+                  credit_burned: false,
+                },
+              });
+            }
+          } catch (e) {
+            console.warn(`[${requestId}] CP-002 supplementary audit emit failed (non-fatal):`, e);
+          }
         }
       }
 
