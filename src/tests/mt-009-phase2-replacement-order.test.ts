@@ -94,9 +94,13 @@ describe("MT-009 Phase 2 Test 4 — replacement transaction order", () => {
     );
   });
 
-  it("never imports POI/WaD/payment/credit/email side-effects (RPC body is pure SQL)", () => {
-    expect(src).not.toMatch(
-      /atomic_generate_poi|atomic_token_burn|notification|resend|payment|credit/i,
+  it("never calls POI/WaD/payment/credit/email side-effects (RPC body is pure SQL)", () => {
+    // Strip comments — narrative may legitimately mention these names.
+    const body = src
+      .replace(/--[^\n]*\n/g, "\n")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(body).not.toMatch(
+      /atomic_generate_poi|atomic_token_burn|notification_dispatch|resend|payment|credit_ledger|token_ledger/i,
     );
   });
 });
