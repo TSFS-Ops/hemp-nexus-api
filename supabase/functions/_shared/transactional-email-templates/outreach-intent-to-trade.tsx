@@ -71,20 +71,24 @@ const OutreachIntentToTradeEmail = (props: OutreachIntentToTradeProps) => {
     <Html lang="en" dir="ltr">
       <Head />
       <Preview>
-        Trade interest from a verified counterparty on {SITE_NAME}{commodity ? ` — ${commodity}` : ''}
+        You have been invited to review a proposed trade on {SITE_NAME}{commodity ? ` — ${commodity}` : ''}
       </Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>Trade Interest — {SITE_NAME}</Heading>
+          <Heading style={h1}>Proposed Trade — Invitation to Review</Heading>
 
           <Text style={text}>{greeting}</Text>
 
           <Text style={text}>
-            We are writing on behalf of <strong>{initiatorOrgName || 'a verified counterparty'}</strong>,
-            an organisation registered on the {SITE_NAME} compliance-grade trading platform.
-            They have expressed a verified intent to {roleLabel}
-            {commodity ? <> <strong>{commodity}</strong></> : ' a commodity'} and have asked us to
-            establish first contact with you.
+            You have been invited to review a proposed trade on {SITE_NAME}. This invitation
+            does not confirm your acceptance. Please review the details and confirm
+            whether you accept or decline participation.
+          </Text>
+
+          <Text style={text}>
+            <strong>{initiatorOrgName || 'An organisation on the platform'}</strong> has
+            proposed to {roleLabel}{commodity ? <> <strong>{commodity}</strong></> : ' a commodity'}
+            {' '}with you. No engagement is recorded against you until you confirm.
           </Text>
 
           <Section style={detailBox}>
@@ -153,8 +157,9 @@ const OutreachIntentToTradeEmail = (props: OutreachIntentToTradeProps) => {
           </Text>
 
           <Text style={text}>
-            {SITE_NAME} provides a verified, audit-grade environment for cross-border commodity trading,
-            including counterparty due diligence, sealed Proof-of-Intent records, and dispute governance.
+            {SITE_NAME} provides a governed environment for cross-border commodity trading,
+            including counterparty due-diligence workflows, recorded Proof-of-Intent records,
+            and dispute governance. Records become mutual only once both parties have confirmed.
           </Text>
 
           <Hr style={hr} />
@@ -182,7 +187,7 @@ export const template = {
   subject: (data: Record<string, any>) => {
     const c = data.commodity ? ` — ${data.commodity}` : ''
     const ref = data.matchId ? ` [${String(data.matchId).slice(0, 8)}]` : ''
-    return `Trade interest from a verified ${SITE_NAME} counterparty${c}${ref}`
+    return `Invitation to review a proposed trade on ${SITE_NAME}${c}${ref}`
   },
   displayName: 'Outreach — Intent to trade',
   previewData: {

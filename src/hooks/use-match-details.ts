@@ -331,7 +331,7 @@ export function useMatchDetails(matchId: string | undefined) {
         // UI-007: tell other tabs to refresh their balance + match views.
         publishCrossTab({ kind: "credit-balance" });
         publishCrossTab({ kind: "match", matchId: match.id });
-        toast.success("POI sealed. 1 credit deducted. Execution-readiness checks (Signed Deal / WaD) still pending.");
+        toast.success("Draft POI recorded — initiator-generated intent record, awaiting counterparty confirmation. 1 credit deducted. WaD, execution, and finality remain subject to the next required workflow steps.");
       }
     },
     {
@@ -452,10 +452,10 @@ export function useMatchDetails(matchId: string | undefined) {
         publishCrossTab({ kind: "match", matchId: match.id });
 
         const labels: Record<string, string> = {
-          "generate-poi": "POI sealed. 1 credit deducted. Execution-readiness checks (Signed Deal / WaD) still pending.",
+          "generate-poi": "Draft POI recorded — initiator-generated intent record, awaiting counterparty confirmation. 1 credit deducted. WaD, execution, and finality remain subject to the next required workflow steps.",
           "reveal-counterparty": "Counterparty revealed.",
           "commit": "Deal committed.",
-          "complete": "Transaction completed. Evidence record sealed.",
+          "complete": "Transaction recorded. Evidence record sealed.",
         };
         toast.success(labels[actionPath] || "Action completed.");
       }

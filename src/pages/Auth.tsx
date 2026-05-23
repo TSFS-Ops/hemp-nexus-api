@@ -448,7 +448,7 @@ export default function Auth() {
         </div>
 
         <p className="mt-3 text-[11px] text-muted-foreground/70 text-center leading-relaxed">
-          POPIA &amp; GDPR-compliant data residency. All sessions tamper-proofally sealed.
+          Regional data residency is configured. Per-organisation residency commitments require separate approval.
         </p>
       </div>
     </div>;

@@ -635,8 +635,9 @@ Deno.serve(async (req) => {
 
         const responseBody = {
           code: "ENGAGEMENT_PENDING",
+          // DEC-005: signed initiator-facing copy.
           message:
-            "Counterparty is not yet registered or attached. A pending engagement has been created; POI mint will resume once the counterparty registers and accepts.",
+            "Counterparty invitation sent. This trade remains pending until the counterparty confirms participation.",
           engagement_id: engagementRow?.id ?? null,
           match_id: matchId,
           missing_party: cpGate.missing_party,
@@ -647,7 +648,7 @@ Deno.serve(async (req) => {
             status: "queued",
             gate: "counterparty_registration",
             message:
-              "Counterparty is named but not yet a registered organisation. The deal is queued in Pending Engagements; POI mint will resume once the counterparty registers and accepts.",
+              "Counterparty invitation sent. This trade remains pending until the counterparty confirms participation.",
           },
           engagement: engagementRow,
           binding,
@@ -886,8 +887,9 @@ Deno.serve(async (req) => {
             soft_route: {
               status: "queued",
               failed_fields: softRoute.failedFields,
+              // DEC-005: signed initiator-facing copy.
               message:
-                "Counterparty is named but not yet a registered organisation. The deal is queued in Pending Engagements; POI mint will resume once the counterparty registers and accepts.",
+                "Counterparty invitation sent. This trade remains pending until the counterparty confirms participation.",
             },
             engagement: engagementRow,
             binding,
@@ -1275,8 +1277,8 @@ Deno.serve(async (req) => {
               const notifRows = cpUsers.map((u: any) => ({
                 user_id: u.id,
                 type: "poi_counterparty_notification",
-                title: `POI issued: ${match.commodity || 'Trade'}`,
-                body: `A Proof of Intent has been issued for ${match.commodity || 'a trade'} by ${creatorOrgName}. Your organisation is the ${counterpartySide}. Review and respond.`,
+                title: `Trade Request — your confirmation needed: ${match.commodity || 'Trade'}`,
+                body: `A Draft Proof of Intent (initiator-generated intent record, awaiting your confirmation) has been recorded for ${match.commodity || 'a trade'} by ${creatorOrgName}. Your organisation is the ${counterpartySide}. Review and confirm whether you accept or decline.`,
                 link: `/desk/match/${matchId}`,
                 org_id: counterpartyOrgId,
                 entity_type: "match",

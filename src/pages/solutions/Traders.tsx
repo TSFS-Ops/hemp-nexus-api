@@ -235,7 +235,7 @@ export default function TradersSolutionsPage() {
             </h2>
             <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
               Three primitives engineered to compress days of paperwork into
-              minutes of tamper-proof execution.
+              minutes from drafted intent to recorded POI.
             </p>
           </div>
 
@@ -255,9 +255,9 @@ export default function TradersSolutionsPage() {
               </h3>
               <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-xl">
                 Search the order book by commodity, geography, role, or
-                counterparty. Every listed party has cleared KYB, sanctions
-                screening, and authority binding before they appear in your
-                results. No more cold introductions or unverified tip-offs.
+                counterparty. Counterparties shown on your desk carry the
+                screening status recorded for them. Status changes over time;
+                always verify the current badge.
               </p>
 
               <div className="mt-10 grid sm:grid-cols-3 gap-4">
@@ -326,7 +326,7 @@ export default function TradersSolutionsPage() {
                 </div>
 
                 <ul className="space-y-2.5">
-                  {["Single KYB profile, all counterparties", "Auto-screened against OFAC, EU, UK lists", "Jurisdictional routing on every deal", "Authority binding via verifiable credentials", "Compliance evidence travels with the trade"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
+                  {["Single KYB profile, all counterparties", "Sanctions screening workflow with admin-reviewed thresholds. Continuous re-screening is planned hardening.", "Jurisdictional routing on every deal", "Authority binding workflow with verifiable credentials", "Compliance evidence travels with the trade"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
                       <span className="font-mono text-[10px] text-[hsl(var(--emerald))]/70 tabular-nums w-6">
                         {String(i + 1).padStart(2, "0")}
                       </span>

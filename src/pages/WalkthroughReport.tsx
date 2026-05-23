@@ -16,7 +16,7 @@ const phases = [{
   title: "Phase 4 - Evidence & Final Output (~1.5 min)",
   steps: ["Generate Evidence Pack v1", "Confirm Signed Deal with hard-gate validations", "Collect buyer + seller attestations", "Seal Signed Deal (hash chain)", "Export certificate", "Export full audit log"]
 }];
-const verificationChecklist = ["Screening is clear and within 30 days for both parties", "Risk band is not high/critical for both parties", "Both parties are Approved to Trade", "Intent completion probability is ≥ 50.1%", "Collapse ledger entry created and immutable", "Signed Deal sealed with attestations", "Evidence Pack export generated", "Audit trail export contains lifecycle events end-to-end"];
+const verificationChecklist = ["Screening is clear and within 30 days for both parties", "Risk band is not high/critical for both parties", "Both parties are Approved to Trade", "Intent completion probability is ≥ 50.1%", "Collapse ledger entry created and hash-recorded", "Signed Deal sealed with attestations", "Evidence Pack export generated", "Audit trail export contains lifecycle events across the recorded workflow"];
 export default function WalkthroughReport() {
   const onDownloadPdf = () => {
     window.print();

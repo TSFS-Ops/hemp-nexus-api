@@ -63,8 +63,8 @@ function EmeraldWhisper() {
 
 const PAYG_FEATURES = [
   "Live Match Compiler",
-  "Automated KYB & Sanctions",
-  "SHA-256 Proof of Intent",
+  "Admin-controlled KYB and sanctions screening workflow",
+  "SHA-256 hashed Proof of Intent",
   "Standard API Access",
 ];
 
@@ -78,18 +78,18 @@ const INSTITUTIONAL_FEATURES = [
 const ALWAYS_INCLUDED = [
   {
     icon: ShieldCheck,
-    title: "Tamper-Proof Security",
-    desc: "SHA-256 sealing on every state transition. Tamper-evident, append-only.",
+    title: "Cryptographic Hashing",
+    desc: "SHA-256 hash recorded on critical state transitions. Coverage is being progressively hardened.",
   },
   {
     icon: Globe,
-    title: "Global Compliance",
-    desc: "Continuous OFAC, EU, UK HMT, and DPL background screening.",
+    title: "Sanctions Screening Workflow",
+    desc: "Periodic OFAC, EU, UK HMT, and DPL background screening on configured cadence.",
   },
   {
     icon: Activity,
-    title: "99.99% Uptime",
-    desc: "Enterprise-grade reliability with real-time platform health.",
+    title: "Platform Health",
+    desc: "Internal platform-health monitoring. Public status feed is in development.",
   },
 ];
 
@@ -132,7 +132,7 @@ export default function Pricing() {
             transition={{ duration: 0.6, delay: 0.12 }}
             className="mt-8 max-w-2xl mx-auto text-lg text-muted-foreground leading-relaxed"
           >
-            Pay only for the tamper-proof deals you execute. No opaque
+            Pay only for the Proof-of-Intent records you mint. No opaque
             licenses, no hidden fees. Volume pricing available for institutions.
           </motion.p>
         </div>

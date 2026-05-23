@@ -335,8 +335,8 @@ export default function ComplianceEngineProductPage() {
               duration: 0.7,
               delay: 0.1
             }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
-                Automate KYB, resolve complex UBO structures, and screen against
-                global sanctions in real-time. Turn compliance from a bottleneck
+                Admin-controlled KYB workflow, resolve complex UBO structures, and screen against
+                global sanctions on configured cadence. Turn compliance from a bottleneck
                 into a competitive advantage.
               </motion.p>
 
@@ -390,7 +390,7 @@ export default function ComplianceEngineProductPage() {
             <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground">
               Three primitives. One verified counterparty.
             </h2>
-            <p className="mt-6 text-lg text-muted-foreground leading-relaxed"> Document intelligence, ownership graphing, and continuous sanctions screening: composed into a single auditable record. </p>
+            <p className="mt-6 text-lg text-muted-foreground leading-relaxed"> Document intelligence, ownership graphing, and periodic sanctions screening on configured cadence: composed into a single auditable record. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -425,9 +425,9 @@ export default function ComplianceEngineProductPage() {
                 </p>
               </div>
               <h3 className="text-2xl font-semibold tracking-tighter text-foreground">
-                Continuous sanctions screening.
+                Periodic sanctions screening.
               </h3>
-              <p className="mt-3 text-[15px] text-muted-foreground leading-relaxed"> Every entity is continuously screened against global watchlists: not just at onboarding. </p>
+              <p className="mt-3 text-[15px] text-muted-foreground leading-relaxed"> Every entity is screened against global watchlists on a configured cadence. Continuous re-screening is planned hardening. </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
                 {[{

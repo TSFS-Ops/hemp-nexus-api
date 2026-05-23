@@ -14,7 +14,7 @@ export default function GovernanceEntities() {
           <GovernancePage
             eyebrow="Governance Layer · 03"
             title="Entity Verification"
-            description="Counterparty register with KYC, UBO chain, authority binding, and risk score. Entities are screened against sanctions and adverse-media feeds at issuance and re-screened on a 90-day cadence."
+            description="Counterparty register with KYC, UBO chain, authority binding, and risk score. Entities are screened against sanctions and adverse-media feeds at issuance and re-screened on a configured cadence (currently targeted at 90 days)."
             icon={ShieldCheck}
             meta={[
               { label: "Verified", value: "4 entities", tone: "good" },

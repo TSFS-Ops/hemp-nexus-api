@@ -161,7 +161,7 @@ export function DealWizard({
     complete: wadComplete,
     locked: !poiComplete || poiHoldActive,
     lockedReason: !poiComplete
-      ? "Generate a Proof of Intent first. Signed Deal compiles the 9-gate evidence bundle on top of a sealed POI."
+      ? "Generate a Proof of Intent first. Signed Deal compiles the 9-gate evidence bundle on top of a recorded POI."
       : poiHoldActive
         ? "The trading partner has been notified but has not yet accepted. Signed Deal unlocks when they engage."
         : undefined,
@@ -238,8 +238,8 @@ export function DealWizard({
       return {
         tone: "locked",
         eyebrow: "Waiting on counterparty",
-        title: "Pending Engagement — outreach in progress",
-        description: `A Pending Engagement has been recorded for this trade (${statusText}). No credits have been burned. POI minting will resume once your counterparty accepts. See the Pending Engagement card above for full status.`,
+        title: "Pending Engagement — counterparty invited, awaiting confirmation.",
+        description: `Counterparty invitation sent (${statusText}). This trade remains pending until the counterparty confirms participation. No credits have been burned. See the Pending Engagement card above for full status.`,
         helpText: "While a Pending Engagement is active the Generate POI action is held by the server (409 ENGAGEMENT_PENDING). You'll be notified by email when the counterparty responds.",
       };
     }

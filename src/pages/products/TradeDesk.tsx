@@ -278,8 +278,8 @@ export default function TradeDeskProductPage() {
               delay: 0.1
             }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
                 The all-in-one terminal for institutional commodity trade. Discover
-                counterparties, run compliance, and seal cross-border deals with
-                tamper-proof Proof of Intent.
+                counterparties, run governed compliance workflow, and record cross-border
+                trade intent with cryptographically hashed Proof of Intent.
               </motion.p>
 
               <motion.div initial={{
@@ -349,7 +349,7 @@ export default function TradeDeskProductPage() {
               <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-foreground">
                 The 9-Gate Protocol.
               </h3>
-              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> Every Proof of Intent traverses nine tamper-proof gates before it seals, entity, UBO, sanctions, jurisdiction, authority, terms, evidence, dual-collapse, certification. </p>
+              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> Every Proof of Intent traverses nine evidence gates before WaD certification: entity, UBO, sanctions, jurisdiction, authority, terms, evidence, dual-collapse, certification. </p>
 
               <div className="mt-12">
                 <NineGateProtocol />
@@ -397,7 +397,7 @@ export default function TradeDeskProductPage() {
                   <h3 className="text-3xl font-semibold tracking-tighter text-foreground">
                     Real-time telemetry.
                   </h3>
-                  <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> A live activity stream surfaces every state transition across your desk (from match creation to certificate issuance) with tamper-proof provenance on every pulse. </p>
+                  <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> A product preview rendered from demo data — not customer activity — surfaces every state transition across a desk (from match creation to certificate issuance) with cryptographic provenance on every pulse. </p>
                 </div>
                 <div className="rounded-xl bg-muted/70 ring-1 ring-slate-100 p-8">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground mb-5">
@@ -419,8 +419,8 @@ export default function TradeDeskProductPage() {
             Open your desk in minutes.
           </h2>
           <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Provision a workspace, complete your compliance profile, and issue your
-            first sealed Proof of Intent today.
+            Provision a workspace, complete your compliance profile, and record your
+            first Draft Proof of Intent today.
           </p>
           <div className="mt-12">
             <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-[hsl(var(--emerald))] px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-[hsl(var(--emerald))] transition-all">

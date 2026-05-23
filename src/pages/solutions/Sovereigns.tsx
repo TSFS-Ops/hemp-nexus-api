@@ -221,8 +221,8 @@ export default function SovereignsSolutionsPage() {
               delay: 0.1
             }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
                 Secure national and cross-border trade programmes with
-                end-to-end provenance, automated compliance, and real-time
-                macro telemetry.
+                end-to-end provenance and governed compliance workflow with
+                admin oversight. Real-time programme telemetry is in development.
               </motion.p>
 
               <motion.div initial={{
@@ -272,7 +272,7 @@ export default function SovereignsSolutionsPage() {
               For ministries, central banks & PDBs
             </p>
             <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground">
-              See the whole programme. In real time.
+              See the whole programme. Refresh cadence subject to workflow completion.
             </h2>
             <p className="mt-6 text-lg text-muted-foreground leading-relaxed"> Three primitives (macro oversight, fraud prevention, and institutional data control) engineered for institutional trade programmes at national scale. </p>
           </div>
@@ -362,7 +362,7 @@ export default function SovereignsSolutionsPage() {
                 </div>
 
                 <ul className="space-y-2.5">
-                  {["Jurisdiction-locked data residency", "Role-based access (RBAC + break-glass)", "POPIA / GDPR retention enforcement", "Cold-storage archival pipeline", "Independent regulator export endpoints"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
+                  {["Jurisdiction-locked data residency", "Role-based access (RBAC + break-glass)", "POPIA / GDPR retention workflow", "Cold-storage archival pipeline", "Independent regulator export endpoints (planned hardening)"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
                       <span className="font-mono text-[10px] text-[hsl(var(--emerald))]/70 tabular-nums w-6">
                         {String(i + 1).padStart(2, "0")}
                       </span>
