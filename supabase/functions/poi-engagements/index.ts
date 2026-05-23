@@ -25,6 +25,7 @@ import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts
 import {
   getContactState,
   isOutreachBlocked,
+  isUsableContactEmail,
   contactBlockReason,
   contactBlockCode,
   contactStateLabel,
@@ -539,7 +540,40 @@ Deno.serve(async (req) => {
               },
             });
           }
+          // CP-003 (signed mirror of CP-002): email present but no
+          // usable counterparty name. Canonical `contact_incomplete`
+          // event above is preserved; this sibling lets dashboards
+          // split "name missing" from the generic incomplete bucket
+          // without changing getContactState return values.
+          if (
+            previewState === "contact_incomplete" &&
+            isUsableContactEmail((eng as { counterparty_email?: string | null }).counterparty_email)
+          ) {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "pending_engagement.outreach_blocked_missing_name",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                cp_rule: "CP-003",
+                actor_role: "platform_admin",
+                surface: "preview-outreach",
+                state: previewState,
+                code,
+                engagement_id: engagementId,
+                match_id: (eng as { match_id?: string }).match_id ?? null,
+                counterparty_name: null,
+                counterparty_email_present: true,
+                outreach_enabled: false,
+                outreach_sent: false,
+                credit_burned: false,
+                request_id: requestId,
+              },
+            });
+          }
         } catch (_e) { /* non-fatal */ }
+
         throw new ApiException(code, reason, 409);
       }
 
@@ -868,6 +902,35 @@ Deno.serve(async (req) => {
                 },
               });
             }
+            // CP-003 (signed mirror): email present, name missing.
+            if (
+              sendState === "contact_incomplete" &&
+              isUsableContactEmail((eng as { counterparty_email?: string | null }).counterparty_email)
+            ) {
+              await supabase.from("audit_logs").insert({
+                org_id: (eng as { org_id: string }).org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.outreach_blocked_missing_name",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  cp_rule: "CP-003",
+                  actor_role: "platform_admin",
+                  surface: "send-outreach",
+                  state: sendState,
+                  code,
+                  engagement_id: engagementId,
+                  match_id: (eng as { match_id?: string }).match_id ?? null,
+                  counterparty_name: null,
+                  counterparty_email_present: true,
+                  outreach_enabled: false,
+                  outreach_sent: false,
+                  credit_burned: false,
+                  request_id: requestId,
+                },
+              });
+            }
+
           } catch (_e) { /* non-fatal */ }
           throw new ApiException(code, reason, 422);
         }
@@ -2046,6 +2109,34 @@ Deno.serve(async (req) => {
                 },
               });
             }
+            // CP-003 (signed mirror): email present but name missing
+            // after a contact PATCH. Emitted alongside (never instead
+            // of) the canonical contact.assigned/updated audit row.
+            if (
+              nextState === "contact_incomplete" &&
+              isUsableContactEmail(nextEmail)
+            ) {
+              await supabase.from("audit_logs").insert({
+                org_id: current.org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.outreach_blocked_missing_name",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  ...baseMeta,
+                  cp_rule: "CP-003",
+                  surface: "contact-patch",
+                  previous_state: prevState,
+                  new_state: nextState,
+                  counterparty_name: null,
+                  counterparty_email_present: true,
+                  contact_state: "name_missing",
+                  outreach_enabled: false,
+                  outreach_sent: false,
+                  credit_burned: false,
+                },
+              });
+
           } catch (e) {
             console.warn(`[${requestId}] CP-002 supplementary audit emit failed (non-fatal):`, e);
           }
