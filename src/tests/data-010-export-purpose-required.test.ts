@@ -36,8 +36,7 @@ describe("DATA-010 — recordExportAudit purpose/reason validation", () => {
       recordExportAudit({
         target_type: "audit_logs",
         row_count: 1,
-        // @ts-expect-error — intentionally omitting purpose
-        purpose: undefined,
+        purpose: undefined as unknown as "audit_or_regulatory_review",
         reason: "valid reason text here",
       }),
     ).rejects.toBeInstanceOf(ExportAuditValidationError);
@@ -50,8 +49,7 @@ describe("DATA-010 — recordExportAudit purpose/reason validation", () => {
         target_type: "audit_logs",
         row_count: 1,
         purpose: "audit_or_regulatory_review",
-        // @ts-expect-error — intentionally omitting reason
-        reason: undefined,
+        reason: undefined as unknown as string,
       }),
     ).rejects.toBeInstanceOf(ExportAuditValidationError);
   });
