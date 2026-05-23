@@ -4,6 +4,7 @@ import { errorResponse, ApiException, handleDatabaseError } from '../_shared/err
 import { authenticateRequest, requireRole, requireScope } from '../_shared/auth.ts';
 import { orgCreateSchema, orgUpdateSchema, validateInput } from '../_shared/validation.ts';
 import { assertIdempotencyKey } from '../_shared/idempotency.ts';
+import { assertAal2 } from '../_shared/aal.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
