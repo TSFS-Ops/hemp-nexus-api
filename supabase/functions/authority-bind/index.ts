@@ -160,6 +160,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST /authority-bind ── Create ATB record or UBO link
     if (req.method === "POST") {
+      await requireMfaForAtbMutation({ type: "atb_or_ubo" });
       const idempotencyKey = req.headers.get("Idempotency-Key");
       if (!idempotencyKey) throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header required", 400);
 
