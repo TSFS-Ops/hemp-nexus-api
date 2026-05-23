@@ -8,6 +8,7 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import {
   cachedResponseToHttp,
   lookupIdempotentResponse,
+  sha256Hex,
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
@@ -2294,6 +2295,132 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] dispute audit insert failed (non-fatal):`, e);
       }
 
+      // ── CP-012 — central public.disputes row + sibling spec audit ──
+      // Without this row, the match-level DISPUTE_ACTIVE guard at
+      // match/intent-declare never trips, so a counterparty dispute
+      // would silently fail to block POI / WaD / execution.
+      const matchIdForDispute = (current as { match_id?: string | null }).match_id ?? null;
+      const counterpartyOrgId = (current as { counterparty_org_id?: string | null }).counterparty_org_id ?? null;
+      const counterpartyEmail = (current as { counterparty_email?: string | null }).counterparty_email ?? null;
+      let disputeRowId: string | null = null;
+      let billingReviewRiskItemId: string | null = null;
+      let creditBurnedForMatch = false;
+      if (matchIdForDispute) {
+        try {
+          const { data: disputeRow, error: disputeErr } = await supabase
+            .from("disputes")
+            .insert({
+              match_id: matchIdForDispute,
+              // raised_by_org_id is NOT NULL. Prefer counterparty org when
+              // known; fall back to the initiator org so the
+              // DISPUTE_ACTIVE guard (which only checks existence on
+              // match_id) still trips even when the counterparty has no
+              // platform org yet.
+              raised_by_org_id: counterpartyOrgId ?? current.org_id,
+              raised_by_user_id: authCtx.userId,
+              reason: "cp012_disputes_being_named",
+              evidence_notes: parsed.data.reason,
+              status: "open",
+            })
+            .select("id")
+            .maybeSingle();
+          if (disputeErr) throw disputeErr;
+          disputeRowId = (disputeRow as { id?: string } | null)?.id ?? null;
+        } catch (e) {
+          console.warn(
+            `[${requestId}] CP-012 disputes row insert failed (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+
+        // Billing review risk item if a credit was already burned on this match.
+        try {
+          const { data: burns } = await supabase
+            .from("token_ledger")
+            .select("id")
+            .eq("entity_id", matchIdForDispute)
+            .gt("tokens_burned", 0)
+            .limit(1);
+          creditBurnedForMatch = Array.isArray(burns) && burns.length > 0;
+          if (creditBurnedForMatch) {
+            const { data: risk } = await supabase
+              .from("admin_risk_items")
+              .insert({
+                org_id: current.org_id,
+                kind: "billing_review_required",
+                title: "Billing review required: credit burned before counterparty dispute",
+                description:
+                  "A counterparty disputed being named in this trade after a credit had already been burned. " +
+                  "No automatic refund has been issued; manual admin review is required.",
+                severity: "high",
+                status: "open",
+                dedup_key: `billing_review_required:cp012:${matchIdForDispute}:${engagementId}`,
+                metadata: {
+                  cp_rule: "CP-012",
+                  match_id: matchIdForDispute,
+                  engagement_id: engagementId,
+                  dispute_id: disputeRowId,
+                  request_id: requestId,
+                },
+              })
+              .select("id")
+              .maybeSingle();
+            billingReviewRiskItemId = (risk as { id?: string } | null)?.id ?? null;
+          }
+        } catch (e) {
+          console.warn(
+            `[${requestId}] CP-012 billing-review risk item insert failed (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }
+
+      // CP-012 spec sibling audit row.
+      try {
+        const counterpartyEmailHash = counterpartyEmail
+          ? await sha256Hex(counterpartyEmail.toLowerCase())
+          : null;
+        await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: "pending_engagement.counterparty_disputed_being_named",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            cp_rule: "CP-012",
+            dispute_id: disputeRowId,
+            engagement_id: engagementId,
+            match_id: matchIdForDispute,
+            poi_id: (current as { poi_id?: string | null }).poi_id ?? null,
+            initiator_organisation_id: current.org_id,
+            counterparty_organisation_id: counterpartyOrgId,
+            counterparty_name: (current as { contact_name?: string | null }).contact_name ?? null,
+            counterparty_email_hash: counterpartyEmailHash,
+            dispute_reason: "disputes_being_named",
+            engagement_status_before: current.engagement_status,
+            engagement_status_after: "disputed_being_named",
+            match_status_after: "dispute_active",
+            progression_blocked: true,
+            poi_completed: false,
+            wad_triggered: false,
+            execution_started: false,
+            credit_burned: creditBurnedForMatch,
+            payment_event_created: false,
+            billing_review_required: !!billingReviewRiskItemId,
+            billing_review_risk_item_id: billingReviewRiskItemId,
+            raised_at: nowIso,
+            raised_by: authCtx.userId,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(
+          `[${requestId}] CP-012 sibling audit insert failed (non-fatal):`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+
+
       // D4b: admin-only alert for dispute_raised. Best-effort; never
       // fails the request. Recipient is hard-coded to the platform
       // admin mailbox + Slack inside the helper — no counterparty,
@@ -2351,13 +2478,197 @@ Deno.serve(async (req) => {
         );
       }
 
-      const responseBody = { engagement: updated };
+      const responseBody = {
+        engagement: updated,
+        dispute: {
+          id: disputeRowId,
+          match_status: matchIdForDispute ? "dispute_active" : null,
+          billing_review_risk_item_id: billingReviewRiskItemId,
+        },
+        acknowledgement:
+          "Your dispute has been recorded. The trade has been placed on hold and will not progress unless reviewed and released by Izenzo admin.",
+      };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
+
+    // ── POST /poi-engagements/:id/dispute-release ──────────────────────
+    // ── POST /poi-engagements/:id/dispute-close ────────────────────────
+    // CP-012 admin-only resolution endpoints. Release returns the
+    // engagement to its pre-dispute status (recorded in dispute_metadata)
+    // or to 'pending' if unknown. Close marks the engagement terminal
+    // (declined). Both update public.disputes to a resolved status and
+    // never auto-trigger POI, WaD, execution, credit burn, payment or
+    // outreach.
+    if (
+      req.method === "POST" &&
+      engagementId &&
+      (parts[1] === "dispute-release" || parts[1] === "dispute-close")
+    ) {
+      const action = parts[1] as "dispute-release" | "dispute-close";
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+      // Platform-admin only.
+      if (!authCtx.roles?.includes("platform_admin")) {
+        throw new ApiException(
+          "FORBIDDEN",
+          "Only a platform admin may release or close a counterparty dispute.",
+          403,
+        );
+      }
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
+      }
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `POST /poi-engagements/${engagementId}/${action}`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
+      const ResolveSchema = z.object({
+        resolution_reason: z.string().trim().min(10).max(1000),
+      });
+      const body = await req.json().catch(() => ({}));
+      const parsed = ResolveSchema.safeParse(body);
+      if (!parsed.success) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          JSON.stringify(parsed.error.flatten().fieldErrors),
+          400,
+        );
+      }
+      const { data: current, error: fetchErr } = await supabase
+        .from("poi_engagements")
+        .select("*")
+        .eq("id", engagementId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+      if (!current) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+      if (current.engagement_status !== "disputed_being_named") {
+        throw new ApiException(
+          "NOT_IN_DISPUTE",
+          `Engagement is not in 'disputed_being_named' state (current: ${current.engagement_status}).`,
+          409,
+        );
+      }
+
+      const matchIdLinked = (current as { match_id?: string | null }).match_id ?? null;
+      const previousStatus =
+        ((current as { dispute_metadata?: { previous_status?: string } | null })
+          .dispute_metadata?.previous_status) ?? "pending";
+      const nowIso = new Date().toISOString();
+      const newEngagementStatus =
+        action === "dispute-release" ? previousStatus : "declined";
+      const newOperationalState =
+        action === "dispute-release"
+          ? null
+          : null;
+
+      const { data: updated, error: updErr } = await supabase
+        .from("poi_engagements")
+        .update({
+          engagement_status: newEngagementStatus,
+          operational_state: newOperationalState,
+          operational_state_set_by: authCtx.userId,
+          operational_state_set_at: nowIso,
+        })
+        .eq("id", engagementId)
+        .eq("engagement_status", "disputed_being_named")
+        .select()
+        .maybeSingle();
+      if (updErr) throw updErr;
+      if (!updated) {
+        throw new ApiException(
+          "CONFLICT",
+          "Engagement state changed concurrently; reload and retry.",
+          409,
+        );
+      }
+
+      // Resolve any open CP-012 dispute rows on this match.
+      let resolvedDisputeId: string | null = null;
+      if (matchIdLinked) {
+        try {
+          const { data: resolved } = await supabase
+            .from("disputes")
+            .update({
+              status: action === "dispute-release" ? "resolved" : "resolved",
+              resolution_outcome:
+                action === "dispute-release"
+                  ? `CP-012 released by platform admin: ${parsed.data.resolution_reason}`
+                  : `CP-012 closed by platform admin: ${parsed.data.resolution_reason}`,
+              resolved_at: nowIso,
+              resolved_by: authCtx.userId,
+            })
+            .eq("match_id", matchIdLinked)
+            .eq("reason", "cp012_disputes_being_named")
+            .eq("status", "open")
+            .select("id")
+            .maybeSingle();
+          resolvedDisputeId = (resolved as { id?: string } | null)?.id ?? null;
+        } catch (e) {
+          console.warn(
+            `[${requestId}] CP-012 dispute resolve update failed (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }
+
+      const auditAction =
+        action === "dispute-release"
+          ? "dispute.counterparty_named_dispute_released"
+          : "dispute.counterparty_named_dispute_closed";
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: auditAction,
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            cp_rule: "CP-012",
+            dispute_id: resolvedDisputeId,
+            match_id: matchIdLinked,
+            previous_status: "disputed_being_named",
+            new_status: newEngagementStatus,
+            resolution_reason: parsed.data.resolution_reason,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(
+          `[${requestId}] CP-012 resolve audit insert failed (non-fatal):`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+
+      const responseBody = {
+        engagement: updated,
+        dispute: {
+          id: resolvedDisputeId,
+          status: "resolved",
+        },
+        action,
+      };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
 
     // ── POST /poi-engagements/:id/cancel-by-initiator — Batch J F3 ──
     // The initiator (org admin of poi_engagements.org_id) withdraws an

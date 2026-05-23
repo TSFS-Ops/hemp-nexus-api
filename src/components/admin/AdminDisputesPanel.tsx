@@ -225,7 +225,17 @@ export function AdminDisputesPanel() {
                       <TableRow key={d.id}>
                         <TableCell className="font-mono text-xs">{d.id.slice(0, 8)}…</TableCell>
                         <TableCell className="font-mono text-xs">{d.match_id.slice(0, 8)}…</TableCell>
-                        <TableCell className="max-w-[250px] truncate">{d.reason}</TableCell>
+                        <TableCell className="max-w-[250px] truncate">
+                          {d.reason === "cp012_disputes_being_named" ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Badge variant="destructive" className="text-[10px]">CP-012</Badge>
+                              <span>Counterparty disputes being named</span>
+                            </span>
+                          ) : (
+                            d.reason
+                          )}
+                        </TableCell>
+
                         <TableCell>
                           <Badge variant={STATUS_COLOURS[d.status] || "secondary"}>{d.status.replace("_", " ")}</Badge>
                         </TableCell>
