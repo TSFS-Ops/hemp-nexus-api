@@ -62,7 +62,7 @@ function walk(dir, acc = []) {
     const st = statSync(full);
     if (st.isDirectory()) {
       walk(full, acc);
-    } else if (name.endsWith(".ts")) {
+    } else if (name.endsWith(".ts") && !/(?:_test|\.test)\.ts$/.test(name)) {
       acc.push(full);
     }
   }
