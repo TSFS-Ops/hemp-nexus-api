@@ -169,6 +169,7 @@ Deno.serve(async (req) => {
     // DELETE /orgs/:id - Delete organisation
     if (req.method === 'DELETE' && pathParts.length === 2) {
       const orgId = pathParts[1];
+      await requireMfaForOrgMutation({ id: orgId });
 
       const { error } = await supabase
         .from('organizations')
