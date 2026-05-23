@@ -480,6 +480,16 @@ export function AdminOutreachBlocksPanel() {
           variant="outline"
           size="sm"
           onClick={async () => {
+            // DATA-010 Phase 1: real reason prompt.
+            const { promptExportReason } = await import("@/lib/export-purpose");
+            const reason = promptExportReason(
+              "compliance verification or sanctions review",
+              `outreach blocks export (${rows.length} rows)`,
+            );
+            if (!reason) {
+              toast.error("Export cancelled — a reason of at least 10 characters is required.");
+              return;
+            }
             const headers = [
               "Created At",
               "Reason",
@@ -504,12 +514,16 @@ export function AdminOutreachBlocksPanel() {
               filename: timestampedFilename("izenzo-outreach-blocks", "csv"),
               target_type: "outreach_blocks",
               sensitive: true,
+              purpose: "compliance_verification_or_sanctions_review",
+              reason,
+              data_categories: ["outreach_blocks"],
               filters: { demo_excluded: true },
             });
             if (result.aal_required) {
               toast.error("MFA required to export outreach blocks.");
             }
           }}
+
           disabled={rows.length === 0 || query.isFetching}
         >
           <Download className="h-3.5 w-3.5 mr-1" />
