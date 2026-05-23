@@ -556,16 +556,24 @@ export function AdminRevenuePanel() {
       ];
       lines.push(cells.join(","));
     }
+    const { promptExportReason } = await import("@/lib/export-purpose");
+    const reason = promptExportReason("billing or payment reconciliation", `revenue export (${rows.length} rows)`);
+    if (!reason) { toast.error("Export cancelled — a reason of at least 10 characters is required."); return; }
     const result = await auditedDownloadCSVRaw(lines.join("\n"), {
       reportName: "admin-revenue",
       filename: `revenue-${timeWindow}-${new Date().toISOString().slice(0, 10)}.csv`,
       target_type: "audit_logs",
       sensitive: true,
       rowCount: rows.length,
+      purpose: "billing_or_payment_reconciliation",
+      reason,
+      target_org_id: selectedOrg === "all" ? null : selectedOrg,
+      data_categories: ["revenue", "credits_purchased", "token_ledger"],
       // Batch U SEC-012: explicit demo_excluded=true so an auditor inspecting
       // the file preamble can confirm the totals are production-only.
       filters: { time_window: timeWindow, granularity, selected_org: selectedOrg, demo_excluded: true },
     });
+
     if (result.aal_required) {
       toast.error("Multi-factor authentication required for this export.", {
         description: "Please re-authenticate with MFA to download the revenue report.",

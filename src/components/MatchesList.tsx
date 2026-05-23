@@ -443,8 +443,12 @@ export function MatchesList() {
       filename: `matches-${new Date().toISOString().split("T")[0]}.csv`,
       target_type: "matches",
       sensitive: true,
+      purpose: "client_approved_reporting",
+      reason: `bulk matches export — page ${page + 1}/${totalPages}, ${matches.length} rows`,
+      data_categories: ["matches", "counterparties"],
       filters: { page: page + 1, totalPages, rowCount: matches.length },
     });
+
     if (!result.ok) {
       if (result.aal_required) {
         toast.error("Step-up authentication required to export matches.");
@@ -735,8 +739,12 @@ export function MatchesList() {
                                     filename: `match-${match.id.slice(0, 8)}.csv`,
                                     target_type: "matches",
                                     sensitive: true,
+                                    purpose: "client_approved_reporting",
+                                    reason: `single match export — id ${match.id.slice(0, 8)}`,
+                                    data_categories: ["matches"],
                                     filters: { match_id: match.id },
                                   });
+
                                   if (!result.ok) {
                                     if (result.aal_required) {
                                       toast.error("Step-up authentication required to export this match.");

@@ -193,7 +193,14 @@ export interface AuditedExportOptions {
     | "other";
   sensitive?: boolean;
   filters?: Record<string, unknown>;
-  reason?: string;
+  /** DATA-010 Phase 1: required. */
+  purpose: import("./export-purpose").ExportPurpose;
+  /** DATA-010 Phase 1: required, min 10 chars. */
+  reason: string;
+  /** DATA-010 Phase 1: nullable client/org scope. */
+  target_org_id?: string | null;
+  /** DATA-010 Phase 1: which data categories are exported. */
+  data_categories?: string[];
 }
 
 export async function auditedDownloadCSV(
@@ -210,11 +217,17 @@ export async function auditedDownloadCSV(
     row_count: rows.length,
     filters: options.filters,
     sensitive: !!options.sensitive,
+    purpose: options.purpose,
     reason: options.reason,
+    target_org_id: options.target_org_id ?? null,
+    data_categories: options.data_categories ?? [options.target_type],
   });
 
   if (options.sensitive && audit.aal_required) {
     return { ok: false, aal_required: true };
+  }
+  if (!audit.ok && options.sensitive) {
+    return { ok: false, error: audit.error };
   }
 
   const preamble = buildExportPreamble({
@@ -230,8 +243,6 @@ export async function auditedDownloadCSV(
 /**
  * Audited variant for callers that have already serialised their CSV
  * body (multi-section reports, BOM-prefixed exports, custom delimiters).
- * Same audit + AAL2 gate; the preamble is prepended to the supplied
- * body string.
  */
 export async function auditedDownloadCSVRaw(
   body: string,
@@ -244,10 +255,16 @@ export async function auditedDownloadCSVRaw(
     row_count: options.rowCount,
     filters: options.filters,
     sensitive: !!options.sensitive,
+    purpose: options.purpose,
     reason: options.reason,
+    target_org_id: options.target_org_id ?? null,
+    data_categories: options.data_categories ?? [options.target_type],
   });
   if (options.sensitive && audit.aal_required) {
     return { ok: false, aal_required: true };
+  }
+  if (!audit.ok && options.sensitive) {
+    return { ok: false, error: audit.error };
   }
   const preamble = buildExportPreamble({
     reportName: options.reportName,
@@ -262,6 +279,7 @@ export async function auditedDownloadCSVRaw(
   );
   return { ok: true };
 }
+
 
 /**
  * Download data as JSON file

@@ -1,35 +1,72 @@
 /**
  * Batch O — AUD-012 export audit wrapper.
- *
- * Records `export.csv` (or `export.json`) in `audit_logs` BEFORE a
- * sensitive download is delivered to the operator. The browser-side
- * helper invokes a tiny edge function so the row is written with
- * server-trusted actor + IP/UA rather than a client-claimed value.
- *
- * For non-sensitive exports (e.g. plain match list) callers can opt
- * out by simply not invoking this helper. The four sensitive exports
- * wired in Batch O are:
- *   - admin audit_logs CSV
- *   - admin_audit_logs CSV
- *   - outreach blocks CSV (org-level pattern)
- *   - bulk matches CSV with metadata
+ * DATA-010 Phase 1 (2026-05-23): `purpose` + `reason` are now required
+ * at the helper boundary and validated server-side. Callers that do
+ * not have a real reason MUST prompt the operator for one — never
+ * silently pass a fake reason.
  */
 import { supabase } from "@/integrations/supabase/client";
+import {
+  type ExportPurpose,
+  MIN_EXPORT_REASON_LENGTH,
+} from "@/lib/export-purpose";
 
 export interface ExportAuditInput {
-  target_type: "audit_logs" | "admin_audit_logs" | "outreach_blocks" | "matches" | "notification_preferences" | "programmes" | "programme_participants" | "programme_fund_flows" | "other";
+  target_type:
+    | "audit_logs"
+    | "admin_audit_logs"
+    | "outreach_blocks"
+    | "matches"
+    | "notification_preferences"
+    | "programmes"
+    | "programme_participants"
+    | "programme_fund_flows"
+    | "other";
   format?: "csv" | "json";
   row_count: number;
   filters?: Record<string, unknown>;
+  /** Advisory only — server treats every admin export as sensitive. */
   sensitive?: boolean;
-  reason?: string;
+  /** DATA-010 Phase 1: required. */
+  purpose: ExportPurpose;
+  /** DATA-010 Phase 1: required, min 10 chars. */
+  reason: string;
+  /** DATA-010 Phase 1: nullable client/org scope. */
+  target_org_id?: string | null;
+  /** DATA-010 Phase 1: which data categories are exported. */
+  data_categories?: string[];
+  requested_date_range?: { from?: string; to?: string } | null;
+}
+
+export class ExportAuditValidationError extends Error {
+  constructor(public readonly field: "purpose" | "reason", message: string) {
+    super(message);
+    this.name = "ExportAuditValidationError";
+  }
+}
+
+function validateInput(input: ExportAuditInput): void {
+  if (!input.purpose) {
+    throw new ExportAuditValidationError("purpose", "Export purpose is required.");
+  }
+  const reason = (input.reason ?? "").trim();
+  if (reason.length < MIN_EXPORT_REASON_LENGTH) {
+    throw new ExportAuditValidationError(
+      "reason",
+      `Export reason must be at least ${MIN_EXPORT_REASON_LENGTH} characters.`,
+    );
+  }
 }
 
 /**
- * Best-effort. Never blocks the download — if the audit write fails
- * we still let the export proceed (the toast surfaces the warning).
+ * Best-effort. Never blocks the download silently — but throws
+ * `ExportAuditValidationError` if purpose/reason are missing so the
+ * caller cannot accidentally ship an unaudited export.
  */
-export async function recordExportAudit(input: ExportAuditInput): Promise<{ ok: boolean; aal_required?: boolean; error?: string }> {
+export async function recordExportAudit(
+  input: ExportAuditInput,
+): Promise<{ ok: boolean; aal_required?: boolean; error?: string; export_request_id?: string }> {
+  validateInput(input);
   try {
     const { data, error } = await supabase.functions.invoke("export-audit", {
       body: {
@@ -37,15 +74,26 @@ export async function recordExportAudit(input: ExportAuditInput): Promise<{ ok: 
         format: input.format ?? "csv",
         row_count: input.row_count,
         filters: input.filters ?? {},
-        sensitive: !!input.sensitive,
-        reason: input.reason ?? null,
+        sensitive: input.sensitive ?? true,
+        purpose: input.purpose,
+        reason: input.reason.trim(),
+        target_org_id: input.target_org_id ?? null,
+        data_categories: input.data_categories ?? [],
+        requested_date_range: input.requested_date_range ?? null,
       },
     });
     if (error) {
-      return { ok: false, error: error.message };
+      const status = (error as { context?: { status?: number } })?.context?.status;
+      // 403 with code MFA_REQUIRED comes through as a generic error from
+      // functions.invoke — surface aal_required when possible.
+      const message = error.message ?? "audit write failed";
+      const aal = /mfa_required|aal/i.test(message) || status === 403;
+      return { ok: false, error: message, aal_required: aal };
     }
-    return { ok: true, aal_required: !!(data as { aal_required?: boolean })?.aal_required };
+    const d = (data ?? {}) as { aal_required?: boolean; export_request_id?: string };
+    return { ok: true, aal_required: !!d.aal_required, export_request_id: d.export_request_id };
   } catch (e) {
+    if (e instanceof ExportAuditValidationError) throw e;
     return { ok: false, error: (e as Error).message };
   }
 }

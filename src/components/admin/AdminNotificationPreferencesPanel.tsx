@@ -122,6 +122,16 @@ export function AdminNotificationPreferencesPanel() {
       toast.error("Nothing to export");
       return;
     }
+    // DATA-010 Phase 1: real reason prompt.
+    const { promptExportReason } = await import("@/lib/export-purpose");
+    const reason = promptExportReason(
+      "compliance verification or sanctions review",
+      `notification preferences export (${rows.length} rows)`,
+    );
+    if (!reason) {
+      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      return;
+    }
     setExporting(true);
     try {
       const audit = await recordExportAudit({
@@ -130,7 +140,10 @@ export function AdminNotificationPreferencesPanel() {
         row_count: rows.length,
         filters: { search, org_id: orgIdFilter, suppression, channel },
         sensitive: true,
-        reason: "compliance_review",
+        purpose: "compliance_verification_or_sanctions_review",
+        reason,
+        target_org_id: orgIdFilter || null,
+        data_categories: ["notification_preferences", "email_suppression"],
       });
       if (!audit.ok && audit.aal_required) {
         toast.error("MFA required for this export. Enrol an authenticator app and retry.");
@@ -162,8 +175,13 @@ export function AdminNotificationPreferencesPanel() {
         filename: timestampedFilename("notification-preferences", "csv"),
         target_type: "notification_preferences",
         sensitive: false,
+        purpose: "compliance_verification_or_sanctions_review",
+        reason,
+        target_org_id: orgIdFilter || null,
+        data_categories: ["notification_preferences", "email_suppression"],
         filters: { search, org_id: orgIdFilter, suppression, channel, demo_excluded: true },
       });
+
       toast.success(`Exported ${rows.length} row${rows.length === 1 ? "" : "s"}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");

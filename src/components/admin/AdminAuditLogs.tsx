@@ -99,6 +99,14 @@ export function AdminAuditLogs() {
       return;
     }
 
+    // DATA-010 Phase 1: prompt operator for a real reason. Cancel ⇒ abort.
+    const { promptExportReason } = await import("@/lib/export-purpose");
+    const reason = promptExportReason("audit or regulatory review", "admin audit-logs export");
+    if (!reason) {
+      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      return;
+    }
+
     // Batch O AUD-012: write audit row + AAL2 gate BEFORE handing rows to the
     // operator. If the gate rejects, we never serialise the CSV.
     const audit = await recordExportAudit({
@@ -106,6 +114,9 @@ export function AdminAuditLogs() {
       format: "csv",
       row_count: auditLogs.length,
       sensitive: true,
+      purpose: "audit_or_regulatory_review",
+      reason,
+      data_categories: ["audit_logs"],
       filters: { actionFilter, entityFilter, search, page: auditPage },
     });
     if (!audit.ok) {
@@ -137,6 +148,9 @@ export function AdminAuditLogs() {
       filename: `audit-logs-${new Date().toISOString().split('T')[0]}.csv`,
       target_type: "audit_logs",
       sensitive: false,
+      purpose: "audit_or_regulatory_review",
+      reason,
+      data_categories: ["audit_logs"],
       filters: { actionFilter, entityFilter, search, page: auditPage, demo_excluded: true },
     });
 
@@ -149,6 +163,7 @@ export function AdminAuditLogs() {
       toast.success(`Exported all ${auditLogs?.length} audit logs`);
     }
   };
+
 
   const getActionBadge = (action: string) => {
     const colors: Record<string, string> = {

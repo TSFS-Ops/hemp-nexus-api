@@ -203,6 +203,17 @@ export default function UsersManagement() {
   };
 
   const exportToCSV = async (usersToExport: User[]) => {
+    // DATA-010 Phase 1: prompt for a real export reason.
+    const { promptExportReason } = await import("@/lib/export-purpose");
+    const reason = promptExportReason(
+      "verified user data export",
+      `admin users export (${usersToExport.length} users)`,
+    );
+    if (!reason) {
+      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      return;
+    }
+
     const headers = ["Email", "Name", "Organisation", "Registered", "Last Sign In", "Email Verified", "Roles", "Status", "Deletion Requested", "Deletion Category", "Deletion Reason"];
     const rows = usersToExport.map((user) => [
       user.email,
@@ -227,12 +238,15 @@ export default function UsersManagement() {
       filename: `users_export_${new Date().toISOString().split("T")[0]}.csv`,
       target_type: "other",
       sensitive: true,
+      purpose: "verified_user_data_export",
+      reason,
+      data_categories: ["users", "profiles", "roles"],
       filters: {
         scope: usersToExport.length === filteredUsers.length ? "all_filtered" : "selected",
         count: usersToExport.length,
       },
-      reason: "admin users export",
     });
+
     if (result.aal_required) {
       toast.error("Multi-factor authentication required for this export.", {
         description: "Please re-authenticate with MFA to download the users CSV.",
