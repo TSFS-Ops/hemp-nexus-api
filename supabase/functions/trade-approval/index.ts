@@ -62,6 +62,25 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
     const subAction = pathParts[pathParts.length - 1];
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorisation");
+
+    // SEC-001: trade-approval issue/revoke/renew change the platform's
+    // collapse-eligibility state and must require AAL2 for human callers.
+    const requireMfaForApprovalOverride = async (target?: { org_id?: string; sub?: string }) => {
+      if (authCtx.isApiKey) return;
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: authCtx.userId,
+        action: "trade.approval_override",
+        context: {
+          sensitive_action_category: "compliance.trade_approval",
+          target_resource_type: "trade_approval",
+          target_resource_id: target?.org_id ?? null,
+          sub_action: target?.sub ?? subAction,
+          method: req.method,
+        },
+      });
+    };
 
     // ── GET /trade-approval ── List approvals
     if (req.method === "GET") {
