@@ -85,6 +85,15 @@ function findAssertAal2CallSites() {
   // Match: action: "key" within ~400 chars after an assertAal2( token.
   const callRx = /assertAal2\s*\(([\s\S]{0,400}?)\)/g;
   const actionRx = /action\s*:\s*["']([^"']+)["']/;
+  // Helper wrapper detection: many edge functions define a local helper like
+  // `const requireMfaForX = async (...) => { await assertAal2(authHeader, {
+  //   ..., action, ... }) }` and then invoke `requireMfaForX("entity.mutate")`.
+  // The direct assertAal2 block then carries `action: action` (a variable,
+  // not a literal) so the strict scanner above misses the key. To still
+  // detect those, if a file imports `assertAal2` we also scan every
+  // `action: "literal"` line in the file as a potential gate key.
+  const fileImportsAssertAal2 = (src) => /from\s+["']\.\.\/_shared\/aal\.ts["']/.test(src) && /assertAal2/.test(src);
+  const literalActionRx = /\baction\s*:\s*["']([a-zA-Z][a-zA-Z0-9_.]+)["']/g;
   for (const file of files) {
     const src = readFileSync(file, "utf8");
     let m;
@@ -94,7 +103,21 @@ function findAssertAal2CallSites() {
       if (am) {
         const key = am[1];
         if (!callSites.has(key)) callSites.set(key, []);
-        callSites.get(key).push(relative(ROOT, file));
+        const list = callSites.get(key);
+        if (!list.includes(relative(ROOT, file))) list.push(relative(ROOT, file));
+      }
+    }
+    // Fallback: detect helper-wrapped gate keys.
+    if (fileImportsAssertAal2(src)) {
+      let lm;
+      while ((lm = literalActionRx.exec(src)) !== null) {
+        const key = lm[1];
+        // Only treat as a gate key if it looks dotted (avoids audit-action
+        // false positives like `action: "create"`).
+        if (!key.includes(".")) continue;
+        if (!callSites.has(key)) callSites.set(key, []);
+        const list = callSites.get(key);
+        if (!list.includes(relative(ROOT, file))) list.push(relative(ROOT, file));
       }
     }
   }
