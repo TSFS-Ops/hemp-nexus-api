@@ -4,6 +4,7 @@ import { errorResponse, ApiException, handleDatabaseError } from '../_shared/err
 import { authenticateRequest, requireRole, requireScope } from '../_shared/auth.ts';
 import { orgCreateSchema, orgUpdateSchema, validateInput } from '../_shared/validation.ts';
 import { assertIdempotencyKey } from '../_shared/idempotency.ts';
+import { assertAal2 } from '../_shared/aal.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -25,6 +26,25 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
+    const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorisation');
+
+    // SEC-001: gate mutating organisation paths (POST/PATCH/DELETE) with AAL2.
+    // GET (list/read) remains AAL1. API key callers (server-to-server) skip
+    // the JWT-derived check since they have no `aal` claim.
+    const requireMfaForOrgMutation = async (target?: { id?: string | null }) => {
+      if (authCtx.isApiKey) return;
+      await assertAal2(authHeader, {
+        adminClient: supabase,
+        callerUserId: authCtx.userId,
+        action: 'organisation.mutate',
+        context: {
+          sensitive_action_category: 'governance.organisation',
+          target_resource_type: 'organisation',
+          target_resource_id: target?.id ?? null,
+          method: req.method,
+        },
+      });
+    };
 
     // GET /orgs - List organisations
     if (req.method === 'GET' && pathParts.length === 1) {
@@ -52,6 +72,7 @@ Deno.serve(async (req) => {
 
     // POST /orgs - Create organisation
     if (req.method === 'POST' && pathParts.length === 1) {
+      await requireMfaForOrgMutation();
       assertIdempotencyKey(req);
       const rawBody = await req.json();
       
@@ -109,7 +130,9 @@ Deno.serve(async (req) => {
     // PATCH /orgs/:id - Update organisation
     if (req.method === 'PATCH' && pathParts.length === 2) {
       const orgId = pathParts[1];
+      await requireMfaForOrgMutation({ id: orgId });
       const rawUpdates = await req.json();
+
       
       let updates;
       try {
@@ -146,6 +169,7 @@ Deno.serve(async (req) => {
     // DELETE /orgs/:id - Delete organisation
     if (req.method === 'DELETE' && pathParts.length === 2) {
       const orgId = pathParts[1];
+      await requireMfaForOrgMutation({ id: orgId });
 
       const { error } = await supabase
         .from('organizations')

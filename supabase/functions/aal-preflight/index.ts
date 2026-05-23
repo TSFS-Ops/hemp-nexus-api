@@ -35,27 +35,41 @@ import { readAal } from "../_shared/aal.ts";
 // Registry of mutating actions and whether they require AAL2.
 // Keep in sync with assertAal2() call-sites under supabase/functions/.
 // If a new aal2-gated endpoint is added, add its action key here.
-const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
+export const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   // Money / credit movement
   "admin.credit_org": "aal2",
   // Lifecycle / state overrides
-  "admin.run_lifecycle": "aal2",
+  "admin.lifecycle_scheduler.invoke": "aal2",
   "admin.match_legacy_repair": "aal2",
+  "admin.match_legacy_archive": "aal2",
   "admin.match_corrections": "aal2",
   "admin.counterparty_corrections": "aal2",
-  "admin.manual_overrides": "aal2",
-  "admin.resolve_risk_item": "aal2",
-  // Challenge lifecycle sensitive transitions (closure / platform_admin override / break-glass)
+  "admin.manual_override": "aal2",
+  "admin.risk_item_resolve": "aal2",
+  "admin.named_contact_override": "aal2",
+  // Challenge lifecycle sensitive transitions
   "match_challenge.transition_outcome_recorded": "aal2",
   "match_challenge.transition_closed_no_action": "aal2",
   "match_challenge.platform_admin_override": "aal2",
   "match_challenge.break_glass": "aal2",
   // Compliance / governance
-  "due_diligence.decision": "aal2",
-  "programmes.write": "aal2",
-  "notification_preferences.update": "aal2",
-  // break-glass uses fresh password re-auth, not the JWT aal claim, so it
-  // is NOT listed here as aal2-gated for preflight purposes.
+  "dd.approval_rejected": "aal2",
+  "programme.budget_update": "aal2",
+  "programme.participant_archive": "aal2",
+  "programme.fund_flow_create": "aal2",
+  "programme.report_sensitive_view": "aal2",
+  "notification_preference.admin_change": "aal2",
+  "notification_preference.sensitive_change": "aal2",
+  // SEC-001 — newly gated sensitive platform_admin mutations
+  "entity.mutate": "aal2",
+  "organisation.mutate": "aal2",
+  "authority.bind": "aal2",
+  "trade.approval_override": "aal2",
+  "pending_engagement.send_outreach": "aal2",
+  "reputation.recalculate": "aal2",
+  // break-glass uses fresh password re-auth via GoTrue, not the JWT aal
+  // claim, so it is intentionally NOT listed here as aal2-gated for
+  // preflight purposes. See scripts/check-aal-registry-drift.mjs allowlist.
 };
 
 const BodySchema = z.object({

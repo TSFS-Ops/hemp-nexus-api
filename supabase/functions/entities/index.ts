@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
+import { assertAal2 } from "../_shared/aal.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -94,9 +95,32 @@ Deno.serve(async (req: Request) => {
     // pathParts: ["entities"] or ["entities", "<sub>"]
 
     const isAdmin = authCtx.roles?.includes("admin") || authCtx.roles?.includes("platform_admin");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorisation");
+
+    // SEC-001 helper: gate platform_admin mutations with AAL2 (MFA). API keys
+    // (server-to-server) have no `aal` claim; skip there so machine flows keep
+    // working. Non-admin governance users (own-org create/update) also remain
+    // AAL1 — this only blocks cross-org platform_admin overrides.
+    const requireMfaForPlatformAdmin = async (action: string, target?: { id?: string; type?: string }) => {
+      if (authCtx.isApiKey) return;
+      if (!isAdmin) return;
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: authCtx.userId,
+        action,
+        context: {
+          sensitive_action_category: "governance.entity",
+          target_resource_type: target?.type ?? "entity",
+          target_resource_id: target?.id ?? null,
+          method: req.method,
+          path: pathParts.join("/"),
+        },
+      });
+    };
 
     // ── POST /entities ── Create Entity
     if (req.method === "POST" && pathParts.length <= 1) {
+      await requireMfaForPlatformAdmin("entity.mutate");
       const idempotencyKey = req.headers.get("Idempotency-Key");
       if (!idempotencyKey) {
         throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
@@ -185,6 +209,7 @@ Deno.serve(async (req: Request) => {
     // ── POST /entities/screen ── Screening stub (admin only)
     if (req.method === "POST" && pathParts[pathParts.length - 1] === "screen") {
       requireRole(authCtx, "platform_admin");
+      await requireMfaForPlatformAdmin("entity.mutate", { type: "entity.screen" });
       assertIdempotencyKey(req);
 
       const body = await req.json();
@@ -286,6 +311,7 @@ Deno.serve(async (req: Request) => {
       requireRole(authCtx, "platform_admin");
       const entityId = url.searchParams.get("entity_id");
       if (!entityId) throw new ApiException("VALIDATION_ERROR", "entity_id parameter required", 400);
+      await requireMfaForPlatformAdmin("entity.mutate", { id: entityId });
 
       const body = await req.json();
       const parsed = EntityUpdateSchema.parse(body);
@@ -323,6 +349,8 @@ Deno.serve(async (req: Request) => {
       requireRole(authCtx, "platform_admin");
       const entityId = url.searchParams.get("entity_id");
       if (!entityId) throw new ApiException("VALIDATION_ERROR", "entity_id parameter required", 400);
+      await requireMfaForPlatformAdmin("entity.mutate", { id: entityId });
+
 
       const { data: archived, error } = await admin
         .from("entities")

@@ -40,6 +40,7 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-release-gate-sync.mjs` — prebuild scripts + critical cron jobs are documented (Batch W)
 - `check-edge-function-deploy-coverage.mjs` — deploy-critical edge functions are backed by source AND named on this page (post-MT-009 Test 1 incident)
 - `check-legal-claims.mjs` — DEC-005/006/010 forbidden wording guard on public pages
+- `check-aal-registry-drift.mjs` — SEC-001 AAL2 call-site ↔ preflight registry drift guard
 
 ### Edge functions requiring deploy
 

@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
+import { assertAal2 } from "../_shared/aal.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -61,6 +62,25 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
     const subAction = pathParts[pathParts.length - 1];
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorisation");
+
+    // SEC-001: trade-approval issue/revoke/renew change the platform's
+    // collapse-eligibility state and must require AAL2 for human callers.
+    const requireMfaForApprovalOverride = async (target?: { org_id?: string; sub?: string }) => {
+      if (authCtx.isApiKey) return;
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: authCtx.userId,
+        action: "trade.approval_override",
+        context: {
+          sensitive_action_category: "compliance.trade_approval",
+          target_resource_type: "trade_approval",
+          target_resource_id: target?.org_id ?? null,
+          sub_action: target?.sub ?? subAction,
+          method: req.method,
+        },
+      });
+    };
 
     // ── GET /trade-approval ── List approvals
     if (req.method === "GET") {
@@ -109,6 +129,7 @@ Deno.serve(async (req: Request) => {
       assertIdempotencyKey(req);
       const body = await req.json();
       const { org_id: targetOrgId, reason } = RevokeSchema.parse(body);
+      await requireMfaForApprovalOverride({ org_id: targetOrgId, sub: "revoke" });
 
       const { data: existing } = await admin
         .from("trade_approvals")
@@ -164,6 +185,7 @@ Deno.serve(async (req: Request) => {
       assertIdempotencyKey(req);
       const body = await req.json();
       const { org_id: targetOrgId, extend_days } = RenewSchema.parse(body);
+      await requireMfaForApprovalOverride({ org_id: targetOrgId, sub: "renew" });
 
       const { data: existing } = await admin
         .from("trade_approvals")
@@ -219,6 +241,7 @@ Deno.serve(async (req: Request) => {
 
       const body = await req.json();
       const parsed = ApprovalSchema.parse(body);
+      await requireMfaForApprovalOverride({ org_id: parsed.org_id, sub: "issue" });
 
       const validUntil = new Date();
       validUntil.setDate(validUntil.getDate() + parsed.valid_days);

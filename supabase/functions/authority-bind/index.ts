@@ -4,6 +4,7 @@ import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
+import { assertAal2 } from "../_shared/aal.ts";
 
 /**
  * Authority-to-Bind & UBO Edge Function - Sprint 6
@@ -67,6 +68,26 @@ Deno.serve(async (req: Request) => {
     const subAction = pathParts[pathParts.length - 1];
 
     const isAdmin = authCtx.roles?.includes("admin") || authCtx.roles?.includes("platform_admin");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorisation");
+
+    // SEC-001: authority/UBO binding mutations (POST create, PATCH status
+    // change) move WaD gate state and must require AAL2 for human callers.
+    // API-key (server-to-server) callers skip the JWT aal check.
+    const requireMfaForAtbMutation = async (target?: { id?: string | null; type?: string }) => {
+      if (authCtx.isApiKey) return;
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: authCtx.userId,
+        action: "authority.bind",
+        context: {
+          sensitive_action_category: "compliance.authority_bind",
+          target_resource_type: target?.type ?? "authority_record",
+          target_resource_id: target?.id ?? null,
+          method: req.method,
+          path: pathParts.join("/"),
+        },
+      });
+    };
 
     // ── POST /authority-bind/check ── Validate gates #3 (UBO) + #4 (ATB) for entity pair
     if (req.method === "POST" && subAction === "check") {
@@ -139,6 +160,7 @@ Deno.serve(async (req: Request) => {
 
     // ── POST /authority-bind ── Create ATB record or UBO link
     if (req.method === "POST") {
+      await requireMfaForAtbMutation({ type: "atb_or_ubo" });
       const idempotencyKey = req.headers.get("Idempotency-Key");
       if (!idempotencyKey) throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header required", 400);
 
@@ -248,6 +270,7 @@ Deno.serve(async (req: Request) => {
       const recordId = url.searchParams.get("id");
       const recordType = url.searchParams.get("type") || "atb";
       if (!recordId) throw new ApiException("VALIDATION_ERROR", "id parameter required", 400);
+      await requireMfaForAtbMutation({ id: recordId, type: recordType === "ubo" ? "ubo_link" : "authority_record" });
 
       const body = await req.json();
       const { status } = StatusUpdateSchema.parse(body);

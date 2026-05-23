@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { assertAal2 } from "../_shared/aal.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
@@ -21,6 +22,24 @@ Deno.serve(async (req) => {
     // SECURITY: Authenticate request - only admins can trigger reputation recalculation
     const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
     requireRole(authCtx, 'platform_admin');
+
+    // SEC-001: reputation recalculation mutates `reputation_scores` rows.
+    // It is human-callable from the HQ admin UI (not cron/service-role-only)
+    // so platform_admin callers must hold an AAL2/MFA session. API-key
+    // callers (back-end automations) skip the JWT aal check.
+    if (!authCtx.isApiKey) {
+      const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorisation');
+      await assertAal2(authHeader, {
+        adminClient: supabase,
+        callerUserId: authCtx.userId,
+        action: 'reputation.recalculate',
+        context: {
+          sensitive_action_category: 'compliance.reputation',
+          target_resource_type: 'reputation_scores',
+        },
+      });
+    }
+
 
     // SECURITY: Rate limit admin endpoint to prevent abuse
     // Uses the admin user's org_id for rate limiting
