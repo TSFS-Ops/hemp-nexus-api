@@ -1924,6 +1924,50 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
+      // ── CP-006 (signed) — auto-bound sibling audit ──
+      // Fires when this PATCH performed a unique-exact-email safe-bind.
+      // Sits alongside the canonical binding fields written above
+      // (counterparty_org_id / counterparty_type). No canonical event
+      // is replaced — this is a dashboards-friendly sibling row.
+      if (safeBindEvent) {
+        try {
+          const emailHash = await sha256Hex(safeBindEvent.email);
+          await supabase.from("audit_logs").insert({
+            org_id: current.org_id,
+            actor_user_id: authCtx.userId,
+            action: "pending_engagement.auto_bound_registered_org",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              cp_rule: "CP-006",
+              engagement_id: engagementId,
+              match_id: (current as { match_id?: string | null }).match_id ?? null,
+              poi_id: (current as { poi_id?: string | null }).poi_id ?? null,
+              counterparty_email_hash: emailHash,
+              counterparty_name:
+                (current as { contact_name?: string | null }).contact_name ?? null,
+              matched_organisation_id: safeBindEvent.matched_organisation_id,
+              matched_contact_id: safeBindEvent.matched_contact_id,
+              match_type: "unique_exact_email",
+              auto_bound: true,
+              binding_review_required: false,
+              outreach_enabled: true,
+              created_by_user_id: authCtx.userId,
+              organisation_id: current.org_id,
+              source: "poi-engagements:patch_resolver",
+              request_id: requestId,
+            },
+          });
+        } catch (e) {
+          console.warn(
+            `[${requestId}] CP-006 auto_bound_registered_org sibling audit failed (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }
+
+
+
       // ── Batch D — binding-review initial-entry side-effects ──
       // Fires exactly once when the engagement first transitions into
       // binding_review_required. Subsequent PATCHes that find the row
