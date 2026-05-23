@@ -3414,6 +3414,51 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.warn(`[${requestId}] cancel audit insert failed (non-fatal):`, e);
       }
+      // CP-015 (signed): sibling audit naming for dashboard parity.
+      // Confirms the old engagement was cancelled/superseded, that direct
+      // edit was not allowed, and that any replacement MUST be created as
+      // a new engagement. No POI/WaD/credit/payment side effects occur.
+      try {
+        const oldEmailHash = oldEmail ? await sha256Hex(oldEmail) : null;
+        const newEmailHash = parsed.data.new_email
+          ? await sha256Hex(parsed.data.new_email.toLowerCase())
+          : null;
+        await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: "pending_engagement.email_change_blocked_requires_new_engagement",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            cp_rule: "CP-015",
+            reason: "counterparty_email_change_after_creation",
+            old_engagement_id: engagementId,
+            new_engagement_id: null,
+            match_id: (current as { match_id?: string | null }).match_id ?? null,
+            poi_id: (current as { poi_id?: string | null }).poi_id ?? null,
+            initiator_user_id: authCtx.userId,
+            initiator_organisation_id: current.org_id,
+            old_counterparty_email_hash: oldEmailHash,
+            new_counterparty_email_hash: newEmailHash,
+            counterparty_name: (current as { contact_name?: string | null }).contact_name ?? null,
+            old_status_before: current.engagement_status,
+            old_status_after: "cancelled_email_change",
+            direct_edit_allowed: false,
+            new_engagement_created: false,
+            old_outreach_link_invalidated: true,
+            poi_completed_from_old_engagement: false,
+            wad_triggered_from_old_engagement: false,
+            credit_burned_for_email_change: false,
+            payment_event_created_for_email_change: false,
+            billing_review_required: false,
+            changed_by_user_id: authCtx.userId,
+            changed_at: nowIso,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(`[${requestId}] CP-015 sibling (cancelled) audit insert failed (non-fatal):`, e);
+      }
 
       // ── D4c-3a: best-effort initiator-side operational notice ────────
       // Wired only after the cancellation state is committed and audited.
