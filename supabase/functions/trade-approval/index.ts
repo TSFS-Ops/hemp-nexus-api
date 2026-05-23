@@ -129,6 +129,7 @@ Deno.serve(async (req: Request) => {
       assertIdempotencyKey(req);
       const body = await req.json();
       const { org_id: targetOrgId, reason } = RevokeSchema.parse(body);
+      await requireMfaForApprovalOverride({ org_id: targetOrgId, sub: "revoke" });
 
       const { data: existing } = await admin
         .from("trade_approvals")
