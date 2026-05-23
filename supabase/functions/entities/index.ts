@@ -209,6 +209,7 @@ Deno.serve(async (req: Request) => {
     // ── POST /entities/screen ── Screening stub (admin only)
     if (req.method === "POST" && pathParts[pathParts.length - 1] === "screen") {
       requireRole(authCtx, "platform_admin");
+      await requireMfaForPlatformAdmin("entity.mutate", { type: "entity.screen" });
       assertIdempotencyKey(req);
 
       const body = await req.json();
