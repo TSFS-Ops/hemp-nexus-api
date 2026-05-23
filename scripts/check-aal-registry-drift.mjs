@@ -93,11 +93,10 @@ function loadRegistry() {
 function findAssertAal2CallSites() {
   const callSites = new Map(); // action -> [file, ...]
   const files = walk(FUNCTIONS_DIR).filter((f) => !f.includes("/_shared/aal.ts"));
-  // Match: action: "key" within ~600 chars after an assertAal2( token.
-  // Covers both direct call-sites and inline helper definitions where the
-  // helper's `assertAal2(authHeader, { ..., action: "key", ... })` body
-  // names the literal action key.
-  const callRx = /assertAal2\s*\(([\s\S]{0,600}?)\)/g;
+  // Match the full assertAal2(...) call up to the trailing `);`. Non-greedy
+  // body, but anchored to `);` so nested parens (e.g. req.headers.get(...))
+  // do not truncate the block early.
+  const callRx = /assertAal2\s*\(([\s\S]{0,800}?)\)\s*;/g;
   const actionRx = /action\s*:\s*["']([a-zA-Z][a-zA-Z0-9_.]+)["']/;
   for (const file of files) {
     const src = readFileSync(file, "utf8");
