@@ -25,6 +25,7 @@ import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts
 import {
   getContactState,
   isOutreachBlocked,
+  isUsableContactEmail,
   contactBlockReason,
   contactBlockCode,
   contactStateLabel,
