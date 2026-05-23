@@ -4116,6 +4116,11 @@ Deno.serve(async (req) => {
               reconfirmation_window_expires_at:
                 (lateRpcResult as { reconfirmation_window_expires_at?: string } | null)
                   ?.reconfirmation_window_expires_at ?? null,
+              // CP-009 / DEC-003 (signed): counterparty acknowledgement copy.
+              // Surfaced verbatim by the counterparty-facing landing page; do
+              // not rephrase without re-signing.
+              counterparty_acknowledgement:
+                "This engagement has expired. Your acceptance has been recorded, but the initiator must reconfirm before the engagement can proceed.",
             },
           }),
           {
