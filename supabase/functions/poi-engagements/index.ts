@@ -477,6 +477,31 @@ Deno.serve(async (req) => {
                 request_id: requestId,
               },
             });
+            // CP-006 (signed) — sibling audit for binding-review block.
+            // Canonical row above is preserved; this lets dashboards
+            // separate CP-006 blocks from disputed-being-named blocks.
+            if (gate.code === "BINDING_REVIEW_PENDING") {
+              await supabase.from("audit_logs").insert({
+                org_id: (eng as { org_id: string }).org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.outreach_blocked_binding_review_required",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  cp_rule: "CP-006",
+                  engagement_id: engagementId,
+                  match_id: (eng as { match_id?: string | null }).match_id ?? null,
+                  attempted_action: "preview_outreach",
+                  binding_review_required: true,
+                  outreach_sent: false,
+                  credit_burned: false,
+                  blocked_reason: "binding_review_required",
+                  guard_code: gate.code,
+                  surface: "preview-outreach",
+                  request_id: requestId,
+                },
+              });
+            }
           } catch (_e) { /* non-fatal */ }
           throw new ApiException(gate.code, gate.message, 409);
         }
@@ -838,6 +863,29 @@ Deno.serve(async (req) => {
                   request_id: requestId,
                 },
               });
+              // CP-006 (signed) — sibling audit for binding-review block.
+              if (gate.code === "BINDING_REVIEW_PENDING") {
+                await supabase.from("audit_logs").insert({
+                  org_id: (eng as { org_id: string }).org_id,
+                  actor_user_id: authCtx.userId,
+                  action: "pending_engagement.outreach_blocked_binding_review_required",
+                  entity_type: "poi_engagement",
+                  entity_id: engagementId,
+                  metadata: {
+                    cp_rule: "CP-006",
+                    engagement_id: engagementId,
+                    match_id: (eng as { match_id?: string | null }).match_id ?? null,
+                    attempted_action: "send_outreach",
+                    binding_review_required: true,
+                    outreach_sent: false,
+                    credit_burned: false,
+                    blocked_reason: "binding_review_required",
+                    guard_code: gate.code,
+                    surface: "send-outreach",
+                    request_id: requestId,
+                  },
+                });
+              }
             } catch (_e) { /* non-fatal */ }
           }
           throw new ApiException(gate.code, gate.message, 409);
@@ -1528,6 +1576,23 @@ Deno.serve(async (req) => {
         reason_codes: string[];
         candidate_count: number;
       } | null = null;
+      // CP-006 (signed): tracks a unique-exact-email safe-bind in THIS
+      // PATCH so the sibling `pending_engagement.auto_bound_registered_org`
+      // audit can be emitted alongside the canonical binding fields.
+      let safeBindEvent: {
+        matched_organisation_id: string;
+        matched_contact_id: string | null;
+        email: string;
+      } | null = null;
+      // CP-006 (signed): captures the first candidate's profile_id list
+      // for the binding-review sibling audit. Mirrors the canonical
+      // `engagement.binding_review_required` insert (initial entry only).
+      let bindingReviewSiblingPayload: {
+        possible_organisation_ids: string[];
+        possible_contact_ids: string[];
+        reason_codes: string[];
+        email: string;
+      } | null = null;
 
       if (parsed.data.counterparty_email !== undefined) {
         // Schema already trims + lowercases, but normalise defensively in case
@@ -1616,6 +1681,11 @@ Deno.serve(async (req) => {
               org_id: decision.org_id,
               email: normalisedEmail,
             };
+            safeBindEvent = {
+              matched_organisation_id: decision.org_id,
+              matched_contact_id: null,
+              email: normalisedEmail,
+            };
             console.log(
               `[${requestId}] Auto-bound engagement ${engagementId} to org ${decision.org_id} via email ${normalisedEmail}`,
             );
@@ -1652,6 +1722,27 @@ Deno.serve(async (req) => {
                 candidates: candidatesPayload,
                 reason_codes: decision.reason_codes,
                 candidate_count: decision.candidates.length,
+              };
+              // CP-006: sibling-audit payload (initial-entry only).
+              const possibleOrgIds = Array.from(
+                new Set(
+                  decision.candidates
+                    .map((c) => c.org_id)
+                    .filter((v): v is string => !!v),
+                ),
+              );
+              const possibleContactIds = Array.from(
+                new Set(
+                  decision.candidates
+                    .map((c) => c.profile_id)
+                    .filter((v): v is string => !!v),
+                ),
+              );
+              bindingReviewSiblingPayload = {
+                possible_organisation_ids: possibleOrgIds,
+                possible_contact_ids: possibleContactIds,
+                reason_codes: decision.reason_codes,
+                email: normalisedEmail,
               };
             }
             console.log(
@@ -1881,6 +1972,50 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] Engagement ${engagementId} updated atomically: ${current.engagement_status} → ${targetStatus}`);
 
+      // ── CP-006 (signed) — auto-bound sibling audit ──
+      // Fires when this PATCH performed a unique-exact-email safe-bind.
+      // Sits alongside the canonical binding fields written above
+      // (counterparty_org_id / counterparty_type). No canonical event
+      // is replaced — this is a dashboards-friendly sibling row.
+      if (safeBindEvent) {
+        try {
+          const emailHash = await sha256Hex(safeBindEvent.email);
+          await supabase.from("audit_logs").insert({
+            org_id: current.org_id,
+            actor_user_id: authCtx.userId,
+            action: "pending_engagement.auto_bound_registered_org",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              cp_rule: "CP-006",
+              engagement_id: engagementId,
+              match_id: (current as { match_id?: string | null }).match_id ?? null,
+              poi_id: (current as { poi_id?: string | null }).poi_id ?? null,
+              counterparty_email_hash: emailHash,
+              counterparty_name:
+                (current as { contact_name?: string | null }).contact_name ?? null,
+              matched_organisation_id: safeBindEvent.matched_organisation_id,
+              matched_contact_id: safeBindEvent.matched_contact_id,
+              match_type: "unique_exact_email",
+              auto_bound: true,
+              binding_review_required: false,
+              outreach_enabled: true,
+              created_by_user_id: authCtx.userId,
+              organisation_id: current.org_id,
+              source: "poi-engagements:patch_resolver",
+              request_id: requestId,
+            },
+          });
+        } catch (e) {
+          console.warn(
+            `[${requestId}] CP-006 auto_bound_registered_org sibling audit failed (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }
+
+
+
       // ── Batch D — binding-review initial-entry side-effects ──
       // Fires exactly once when the engagement first transitions into
       // binding_review_required. Subsequent PATCHes that find the row
@@ -1932,6 +2067,52 @@ Deno.serve(async (req) => {
             `[${requestId}] binding_review_required audit insert failed (non-fatal):`,
             e,
           );
+        }
+        // CP-006 (signed) — binding-review sibling audit. Sits
+        // alongside the canonical `engagement.binding_review_required`
+        // row above (initial-entry only). Dashboards can split
+        // CP-006 review entries from the generic binding-review
+        // bucket without losing the canonical row.
+        if (bindingReviewSiblingPayload) {
+          try {
+            const emailHash = await sha256Hex(bindingReviewSiblingPayload.email);
+            await supabase.from("audit_logs").insert({
+              org_id: current.org_id,
+              actor_user_id: authCtx.userId,
+              action: "pending_engagement.binding_review_required",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                cp_rule: "CP-006",
+                engagement_id: engagementId,
+                match_id: (current as { match_id?: string | null }).match_id ?? null,
+                poi_id: (current as { poi_id?: string | null }).poi_id ?? null,
+                counterparty_email_hash: emailHash,
+                counterparty_name:
+                  (current as { contact_name?: string | null }).contact_name ?? null,
+                possible_organisation_ids:
+                  bindingReviewSiblingPayload.possible_organisation_ids,
+                possible_contact_ids:
+                  bindingReviewSiblingPayload.possible_contact_ids,
+                match_type: "ambiguous",
+                reason_codes: bindingReviewSiblingPayload.reason_codes,
+                auto_bound: false,
+                binding_review_required: true,
+                outreach_enabled: false,
+                outreach_sent: false,
+                credit_burned: false,
+                created_by_user_id: authCtx.userId,
+                organisation_id: current.org_id,
+                source: "poi-engagements:patch_resolver",
+                request_id: requestId,
+              },
+            });
+          } catch (e) {
+            console.warn(
+              `[${requestId}] CP-006 binding_review_required sibling audit failed (non-fatal):`,
+              e instanceof Error ? e.message : e,
+            );
+          }
         }
         try {
           await dispatchD4bAdminAlert(supabase, {
