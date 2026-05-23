@@ -745,7 +745,7 @@ Deno.serve(async (req) => {
             for (const v of violations) {
               try {
                 await supabase.from("audit_logs").insert({
-                  org_id: (eng as { org_id: string } | null)?.org_id ?? authCtx.orgId ?? null,
+                  org_id: authCtx.orgId ?? null,
                   actor_user_id: authCtx.userId,
                   action: v.action,
                   entity_type: "poi_engagement",
