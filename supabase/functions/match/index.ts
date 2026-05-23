@@ -465,7 +465,7 @@ Deno.serve(async (req) => {
       // `evaluateEligibility` no longer requires `buyer_id` / `seller_id`,
       // so a match with a named-but-unregistered counterparty would now
       // pass eligibility and reach `atomic_generate_poi_v2`, which would
-      // try to seal a binding POI against a non-platform entity. This gate
+      // try to mint a counterparty-facing POI against a non-platform entity. This gate
       // intercepts that case BEFORE the eligibility branch and routes the
       // request to a Pending Engagement (202) — or returns a typed 422 if
       // the caller has not supplied enough counterparty details to invite.
