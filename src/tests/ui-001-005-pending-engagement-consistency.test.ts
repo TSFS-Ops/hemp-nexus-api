@@ -7,7 +7,7 @@
  *   1. `isPendingEngagementActive` exists, exports correct terminal set
  *      (accepted / declined / expired / cancelled_email_change).
  *   2. DealWizard focal banner has a `softRoutePending` branch with the
- *      "Pending Engagement — outreach in progress" copy.
+ *      "Pending Engagement — counterparty invited, awaiting confirmation." copy (DEC-005).
  *   3. StateProgressionCard derives `softRoutePending`, uses it to disable
  *      the mint CTA, shows the "No credits will be burned" note, and
  *      renders the dedicated dialog block.
@@ -78,7 +78,8 @@ describe("DealWizard — focal banner soft-route branch", () => {
   });
 
   it("shows the Waiting on counterparty / Pending Engagement focal banner", () => {
-    expect(src).toContain("Pending Engagement — outreach in progress");
+    // DEC-005: signed wording for the Pending Engagement banner.
+    expect(src).toContain("Pending Engagement — counterparty invited, awaiting confirmation.");
     expect(src).toContain("Waiting on counterparty");
     expect(src).toMatch(/tone:\s*"locked"/);
   });
@@ -102,7 +103,8 @@ describe("StateProgressionCard — mint CTA + dialog", () => {
   });
 
   it("renders the soft-route CTA label and the no-credits note", () => {
-    expect(src).toContain("Pending Engagement — outreach in progress");
+    // DEC-005: signed wording.
+    expect(src).toContain("Pending Engagement — counterparty invited, awaiting confirmation.");
     expect(src).toContain("No credits will be burned — pending engagement in progress");
     expect(src).toContain('data-soft-route-pending-note="true"');
   });

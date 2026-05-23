@@ -635,8 +635,9 @@ Deno.serve(async (req) => {
 
         const responseBody = {
           code: "ENGAGEMENT_PENDING",
+          // DEC-005: signed initiator-facing copy.
           message:
-            "Counterparty is not yet registered or attached. A pending engagement has been created; POI mint will resume once the counterparty registers and accepts.",
+            "Counterparty invitation sent. This trade remains pending until the counterparty confirms participation.",
           engagement_id: engagementRow?.id ?? null,
           match_id: matchId,
           missing_party: cpGate.missing_party,
@@ -647,7 +648,7 @@ Deno.serve(async (req) => {
             status: "queued",
             gate: "counterparty_registration",
             message:
-              "Counterparty is named but not yet a registered organisation. The deal is queued in Pending Engagements; POI mint will resume once the counterparty registers and accepts.",
+              "Counterparty invitation sent. This trade remains pending until the counterparty confirms participation.",
           },
           engagement: engagementRow,
           binding,
@@ -886,8 +887,9 @@ Deno.serve(async (req) => {
             soft_route: {
               status: "queued",
               failed_fields: softRoute.failedFields,
+              // DEC-005: signed initiator-facing copy.
               message:
-                "Counterparty is named but not yet a registered organisation. The deal is queued in Pending Engagements; POI mint will resume once the counterparty registers and accepts.",
+                "Counterparty invitation sent. This trade remains pending until the counterparty confirms participation.",
             },
             engagement: engagementRow,
             binding,

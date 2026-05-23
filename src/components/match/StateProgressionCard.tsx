@@ -826,7 +826,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 ) : softRoutePending ? (
                   <>
                     <ShieldAlert className="h-4 w-4" />
-                    Pending Engagement — outreach in progress
+                    Pending Engagement — counterparty invited, awaiting confirmation.
                   </>
                 ) : !isFreeAction && recheckingBalance ? (
                   <>
