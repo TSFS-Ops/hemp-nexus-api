@@ -3,7 +3,9 @@
   "required": [
     "match-named-contacts-assign",
     "seed-mt009-controlled-prod",
-    "unseed-mt009-controlled-prod"
+    "unseed-mt009-controlled-prod",
+    "seed-cp002-controlled-prod",
+    "unseed-cp002-controlled-prod"
   ],
   "exempt_invokes": []
 }
