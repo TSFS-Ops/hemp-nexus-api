@@ -1639,6 +1639,50 @@ Deno.serve(async (req) => {
             } catch (e) {
               console.warn(`[${requestId}] email_change_refused audit insert failed (non-fatal):`, e);
             }
+            // CP-015 (signed): sibling audit naming for dashboard parity.
+            // Canonical row is `engagement.email_change_refused`; this row
+            // restates the intent in the "pending_engagement.*" namespace
+            // used by Daniel's signed-form audit views. No state change,
+            // no side effects — additive audit only.
+            try {
+              const oldHash = prevEmailNorm ? await sha256Hex(prevEmailNorm) : null;
+              const newHash = normalisedEmail ? await sha256Hex(normalisedEmail) : null;
+              await supabase.from("audit_logs").insert({
+                org_id: current.org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.email_change_blocked_requires_new_engagement",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  cp_rule: "CP-015",
+                  reason: "counterparty_email_change_after_creation",
+                  old_engagement_id: engagementId,
+                  new_engagement_id: null,
+                  match_id: (current as { match_id?: string | null }).match_id ?? null,
+                  poi_id: (current as { poi_id?: string | null }).poi_id ?? null,
+                  initiator_user_id: authCtx.userId,
+                  initiator_organisation_id: current.org_id,
+                  old_counterparty_email_hash: oldHash,
+                  new_counterparty_email_hash: newHash,
+                  counterparty_name: (current as { contact_name?: string | null }).contact_name ?? null,
+                  old_status_before: current.engagement_status,
+                  old_status_after: current.engagement_status,
+                  direct_edit_allowed: false,
+                  new_engagement_created: false,
+                  old_outreach_link_invalidated: false,
+                  poi_completed_from_old_engagement: false,
+                  wad_triggered_from_old_engagement: false,
+                  credit_burned_for_email_change: false,
+                  payment_event_created_for_email_change: false,
+                  billing_review_required: false,
+                  changed_by_user_id: authCtx.userId,
+                  changed_at: new Date().toISOString(),
+                  request_id: requestId,
+                },
+              });
+            } catch (e) {
+              console.warn(`[${requestId}] CP-015 sibling (refused) audit insert failed (non-fatal):`, e);
+            }
             throw new ApiException(
               "EMAIL_CHANGE_REQUIRES_CANCEL_RECREATE",
               "This engagement has already been used for outreach. To change the counterparty email, cancel this engagement and create a replacement.",
