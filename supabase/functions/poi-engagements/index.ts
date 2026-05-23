@@ -2295,6 +2295,132 @@ Deno.serve(async (req) => {
         console.warn(`[${requestId}] dispute audit insert failed (non-fatal):`, e);
       }
 
+      // ── CP-012 — central public.disputes row + sibling spec audit ──
+      // Without this row, the match-level DISPUTE_ACTIVE guard at
+      // match/intent-declare never trips, so a counterparty dispute
+      // would silently fail to block POI / WaD / execution.
+      const matchIdForDispute = (current as { match_id?: string | null }).match_id ?? null;
+      const counterpartyOrgId = (current as { counterparty_org_id?: string | null }).counterparty_org_id ?? null;
+      const counterpartyEmail = (current as { counterparty_email?: string | null }).counterparty_email ?? null;
+      let disputeRowId: string | null = null;
+      let billingReviewRiskItemId: string | null = null;
+      let creditBurnedForMatch = false;
+      if (matchIdForDispute) {
+        try {
+          const { data: disputeRow, error: disputeErr } = await supabase
+            .from("disputes")
+            .insert({
+              match_id: matchIdForDispute,
+              // raised_by_org_id is NOT NULL. Prefer counterparty org when
+              // known; fall back to the initiator org so the
+              // DISPUTE_ACTIVE guard (which only checks existence on
+              // match_id) still trips even when the counterparty has no
+              // platform org yet.
+              raised_by_org_id: counterpartyOrgId ?? current.org_id,
+              raised_by_user_id: authCtx.userId,
+              reason: "cp012_disputes_being_named",
+              evidence_notes: parsed.data.reason,
+              status: "open",
+            })
+            .select("id")
+            .maybeSingle();
+          if (disputeErr) throw disputeErr;
+          disputeRowId = (disputeRow as { id?: string } | null)?.id ?? null;
+        } catch (e) {
+          console.warn(
+            `[${requestId}] CP-012 disputes row insert failed (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+
+        // Billing review risk item if a credit was already burned on this match.
+        try {
+          const { data: burns } = await supabase
+            .from("token_ledger")
+            .select("id")
+            .eq("entity_id", matchIdForDispute)
+            .gt("tokens_burned", 0)
+            .limit(1);
+          creditBurnedForMatch = Array.isArray(burns) && burns.length > 0;
+          if (creditBurnedForMatch) {
+            const { data: risk } = await supabase
+              .from("admin_risk_items")
+              .insert({
+                org_id: current.org_id,
+                kind: "billing_review_required",
+                title: "Billing review required: credit burned before counterparty dispute",
+                description:
+                  "A counterparty disputed being named in this trade after a credit had already been burned. " +
+                  "No automatic refund has been issued; manual admin review is required.",
+                severity: "high",
+                status: "open",
+                dedup_key: `billing_review_required:cp012:${matchIdForDispute}:${engagementId}`,
+                metadata: {
+                  cp_rule: "CP-012",
+                  match_id: matchIdForDispute,
+                  engagement_id: engagementId,
+                  dispute_id: disputeRowId,
+                  request_id: requestId,
+                },
+              })
+              .select("id")
+              .maybeSingle();
+            billingReviewRiskItemId = (risk as { id?: string } | null)?.id ?? null;
+          }
+        } catch (e) {
+          console.warn(
+            `[${requestId}] CP-012 billing-review risk item insert failed (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }
+
+      // CP-012 spec sibling audit row.
+      try {
+        const counterpartyEmailHash = counterpartyEmail
+          ? await sha256Hex(counterpartyEmail.toLowerCase())
+          : null;
+        await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: "pending_engagement.counterparty_disputed_being_named",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            cp_rule: "CP-012",
+            dispute_id: disputeRowId,
+            engagement_id: engagementId,
+            match_id: matchIdForDispute,
+            poi_id: (current as { poi_id?: string | null }).poi_id ?? null,
+            initiator_organisation_id: current.org_id,
+            counterparty_organisation_id: counterpartyOrgId,
+            counterparty_name: (current as { contact_name?: string | null }).contact_name ?? null,
+            counterparty_email_hash: counterpartyEmailHash,
+            dispute_reason: "disputes_being_named",
+            engagement_status_before: current.engagement_status,
+            engagement_status_after: "disputed_being_named",
+            match_status_after: "dispute_active",
+            progression_blocked: true,
+            poi_completed: false,
+            wad_triggered: false,
+            execution_started: false,
+            credit_burned: creditBurnedForMatch,
+            payment_event_created: false,
+            billing_review_required: !!billingReviewRiskItemId,
+            billing_review_risk_item_id: billingReviewRiskItemId,
+            raised_at: nowIso,
+            raised_by: authCtx.userId,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(
+          `[${requestId}] CP-012 sibling audit insert failed (non-fatal):`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+
+
       // D4b: admin-only alert for dispute_raised. Best-effort; never
       // fails the request. Recipient is hard-coded to the platform
       // admin mailbox + Slack inside the helper — no counterparty,
