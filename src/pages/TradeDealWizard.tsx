@@ -222,10 +222,10 @@ export default function TradeDealWizard() {
                 <div className="border-t border-border bg-secondary/40 p-5 md:p-6">
                   <div className="text-center max-w-md mx-auto">
                     <h3 className="text-base font-bold text-foreground">
-                      Seal this Trade Intent
+                      Record this Trade Intent
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Final review before tamper-proof commitment.
+                      Final review before recording the Draft POI.
                     </p>
                     <Button
                       size="lg"
@@ -234,9 +234,11 @@ export default function TradeDealWizard() {
                       Generate POI (1 Credit)
                     </Button>
                     <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
-                      Generating this Proof of Intent will atomically consume 1 Credit
-                      ($1.00 USD, charged in USD at checkout) and generate a
-                      tamper-proof hash of this payload. This action cannot be undone.
+                      Generating this Draft Proof of Intent (initiator-generated intent record,
+                      awaiting counterparty confirmation) will atomically consume 1 Credit
+                      ($1.00 USD, charged in USD at checkout) and record a cryptographic
+                      hash of this payload. POI mint is recorded and not user-revocable; admin
+                      reversal workflows may apply.
                     </p>
                   </div>
                 </div>

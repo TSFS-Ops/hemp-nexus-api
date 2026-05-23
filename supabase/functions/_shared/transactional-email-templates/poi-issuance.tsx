@@ -13,29 +13,36 @@ interface PoiIssuanceProps {
   issuedAt?: string
 }
 
+// DEC-006: initiator-facing recording confirmation. POI is described as a
+// Draft record (initiator-generated intent record), not as "binding" or
+// "sealed". Acceptance by the counterparty is still required.
 const PoiIssuanceEmail = ({ matchId, commodity, poiState, issuedAt }: PoiIssuanceProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Trade Request issued for {commodity || 'your match'}</Preview>
+    <Preview>Draft Proof of Intent recorded for {commodity || 'your match'}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Trade Request Issued</Heading>
+        <Heading style={h1}>Draft Proof of Intent Recorded</Heading>
         <Text style={text}>
-          A binding Trade Request (POI) has been recorded for your {commodity ? <strong>{commodity}</strong> : 'match'} on the {SITE_NAME} platform.
+          A Draft Proof of Intent (POI) — an initiator-generated intent record, awaiting counterparty
+          confirmation — has been recorded for your {commodity ? <strong>{commodity}</strong> : 'match'} on
+          the {SITE_NAME} platform. WaD, execution, and finality remain subject to the next required
+          workflow steps.
         </Text>
         <Section style={detailBox}>
           {poiState && (
             <Text style={detailText}>POI State: <strong>{poiState}</strong></Text>
           )}
           {issuedAt && (
-            <Text style={detailText}>Issued: <strong>{issuedAt}</strong></Text>
+            <Text style={detailText}>Recorded: <strong>{issuedAt}</strong></Text>
           )}
           {matchId && (
             <Text style={detailText}>Reference: <strong>{matchId.slice(0, 8)}</strong></Text>
           )}
         </Section>
         <Text style={text}>
-          This record forms part of your evidence chain. The cryptographic hash of this event has been sealed and cannot be altered.
+          This record forms part of your evidence chain. The cryptographic hash of this event has been
+          recorded.
         </Text>
         <Text style={text}>
           Log in to your console to view the full evidence pack.
@@ -52,7 +59,7 @@ const PoiIssuanceEmail = ({ matchId, commodity, poiState, issuedAt }: PoiIssuanc
 export const template = {
   component: PoiIssuanceEmail,
   subject: (data: Record<string, any>) =>
-    `POI issued: ${data.commodity || 'Match'} - ${SITE_NAME}`,
+    `Draft POI recorded: ${data.commodity || 'Match'} - ${SITE_NAME}`,
   displayName: 'POI issuance',
   previewData: { matchId: 'a1b2c3d4-e5f6', commodity: 'Refined Sunflower Oil', poiState: 'intent_declared', issuedAt: '2026-04-08T12:00:00Z' },
 } satisfies TemplateEntry

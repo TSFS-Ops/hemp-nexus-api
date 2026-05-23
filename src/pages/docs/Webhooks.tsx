@@ -78,8 +78,8 @@ export default function DocsWebhooks() {
             { name: "engagement.accepted",       type: "event", desc: "Counterparty accepted the engagement; hold-point cleared and POI mint is now reachable." },
             { name: "counterparty.sighted",      type: "event", desc: "Counterparty has acknowledged a match they are party to (single-side)." },
             { name: "poi.generated",             type: "event", desc: "Proof of Intent has been minted for a match." },
-            { name: "intent.confirmed",          type: "event", desc: "Both parties' Proof of Intent recorded; collapse ledger entry sealed." },
-            { name: "transaction.committed",     type: "event", desc: "Match advanced to committed; terms are now immutable." },
+            { name: "intent.confirmed",          type: "event", desc: "Both parties have confirmed their POI; the mutual intent record has been recorded." },
+            { name: "transaction.committed",     type: "event", desc: "Match advanced to committed; terms are locked from further client mutation pending counterparty action." },
             { name: "wad.sealed",                type: "event", desc: "Without a Doubt certificate sealed; evidence pack available for download." },
             { name: "dispute.opened",            type: "event", desc: "A dispute was raised against a match; commercial mutations are blocked until resolved." },
           ]}

@@ -1277,8 +1277,8 @@ Deno.serve(async (req) => {
               const notifRows = cpUsers.map((u: any) => ({
                 user_id: u.id,
                 type: "poi_counterparty_notification",
-                title: `POI issued: ${match.commodity || 'Trade'}`,
-                body: `A Proof of Intent has been issued for ${match.commodity || 'a trade'} by ${creatorOrgName}. Your organisation is the ${counterpartySide}. Review and respond.`,
+                title: `Trade Request — your confirmation needed: ${match.commodity || 'Trade'}`,
+                body: `A Draft Proof of Intent (initiator-generated intent record, awaiting your confirmation) has been recorded for ${match.commodity || 'a trade'} by ${creatorOrgName}. Your organisation is the ${counterpartySide}. Review and confirm whether you accept or decline.`,
                 link: `/desk/match/${matchId}`,
                 org_id: counterpartyOrgId,
                 entity_type: "match",

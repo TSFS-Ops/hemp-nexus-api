@@ -14,15 +14,19 @@ interface PoiCounterpartyNotifyProps {
   issuedAt?: string
 }
 
+// DEC-006: pre-acceptance POI labelling. Recipient has not yet accepted,
+// so the POI is described as a Draft, not "issued" / "sealed".
 const PoiCounterpartyNotifyEmail = ({ commodity, creatorOrgName, matchId, side, issuedAt }: PoiCounterpartyNotifyProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>A Proof of Intent has been issued for {commodity || 'a trade'} involving your organisation</Preview>
+    <Preview>You have been invited to review a proposed trade on {SITE_NAME}{commodity ? ` — ${commodity}` : ''}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Trade Request — Action Required</Heading>
+        <Heading style={h1}>Trade Request — Your Confirmation Needed</Heading>
         <Text style={text}>
-          A Proof of Intent (POI) has been issued on the {SITE_NAME} platform for a trade involving your organisation.
+          A Draft Proof of Intent (POI) — an initiator-generated intent record, awaiting your confirmation —
+          has been recorded on the {SITE_NAME} platform for a trade involving your organisation. This is
+          not yet a mutual intent record. Nothing is recorded against your organisation until you confirm.
         </Text>
         <Section style={detailBox}>
           {commodity && (
@@ -35,20 +39,20 @@ const PoiCounterpartyNotifyEmail = ({ commodity, creatorOrgName, matchId, side, 
             <Text style={detailText}>Your role: <strong>{side === 'buyer' ? 'Buyer' : 'Seller'}</strong></Text>
           )}
           {issuedAt && (
-            <Text style={detailText}>Issued: <strong>{issuedAt}</strong></Text>
+            <Text style={detailText}>Recorded: <strong>{issuedAt}</strong></Text>
           )}
           {matchId && (
             <Text style={detailText}>Reference: <strong>{matchId.slice(0, 8)}</strong></Text>
           )}
         </Section>
         <Text style={text}>
-          Please log in to your console to review the details and respond.
+          Please log in to your console to review the details and confirm whether you accept or decline.
         </Text>
         <Button
           href={`https://api.trade.izenzo.co.za/desk/match/${matchId || ''}`}
           style={button}
         >
-          View Trade Request
+          Review Trade Request
         </Button>
         <Hr style={hr} />
         <Text style={footer}>
@@ -62,7 +66,7 @@ const PoiCounterpartyNotifyEmail = ({ commodity, creatorOrgName, matchId, side, 
 export const template = {
   component: PoiCounterpartyNotifyEmail,
   subject: (data: Record<string, any>) =>
-    `[Izenzo] POI issued: ${data.commodity || 'Trade'} — your response needed`,
+    `[Izenzo] Trade Request — your confirmation needed${data.commodity ? `: ${data.commodity}` : ''}`,
   displayName: 'POI counterparty notification',
   previewData: {
     commodity: 'Yellow Maize',
