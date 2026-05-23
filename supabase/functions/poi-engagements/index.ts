@@ -1528,6 +1528,23 @@ Deno.serve(async (req) => {
         reason_codes: string[];
         candidate_count: number;
       } | null = null;
+      // CP-006 (signed): tracks a unique-exact-email safe-bind in THIS
+      // PATCH so the sibling `pending_engagement.auto_bound_registered_org`
+      // audit can be emitted alongside the canonical binding fields.
+      let safeBindEvent: {
+        matched_organisation_id: string;
+        matched_contact_id: string | null;
+        email: string;
+      } | null = null;
+      // CP-006 (signed): captures the first candidate's profile_id list
+      // for the binding-review sibling audit. Mirrors the canonical
+      // `engagement.binding_review_required` insert (initial entry only).
+      let bindingReviewSiblingPayload: {
+        possible_organisation_ids: string[];
+        possible_contact_ids: string[];
+        reason_codes: string[];
+        email: string;
+      } | null = null;
 
       if (parsed.data.counterparty_email !== undefined) {
         // Schema already trims + lowercases, but normalise defensively in case
