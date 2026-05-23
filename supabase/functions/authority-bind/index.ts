@@ -270,6 +270,7 @@ Deno.serve(async (req: Request) => {
       const recordId = url.searchParams.get("id");
       const recordType = url.searchParams.get("type") || "atb";
       if (!recordId) throw new ApiException("VALIDATION_ERROR", "id parameter required", 400);
+      await requireMfaForAtbMutation({ id: recordId, type: recordType === "ubo" ? "ubo_link" : "authority_record" });
 
       const body = await req.json();
       const { status } = StatusUpdateSchema.parse(body);
