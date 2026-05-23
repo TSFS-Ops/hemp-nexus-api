@@ -401,6 +401,14 @@ Deno.serve(async (req) => {
         | { declaration_ack: boolean; atb_ack: boolean; actor_roles: string[]; ack_timestamp: string }
         | null = null;
       let counterpartyEmail: string | null = null;
+      // CP-015 (signed): optional replacement context. When the caller is
+      // recreating an engagement after a cancel-for-email-change, they may
+      // pass the cancelled engagement id here. The match function does not
+      // mutate the old row; it only validates the linkage and emits a
+      // sibling audit (`pending_engagement.created_after_counterparty_email_change`)
+      // after the new soft-route engagement row is created. Invalid or
+      // unrelated ids are rejected with a typed 409.
+      let replacesEngagementId: string | null = null;
       // D-02: terms_hash the user acknowledged. Server recomputes from the
       // live row and rejects with TERMS_DRIFT on mismatch. Optional for
       // backwards compatibility (NULL accepted; logged in audit metadata).
