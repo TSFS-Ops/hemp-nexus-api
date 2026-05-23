@@ -16,6 +16,13 @@ import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE }
 import { clampSubject } from "../_shared/email-subject.ts";
 import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
 import { dispatchD4cInitiatorAlert } from "../_shared/batch-d-initiator-notify.ts";
+import {
+  assertPreAcceptanceSafe,
+  assertPoiWordingSafe,
+  UNSAFE_PRE_ACCEPTANCE_WARNING,
+  UNSAFE_POI_WARNING,
+} from "../_shared/legal-wording.ts";
+import { assertClaimSafe } from "../_shared/legal-claims.ts";
 import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 import { evaluateCounterpartyEmailBinding } from "../_shared/binding-resolver.ts";
 import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
