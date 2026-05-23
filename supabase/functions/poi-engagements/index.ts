@@ -1675,6 +1675,27 @@ Deno.serve(async (req) => {
                 reason_codes: decision.reason_codes,
                 candidate_count: decision.candidates.length,
               };
+              // CP-006: sibling-audit payload (initial-entry only).
+              const possibleOrgIds = Array.from(
+                new Set(
+                  decision.candidates
+                    .map((c) => c.org_id)
+                    .filter((v): v is string => !!v),
+                ),
+              );
+              const possibleContactIds = Array.from(
+                new Set(
+                  decision.candidates
+                    .map((c) => c.profile_id)
+                    .filter((v): v is string => !!v),
+                ),
+              );
+              bindingReviewSiblingPayload = {
+                possible_organisation_ids: possibleOrgIds,
+                possible_contact_ids: possibleContactIds,
+                reason_codes: decision.reason_codes,
+                email: normalisedEmail,
+              };
             }
             console.log(
               `[${requestId}] Engagement ${engagementId} entered binding_review_required (${decision.reason_codes.join(",")}, ${decision.candidates.length} candidates); initial_entry=${!isAlreadyInReview}`,
