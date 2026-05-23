@@ -185,6 +185,7 @@ Deno.serve(async (req: Request) => {
       assertIdempotencyKey(req);
       const body = await req.json();
       const { org_id: targetOrgId, extend_days } = RenewSchema.parse(body);
+      await requireMfaForApprovalOverride({ org_id: targetOrgId, sub: "renew" });
 
       const { data: existing } = await admin
         .from("trade_approvals")
