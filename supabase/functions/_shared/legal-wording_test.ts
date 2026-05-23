@@ -7,8 +7,8 @@ import {
   assertPreAcceptanceSafe,
   assertPoiWordingSafe,
   getPoiLabel,
-} from "../legal-wording.ts";
-import { assertClaimSafe } from "../legal-claims.ts";
+} from "./legal-wording.ts";
+import { assertClaimSafe } from "./legal-claims.ts";
 
 Deno.test("DEC-005 — signed Pending Engagement label", () => {
   assertEquals(
