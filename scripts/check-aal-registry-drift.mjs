@@ -36,6 +36,17 @@ const ALLOWLIST_NO_CALLSITE = new Set([
   "match_challenge.transition_closed_no_action",
   "match_challenge.platform_admin_override",
   "match_challenge.break_glass",
+  // SEC-001: these keys are enforced via small per-file helpers that pass
+  // `action` as a variable into assertAal2, so the strict literal scanner
+  // does not see them. Coverage is asserted by
+  // src/tests/sec-001-aal-coverage.test.ts instead.
+  "entity.mutate",
+  "organisation.mutate",
+  "authority.bind",
+  "trade.approval_override",
+  "reputation.recalculate",
+  // pending_engagement.send_outreach is a direct literal call-site in
+  // poi-engagements/index.ts (no helper), so it does NOT need allowlisting.
 ]);
 
 // Action keys that must NEVER be in the preflight registry. break-glass uses
