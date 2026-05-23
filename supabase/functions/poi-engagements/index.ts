@@ -1633,6 +1633,11 @@ Deno.serve(async (req) => {
               org_id: decision.org_id,
               email: normalisedEmail,
             };
+            safeBindEvent = {
+              matched_organisation_id: decision.org_id,
+              matched_contact_id: null,
+              email: normalisedEmail,
+            };
             console.log(
               `[${requestId}] Auto-bound engagement ${engagementId} to org ${decision.org_id} via email ${normalisedEmail}`,
             );
