@@ -67,10 +67,13 @@ export const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   "trade.approval_override": "aal2",
   "pending_engagement.send_outreach": "aal2",
   "reputation.recalculate": "aal2",
+  // DATA-010 Phase 1 — sensitive admin export gate
+  "export.admin_pii_export": "aal2",
   // break-glass uses fresh password re-auth via GoTrue, not the JWT aal
   // claim, so it is intentionally NOT listed here as aal2-gated for
   // preflight purposes. See scripts/check-aal-registry-drift.mjs allowlist.
 };
+
 
 const BodySchema = z.object({
   action: z.string().min(1).max(128),
