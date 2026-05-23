@@ -446,6 +446,13 @@ Deno.serve(async (req) => {
                 const t = parsed.terms_hash.trim().toLowerCase();
                 if (/^[0-9a-f]{64}$/.test(t)) termsHashFromBody = t;
               }
+              // CP-015: optional replaces_engagement_id (uuid).
+              if (typeof parsed.replaces_engagement_id === "string") {
+                const r = parsed.replaces_engagement_id.trim().toLowerCase();
+                if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(r)) {
+                  replacesEngagementId = r;
+                }
+              }
             }
           }
         }
