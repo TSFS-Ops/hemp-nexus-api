@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
 
     // POST /orgs - Create organisation
     if (req.method === 'POST' && pathParts.length === 1) {
+      await requireMfaForOrgMutation();
       assertIdempotencyKey(req);
       const rawBody = await req.json();
       
