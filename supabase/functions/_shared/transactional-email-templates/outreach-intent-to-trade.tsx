@@ -33,7 +33,7 @@ interface OutreachIntentToTradeProps {
   priceCurrency?: string
   location?: string
   jurisdiction?: string
-  // Initiator (verified counterparty on platform)
+  // Initiator (registered counterparty on platform)
   initiatorOrgName?: string
   // Admin sending on behalf of
   adminName?: string
@@ -80,9 +80,7 @@ const OutreachIntentToTradeEmail = (props: OutreachIntentToTradeProps) => {
           <Text style={text}>{greeting}</Text>
 
           <Text style={text}>
-            You have been invited to review a proposed trade on {SITE_NAME}. This invitation
-            does not confirm your acceptance. Please review the details and confirm
-            whether you accept or decline participation.
+            You have been invited to review a proposed trade on {SITE_NAME}. This invitation does not confirm your acceptance. Please review the details and confirm whether you accept or decline participation.
           </Text>
 
           <Text style={text}>
