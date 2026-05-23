@@ -674,10 +674,30 @@ Deno.serve(async (req) => {
     if (req.method === "POST" && engagementId && parts[1] === "send-outreach") {
       requireRole(authCtx, "platform_admin");
 
+      // SEC-001: outreach is a sensitive admin action — it fires real email,
+      // writes an immutable outreach log entry, and transitions engagement
+      // state. Platform_admin callers must hold an AAL2 (MFA) session BEFORE
+      // any state mutation, audit-says-sent row, or external send is attempted.
+      // API-key callers skip the JWT aal check (they have no `aal` claim).
+      if (!authCtx.isApiKey) {
+        const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorisation");
+        await assertAal2(authHeader, {
+          adminClient: supabase,
+          callerUserId: authCtx.userId,
+          action: "pending_engagement.send_outreach",
+          context: {
+            sensitive_action_category: "engagement.outreach",
+            target_resource_type: "poi_engagement",
+            target_resource_id: engagementId,
+          },
+        });
+      }
+
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(engagementId)) {
         throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
       }
+
 
       // ── Validate body FIRST so we can derive a stable idempotency key from
       // its content. Previously we fell back to `Date.now()` whenever the
