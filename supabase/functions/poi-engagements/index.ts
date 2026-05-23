@@ -2020,6 +2020,52 @@ Deno.serve(async (req) => {
             e,
           );
         }
+        // CP-006 (signed) — binding-review sibling audit. Sits
+        // alongside the canonical `engagement.binding_review_required`
+        // row above (initial-entry only). Dashboards can split
+        // CP-006 review entries from the generic binding-review
+        // bucket without losing the canonical row.
+        if (bindingReviewSiblingPayload) {
+          try {
+            const emailHash = await sha256Hex(bindingReviewSiblingPayload.email);
+            await supabase.from("audit_logs").insert({
+              org_id: current.org_id,
+              actor_user_id: authCtx.userId,
+              action: "pending_engagement.binding_review_required",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                cp_rule: "CP-006",
+                engagement_id: engagementId,
+                match_id: (current as { match_id?: string | null }).match_id ?? null,
+                poi_id: (current as { poi_id?: string | null }).poi_id ?? null,
+                counterparty_email_hash: emailHash,
+                counterparty_name:
+                  (current as { contact_name?: string | null }).contact_name ?? null,
+                possible_organisation_ids:
+                  bindingReviewSiblingPayload.possible_organisation_ids,
+                possible_contact_ids:
+                  bindingReviewSiblingPayload.possible_contact_ids,
+                match_type: "ambiguous",
+                reason_codes: bindingReviewSiblingPayload.reason_codes,
+                auto_bound: false,
+                binding_review_required: true,
+                outreach_enabled: false,
+                outreach_sent: false,
+                credit_burned: false,
+                created_by_user_id: authCtx.userId,
+                organisation_id: current.org_id,
+                source: "poi-engagements:patch_resolver",
+                request_id: requestId,
+              },
+            });
+          } catch (e) {
+            console.warn(
+              `[${requestId}] CP-006 binding_review_required sibling audit failed (non-fatal):`,
+              e instanceof Error ? e.message : e,
+            );
+          }
+        }
         try {
           await dispatchD4bAdminAlert(supabase, {
             eventType: "engagement.binding_review_required",
