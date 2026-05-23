@@ -50,6 +50,7 @@ All three must exit 0. Attach the terminal output to the release ticket.
 - `check-release-gate-sync.mjs` (Batch W)
 - `check-legal-claims.mjs` (DEC-005/006/010)
 - `check-aal-registry-drift.mjs` (SEC-001)
+- `check-export-audit-payload.mjs` (DATA-010 Phase 1: admin exports require AAL2 + `purpose`/`reason`/`data_categories`/`target_type`; Phase 2 signed-URL/TTL/file-destruction lifecycle deferred)
 
 ---
 
