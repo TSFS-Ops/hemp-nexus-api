@@ -477,6 +477,31 @@ Deno.serve(async (req) => {
                 request_id: requestId,
               },
             });
+            // CP-006 (signed) — sibling audit for binding-review block.
+            // Canonical row above is preserved; this lets dashboards
+            // separate CP-006 blocks from disputed-being-named blocks.
+            if (gate.code === "BINDING_REVIEW_PENDING") {
+              await supabase.from("audit_logs").insert({
+                org_id: (eng as { org_id: string }).org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.outreach_blocked_binding_review_required",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  cp_rule: "CP-006",
+                  engagement_id: engagementId,
+                  match_id: (eng as { match_id?: string | null }).match_id ?? null,
+                  attempted_action: "preview_outreach",
+                  binding_review_required: true,
+                  outreach_sent: false,
+                  credit_burned: false,
+                  blocked_reason: "binding_review_required",
+                  guard_code: gate.code,
+                  surface: "preview-outreach",
+                  request_id: requestId,
+                },
+              });
+            }
           } catch (_e) { /* non-fatal */ }
           throw new ApiException(gate.code, gate.message, 409);
         }
