@@ -3791,6 +3791,72 @@ Deno.serve(async (req) => {
         renewedChild = child as Record<string, unknown> | null;
       }
 
+      // ── CP-009 / DEC-003 (signed) — late-acceptance resolution sibling audit ──
+      // Sits alongside the canonical RPC-written rows
+      // (`pending_engagement.reconfirmed` /
+      //  `pending_engagement.initiator_declined_after_late_acceptance`).
+      // Fires on every successful resolution, regardless of whether the
+      // initiator is org_admin or platform_admin (override is separately
+      // audited below). Non-fatal: a failure here must never roll back the
+      // RPC-committed transition.
+      try {
+        const pa = (parentAfter ?? {}) as Record<string, unknown>;
+        const counterpartyEmail =
+          (pa.counterparty_email as string | null | undefined) ?? null;
+        const counterpartyEmailHash = counterpartyEmail
+          ? await sha256Hex(counterpartyEmail.toLowerCase())
+          : null;
+        const priorStatus = (parent as { engagement_status?: string | null })
+          .engagement_status ?? null;
+        const newStatus = (pa.engagement_status as string | null) ?? null;
+        const nowIso = new Date().toISOString();
+        const isReconfirm = action === "reconfirm";
+        const siblingAction = isReconfirm
+          ? "pending_engagement.late_acceptance_reconfirmed_by_initiator"
+          : "pending_engagement.late_acceptance_declined_by_initiator";
+        const cpRule = "CP-009";
+        await supabase.from("audit_logs").insert({
+          org_id: authCtx.orgId,
+          actor_user_id: authCtx.userId,
+          action: siblingAction,
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            cp_rule: cpRule,
+            engagement_id: engagementId,
+            renewed_engagement_id: renewedId ?? null,
+            match_id: (pa.match_id as string | null) ?? null,
+            poi_id: (pa.poi_id as string | null) ?? null,
+            initiator_user_id: authCtx.userId,
+            initiator_organisation_id: authCtx.orgId,
+            counterparty_user_id:
+              (pa.counterparty_user_id as string | null) ?? null,
+            counterparty_organisation_id:
+              (pa.counterparty_org_id as string | null) ?? null,
+            counterparty_email_hash: counterpartyEmailHash,
+            prior_engagement_status: priorStatus,
+            new_engagement_status: newStatus,
+            counterparty_response: "accepted_after_expiry",
+            ...(isReconfirm
+              ? { initiator_reconfirmed: true, reconfirmed_at: nowIso }
+              : { initiator_declined: true, declined_at: nowIso }),
+            poi_completed: false,
+            wad_triggered: false,
+            credit_burned: false,
+            payment_event_created: false,
+            actor_role: isInitiatorOrgAdmin ? "org_admin" : "platform_admin",
+            source: `poi-engagements:initiator_${action}`,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(
+          `[${requestId}] CP-009 ${action} sibling audit insert failed (non-fatal):`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+
+
       // Phase 3 Issue 3: separately-audited record of the platform_admin
       // override path so it is never silently mixed with org_admin actions.
       if (!isInitiatorOrgAdmin && isPlatformAdminOverride) {
@@ -4050,6 +4116,11 @@ Deno.serve(async (req) => {
               reconfirmation_window_expires_at:
                 (lateRpcResult as { reconfirmation_window_expires_at?: string } | null)
                   ?.reconfirmation_window_expires_at ?? null,
+              // CP-009 / DEC-003 (signed): counterparty acknowledgement copy.
+              // Surfaced verbatim by the counterparty-facing landing page; do
+              // not rephrase without re-signing.
+              counterparty_acknowledgement:
+                "This engagement has expired. Your acceptance has been recorded, but the initiator must reconfirm before the engagement can proceed.",
             },
           }),
           {
