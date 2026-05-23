@@ -48,6 +48,7 @@ All three must exit 0. Attach the terminal output to the release ticket.
 - `check-csv-export-audit.mjs`
 - `check-batch-suite-presence.mjs` (Batch W)
 - `check-release-gate-sync.mjs` (Batch W)
+- `check-legal-claims.mjs` (DEC-005/006/010)
 
 ---
 
