@@ -705,6 +705,75 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", JSON.stringify(parsed.error.flatten().fieldErrors), 400);
       }
 
+      // ── DEC-005 / DEC-006 / DEC-010 — admin free-text wording guards.
+      // Engagements are by definition pre-counterparty-acceptance, so unsafe
+      // pre-acceptance terms, POI binding claims, and forbidden public-claim
+      // phrases are all rejected with 422 + a signed warning. Each block is
+      // audited additively (`legal.unsafe_*` / `claims.unapproved_claim_blocked`)
+      // and never mutates engagement state, POIs, credits, or payments.
+      {
+        const combined = [parsed.data.subject ?? "", parsed.data.custom_message ?? ""]
+          .filter(Boolean)
+          .join("\n");
+        if (combined.trim().length > 0) {
+          const preAcc = assertPreAcceptanceSafe(combined);
+          const poi = assertPoiWordingSafe(combined, { accepted: false });
+          const claim = assertClaimSafe(combined, { surface: "outreach_body", accepted: false });
+          const violations: Array<{ action: string; warning: string; blocked: string[] }> = [];
+          if (!preAcc.ok) {
+            violations.push({
+              action: "legal.unsafe_pre_acceptance_wording_blocked",
+              warning: UNSAFE_PRE_ACCEPTANCE_WARNING,
+              blocked: preAcc.blockedTerms,
+            });
+          }
+          if (!poi.ok) {
+            violations.push({
+              action: "legal.unsafe_poi_binding_claim_blocked",
+              warning: UNSAFE_POI_WARNING,
+              blocked: poi.blockedTerms,
+            });
+          }
+          if (!claim.ok) {
+            violations.push({
+              action: "claims.unapproved_claim_blocked",
+              warning: claim.warning ?? UNSAFE_PRE_ACCEPTANCE_WARNING,
+              blocked: claim.blockedTerms,
+            });
+          }
+          if (violations.length > 0) {
+            for (const v of violations) {
+              try {
+                await supabase.from("audit_logs").insert({
+                  org_id: (eng as { org_id: string } | null)?.org_id ?? authCtx.orgId ?? null,
+                  actor_user_id: authCtx.userId,
+                  action: v.action,
+                  entity_type: "poi_engagement",
+                  entity_id: engagementId,
+                  metadata: {
+                    request_id: requestId,
+                    surface: "send-outreach",
+                    blocked_terms: v.blocked,
+                    actor_role: "platform_admin",
+                  },
+                });
+              } catch (_e) { /* non-fatal */ }
+            }
+            return new Response(
+              JSON.stringify({
+                error: "UNSAFE_WORDING",
+                message: violations[0].warning,
+                blocked_terms: Array.from(new Set(violations.flatMap((v) => v.blocked))),
+                violations: violations.map((v) => ({ action: v.action, warning: v.warning })),
+              }),
+              { status: 422, headers: { ...headers, "Content-Type": "application/json" } },
+            );
+          }
+        }
+      }
+
+
+
       // Stable key: SHA-256 of the canonical body. Same body + same engagement
       // = same key = idempotent. Different body = new send (admin chose to
       // re-send with edits). Header still wins when the client provides one.
