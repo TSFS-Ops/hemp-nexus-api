@@ -504,6 +504,16 @@ export function AdminPendingEngagementsPanel() {
       toast.error("No engagements to export with the current filters.");
       return;
     }
+    // DATA-010 Phase 1: real reason prompt.
+    const { promptExportReason } = await import("@/lib/export-purpose");
+    const reason = promptExportReason(
+      "Izenzo-approved client support",
+      `pending engagements export (${filtered.length} rows)`,
+    );
+    if (!reason) {
+      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      return;
+    }
     const rows = exportRowsForFiltered();
     const headers = Object.keys(rows[0]);
     const csv = [
@@ -523,8 +533,11 @@ export function AdminPendingEngagementsPanel() {
       rowCount: rows.length,
       bom: true,
       filters: { count: rows.length },
-      reason: "pending engagements export",
+      purpose: "izenzo_approved_client_support",
+      reason,
+      data_categories: ["pending_engagements", "counterparty_contacts", "support_notes"],
     });
+
     if (result.aal_required) {
       toast.error("Multi-factor authentication required for this export.");
       return;
