@@ -244,9 +244,9 @@ export default function DevelopersPage() {
               duration: 0.7,
               delay: 0.1
             }} className="mt-8 text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
-                Integrate the Izenzo API to embed tamper-proof trade
-                governance, automated KYB, and instant match execution
-                directly into your institutional systems.
+                Integrate the Izenzo API to embed governed trade workflow,
+                admin-controlled KYB and sanctions screening, and Trade Request
+                recording directly into your institutional systems.
               </motion.p>
 
               <motion.div initial={{
@@ -354,13 +354,13 @@ export default function DevelopersPage() {
       <section className="relative bg-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-44 text-center">
           <h2 className="text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-slate-900 max-w-3xl mx-auto">
-            Ship your first sealed match.
+            Ship your first recorded match.
             <br />
             <span className="text-emerald-700">In under 10 minutes.</span>
           </h2>
           <p className="mt-8 text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
             Provision a workspace, mint an API key, and POST your first
-            tamper-proofally sealed deal today.
+            cryptographically hashed Draft POI today.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
             <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-emerald-600 px-7 py-4 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all">

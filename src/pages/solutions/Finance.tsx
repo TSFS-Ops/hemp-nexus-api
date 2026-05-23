@@ -75,7 +75,7 @@ export default function FinanceSolutionsPage() {
               </div>
 
               <p className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
-                SHA-256 immutable · Underwriter-grade · Audit-ready
+                SHA-256 hashed · Designed for underwriter review · Designed for audit review
               </p>
             </div>
 
@@ -117,7 +117,7 @@ export default function FinanceSolutionsPage() {
             <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground">
               The end of forensic auditing.
             </h2>
-            <p className="mt-6 text-lg text-muted-foreground leading-relaxed"> Three primitives (tamper-proof proof, automated underwriting, and instant audit resolution) engineered for institutional capital deployment. </p>
+            <p className="mt-6 text-lg text-muted-foreground leading-relaxed"> Three primitives (cryptographically hashed proof, governed underwriting workflow, and instant audit resolution) designed for institutional capital deployment workflows. </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -135,7 +135,7 @@ export default function FinanceSolutionsPage() {
                 Immutable proof (SHA-256).
               </h3>
               <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-xl">
-                Every sealed deal carries a 256-bit tamper-proof fingerprint
+                Every recorded deal carries a 256-bit cryptographic fingerprint
                 that any third party can independently re-compute and verify.
                 No more notarised PDFs. No more chasing wet-ink signatures
                 across three time zones.
@@ -206,7 +206,7 @@ export default function FinanceSolutionsPage() {
                 </div>
 
                 <ul className="space-y-2.5">
-                  {["One-click hash verification", "Bound evidence chain (KYB, sanctions, terms)", "Bilateral signature provenance", "Tamper-evident timestamping", "Bank-ready PDF + JSON exports"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
+                  {["One-click hash verification", "Bound evidence chain (KYB, sanctions, terms)", "Bilateral signature provenance", "Tamper-evident timestamping", "PDF + JSON evidence exports"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
                       <span className="font-mono text-[10px] text-[hsl(var(--emerald))]/70 tabular-nums w-6">
                         {String(i + 1).padStart(2, "0")}
                       </span>
