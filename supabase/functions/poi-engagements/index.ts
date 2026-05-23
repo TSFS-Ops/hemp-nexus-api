@@ -2478,13 +2478,197 @@ Deno.serve(async (req) => {
         );
       }
 
-      const responseBody = { engagement: updated };
+      const responseBody = {
+        engagement: updated,
+        dispute: {
+          id: disputeRowId,
+          match_status: matchIdForDispute ? "dispute_active" : null,
+          billing_review_risk_item_id: billingReviewRiskItemId,
+        },
+        acknowledgement:
+          "Your dispute has been recorded. The trade has been placed on hold and will not progress unless reviewed and released by Izenzo admin.",
+      };
       await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
       return new Response(JSON.stringify(responseBody), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
+
+    // ── POST /poi-engagements/:id/dispute-release ──────────────────────
+    // ── POST /poi-engagements/:id/dispute-close ────────────────────────
+    // CP-012 admin-only resolution endpoints. Release returns the
+    // engagement to its pre-dispute status (recorded in dispute_metadata)
+    // or to 'pending' if unknown. Close marks the engagement terminal
+    // (declined). Both update public.disputes to a resolved status and
+    // never auto-trigger POI, WaD, execution, credit burn, payment or
+    // outreach.
+    if (
+      req.method === "POST" &&
+      engagementId &&
+      (parts[1] === "dispute-release" || parts[1] === "dispute-close")
+    ) {
+      const action = parts[1] as "dispute-release" | "dispute-close";
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(engagementId)) {
+        throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
+      }
+      // Platform-admin only.
+      if (!authCtx.roles?.includes("platform_admin")) {
+        throw new ApiException(
+          "FORBIDDEN",
+          "Only a platform admin may release or close a counterparty dispute.",
+          403,
+        );
+      }
+      const idempotencyKey = req.headers.get("Idempotency-Key");
+      if (!idempotencyKey) {
+        throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
+      }
+      const idemOpts = {
+        supabase,
+        orgId: authCtx.orgId ?? "platform",
+        endpoint: `POST /poi-engagements/${engagementId}/${action}`,
+        idempotencyKey,
+        requestId,
+      };
+      const cached = await lookupIdempotentResponse(idemOpts);
+      if (cached) return cachedResponseToHttp(cached, headers);
+
+      const ResolveSchema = z.object({
+        resolution_reason: z.string().trim().min(10).max(1000),
+      });
+      const body = await req.json().catch(() => ({}));
+      const parsed = ResolveSchema.safeParse(body);
+      if (!parsed.success) {
+        throw new ApiException(
+          "VALIDATION_ERROR",
+          JSON.stringify(parsed.error.flatten().fieldErrors),
+          400,
+        );
+      }
+      const { data: current, error: fetchErr } = await supabase
+        .from("poi_engagements")
+        .select("*")
+        .eq("id", engagementId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+      if (!current) {
+        throw new ApiException("NOT_FOUND", "Engagement not found", 404);
+      }
+      if (current.engagement_status !== "disputed_being_named") {
+        throw new ApiException(
+          "NOT_IN_DISPUTE",
+          `Engagement is not in 'disputed_being_named' state (current: ${current.engagement_status}).`,
+          409,
+        );
+      }
+
+      const matchIdLinked = (current as { match_id?: string | null }).match_id ?? null;
+      const previousStatus =
+        ((current as { dispute_metadata?: { previous_status?: string } | null })
+          .dispute_metadata?.previous_status) ?? "pending";
+      const nowIso = new Date().toISOString();
+      const newEngagementStatus =
+        action === "dispute-release" ? previousStatus : "declined";
+      const newOperationalState =
+        action === "dispute-release"
+          ? null
+          : null;
+
+      const { data: updated, error: updErr } = await supabase
+        .from("poi_engagements")
+        .update({
+          engagement_status: newEngagementStatus,
+          operational_state: newOperationalState,
+          operational_state_set_by: authCtx.userId,
+          operational_state_set_at: nowIso,
+        })
+        .eq("id", engagementId)
+        .eq("engagement_status", "disputed_being_named")
+        .select()
+        .maybeSingle();
+      if (updErr) throw updErr;
+      if (!updated) {
+        throw new ApiException(
+          "CONFLICT",
+          "Engagement state changed concurrently; reload and retry.",
+          409,
+        );
+      }
+
+      // Resolve any open CP-012 dispute rows on this match.
+      let resolvedDisputeId: string | null = null;
+      if (matchIdLinked) {
+        try {
+          const { data: resolved } = await supabase
+            .from("disputes")
+            .update({
+              status: action === "dispute-release" ? "resolved" : "resolved",
+              resolution_outcome:
+                action === "dispute-release"
+                  ? `CP-012 released by platform admin: ${parsed.data.resolution_reason}`
+                  : `CP-012 closed by platform admin: ${parsed.data.resolution_reason}`,
+              resolved_at: nowIso,
+              resolved_by: authCtx.userId,
+            })
+            .eq("match_id", matchIdLinked)
+            .eq("reason", "cp012_disputes_being_named")
+            .eq("status", "open")
+            .select("id")
+            .maybeSingle();
+          resolvedDisputeId = (resolved as { id?: string } | null)?.id ?? null;
+        } catch (e) {
+          console.warn(
+            `[${requestId}] CP-012 dispute resolve update failed (non-fatal):`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }
+
+      const auditAction =
+        action === "dispute-release"
+          ? "dispute.counterparty_named_dispute_released"
+          : "dispute.counterparty_named_dispute_closed";
+      try {
+        await supabase.from("audit_logs").insert({
+          org_id: current.org_id,
+          actor_user_id: authCtx.userId,
+          action: auditAction,
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            cp_rule: "CP-012",
+            dispute_id: resolvedDisputeId,
+            match_id: matchIdLinked,
+            previous_status: "disputed_being_named",
+            new_status: newEngagementStatus,
+            resolution_reason: parsed.data.resolution_reason,
+            request_id: requestId,
+          },
+        });
+      } catch (e) {
+        console.warn(
+          `[${requestId}] CP-012 resolve audit insert failed (non-fatal):`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+
+      const responseBody = {
+        engagement: updated,
+        dispute: {
+          id: resolvedDisputeId,
+          status: "resolved",
+        },
+        action,
+      };
+      await storeIdempotentResponse(idemOpts, { status: 200, body: responseBody });
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
 
     // ── POST /poi-engagements/:id/cancel-by-initiator — Batch J F3 ──
     // The initiator (org admin of poi_engagements.org_id) withdraws an
