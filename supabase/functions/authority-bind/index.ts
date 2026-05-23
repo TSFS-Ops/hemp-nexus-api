@@ -68,6 +68,26 @@ Deno.serve(async (req: Request) => {
     const subAction = pathParts[pathParts.length - 1];
 
     const isAdmin = authCtx.roles?.includes("admin") || authCtx.roles?.includes("platform_admin");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorisation");
+
+    // SEC-001: authority/UBO binding mutations (POST create, PATCH status
+    // change) move WaD gate state and must require AAL2 for human callers.
+    // API-key (server-to-server) callers skip the JWT aal check.
+    const requireMfaForAtbMutation = async (target?: { id?: string | null; type?: string }) => {
+      if (authCtx.isApiKey) return;
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: authCtx.userId,
+        action: "authority.bind",
+        context: {
+          sensitive_action_category: "compliance.authority_bind",
+          target_resource_type: target?.type ?? "authority_record",
+          target_resource_id: target?.id ?? null,
+          method: req.method,
+          path: pathParts.join("/"),
+        },
+      });
+    };
 
     // ── POST /authority-bind/check ── Validate gates #3 (UBO) + #4 (ATB) for entity pair
     if (req.method === "POST" && subAction === "check") {
