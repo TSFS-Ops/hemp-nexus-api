@@ -41,6 +41,7 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-edge-function-deploy-coverage.mjs` — deploy-critical edge functions are backed by source AND named on this page (post-MT-009 Test 1 incident)
 - `check-legal-claims.mjs` — DEC-005/006/010 forbidden wording guard on public pages
 - `check-aal-registry-drift.mjs` — SEC-001 AAL2 call-site ↔ preflight registry drift guard
+- `check-export-audit-payload.mjs` — DATA-010 Phase 1: admin CSV/JSON exports must carry `purpose`, `reason`, `data_categories`, `target_type`; admin exports require AAL2 server-side; Phase 2 signed-URL/TTL/file-destruction lifecycle is deferred
 
 ### Edge functions requiring deploy
 
