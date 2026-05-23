@@ -8,6 +8,7 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import {
   cachedResponseToHttp,
   lookupIdempotentResponse,
+  sha256Hex,
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
