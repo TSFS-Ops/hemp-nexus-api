@@ -311,6 +311,7 @@ Deno.serve(async (req: Request) => {
       requireRole(authCtx, "platform_admin");
       const entityId = url.searchParams.get("entity_id");
       if (!entityId) throw new ApiException("VALIDATION_ERROR", "entity_id parameter required", 400);
+      await requireMfaForPlatformAdmin("entity.mutate", { id: entityId });
 
       const body = await req.json();
       const parsed = EntityUpdateSchema.parse(body);
