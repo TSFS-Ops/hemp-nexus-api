@@ -23,6 +23,7 @@ import {
   UNSAFE_POI_WARNING,
 } from "../_shared/legal-wording.ts";
 import { assertClaimSafe } from "../_shared/legal-claims.ts";
+import { assertAal2 } from "../_shared/aal.ts";
 import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
 import { evaluateCounterpartyEmailBinding } from "../_shared/binding-resolver.ts";
 import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts";
