@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { assertAal2 } from "../_shared/aal.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
