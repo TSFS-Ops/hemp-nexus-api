@@ -106,13 +106,14 @@ Deno.test("CP-003 sibling fires only when email is present AND name is missing",
           counterparty_email: EMAIL_OK,
           counterparty_org_id: null,
           contact_name: null,
-          counterparty_org: "Acme Ltd",
+          counterparty_org: { name: "Acme Ltd" },
         } as any,
         null,
       ),
       EMAIL_OK,
     ),
   );
+
 });
 
 Deno.test("CP-003 does not regress CP-002: name present + no email still maps to 'email_missing'", () => {
