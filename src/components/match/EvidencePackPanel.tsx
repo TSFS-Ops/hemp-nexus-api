@@ -218,9 +218,12 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
           format: variant,
           row_count: body.split(/\r?\n/).filter(Boolean).length,
           sensitive: true,
+          purpose: "audit_or_regulatory_review",
+          reason: `evidence-pack standalone audit trail for match ${matchId}`,
+          data_categories: ["audit_logs", "match_evidence"],
           filters: { match_id: matchId },
-          reason: "evidence-pack standalone audit trail",
         });
+
         if (auditResult.aal_required) {
           toast.error("Multi-factor authentication required for this export.", {
             description: "Please re-authenticate with MFA to download audit trails.",
