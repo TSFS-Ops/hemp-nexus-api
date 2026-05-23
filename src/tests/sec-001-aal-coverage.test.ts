@@ -32,7 +32,10 @@ describe("SEC-001 — assertAal2 is wired on every sensitive admin mutating endp
     const src = FN("entities");
     expect(importsAssertAal2(src)).toBe(true);
     expect(src).toMatch(/assertAal2\s*\(/);
-    expect(src).toMatch(/action:\s*["']entity\.mutate["']/);
+    // entities/index.ts wraps the gate in a per-file helper that
+    // receives the action key as a positional argument, so we look for
+    // the literal anywhere in the file.
+    expect(src).toMatch(/["']entity\.mutate["']/);
   });
 
   it("orgs/index.ts gates mutating verbs (POST/PATCH/DELETE) but skips GET", () => {
