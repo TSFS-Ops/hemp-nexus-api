@@ -2109,6 +2109,34 @@ Deno.serve(async (req) => {
                 },
               });
             }
+            // CP-003 (signed mirror): email present but name missing
+            // after a contact PATCH. Emitted alongside (never instead
+            // of) the canonical contact.assigned/updated audit row.
+            if (
+              nextState === "contact_incomplete" &&
+              isUsableContactEmail(nextEmail)
+            ) {
+              await supabase.from("audit_logs").insert({
+                org_id: current.org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.outreach_blocked_missing_name",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: {
+                  ...baseMeta,
+                  cp_rule: "CP-003",
+                  surface: "contact-patch",
+                  previous_state: prevState,
+                  new_state: nextState,
+                  counterparty_name: null,
+                  counterparty_email_present: true,
+                  contact_state: "name_missing",
+                  outreach_enabled: false,
+                  outreach_sent: false,
+                  credit_burned: false,
+                },
+              });
+
           } catch (e) {
             console.warn(`[${requestId}] CP-002 supplementary audit emit failed (non-fatal):`, e);
           }
