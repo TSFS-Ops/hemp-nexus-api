@@ -35,7 +35,7 @@ import { readAal } from "../_shared/aal.ts";
 // Registry of mutating actions and whether they require AAL2.
 // Keep in sync with assertAal2() call-sites under supabase/functions/.
 // If a new aal2-gated endpoint is added, add its action key here.
-const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
+export const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   // Money / credit movement
   "admin.credit_org": "aal2",
   // Lifecycle / state overrides
