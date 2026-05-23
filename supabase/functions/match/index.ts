@@ -784,6 +784,82 @@ Deno.serve(async (req) => {
             console.warn(`[${requestId}] SOFT_ROUTE audit write failed (non-fatal):`, auditErr);
           }
 
+          // ── CP-015 (signed): replacement-engagement sibling audit ──
+          // When the caller passed `replaces_engagement_id`, verify the
+          // referenced engagement (a) exists, (b) shares this match, and
+          // (c) is cancelled for email change. If any check fails, reject
+          // with a typed 409 BEFORE the new engagement can be treated as a
+          // replacement — the new row already exists (idempotent), but the
+          // sibling audit is the only signal we will not emit. On success
+          // we emit `pending_engagement.created_after_counterparty_email_change`.
+          if (replacesEngagementId && engagementRow?.id) {
+            const { data: oldEng, error: oldEngErr } = await supabase
+              .from("poi_engagements")
+              .select("id, match_id, org_id, engagement_status, counterparty_email")
+              .eq("id", replacesEngagementId)
+              .maybeSingle();
+            if (oldEngErr || !oldEng) {
+              throw new ApiException(
+                "INVALID_REPLACES_ENGAGEMENT_ID",
+                "replaces_engagement_id does not reference an existing engagement.",
+                409,
+              );
+            }
+            if (oldEng.match_id !== matchId || oldEng.org_id !== match.org_id) {
+              throw new ApiException(
+                "INVALID_REPLACES_ENGAGEMENT_ID",
+                "replaces_engagement_id belongs to a different match or initiator.",
+                409,
+              );
+            }
+            if (oldEng.engagement_status !== "cancelled_email_change") {
+              throw new ApiException(
+                "INVALID_REPLACES_ENGAGEMENT_ID",
+                "Referenced engagement is not cancelled for an email change.",
+                409,
+              );
+            }
+            try {
+              // Local sha256 hex helper — keeps this file dep-free.
+              const hashHex = async (s: string): Promise<string> => {
+                const buf = await crypto.subtle.digest(
+                  "SHA-256",
+                  new TextEncoder().encode(s),
+                );
+                return Array.from(new Uint8Array(buf))
+                  .map((b) => b.toString(16).padStart(2, "0"))
+                  .join("");
+              };
+              const newEmailHash = counterpartyEmail
+                ? await hashHex(counterpartyEmail.toLowerCase())
+                : null;
+              await supabase.from("audit_logs").insert({
+                org_id: match.org_id,
+                actor_user_id: actorUserId,
+                actor_api_key_id: actorApiKeyId,
+                action: "pending_engagement.created_after_counterparty_email_change",
+                entity_type: "poi_engagement",
+                entity_id: engagementRow.id as string,
+                metadata: {
+                  cp_rule: "CP-015",
+                  source_reason: "email_change_required_new_engagement",
+                  old_engagement_id: replacesEngagementId,
+                  new_engagement_id: engagementRow.id,
+                  match_id: matchId,
+                  new_counterparty_email_hash: newEmailHash,
+                  created_by_user_id: actorUserId,
+                  organisation_id: match.org_id,
+                  request_id: requestId,
+                },
+              });
+            } catch (auditErr) {
+              console.warn(
+                `[${requestId}] CP-015 replacement-created audit write failed (non-fatal):`,
+                auditErr,
+              );
+            }
+          }
+
           // ── NOT-001 / NOT-006: same skip-audit policy as the
           // counterparty-gate branch. Only emit when there is no usable
           // recipient email; the helper dedupes per target/reason/day.
