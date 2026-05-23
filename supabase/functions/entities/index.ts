@@ -95,9 +95,32 @@ Deno.serve(async (req: Request) => {
     // pathParts: ["entities"] or ["entities", "<sub>"]
 
     const isAdmin = authCtx.roles?.includes("admin") || authCtx.roles?.includes("platform_admin");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorisation");
+
+    // SEC-001 helper: gate platform_admin mutations with AAL2 (MFA). API keys
+    // (server-to-server) have no `aal` claim; skip there so machine flows keep
+    // working. Non-admin governance users (own-org create/update) also remain
+    // AAL1 — this only blocks cross-org platform_admin overrides.
+    const requireMfaForPlatformAdmin = async (action: string, target?: { id?: string; type?: string }) => {
+      if (authCtx.isApiKey) return;
+      if (!isAdmin) return;
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: authCtx.userId,
+        action,
+        context: {
+          sensitive_action_category: "governance.entity",
+          target_resource_type: target?.type ?? "entity",
+          target_resource_id: target?.id ?? null,
+          method: req.method,
+          path: pathParts.join("/"),
+        },
+      });
+    };
 
     // ── POST /entities ── Create Entity
     if (req.method === "POST" && pathParts.length <= 1) {
+      await requireMfaForPlatformAdmin("entity.mutate");
       const idempotencyKey = req.headers.get("Idempotency-Key");
       if (!idempotencyKey) {
         throw new ApiException("VALIDATION_ERROR", "Idempotency-Key header is required", 400);
