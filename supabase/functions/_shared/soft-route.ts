@@ -238,8 +238,8 @@ export async function resolveCounterpartyBinding(
  * Eligibility no longer requires `buyer_id` / `seller_id`, so a match with a
  * named-but-unregistered counterparty now PASSES `evaluateEligibility` and
  * would otherwise drop straight into `atomic_generate_poi_v2` — which would
- * try to seal a binding POI against a non-platform entity. That is exactly
- * the failure mode the soft-route was built to prevent.
+ * try to mint a counterparty-facing POI against a non-platform entity. That
+ * is exactly the failure mode the soft-route was built to prevent.
  *
  * This helper runs BEFORE the eligibility branch and decides what to do
  * when one side has no `*_org_id` on file:

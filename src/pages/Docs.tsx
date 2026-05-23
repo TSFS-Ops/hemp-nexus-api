@@ -67,7 +67,7 @@ export default function Docs() {
           </h1>
           <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
             An information-only API for regulated B2B matching. Search for trading partners, 
-            express interest, and create tamper-proofally-signed evidence records.
+            express interest, and create cryptographically signed evidence records.
           </p>
           <Alert className="max-w-xl mx-auto border-amber-200 bg-amber-50 dark:bg-amber-950/50">
             <CheckCircle className="h-4 w-4 text-amber-600 shrink-0" />
@@ -124,7 +124,7 @@ export default function Docs() {
               <div className="flex-1">
                 <h4 className="font-semibold mb-2">Send Trade Request</h4>
                 <p className="text-sm text-muted-foreground mb-3">
-                  When ready, confirm interest to create an immutable evidence record.
+                  When ready, confirm interest to create a tamper-evident evidence record (subject to workflow completion).
                 </p>
                 <CodeBlock language="bash" code={`curl -X POST "${API_BASE_URL}/match/{match_id}/settle" \\
   -H "X-API-Key: $IZENZO_KEY" \\
@@ -133,7 +133,7 @@ export default function Docs() {
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-sm">
                     This triggers <code className="bg-muted px-1 rounded">intent.confirmed</code> webhook 
-                    and creates an audit log with tamper-proof hash.
+                    and creates an audit log with cryptographic hash.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -251,7 +251,7 @@ async function listMatches() {
                     <code className="font-mono text-sm">/match</code>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Create a new match record. Returns a unique match ID and tamper-proof hash.
+                    Create a new match record. Returns a unique match ID and cryptographic hash.
                   </p>
                   
                   <h5 className="font-medium mb-2 text-sm">Request Body</h5>
@@ -393,7 +393,7 @@ def send_trade_request(match_id: str, api_key: str):
     """
     Send a trade request for a match.
     
-    This creates an immutable audit record proving that at this
+    This creates a tamper-evident audit record proving that at this
     moment in time, serious interest was expressed.
     
     No payment, contract, or legal obligation is created.
@@ -424,7 +424,7 @@ match = send_trade_request("your-match-id", "your-api-key")`} />
   /**
    * Send a trade request for a match.
    * 
-   * Creates an immutable audit record proving interest
+   * Creates a tamper-evident audit record proving interest
    * was expressed at this specific date/time.
    * 
    * No payment, contract, or legal obligation.
@@ -462,7 +462,7 @@ sendTradeRequest('your-match-id', 'your-api-key')
   "id": "match-uuid",
   "status": "settled",
   "settled_at": "2024-12-06T12:00:00.000Z",
-  "hash": "sha256_tamper-proof_hash",
+  "hash": "sha256_cryptographic_hash",
   "buyer_id": "buyer-123",
   "buyer_name": "Acme Corp",
   "seller_id": "seller-456", 
@@ -484,7 +484,7 @@ sendTradeRequest('your-match-id', 'your-api-key')
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-4 w-4 mt-0.5 text-primary" />
-                      <span>An immutable audit log entry is created with tamper-proof hash</span>
+                      <span>a tamper-evident audit log entry is created with a cryptographic hash</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-4 w-4 mt-0.5 text-primary" />
@@ -630,7 +630,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
                   Evidence Pack
                 </CardTitle>
                 <CardDescription>
-                  Retrieve tamper-proofally-signed audit trails for compliance
+                  Retrieve cryptographically signed audit trails for compliance
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -696,8 +696,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     The hash chain provides tamper-evident proof. Each event's hash includes 
-                    the previous event's hash, creating an immutable timeline that can be 
-                    tamper-proofally verified.
+                    the previous event's hash, creating a tamper-evident timeline that can be 
+                    cryptographically verified.
                   </AlertDescription>
                 </Alert>
               </CardContent>

@@ -113,7 +113,7 @@ const TABS: {
   id: "audit",
   label: "Audit & Health",
   icon: Activity,
-  blurb: "Immutable audit trail, event store, system health monitoring, and platform analytics."
+  blurb: "Tamper-evident audit trail, event store, system health monitoring, and platform analytics."
 }, {
   id: "settings",
   label: "Platform Settings",
@@ -347,7 +347,7 @@ function RevenueTab() {
     </>;
 }
 function AuditTab() {
-  // Compliance & observability: immutable audit trail, event store, system health, analytics.
+  // Compliance & observability: tamper-evident audit trail, event store, system health, analytics.
   const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "notification-prefs", "outreach-blocks", "upload-audit", "revenue-notifications", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
@@ -376,7 +376,7 @@ function AuditTab() {
           </Surface>
         </TabsContent>
         <TabsContent value="audit-logs">
-          <Surface label="Immutable audit trail · public.audit_logs">
+          <Surface label="Tamper-evident audit trail · public.audit_logs">
             <AdminAuditLogs />
           </Surface>
         </TabsContent>
@@ -466,7 +466,7 @@ function SettingsTab() {
           </Surface>
         </TabsContent>
         <TabsContent value="signing">
-          <Surface label="Tamper-Proof signing keys · append-only · public.signing_keys">
+          <Surface label="Cryptographic signing keys · append-only · public.signing_keys">
             <AdminSigningKeysPanel />
           </Surface>
         </TabsContent>
