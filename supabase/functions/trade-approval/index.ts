@@ -241,6 +241,7 @@ Deno.serve(async (req: Request) => {
 
       const body = await req.json();
       const parsed = ApprovalSchema.parse(body);
+      await requireMfaForApprovalOverride({ org_id: parsed.org_id, sub: "issue" });
 
       const validUntil = new Date();
       validUntil.setDate(validUntil.getDate() + parsed.valid_days);
