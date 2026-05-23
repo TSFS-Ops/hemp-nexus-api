@@ -49,6 +49,8 @@ live in the production runtime before publishing.
 - `match-named-contacts-assign` — MT-009 Phase 2 controlled named-contact assign (frontend-invoked from `AssignNamedContactDialog`)
 - `seed-mt009-controlled-prod` — MT-009 controlled-production demo seeder (admin/curl only)
 - `unseed-mt009-controlled-prod` — MT-009 controlled-production demo cleanup (admin/curl only)
+- `seed-cp002-controlled-prod` — CP-002 controlled-production demo seeder (admin/curl only)
+- `unseed-cp002-controlled-prod` — CP-002 controlled-production demo cleanup (admin/curl only)
 
 Closeout & handover artefacts (must be reviewed before client sign-off):
 
