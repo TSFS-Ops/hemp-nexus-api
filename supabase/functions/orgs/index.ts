@@ -130,7 +130,9 @@ Deno.serve(async (req) => {
     // PATCH /orgs/:id - Update organisation
     if (req.method === 'PATCH' && pathParts.length === 2) {
       const orgId = pathParts[1];
+      await requireMfaForOrgMutation({ id: orgId });
       const rawUpdates = await req.json();
+
       
       let updates;
       try {
