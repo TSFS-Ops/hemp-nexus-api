@@ -54,8 +54,16 @@ const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   "due_diligence.decision": "aal2",
   "programmes.write": "aal2",
   "notification_preferences.update": "aal2",
-  // break-glass uses fresh password re-auth, not the JWT aal claim, so it
-  // is NOT listed here as aal2-gated for preflight purposes.
+  // SEC-001 — newly gated sensitive platform_admin mutations
+  "entity.mutate": "aal2",
+  "organisation.mutate": "aal2",
+  "authority.bind": "aal2",
+  "trade.approval_override": "aal2",
+  "pending_engagement.send_outreach": "aal2",
+  "reputation.recalculate": "aal2",
+  // break-glass uses fresh password re-auth via GoTrue, not the JWT aal
+  // claim, so it is intentionally NOT listed here as aal2-gated for
+  // preflight purposes. See scripts/check-aal-registry-drift.mjs allowlist.
 };
 
 const BodySchema = z.object({
