@@ -359,8 +359,9 @@ Deno.serve(async (req: Request) => {
         });
         return new Response(JSON.stringify({ demo: true, ...result }), {
           status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...headers, "Content-Type": "application/json" },
         });
+
 
       }
     }
