@@ -365,11 +365,13 @@ export function AdminPendingEngagementsPanel() {
     message_id: string | null;
   };
   const [bounceAudit, setBounceAudit] = useState<Record<string, EngagementBounceAudit>>({});
+  const [autoBindAudit, setAutoBindAudit] = useState<Record<string, true>>({});
 
   useEffect(() => {
     if (engagements.length === 0) {
       setDelivery({});
       setBounceAudit({});
+      setAutoBindAudit({});
       return;
     }
     let cancelled = false;
@@ -433,6 +435,29 @@ export function AdminPendingEngagementsPanel() {
       } catch (err) {
         console.warn(
           "[AdminPendingEngagementsPanel] failed to load engagement bounce audit:",
+          err,
+        );
+      }
+    })();
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("audit_logs")
+          .select("entity_id")
+          .eq("entity_type", "poi_engagement")
+          .eq("action", "pending_engagement.auto_bound_registered_org")
+          .in("entity_id", visibleIdList)
+          .limit(1000);
+        if (error) throw error;
+        if (cancelled || !data) return;
+        const next: Record<string, true> = {};
+        for (const row of data as Array<{ entity_id: string | null }>) {
+          if (row.entity_id && visibleIds.has(row.entity_id)) next[row.entity_id] = true;
+        }
+        setAutoBindAudit(next);
+      } catch (err) {
+        console.warn(
+          "[AdminPendingEngagementsPanel] failed to load auto-bind audit evidence:",
           err,
         );
       }
