@@ -2221,6 +2221,18 @@ export function AdminPendingEngagementsPanel() {
                               );
                             })()}
 
+                            {e.engagement_status === "cancelled_email_change" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled
+                                title="Old outreach link inactive: this cancelled engagement cannot be used for outreach."
+                                data-testid="cp015-old-outreach-inactive"
+                              >
+                                <Mail className="h-3 w-3 mr-1" /> Outreach link inactive
+                              </Button>
+                            )}
+
                             {e.engagement_status === "late_acceptance_pending_initiator_reconfirmation" && (
                               <>
                                 <Button
