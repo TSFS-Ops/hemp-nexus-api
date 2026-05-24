@@ -30,6 +30,10 @@ import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertAal2, readAal } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { LEGAL_HOLD_AUDIT_NAMES, type LegalHoldScopeType } from "../_shared/legal-hold.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+} from "../_shared/governance-audit-integration.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers":
