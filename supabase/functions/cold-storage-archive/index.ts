@@ -1,6 +1,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException } from "../_shared/errors.ts";
+import { assertNoLegalHold, RECORD_GROUP_IDS, type LegalHoldScopeType } from "../_shared/legal-hold.ts";
+
+const COLD_TABLE_TO_SCOPE: Record<string, LegalHoldScopeType | null> = {
+  matches: "match",
+  match_documents: "evidence",
+  match_events: "match",
+  wads: "wad",
+  pois: "poi",
+  compliance_cases: null,
+  screening_results: null,
+};
 
 /**
  * Cold Storage Archival Pipeline — Edge Function
