@@ -1865,7 +1865,13 @@ export function AdminPendingEngagementsPanel() {
                     const danielUiMessages = getDanielFixtureUiMessages(e);
                     return (
                       <React.Fragment key={e.id}>
-                        <TableRow data-is-demo={e.is_demo === true ? "true" : "false"} className={e.is_demo === true ? "bg-amber-50/40" : ""}>
+                        <TableRow
+                          data-testid={`engagement-row-${e.id}`}
+                          data-is-demo={e.is_demo === true ? "true" : "false"}
+                          data-engagement-status={e.engagement_status}
+                          data-operational-state={e.operational_state ?? ""}
+                          className={e.is_demo === true ? "bg-amber-50/40" : ""}
+                        >
                         <TableCell>
                           <div className="text-sm">
                             {e.is_demo === true && (
