@@ -117,9 +117,13 @@ describe("SEC-001 — assertAal2 is wired on every sensitive admin mutating endp
     const src = FN("delete-account");
     expect(src).toMatch(/SEC-001 — AAL2 EXEMPTION/);
     expect(src).toMatch(/SELF-ONLY/);
-    // No assertAal2 call must exist — adding one would lock users out of their
-    // own off-boarding flow without a corresponding risk reduction.
-    expect(src).not.toMatch(/assertAal2\s*\(/);
+    // No real assertAal2 call must exist (comments referring to it for
+    // documentation are fine — strip line comments before scanning).
+    const codeOnly = src
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("//"))
+      .join("\n");
+    expect(codeOnly).not.toMatch(/assertAal2\s*\(/);
   });
 });
 
