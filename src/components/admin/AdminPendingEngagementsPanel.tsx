@@ -938,6 +938,7 @@ export function AdminPendingEngagementsPanel() {
     );
 
   const isUniqueExactEmailAutoBound = (e: Engagement): boolean => {
+    if (!autoBindAudit[e.id]) return false;
     if (!e.counterparty_org_id) return false;
     if (isBindingReviewPending(e)) return false;
     if (e.operational_state && e.operational_state !== "cancelled_for_email_change") return false;
