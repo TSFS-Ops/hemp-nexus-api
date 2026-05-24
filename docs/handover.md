@@ -69,4 +69,7 @@ The tile is intentionally designed to fail visibly rather than silently.
 
 ## What we are not claiming
 
-We are not telling you the platform is "production ready" in absolute terms. We are telling you: **the repository contract is complete and pinned; the runbook is the bridge from here to live.** When the runbook's evidence pack is attached, you will have a defensible basis for go-live.
+We are not telling you the platform is "production ready" without the runbook, release gate, and live-evidence pack attached. We are telling you: **the repository contract is complete and pinned; the runbook is the bridge from here to live.** When the runbook's evidence pack is attached, you will have a defensible basis for go-live.
+
+Current verdict: **READY_FOR_DANIEL_VISIBLE_UAT_WITH_KNOWN_LEGACY_TEST_FAILURES_AND_DEFERRED_DATA002**. DATA-002 destructive deletion remains deliberately deferred (Phase 2 hardening); Daniel-visible UAT is still outstanding; known legacy regression cleanup is tracked separately.
+
