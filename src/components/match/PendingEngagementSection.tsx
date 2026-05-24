@@ -222,6 +222,19 @@ function statusMeta(status: string | null): StatusMeta {
         icon: Clock,
       };
     }
+    case "disputed_being_named":
+      // CP-012 — explicit, non-fallback branch. The detailed CP-012 panel
+      // (MatchDisputeBeingNamedPanel) on the deal-desk match page is the
+      // canonical surface for initiator / counterparty / admin messages
+      // and the Release/Close controls. This card just needs an honest
+      // header so it never falls into the "unrecognised state" branch.
+      return {
+        label: "Dispute hold — platform admin review required",
+        tone: "fail",
+        description:
+          "A dispute has been raised against this engagement. The trade is on dispute hold and cannot progress until an Izenzo platform admin releases or closes the dispute. See the Dispute hold panel above for details.",
+        icon: AlertCircle,
+      };
     default:
       return {
         label: status ? `Status: ${status}` : "Unknown status",
