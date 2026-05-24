@@ -63,9 +63,16 @@ describe("Batch K :: Export CSV button is present", () => {
     expect(PANEL_CODE).toMatch(
       /from\s+["']@\/lib\/download-utils["']/,
     );
-    expect(PANEL_CODE.includes("downloadCSV")).toBe(true);
+    // Batch U (AUD-018) upgraded the panel from the raw `downloadCSV` helper
+    // to the audited wrapper `auditedDownloadCSV`, which writes a compliance
+    // audit row before the bytes leave. Either form is acceptable; the
+    // audited wrapper is strictly stricter.
+    expect(
+      PANEL_CODE.includes("auditedDownloadCSV") || PANEL_CODE.includes("downloadCSV"),
+    ).toBe(true);
     expect(PANEL_CODE.includes("timestampedFilename")).toBe(true);
   });
+
 });
 
 describe("Batch K :: CSV column allowlist", () => {
