@@ -26,6 +26,8 @@ import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
 import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard";
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { PendingEngagementSection } from "@/components/match/PendingEngagementSection";
+import { MatchDisputeBeingNamedPanel } from "@/components/match/MatchDisputeBeingNamedPanel";
+import { useAuth } from "@/contexts/AuthContext";
 import type { PendingEngagementRow } from "@/components/match/PendingEngagementSection";
 import { OrgAdminContactCompletionCard } from "@/components/match/OrgAdminContactCompletionCard";
 import { ReconfirmLateAcceptanceCard } from "@/components/match/ReconfirmLateAcceptanceCard";
@@ -44,6 +46,7 @@ import type { EngagementStatus } from "@/components/match/wizard/DealWizard";
 function MatchDetailsContent() {
   const { matchId } = useParams<{ matchId: string }>();
   const userOrgId = useUserOrg();
+  const { isPlatformAdmin } = useAuth();
   const { open: openChallenge } = useMatchChallenge(matchId);
   const {
     match,
@@ -264,12 +267,31 @@ function MatchDetailsContent() {
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
 
+      {(displayEngagement?.engagement_status as string | null) === "disputed_being_named" && displayEngagement?.id && (
+        <MatchDisputeBeingNamedPanel
+          engagementId={displayEngagement.id}
+          engagementStatus={displayEngagement.engagement_status as string}
+          operationalState={(displayEngagement as any).operational_state ?? null}
+          counterpartyResponse={(displayEngagement as any).counterparty_response ?? null}
+          viewerRole={
+            matchRole === "creator" || userOrgId === (match as any).org_id
+              ? "initiator"
+              : matchRole === "buyer" || matchRole === "seller"
+                ? "counterparty"
+                : "other"
+          }
+          isPlatformAdmin={!!isPlatformAdmin}
+          onResolved={fetchMatch}
+        />
+      )}
+
       <PendingEngagementSection
         engagement={displayEngagement}
         match={match as any}
         isInitiator={matchRole === "creator" || userOrgId === (match as any).org_id}
         isLoading={engagementLoading}
       />
+
 
       <UnknownCounterpartyStatus
         engagement={engagementData}
