@@ -30,7 +30,13 @@ interface Row {
 }
 
 export function AdminTradeRequestArchivePanel() {
-  const { isPlatformAdmin, currentOrgId } = useAuth();
+  const { isPlatformAdmin, user } = useAuth();
+  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user?.id) { setCurrentOrgId(null); return; }
+    void supabase.from("profiles").select("org_id").eq("id", user.id).maybeSingle()
+      .then(({ data }) => setCurrentOrgId((data?.org_id as string | null) ?? null));
+  }, [user?.id]);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
