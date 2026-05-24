@@ -24,6 +24,10 @@ import {
   toCsv,
 } from "../_shared/export-redaction.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import {
+  checkResidencyHoldAny,
+  residencyBlockResponse,
+} from "../_shared/residency-claim-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
