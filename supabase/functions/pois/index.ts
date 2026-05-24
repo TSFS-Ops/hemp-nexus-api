@@ -9,6 +9,10 @@ import {
   ORG_NOT_VERIFIED_CODE,
 } from "../_shared/legitimacy.ts";
 import { tryBypass } from "../_shared/test-mode-bypass.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+} from "../_shared/governance-audit-integration.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
