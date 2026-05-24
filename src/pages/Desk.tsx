@@ -231,6 +231,7 @@ export default function Desk() {
                   <Route path="notifications" element={<NotificationRulesTab />} />
                   <Route path="balance" element={<TokenBalanceTab />} />
                   <Route path="security" element={<SecurityTab />} />
+                  <Route path="data-export" element={<DataExportTab />} />
                 </Route>
                 <Route path="new-trade" element={<NewTradeInitiation />} />
               </Routes>
