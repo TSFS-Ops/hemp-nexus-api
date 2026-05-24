@@ -1569,6 +1569,51 @@ Deno.serve(async (req) => {
           console.warn(`[${requestId}] Failed to write governance snapshot audit row:`, snapErr);
         }
 
+        // ── DEC-001 (signed): canonical "sent" row (dual-write). ──
+        // Pairs with the operational engagement.outreach_email_queued
+        // state-transition row. SSOT: src/lib/outreach/dec-001-audit.ts.
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "pending_engagement.off_platform_outreach_sent",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-001",
+              surface: "send-outreach",
+              recipient,
+              outreach_sent: true,
+              credit_burned: false,
+              poi_minted: false,
+              wad_triggered: false,
+              payment_event: false,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
+
+        // ── DEC-004 (signed): canonical "manual follow-up assigned" row. ──
+        // Engagement now sits in `contacted` awaiting counterparty
+        // response — i.e. it has entered the manual follow-up cycle
+        // owned by the Izenzo platform admin. SSOT:
+        // src/lib/outreach/dec-004-states.ts.
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "outreach.manual_follow_up_assigned",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-004",
+              manual_owner: "izenzo_platform_admin",
+              canonical_state: "contacted_awaiting_response",
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
+
         // ── DEC-005 / DEC-006 (signed): pre-acceptance wording-state ledger.
         // The atomic RPC above wrote the engagement.outreach_email_queued
         // state-transition row. These additive rows record that the
