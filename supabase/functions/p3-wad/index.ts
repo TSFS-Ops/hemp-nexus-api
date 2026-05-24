@@ -573,6 +573,29 @@ Deno.serve(async (req: Request) => {
           event_hash: await computeHash(JSON.stringify(failedGates)),
         });
 
+        // Phase 2 canonical (fail-closed: WaD finality is critical)
+        await writeCriticalEventWithPosture(admin, {
+          event_type: "wad.failed",
+          org_id: orgId,
+          aggregate_type: "wad",
+          aggregate_id: parsed.poi_id,
+          actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+          actor_role: authCtx.roles?.[0] || null,
+          source_function: "p3-wad",
+          correlation_id: correlationId,
+          poi_id: parsed.poi_id,
+          allowed_or_blocked: "blocked",
+          reason_code: "HARD_GATE_FAILED",
+          posture: buildPostureSnapshot("Failed Verification", {
+            check_status: { failed_gates: failedGates.map((g) => g.gate) },
+            manual_review_required: !!failedGates.find((g) => g.gate === "UBO_COMPLETENESS"),
+          }),
+          metadata: {
+            failed_gates: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
+          },
+          idempotency_extra: "denied",
+        });
+
         return new Response(JSON.stringify(responseData), {
           status: 422,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
