@@ -472,6 +472,24 @@ Deno.serve(async (req: Request) => {
             payload: { poi_id: parsed.poi_id, reason: discoveryReason },
             event_hash: await computeHash(JSON.stringify({ poi_id: parsed.poi_id, gate: "discovery" })),
           });
+          // Phase 2 canonical (best-effort: blocking is observability, not finality)
+          await writeGovernanceEventBestEffort(admin, {
+            event_type: "wad.check_failed",
+            org_id: orgId,
+            aggregate_type: "poi",
+            aggregate_id: parsed.poi_id,
+            actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+            actor_role: authCtx.roles?.[0] || null,
+            source_function: "p3-wad",
+            correlation_id: correlationId,
+            poi_id: parsed.poi_id,
+            allowed_or_blocked: "blocked",
+            reason_code: "DISCOVERY_GATE_FAILED",
+            posture_snapshot: buildPostureSnapshot("Failed Verification", {
+              check_status: { gate: "DISCOVERY_ELIGIBILITY", passed: false },
+            }),
+            metadata: { reason: discoveryReason, gate: "DISCOVERY_ELIGIBILITY" },
+          });
         }
       }
 
