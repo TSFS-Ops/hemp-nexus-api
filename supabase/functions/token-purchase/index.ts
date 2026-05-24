@@ -1923,6 +1923,14 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
         creditsReleased: hold.credits_held,
       },
     );
+
+    // PAY-009 governed dual-write — WON path safely routes through the
+    // resolver RPC (status + audit only, no ledger mutation).
+    await dualWriteGovernedDisputeResolve(supabase, {
+      disputeRef,
+      terminalStatus: "won",
+      paystackStatus,
+    });
   } else {
     // LOST or MERCHANT_ACCEPTED → real deduction via atomic_token_credit.
     const { data: debit, error: debitErr } = await supabase.rpc("atomic_token_credit", {
