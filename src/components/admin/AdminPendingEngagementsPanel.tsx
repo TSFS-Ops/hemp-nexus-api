@@ -1908,6 +1908,13 @@ export function AdminPendingEngagementsPanel() {
                             <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
                               {e.match_id.substring(0, 8)}…
                             </p>
+                            <div className="mt-1">
+                              <OpenGovernanceRecordLink
+                                matchId={e.match_id}
+                                engagementId={e.id}
+                                variant="inline"
+                              />
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
