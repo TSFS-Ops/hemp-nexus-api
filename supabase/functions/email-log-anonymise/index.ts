@@ -11,6 +11,7 @@
 // Defaults: p_days = 90, p_dry_run = false.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { assertNoLegalHold, RECORD_GROUP_IDS } from "../_shared/legal-hold.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +53,24 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // DATA-003: refuse if a record_group-level hold covers email-log anonymisation.
+  const hold = await assertNoLegalHold(admin, [
+    { scope_type: "record_group", scope_id: RECORD_GROUP_IDS.email_send_log_anonymise },
+  ], {
+    action: "email-log-anonymise.batch",
+    actorUserId: null,
+    actorOrgId: null,
+    requestId: null,
+  });
+  if (hold.blocked) {
+    return json(200, {
+      ok: false,
+      skipped_legal_hold: true,
+      legal_hold_id: hold.activeHold?.id ?? null,
+      message: "Email log anonymisation blocked by active legal hold",
+    });
+  }
 
   const { data, error } = await admin.rpc("anonymise_old_email_send_log", {
     p_days: days,

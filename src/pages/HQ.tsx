@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -64,11 +64,12 @@ import { SystemStatusBadge } from "@/components/admin/SystemStatusBadge";
 import { AdminCanonicalSpinePanel } from "@/components/admin/AdminCanonicalSpinePanel";
 import { AdminLifecycleRunPanel } from "@/components/admin/AdminLifecycleRunPanel";
 import { AdminLegacyRepairPanel } from "@/components/admin/AdminLegacyRepairPanel";
+import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -109,6 +110,11 @@ const TABS: {
   label: "Legacy Repair",
   icon: Wrench,
   blurb: "Matches with conflicting status / state / POI fields. Hidden from user views, awaiting admin reconciliation. Read-only — repair/archive actions coming next."
+}, {
+  id: "legal-holds",
+  label: "Legal Holds",
+  icon: Lock,
+  blurb: "Apply and release legal holds. Active holds block deletion, anonymisation, purge and export destruction for the scoped entity."
 }, {
   id: "audit",
   label: "Audit & Health",
@@ -300,6 +306,14 @@ function LegacyRepairTab() {
       <TabHeader id="legacy-repair" />
       <Surface label="Inconsistent matches · public.matches via admin_list_inconsistent_matches RPC · hidden from user views">
         <AdminLegacyRepairPanel />
+      </Surface>
+    </>;
+}
+function LegalHoldsTab() {
+  return <>
+      <TabHeader id="legal-holds" />
+      <Surface label="DATA-003 · public.legal_holds · platform_admin + AAL2 · blocks deletion/anonymisation/purge/export-destruction">
+        <AdminLegalHoldsPanel />
       </Surface>
     </>;
 }
@@ -556,6 +570,7 @@ function HQLayout() {
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
           <TabsContent value="legacy-repair" className="mt-0 animate-section-enter"><LegacyRepairTab /></TabsContent>
+          <TabsContent value="legal-holds" className="mt-0 animate-section-enter"><LegalHoldsTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>

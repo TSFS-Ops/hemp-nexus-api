@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse } from "../_shared/errors.ts";
+import { assertNoLegalHold, RECORD_GROUP_IDS } from "../_shared/legal-hold.ts";
 
 /**
  * Storage Orphan Cleanup — Batch E hardened
@@ -126,6 +127,27 @@ Deno.serve(async (req) => {
         }
       }
       return out;
+    }
+
+    // DATA-003: refuse the whole job if a record_group-level hold covers
+    // the orphan cleanup pipeline.
+    const batchHold = await assertNoLegalHold(adminClient, [
+      { scope_type: "record_group", scope_id: RECORD_GROUP_IDS.storage_orphan_cleanup },
+    ], {
+      action: "storage-orphan-cleanup.batch",
+      actorUserId: null,
+      actorOrgId: null,
+      requestId,
+    });
+    if (batchHold.blocked) {
+      return new Response(JSON.stringify({
+        success: true,
+        orphans_found: 0,
+        files_deleted: 0,
+        skipped_legal_hold: true,
+        legal_hold_id: batchHold.activeHold?.id ?? null,
+        request_id: requestId,
+      }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
     }
 
     for (const cfg of BUCKETS) {
