@@ -182,9 +182,22 @@ describe("Batch O — export-audit edge function", () => {
   const fn = read("supabase/functions/export-audit/index.ts");
 
   it("[22] sensitive targets require AAL2", () => {
-    expect(fn).toContain("SENSITIVE_TARGETS");
-    expect(fn).toContain("aal2_required");
-    expect(fn).toMatch(/getAuthenticatorAssuranceLevel/);
+    // Current contract (post-SEC-001): export-audit uses a fail-closed
+    // allowlist (`NON_SENSITIVE_TARGETS`); anything not on it is treated as
+    // sensitive and routed through the shared `assertAal2` helper, which
+    // returns 403 `aal_required: true` / `code: "MFA_REQUIRED"` for aal1 JWTs.
+    expect(fn).toContain("NON_SENSITIVE_TARGETS");
+    expect(fn).toMatch(/!\s*NON_SENSITIVE_TARGETS\.has\(\s*input\.target_type\s*\)/);
+    expect(fn).toMatch(/assertAal2\(/);
+    expect(fn).toContain("aal_required: true");
+    expect(fn).toMatch(/code:\s*["']MFA_REQUIRED["']/);
+    // The underlying AAL detection lives in the shared helper. It reads the
+    // `aal` claim off the JWT rather than calling GoTrue's
+    // `getAuthenticatorAssuranceLevel`, so assert the helper surface that
+    // export-audit actually depends on.
+    const aalShared = read("supabase/functions/_shared/aal.ts");
+    expect(aalShared).toMatch(/export\s+(async\s+)?function\s+assertAal2\b/);
+    expect(aalShared).toMatch(/export\s+function\s+readAal\b/);
   });
 
   it("records export.csv in audit_logs with actor + filters_hash", () => {
