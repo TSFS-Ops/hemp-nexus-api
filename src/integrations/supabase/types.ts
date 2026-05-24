@@ -7200,6 +7200,10 @@ export type Database = {
       }
       trade_requests: {
         Row: {
+          archive_mode: string | null
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           commodity: string | null
           created_at: string
           created_by: string
@@ -7217,6 +7221,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archive_mode?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           commodity?: string | null
           created_at?: string
           created_by: string
@@ -7234,6 +7242,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archive_mode?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           commodity?: string | null
           created_at?: string
           created_by?: string
@@ -8475,6 +8487,14 @@ export type Database = {
         Args: { p_admin_user_id: string; p_match_id: string; p_notes: string }
         Returns: Json
       }
+      admin_archive_trade_request_override: {
+        Args: {
+          p_admin_user_id: string
+          p_reason: string
+          p_trade_request_id: string
+        }
+        Returns: Json
+      }
       admin_correct_match_jurisdiction: {
         Args: {
           p_admin_user_id: string
@@ -8548,6 +8568,14 @@ export type Database = {
         Args: { p_admin_user_id: string; p_match_ids?: string[] }
         Returns: Json
       }
+      admin_release_trade_request_exception_hold: {
+        Args: {
+          p_admin_user_id: string
+          p_reason: string
+          p_trade_request_id: string
+        }
+        Returns: Json
+      }
       admin_relink_match_counterparty: {
         Args: {
           p_admin_user_id: string
@@ -8619,6 +8647,15 @@ export type Database = {
           p_override_linked?: boolean
           p_participant_id: string
           p_reason: string
+        }
+        Returns: Json
+      }
+      archive_trade_request: {
+        Args: {
+          p_actor_org_id: string
+          p_actor_user_id: string
+          p_reason?: string
+          p_trade_request_id: string
         }
         Returns: Json
       }
