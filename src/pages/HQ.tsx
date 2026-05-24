@@ -328,6 +328,14 @@ function LegalHoldsTab() {
       </Surface>
     </>;
 }
+function GovernanceRecordsTab() {
+  return <>
+      <TabHeader id="governance-records" />
+      <Surface label="Governance Records · HQ-only · merged audit_logs · admin_audit_logs · event_store · match_events · Phase 1 visibility only">
+        <GovernanceRecordsPanel />
+      </Surface>
+    </>;
+}
 function DisputesTab() {
   // Sub-tabs: Disputes · Challenges · Trade Approvals · Verification Queue (clip-on)
   const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification", "trade-request-archive", "billing-review"]);
