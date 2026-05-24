@@ -2221,6 +2221,29 @@ export function AdminPendingEngagementsPanel() {
                               );
                             })()}
 
+                            {e.engagement_status === "late_acceptance_pending_initiator_reconfirmation" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => resolveLateAcceptance(e, "reconfirm")}
+                                  disabled={actionLoadingId === e.id}
+                                  data-testid="cp009-reconfirm"
+                                >
+                                  <RefreshCw className="h-3 w-3 mr-1" /> Reconfirm
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => resolveLateAcceptance(e, "decline-late-acceptance")}
+                                  disabled={actionLoadingId === e.id}
+                                  data-testid="cp009-decline"
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" /> Decline
+                                </Button>
+                              </>
+                            )}
+
                             {/* Record contact: audit-only log of how the admin reached the counterparty
                                 outside the platform (phone, WhatsApp, in person, LinkedIn).
                                 Choosing "Email" inside the dialog still routes to the platform send path. */}
