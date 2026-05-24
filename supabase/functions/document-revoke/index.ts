@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
+import { assertNoLegalHold } from "../_shared/legal-hold.ts";
 
 /**
  * Document Revoke Endpoint
