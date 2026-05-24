@@ -36,6 +36,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { SafeSelect } from "@/components/admin/SafeSelect";
+import { OpenGovernanceRecordLink } from "@/components/admin/governance/OpenGovernanceRecordLink";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
