@@ -161,7 +161,7 @@ describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs 
     const { error } = await supabase.from("match_documents").insert({
       match_id: matchId,
       org_id: orgId,
-      doc_type: "commercial_invoice",
+      doc_type: "invoice",
       filename: "uat-invoice.pdf",
       storage_path: `match-docs/${matchId}/uat-invoice.pdf`,
       sha256_hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
