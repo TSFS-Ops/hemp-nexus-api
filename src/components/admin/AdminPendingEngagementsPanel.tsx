@@ -1798,7 +1798,8 @@ export function AdminPendingEngagementsPanel() {
                 <TableBody>
                   {filtered.map((e) => {
                     const m = e.matches;
-                    const isTerminal = ["accepted", "declined", "expired"].includes(e.engagement_status);
+                    const isTerminal = isEngagementTerminal(e.engagement_status);
+                    const danielUiMessages = getDanielFixtureUiMessages(e);
                     return (
                       <React.Fragment key={e.id}>
                         <TableRow data-is-demo={e.is_demo === true ? "true" : "false"} className={e.is_demo === true ? "bg-amber-50/40" : ""}>
@@ -2239,6 +2240,32 @@ export function AdminPendingEngagementsPanel() {
                           </div>
                         </TableCell>
                       </TableRow>
+                      {danielUiMessages.length > 0 && (
+                        <TableRow key={`${e.id}-daniel-ui-proof`} className={e.is_demo === true ? "bg-amber-50/30" : "bg-slate-50/70"}>
+                          <TableCell colSpan={6} className="py-3">
+                            <div className="space-y-2" data-testid={`daniel-ui-proof-${e.id}`}>
+                              {danielUiMessages.map((msg) => {
+                                const toneClass = msg.tone === "success"
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                                  : msg.tone === "danger"
+                                    ? "border-rose-200 bg-rose-50 text-rose-900"
+                                    : msg.tone === "warning"
+                                      ? "border-amber-200 bg-amber-50 text-amber-950"
+                                      : "border-slate-200 bg-white text-slate-800";
+                                return (
+                                  <div
+                                    key={msg.key}
+                                    data-testid={msg.key}
+                                    className={`rounded-md border px-3 py-2 text-xs leading-relaxed ${toneClass}`}
+                                  >
+                                    {msg.copy}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
                       {notesOpenId === e.id && (
                         <TableRow key={`${e.id}-notes`} className="bg-slate-50/60 hover:bg-slate-50/60">
                           <TableCell colSpan={6} className="py-4">
