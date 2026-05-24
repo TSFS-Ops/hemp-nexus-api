@@ -1047,7 +1047,10 @@ export function AdminPendingEngagementsPanel() {
       });
     }
     // Phase 1 demo isolation: hide is_demo rows unless operator opts in.
-    if (!showDemo) base = base.filter((e) => e.is_demo !== true);
+    // BUT when an explicit ID lookup is active (e.g. Daniel landing from
+    // /admin/engagements?match=<uuid>), surface demo rows too — otherwise
+    // the targeted fixture row would be silently filtered out.
+    if (!showDemo && idQuery.trim().length === 0) base = base.filter((e) => e.is_demo !== true);
     return base;
   }, [engagements, filter, notesFilter, notesFrom, notesTo, idQuery, showDemo]);
 
