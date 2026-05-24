@@ -1476,6 +1476,32 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
+  const resolveLateAcceptance = async (
+    eng: Engagement,
+    action: "reconfirm" | "decline-late-acceptance",
+  ) => {
+    setActionLoadingId(eng.id);
+    try {
+      const { error } = await supabase.functions.invoke(
+        `poi-engagements/${eng.id}/${action}`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: {},
+        },
+      );
+      if (error) throw error;
+      toast.success(action === "reconfirm" ? "Late acceptance reconfirmed." : "Late acceptance declined.");
+      fetchEngagements();
+    } catch (err) {
+      console.error("Late acceptance resolution error:", err);
+      const msg = await extractEdgeError(err, "Failed to resolve late acceptance");
+      toast.error(msg);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
