@@ -2854,6 +2854,25 @@ Deno.serve(async (req) => {
             auditErr,
           );
         }
+        // DEC-004 (signed): canonical manual-action-recorded row (dual-write).
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: current.org_id,
+            actor_user_id: authCtx.userId,
+            action: "outreach.manual_follow_up_action_recorded",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-004",
+              manual_owner: "izenzo_platform_admin",
+              admin_action: "record_contact",
+              contact_method: parsed.data.contact_method,
+              previous_status: current.engagement_status,
+              new_status: targetStatus,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
       }
 
       // ── Admin audit log: explicit entry whenever support notes are created/updated/cleared ──
