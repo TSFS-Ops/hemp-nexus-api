@@ -88,10 +88,17 @@ describe("DATA-003 — delete-account (user/org scope, 409 legal_hold_active)", 
   });
 
   it("blocks BEFORE profile anonymisation / role revoke / scrub", () => {
-    assertCallBefore(src, ".from(\"profiles\")", "delete-account.profile_anonymise");
-    assertCallBefore(src, ".from(\"user_roles\").delete()", "delete-account.role_revoke");
-    assertCallBefore(src, "scrub_user_pii", "delete-account.scrub");
+    // The destructive UPDATE/DELETE/RPC calls must come after the hold check.
+    const holdIdx = src.indexOf("assertNoLegalHold");
+    const updateIdx = src.indexOf('.from("profiles")\n    .update(');
+    const roleDelIdx = src.indexOf('.from("user_roles").delete()');
+    const scrubIdx = src.indexOf("scrub_user_pii");
+    expect(holdIdx).toBeGreaterThan(-1);
+    expect(updateIdx).toBeGreaterThan(holdIdx);
+    expect(roleDelIdx).toBeGreaterThan(holdIdx);
+    expect(scrubIdx).toBeGreaterThan(holdIdx);
   });
+
 });
 
 describe("DATA-003 — user-export-request (user/org scope, no payload, no URL)", () => {
