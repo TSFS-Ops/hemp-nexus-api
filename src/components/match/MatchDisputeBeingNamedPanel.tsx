@@ -36,7 +36,20 @@ import { Label } from "@/components/ui/label";
 import { ShieldAlert, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { extractEdgeError } from "@/lib/edge-invoke";
+
+async function extractEdgeError(err: any, fallback: string): Promise<string> {
+  try {
+    const ctx = err?.context;
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.json();
+      if (body?.error) return String(body.error);
+      if (body?.message) return String(body.message);
+    }
+  } catch {
+    /* swallow */
+  }
+  return err?.message ? String(err.message) : fallback;
+}
 
 export const CP012_INITIATOR_MESSAGE =
   "The named counterparty has disputed being linked to this trade. The match is now on dispute hold. No POI, WaD, execution step, credit burn, or further progression can occur until Izenzo admin reviews the dispute.";
