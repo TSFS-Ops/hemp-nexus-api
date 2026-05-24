@@ -19,6 +19,10 @@ import {
   assertMatchProgressable,
   buildProgressionGuardResponse,
 } from "../_shared/match-progression-guard.ts";
+import {
+  assertCompliantFreshness,
+  buildComplianceFreshnessResponse,
+} from "../_shared/compliance-freshness-guard.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -204,6 +208,20 @@ Deno.serve(async (req) => {
           });
           const blocked = buildProgressionGuardResponse(mtDecision);
           if (blocked) return blocked;
+        }
+
+        // ── COMP-002 / COMP-012 compliance freshness guard (WaD create) ──
+        {
+          const compDecision = await assertCompliantFreshness({
+            supabase,
+            matchId: matchIdForGuard,
+            action: "wad",
+            sourceFunction: "wad:create",
+            actorUserId: authCtx.userId ?? null,
+            actorOrgId: authCtx.orgId ?? null,
+          });
+          const blockedComp = buildComplianceFreshnessResponse(compDecision);
+          if (blockedComp) return blockedComp;
         }
 
         const challengeDecision = await assertNoOpenChallenge(supabase, matchIdForGuard);

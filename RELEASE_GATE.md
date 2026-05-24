@@ -203,3 +203,12 @@ After clicking **Publish → Update**:
 4. Test on actual mobile device if possible
 
 > **Estimated time:** 12–15 minutes for full pass.
+
+## COMP-002 / COMP-012 Phase 2A (compliance freshness gates)
+- Sanctions freshness threshold = 30 days; verification freshness = 365 days.
+- `compliance_holds` table + `operator_verification_requests.compliance_hold_id` link.
+- Shared guard `supabase/functions/_shared/compliance-freshness-guard.ts` wired into `wad`, `p3-wad`, `collapse` after MT/engagement guards.
+- Admin release/close edge fns: `admin-compliance-hold-release`, `admin-compliance-hold-close` (platform_admin + AAL2 + reason ≥ 20 chars; no payment/credit side effects).
+- HQ → Compliance Holds tab (`AdminComplianceHoldPanel`).
+- Prebuild guards: `check-comp-002-012-audit-names.mjs`, `check-comp-002-012-thresholds.mjs`, `check-comp-002-012-guard-coverage.mjs`.
+- Phase 2B deferred: cron auto-open, baseline backfill notifications, broad `notification-dispatch` suppression.

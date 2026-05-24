@@ -9,6 +9,10 @@ import {
   assertMatchProgressable,
   buildProgressionGuardResponse,
 } from "../_shared/match-progression-guard.ts";
+import {
+  assertCompliantFreshness,
+  buildComplianceFreshnessResponse,
+} from "../_shared/compliance-freshness-guard.ts";
 
 /**
  * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
@@ -122,6 +126,20 @@ Deno.serve(async (req: Request) => {
           });
           const blocked = buildProgressionGuardResponse(mtDecision);
           if (blocked) return blocked;
+        }
+
+        // ── COMP-002 / COMP-012 compliance freshness guard (p3 WaD issue) ──
+        {
+          const compDecision = await assertCompliantFreshness({
+            supabase: admin,
+            matchId: matchIdForGuard,
+            action: "p3_wad",
+            sourceFunction: "p3-wad:issue",
+            actorUserId: userId ?? null,
+            actorOrgId: orgId ?? null,
+          });
+          const blockedComp = buildComplianceFreshnessResponse(compDecision);
+          if (blockedComp) return blockedComp;
         }
 
         // Batch C Phase 3A: p3 WaD issuance blocked while a challenge is open.

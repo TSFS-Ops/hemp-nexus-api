@@ -1263,6 +1263,78 @@ export type Database = {
           },
         ]
       }
+      compliance_holds: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          hold_type: string
+          id: string
+          metadata: Json
+          opened_at: string
+          opened_by: string | null
+          org_id: string
+          reason: string
+          release_reason: string | null
+          released_at: string | null
+          released_by: string | null
+          source_check_id: string | null
+          source_check_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          hold_type: string
+          id?: string
+          metadata?: Json
+          opened_at?: string
+          opened_by?: string | null
+          org_id: string
+          reason: string
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          source_check_id?: string | null
+          source_check_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          hold_type?: string
+          id?: string
+          metadata?: Json
+          opened_at?: string
+          opened_by?: string | null
+          org_id?: string
+          reason?: string
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          source_check_id?: string | null
+          source_check_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_holds_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_holds_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consents: {
         Row: {
           data_source_id: string
@@ -4607,6 +4679,7 @@ export type Database = {
           assigned_to: string | null
           clip_on_billed_at: string | null
           completed_at: string | null
+          compliance_hold_id: string | null
           created_at: string
           id: string
           kind: string
@@ -4618,7 +4691,7 @@ export type Database = {
           priced_margin_pct: number | null
           priced_total_zar: number | null
           pricing_mode: string | null
-          raised_by: string
+          raised_by: string | null
           reason: string | null
           reviewer_notes: string | null
           status: string
@@ -4630,6 +4703,7 @@ export type Database = {
           assigned_to?: string | null
           clip_on_billed_at?: string | null
           completed_at?: string | null
+          compliance_hold_id?: string | null
           created_at?: string
           id?: string
           kind: string
@@ -4641,7 +4715,7 @@ export type Database = {
           priced_margin_pct?: number | null
           priced_total_zar?: number | null
           pricing_mode?: string | null
-          raised_by: string
+          raised_by?: string | null
           reason?: string | null
           reviewer_notes?: string | null
           status?: string
@@ -4653,6 +4727,7 @@ export type Database = {
           assigned_to?: string | null
           clip_on_billed_at?: string | null
           completed_at?: string | null
+          compliance_hold_id?: string | null
           created_at?: string
           id?: string
           kind?: string
@@ -4664,7 +4739,7 @@ export type Database = {
           priced_margin_pct?: number | null
           priced_total_zar?: number | null
           pricing_mode?: string | null
-          raised_by?: string
+          raised_by?: string | null
           reason?: string | null
           reviewer_notes?: string | null
           status?: string
@@ -4673,6 +4748,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "operator_verification_requests_compliance_hold_id_fkey"
+            columns: ["compliance_hold_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_holds"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "operator_verification_requests_match_id_fkey"
             columns: ["match_id"]

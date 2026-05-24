@@ -66,6 +66,7 @@ import { AdminLifecycleRunPanel } from "@/components/admin/AdminLifecycleRunPane
 import { AdminLegacyRepairPanel } from "@/components/admin/AdminLegacyRepairPanel";
 import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
 import { AdminTradeRequestArchivePanel } from "@/components/admin/AdminTradeRequestArchivePanel";
+import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHoldPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
@@ -330,6 +331,7 @@ function DisputesTab() {
           <TabsTrigger value="approvals">Trade Approvals</TabsTrigger>
           <TabsTrigger value="verification">Verification Queue</TabsTrigger>
           <TabsTrigger value="trade-request-archive">Trade Request Archive</TabsTrigger>
+          <TabsTrigger value="compliance-holds">Compliance Holds</TabsTrigger>
         </TabsList>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
@@ -354,6 +356,11 @@ function DisputesTab() {
         <TabsContent value="trade-request-archive">
           <Surface label="MT-012 · public.trade_requests · normal archive / admin override / exception hold release · service_role-only RPCs, AAL2-gated overrides, no POI/WaD/execution/finality/credit/payment side effects">
             <AdminTradeRequestArchivePanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="compliance-holds">
+          <Surface label="COMP-002 / COMP-012 · public.compliance_holds · sanctions (30d) + verification (365d) freshness gate · AAL2-gated release/close · no payment/credit side effects">
+            <AdminComplianceHoldPanel />
           </Surface>
         </TabsContent>
       </Tabs>
