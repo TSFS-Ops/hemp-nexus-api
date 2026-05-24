@@ -22,11 +22,24 @@ import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Spy on the safe CSV download helper.
+// Batch U (AUD-018) introduced `auditedDownloadCSV`, which wraps the raw
+// helper with a compliance audit row. The panel now calls the audited
+// wrapper, which returns `{ aal_required: boolean }`. We spy on both so
+// this test is resilient to either wiring.
 const downloadCSVSpy = vi.fn();
 vi.mock("@/lib/download-utils", () => ({
   downloadCSV: (...args: unknown[]) => downloadCSVSpy(...args),
+  auditedDownloadCSV: async (
+    headers: unknown,
+    rows: unknown,
+    opts: { filename?: string } = {},
+  ) => {
+    downloadCSVSpy(headers, rows, opts.filename ?? "");
+    return { aal_required: false };
+  },
   timestampedFilename: (prefix: string, ext: string) => `${prefix}-TEST.${ext}`,
 }));
+
 
 // ── Supabase mock:
 //    • audit_logs rows query (select with no count opt) → succeeds with
