@@ -187,7 +187,11 @@ Deno.serve(async (req) => {
   }
 
   // Legal / security hold check.
-  const hold = await checkLegalHold(admin, user.id, orgIds);
+  const hold = await checkLegalHold(admin, user.id, orgIds, {
+    ip,
+    ua,
+    requestId: req.headers.get("x-request-id"),
+  });
 
   // Insert the request row at status=requested. Service-role bypasses RLS.
   const { data: inserted, error: insertErr } = await admin
