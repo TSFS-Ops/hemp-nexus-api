@@ -179,6 +179,28 @@ async function _serve(req: Request): Promise<Response> {
 
     const fromState = matchRow.poi_state;
 
+    // ── MT-008 / MT-009 server-side progression guard ──
+    // Block before ANY side effect (event insert, atomic_token_burn, etc.):
+    //   MT-008 → inconsistent / legacy-admin-hold rows return 409
+    //            MT_008_INCONSISTENT_MATCH | MT_008_LEGACY_ADMIN_HOLD
+    //   MT-009 → org-attached row missing named contact returns 409
+    //            MT_009_NAMED_CONTACT_REQUIRED
+    {
+      const decision = await assertMatchProgressable({
+        supabase: adminClient,
+        matchId,
+        action: "poi_transition",
+        sourceFunction: "poi-transition",
+        actorUserId: user.id,
+        actorOrgId: callerOrgId,
+      });
+      const blocked = buildProgressionGuardResponse(decision, corsHeaders);
+      if (blocked) {
+        if (hasLock) await adminClient.rpc("release_lifecycle_lock");
+        return blocked;
+      }
+    }
+
     // ── Gap (b): Server-side legal-name enforcement on POI generation ──
     // The actor's profiles.full_name must be a real legal name (not null,
     // not empty, not their email address) before they can move a match
