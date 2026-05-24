@@ -282,7 +282,7 @@ export const DANIEL_FIXTURE_UI_COPY = {
   cp015EmailChange:
     "Counterparty email cannot be edited silently after a Pending Engagement has been created. The existing engagement will be cancelled and a new engagement must be created with the corrected email. The original record will remain in the audit trail.",
   cp015InactiveLink:
-    "Old outreach link inactive: the original outreach link is no longer active for this cancelled engagement.",
+    "Old outreach link: This engagement invitation is no longer active. Please contact Izenzo admin if you believe this is incorrect.",
 } as const;
 
 export function AdminPendingEngagementsPanel() {
@@ -988,10 +988,11 @@ export function AdminPendingEngagementsPanel() {
       messages.push({ key: "cp012DisputeHoldInitiator", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldInitiator, tone: "neutral" });
       messages.push({ key: "cp012DisputeHoldCounterparty", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldCounterparty, tone: "neutral" });
     }
-    if (e.engagement_status === "cancelled_email_change" || e.operational_state === "cancelled_for_email_change") {
-      messages.push({ key: "cp015EmailChange", copy: DANIEL_FIXTURE_UI_COPY.cp015EmailChange, tone: "warning" });
-      messages.push({ key: "cp015InactiveLink", copy: DANIEL_FIXTURE_UI_COPY.cp015InactiveLink, tone: "neutral" });
-    }
+    // CP-015 wording is rendered by the inline cp015-hq-evidence-block in
+    // the counterparty cell (full Daniel-acceptance paragraph + replacement
+    // engagement reference + direct-edit-blocked + side-effects note), so we
+    // do not also emit it via the fixture-message renderer to avoid
+    // duplicate text nodes.
 
     return messages;
   };
@@ -1940,6 +1941,56 @@ export function AdminPendingEngagementsPanel() {
                               completed, and no credit has been used.
                             </div>
                           )}
+                          {/* CP-015: cancelled-for-email-change evidence block.
+                              The HQ row must show the full Daniel-acceptance
+                              wording, not only the chip + "Create a replacement
+                              engagement" hint, and must point at the replacement
+                              engagement when one exists. */}
+                          {(e.engagement_status === "cancelled_email_change" ||
+                            e.operational_state === "cancelled_for_email_change") && (() => {
+                            const replacement = engagements.find(
+                              (r) =>
+                                r.match_id === e.match_id &&
+                                (r as any).renewed_from_engagement_id === e.id &&
+                                r.id !== e.id,
+                            );
+                            return (
+                              <div
+                                className="text-[11px] text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-2 py-1.5 mt-1 leading-snug space-y-1"
+                                data-testid="cp015-hq-evidence-block"
+                                data-engagement-id={e.id}
+                                role="note"
+                              >
+                                <p data-testid="cp015-hq-user-facing-message">
+                                  Counterparty email cannot be edited silently after a Pending Engagement has been created. The existing engagement will be cancelled and a new engagement must be created with the corrected email. The original record will remain in the audit trail.
+                                </p>
+                                <p data-testid="cp015-hq-old-link-inactive">
+                                  Old outreach link: This engagement invitation is no longer active. Please contact Izenzo admin if you believe this is incorrect.
+                                </p>
+                                {replacement && (
+                                  <p
+                                    className="font-mono break-all"
+                                    data-testid="cp015-hq-replacement-ref"
+                                    data-replacement-engagement-id={replacement.id}
+                                  >
+                                    Replacement engagement: {replacement.id}
+                                    {replacement.counterparty_email
+                                      ? ` (${replacement.counterparty_email})`
+                                      : ""}
+                                  </p>
+                                )}
+                                <p data-testid="cp015-hq-direct-edit-blocked">
+                                  Direct email edit is blocked. Email changes require cancellation and creation of a new Pending Engagement.
+                                </p>
+                                <p
+                                  className="text-muted-foreground"
+                                  data-testid="cp015-hq-side-effects"
+                                >
+                                  No POI, WaD, execution, finality, credit burn, payment event, or silent external notice was triggered by the email change.
+                                </p>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1 items-start">

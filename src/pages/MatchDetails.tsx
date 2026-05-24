@@ -27,6 +27,7 @@ import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard"
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { PendingEngagementSection } from "@/components/match/PendingEngagementSection";
 import { MatchDisputeBeingNamedPanel } from "@/components/match/MatchDisputeBeingNamedPanel";
+import { MatchEmailChangeHistoryPanel } from "@/components/match/MatchEmailChangeHistoryPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PendingEngagementRow } from "@/components/match/PendingEngagementSection";
 import { OrgAdminContactCompletionCard } from "@/components/match/OrgAdminContactCompletionCard";
@@ -284,6 +285,12 @@ function MatchDetailsContent() {
           onResolved={fetchMatch}
         />
       )}
+
+      <MatchEmailChangeHistoryPanel
+        current={(engagementModel?.current_engagement ?? null) as any}
+        latestHistorical={(engagementModel?.latest_historical_engagement ?? null) as any}
+        history={(engagementModel?.history ?? []) as any}
+      />
 
       <PendingEngagementSection
         engagement={displayEngagement}
