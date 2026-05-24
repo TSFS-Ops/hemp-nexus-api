@@ -46,6 +46,8 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-legal-hold-audit-names.mjs` — DATA-003 Phase 1: legal-hold enforcement audit-name SSOT drift guard across helper + 8 wired enforcement paths
 - `check-cp003-audit-names.mjs` — CP-003 audit-name parity guard: signed canonical `pending_engagement.outreach_blocked_missing_counterparty_name` must be emitted alongside legacy `pending_engagement.outreach_blocked_missing_name` across all 3 code surfaces and the controlled-prod seed
 - `check-data-002-audit-names.mjs` — DATA-002 Phase 1 account self-deletion audit-name parity: legacy `account.*` and canonical `data.deletion_window_elapsed` / `data.profile_deleted_or_anonymised` / `data.deletion_deferred_retention_required` dual-write contract enforced across `delete-account` and `account-deletion-sweeper` edge functions
+- `check-public-availability-claims.mjs` — UI-010 public status & availability-claims guard: enforces the verbatim signed holding message on `src/pages/Status.tsx`, blocks forbidden public availability claims (`SYSTEM: OPERATIONAL`, `uptime`, `live/real-time platform health`, `99.9%`, `99.95%`, `degraded service`, `incident resolved`, `All systems operational`) on the public surfaces (Status, HeroStripeGlow, PublicHeader, Developers), and pins the two canonical audit action constants (`status.public_status_publish_blocked`, `status.admin_health_check_recorded`) in `src/lib/status-audit.ts`
+
 
 ### Edge functions requiring deploy
 

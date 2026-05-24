@@ -55,6 +55,8 @@ All three must exit 0. Attach the terminal output to the release ticket.
 - `check-legal-hold-audit-names.mjs` (DATA-003 Phase 1: legal-hold helper + 8 wired enforcement paths audit-name SSOT drift guard)
 - `check-cp003-audit-names.mjs` (CP-003 audit-name parity: signed canonical `outreach_blocked_missing_counterparty_name` paired with legacy `outreach_blocked_missing_name` across 3 emit surfaces + controlled-prod seed)
 - `check-data-002-audit-names.mjs` (DATA-002 Phase 1 account self-deletion: dual-write of legacy `account.*` and canonical `data.deletion_window_elapsed` / `data.profile_deleted_or_anonymised` / `data.deletion_deferred_retention_required` audits across `delete-account` and `account-deletion-sweeper`)
+- `check-public-availability-claims.mjs` (UI-010 public status & availability-claims guard: verbatim signed holding message on `src/pages/Status.tsx`; forbidden phrases blocked on Status/HeroStripeGlow/PublicHeader/Developers; canonical audit constants `status.public_status_publish_blocked` and `status.admin_health_check_recorded` pinned in `src/lib/status-audit.ts`)
+
 
 ### DATA-005 Phase 1 — User self-export of data (subject-access request)
 

@@ -1,16 +1,26 @@
 /**
- * Public /status — Batch A Stage 1.
+ * Public /status — UI-010 holding page (signed Decision Form).
  *
- * Previously displayed hardcoded service rows with mocked uptime bars and
- * unconditional health claims. Until a public-incident-disclosure policy is
- * finalised, this page only shows a conservative configuration notice — no
- * uptime metrics, no per-service indicators, no synthetic green claims.
+ * The signed Client-Only Decision Form (UI-010) requires that this public
+ * route does NOT make any availability claim of any kind (no operational,
+ * degraded, incident, service-level, or platform-availability wording).
+ * The verbatim holding message below is the ONLY permitted public copy.
+ * Any deviation is enforced as a build failure by
+
+ * `scripts/check-public-availability-claims.mjs` and the
+ * `src/tests/ui-010-public-status-and-availability-claims.test.ts` suite.
  *
- * Truthful operational state lives behind auth on the admin HealthBoard,
- * driven by cron_heartbeats and admin_risk_items.
+ * Truthful operational state lives behind auth on the admin HealthBoard
+ * (`/governance/health`), driven by `cron_heartbeats` and
+ * `admin_risk_items`. No public subscriber alert, incident email, or
+ * automated outbound status update exists on this surface.
  */
-import { Wrench } from "lucide-react";
 import { PublicHeader } from "@/components/PublicHeader";
+
+// UI-010 verbatim signed holding message. Do NOT edit without updating
+// the signed Decision Form and the UI-010 test/prebuild guards.
+export const UI_010_PUBLIC_STATUS_HOLDING_MESSAGE =
+  "Status information is not currently published. Please contact Izenzo support for platform availability queries." as const;
 
 export default function Status() {
   return (
@@ -19,44 +29,22 @@ export default function Status() {
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         <p className="text-[13px] font-medium text-muted-foreground tracking-wider uppercase mb-3">
-          System Status
+          Platform information
         </p>
         <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-foreground mb-8">
-          Status monitoring is being configured
+          Status information not currently published
         </h1>
 
         <div
-          className="flex items-start gap-3 rounded-xl border border-border bg-card px-5 py-4 mb-8"
+          className="rounded-xl border border-border bg-card px-5 py-4"
           data-testid="status-conservative-notice"
         >
-          <Wrench className="h-5 w-5 mt-0.5 text-muted-foreground shrink-0" />
-          <div className="space-y-2">
-            <p className="text-[15px] font-medium text-foreground">
-              We are not publishing live service status at the moment.
-            </p>
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
-              A public status feed will be enabled once our incident disclosure
-              policy is finalised. Until then, this page intentionally does not
-              display uptime metrics or per-service indicators.
-            </p>
-          </div>
+          <p className="text-[15px] font-medium text-foreground leading-relaxed">
+            {UI_010_PUBLIC_STATUS_HOLDING_MESSAGE}
+          </p>
         </div>
-
-        <p className="text-[13px] text-muted-foreground leading-relaxed mb-3">
-          If you believe you are experiencing a service issue, please contact{" "}
-          <a
-            href="mailto:support@izenzo.co.za"
-            className="text-[hsl(var(--emerald))] hover:underline font-medium"
-          >
-            support@izenzo.co.za
-          </a>
-          .
-        </p>
-        <p className="text-[12px] text-muted-foreground/70 leading-relaxed">
-          Customers with admin access can view live platform health from the
-          governance dashboard after signing in.
-        </p>
       </main>
     </div>
   );
 }
+
