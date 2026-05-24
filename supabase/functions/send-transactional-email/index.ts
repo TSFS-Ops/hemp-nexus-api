@@ -492,13 +492,25 @@ Deno.serve(async (req) => {
   }
 
   // 4. Render React Email template to HTML and plain text
-  const html = await renderAsync(
+  let html = await renderAsync(
     React.createElement(template.component, templateData)
   )
-  const plainText = await renderAsync(
+  let plainText = await renderAsync(
     React.createElement(template.component, templateData),
     { plainText: true }
   )
+
+  // NOT-008 / DEC-009: append mandated disclaimer footer when sending an
+  // essential notice (transactional/security/payment/compliance/admin_only)
+  // to a recipient on the suppression list.
+  if (appendUnsubscribedFooter) {
+    if (html.includes('</body>')) {
+      html = html.replace('</body>', `${UNSUBSCRIBED_ESSENTIAL_FOOTER_HTML}</body>`)
+    } else {
+      html = `${html}\n${UNSUBSCRIBED_ESSENTIAL_FOOTER_HTML}`
+    }
+    plainText = `${plainText}\n\n---\n${UNSUBSCRIBED_ESSENTIAL_FOOTER}`
+  }
 
   // Resolve subject - supports static string or dynamic function
   const resolvedSubject =
