@@ -78,7 +78,9 @@ Deno.serve(async (req) => {
 
   const { data: reqRow, error: reqErr } = await admin
     .from("export_requests")
-    .select("*")
+    .select(
+      "id, kind, status, requester_user_id, requester_org_id, subject_user_id, requested_categories, approver_user_id, verification, approval",
+    )
     .eq("id", request_id)
     .single();
   if (reqErr || !reqRow) return json({ error: "not_found" }, 404);
