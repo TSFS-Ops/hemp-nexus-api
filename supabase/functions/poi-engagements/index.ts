@@ -754,6 +754,26 @@ Deno.serve(async (req) => {
         throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
       }
 
+      // ── DEC-001 (signed): canonical "evaluated" audit row ──
+      // Dual-write with existing per-reason audits. Records THAT an
+      // off-platform outreach decision was walked through every gate
+      // (identity, supersession, binding review, dispute, MT-008/MT-009
+      // progression), regardless of outcome. SSOT: src/lib/outreach/
+      // dec-001-audit.ts → OFF_PLATFORM_OUTREACH_EVALUATED.
+      try {
+        await supabase.from("audit_logs").insert({
+          actor_user_id: authCtx.userId,
+          action: "pending_engagement.off_platform_outreach_evaluated",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            dec_rule: "DEC-001",
+            surface: "send-outreach",
+            request_id: requestId,
+          },
+        });
+      } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
+
 
       // ── Validate body FIRST so we can derive a stable idempotency key from
       // its content. Previously we fell back to `Date.now()` whenever the
