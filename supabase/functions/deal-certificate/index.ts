@@ -4,6 +4,8 @@ import { errorResponse, ApiException, handleDatabaseError } from "../_shared/err
 import { authenticateRequest } from "../_shared/auth.ts";
 import { assertWadIsSettleable } from "../_shared/test-mode-bypass.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
+import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
 
 /**
  * Deal Certificate Generator
@@ -412,6 +414,10 @@ Deno.serve(async (req) => {
     );
     const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "deal-certificate", artefact: true });
     if (_demoBlocked) return _demoBlocked;
+    // DATA-009 Phase 2 residency gate.
+    const _resGate = await residencyGateForMatchRequest(_demoAdmin, req);
+    if (_resGate) return _resGate;
+    void checkResidencyHoldAny; void residencyBlockResponse;
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
   const startMs = Date.now();

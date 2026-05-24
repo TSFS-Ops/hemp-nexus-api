@@ -6,6 +6,8 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
+import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
 
 /**
  * Deterministic canonical JSON serialisation.
@@ -247,6 +249,10 @@ Deno.serve(async (req) => {
     );
     const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "evidence-pack", artefact: true });
     if (_demoBlocked) return _demoBlocked;
+    // DATA-009 Phase 2 residency gate.
+    const _resGate = await residencyGateForMatchRequest(_demoAdmin, req);
+    if (_resGate) return _resGate;
+    void checkResidencyHoldAny; void residencyBlockResponse;
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";

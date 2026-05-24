@@ -14,6 +14,8 @@ import {
   buildComplianceFreshnessResponse,
 } from "../_shared/compliance-freshness-guard.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
+import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
 
 /**
  * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
@@ -60,6 +62,10 @@ Deno.serve(async (req: Request) => {
     );
     const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "p3-wad", artefact: true });
     if (_demoBlocked) return _demoBlocked;
+    // DATA-009 Phase 2 residency gate.
+    const _resGate = await residencyGateForMatchRequest(_demoAdmin, req);
+    if (_resGate) return _resGate;
+    void checkResidencyHoldAny; void residencyBlockResponse;
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   if (req.method === "OPTIONS") return handleCors(req);
 
