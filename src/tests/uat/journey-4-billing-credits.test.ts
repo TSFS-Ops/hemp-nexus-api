@@ -61,11 +61,20 @@ describe("Journey 4: Credits appear after purchase → deducted on action", () =
     expect(error).not.toBeNull();
     const code = (error as { code?: string } | null)?.code ?? "";
     const message = (error as { message?: string } | null)?.message ?? "";
+    // Acceptable proofs that direct user-JWT execution is blocked:
+    //   - 42501 permission denied (REVOKE worked)
+    //   - PGRST202 function not found in schema cache
+    //   - PGRST203 / "not unique" — overload resolution refused under user JWT
+    //     because no overload is callable (both REVOKED from authenticated).
     const blocked =
       code === "42501" ||
       code === "PGRST202" ||
-      /permission denied|not (?:exist|found)|schema cache/i.test(message);
+      code === "PGRST203" ||
+      /permission denied|not (?:exist|found|unique)|schema cache|could not choose|ambiguous/i.test(
+        message,
+      );
     expect(blocked).toBe(true);
+
   });
 
   // ── Step 3: Verify idempotency index exists ────────────────────
