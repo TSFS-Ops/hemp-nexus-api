@@ -3178,6 +3178,54 @@ export type Database = {
           },
         ]
       }
+      legal_holds: {
+        Row: {
+          applied_at: string
+          applied_by: string
+          created_at: string
+          id: string
+          metadata: Json
+          reason: string
+          released_at: string | null
+          released_by: string | null
+          released_reason: string | null
+          scope_id: string
+          scope_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string
+          applied_by: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason: string
+          released_at?: string | null
+          released_by?: string | null
+          released_reason?: string | null
+          scope_id: string
+          scope_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string
+          released_at?: string | null
+          released_by?: string | null
+          released_reason?: string | null
+          scope_id?: string
+          scope_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       licences: {
         Row: {
           amount_usd: number

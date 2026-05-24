@@ -19,6 +19,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { assertNoLegalHold } from "../_shared/legal-hold.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Headers":
@@ -164,8 +166,36 @@ Deno.serve(async (req) => {
     );
   }
 
+  // 4b. DATA-003: legal hold check. Block self-deletion if an active hold
+  //     covers the user or their org.
+  const holdCheck = await assertNoLegalHold(
+    admin,
+    [
+      { scope_type: "user", scope_id: user.id },
+      ...(profile.org_id ? [{ scope_type: "org" as const, scope_id: profile.org_id }] : []),
+    ],
+    {
+      action: "delete-account.self_delete",
+      actorUserId: user.id,
+      actorOrgId: profile.org_id,
+      requestId: req.headers.get("x-request-id"),
+    },
+  );
+  if (holdCheck.blocked) {
+    return json(req,
+      withRequestId(req, {
+        error: "legal_hold_active",
+        code: holdCheck.code,
+        message: holdCheck.message,
+        legal_hold_id: holdCheck.activeHold?.id ?? null,
+      }),
+      409,
+    );
+  }
+
   // 5. Anonymise + soft-delete profile.
   const placeholderEmail = `deleted+${user.id}@deleted.izenzo.local`;
+
   const { error: updateErr } = await admin
     .from("profiles")
     .update({
