@@ -282,7 +282,7 @@ export const DANIEL_FIXTURE_UI_COPY = {
   cp015EmailChange:
     "Counterparty email cannot be edited silently after a Pending Engagement has been created. The existing engagement will be cancelled and a new engagement must be created with the corrected email. The original record will remain in the audit trail.",
   cp015InactiveLink:
-    "Old outreach link inactive: the original outreach link is no longer active for this cancelled engagement.",
+    "Old outreach link: This engagement invitation is no longer active. Please contact Izenzo admin if you believe this is incorrect.",
 } as const;
 
 export function AdminPendingEngagementsPanel() {
