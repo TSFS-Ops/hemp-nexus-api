@@ -43,8 +43,16 @@ describe("DEC-010 — public pages must not contain forbidden claim phrases", ()
 describe("DEC-010 — Status page remains conservative", () => {
   it("does not claim public operational status", () => {
     const src = readFileSync("src/pages/Status.tsx", "utf8");
-    expect(src).toContain("Status monitoring is being configured");
+    // Aligned with UI-010 signed holding message (DEC-010 conservative-copy intent preserved).
+    expect(src).toContain(
+      "Status information is not currently published. Please contact Izenzo support for platform availability queries.",
+    );
     expect(src).not.toMatch(/All systems operational/i);
     expect(src).not.toMatch(/99\.9\d%\s*uptime/i);
+    expect(src).not.toMatch(/SYSTEM:\s*OPERATIONAL/i);
+    expect(src).not.toMatch(/incident resolved/i);
+    expect(src).not.toMatch(/degraded service/i);
+    expect(src).not.toMatch(/real-time platform health/i);
   });
 });
+
