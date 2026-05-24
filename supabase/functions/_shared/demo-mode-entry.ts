@@ -105,3 +105,51 @@ export function extractDemoIds(body: any, url?: URL): DemoShortCircuitArgs["ids"
 }
 
 export { type DemoContext, markDemoArtifact };
+
+/**
+ * Convenience wrapper: clones the request (so the original body remains
+ * readable by the caller), extracts identifiers from URL/JSON body, and
+ * short-circuits if the target row is demo. Safe to call at the top of
+ * any POST handler immediately after CORS handling.
+ */
+export async function tryDemoShortCircuit(
+  admin: any,
+  req: Request,
+  opts: {
+    op: string;
+    artefact?: boolean;
+    auditAction?: string;
+    actorUserId?: string | null;
+  },
+): Promise<Response | null> {
+  let ids: DemoShortCircuitArgs["ids"] = {};
+  try {
+    const url = new URL(req.url);
+    let body: any = null;
+    if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
+      const cloned = req.clone();
+      const text = await cloned.text();
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = null;
+        }
+      }
+    }
+    ids = extractDemoIds(body, url);
+  } catch {
+    ids = {};
+  }
+  // No identifiers → cannot prove demo; let live flow proceed.
+  if (!ids.orgId && !ids.matchId && !ids.tradeRequestId && !ids.poiId) {
+    return null;
+  }
+  return demoShortCircuit(admin, {
+    ids,
+    op: opts.op,
+    artefact: opts.artefact,
+    auditAction: opts.auditAction,
+    actorUserId: opts.actorUserId ?? null,
+  });
+}
