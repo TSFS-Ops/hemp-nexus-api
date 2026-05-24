@@ -89,6 +89,24 @@ export function GovernanceEventDrawer({ event, open, onClose }: Props) {
             <Row label="Status" value={event.status} />
             <Row label="Reason code" value={event.reasonCode} />
             <Row label="Posture" value={event.posture} />
+            {/* Phase 2 canonical fields (event_store payload). Read from
+                redacted safeMetadata so legacy rows fall back to "Not recorded". */}
+            <Row
+              label="Policy version"
+              value={(event.safeMetadata?.policy_version as string) ?? null}
+            />
+            <Row
+              label="Source function"
+              value={(event.safeMetadata?.source_function as string) ?? null}
+            />
+            <Row
+              label="Correlation id"
+              value={(event.safeMetadata?.correlation_id as string) ?? null}
+            />
+            <Row
+              label="Request id"
+              value={(event.safeMetadata?.request_id as string) ?? null}
+            />
             <Row label="Match id" value={event.links.matchId} />
             <Row label="POI id" value={event.links.poiId} />
             <Row label="Engagement id" value={event.links.engagementId} />
