@@ -339,6 +339,12 @@ function MatchDetailsContent() {
 
       <ProgressionPausedBanner challenge={openChallenge ?? null} />
 
+      {matchId && (
+        <div className="flex justify-end">
+          <OpenGovernanceRecordLink matchId={matchId} />
+        </div>
+      )}
+
       <DealWizard
         match={match}
         canConfirm={MatchState.canDo(match.state || "discovery", "confirm_intent")}
