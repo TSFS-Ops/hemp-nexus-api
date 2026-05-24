@@ -40,6 +40,13 @@ vi.mock("@/lib/download-utils", () => ({
   timestampedFilename: (prefix: string, ext: string) => `${prefix}-TEST.${ext}`,
 }));
 
+// DATA-010 Phase 1: panel now prompts for an export reason via
+// `promptExportReason`. Stub it to a valid reason so the click path
+// reaches the CSV download spy.
+vi.mock("@/lib/export-purpose", () => ({
+  promptExportReason: () => "automated test export reason for batch-m fallback fixture",
+}));
+
 
 // ── Supabase mock:
 //    • audit_logs rows query (select with no count opt) → succeeds with
