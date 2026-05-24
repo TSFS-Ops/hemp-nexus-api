@@ -59,11 +59,13 @@ describe('MT-008 / MT-009 — shared progression guard helper', () => {
 
 describe('MT-008 / MT-009 — guard wired into progression edge functions', () => {
   const surfaces: Array<{ name: string; path: string; action: string }> = [
-    { name: 'poi-transition', path: 'supabase/functions/poi-transition/index.ts', action: 'poi_transition' },
-    { name: 'wad',            path: 'supabase/functions/wad/index.ts',            action: 'wad' },
-    { name: 'p3-wad',         path: 'supabase/functions/p3-wad/index.ts',         action: 'finality' },
-    { name: 'collapse',       path: 'supabase/functions/collapse/index.ts',       action: 'collapse' },
+    { name: 'poi-transition',  path: 'supabase/functions/poi-transition/index.ts',  action: 'poi_transition' },
+    { name: 'wad',             path: 'supabase/functions/wad/index.ts',             action: 'wad' },
+    { name: 'p3-wad',          path: 'supabase/functions/p3-wad/index.ts',          action: 'finality' },
+    { name: 'collapse',        path: 'supabase/functions/collapse/index.ts',        action: 'collapse' },
+    { name: 'poi-engagements', path: 'supabase/functions/poi-engagements/index.ts', action: 'outreach' },
   ];
+
 
   for (const s of surfaces) {
     it(`${s.name} imports the guard helper`, () => {
