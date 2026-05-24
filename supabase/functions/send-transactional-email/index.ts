@@ -137,6 +137,52 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // OPS-010 Phase 2A — ZERO outbound email policy for demo workspaces.
+  // If the recipient is a member of a demo org, OR templateData ties the
+  // send to a demo org/match/poi, we short-circuit BEFORE any provider call,
+  // write an `ops.demo_outreach_blocked` audit, and return a success-shape
+  // so existing callers see no behaviour change.
+  try {
+    const { wouldEmitToDemoOrg, loadDemoContext, writeDemoAudit, OPS_010_AUDIT } =
+      await import('../_shared/demo-mode-guard.ts');
+    let demoCtx = { isDemo: false, datasetId: null as string | null, orgId: null as string | null, source: 'unknown' as const };
+    // 1) recipient profile org
+    const lcRecipient = effectiveRecipient.toLowerCase();
+    const { data: recipientProfile } = await supabase
+      .from('profiles').select('org_id').eq('email', lcRecipient).maybeSingle();
+    if (recipientProfile?.org_id) {
+      demoCtx = await wouldEmitToDemoOrg(supabase, recipientProfile.org_id) as any;
+    }
+    // 2) templateData hints
+    if (!demoCtx.isDemo) {
+      const td = templateData as Record<string, any>;
+      const ids = { orgId: td?.org_id, matchId: td?.match_id, tradeRequestId: td?.trade_request_id, poiId: td?.poi_id };
+      if (ids.orgId || ids.matchId || ids.tradeRequestId || ids.poiId) {
+        demoCtx = await loadDemoContext(supabase, ids) as any;
+      }
+    }
+    if (demoCtx.isDemo) {
+      await writeDemoAudit(supabase, {
+        action: OPS_010_AUDIT.OUTREACH_BLOCKED,
+        ctx: demoCtx,
+        entityType: 'email',
+        entityId: messageId,
+        extra: { template: templateName, recipient: lcRecipient, provider: 'resend', blocked_live_call: true },
+      });
+      return wrap(new Response(JSON.stringify({
+        success: true,
+        queued: false,
+        demo: true,
+        messageId,
+        status: 'demo_blocked',
+        message: 'OPS-010 — demo workspace, zero outbound email. No provider was called.',
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }));
+    }
+  } catch (e) {
+    console.error('[OPS-010] demo guard check failed (failing open to live path)', e);
+  }
+
+
   // POI-004 stage-2: idempotency short-circuit. If a caller supplied an
   // explicit `idempotencyKey` and we have a prior email_send_log row with
   // that key, return the prior messageId/status instead of enqueuing a
