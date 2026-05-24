@@ -111,6 +111,11 @@ const TABS: {
   icon: Wrench,
   blurb: "Matches with conflicting status / state / POI fields. Hidden from user views, awaiting admin reconciliation. Read-only — repair/archive actions coming next."
 }, {
+  id: "legal-holds",
+  label: "Legal Holds",
+  icon: Lock,
+  blurb: "Apply and release legal holds. Active holds block deletion, anonymisation, purge and export destruction for the scoped entity."
+}, {
   id: "audit",
   label: "Audit & Health",
   icon: Activity,
