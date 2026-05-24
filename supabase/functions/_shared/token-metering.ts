@@ -572,10 +572,46 @@ export async function burnTokensForAction(
 
   if (burnError) {
     console.error("Error in atomic_token_burn for action:", burnError);
+    await writeGovernanceEventBestEffort(supabase as any, {
+      event_type: "credit.burn_attempted",
+      org_id: orgId,
+      aggregate_type: "credit_burn",
+      aggregate_id: entityId ?? orgId,
+      actor_user_id: null,
+      system_actor: "token-metering",
+      source_function: "burnTokensForAction",
+      request_id: requestId,
+      allowed_or_blocked: "blocked",
+      reason_code: "TOKEN_BURN_RPC_ERROR",
+      posture_snapshot: buildPostureSnapshot("Not recorded", {
+        reason: "atomic_token_burn RPC error before settlement",
+      }),
+      metadata: { actionType, error_message: String(burnError.message ?? burnError) },
+    });
     throw new ApiException("TOKEN_BURN_FAILED", "Failed to burn tokens", 500);
   }
 
   if (!burnResult?.success) {
+    await writeGovernanceEventBestEffort(supabase as any, {
+      event_type: "credit.burn_blocked",
+      org_id: orgId,
+      aggregate_type: "credit_burn",
+      aggregate_id: entityId ?? orgId,
+      actor_user_id: null,
+      system_actor: "token-metering",
+      source_function: "burnTokensForAction",
+      request_id: requestId,
+      allowed_or_blocked: "blocked",
+      reason_code: burnResult?.error ?? "INSUFFICIENT_TOKENS",
+      posture_snapshot: buildPostureSnapshot("Standard", {
+        check_status: { current_balance: burnResult?.current_balance ?? 0 },
+      }),
+      metadata: {
+        actionType,
+        required: tokensToBurn,
+        available: burnResult?.current_balance ?? 0,
+      },
+    });
     throw new ApiException(
       "INSUFFICIENT_TOKEN_BALANCE",
       `Insufficient tokens for ${actionType}. Required: ${tokensToBurn}, Available: ${burnResult?.current_balance ?? 0}`,
@@ -593,11 +629,46 @@ export async function burnTokensForAction(
 
   // Check if we crossed any low balance thresholds
   await checkAndTriggerLowBalanceWebhooks(supabase, orgId, previousBalance, newBalance);
-  
-  // Ledger write is now handled inside atomic_token_burn (self-auditing).
-  // No duplicate write needed here.
-  
+
+  // Phase 2 canonical credit.burned event (fail-closed)
+  try {
+    await writeCriticalEventWithPosture(supabase as any, {
+      event_type: "credit.burned",
+      org_id: orgId,
+      aggregate_type: "credit_burn",
+      aggregate_id: entityId ?? orgId,
+      actor_user_id: null,
+      actor_role: apiKeyId ? "api_key" : "system",
+      system_actor: "token-metering",
+      source_function: "burnTokensForAction",
+      request_id: requestId,
+      allowed_or_blocked: "allowed",
+      reason_code: `action:${actionType}`,
+      posture: buildPostureSnapshot("Standard", {
+        check_status: { balance_before: previousBalance, balance_after: newBalance },
+      }),
+      metadata: {
+        actionType,
+        amount: tokensToBurn,
+        balance_before: previousBalance,
+        balance_after: newBalance,
+        entity_id: entityId ?? null,
+        ...(metadata ?? {}),
+      },
+      idempotency_extra: requestId,
+    });
+  } catch (govErr) {
+    console.error("CRITICAL: governance audit write failed after burnTokensForAction", govErr);
+    throw new ApiException(
+      "GOV_AUDIT_WRITE_FAILED",
+      "Credit burned but governance audit write failed",
+      500,
+      { underlying: String((govErr as Error)?.message ?? govErr) }
+    );
+  }
+
   console.log(`[Token Metering] Burned ${tokensToBurn} tokens for ${actionType} (org: ${orgId})`);
+
   
   return {
     success: true,
