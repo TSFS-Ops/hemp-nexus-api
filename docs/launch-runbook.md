@@ -214,3 +214,31 @@ Prebuild guards:
 - `scripts/check-data-009-phase2-audit-emission.mjs`
 - `scripts/check-data-009-phase2-no-technical-side-effects.mjs`
 - `scripts/check-data-009-phase2-guard-coverage.mjs`
+
+### DEC-007 / PAY-009 — Refund & payment-dispute governance (Phase 2)
+
+- Org self-serve refund: `POST /functions/v1/refund-request` (authenticated
+  org member). Calls `request_refund` SECDEF RPC — auto-blocks when
+  credits are fully burned (`blocked_credits_used`) or purchase is older
+  than 180 days (`blocked_expired`). Approval/decline by platform admin in
+  HQ → Billing Review tab via `admin-refund-approve` /
+  `admin-refund-decline` (AAL2 + reason ≥ 20).
+- Refund approval emits an append-only `administrative_adjustment` row on
+  `token_ledger`. Existing burned credits are NEVER deleted or rewritten.
+- Paystack webhook (`token-purchase/webhook`) routes `charge.dispute.create`
+  through `record_payment_dispute` (idempotent on
+  `provider_dispute_reference`), and `charge.dispute.resolve` (won) through
+  `resolve_payment_dispute_won`. Lost dispute resolution from webhook only
+  records a `billing.payment_dispute_resolved_lost` audit-detection row and
+  defers the formal RPC resolution to admin AAL2 review in HQ → Billing
+  Review (prevents double ledger debit alongside the legacy chargeback path).
+- Billing hold (`organizations.billing_hold = true`) blocks new
+  `token-purchase` checkouts (`BILLING_HOLD_ACTIVE`) AND blocks every
+  `atomic_token_burn` call across the platform (POI mint, WaD, collapse).
+  Apply/release via `admin-billing-hold-apply` / `admin-billing-hold-release`
+  (AAL2 + reason ≥ 20). Auto-released when last open dispute resolves won.
+
+Prebuild guards:
+- `scripts/check-dec-007-pay-009-audit-names.mjs`
+- `scripts/check-dec-007-pay-009-guard-coverage.mjs`
+- `scripts/check-dec-007-pay-009-no-ledger-delete.mjs`
