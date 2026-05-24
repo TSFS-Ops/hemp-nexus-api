@@ -417,6 +417,41 @@ async function _serve(req: Request): Promise<Response> {
       );
     }
 
+    // ── Phase 2 canonical governance event (fail-closed) ──
+    // Writes the controlled `poi.state_changed` event to event_store with a
+    // posture_snapshot. Idempotency key is derived so retries dedupe.
+    try {
+      await writeCriticalEventWithPosture(adminClient, {
+        event_type: "poi.state_changed",
+        org_id: matchRow.org_id,
+        aggregate_type: "match",
+        aggregate_id: matchId,
+        actor_user_id: user.id,
+        source_function: "poi-transition",
+        request_id: req.headers.get("x-request-id") ?? null,
+        correlation_id: req.headers.get("x-correlation-id") ?? null,
+        match_id: matchId,
+        previous_state: fromState,
+        new_state: toState,
+        allowed_or_blocked: "allowed",
+        reason_code: reason ?? null,
+        posture: buildPostureSnapshot("Not recorded", {
+          reason: "posture not derived in poi-transition flow",
+        }),
+        metadata: { poi_event_id: event.id },
+        idempotency_extra: `${fromState}->${toState}`,
+      });
+    } catch (govErr) {
+      console.error("CRITICAL: Governance audit write failed for POI transition:", govErr);
+      return new Response(
+        JSON.stringify({
+          error: "Governance audit write failed - transition recorded but proof trail incomplete",
+          code: "GOV_AUDIT_WRITE_FAILED",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const successPayload = {
       success: true,
       event: {
