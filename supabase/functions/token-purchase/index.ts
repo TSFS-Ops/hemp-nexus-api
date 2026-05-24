@@ -1703,6 +1703,101 @@ async function handleDisputeCreated(supabase: any, data: DisputeData): Promise<v
       price_usd: lookup.price_usd ?? 0,
     },
   });
+
+  // ── PAY-009 governed dual-write ─────────────────────────────────────
+  // Mirror the dispute into the governed `payment_disputes` table via
+  // `record_payment_dispute` (idempotent on provider_dispute_reference).
+  // Additive only — never mutates ledger / deletes anything. Wrapped in
+  // try/catch so a governance write failure never breaks legacy flow.
+  await dualWriteGovernedDisputeOpen(supabase, {
+    orgId,
+    disputeRef,
+    paymentRef,
+    credits: credits ?? 0,
+  });
+}
+
+// PAY-009 governed dual-write helpers (webhook-side mirrors of the
+// SECDEF RPCs). Never mutate ledger directly — they call the RPCs which
+// own all ledger/audit emission. Failures are swallowed so the legacy
+// path is never destabilised.
+// deno-lint-ignore no-explicit-any
+async function dualWriteGovernedDisputeOpen(
+  supabase: any,
+  args: { orgId: string; disputeRef: string; paymentRef: string | null; credits: number },
+): Promise<void> {
+  try {
+    if (!args.paymentRef) return;
+    const { data: purchase } = await supabase
+      .from("token_purchases")
+      .select("id")
+      .eq("paystack_reference", args.paymentRef)
+      .maybeSingle();
+    if (!purchase?.id) return;
+    await supabase.rpc("record_payment_dispute", {
+      p_org_id: args.orgId,
+      p_token_purchase_id: purchase.id,
+      p_provider: "paystack",
+      p_provider_dispute_reference: args.disputeRef,
+      p_source: "webhook",
+      p_credits_issued: args.credits,
+      p_actor_user_id: null,
+      p_metadata: {
+        payment_reference: args.paymentRef,
+        source_handler: "token-purchase/webhook",
+      },
+    });
+  } catch (e) {
+    console.error("[PAY-009 dual-write open] non-fatal:", e);
+  }
+}
+
+// deno-lint-ignore no-explicit-any
+async function dualWriteGovernedDisputeResolve(
+  supabase: any,
+  args: { disputeRef: string; terminalStatus: "won" | "lost" | "merchant_accepted"; paystackStatus: string },
+): Promise<void> {
+  try {
+    const { data: pd } = await supabase
+      .from("payment_disputes")
+      .select("id, org_id, status")
+      .eq("provider_dispute_reference", args.disputeRef)
+      .maybeSingle();
+    if (!pd?.id || pd.status !== "open") return;
+
+    if (args.terminalStatus === "won") {
+      // Safe: WON resolver only updates status + audit, no ledger mutation.
+      await supabase.rpc("resolve_payment_dispute_won", {
+        p_payment_dispute_id: pd.id,
+        p_admin_user_id: null,
+        p_reason: `Paystack webhook resolved dispute ${args.disputeRef} as won (paystack_status=${args.paystackStatus}); auto-routed by token-purchase/webhook handler.`,
+      });
+    } else {
+      // LOST / merchant_accepted: legacy chargeback path already debited
+      // via atomic_token_credit + token_ledger insert. Calling
+      // resolve_payment_dispute_lost here would create a SECOND
+      // administrative_adjustment ledger row for the same credits_frozen,
+      // double-debiting the org. Emit a detection audit instead and defer
+      // the formal RPC resolution to admin AAL2 sign-off via HQ → Billing
+      // Review. payment_disputes.status stays 'open' so it surfaces in
+      // the admin queue.
+      await supabase.from("audit_logs").insert({
+        org_id: pd.org_id,
+        action: "billing.payment_dispute_resolved_lost",
+        entity_type: "payment_dispute",
+        entity_id: pd.id,
+        metadata: {
+          dispute_reference: args.disputeRef,
+          paystack_status: args.paystackStatus,
+          source: "webhook_detection",
+          requires_admin_action: true,
+          note: "Webhook detection only — ledger adjustment handled by legacy chargeback path; formal RPC resolution awaits admin AAL2 sign-off via HQ → Billing Review.",
+        },
+      });
+    }
+  } catch (e) {
+    console.error("[PAY-009 dual-write resolve] non-fatal:", e);
+  }
 }
 
 // deno-lint-ignore no-explicit-any
