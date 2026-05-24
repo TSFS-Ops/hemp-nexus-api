@@ -503,6 +503,34 @@ async function _serve(req: Request): Promise<Response> {
       }
     }
 
+    // OPS-010 Phase 2A — block live Paystack init for demo orgs.
+    // Demo orgs simulate purchase via admin-credit-org demo path; never call Paystack.
+    {
+      const { loadDemoContext, simulateInsteadOf, OPS_010_AUDIT } = await import("../_shared/demo-mode-guard.ts");
+      const demoCtx = await loadDemoContext(supabase, { orgId: profile.org_id });
+      if (demoCtx.isDemo) {
+        const fakeRef = `demo_${crypto.randomUUID()}`;
+        await simulateInsteadOf(supabase, {
+          ctx: demoCtx,
+          op: "token-purchase.initiate",
+          auditAction: OPS_010_AUDIT.PAYMENT_EVENT_SIMULATED,
+          actorUserId: userData.user.id,
+          entityType: "payment",
+          entityId: fakeRef,
+          simulator: () => ({ reference: fakeRef }),
+          extra: { provider: "paystack", blocked_live_call: true },
+        });
+        return new Response(
+          JSON.stringify({
+            demo: true,
+            reference: fakeRef,
+            message: "DEMO — Paystack not contacted. Use admin-credit-org demo flow for credits.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const body = await req.json();
     const parsed = purchaseSchema.safeParse(body);
     if (!parsed.success) {

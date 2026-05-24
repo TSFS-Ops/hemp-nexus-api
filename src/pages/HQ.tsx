@@ -67,6 +67,7 @@ import { AdminLegacyRepairPanel } from "@/components/admin/AdminLegacyRepairPane
 import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
 import { AdminTradeRequestArchivePanel } from "@/components/admin/AdminTradeRequestArchivePanel";
 import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHoldPanel";
+import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspacesPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
@@ -332,6 +333,7 @@ function DisputesTab() {
           <TabsTrigger value="verification">Verification Queue</TabsTrigger>
           <TabsTrigger value="trade-request-archive">Trade Request Archive</TabsTrigger>
           <TabsTrigger value="compliance-holds">Compliance Holds</TabsTrigger>
+          <TabsTrigger value="demo-workspaces">Demo Workspaces</TabsTrigger>
         </TabsList>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
