@@ -55,35 +55,31 @@ function extractIp(req: Request): string | null {
 }
 
 /**
- * Phase 1 legal/security-hold check. The formal `legal_holds` model
- * does not yet exist (see DATA-005-FU-LEGAL-HOLD-001). This helper is
- * future-safe: if the table is absent it returns "no active hold"; if
- * the table appears later we can extend it without touching callers.
+ * Phase 1 legal/security-hold check. Delegates to the canonical
+ * `assertNoLegalHold` helper (DATA-003). Fails CLOSED on query errors.
  */
 // deno-lint-ignore no-explicit-any
-async function checkLegalHold(admin: any, userId: string, orgIds: string[]):
-  Promise<{ blocked: boolean; reason: string | null }> {
-  try {
-    const { data, error } = await admin
-      .from("legal_holds")
-      .select("id, scope_type, scope_id, status")
-      .or(
-        [
-          `and(scope_type.eq.user,scope_id.eq.${userId})`,
-          ...orgIds.map((o) => `and(scope_type.eq.org,scope_id.eq.${o})`),
-        ].join(","),
-      )
-      .eq("status", "active")
-      .limit(1);
-    // Table missing or any error: treat as no hold (future-safe).
-    if (error) return { blocked: false, reason: null };
-    if (data && data.length > 0) {
-      return { blocked: true, reason: "legal_or_security_hold_active" };
-    }
-    return { blocked: false, reason: null };
-  } catch {
-    return { blocked: false, reason: null };
-  }
+async function checkLegalHold(admin: any, userId: string, orgIds: string[], ctx: { ip: string | null; ua: string | null; requestId: string | null }):
+  Promise<{ blocked: boolean; reason: string | null; holdId: string | null }> {
+  const scopes: LegalHoldScope[] = [
+    { scope_type: "user", scope_id: userId },
+    ...orgIds.map((o) => ({ scope_type: "org" as const, scope_id: o })),
+  ];
+  const result = await assertNoLegalHold(admin, scopes, {
+    action: "user-export-request.create",
+    actorUserId: userId,
+    actorOrgId: orgIds[0] ?? null,
+    requestId: ctx.requestId,
+    extra: { actor_ip: ctx.ip, user_agent: ctx.ua },
+  });
+  if (!result.blocked) return { blocked: false, reason: null, holdId: null };
+  return {
+    blocked: true,
+    reason: result.code === "LEGAL_HOLD_CHECK_FAILED"
+      ? "legal_hold_check_failed"
+      : "legal_or_security_hold_active",
+    holdId: result.activeHold?.id ?? null,
+  };
 }
 
 // deno-lint-ignore no-explicit-any
