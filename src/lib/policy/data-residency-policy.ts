@@ -86,5 +86,21 @@ export const DATA_RESIDENCY_AUDIT_ACTIONS = [
 export type DataResidencyAuditAction =
   (typeof DATA_RESIDENCY_AUDIT_ACTIONS)[number];
 
-/** Phase indicator — Phase 2 emit wiring is intentionally out of scope. */
-export const DATA_RESIDENCY_POLICY_PHASE = 1 as const;
+/**
+ * Phase indicator — Phase 2 wires runtime emission via SECDEF RPCs
+ * `request_residency_review`, `approve_residency_review`,
+ * `decline_residency_review` and the edge functions
+ * `residency-review-request`, `admin-residency-review-approve`,
+ * `admin-residency-review-decline`. Approval records the policy
+ * exception only; no automatic data migration, region split, backup
+ * change, export restriction, deletion, or re-hosting occurs.
+ */
+export const DATA_RESIDENCY_POLICY_PHASE = 2 as const;
+
+/** Minimum admin reason length for approve / decline of a residency review. */
+export const RESIDENCY_ADMIN_REASON_MIN_LENGTH = 20 as const;
+
+/** Approve/decline UI warning copy — exact wording mandated by DATA-009 Phase 2. */
+export const RESIDENCY_DECISION_WARNING_COPY =
+  "Approval records the policy exception only. It does NOT create any technical hosting control, region migration, backup restriction, export restriction, or deletion behaviour. Any technical change requires a separate engineering decision.";
+
