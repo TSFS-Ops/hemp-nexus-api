@@ -44,10 +44,16 @@ describe("CP-003 — signed canonical audit actions", () => {
     );
   });
 
-  it("emits the signed outreach-blocked name from at least two surfaces (preview + send)", () => {
+  it("emits the signed outreach-blocked name from all three surfaces (preview + send + contact-patch)", () => {
     const re = /pending_engagement\.outreach_blocked_missing_counterparty_name/g;
     const hits = EDGE.match(re) ?? [];
-    expect(hits.length).toBeGreaterThanOrEqual(2);
+    expect(hits.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("legacy and signed missing-name emits are count-paired", () => {
+    const legacy = (EDGE.match(/pending_engagement\.outreach_blocked_missing_name/g) ?? []).length;
+    const signed = (EDGE.match(/pending_engagement\.outreach_blocked_missing_counterparty_name/g) ?? []).length;
+    expect(signed).toBeGreaterThanOrEqual(legacy);
   });
 });
 
