@@ -22,6 +22,7 @@ import {
   FORBIDDEN_USER_EXPORT_CATEGORIES,
   resolveExportScope,
 } from "../_shared/user-export-categories.ts";
+import { assertNoLegalHold, type LegalHoldScope } from "../_shared/legal-hold.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
