@@ -12,7 +12,9 @@
  *   - contact_name / contact_type / counterparty_org_id remain NULL
  *   - emits `pending_engagement.identity_incomplete_email_only_detected`
  *     (the signed CP-003 canonical name) plus the legacy sibling
- *     `pending_engagement.outreach_blocked_missing_name`
+ *     `pending_engagement.outreach_blocked_missing_name` and the second
+ *     signed canonical
+ *     `pending_engagement.outreach_blocked_missing_counterparty_name`
  *
  * Hard-gated by:
  *   - `admin_settings.allow_controlled_production_demo_fixtures_cp003.enabled = true`
