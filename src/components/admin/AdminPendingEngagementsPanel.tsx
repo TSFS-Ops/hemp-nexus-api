@@ -132,6 +132,8 @@ interface Engagement {
     price_currency: string | null;
     buyer_name: string | null;
     seller_name: string | null;
+    buyer_org_id: string | null;
+    seller_org_id: string | null;
   } | null;
   initiator_org?: { id: string; name: string } | null;
   counterparty_org?: { id: string; name: string } | null;
@@ -875,11 +877,17 @@ export function AdminPendingEngagementsPanel() {
         ? {
             buyer_name: e.matches.buyer_name,
             seller_name: e.matches.seller_name,
-            // matches projection on this panel doesn't include *_org_id;
-            // pass undefined so the helper falls back to the engagement
-            // counterparty_org_id signal it already has.
-            buyer_org_id: undefined,
-            seller_org_id: undefined,
+            // CP-003 FAIL fix (Daniel): the server projection includes
+            // buyer_org_id / seller_org_id. Forwarding them lets
+            // resolveOrgName correctly identify which side is the
+            // unregistered counterparty. Previously both were passed as
+            // undefined, which made resolveOrgName treat BOTH sides as
+            // unregistered and pick the initiator's own org name as the
+            // "counterparty" name — wrongly returning organisation_contact
+            // for the email-present / no-counterparty-name case and
+            // leaving Send outreach enabled.
+            buyer_org_id: e.matches.buyer_org_id ?? null,
+            seller_org_id: e.matches.seller_org_id ?? null,
           }
         : null,
     );
@@ -1742,6 +1750,23 @@ export function AdminPendingEngagementsPanel() {
                                 <p>Send outreach is disabled until a valid email is added.</p>
                               </div>
                             )
+                          )}
+                          {/* CP-003: email present but no counterparty name/person/org.
+                              Surface the required Daniel-acceptance wording inline
+                              so the operator sees WHY Send outreach is disabled and
+                              what to do via Add/Edit contact. */}
+                          {!isTerminal && getEngagementContactState(e) === "contact_incomplete" && e.counterparty_email && (
+                            <div
+                              className="text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5 mt-1 leading-snug"
+                              data-testid="cp003-missing-name-warning"
+                              data-contact-state="contact_incomplete"
+                              role="alert"
+                            >
+                              Counterparty email exists, but the counterparty name is missing.
+                              Add a valid counterparty name, person, or organisation before
+                              outreach can be sent. No outreach has been sent, no POI has been
+                              completed, and no credit has been used.
+                            </div>
                           )}
                         </TableCell>
                         <TableCell>
