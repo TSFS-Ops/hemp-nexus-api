@@ -108,6 +108,22 @@ Deno.serve(async (req: Request) => {
       {
         const matchIdForGuard = (poi as { match_id?: string | null }).match_id || poi.id;
 
+        const matchIdForGuard = (poi as { match_id?: string | null }).match_id || poi.id;
+
+        // ── MT-008 / MT-009 server-side progression guard (p3 WaD issuance) ──
+        {
+          const mtDecision = await assertMatchProgressable({
+            supabase: admin,
+            matchId: matchIdForGuard,
+            action: "finality",
+            sourceFunction: "p3-wad:issue",
+            actorUserId: userId ?? null,
+            actorOrgId: orgId ?? null,
+          });
+          const blocked = buildProgressionGuardResponse(mtDecision);
+          if (blocked) return blocked;
+        }
+
         // Batch C Phase 3A: p3 WaD issuance blocked while a challenge is open.
         const challengeDecision = await assertNoOpenChallenge(admin, matchIdForGuard);
         if (!challengeDecision.allowed) {
