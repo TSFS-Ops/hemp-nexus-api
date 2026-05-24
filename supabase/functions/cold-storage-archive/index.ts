@@ -361,6 +361,7 @@ Deno.serve(async (req: Request) => {
       dry_run: dryRun,
       processed,
       failed,
+      skipped_legal_hold: skippedLegalHold,
       total_pending: pendingFlags.length,
       errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
       timestamp: new Date().toISOString(),
