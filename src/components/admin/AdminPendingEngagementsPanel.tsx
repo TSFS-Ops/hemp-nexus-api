@@ -323,7 +323,19 @@ export function AdminPendingEngagementsPanel() {
   // ID query is present we widen the base set to ALL engagements regardless
   // of the active tab — operators looking up a specific row by ID should
   // never have it hidden by the current tab.
-  const [idQuery, setIdQuery] = useState<string>("");
+  // Pre-scope from URL: links like /admin/engagements?match=<uuid> or
+  // ?engagement=<uuid> (used in Daniel-fixture acceptance emails) must
+  // land directly on the row. Initialise idQuery from those params so
+  // the panel filters down to that single row on first render.
+  const [idQuery, setIdQuery] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      return (sp.get("match") ?? sp.get("engagement") ?? "").trim();
+    } catch {
+      return "";
+    }
+  });
 
   // ── Support-notes editor (admin/reviewer-only, per row) ──
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
