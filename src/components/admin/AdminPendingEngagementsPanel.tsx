@@ -877,11 +877,17 @@ export function AdminPendingEngagementsPanel() {
         ? {
             buyer_name: e.matches.buyer_name,
             seller_name: e.matches.seller_name,
-            // matches projection on this panel doesn't include *_org_id;
-            // pass undefined so the helper falls back to the engagement
-            // counterparty_org_id signal it already has.
-            buyer_org_id: undefined,
-            seller_org_id: undefined,
+            // CP-003 FAIL fix (Daniel): the server projection includes
+            // buyer_org_id / seller_org_id. Forwarding them lets
+            // resolveOrgName correctly identify which side is the
+            // unregistered counterparty. Previously both were passed as
+            // undefined, which made resolveOrgName treat BOTH sides as
+            // unregistered and pick the initiator's own org name as the
+            // "counterparty" name — wrongly returning organisation_contact
+            // for the email-present / no-counterparty-name case and
+            // leaving Send outreach enabled.
+            buyer_org_id: e.matches.buyer_org_id ?? null,
+            seller_org_id: e.matches.seller_org_id ?? null,
           }
         : null,
     );
