@@ -2,9 +2,11 @@
  * Public /status — UI-010 holding page (signed Decision Form).
  *
  * The signed Client-Only Decision Form (UI-010) requires that this public
- * route does NOT make any operational, degraded, incident, uptime, or
- * availability claim. The verbatim holding message below is the ONLY
- * permitted public copy. Any deviation is enforced as a build failure by
+ * route does NOT make any availability claim of any kind (no operational,
+ * degraded, incident, service-level, or platform-availability wording).
+ * The verbatim holding message below is the ONLY permitted public copy.
+ * Any deviation is enforced as a build failure by
+
  * `scripts/check-public-availability-claims.mjs` and the
  * `src/tests/ui-010-public-status-and-availability-claims.test.ts` suite.
  *
