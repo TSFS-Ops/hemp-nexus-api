@@ -69,6 +69,7 @@ import { AdminTradeRequestArchivePanel } from "@/components/admin/AdminTradeRequ
 import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHoldPanel";
 import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspacesPanel";
 import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyReviewsPanel";
+import { AdminBillingReviewPanel } from "@/components/admin/AdminBillingReviewPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
@@ -323,7 +324,7 @@ function LegalHoldsTab() {
 }
 function DisputesTab() {
   // Sub-tabs: Disputes · Challenges · Trade Approvals · Verification Queue (clip-on)
-  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification", "trade-request-archive"]);
+  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification", "trade-request-archive", "billing-review"]);
   return <>
       <TabHeader id="disputes" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -336,6 +337,7 @@ function DisputesTab() {
           <TabsTrigger value="compliance-holds">Compliance Holds</TabsTrigger>
           <TabsTrigger value="demo-workspaces">Demo Workspaces</TabsTrigger>
           <TabsTrigger value="residency-reviews">Residency Reviews</TabsTrigger>
+          <TabsTrigger value="billing-review">Billing Review</TabsTrigger>
         </TabsList>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
@@ -375,6 +377,11 @@ function DisputesTab() {
         <TabsContent value="residency-reviews">
           <Surface label="DATA-009 Phase 2 · public.data_residency_reviews · onboarding hold + approve/decline · AAL2-gated; policy exception only, no technical hosting/region/migration/backup/export/deletion control">
             <AdminResidencyReviewsPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="billing-review">
+          <Surface label="DEC-007 / PAY-009 · public.refund_requests · public.payment_disputes · org billing holds · AAL2-gated · append-only ledger adjustments; no POI/WaD/execution/audit deletion">
+            <AdminBillingReviewPanel />
           </Surface>
         </TabsContent>
       </Tabs>
