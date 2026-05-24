@@ -188,10 +188,11 @@ const HUB_CARDS: HubCard[] = [{
 }, {
   icon: Activity,
   title: "System Status",
-  description: "100% uptime target. Real-time platform health.",
+  description: "Admin-monitored platform health. Service information is available through Izenzo support.",
   href: "/admin/health",
   cta: "View status",
   statusBadge: true
+
 }];
 
 /* ─────────────────────────────── PAGE ─────────────────────────────── */
