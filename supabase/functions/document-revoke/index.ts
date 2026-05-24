@@ -105,6 +105,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // DATA-003: refuse revocation/grant-revocation if the evidence
+    // document or its match is under an active legal hold.
+    const holdScopes: Array<{ scope_type: "evidence" | "match"; scope_id: string }> = [
+      { scope_type: "evidence", scope_id: documentId },
+    ];
+    if (document.match_id) holdScopes.push({ scope_type: "match", scope_id: document.match_id });
+    const docHold = await assertNoLegalHold(supabase, holdScopes, {
+      action: `document-revoke.${action}`,
+      actorUserId: authCtx.userId,
+      actorOrgId: authCtx.orgId,
+      requestId,
+      relatedRequestId: documentId,
+    });
+    if (docHold.blocked) {
+      throw new ApiException(
+        "LEGAL_HOLD_ACTIVE",
+        "Document revocation is blocked because an active legal hold exists for this scope.",
+        409,
+      );
+    }
+
     if (action === "revoke_document") {
       // Soft-revoke the entire document
       const { error: updateError } = await supabase
