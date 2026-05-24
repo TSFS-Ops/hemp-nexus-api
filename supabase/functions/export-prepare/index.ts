@@ -103,6 +103,14 @@ Deno.serve(async (req) => {
     return json({ error: "invalid_state", actual: reqRow.status }, 409);
   }
 
+  // DATA-009 Phase 2: block production export when residency review hold is active.
+  const _residencyBlock = await checkResidencyHoldAny(admin, [
+    (reqRow as { requester_org_id?: string | null }).requester_org_id ?? null,
+    (reqRow as { target_org_id?: string | null }).target_org_id ?? null,
+  ]);
+  if (_residencyBlock) return residencyBlockResponse(_residencyBlock, corsHeaders);
+
+
   const isUser = reqRow.kind === "user_export";
   const allowLists = isUser
     ? USER_EXPORT_CATEGORY_ALLOW_LISTS
