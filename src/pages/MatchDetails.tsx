@@ -26,6 +26,8 @@ import { AcceptEngagementCard } from "@/components/match/AcceptEngagementCard";
 import { AcceptanceReceiptCard } from "@/components/match/AcceptanceReceiptCard";
 import { UnknownCounterpartyStatus } from "@/components/match/UnknownCounterpartyStatus";
 import { PendingEngagementSection } from "@/components/match/PendingEngagementSection";
+import { MatchDisputeBeingNamedPanel } from "@/components/match/MatchDisputeBeingNamedPanel";
+import { useAuth } from "@/contexts/AuthContext";
 import type { PendingEngagementRow } from "@/components/match/PendingEngagementSection";
 import { OrgAdminContactCompletionCard } from "@/components/match/OrgAdminContactCompletionCard";
 import { ReconfirmLateAcceptanceCard } from "@/components/match/ReconfirmLateAcceptanceCard";
