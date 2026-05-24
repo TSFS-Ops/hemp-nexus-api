@@ -21,6 +21,12 @@ import {
   assertPoiWordingSafe,
   UNSAFE_PRE_ACCEPTANCE_WARNING,
   UNSAFE_POI_WARNING,
+  PENDING_ENGAGEMENT_LABEL,
+  INITIATOR_PENDING_COPY,
+  OUTREACH_INVITATION_COPY,
+  DRAFT_POI_LABEL,
+  ACCEPTED_POI_LABEL,
+  POST_ACCEPTANCE_QUALIFIER,
 } from "../_shared/legal-wording.ts";
 import { assertClaimSafe } from "../_shared/legal-claims.ts";
 import { assertAal2 } from "../_shared/aal.ts";
