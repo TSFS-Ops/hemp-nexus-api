@@ -1751,6 +1751,23 @@ export function AdminPendingEngagementsPanel() {
                               </div>
                             )
                           )}
+                          {/* CP-003: email present but no counterparty name/person/org.
+                              Surface the required Daniel-acceptance wording inline
+                              so the operator sees WHY Send outreach is disabled and
+                              what to do via Add/Edit contact. */}
+                          {!isTerminal && getEngagementContactState(e) === "contact_incomplete" && e.counterparty_email && (
+                            <div
+                              className="text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5 mt-1 leading-snug"
+                              data-testid="cp003-missing-name-warning"
+                              data-contact-state="contact_incomplete"
+                              role="alert"
+                            >
+                              Counterparty email exists, but the counterparty name is missing.
+                              Add a valid counterparty name, person, or organisation before
+                              outreach can be sent. No outreach has been sent, no POI has been
+                              completed, and no credit has been used.
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1 items-start">
