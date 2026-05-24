@@ -332,7 +332,40 @@ Deno.serve(async (req: Request) => {
 
     const type = screen_type === "entity" ? "entity" : "individual";
 
+    // ── OPS-010 Phase 2A: demo orgs never call live sanctions provider ──
+    {
+      const { loadDemoContext, simulateInsteadOf, OPS_010_AUDIT } = await import("../_shared/demo-mode-guard.ts");
+      const demoCtx = await loadDemoContext(adminClient, { orgId: org_id });
+      if (demoCtx.isDemo) {
+        const result = await simulateInsteadOf(adminClient, {
+          ctx: demoCtx,
+          op: "dilisense-screen",
+          auditAction: OPS_010_AUDIT.COMPLIANCE_CALL_SIMULATED,
+          actorUserId: actorUserId || null,
+          entityType: "screening",
+          entityId: entity_id || null,
+          simulator: () => ({
+            org_id,
+            entity_id: entity_id || null,
+            screen_type: type,
+            status: "clear",
+            matched_entities: [],
+            provider: "ops_010_demo",
+            simulated: true,
+            screened_at: new Date().toISOString(),
+            next_screening_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          }),
+          extra: { provider: "dilisense", blocked_live_call: true, name, screen_type: type },
+        });
+        return new Response(JSON.stringify({ demo: true, ...result }), {
+          status: 200,
+          headers: { ...handleCors(req).headers, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // ── Test-mode bypass: synthesize a "clear" screening result without touching any provider ──
+
     if (await isBypassEnabled(adminClient, "sanctions", "dilisense-screen")) {
       const bypassedAt = new Date().toISOString();
       const bypassHash = await computeHash(JSON.stringify({ bypass: true, name, type, ts: bypassedAt }));
