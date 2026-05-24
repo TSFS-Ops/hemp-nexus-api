@@ -6,6 +6,11 @@ import {
   getCategoryForTemplate,
   getPreferenceKeyForTemplate,
   isBlockedByUnsubscribe,
+  getSignedCategoryForTemplate,
+  evaluateUnsubscribedDisposition,
+  UNSUBSCRIBED_ESSENTIAL_FOOTER,
+  UNSUBSCRIBED_ESSENTIAL_FOOTER_HTML,
+  AUDIT_SEND_EVALUATED_UNSUBSCRIBED,
 } from '../_shared/email-categories.ts'
 import { checkAndAuditPreference } from '../_shared/notification-preferences.ts'
 import { recordNotificationSkipped } from '../_shared/notification-skip-audit.ts'
@@ -176,29 +181,81 @@ Deno.serve(async (req) => {
   const category = getCategoryForTemplate(templateName)
   const prefKey = getPreferenceKeyForTemplate(templateName)
 
-  // 2. Check suppression list, honouring category. Security/compliance bypass.
-  if (isBlockedByUnsubscribe(category)) {
-    const { data: suppressed, error: suppressionError } = await supabase
-      .from('suppressed_emails')
-      .select('id')
-      .eq('email', effectiveRecipient.toLowerCase())
-      .maybeSingle()
+  // ── NOT-008 / DEC-009: signed-form classification + disposition ──
+  // Always look up suppression status (regardless of legacy category)
+  // so the umbrella audit `notification.send_evaluated_unsubscribed_user`
+  // can fire for every essential notice evaluated against an unsubscribed
+  // recipient. The legacy `isBlockedByUnsubscribe(category)` gate is
+  // preserved as the suppression enforcement path for `optional` /
+  // `transactional` legacy categories.
+  const signedCategory = getSignedCategoryForTemplate(templateName)
+  const recipientIsFixedAdminTo =
+    !!template.to && template.to.toLowerCase() === effectiveRecipient.toLowerCase()
 
-    if (suppressionError) {
-      console.error('Suppression check failed - refusing to send', {
-        error: suppressionError,
-        effectiveRecipient,
+  const { data: suppressedRow, error: suppressionLookupError } = await supabase
+    .from('suppressed_emails')
+    .select('id')
+    .eq('email', effectiveRecipient.toLowerCase())
+    .maybeSingle()
+
+  if (suppressionLookupError) {
+    console.error('Suppression check failed - refusing to send', {
+      error: suppressionLookupError,
+      effectiveRecipient,
+    })
+    return wrap(new Response(
+      JSON.stringify({ error: 'Failed to verify suppression status' }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    ))
+  }
+
+  const recipientIsSuppressed = !!suppressedRow
+  let appendUnsubscribedFooter = false
+
+  if (recipientIsSuppressed) {
+    const disposition = evaluateUnsubscribedDisposition(signedCategory, recipientIsFixedAdminTo)
+
+    // Umbrella audit: every evaluation against an unsubscribed recipient.
+    try {
+      await supabase.from('audit_logs').insert({
+        org_id: '00000000-0000-0000-0000-000000000000',
+        entity_type: 'notification',
+        action: AUDIT_SEND_EVALUATED_UNSUBSCRIBED,
+        metadata: {
+          template_name: templateName,
+          signed_category: signedCategory,
+          legacy_category: category,
+          recipient_email: effectiveRecipient,
+          disposition: disposition.action,
+          timestamp: new Date().toISOString(),
+        },
       })
-      return wrap(new Response(
-        JSON.stringify({ error: 'Failed to verify suppression status' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      ))
+    } catch (auditErr) {
+      console.error('[NOT-008] umbrella audit failed (continuing):', auditErr)
     }
 
-    if (suppressed) {
+    if (disposition.action === 'suppress' || disposition.action === 'admin_only_skip') {
+      // Disposition-specific audit
+      try {
+        await supabase.from('audit_logs').insert({
+          org_id: '00000000-0000-0000-0000-000000000000',
+          entity_type: 'notification',
+          action: disposition.auditAction,
+          metadata: {
+            template_name: templateName,
+            signed_category: signedCategory,
+            recipient_email: effectiveRecipient,
+            reason: disposition.action,
+            timestamp: new Date().toISOString(),
+          },
+        })
+      } catch (auditErr) {
+        console.error('[NOT-008] suppression audit failed (continuing):', auditErr)
+      }
+
       await supabase.from('email_send_log').insert({
         message_id: messageId,
         idempotency_key: callerSuppliedKey,
@@ -212,17 +269,62 @@ Deno.serve(async (req) => {
         sourceEventType: templateName,
         channel: 'email',
         recipientEmail: effectiveRecipient,
-        extra: { category, pref_key: prefKey },
+        extra: {
+          category,
+          signed_category: signedCategory,
+          disposition: disposition.action,
+          pref_key: prefKey,
+        },
       })
-      console.log('Email suppressed', { effectiveRecipient, templateName, category })
+      console.log('[NOT-008] Email suppressed for unsubscribed recipient', {
+        effectiveRecipient,
+        templateName,
+        signedCategory,
+        disposition: disposition.action,
+      })
       return wrap(new Response(
-        JSON.stringify({ success: false, reason: 'email_suppressed', category }),
+        JSON.stringify({
+          success: false,
+          reason: 'email_suppressed',
+          category,
+          signed_category: signedCategory,
+          disposition: disposition.action,
+        }),
         {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       ))
     }
+
+    // send_with_disclaimer: essential notice to unsubscribed user.
+    // Emit transactional_sent_to_unsubscribed_user audit, then append the
+    // mandated NOT-008 footer at render time below.
+    try {
+      await supabase.from('audit_logs').insert({
+        org_id: '00000000-0000-0000-0000-000000000000',
+        entity_type: 'notification',
+        action: disposition.auditAction,
+        metadata: {
+          template_name: templateName,
+          signed_category: signedCategory,
+          recipient_email: effectiveRecipient,
+          disclaimer_appended: true,
+          timestamp: new Date().toISOString(),
+        },
+      })
+    } catch (auditErr) {
+      console.error('[NOT-008] essential-send audit failed (continuing):', auditErr)
+    }
+    appendUnsubscribedFooter = true
+    console.log('[NOT-008] Essential notice sent to unsubscribed recipient with disclaimer', {
+      effectiveRecipient,
+      templateName,
+      signedCategory,
+    })
+  } else if (isBlockedByUnsubscribe(category)) {
+    // Legacy path no-op: recipient is NOT suppressed, no preference yet
+    // applied. Falls through to render/enqueue.
   } else {
     console.log('Suppression bypassed for safety-critical category', { templateName, category })
   }
@@ -390,13 +492,25 @@ Deno.serve(async (req) => {
   }
 
   // 4. Render React Email template to HTML and plain text
-  const html = await renderAsync(
+  let html = await renderAsync(
     React.createElement(template.component, templateData)
   )
-  const plainText = await renderAsync(
+  let plainText = await renderAsync(
     React.createElement(template.component, templateData),
     { plainText: true }
   )
+
+  // NOT-008 / DEC-009: append mandated disclaimer footer when sending an
+  // essential notice (transactional/security/payment/compliance/admin_only)
+  // to a recipient on the suppression list.
+  if (appendUnsubscribedFooter) {
+    if (html.includes('</body>')) {
+      html = html.replace('</body>', `${UNSUBSCRIBED_ESSENTIAL_FOOTER_HTML}</body>`)
+    } else {
+      html = `${html}\n${UNSUBSCRIBED_ESSENTIAL_FOOTER_HTML}`
+    }
+    plainText = `${plainText}\n\n---\n${UNSUBSCRIBED_ESSENTIAL_FOOTER}`
+  }
 
   // Resolve subject - supports static string or dynamic function
   const resolvedSubject =
