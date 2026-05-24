@@ -113,6 +113,49 @@ Deno.test("Acceptance wording-state audit names are stable", () => {
   }
 });
 
+Deno.test("DEC-005/006 — index.ts source contains all six signed audit names", async () => {
+  // Pins that the live edge function (poi-engagements/index.ts) actually
+  // writes each of the six signed audit names. This is a source-text
+  // assertion: if a future refactor drops one of the inserts, this test
+  // fails before the live function ever ships missing audits.
+  const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+  const required = [
+    // Pre-acceptance wording applied (send-outreach success branch).
+    'action: "legal.pre_acceptance_wording_applied"',
+    // Express counterparty acceptance wording-state flip.
+    'action: "counterparty.acceptance_recorded_wording_state_updated"',
+    // Post-acceptance POI wording flip.
+    'action: "legal.poi_wording_updated_after_counterparty_acceptance"',
+    // POI binding wording applied (emitted on both outreach (draft) and
+    // acceptance (accepted) branches).
+    'action: "legal.poi_binding_wording_applied"',
+    // Unsafe-wording blocks (already wired into send-outreach guard).
+    'action: "legal.unsafe_pre_acceptance_wording_blocked"',
+    'action: "legal.unsafe_poi_binding_claim_blocked"',
+  ];
+  for (const needle of required) {
+    assert(
+      src.includes(needle),
+      `poi-engagements/index.ts is missing live emission of ${needle}`,
+    );
+  }
+});
+
+Deno.test("DEC-005/006 — poi_binding_wording_applied is emitted on BOTH draft and accepted paths", async () => {
+  const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+  // Two separate inserts: one in the send-outreach success branch with
+  // poi_wording_state: "draft_intent_record", one in the counterparty-
+  // respond accepted branch with "accepted_mutual_intent_record".
+  assert(
+    src.includes('poi_wording_state: "draft_intent_record"'),
+    "missing draft_intent_record wording-state emission",
+  );
+  assert(
+    src.includes('poi_wording_state: "accepted_mutual_intent_record"'),
+    "missing accepted_mutual_intent_record wording-state emission",
+  );
+});
+
 Deno.test("Guards do NOT introduce POI / WaD / credit / payment side effects", () => {
   // Pure functions — call them many times, they must remain pure.
   for (let i = 0; i < 10; i++) {
