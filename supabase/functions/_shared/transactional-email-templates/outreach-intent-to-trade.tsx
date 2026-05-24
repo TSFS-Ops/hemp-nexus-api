@@ -157,7 +157,7 @@ const OutreachIntentToTradeEmail = (props: OutreachIntentToTradeProps) => {
           <Text style={text}>
             {SITE_NAME} provides a governed environment for cross-border commodity trading,
             including counterparty due-diligence workflows, recorded Proof-of-Intent records,
-            and dispute governance. Records become mutual only once both parties have confirmed.
+            and dispute governance. Records remain pending until each party signs Proof of Intent on its own side.
           </Text>
 
           <Hr style={hr} />

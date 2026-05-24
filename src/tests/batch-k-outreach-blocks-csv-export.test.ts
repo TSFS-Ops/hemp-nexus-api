@@ -63,9 +63,16 @@ describe("Batch K :: Export CSV button is present", () => {
     expect(PANEL_CODE).toMatch(
       /from\s+["']@\/lib\/download-utils["']/,
     );
-    expect(PANEL_CODE.includes("downloadCSV")).toBe(true);
+    // Batch U (AUD-018) upgraded the panel from the raw `downloadCSV` helper
+    // to the audited wrapper `auditedDownloadCSV`, which writes a compliance
+    // audit row before the bytes leave. Either form is acceptable; the
+    // audited wrapper is strictly stricter.
+    expect(
+      PANEL_CODE.includes("auditedDownloadCSV") || PANEL_CODE.includes("downloadCSV"),
+    ).toBe(true);
     expect(PANEL_CODE.includes("timestampedFilename")).toBe(true);
   });
+
 });
 
 describe("Batch K :: CSV column allowlist", () => {
@@ -188,14 +195,16 @@ describe("Batch K :: explicit safe select allowlists preserved", () => {
 describe("Batch K :: export reuses already-filtered rows (no broad query)", () => {
   it("Export CSV onClick maps over the panel's `rows`, not a fresh query", () => {
     // The export region must reference `rows.map(` and must not run a new
-    // supabase query inside the click handler.
+    // supabase query inside the click handler. Note: the click handler is
+    // now async because it calls `auditedDownloadCSV` (Batch U AUD-018) —
+    // so `await ` is expected, but no supabase query may appear in the
+    // surrounding click handler block.
     const idx = PANEL_SRC.indexOf("Export CSV");
     expect(idx).toBeGreaterThan(0);
-    // Search backwards for the surrounding Button block.
     const before = PANEL_SRC.slice(Math.max(0, idx - 1500), idx);
     expect(before.includes("rows.map(")).toBe(true);
     expect(before.includes("orgNames")).toBe(true);
     expect(before.includes("supabase.from(")).toBe(false);
-    expect(before.includes("await ")).toBe(false);
   });
+
 });

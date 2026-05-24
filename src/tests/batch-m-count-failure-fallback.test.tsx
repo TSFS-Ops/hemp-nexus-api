@@ -22,11 +22,31 @@ import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Spy on the safe CSV download helper.
+// Batch U (AUD-018) introduced `auditedDownloadCSV`, which wraps the raw
+// helper with a compliance audit row. The panel now calls the audited
+// wrapper, which returns `{ aal_required: boolean }`. We spy on both so
+// this test is resilient to either wiring.
 const downloadCSVSpy = vi.fn();
 vi.mock("@/lib/download-utils", () => ({
   downloadCSV: (...args: unknown[]) => downloadCSVSpy(...args),
+  auditedDownloadCSV: async (
+    headers: unknown,
+    rows: unknown,
+    opts: { filename?: string } = {},
+  ) => {
+    downloadCSVSpy(headers, rows, opts.filename ?? "");
+    return { aal_required: false };
+  },
   timestampedFilename: (prefix: string, ext: string) => `${prefix}-TEST.${ext}`,
 }));
+
+// DATA-010 Phase 1: panel now prompts for an export reason via
+// `promptExportReason`. Stub it to a valid reason so the click path
+// reaches the CSV download spy.
+vi.mock("@/lib/export-purpose", () => ({
+  promptExportReason: () => "automated test export reason for batch-m fallback fixture",
+}));
+
 
 // ── Supabase mock:
 //    • audit_logs rows query (select with no count opt) → succeeds with
@@ -166,7 +186,9 @@ describe("Batch M :: count query failure → heuristic fallback", () => {
 
     fireEvent.click(exportBtn);
 
-    expect(downloadCSVSpy).toHaveBeenCalledTimes(1);
+    // Click handler is async (dynamic import of export-purpose +
+    // auditedDownloadCSV await). Wait for the spy to be called.
+    await waitFor(() => expect(downloadCSVSpy).toHaveBeenCalledTimes(1));
     const [headers, csvRows, filename] = downloadCSVSpy.mock.calls[0] as [
       string[],
       unknown[][],

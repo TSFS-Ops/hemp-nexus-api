@@ -59,7 +59,7 @@ export default function DocsMatches() {
             { name: "discovery",            type: "initial", desc: "Both party slots identified. Terms may still be amended." },
             { name: "intent_declared",      type: "next",    desc: "Initiating party has recorded intent. The opposite-slot org has been notified — single-side acknowledgement, not bilateral acceptance." },
             { name: "counterparty_sighted", type: "next",    desc: "The opposite-slot org has acknowledged the match. Engagement hold-point cleared. Still single-side; not yet committed." },
-            { name: "committed",            type: "next",    desc: "At least one party's POI has been recorded. Terms are locked from further client mutation pending counterparty action. The POI is only described as mutual once both parties have confirmed." },
+            { name: "committed",            type: "next",    desc: "At least one party's POI has been recorded. Terms are locked from further client mutation pending counterparty action. The POI is only described as mutual once BOTH parties have signed Proof of Intent." },
             { name: "completed",            type: "final",   desc: "Without a Doubt (WaD) certificate sealed. Evidence pack downloadable." },
           ]}
         />
@@ -133,7 +133,7 @@ export default function DocsMatches() {
         <Callout>
           POI mint is a hold-point: the call returns <InlineCode>409 ENGAGEMENT_PENDING</InlineCode>{" "}
           until the org in the opposite slot has accepted the engagement. Acceptance is
-          single-side and is <em>not</em> the same as bilateral commitment — both parties
+          single-side and is <em>not</em> the same as bilateral acceptance — both parties
           must mint POI for the match to reach <InlineCode>committed</InlineCode>. See{" "}
           <a href="/docs/counterparties" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">Counterparties</a>{" "}
           for the engagement flow.

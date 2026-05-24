@@ -169,10 +169,14 @@ describe("Batch O Phase 2b Step 4 — admin_repair_legacy_match RPC migration", 
     const sql = latest.sql
       .replace(/--.*$/gm, "")
       .replace(/\/\*[\s\S]*?\*\//g, "");
+    // Batch K Fix 2 added a READ on public.wads to refuse
+    // restore_poi_state_for_completed when no sealed WaD exists. That is
+    // a safety guard, not a mutation. The forbidden contract here is
+    // WRITES to these tables — never reads.
     const forbidden = [
       /\bpois\b/i,
       /poi_engagements/i,
-      /\bwads?\b/i,
+      /\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:public\.)?wads?\b/i,
       /\bpayments?\b/i,
       /paystack/i,
       /\bcredits\b/i,
@@ -182,7 +186,12 @@ describe("Batch O Phase 2b Step 4 — admin_repair_legacy_match RPC migration", 
     for (const re of forbidden) {
       expect(sql).not.toMatch(re);
     }
+    // And, separately, no UPDATE/INSERT/DELETE may touch public.wads.
+    expect(sql).not.toMatch(/UPDATE\s+(?:public\.)?wads\b/i);
+    expect(sql).not.toMatch(/INSERT\s+INTO\s+(?:public\.)?wads\b/i);
+    expect(sql).not.toMatch(/DELETE\s+FROM\s+(?:public\.)?wads\b/i);
   });
+
 
   it("does not create triggers or pg_notify fan-out", () => {
     expect(latest.sql).not.toMatch(/CREATE\s+TRIGGER/i);

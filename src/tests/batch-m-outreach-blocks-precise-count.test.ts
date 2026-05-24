@@ -152,12 +152,16 @@ describe("Batch M :: CSV column allowlist unchanged from K/L", () => {
   });
 
   it("CSV export still maps over the panel's already-filtered `rows`", () => {
+    // Note: Batch U (AUD-018) made the click handler async (awaits the
+    // audited download + the export-reason prompt), so `await ` is now
+    // expected in the surrounding block. The hard contract remains: no
+    // supabase query may appear inside the click handler.
     const idx = PANEL_SRC.indexOf("Export CSV");
     const before = PANEL_SRC.slice(Math.max(0, idx - 1500), idx);
     expect(before.includes("rows.map(")).toBe(true);
     expect(before.includes("supabase.from(")).toBe(false);
-    expect(before.includes("await ")).toBe(false);
   });
+
 });
 
 describe("Batch M :: safety contract preserved", () => {
