@@ -132,6 +132,8 @@ interface Engagement {
     price_currency: string | null;
     buyer_name: string | null;
     seller_name: string | null;
+    buyer_org_id: string | null;
+    seller_org_id: string | null;
   } | null;
   initiator_org?: { id: string; name: string } | null;
   counterparty_org?: { id: string; name: string } | null;
