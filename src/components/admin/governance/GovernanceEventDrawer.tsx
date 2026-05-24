@@ -73,7 +73,7 @@ export function GovernanceEventDrawer({ event, open, onClose }: Props) {
           <p className="text-xs text-muted-foreground italic mb-2">{HQ_DECISION_COPY}</p>
         )}
 
-        <ScrollArea className="max-h-[420px] pr-3">
+        <div className="max-h-[420px] overflow-y-auto pr-3">
           <div className="border-t border-border pt-3">
             <Row label="Event source" value={event.source} />
             <Row label="Source row id" value={event.sourceRowId} />
@@ -109,7 +109,7 @@ export function GovernanceEventDrawer({ event, open, onClose }: Props) {
               {JSON.stringify(event.safeMetadata, null, 2)}
             </pre>
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
