@@ -320,15 +320,16 @@ function LegalHoldsTab() {
 }
 function DisputesTab() {
   // Sub-tabs: Disputes · Challenges · Trade Approvals · Verification Queue (clip-on)
-  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification"]);
+  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification", "trade-request-archive"]);
   return <>
       <TabHeader id="disputes" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
-        <TabsList className="bg-card border border-border rounded-sm">
+        <TabsList className="bg-card border border-border rounded-sm flex-wrap h-auto">
           <TabsTrigger value="disputes">Active Disputes</TabsTrigger>
           <TabsTrigger value="challenges">Challenges</TabsTrigger>
           <TabsTrigger value="approvals">Trade Approvals</TabsTrigger>
           <TabsTrigger value="verification">Verification Queue</TabsTrigger>
+          <TabsTrigger value="trade-request-archive">Trade Request Archive</TabsTrigger>
         </TabsList>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
@@ -348,6 +349,11 @@ function DisputesTab() {
         <TabsContent value="verification">
           <Surface label="Operator verification clip-on · public.operator_verification_requests · optional pre-POI; informational, not a gate">
             <AdminVerificationQueuePanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="trade-request-archive">
+          <Surface label="MT-012 · public.trade_requests · normal archive / admin override / exception hold release · service_role-only RPCs, AAL2-gated overrides, no POI/WaD/execution/finality/credit/payment side effects">
+            <AdminTradeRequestArchivePanel />
           </Surface>
         </TabsContent>
       </Tabs>
