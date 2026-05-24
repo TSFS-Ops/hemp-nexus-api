@@ -51,6 +51,29 @@ All three must exit 0. Attach the terminal output to the release ticket.
 - `check-legal-claims.mjs` (DEC-005/006/010)
 - `check-aal-registry-drift.mjs` (SEC-001)
 - `check-export-audit-payload.mjs` (DATA-010 Phase 1: admin exports require AAL2 + `purpose`/`reason`/`data_categories`/`target_type`; Phase 2 signed-URL/TTL/file-destruction lifecycle deferred)
+- `check-user-export-categories.mjs` (DATA-005 Phase 1: user self-export category SSOT drift, forbidden categories blocked, Phase 1 canonical audit names required, Phase 2 names forbidden until lifecycle ships under `DATA-005-FU-EXPORT-LIFECYCLE-001`)
+
+### DATA-005 Phase 1 — User self-export of data (subject-access request)
+
+Users can request an export of their personal/account data from
+**Desk → Settings → My Data**. Phase 1 captures the request, resolves
+which categories are eligible, applies rate-limits and legal/security
+hold guards, and writes canonical audit rows:
+
+- `data.user_export_requested`
+- `data.user_export_scope_resolved`
+- `data.user_export_blocked_or_declined`
+
+Phase 1 does **not** generate a downloadable file. The full lifecycle
+(async generation, signed-URL TTL, download audit, file expiry/destruction)
+is deferred to `DATA-005-FU-EXPORT-LIFECYCLE-001`, which is intended to
+share the signed-URL/storage-TTL module with `DATA-010-FU-EXPORT-LIFECYCLE-001`.
+
+A formal legal/security hold model is deferred to
+`DATA-005-FU-LEGAL-HOLD-001`. The Phase 1 helper is future-safe: if the
+`legal_holds` table does not exist, it returns "no active hold"; once
+the table appears, the existing call-site begins enforcing it without
+further code changes.
 
 ---
 

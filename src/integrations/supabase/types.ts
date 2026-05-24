@@ -7065,6 +7065,51 @@ export type Database = {
           },
         ]
       }
+      user_export_requests: {
+        Row: {
+          block_reason: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          org_id: string | null
+          request_metadata: Json
+          requested_at: string
+          requested_categories: string[]
+          resolved_categories: string[]
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          block_reason?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          org_id?: string | null
+          request_metadata?: Json
+          requested_at?: string
+          requested_categories?: string[]
+          resolved_categories?: string[]
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          block_reason?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          org_id?: string | null
+          request_metadata?: Json
+          requested_at?: string
+          requested_categories?: string[]
+          resolved_categories?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
