@@ -108,7 +108,7 @@ Deno.serve(async (req: Request) => {
       {
         const matchIdForGuard = (poi as { match_id?: string | null }).match_id || poi.id;
 
-        const matchIdForGuard = (poi as { match_id?: string | null }).match_id || poi.id;
+
 
         // ── MT-008 / MT-009 server-side progression guard (p3 WaD issuance) ──
         {
