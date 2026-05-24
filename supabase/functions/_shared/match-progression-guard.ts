@@ -25,7 +25,8 @@
  *
  * Existing audits NOT modified by this guard:
  *   "match.legacy_state_repaired", "match.legacy_state_archived",
- *   "match.named_contact_assigned" — emitted by their owning admin RPCs.
+ *   and the named-contact-assignment audit — emitted by their owning admin RPCs.
+
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";

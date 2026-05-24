@@ -49,6 +49,14 @@ import {
   isCounterpartySide,
   describeMatchSide,
 } from "../_shared/engagement-counterparty.ts";
+// MT-008 / MT-009 — server-side progression guard. Must run before any
+// outreach side effect (email send, immutable outreach-log row, status
+// transition, credit-related event) on a match-bound engagement.
+import {
+  assertMatchProgressable,
+  buildProgressionGuardResponse,
+} from "../_shared/match-progression-guard.ts";
+
 
 const EngagementStatusSchema = z.enum([
   "pending",
@@ -462,7 +470,30 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
+      // ── MT-008 / MT-009 progression guard (preview-outreach) ──
+      // Runs BEFORE the D2a gate so an inconsistent legacy match row or
+      // an organisation-attached match missing its named contact is
+      // refused before any outreach side effect (preview render still
+      // counts as an outreach surface per the signed contract — it shapes
+      // the email that would be sent). Emits the canonical block audits.
+      {
+        const matchIdForGuard = (eng as { match_id?: string | null }).match_id ?? null;
+        if (matchIdForGuard) {
+          const decision = await assertMatchProgressable({
+            supabase,
+            matchId: matchIdForGuard,
+            action: "outreach",
+            sourceFunction: "poi-engagements/preview-outreach",
+            actorUserId: authCtx.userId,
+            actorOrgId: (eng as { org_id?: string | null }).org_id ?? null,
+          });
+          const blocked = buildProgressionGuardResponse(decision, corsHeaders);
+          if (blocked) return blocked;
+        }
+      }
+
       // ── D2a outreach gate (preview) ──
+
       // Block disputed + binding-review BEFORE the contact-completeness
       // check so a disputed/binding-pending row never even renders a
       // preview body. Batch E: emit the canonical audit-only catalogue
@@ -926,7 +957,30 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
+      // ── MT-008 / MT-009 progression guard (send-outreach) ──
+      // Runs BEFORE the D2a gate, legitimacy check, suppression check,
+      // outreach-log write, status transition, and the real email send.
+      // Refuses inconsistent legacy match rows (MT-008) and
+      // organisation-attached matches missing a named contact (MT-009).
+      // Emits the canonical block audits via the shared helper.
+      {
+        const matchIdForGuard = (eng as { match_id?: string | null }).match_id ?? null;
+        if (matchIdForGuard) {
+          const decision = await assertMatchProgressable({
+            supabase,
+            matchId: matchIdForGuard,
+            action: "outreach",
+            sourceFunction: "poi-engagements/send-outreach",
+            actorUserId: authCtx.userId,
+            actorOrgId: (eng as { org_id?: string | null }).org_id ?? null,
+          });
+          const blocked = buildProgressionGuardResponse(decision, corsHeaders);
+          if (blocked) return blocked;
+        }
+      }
+
       // ── D2a outreach gate (send) ──
+
       // Block disputed + binding-review BEFORE legitimacy / suppression /
       // email send. Audit-on-block via engagement_outreach_logs so the
       // refusal is captured in the immutable history with the originating
