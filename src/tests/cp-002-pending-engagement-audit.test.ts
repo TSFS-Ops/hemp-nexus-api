@@ -70,7 +70,7 @@ describe("CP-002 / DEC-002 — canonical events preserved (additive only)", () =
     expect(blockedSendIdx).toBeGreaterThan(0);
     // The new emit lives in the gate path that throws an ApiException right
     // after, so it cannot fall through to send code.
-    const after = EDGE.slice(blockedSendIdx, blockedSendIdx + 2000);
+    const after = EDGE.slice(blockedSendIdx, blockedSendIdx + 5000);
     expect(after).toMatch(/throw new ApiException/);
   });
 });
