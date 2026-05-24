@@ -122,6 +122,11 @@ const TABS: {
   icon: Lock,
   blurb: "Apply and release legal holds. Active holds block deletion, anonymisation, purge and export destruction for the scoped entity."
 }, {
+  id: "governance-records",
+  label: "Governance Records",
+  icon: FileSearch,
+  blurb: "HQ-only Governance Record per transaction · merges audit_logs · admin_audit_logs · event_store · match_events · Phase 1 visibility only."
+}, {
   id: "audit",
   label: "Audit & Health",
   icon: Activity,
