@@ -5,6 +5,9 @@
  * pattern matches AdminAuditLogs / AdminEventStorePanel.
  *
  * Phase 1: never mutates state, never calls payment / WaD / POI logic.
+ *
+ * Returns { events, capsHit } so the UI can warn HQ when a source hit the
+ * per-source display cap and some events may be hidden.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -18,7 +21,7 @@ import {
   normaliseMatchEvent,
 } from "./governance-record";
 
-const PER_SOURCE_LIMIT = 500;
+export const PER_SOURCE_LIMIT = 500;
 
 export interface GovernanceAnchor {
   matchId?: string | null;
@@ -26,6 +29,16 @@ export interface GovernanceAnchor {
   engagementId?: string | null;
   pendingEngagementId?: string | null;
   tradeRequestId?: string | null;
+}
+
+export interface GovernanceEventsResult {
+  events: GovernanceEvent[];
+  /** Source labels whose fetch returned exactly the PER_SOURCE_LIMIT cap. */
+  capsHit: string[];
+}
+
+function markCap(rows: any[] | null | undefined, label: string, capsHit: string[]) {
+  if (Array.isArray(rows) && rows.length === PER_SOURCE_LIMIT) capsHit.push(label);
 }
 
 export function useGovernanceEvents(anchor: GovernanceAnchor) {
@@ -38,8 +51,9 @@ export function useGovernanceEvents(anchor: GovernanceAnchor) {
         anchor.pendingEngagementId ||
         anchor.tradeRequestId,
     ),
-    queryFn: async (): Promise<GovernanceEvent[]> => {
+    queryFn: async (): Promise<GovernanceEventsResult> => {
       const events: GovernanceEvent[] = [];
+      const capsHit: string[] = [];
 
       // --- match_events: only by match_id ---
       if (anchor.matchId) {
@@ -50,6 +64,7 @@ export function useGovernanceEvents(anchor: GovernanceAnchor) {
           .order("created_at", { ascending: false })
           .limit(PER_SOURCE_LIMIT);
         if (error) throw error;
+        markCap(data, "match_events", capsHit);
         for (const r of data ?? []) events.push(normaliseMatchEvent(r));
       }
 
@@ -63,6 +78,7 @@ export function useGovernanceEvents(anchor: GovernanceAnchor) {
           .order("created_at", { ascending: false })
           .limit(PER_SOURCE_LIMIT);
         if (e1) throw e1;
+        markCap(byEntity, "audit_logs", capsHit);
         for (const r of byEntity ?? []) events.push(normaliseAuditLog(r));
 
         if (anchor.matchId) {
@@ -73,6 +89,7 @@ export function useGovernanceEvents(anchor: GovernanceAnchor) {
             .order("created_at", { ascending: false })
             .limit(PER_SOURCE_LIMIT);
           if (e2) throw e2;
+          markCap(byMeta, "audit_logs (metadata)", capsHit);
           for (const r of byMeta ?? []) events.push(normaliseAuditLog(r));
         }
       }
@@ -86,6 +103,7 @@ export function useGovernanceEvents(anchor: GovernanceAnchor) {
           .order("created_at", { ascending: false })
           .limit(PER_SOURCE_LIMIT);
         if (error) throw error;
+        markCap(data, "admin_audit_logs", capsHit);
         for (const r of data ?? []) events.push(normaliseAdminAuditLog(r));
       }
 
@@ -98,10 +116,35 @@ export function useGovernanceEvents(anchor: GovernanceAnchor) {
           .order("occurred_at", { ascending: false })
           .limit(PER_SOURCE_LIMIT);
         if (error) throw error;
+        markCap(data, "event_store", capsHit);
         for (const r of data ?? []) events.push(normaliseEventStore(r));
+
+        // --- event_store: nested match_id references in payload.
+        // Some flows write events whose aggregate is a POI / WaD / engagement
+        // but whose payload carries match_id. Surface those too so the
+        // Governance Record for the match isn't missing them.
+        if (anchor.matchId) {
+          const mid = anchor.matchId;
+          try {
+            const { data: nested, error: e3 } = await supabase
+              .from("event_store")
+              .select("*")
+              .or(
+                `payload->>match_id.eq.${mid},payload->>matchId.eq.${mid}`,
+              )
+              .order("occurred_at", { ascending: false })
+              .limit(PER_SOURCE_LIMIT);
+            if (!e3) {
+              markCap(nested, "event_store (nested)", capsHit);
+              for (const r of nested ?? []) events.push(normaliseEventStore(r));
+            }
+          } catch {
+            // Nested JSON filter is opportunistic — never fail the whole fetch.
+          }
+        }
       }
 
-      return mergeAndSort(events);
+      return { events: mergeAndSort(events), capsHit };
     },
   });
 }

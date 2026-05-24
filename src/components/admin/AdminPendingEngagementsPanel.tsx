@@ -36,6 +36,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { SafeSelect } from "@/components/admin/SafeSelect";
+import { OpenGovernanceRecordLink } from "@/components/admin/governance/OpenGovernanceRecordLink";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -1907,6 +1908,13 @@ export function AdminPendingEngagementsPanel() {
                             <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
                               {e.match_id.substring(0, 8)}…
                             </p>
+                            <div className="mt-1">
+                              <OpenGovernanceRecordLink
+                                matchId={e.match_id}
+                                engagementId={e.id}
+                                variant="inline"
+                              />
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">

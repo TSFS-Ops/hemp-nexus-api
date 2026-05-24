@@ -36,6 +36,7 @@ import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPane
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { SpineTimeline } from "@/components/match/SpineTimeline";
 import { MatchChallengePanel } from "@/components/match/MatchChallengePanel";
+import { OpenGovernanceRecordLink } from "@/components/admin/governance/OpenGovernanceRecordLink";
 import { ProgressionPausedBanner } from "@/components/match/ProgressionPausedBanner";
 import { useMatchChallenge } from "@/hooks/useMatchChallenge";
 import { ROUTES } from "@/lib/constants";
@@ -337,6 +338,12 @@ function MatchDetailsContent() {
       <MatchChallengePanel match={match as any} />
 
       <ProgressionPausedBanner challenge={openChallenge ?? null} />
+
+      {matchId && (
+        <div className="flex justify-end">
+          <OpenGovernanceRecordLink matchId={matchId} />
+        </div>
+      )}
 
       <DealWizard
         match={match}
