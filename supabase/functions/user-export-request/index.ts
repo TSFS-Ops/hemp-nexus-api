@@ -227,6 +227,18 @@ Deno.serve(async (req) => {
     user_agent: ua,
     requested_at: inserted.requested_at,
   }, primaryOrgId);
+  // DATA-005 / DATA-010 Phase 2A canonical dual-write (legacy preserved above).
+  await writeCanonical(admin, "data.export_request_received", {
+    request_id: inserted.id,
+    user_id: user.id,
+    org_id: primaryOrgId,
+    kind: "user_export",
+    requested_categories: requestedCategories,
+    reason: reason ?? null,
+    actor_ip: ip,
+    user_agent: ua,
+    requested_at: inserted.requested_at,
+  }, primaryOrgId);
 
   // Blocked by legal/security hold: transition straight to `blocked`.
   if (hold.blocked) {
@@ -242,6 +254,18 @@ Deno.serve(async (req) => {
       user_id: user.id,
       org_id: primaryOrgId,
       reason_for_block: hold.reason,
+      actor_ip: ip,
+      user_agent: ua,
+      blocked_at: new Date().toISOString(),
+    }, primaryOrgId);
+    // DATA-005 / DATA-010 Phase 2A canonical dual-write.
+    await writeCanonical(admin, "data.export_blocked_verification_failed", {
+      request_id: inserted.id,
+      user_id: user.id,
+      org_id: primaryOrgId,
+      kind: "user_export",
+      reason_for_block: hold.reason,
+      hold_id: hold.holdId ?? null,
       actor_ip: ip,
       user_agent: ua,
       blocked_at: new Date().toISOString(),
@@ -314,6 +338,42 @@ Deno.serve(async (req) => {
     user_agent: ua,
     scope_resolved_at: new Date().toISOString(),
   }, primaryOrgId);
+  // DATA-005 / DATA-010 Phase 2A canonical dual-write: the subject is the
+  // authenticated session owner — JWT presence + service-role hold-checks
+  // are the verification gate at Phase 2A. Real AAL2 step-up is Phase 2B.
+  await writeCanonical(admin, "data.export_requester_verified", {
+    request_id: inserted.id,
+    user_id: user.id,
+    org_id: primaryOrgId,
+    kind: "user_export",
+    verification_method: "session_jwt",
+    aal: "aal1",
+    actor_ip: ip,
+    user_agent: ua,
+    verified_at: new Date().toISOString(),
+  }, primaryOrgId);
+  // If any requested categories were stripped during scope resolution,
+  // emit the canonical "limited" audit so the user-visible scope reduction
+  // is recorded under the DATA-005 canonical name as well.
+  if (Array.isArray(scope.stripped) && scope.stripped.length > 0) {
+    await writeCanonical(
+      admin,
+      "data.export_limited_retention_or_confidentiality_required",
+      {
+        request_id: inserted.id,
+        user_id: user.id,
+        org_id: primaryOrgId,
+        kind: "user_export",
+        requested_categories: requestedCategories,
+        resolved_categories: scope.resolved,
+        stripped: scope.stripped,
+        actor_ip: ip,
+        user_agent: ua,
+        limited_at: new Date().toISOString(),
+      },
+      primaryOrgId,
+    );
+  }
 
   return json({
     ok: true,

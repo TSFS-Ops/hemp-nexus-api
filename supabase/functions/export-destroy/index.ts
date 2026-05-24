@@ -9,8 +9,8 @@
 //
 // Phase 2A may emit a dry-run admin audit:
 //   admin_audit_logs.action = 'export.destroy_dry_run_scanned'
-// It must NOT emit data.export_file_destroyed /
-// data.admin_export_file_destroyed in this phase.
+// It must NOT emit the final destruction audit constants in this phase
+// (see prebuild guard `check-data-005-010-export-lifecycle.mjs`).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
