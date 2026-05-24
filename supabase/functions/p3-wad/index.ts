@@ -16,6 +16,11 @@ import {
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
 import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+  writeGovernanceEventBestEffort,
+} from "../_shared/governance-audit-integration.ts";
 
 /**
  * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
@@ -467,6 +472,24 @@ Deno.serve(async (req: Request) => {
             payload: { poi_id: parsed.poi_id, reason: discoveryReason },
             event_hash: await computeHash(JSON.stringify({ poi_id: parsed.poi_id, gate: "discovery" })),
           });
+          // Phase 2 canonical (best-effort: blocking is observability, not finality)
+          await writeGovernanceEventBestEffort(admin, {
+            event_type: "wad.check_failed",
+            org_id: orgId,
+            aggregate_type: "poi",
+            aggregate_id: parsed.poi_id,
+            actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+            actor_role: authCtx.roles?.[0] || null,
+            source_function: "p3-wad",
+            correlation_id: correlationId,
+            poi_id: parsed.poi_id,
+            allowed_or_blocked: "blocked",
+            reason_code: "DISCOVERY_GATE_FAILED",
+            posture_snapshot: buildPostureSnapshot("Failed Verification", {
+              check_status: { gate: "DISCOVERY_ELIGIBILITY", passed: false },
+            }),
+            metadata: { reason: discoveryReason, gate: "DISCOVERY_ELIGIBILITY" },
+          });
         }
       }
 
@@ -550,6 +573,29 @@ Deno.serve(async (req: Request) => {
           event_hash: await computeHash(JSON.stringify(failedGates)),
         });
 
+        // Phase 2 canonical (fail-closed: WaD finality is critical)
+        await writeCriticalEventWithPosture(admin, {
+          event_type: "wad.failed",
+          org_id: orgId,
+          aggregate_type: "wad",
+          aggregate_id: parsed.poi_id,
+          actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+          actor_role: authCtx.roles?.[0] || null,
+          source_function: "p3-wad",
+          correlation_id: correlationId,
+          poi_id: parsed.poi_id,
+          allowed_or_blocked: "blocked",
+          reason_code: "HARD_GATE_FAILED",
+          posture: buildPostureSnapshot("Failed Verification", {
+            check_status: { failed_gates: failedGates.map((g) => g.gate) },
+            manual_review_required: !!failedGates.find((g) => g.gate === "UBO_COMPLETENESS"),
+          }),
+          metadata: {
+            failed_gates: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
+          },
+          idempotency_extra: "denied",
+        });
+
         return new Response(JSON.stringify(responseData), {
           status: 422,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -589,6 +635,27 @@ Deno.serve(async (req: Request) => {
         actor_role: authCtx.roles?.[0] || null,
         payload: { poi_id: parsed.poi_id, gates_passed: gates.length, carry_forward: carryForwardLog },
         event_hash: await computeHash(JSON.stringify({ wad_id: wad.id })),
+      });
+
+      // Phase 2 canonical (fail-closed: WaD pass is critical proof)
+      await writeCriticalEventWithPosture(admin, {
+        event_type: "wad.passed",
+        org_id: orgId,
+        aggregate_type: "wad",
+        aggregate_id: wad.id,
+        actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+        actor_role: authCtx.roles?.[0] || null,
+        source_function: "p3-wad",
+        correlation_id: correlationId,
+        poi_id: parsed.poi_id,
+        wad_id: wad.id,
+        new_state: "ISSUED",
+        allowed_or_blocked: "allowed",
+        posture: buildPostureSnapshot("Standard", {
+          check_status: { gates_passed: gates.length, carry_forward: carryForwardLog },
+        }),
+        metadata: { gates_passed: gates.length },
+        idempotency_extra: "issued",
       });
 
       const responseData = successEnvelope(
