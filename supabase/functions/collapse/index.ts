@@ -10,6 +10,10 @@ import {
   assertMatchProgressable,
   buildProgressionGuardResponse,
 } from "../_shared/match-progression-guard.ts";
+import {
+  assertCompliantFreshness,
+  buildComplianceFreshnessResponse,
+} from "../_shared/compliance-freshness-guard.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
@@ -441,6 +445,20 @@ Deno.serve(async (req: Request) => {
         });
         const blocked = buildProgressionGuardResponse(mtDecision, headers);
         if (blocked) return blocked;
+      }
+
+      // ── COMP-002 / COMP-012 compliance freshness guard (collapse/finality) ──
+      {
+        const compDecision = await assertCompliantFreshness({
+          supabase: adminClient,
+          matchId: match_id,
+          action: "collapse",
+          sourceFunction: "collapse",
+          actorUserId: null,
+          actorOrgId: (body as { org_id?: string }).org_id ?? null,
+        });
+        const blockedComp = buildComplianceFreshnessResponse(compDecision, headers);
+        if (blockedComp) return blockedComp;
       }
 
       const { data: match } = await adminClient
