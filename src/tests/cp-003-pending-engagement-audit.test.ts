@@ -98,8 +98,9 @@ describe("CP-003 — does not regress CP-002 / CP-006 / CP-009 / CP-012 / CP-015
   ];
   for (const action of SIBLINGS) {
     it(`preserves ${action}`, () => {
-      const re = new RegExp(`action:\\s*"${action.replace(/\./g, "\\.")}"`);
-      expect(EDGE).toMatch(re);
+      // Some canonical names are emitted via ternary expressions, so we
+      // pin the literal action string rather than the `action: "…"` form.
+      expect(EDGE).toContain(`"${action}"`);
     });
   }
 });
