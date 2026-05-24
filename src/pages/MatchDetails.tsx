@@ -266,12 +266,31 @@ function MatchDetailsContent() {
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
 
+      {displayEngagement?.engagement_status === "disputed_being_named" && displayEngagement?.id && (
+        <MatchDisputeBeingNamedPanel
+          engagementId={displayEngagement.id}
+          engagementStatus={displayEngagement.engagement_status}
+          operationalState={(displayEngagement as any).operational_state ?? null}
+          counterpartyResponse={(displayEngagement as any).counterparty_response ?? null}
+          viewerRole={
+            matchRole === "creator" || userOrgId === (match as any).org_id
+              ? "initiator"
+              : matchRole === "buyer" || matchRole === "seller"
+                ? "counterparty"
+                : "other"
+          }
+          isPlatformAdmin={!!isPlatformAdmin}
+          onResolved={fetchMatch}
+        />
+      )}
+
       <PendingEngagementSection
         engagement={displayEngagement}
         match={match as any}
         isInitiator={matchRole === "creator" || userOrgId === (match as any).org_id}
         isLoading={engagementLoading}
       />
+
 
       <UnknownCounterpartyStatus
         engagement={engagementData}
