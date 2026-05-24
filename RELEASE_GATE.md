@@ -212,3 +212,16 @@ After clicking **Publish → Update**:
 - HQ → Compliance Holds tab (`AdminComplianceHoldPanel`).
 - Prebuild guards: `check-comp-002-012-audit-names.mjs`, `check-comp-002-012-thresholds.mjs`, `check-comp-002-012-guard-coverage.mjs`.
 - Phase 2B deferred: cron auto-open, baseline backfill notifications, broad `notification-dispatch` suppression.
+
+## OPS-010 Phase 2A (Controlled Demo Workspace)
+- Schema: `is_demo` + `demo_dataset_id` on 18 tables; `demo_workspaces` registry; `enforce_demo_inheritance_trg` rejects mixed live/demo with `DEMO_BOUNDARY_VIOLATION`.
+- SECDEF RPCs (service_role only, platform_admin + AAL2 + reason ≥ 20): `create_demo_workspace`, `reset_demo_workspace`, `archive_demo_workspace`.
+- Demo guard (`supabase/functions/_shared/demo-mode-guard.ts`) + entry helper (`_shared/demo-mode-entry.ts`) wired into:
+  - Primary chokepoints: `send-transactional-email` (zero outbound), `token-purchase` (no live Paystack), `dilisense-screen` (deterministic CLEAR).
+  - Secondary chokepoints: `paystack-webhook`, `admin-credit-org`, `idv-verify`, `ubo-verify`, `wad`, `p3-wad`, `collapse`, `deal-certificate`, `evidence-pack`, `webhooks`, `webhook-retry`, `webhook-events`, `export-prepare`, `export-download`.
+- Artefact surfaces (WaD / p3-WaD / collapse / certificate / evidence pack / export) stamp `markDemoArtifact` with `DEMO — NOT A PRODUCTION ARTEFACT` watermark + `non_production: true` + `DEMO_` seal prefix → never substitutable for live production artefacts.
+- Email policy: zero outbound for demo orgs. Demo email attempts are audit-only via `ops.demo_outreach_blocked`.
+- Global `<DemoModeBanner />` mounted in `src/App.tsx` beneath `TestModeBanner`.
+- HQ → "Demo Workspaces" tab (`AdminDemoWorkspacesPanel`).
+- Prebuild guards: `check-ops-010-audit-names.mjs`, `check-ops-010-guard-coverage.mjs`, `check-ops-010-demo-boundary.mjs`.
+- Phase 2B deferred: cron-driven dataset cleanup, demo-aware live-dashboard filters, allowlisted internal inbox for demo email preview, screenshot watermark renderer on UI artefact previews.

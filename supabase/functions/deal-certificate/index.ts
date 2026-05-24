@@ -3,6 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse, ApiException, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { assertWadIsSettleable } from "../_shared/test-mode-bypass.ts";
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 
 /**
  * Deal Certificate Generator
@@ -402,6 +403,16 @@ ${documents.length > 0 ? `
 }
 
 Deno.serve(async (req) => {
+  // OPS-010: short-circuit live side effects for demo data.
+  try {
+    const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "deal-certificate", artefact: true });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
   const startMs = Date.now();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
