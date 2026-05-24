@@ -34,7 +34,7 @@ const MEGA_NAV: MegaCategory[] = [
       { label: "Documentation", description: "Guides, concepts & quickstarts", to: "/docs" },
       { label: "API Reference", description: "Full endpoint specification", to: "/docs/api" },
       { label: "Webhooks", description: "Signed callbacks & event catalogue", to: "/docs/webhooks" },
-      { label: "System Status", description: "Live platform health & uptime", to: "/status" },
+      { label: "System Status", description: "Platform information & support contact", to: "/status" },
     ],
   },
   {
