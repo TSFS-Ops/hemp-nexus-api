@@ -957,7 +957,30 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Engagement not found", 404);
       }
 
+      // ── MT-008 / MT-009 progression guard (send-outreach) ──
+      // Runs BEFORE the D2a gate, legitimacy check, suppression check,
+      // outreach-log write, status transition, and the real email send.
+      // Refuses inconsistent legacy match rows (MT-008) and
+      // organisation-attached matches missing a named contact (MT-009).
+      // Emits the canonical block audits via the shared helper.
+      {
+        const matchIdForGuard = (eng as { match_id?: string | null }).match_id ?? null;
+        if (matchIdForGuard) {
+          const decision = await assertMatchProgressable({
+            supabase,
+            matchId: matchIdForGuard,
+            action: "outreach",
+            sourceFunction: "poi-engagements/send-outreach",
+            actorUserId: authCtx.userId,
+            actorOrgId: (eng as { org_id?: string | null }).org_id ?? null,
+          });
+          const blocked = buildProgressionGuardResponse(decision, corsHeaders);
+          if (blocked) return blocked;
+        }
+      }
+
       // ── D2a outreach gate (send) ──
+
       // Block disputed + binding-review BEFORE legitimacy / suppression /
       // email send. Audit-on-block via engagement_outreach_logs so the
       // refusal is captured in the immutable history with the originating
