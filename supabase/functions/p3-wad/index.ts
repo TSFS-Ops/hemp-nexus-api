@@ -558,6 +558,34 @@ Deno.serve(async (req: Request) => {
               correlation_id: correlationId,
             },
           });
+
+          // Phase 2 canonical: WaD manual-review-required event (best-effort,
+          // observability — runs alongside the fail-closed `wad.failed` write
+          // below so the timeline carries both signals). Non-blocking so the
+          // user-facing 422 path cannot be silently broken by a transient
+          // audit write failure on this secondary event.
+          await writeGovernanceEventBestEffort(admin, {
+            event_type: "wad.manual_review_required",
+            org_id: orgId,
+            aggregate_type: "wad",
+            aggregate_id: parsed.poi_id,
+            actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+            actor_role: authCtx.roles?.[0] || null,
+            source_function: "p3-wad",
+            correlation_id: correlationId,
+            poi_id: parsed.poi_id,
+            allowed_or_blocked: "manual_review",
+            reason_code: "UBO_INCOMPLETE",
+            posture_snapshot: buildPostureSnapshot("Manual Review Required", {
+              check_status: { gate: "UBO_COMPLETENESS", reason: uboFailed.reason },
+              manual_review_required: true,
+            }),
+            metadata: {
+              dedup_key: dedupKey,
+              gate: "UBO_COMPLETENESS",
+              reason: uboFailed.reason,
+            },
+          });
         }
 
         // Record event
