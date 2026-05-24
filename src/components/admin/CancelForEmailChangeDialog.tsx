@@ -160,10 +160,22 @@ export function CancelForEmailChangeDialog({
             {engagement.counterparty_email
               ? <> — current email <span className="font-mono">{engagement.counterparty_email}</span></>
               : null}
-            . Because outreach has already begun, the existing engagement is
-            cancelled and a replacement must be created with the new email.
+            .
           </DialogDescription>
         </DialogHeader>
+
+        <div
+          className="rounded-md border border-amber-200 bg-amber-50 text-amber-950 px-3 py-2 text-xs leading-relaxed"
+          data-testid="cp015-email-change-required-wording"
+          role="alert"
+        >
+          Counterparty email cannot be edited silently after a Pending
+          Engagement has been created. The existing engagement will be
+          cancelled and a new engagement must be created with the
+          corrected email. The original record will remain in the audit
+          trail.
+        </div>
+
 
         <div className="space-y-4">
           <div>
