@@ -637,6 +637,27 @@ Deno.serve(async (req: Request) => {
         event_hash: await computeHash(JSON.stringify({ wad_id: wad.id })),
       });
 
+      // Phase 2 canonical (fail-closed: WaD pass is critical proof)
+      await writeCriticalEventWithPosture(admin, {
+        event_type: "wad.passed",
+        org_id: orgId,
+        aggregate_type: "wad",
+        aggregate_id: wad.id,
+        actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+        actor_role: authCtx.roles?.[0] || null,
+        source_function: "p3-wad",
+        correlation_id: correlationId,
+        poi_id: parsed.poi_id,
+        wad_id: wad.id,
+        new_state: "ISSUED",
+        allowed_or_blocked: "allowed",
+        posture: buildPostureSnapshot("Standard", {
+          check_status: { gates_passed: gates.length, carry_forward: carryForwardLog },
+        }),
+        metadata: { gates_passed: gates.length },
+        idempotency_extra: "issued",
+      });
+
       const responseData = successEnvelope(
         {
           wad_id: wad.id,
