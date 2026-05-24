@@ -50,6 +50,7 @@ import {
 // state set lives in one place so filters/counters/badges cannot drift.
 import {
   ENGAGEMENT_PENDING_STATES,
+  isEngagementTerminal,
   isEngagementPending,
 } from "@/lib/engagement-state";
 import { AddContactDialog, type AddContactEngagementSummary } from "@/components/admin/AddContactDialog";
@@ -264,6 +265,25 @@ const FILTER_TABS = [
   { value: "disputed_being_named", label: "Disputed — being named" },
   { value: "cancelled_email_change", label: "Cancelled for email change" },
 ] as const;
+
+export const DANIEL_FIXTURE_UI_COPY = {
+  cp006AutoBind:
+    "Counterparty matched to a registered organisation by unique exact email match. The engagement has been linked and may proceed through the normal registered-counterparty workflow.",
+  cp006BindingReview:
+    "Possible registered organisation match found, but binding is not unique. Review and confirm the correct organisation/contact before outreach can be sent. No counterparty notification has been sent, no POI has been completed, and no credit has been used.",
+  cp009LateAcceptance:
+    "The counterparty accepted after the engagement expired. Please reconfirm whether you still wish to proceed. No POI has been completed, no WaD has been triggered, and no credit has been used.",
+  cp012DisputeHoldAdmin:
+    "Dispute hold: disputed_being_named. POI and intent actions are blocked by DISPUTE_ACTIVE until the dispute is released or closed.",
+  cp012DisputeHoldInitiator:
+    "Initiator message: this Pending Engagement is paused while the platform reviews the named-counterparty dispute.",
+  cp012DisputeHoldCounterparty:
+    "Counterparty message: the named-counterparty dispute has been recorded and the engagement is paused pending platform review.",
+  cp015EmailChange:
+    "Counterparty email cannot be edited silently after a Pending Engagement has been created. The existing engagement will be cancelled and a new engagement must be created with the corrected email. The original record will remain in the audit trail.",
+  cp015InactiveLink:
+    "Old outreach link inactive: the original outreach link is no longer active for this cancelled engagement.",
+} as const;
 
 export function AdminPendingEngagementsPanel() {
   const [engagements, setEngagements] = useState<Engagement[]>([]);
