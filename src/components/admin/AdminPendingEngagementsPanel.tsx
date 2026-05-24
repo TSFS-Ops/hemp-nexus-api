@@ -2732,6 +2732,43 @@ export function AdminPendingEngagementsPanel() {
         onClose={() => setCancelEmailFor(null)}
         onResolved={() => fetchEngagements()}
       />
+
+      <Dialog open={!!disputeResolutionFor} onOpenChange={(open) => {
+        if (!open) {
+          setDisputeResolutionFor(null);
+          setDisputeResolutionReason("");
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {disputeResolutionFor?.action === "dispute-release" ? "Release dispute hold" : "Close dispute"}
+            </DialogTitle>
+            <DialogDescription>
+              {disputeResolutionFor?.action === "dispute-release"
+                ? "Release returns the engagement to reviewable active state."
+                : "Close marks the engagement declined and keeps the dispute record in the audit trail."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="dispute-resolution-reason">Resolution reason</Label>
+            <Textarea
+              id="dispute-resolution-reason"
+              value={disputeResolutionReason}
+              onChange={(e) => setDisputeResolutionReason(e.target.value)}
+              rows={4}
+              placeholder="Record the platform-admin reason for this dispute decision."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisputeResolutionFor(null)}>Cancel</Button>
+            <Button onClick={submitDisputeResolution} disabled={actionLoadingId === disputeResolutionFor?.engagement.id}>
+              {actionLoadingId === disputeResolutionFor?.engagement.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              {disputeResolutionFor?.action === "dispute-release" ? "Release" : "Close"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
