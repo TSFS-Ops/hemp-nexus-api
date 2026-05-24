@@ -2590,6 +2590,18 @@ Deno.serve(async (req) => {
                 entity_id: engagementId,
                 metadata: cp003PatchMeta,
               });
+              // CP-003 (signed canonical) — third surface (contact-patch).
+              // Emitted alongside (never instead of) the legacy sibling so
+              // every CP-003 missing-name block surface carries the signed
+              // audit name. Required for CP-audit-name parity guard.
+              await supabase.from("audit_logs").insert({
+                org_id: current.org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.outreach_blocked_missing_counterparty_name",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: cp003PatchMeta,
+              });
             }
           } catch (e) {
             console.warn(`[${requestId}] CP-002 supplementary audit emit failed (non-fatal):`, e);

@@ -12,7 +12,9 @@
  *   - contact_name / contact_type / counterparty_org_id remain NULL
  *   - emits `pending_engagement.identity_incomplete_email_only_detected`
  *     (the signed CP-003 canonical name) plus the legacy sibling
- *     `pending_engagement.outreach_blocked_missing_name`
+ *     `pending_engagement.outreach_blocked_missing_name` and the second
+ *     signed canonical
+ *     `pending_engagement.outreach_blocked_missing_counterparty_name`
  *
  * Hard-gated by:
  *   - `admin_settings.allow_controlled_production_demo_fixtures_cp003.enabled = true`
@@ -408,6 +410,30 @@ async function emitCp003DetectionAudit(
     result.legacy_sibling = true;
   }
 
+  // CP-003 signed canonical "outreach blocked" sibling. Audit-name parity:
+  // every CP-003 missing-name fixture must carry the signed name alongside
+  // the legacy alias so dashboards keyed on the signed canonical see the
+  // fixture too. Idempotent — only inserted if not already present.
+  const { data: priorSigned } = await admin
+    .from("audit_logs")
+    .select("id")
+    .eq("entity_type", "poi_engagement")
+    .eq("entity_id", args.engagement_id)
+    .eq("action", "pending_engagement.outreach_blocked_missing_counterparty_name")
+    .limit(1)
+    .maybeSingle();
+  if (!priorSigned) {
+    await admin.from("audit_logs").insert({
+      org_id: args.org_id,
+      actor_user_id: args.actor_user_id,
+      action: "pending_engagement.outreach_blocked_missing_counterparty_name",
+      entity_type: "poi_engagement",
+      entity_id: args.engagement_id,
+      metadata: { ...baseMeta, audit_parity_backfill: false, source: "seed" },
+    });
+    (result as Record<string, boolean>).signed_outreach_blocked = true;
+  }
+
   return result;
 }
 
@@ -594,13 +620,15 @@ Deno.serve(async (req) => {
             auditResult.detection ? "inserted" : "already_present",
           "pending_engagement.outreach_blocked_missing_name":
             auditResult.legacy_sibling ? "inserted" : "already_present",
+          "pending_engagement.outreach_blocked_missing_counterparty_name":
+            (auditResult as Record<string, boolean>).signed_outreach_blocked
+              ? "inserted"
+              : "already_present",
         },
         next_step_for_daniel: [
           "Attempt outreach via /admin/engagements — Send outreach must be disabled / blocked.",
           "Use Add/Edit contact to provide a counterparty name and re-attempt.",
-          "Look for a second audit row " +
-            "`pending_engagement.outreach_blocked_missing_counterparty_name` " +
-            "if you exercise the preview/send-outreach blocked path.",
+          "Live outreach attempts also re-emit `pending_engagement.outreach_blocked_missing_counterparty_name` from poi-engagements (the seed pre-emits one row for audit parity).",
         ],
       });
     }
@@ -638,8 +666,8 @@ Deno.serve(async (req) => {
         "Engagement inserted with is_demo=true, counterparty_type='unknown', engagement_status='pending', counterparty_email set, contact_name NULL.",
         "Match seller_name and seller_org_id deliberately NULL (CP-003 missing-name shape).",
         "pending_engagement.identity_incomplete_email_only_detected audit row emitted once per engagement (canonical signed name).",
-        "pending_engagement.outreach_blocked_missing_name legacy sibling also emitted for backward compatibility.",
-        "The second canonical audit `pending_engagement.outreach_blocked_missing_counterparty_name` is emitted by live poi-engagements code when Daniel attempts preview-outreach / send-outreach on this fixture — it is intentionally NOT pre-seeded.",
+        "pending_engagement.outreach_blocked_missing_name legacy sibling emitted for backward compatibility.",
+        "pending_engagement.outreach_blocked_missing_counterparty_name signed canonical emitted for audit parity (idempotent, one row per fixture). Live poi-engagements code additionally re-emits this name on every preview/send-outreach block.",
         "No POI / WaD / payment / credit / token / notification / email / outreach side effects.",
         "Cleanup: POST /functions/v1/unseed-cp003-controlled-prod with the same scope.",
       ],
