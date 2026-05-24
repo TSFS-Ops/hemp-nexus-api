@@ -36,10 +36,25 @@
  * Auth: `verify_jwt = false` (set in supabase/config.toml). Signature is
  * the only trust boundary.
  */
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { createClient as _createDemoAdmin } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
 Deno.serve(async (req: Request): Promise<Response> => {
+  // OPS-010: demo orgs must never reach Paystack. Best-effort short-circuit
+  // (the inbound webhook normally carries no demo org id, so this is a
+  // defence-in-depth shim; the canonical block is in token-purchase).
+  try {
+    const _demoAdmin = _createDemoAdmin(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "paystack-webhook", artefact: false });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort */ }
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
