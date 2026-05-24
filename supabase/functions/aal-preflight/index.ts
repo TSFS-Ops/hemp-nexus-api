@@ -69,6 +69,8 @@ export const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   "reputation.recalculate": "aal2",
   // DATA-010 Phase 1 — sensitive admin export gate
   "export.admin_pii_export": "aal2",
+  // DATA-003 Phase 1 — legal hold apply/release (admin-legal-hold)
+  "admin.legal_hold": "aal2",
   // break-glass uses fresh password re-auth via GoTrue, not the JWT aal
   // claim, so it is intentionally NOT listed here as aal2-gated for
   // preflight purposes. See scripts/check-aal-registry-drift.mjs allowlist.
