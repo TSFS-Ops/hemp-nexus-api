@@ -17,6 +17,11 @@ import {
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
 import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+  writeGovernanceEventBestEffort,
+} from "../_shared/governance-audit-integration.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
@@ -734,6 +739,80 @@ Deno.serve(async (req: Request) => {
         request_id: requestId,
       },
     });
+
+    // ── Phase 2 canonical governance proof (FAIL-CLOSED) ──
+    // Collapse is the terminal commercial event for a match: emit both
+    // `execution.permitted` (the gate let the trade settle) and
+    // `finality.recorded` (the proof of finality itself). Idempotency key
+    // = (collapse_id, event_type, idempotency_key) so Paystack-style retries
+    // dedupe cleanly.
+    try {
+      await writeCriticalEventWithPosture(adminClient, {
+        event_type: "execution.permitted",
+        org_id,
+        aggregate_type: "match",
+        aggregate_id: (match_id && UUID_RE.test(match_id)) ? match_id : record.id,
+        actor_user_id: actorUserId || null,
+        source_function: "collapse",
+        request_id: requestId,
+        match_id: (match_id && UUID_RE.test(match_id)) ? match_id : null,
+        credit_ledger_id: record.id,
+        allowed_or_blocked: "allowed",
+        reason_code: "COLLAPSE_OK",
+        posture: buildPostureSnapshot("Standard", {
+          check_status: {
+            signature_valid: signatureValid,
+            ntp_status: ntpStatus,
+            ntp_drift_ms: measuredDriftMs,
+          },
+        }),
+        metadata: {
+          payload_hash: payloadHash,
+          counterparty_org_id,
+          asset_id,
+          currency,
+        },
+        idempotency_extra: idempotency_key,
+      });
+
+      await writeCriticalEventWithPosture(adminClient, {
+        event_type: "finality.recorded",
+        org_id,
+        aggregate_type: "collapse_ledger",
+        aggregate_id: record.id,
+        actor_user_id: actorUserId || null,
+        source_function: "collapse",
+        request_id: requestId,
+        match_id: (match_id && UUID_RE.test(match_id)) ? match_id : null,
+        credit_ledger_id: record.id,
+        previous_state: "COMPLETION_REQUESTED",
+        new_state: "COMPLETED",
+        allowed_or_blocked: "allowed",
+        reason_code: "COLLAPSE_FINAL",
+        posture: buildPostureSnapshot("Standard", {
+          check_status: {
+            signature_valid: signatureValid,
+            ntp_status: ntpStatus,
+          },
+        }),
+        metadata: {
+          payload_hash: payloadHash,
+          counterparty_org_id,
+          asset_id,
+          quantity,
+          price,
+          currency,
+        },
+        idempotency_extra: idempotency_key,
+      });
+    } catch (govErr) {
+      console.error(`[${requestId}] CRITICAL: governance audit write failed after collapse:`, govErr);
+      throw new ApiException(
+        "GOV_AUDIT_WRITE_FAILED",
+        "Collapse recorded but governance proof write failed",
+        500,
+      );
+    }
 
     return new Response(
       JSON.stringify({

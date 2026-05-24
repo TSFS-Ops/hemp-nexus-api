@@ -24,6 +24,10 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { readAal } from "../_shared/aal.ts";
 import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+} from "../_shared/governance-audit-integration.ts";
 
 /**
  * Batch J Required Fix 2 — AAL2 gate.
@@ -253,7 +257,7 @@ async function fetchMatch(admin: ReturnType<typeof createClient>, matchId: strin
 async function fetchChallenge(admin: ReturnType<typeof createClient>, challengeId: string) {
   const { data, error } = await admin
     .from("match_challenges")
-    .select("id, match_id, status, raised_by_user_id, raised_by_org_id, raised_by_role")
+    .select("id, match_id, org_id, status, raised_by_user_id, raised_by_org_id, raised_by_role")
     .eq("id", challengeId)
     .maybeSingle();
   return { challenge: data, error };
@@ -379,6 +383,31 @@ Deno.serve(async (req) => {
           requestId,
           extra: { subject_code: p.subject_code, raised_by_role: p.raised_by_role },
         });
+        // Phase 2 canonical (FAIL-CLOSED): dispute.opened
+        try {
+          await writeCriticalEventWithPosture(admin, {
+            event_type: "dispute.opened",
+            org_id: insertOrgId,
+            aggregate_type: "match_challenge",
+            aggregate_id: row.id,
+            actor_user_id: userId,
+            actor_role: p.raised_by_role,
+            source_function: "match-challenges",
+            request_id: requestId,
+            match_id: p.match_id,
+            new_state: "open",
+            allowed_or_blocked: "allowed",
+            reason_code: p.subject_code,
+            posture: buildPostureSnapshot("Standard", {
+              check_status: { raised_by_role: p.raised_by_role },
+            }),
+            metadata: { subject_code: p.subject_code, summary_length: p.summary.length },
+            idempotency_extra: "raised",
+          });
+        } catch (govErr) {
+          console.error("[match-challenges] CRITICAL: dispute.opened audit failed:", govErr);
+          return err("GOV_AUDIT_WRITE_FAILED", "Challenge raised but governance proof write failed", 500);
+        }
         return json({ challenge: row }, 201);
       }
 
@@ -535,6 +564,39 @@ Deno.serve(async (req) => {
             requestId,
             source: `match-challenges:transitioned_${p.to_status}`,
           });
+
+          // Phase 2 canonical (FAIL-CLOSED): dispute.released for withdrawals,
+          // dispute.closed for outcome_recorded / closed_no_action.
+          const eventType = p.to_status === "withdrawn" ? "dispute.released" : "dispute.closed";
+          try {
+            await writeCriticalEventWithPosture(admin, {
+              event_type: eventType,
+              org_id: challenge.org_id ?? orgId,
+              aggregate_type: "match_challenge",
+              aggregate_id: p.challenge_id,
+              actor_user_id: userId,
+              actor_role: isPlatformAdmin ? "platform_admin" : "org_admin",
+              source_function: "match-challenges",
+              request_id: requestId,
+              match_id: challenge.match_id,
+              previous_state: challenge.status,
+              new_state: p.to_status,
+              allowed_or_blocked: p.to_status === "withdrawn" ? "neutral" : "allowed",
+              reason_code: (update.outcome_code as string | undefined) ?? p.to_status,
+              posture: buildPostureSnapshot("Standard", {
+                check_status: { via_platform_admin: isPlatformAdmin, to_status: p.to_status },
+              }),
+              metadata: {
+                outcome_code: (update.outcome_code as string | undefined) ?? null,
+                outcome_summary_length:
+                  typeof update.outcome_summary === "string" ? update.outcome_summary.length : 0,
+              },
+              idempotency_extra: p.to_status,
+            });
+          } catch (govErr) {
+            console.error(`[match-challenges] CRITICAL: ${eventType} audit failed:`, govErr);
+            return err("GOV_AUDIT_WRITE_FAILED", "Challenge transitioned but governance proof write failed", 500);
+          }
         }
         return json({ challenge: row }, 200);
       }
