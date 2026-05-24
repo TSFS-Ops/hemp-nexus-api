@@ -2476,26 +2476,43 @@ Deno.serve(async (req) => {
               nextState === "contact_incomplete" &&
               isUsableContactEmail(nextEmail)
             ) {
+              const cp003PatchMeta = {
+                ...baseMeta,
+                cp_rule: "CP-003",
+                surface: "contact-patch",
+                previous_state: prevState,
+                new_state: nextState,
+                counterparty_email: nextEmail ?? null,
+                counterparty_name: null,
+                counterparty_name_present: false,
+                counterparty_email_present: true,
+                counterparty_registration_status: "unregistered",
+                status: "pending",
+                contact_state: "missing_name",
+                outreach_enabled: false,
+                outreach_sent: false,
+                credit_burned: false,
+                reason: "missing_counterparty_name",
+              };
+              // CP-003 (signed canonical) — detection moment:
+              await supabase.from("audit_logs").insert({
+                org_id: current.org_id,
+                actor_user_id: authCtx.userId,
+                action: "pending_engagement.identity_incomplete_email_only_detected",
+                entity_type: "poi_engagement",
+                entity_id: engagementId,
+                metadata: cp003PatchMeta,
+              });
+              // Legacy sibling (preserved for backwards compatibility):
               await supabase.from("audit_logs").insert({
                 org_id: current.org_id,
                 actor_user_id: authCtx.userId,
                 action: "pending_engagement.outreach_blocked_missing_name",
                 entity_type: "poi_engagement",
                 entity_id: engagementId,
-                metadata: {
-                  ...baseMeta,
-                  cp_rule: "CP-003",
-                  surface: "contact-patch",
-                  previous_state: prevState,
-                  new_state: nextState,
-                  counterparty_name: null,
-                  counterparty_email_present: true,
-                  contact_state: "name_missing",
-                  outreach_enabled: false,
-                  outreach_sent: false,
-                  credit_burned: false,
-                },
+                metadata: cp003PatchMeta,
               });
+
 
           } catch (e) {
             console.warn(`[${requestId}] CP-002 supplementary audit emit failed (non-fatal):`, e);
