@@ -154,6 +154,11 @@ function App() {
                   <Route path="/admin/settings" element={<LegacyRedirect to="/hq/settings?sub=platform" label="Admin Settings" />} />
                   <Route path="/admin/data-governance" element={<LegacyRedirect to="/hq/settings?sub=platform" label="Data Governance" />} />
                   <Route path="/admin/overrides" element={<LegacyRedirect to="/hq/settings?sub=overrides" label="Admin Overrides" />} />
+                  {/* Daniel fixture / outreach links use /admin/engagements?match=…
+                      and /admin/engagements?engagement=…. LegacyRedirect preserves
+                      query string + hash, and the HQ Engagements panel reads
+                      ?match= / ?engagement= to pre-scope the row. */}
+                  <Route path="/admin/engagements" element={<LegacyRedirect to="/hq/engagements" label="Admin Engagements" />} />
                   {/* Catch-all: anything else under /admin lands on Users (default tab) */}
                   <Route path="/admin/*" element={<LegacyRedirect to="/hq/users" label="Admin Console" />} />
                   {/* Public docs hub, Stripe-style sidebar layout */}
