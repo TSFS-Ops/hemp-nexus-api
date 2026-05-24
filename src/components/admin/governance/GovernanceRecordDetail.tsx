@@ -1,0 +1,264 @@
+/**
+ * GovernanceRecordDetail — HQ-only top summary + merged timeline for one
+ * transaction. Anchor: match_id (primary). Falls back to poi_id or
+ * engagement_id where given.
+ */
+
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  GovernanceAnchor,
+  useGovernanceEvents,
+} from "@/lib/governance/use-governance-events";
+import {
+  DEMO_EVENT_COPY,
+  EventCategory,
+  GovernanceEvent,
+  NO_EVENT_COPY,
+  statusCopy,
+} from "@/lib/governance/governance-record";
+import { GovernanceEventDrawer } from "./GovernanceEventDrawer";
+
+interface Props {
+  anchor: GovernanceAnchor;
+}
+
+function useMatchSummary(matchId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["governance-match-summary", matchId],
+    enabled: Boolean(matchId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select(
+          "id, status, state, poi_state, commodity, buyer_org_id, seller_org_id, buyer_name, seller_name, settled_at, is_demo, created_at, finality_tokens_burned",
+        )
+        .eq("id", matchId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+function SummaryField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-1">
+        {label}
+      </p>
+      <p className="font-mono text-xs text-foreground break-all">
+        {value || <span className="text-muted-foreground">Not recorded</span>}
+      </p>
+    </div>
+  );
+}
+
+const CATEGORY_LABEL: Record<EventCategory, string> = {
+  trade_request: "Trade request",
+  match: "Match",
+  engagement: "Engagement",
+  outreach: "Outreach",
+  contact: "Contact",
+  counterparty: "Counterparty",
+  binding: "Binding",
+  poi: "POI",
+  wad: "WaD",
+  execution: "Execution",
+  admin_review: "Admin review",
+  hq_decision: "HQ decision",
+  dispute: "Dispute",
+  credit: "Credit",
+  payment: "Payment",
+  evidence: "Evidence",
+  finality: "Finality",
+  memory: "Memory",
+  export: "Export",
+  sensitive_admin: "Sensitive admin",
+  demo_test: "Demo/Test",
+  other: "Other",
+};
+
+export function GovernanceRecordDetail({ anchor }: Props) {
+  const summary = useMatchSummary(anchor.matchId);
+  const { data: events, isLoading, isError } = useGovernanceEvents(anchor);
+  const [selected, setSelected] = useState<GovernanceEvent | null>(null);
+
+  const recordRef = useMemo(() => {
+    if (anchor.matchId) return `GR-MATCH-${anchor.matchId.slice(0, 8).toUpperCase()}`;
+    if (anchor.poiId) return `GR-POI-${anchor.poiId.slice(0, 8).toUpperCase()}`;
+    if (anchor.engagementId) return `GR-ENG-${anchor.engagementId.slice(0, 8).toUpperCase()}`;
+    if (anchor.pendingEngagementId)
+      return `GR-PE-${anchor.pendingEngagementId.slice(0, 8).toUpperCase()}`;
+    return "GR-UNKNOWN";
+  }, [anchor]);
+
+  const m = summary.data;
+
+  return (
+    <div className="space-y-6" data-testid="governance-record-detail">
+      {/* Top summary */}
+      <Card>
+        <CardContent className="p-5 space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+                Governance Record
+              </p>
+              <p className="font-mono text-sm tracking-wider mt-1">{recordRef}</p>
+            </div>
+            {m?.is_demo && (
+              <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-800">
+                Demo/Test
+              </Badge>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-4">
+            <SummaryField label="Match ID" value={anchor.matchId ?? null} />
+            <SummaryField label="Buyer organisation" value={m?.buyer_name ?? null} />
+            <SummaryField label="Seller organisation" value={m?.seller_name ?? null} />
+            <SummaryField label="Commodity / deal" value={m?.commodity ?? null} />
+            <SummaryField label="POI status" value={m?.poi_state ?? null} />
+            <SummaryField label="Counterparty status" value={m?.state ?? null} />
+            <SummaryField label="WaD status" value={null} />
+            <SummaryField label="Execution status" value={m?.status ?? null} />
+            <SummaryField
+              label="Finality status"
+              value={m?.settled_at ? format(new Date(m.settled_at), "yyyy-MM-dd") : null}
+            />
+            <SummaryField label="Memory record" value={null} />
+            <SummaryField
+              label="Credit / payment"
+              value={m?.finality_tokens_burned != null ? `${m.finality_tokens_burned} burned` : null}
+            />
+            <SummaryField
+              label="Last material event"
+              value={
+                events && events.length > 0
+                  ? format(new Date(events[0].occurredAt), "yyyy-MM-dd HH:mm")
+                  : null
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Timeline */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+            <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+              Merged timeline · audit_logs · admin_audit_logs · event_store · match_events
+            </p>
+            {events && (
+              <p className="font-mono text-[10px] text-muted-foreground">
+                {events.length} event{events.length === 1 ? "" : "s"}
+              </p>
+            )}
+          </div>
+
+          {isLoading && (
+            <div className="p-5 space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          )}
+
+          {isError && (
+            <div className="p-5 text-sm text-destructive">
+              Failed to load governance events.
+            </div>
+          )}
+
+          {!isLoading && !isError && events && events.length === 0 && (
+            <div className="p-5 text-sm text-muted-foreground italic" data-testid="no-event-copy">
+              {NO_EVENT_COPY}
+            </div>
+          )}
+
+          {events && events.length > 0 && (
+            <ul className="divide-y divide-border">
+              {events.map((e) => (
+                <li
+                  key={e.id}
+                  className="px-5 py-3 hover:bg-muted/40 cursor-pointer"
+                  onClick={() => setSelected(e)}
+                  data-testid="governance-timeline-row"
+                  data-source={e.source}
+                  data-status={e.status}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                        <span className="font-mono text-xs text-foreground break-all">
+                          {e.action}
+                        </span>
+                        <Badge variant="outline" className="text-[10px]">
+                          {CATEGORY_LABEL[e.category]}
+                        </Badge>
+                        {e.status === "blocked" && (
+                          <Badge variant="destructive" className="text-[10px]" data-testid="blocked-badge">
+                            Blocked{e.reasonCode ? ` · ${e.reasonCode}` : ""}
+                          </Badge>
+                        )}
+                        {e.status === "manual_review" && (
+                          <Badge variant="outline" className="text-[10px] bg-amber-50 border-amber-200 text-amber-800">
+                            Manual review
+                          </Badge>
+                        )}
+                        {e.status === "allowed" && (
+                          <Badge variant="outline" className="text-[10px] bg-emerald-50 border-emerald-200 text-emerald-800">
+                            Allowed
+                          </Badge>
+                        )}
+                        {e.isDemo && (
+                          <Badge variant="outline" className="text-[10px]" data-testid="demo-badge">
+                            Demo/Test
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {e.source}
+                        </Badge>
+                      </div>
+                      {e.status !== "neutral" && (
+                        <p className="text-[11px] text-muted-foreground leading-snug">
+                          {statusCopy(e)}
+                        </p>
+                      )}
+                      {e.isDemo && (
+                        <p className="text-[11px] text-amber-700 italic leading-snug">
+                          {DEMO_EVENT_COPY}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-mono text-[11px] text-muted-foreground">
+                        {format(new Date(e.occurredAt), "yyyy-MM-dd HH:mm:ss")}
+                      </p>
+                      <p className="font-mono text-[10px] text-muted-foreground/70 mt-0.5">
+                        {e.actorType}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <GovernanceEventDrawer
+        event={selected}
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+      />
+    </div>
+  );
+}
