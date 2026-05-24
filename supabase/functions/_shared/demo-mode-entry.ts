@@ -122,6 +122,7 @@ export async function tryDemoShortCircuit(
     actorUserId?: string | null;
   },
 ): Promise<Response | null> {
+  if (req.method === "OPTIONS" || req.method === "GET") return null;
   let ids: DemoShortCircuitArgs["ids"] = {};
   try {
     const url = new URL(req.url);
