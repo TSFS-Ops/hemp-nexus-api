@@ -1,5 +1,10 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { ApiException } from "./errors.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+  writeGovernanceEventBestEffort,
+} from "./governance-audit-integration.ts";
 
 // Endpoints that are NOT billable (free)
 const NON_BILLABLE_ENDPOINTS = [
