@@ -45,6 +45,7 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-user-export-categories.mjs` — DATA-005 Phase 1: user self-export category SSOT (Deno ↔ client mirror) drift guard, forbidden category names blocked, canonical Phase 1 audit names required, Phase 2 audit names forbidden until lifecycle ships
 - `check-legal-hold-audit-names.mjs` — DATA-003 Phase 1: legal-hold enforcement audit-name SSOT drift guard across helper + 8 wired enforcement paths
 - `check-cp003-audit-names.mjs` — CP-003 audit-name parity guard: signed canonical `pending_engagement.outreach_blocked_missing_counterparty_name` must be emitted alongside legacy `pending_engagement.outreach_blocked_missing_name` across all 3 code surfaces and the controlled-prod seed
+- `check-data-002-audit-names.mjs` — DATA-002 Phase 1 account self-deletion audit-name parity: legacy `account.*` and canonical `data.deletion_window_elapsed` / `data.profile_deleted_or_anonymised` / `data.deletion_deferred_retention_required` dual-write contract enforced across `delete-account` and `account-deletion-sweeper` edge functions
 
 ### Edge functions requiring deploy
 
