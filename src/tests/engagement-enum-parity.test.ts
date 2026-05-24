@@ -91,9 +91,12 @@ describe("D-05 — engagement enum parity", () => {
     expect(isEngagementTerminal(null)).toBe(false);
   });
 
-  it("snapshot guard: terminal set is exactly accepted/declined/expired", () => {
+  it("snapshot guard: terminal set is exactly accepted/declined/expired/cancelled_email_change", () => {
+    // CP-015: cancelled_email_change is a terminal state when an engagement
+    // is cancelled-or-superseded because the counterparty email was changed.
     expect([...ENGAGEMENT_TERMINAL_STATES].sort()).toEqual(
-      ["accepted", "declined", "expired"].sort()
+      ["accepted", "cancelled_email_change", "declined", "expired"].sort()
     );
   });
+
 });
