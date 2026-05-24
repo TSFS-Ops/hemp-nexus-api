@@ -5087,6 +5087,10 @@ export type Database = {
         Row: {
           address: Json | null
           authorised_signatory: string | null
+          billing_hold: boolean
+          billing_hold_applied_at: string | null
+          billing_hold_applied_by: string | null
+          billing_hold_reason: string | null
           clip_on_always_on: boolean
           clip_on_subscription_started_at: string | null
           created_at: string
@@ -5120,6 +5124,10 @@ export type Database = {
         Insert: {
           address?: Json | null
           authorised_signatory?: string | null
+          billing_hold?: boolean
+          billing_hold_applied_at?: string | null
+          billing_hold_applied_by?: string | null
+          billing_hold_reason?: string | null
           clip_on_always_on?: boolean
           clip_on_subscription_started_at?: string | null
           created_at?: string
@@ -5153,6 +5161,10 @@ export type Database = {
         Update: {
           address?: Json | null
           authorised_signatory?: string | null
+          billing_hold?: boolean
+          billing_hold_applied_at?: string | null
+          billing_hold_applied_by?: string | null
+          billing_hold_reason?: string | null
           clip_on_always_on?: boolean
           clip_on_subscription_started_at?: string | null
           created_at?: string
@@ -5338,6 +5350,140 @@ export type Database = {
             columns: ["poi_id"]
             isOneToOne: false
             referencedRelation: "pois"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_dispute_affected_burns: {
+        Row: {
+          billing_review_required: boolean
+          cleared_at: string | null
+          cleared_by: string | null
+          created_at: string
+          id: string
+          payment_dispute_id: string
+          token_ledger_id: string
+        }
+        Insert: {
+          billing_review_required?: boolean
+          cleared_at?: string | null
+          cleared_by?: string | null
+          created_at?: string
+          id?: string
+          payment_dispute_id: string
+          token_ledger_id: string
+        }
+        Update: {
+          billing_review_required?: boolean
+          cleared_at?: string | null
+          cleared_by?: string | null
+          created_at?: string
+          id?: string
+          payment_dispute_id?: string
+          token_ledger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_dispute_affected_burns_payment_dispute_id_fkey"
+            columns: ["payment_dispute_id"]
+            isOneToOne: false
+            referencedRelation: "payment_disputes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_dispute_affected_burns_token_ledger_id_fkey"
+            columns: ["token_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "token_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_dispute_affected_burns_token_ledger_id_fkey"
+            columns: ["token_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "v_poi_burn_reconciliation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_disputes: {
+        Row: {
+          created_at: string
+          credits_frozen: number
+          credits_issued: number
+          credits_used_at_open: number
+          disputed_credit_hold_id: string | null
+          id: string
+          metadata: Json
+          org_id: string
+          provider: string
+          provider_dispute_reference: string
+          resolution_reason: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          source: string
+          status: string
+          token_purchase_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credits_frozen?: number
+          credits_issued: number
+          credits_used_at_open: number
+          disputed_credit_hold_id?: string | null
+          id?: string
+          metadata?: Json
+          org_id: string
+          provider?: string
+          provider_dispute_reference: string
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source: string
+          status?: string
+          token_purchase_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credits_frozen?: number
+          credits_issued?: number
+          credits_used_at_open?: number
+          disputed_credit_hold_id?: string | null
+          id?: string
+          metadata?: Json
+          org_id?: string
+          provider?: string
+          provider_dispute_reference?: string
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source?: string
+          status?: string
+          token_purchase_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_disputes_disputed_credit_hold_id_fkey"
+            columns: ["disputed_credit_hold_id"]
+            isOneToOne: false
+            referencedRelation: "disputed_credit_holds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_disputes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_disputes_token_purchase_id_fkey"
+            columns: ["token_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "token_purchases"
             referencedColumns: ["id"]
           },
         ]
@@ -6333,6 +6479,92 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refund_requests: {
+        Row: {
+          created_at: string
+          credits_at_request: number
+          credits_used_at_request: number
+          decision_reason: string | null
+          id: string
+          ledger_adjustment_id: string | null
+          metadata: Json
+          org_id: string
+          reason_code: string
+          reason_detail: string
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          token_purchase_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credits_at_request: number
+          credits_used_at_request: number
+          decision_reason?: string | null
+          id?: string
+          ledger_adjustment_id?: string | null
+          metadata?: Json
+          org_id: string
+          reason_code: string
+          reason_detail: string
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          token_purchase_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credits_at_request?: number
+          credits_used_at_request?: number
+          decision_reason?: string | null
+          id?: string
+          ledger_adjustment_id?: string | null
+          metadata?: Json
+          org_id?: string
+          reason_code?: string
+          reason_detail?: string
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          token_purchase_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_requests_ledger_adjustment_id_fkey"
+            columns: ["ledger_adjustment_id"]
+            isOneToOne: false
+            referencedRelation: "token_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_ledger_adjustment_id_fkey"
+            columns: ["ledger_adjustment_id"]
+            isOneToOne: false
+            referencedRelation: "v_poi_burn_reconciliation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_token_purchase_id_fkey"
+            columns: ["token_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "token_purchases"
             referencedColumns: ["id"]
           },
         ]
@@ -8914,6 +9146,10 @@ export type Database = {
         Args: { p_days?: number; p_dry_run?: boolean }
         Returns: Json
       }
+      apply_billing_hold: {
+        Args: { p_admin_user_id: string; p_org_id: string; p_reason: string }
+        Returns: Json
+      }
       approve_admin_export: {
         Args: {
           p_approval_method: string
@@ -8946,6 +9182,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      approve_refund: {
+        Args: {
+          p_admin_user_id: string
+          p_reason: string
+          p_refund_request_id: string
+        }
+        Returns: Json
       }
       approve_residency_review: {
         Args: { p_admin_user_id: string; p_reason: string; p_review_id: string }
@@ -9328,6 +9572,14 @@ export type Database = {
         Returns: number
       }
       cron_reconcile_heartbeats: { Args: never; Returns: undefined }
+      decline_refund: {
+        Args: {
+          p_admin_user_id: string
+          p_reason: string
+          p_refund_request_id: string
+        }
+        Returns: Json
+      }
       decline_residency_review: {
         Args: { p_admin_user_id: string; p_reason: string; p_review_id: string }
         Returns: Json
@@ -9618,6 +9870,19 @@ export type Database = {
         }
         Returns: string
       }
+      record_payment_dispute: {
+        Args: {
+          p_actor_user_id?: string
+          p_credits_issued: number
+          p_metadata?: Json
+          p_org_id: string
+          p_provider: string
+          p_provider_dispute_reference: string
+          p_source: string
+          p_token_purchase_id: string
+        }
+        Returns: Json
+      }
       record_role_confirmation: {
         Args: {
           p_confirmed_side: string
@@ -9640,6 +9905,10 @@ export type Database = {
         }
         Returns: Json
       }
+      release_billing_hold: {
+        Args: { p_admin_user_id: string; p_org_id: string; p_reason: string }
+        Returns: Json
+      }
       release_lifecycle_lock: { Args: never; Returns: undefined }
       request_admin_export: {
         Args: {
@@ -9652,6 +9921,16 @@ export type Database = {
           p_target_org_id: string
         }
         Returns: string
+      }
+      request_refund: {
+        Args: {
+          p_org_id: string
+          p_reason_code: string
+          p_reason_detail: string
+          p_token_purchase_id: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       request_residency_review: {
         Args: {
@@ -9695,6 +9974,22 @@ export type Database = {
       resolve_notifications_for: {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: number
+      }
+      resolve_payment_dispute_lost: {
+        Args: {
+          p_admin_user_id: string
+          p_payment_dispute_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      resolve_payment_dispute_won: {
+        Args: {
+          p_admin_user_id: string
+          p_payment_dispute_id: string
+          p_reason: string
+        }
+        Returns: Json
       }
       run_data_integrity_checks: { Args: never; Returns: Json }
       safe_transition_match_state: {
