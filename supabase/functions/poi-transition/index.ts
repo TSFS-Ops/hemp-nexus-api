@@ -10,6 +10,10 @@ import { isActorLegalNameMissing } from "./legal-name-guard.ts";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 import { assertNoOpenChallenge, challengeOpenResponse } from "../_shared/challenge-progression-guard.ts";
+import {
+  assertMatchProgressable,
+  buildProgressionGuardResponse,
+} from "../_shared/match-progression-guard.ts";
 
 // Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
 // with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
@@ -174,6 +178,28 @@ async function _serve(req: Request): Promise<Response> {
     }
 
     const fromState = matchRow.poi_state;
+
+    // ── MT-008 / MT-009 server-side progression guard ──
+    // Block before ANY side effect (event insert, atomic_token_burn, etc.):
+    //   MT-008 → inconsistent / legacy-admin-hold rows return 409
+    //            MT_008_INCONSISTENT_MATCH | MT_008_LEGACY_ADMIN_HOLD
+    //   MT-009 → org-attached row missing named contact returns 409
+    //            MT_009_NAMED_CONTACT_REQUIRED
+    {
+      const decision = await assertMatchProgressable({
+        supabase: adminClient,
+        matchId,
+        action: "poi_transition",
+        sourceFunction: "poi-transition",
+        actorUserId: user.id,
+        actorOrgId: callerOrgId,
+      });
+      const blocked = buildProgressionGuardResponse(decision, corsHeaders);
+      if (blocked) {
+        if (hasLock) await adminClient.rpc("release_lifecycle_lock");
+        return blocked;
+      }
+    }
 
     // ── Gap (b): Server-side legal-name enforcement on POI generation ──
     // The actor's profiles.full_name must be a real legal name (not null,
