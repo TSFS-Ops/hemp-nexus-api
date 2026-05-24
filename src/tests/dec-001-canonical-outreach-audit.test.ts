@@ -119,15 +119,12 @@ describe("DEC-001 Phase 1 — outreach has no POI / WaD / credit / payment side 
 });
 
 describe("DEC-001 Phase 1 — block branches cover the signed-form refusal set", () => {
-  it("blocks missing email / missing name before any send side-effect", () => {
-    // The per-reason block audits being preserved (asserted above) is
-    // the primary contract; here we additionally pin that the
-    // canonical blocked row carries the right reason discriminators.
-    expect(POI_FN).toContain('blocked_reason:\n                  sendState === "email_missing"');
-    expect(POI_FN).toContain('blocked_reason:\n                  previewState === "email_missing"');
+  it("blocks missing email / missing name before any send side-effect (canonical reasons present)", () => {
+    expect(POI_FN).toMatch(/blocked_reason:\s*\n\s*sendState === "email_missing"/);
+    expect(POI_FN).toMatch(/blocked_reason:\s*\n\s*previewState === "email_missing"/);
   });
 
   it("blocks disputed-being-named and binding-review-required engagements", () => {
-    expect(POI_FN).toContain('blocked_reason:\n                  gate.code === "DISPUTED_BEING_NAMED"');
+    expect(POI_FN).toMatch(/blocked_reason:\s*\n\s*gate\.code === "DISPUTED_BEING_NAMED"/);
   });
 });
