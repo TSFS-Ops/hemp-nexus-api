@@ -912,6 +912,47 @@ export function AdminPendingEngagementsPanel() {
         : null,
     );
 
+  const isUniqueExactEmailAutoBound = (e: Engagement): boolean => {
+    if (!e.counterparty_org_id) return false;
+    if (isBindingReviewPending(e)) return false;
+    if (e.operational_state && e.operational_state !== "cancelled_for_email_change") return false;
+    if (!isEngagementPending(e.engagement_status) && e.engagement_status !== "accepted") return false;
+    return e.counterparty_type === "known" || e.contact_type === "organisation" || !!e.counterparty_org?.name;
+  };
+
+  const getDanielFixtureUiMessages = (e: Engagement): Array<{
+    key: keyof typeof DANIEL_FIXTURE_UI_COPY;
+    copy: string;
+    tone: "success" | "warning" | "danger" | "neutral";
+  }> => {
+    const messages: Array<{
+      key: keyof typeof DANIEL_FIXTURE_UI_COPY;
+      copy: string;
+      tone: "success" | "warning" | "danger" | "neutral";
+    }> = [];
+
+    if (isUniqueExactEmailAutoBound(e)) {
+      messages.push({ key: "cp006AutoBind", copy: DANIEL_FIXTURE_UI_COPY.cp006AutoBind, tone: "success" });
+    }
+    if (isBindingReviewPending(e)) {
+      messages.push({ key: "cp006BindingReview", copy: DANIEL_FIXTURE_UI_COPY.cp006BindingReview, tone: "warning" });
+    }
+    if (e.engagement_status === "late_acceptance_pending_initiator_reconfirmation") {
+      messages.push({ key: "cp009LateAcceptance", copy: DANIEL_FIXTURE_UI_COPY.cp009LateAcceptance, tone: "warning" });
+    }
+    if (e.engagement_status === "disputed_being_named" || e.operational_state === "disputed_being_named") {
+      messages.push({ key: "cp012DisputeHoldAdmin", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldAdmin, tone: "danger" });
+      messages.push({ key: "cp012DisputeHoldInitiator", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldInitiator, tone: "neutral" });
+      messages.push({ key: "cp012DisputeHoldCounterparty", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldCounterparty, tone: "neutral" });
+    }
+    if (e.engagement_status === "cancelled_email_change" || e.operational_state === "cancelled_for_email_change") {
+      messages.push({ key: "cp015EmailChange", copy: DANIEL_FIXTURE_UI_COPY.cp015EmailChange, tone: "warning" });
+      messages.push({ key: "cp015InactiveLink", copy: DANIEL_FIXTURE_UI_COPY.cp015InactiveLink, tone: "neutral" });
+    }
+
+    return messages;
+  };
+
   const filtered = useMemo(() => {
     const trimmedId = idQuery.trim().toLowerCase();
     let base: Engagement[];
