@@ -548,6 +548,28 @@ Deno.serve(async (req) => {
               });
             }
           } catch (_e) { /* non-fatal */ }
+          // DEC-001 (signed): canonical blocked row (dual-write).
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "pending_engagement.off_platform_outreach_blocked",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                dec_rule: "DEC-001",
+                surface: "preview-outreach",
+                blocked_reason:
+                  gate.code === "DISPUTED_BEING_NAMED"
+                    ? "disputed_being_named"
+                    : "binding_review_required",
+                guard_code: gate.code,
+                outreach_sent: false,
+                credit_burned: false,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
           throw new ApiException(gate.code, gate.message, 409);
         }
       }
@@ -662,6 +684,30 @@ Deno.serve(async (req) => {
             });
           }
         } catch (_e) { /* non-fatal */ }
+
+        // DEC-001 (signed): canonical blocked row (dual-write).
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: (eng as { org_id: string }).org_id,
+            actor_user_id: authCtx.userId,
+            action: "pending_engagement.off_platform_outreach_blocked",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-001",
+              surface: "preview-outreach",
+              blocked_reason:
+                previewState === "email_missing"
+                  ? "contact_email_missing"
+                  : "contact_incomplete",
+              code,
+              state: previewState,
+              outreach_sent: false,
+              credit_burned: false,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
 
         throw new ApiException(code, reason, 409);
       }
