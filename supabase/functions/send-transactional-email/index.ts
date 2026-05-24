@@ -6,6 +6,11 @@ import {
   getCategoryForTemplate,
   getPreferenceKeyForTemplate,
   isBlockedByUnsubscribe,
+  getSignedCategoryForTemplate,
+  evaluateUnsubscribedDisposition,
+  UNSUBSCRIBED_ESSENTIAL_FOOTER,
+  UNSUBSCRIBED_ESSENTIAL_FOOTER_HTML,
+  AUDIT_SEND_EVALUATED_UNSUBSCRIBED,
 } from '../_shared/email-categories.ts'
 import { checkAndAuditPreference } from '../_shared/notification-preferences.ts'
 import { recordNotificationSkipped } from '../_shared/notification-skip-audit.ts'
