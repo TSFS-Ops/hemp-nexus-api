@@ -286,7 +286,7 @@ Deno.serve(async (req: Request) => {
 
       if (updateErr) throw new ApiException("INTERNAL_ERROR", updateErr.message, 500);
 
-      // Record transition event (fire-and-forget pattern for non-critical audit)
+      // Legacy fire-and-forget event (preserves Phase 1 timeline reads)
       admin.from("event_store").insert({
         org_id: orgId,
         domain: "trust",
@@ -305,6 +305,29 @@ Deno.serve(async (req: Request) => {
       }).then(({ error }) => {
         if (error) console.error("Event store insert failed:", error.message);
       });
+
+      // Phase 2 canonical governance event (fail-closed)
+      await writeCriticalEventWithPosture(admin, {
+        event_type: "poi.state_changed",
+        org_id: orgId,
+        aggregate_type: "poi",
+        aggregate_id: poi.id,
+        actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+        actor_role: authCtx.roles?.[0] || null,
+        source_function: "pois",
+        correlation_id: correlationId,
+        poi_id: poi.id,
+        previous_state: fromState,
+        new_state: toState,
+        allowed_or_blocked: "allowed",
+        reason_code: parsed.reason || null,
+        posture: buildPostureSnapshot("Not recorded", {
+          reason: "posture not derived in pois transition flow",
+        }),
+        metadata: { poi_type: poi.poi_type },
+        idempotency_extra: `${fromState}->${toState}`,
+      });
+
 
       return new Response(
         JSON.stringify(
