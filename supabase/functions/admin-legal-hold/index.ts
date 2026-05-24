@@ -395,6 +395,33 @@ Deno.serve(async (req) => {
         aal: observedAal,
       });
 
+      // Phase 2 canonical (FAIL-CLOSED): legal_hold.released
+      try {
+        await writeCriticalEventWithPosture(admin, {
+          event_type: "legal_hold.released",
+          org_id: hold.scope_id,
+          aggregate_type: "legal_hold",
+          aggregate_id: legal_hold_id,
+          actor_user_id: callerId,
+          actor_role: "platform_admin",
+          source_function: "admin-legal-hold",
+          request_id: requestId,
+          allowed_or_blocked: "allowed",
+          reason_code: `scope:${hold.scope_type}`,
+          posture: buildPostureSnapshot("Standard", {
+            check_status: { aal: observedAal, scope_type: hold.scope_type, scope_id: hold.scope_id },
+          }),
+          metadata: { released_reason, scope_type: hold.scope_type, scope_id: hold.scope_id },
+          idempotency_extra: `release:${legal_hold_id}`,
+        });
+      } catch (govErr) {
+        console.error("[admin-legal-hold] CRITICAL: legal_hold.released audit failed:", govErr);
+        return jsonResponse(req, {
+          error: "Hold released but governance proof write failed",
+          code: "GOV_AUDIT_WRITE_FAILED",
+        }, 500);
+      }
+
       return jsonResponse(req, {
         ok: true,
         legal_hold_id,
