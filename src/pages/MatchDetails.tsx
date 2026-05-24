@@ -267,7 +267,7 @@ function MatchDetailsContent() {
 
       <AcceptBindCard match={match} onAccepted={fetchMatch} />
 
-      {displayEngagement?.engagement_status === "disputed_being_named" && displayEngagement?.id && (
+      {(displayEngagement?.engagement_status as string | null) === "disputed_being_named" && displayEngagement?.id && (
         <MatchDisputeBeingNamedPanel
           engagementId={displayEngagement.id}
           engagementStatus={displayEngagement.engagement_status}
