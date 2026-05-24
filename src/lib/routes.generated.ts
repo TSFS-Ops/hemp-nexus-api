@@ -17,6 +17,7 @@ export const ROUTE_PATHS = [
   "/admin/compliance",
   "/admin/data-governance",
   "/admin/deals",
+  "/admin/engagements",
   "/admin/entities",
   "/admin/orgs",
   "/admin/overrides",
@@ -38,6 +39,7 @@ export const ROUTE_PATHS = [
   "/desk/billing",
   "/desk/compiler/:matchId",
   "/desk/compliance",
+  "/desk/data-export",
   "/desk/deals",
   "/desk/deals/:matchId",
   "/desk/discover",
@@ -102,7 +104,7 @@ export const ROUTE_PATHS = [
   "…",
 ] as const;
 
-export type RoutePath = "/" | "/admin" | "/admin/compliance" | "/admin/data-governance" | "/admin/deals" | "/admin/entities" | "/admin/orgs" | "/admin/overrides" | "/admin/settings" | "/admin/users" | "/auth" | "/billing" | "/dashboard" | "/dashboard/account" | "/dashboard/billing" | "/dashboard/compliance" | "/dashboard/matches" | "/dashboard/matches/:matchId" | "/dashboard/order-book" | "/dashboard/programmes" | "/dashboard/search" | "/dashboard/settings" | "/desk" | "/desk/billing" | "/desk/compiler/:matchId" | "/desk/compliance" | "/desk/deals" | "/desk/deals/:matchId" | "/desk/discover" | "/desk/evidence/:id" | "/desk/inbound/review" | "/desk/inbound/review/:matchId" | "/desk/match/:matchId" | "/desk/match/active" | "/desk/match/new" | "/desk/match/rejected" | "/desk/new-trade" | "/desk/security" | "/desk/settings" | "/desk/settings/balance" | "/desk/settings/company" | "/desk/settings/notifications" | "/desk/wizard" | "/developer" | "/developer/docs" | "/developer/keys" | "/developer/schema" | "/developer/webhooks" | "/developers" | "/developers/dlq" | "/developers/docs" | "/developers/keys" | "/developers/webhooks" | "/docs" | "/docs/api" | "/docs/authentication" | "/docs/counterparties" | "/docs/errors" | "/docs/evidence" | "/docs/legacy" | "/docs/matches" | "/docs/quickstart" | "/docs/sdks" | "/docs/webhooks" | "/governance" | "/governance/audits" | "/governance/entities" | "/governance/health" | "/governance/triage" | "/hq" | "/hq/:tab" | "/landing" | "/pricing" | "/products" | "/products/audit-ledger" | "/products/compliance-engine" | "/products/trade-desk" | "/reset-password" | "/solutions" | "/solutions/finance" | "/solutions/sovereigns" | "/solutions/traders" | "/status" | "/trade/wizard" | "/unsubscribe" | "/walkthrough" | "/welcome" | "…";
+export type RoutePath = "/" | "/admin" | "/admin/compliance" | "/admin/data-governance" | "/admin/deals" | "/admin/engagements" | "/admin/entities" | "/admin/orgs" | "/admin/overrides" | "/admin/settings" | "/admin/users" | "/auth" | "/billing" | "/dashboard" | "/dashboard/account" | "/dashboard/billing" | "/dashboard/compliance" | "/dashboard/matches" | "/dashboard/matches/:matchId" | "/dashboard/order-book" | "/dashboard/programmes" | "/dashboard/search" | "/dashboard/settings" | "/desk" | "/desk/billing" | "/desk/compiler/:matchId" | "/desk/compliance" | "/desk/data-export" | "/desk/deals" | "/desk/deals/:matchId" | "/desk/discover" | "/desk/evidence/:id" | "/desk/inbound/review" | "/desk/inbound/review/:matchId" | "/desk/match/:matchId" | "/desk/match/active" | "/desk/match/new" | "/desk/match/rejected" | "/desk/new-trade" | "/desk/security" | "/desk/settings" | "/desk/settings/balance" | "/desk/settings/company" | "/desk/settings/notifications" | "/desk/wizard" | "/developer" | "/developer/docs" | "/developer/keys" | "/developer/schema" | "/developer/webhooks" | "/developers" | "/developers/dlq" | "/developers/docs" | "/developers/keys" | "/developers/webhooks" | "/docs" | "/docs/api" | "/docs/authentication" | "/docs/counterparties" | "/docs/errors" | "/docs/evidence" | "/docs/legacy" | "/docs/matches" | "/docs/quickstart" | "/docs/sdks" | "/docs/webhooks" | "/governance" | "/governance/audits" | "/governance/entities" | "/governance/health" | "/governance/triage" | "/hq" | "/hq/:tab" | "/landing" | "/pricing" | "/products" | "/products/audit-ledger" | "/products/compliance-engine" | "/products/trade-desk" | "/reset-password" | "/solutions" | "/solutions/finance" | "/solutions/sovereigns" | "/solutions/traders" | "/status" | "/trade/wizard" | "/unsubscribe" | "/walkthrough" | "/welcome" | "…";
 
 /**
  * Runtime guard for paths sourced from data (notification payloads, server
