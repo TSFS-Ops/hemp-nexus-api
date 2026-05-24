@@ -110,6 +110,7 @@ function App() {
             <HostnameRouter>
               <MaintenanceBanner />
               <TestModeBanner />
+              <DemoModeBanner />
               <LegacyRedirectBanner />
               <AuthRedirectNoticeBanner />
               <RouteErrorBoundary>
