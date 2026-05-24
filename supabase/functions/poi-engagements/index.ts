@@ -2590,8 +2590,7 @@ Deno.serve(async (req) => {
                 entity_id: engagementId,
                 metadata: cp003PatchMeta,
               });
-
-
+            }
           } catch (e) {
             console.warn(`[${requestId}] CP-002 supplementary audit emit failed (non-fatal):`, e);
           }
