@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { webhookCorsHeaders } from "../_shared/cors.ts";
+import { assertNoLegalHold, RECORD_GROUP_IDS } from "../_shared/legal-hold.ts";
 
 // Internal cron endpoint (INTERNAL_CRON_KEY-gated). Server-to-server only.
 const corsHeaders = {
