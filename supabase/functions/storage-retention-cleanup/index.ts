@@ -61,8 +61,42 @@ Deno.serve(async (req) => {
 
   let processed = 0;
   let failed = 0;
+  let skippedLegalHold = 0;
+
+  // DATA-003: batch-level sentinel hold blocks the whole purge job.
+  const batchHold = await assertNoLegalHold(supabase, [
+    { scope_type: "record_group", scope_id: RECORD_GROUP_IDS.storage_deletion_queue },
+  ], {
+    action: "storage-retention-cleanup.batch",
+    actorUserId: null,
+    actorOrgId: null,
+    requestId: null,
+  });
+  if (batchHold.blocked) {
+    return new Response(
+      JSON.stringify({ processed: 0, failed: 0, skipped_legal_hold: pendingItems.length, message: "Blocked by active legal hold", legal_hold_id: batchHold.activeHold?.id }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 
   for (const item of pendingItems) {
+    // DATA-003: per-file evidence-scope check. The queue row id is used
+    // as the evidence scope_id sentinel; admins can apply a hold on
+    // scope_type=evidence/scope_id=<queue.id> to spare individual files.
+    const fileHold = await assertNoLegalHold(supabase, [
+      { scope_type: "evidence", scope_id: item.id },
+    ], {
+      action: "storage-retention-cleanup.delete_file",
+      actorUserId: null,
+      actorOrgId: null,
+      requestId: null,
+      relatedRequestId: item.id,
+      extra: { bucket_id: item.bucket_id, file_path: item.file_path },
+    });
+    if (fileHold.blocked) {
+      skippedLegalHold++;
+      continue;
+    }
     try {
       // Remove file from storage bucket
       const { error: removeError } = await supabase.storage
