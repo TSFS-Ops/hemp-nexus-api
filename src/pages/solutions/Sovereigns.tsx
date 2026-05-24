@@ -253,7 +253,7 @@ export default function SovereignsSolutionsPage() {
               duration: 0.7,
               delay: 0.3
             }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
-                Institutional data residency · Append-only ledger · Macro telemetry
+                Single approved production-region policy · Append-only ledger · Macro telemetry
               </motion.p>
             </div>
 
@@ -354,15 +354,16 @@ export default function SovereignsSolutionsPage() {
                     Institutional data control.
                   </h3>
                   <p className="mt-4 text-base text-muted-foreground leading-relaxed">
-                    Programme data, KYB records, and trade evidence remain
-                    locked to the jurisdiction you choose. Residency is enforced
-                    at onboarding and cannot be silently relocated. Your data,
-                    your borders, your terms.
+                    Izenzo currently operates a single approved production-region
+                    storage policy. A trading jurisdiction is recorded at
+                    onboarding for governance purposes. Per-organisation residency
+                    commitments require separate Izenzo approval and are not
+                    automatically applied.
                   </p>
                 </div>
 
                 <ul className="space-y-2.5">
-                  {["Jurisdiction-locked data residency", "Role-based access (RBAC + break-glass)", "POPIA / GDPR retention workflow", "Cold-storage archival pipeline", "Independent regulator export endpoints (planned hardening)"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
+                  {["Single approved production-region policy", "Role-based access (RBAC + break-glass)", "POPIA / GDPR retention workflow", "Cold-storage archival pipeline", "Independent regulator export endpoints (planned hardening)"].map((g, i) => <li key={g} className="flex items-center gap-3 text-[13px]">
                       <span className="font-mono text-[10px] text-[hsl(var(--emerald))]/70 tabular-nums w-6">
                         {String(i + 1).padStart(2, "0")}
                       </span>

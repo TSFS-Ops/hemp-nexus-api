@@ -245,7 +245,7 @@ For sub-millisecond accuracy, integrate a dedicated NTP service:
 - [x] NTP drift measurement implemented in collapse engine
 - [x] Non-bypassability test (NEG-20) in checkpoint demo
 - [x] Data retention cron job scheduled (daily at 2 AM UTC)
-- [x] Data residency region selector in onboarding wizard
+- [x] DATA-009 Phase 1: single approved production-region storage policy in effect; per-organisation residency commitments require separate Izenzo approval (no onboarding region selector exists; exception workflow is Phase 2)
 - [x] WAF enabled at CDN layer with rules for `/functions/v1/collapse` — **INFRA ONLY** (Cloudflare/AWS)
 - [x] Health check monitoring configured — **Admin → Technical → Health Monitor** (30s polling)
 - [ ] Database PITR enabled (Supabase Pro) — **INFRA ONLY** (Supabase dashboard)

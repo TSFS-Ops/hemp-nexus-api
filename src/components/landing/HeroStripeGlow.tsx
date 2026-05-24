@@ -119,7 +119,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
                   </div>
                   <div className="flex items-center gap-3 text-muted-foreground shrink-0">
                     <Globe2 className="w-4 h-4 text-muted-foreground/70" strokeWidth={1.75} />
-                    <span className="text-sm font-mono tracking-tight">RESIDENCY: POPIA / GDPR</span>
+                    <span className="text-sm font-mono tracking-tight">REGION: SINGLE APPROVED POLICY</span>
                   </div>
                   <div className="flex items-center gap-3 text-muted-foreground shrink-0">
                     <Database className="w-4 h-4 text-muted-foreground/70" strokeWidth={1.75} />

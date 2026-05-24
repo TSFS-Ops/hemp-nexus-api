@@ -375,7 +375,7 @@ export default function TradeDeskProductPage() {
               </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
-                {["Entity verification", "Beneficial-owner disclosure", "Sanctions & PEP screening", "Jurisdiction residency lock"].map(c => <li key={c} className="flex items-center gap-3 text-muted-foreground">
+                {["Entity verification", "Beneficial-owner disclosure", "Sanctions & PEP screening", "Jurisdiction recorded at onboarding"].map(c => <li key={c} className="flex items-center gap-3 text-muted-foreground">
                     <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--emerald))] shrink-0" strokeWidth={2} />
                     {c}
                   </li>)}
