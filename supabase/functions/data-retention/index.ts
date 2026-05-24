@@ -234,9 +234,42 @@ Deno.serve(async (req: Request) => {
           .lte("retention_expires_at", now.toISOString())
           .limit(BATCH_SIZE);
 
+        // DATA-003: refuse the whole batch if a record_group-level hold
+        // covers the retention pipeline. Per-record checks happen below.
+        const batchHold = await assertNoLegalHold(admin, [
+          { scope_type: "record_group", scope_id: RECORD_GROUP_IDS.retention_enforcement },
+        ], {
+          action: `data-retention.enforce.${table}`,
+          actorUserId: null,
+          actorOrgId: null,
+          requestId,
+        });
+        if (batchHold.blocked) {
+          console.log(`[${requestId}] retention enforcement on ${table} blocked by legal hold ${batchHold.activeHold?.id}`);
+          continue;
+        }
+
         for (const flag of dueRecords || []) {
+          // DATA-003: per-record legal hold check before mutation.
+          const scopeType = TABLE_TO_SCOPE[flag.table_name];
+          if (scopeType) {
+            const rowHold = await assertNoLegalHold(admin, [
+              { scope_type: scopeType, scope_id: flag.record_id },
+            ], {
+              action: `data-retention.enforce.${flag.table_name}`,
+              actorUserId: null,
+              actorOrgId: flag.org_id ?? null,
+              requestId,
+              relatedRequestId: flag.id,
+            });
+            if (rowHold.blocked) {
+              result.skipped_already_actioned++;
+              continue;
+            }
+          }
           const action = flag.retention_action;
           let newStatus: string;
+
 
           switch (action) {
             case "archive":
