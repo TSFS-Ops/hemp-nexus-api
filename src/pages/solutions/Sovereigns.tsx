@@ -356,9 +356,7 @@ export default function SovereignsSolutionsPage() {
                   <p className="mt-4 text-base text-muted-foreground leading-relaxed">
                     Izenzo currently operates a single approved production-region
                     storage policy. A trading jurisdiction is recorded at
-                    onboarding for governance purposes. Per-organisation residency
-                    commitments require separate Izenzo approval and are not
-                    automatically applied.
+                    onboarding for governance purposes. Per-organisation residency commitments require separate Izenzo approval and are not automatically applied.
                   </p>
                 </div>
 
