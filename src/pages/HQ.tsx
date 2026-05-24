@@ -70,6 +70,7 @@ import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHold
 import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspacesPanel";
 import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyReviewsPanel";
 import { AdminBillingReviewPanel } from "@/components/admin/AdminBillingReviewPanel";
+import { GovernanceRecordsPanel } from "@/components/admin/governance/GovernanceRecordsPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
