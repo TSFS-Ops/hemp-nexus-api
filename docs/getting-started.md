@@ -74,7 +74,7 @@ By the end of this guide, you'll be able to:
 **What happens on first login**:
 - An organisation is automatically created for you
 - You're assigned `org_admin` + `org_member` roles
-- A jurisdiction is locked in during onboarding (regional data-residency lock — this is permanent)
+- A trading jurisdiction is recorded during onboarding for governance purposes. Izenzo currently operates a single approved production-region storage policy; per-organisation residency commitments require separate Izenzo approval and are not automatically applied (DATA-009)
 - You're ready to create API keys or begin trading
 
 ---

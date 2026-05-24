@@ -121,7 +121,7 @@ export function BrdConstraintsPanel() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>• <strong>Retention:</strong> Minimum 7 years, then cold storage with tamper-proof integrity preserved.</p>
-          <p>• <strong>Data residency:</strong> Region selectable at onboarding. No cross-border movement without explicit consent.</p>
+          <p>• <strong>Data residency:</strong> Single approved production-region storage policy in effect. A trading jurisdiction is recorded at onboarding for governance purposes. Per-organisation residency commitments require separate Izenzo approval and are not automatically applied.</p>
           <p>• <strong>RPO/RTO:</strong> Collapse ledger RPO = 0 (synchronous replication). RTO ≤ 60 minutes.</p>
           <p>• <strong>Immutability:</strong> Collapse ledger and break-glass logs are append-only with database-level triggers preventing UPDATE/DELETE.</p>
         </CardContent>
