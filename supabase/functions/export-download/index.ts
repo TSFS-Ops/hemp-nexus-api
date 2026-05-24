@@ -19,6 +19,11 @@ import {
   writeLifecycleAudit,
 } from "../_shared/export-lifecycle-audit.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
+import {
+  checkResidencyHoldAny,
+  residencyBlockResponse,
+} from "../_shared/residency-claim-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
