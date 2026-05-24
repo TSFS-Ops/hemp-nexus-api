@@ -15,6 +15,10 @@ import { safePdfText } from "../_shared/pdf-sanitizer.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 import { assertNoOpenChallenge, challengeOpenResponse } from "../_shared/challenge-progression-guard.ts";
+import {
+  assertMatchProgressable,
+  buildProgressionGuardResponse,
+} from "../_shared/match-progression-guard.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
