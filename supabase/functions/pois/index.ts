@@ -637,6 +637,31 @@ async function handleUnilateralCreate(
     }),
   ]);
 
+  // Phase 2 canonical governance event (fail-closed)
+  await writeCriticalEventWithPosture(admin, {
+    event_type: "poi.created",
+    org_id: orgId,
+    aggregate_type: "poi",
+    aggregate_id: poi.id,
+    actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+    actor_role: authCtx.roles?.[0] || null,
+    source_function: "pois",
+    correlation_id: correlationId,
+    poi_id: poi.id,
+    new_state: poi.state,
+    allowed_or_blocked: "allowed",
+    posture: buildPostureSnapshot("Not recorded", {
+      reason: "posture not derived in pois unilateral create",
+    }),
+    metadata: {
+      poi_type: "unilateral",
+      jurisdiction_code: parsed.jurisdiction_code,
+      industry_code: parsed.industry_code,
+    },
+    idempotency_extra: idempotencyKey,
+  });
+
+
   return new Response(JSON.stringify(responseData), {
     status: 201,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
