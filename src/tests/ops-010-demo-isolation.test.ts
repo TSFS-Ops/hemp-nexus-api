@@ -101,7 +101,7 @@ describe("OPS-010 demo/live boundary enforcement", () => {
       if (!f.endsWith(".sql")) return false;
       const src = fs.readFileSync(`${dir}/${f}`, "utf8");
       if (!src.includes("reset_demo_workspace")) return false;
-      const block = (src.match(/reset_demo_workspace[\s\S]+?\$\$/i) || [""])[0];
+      const block = (src.match(/reset_demo_workspace[\s\S]+?\$fn\$;/i) || [""])[0];
       return /is_demo[\s\S]+demo_dataset_id/i.test(block);
     });
     expect(found, "reset_demo_workspace must scope by both is_demo AND demo_dataset_id").toBe(true);
@@ -167,7 +167,7 @@ describe("OPS-010 demo artefact watermark", () => {
     );
     expect(src).toContain("markDemoArtifact");
     expect(src).toContain("non_production");
-    expect(src).toContain(OPS_010_DEMO_WATERMARK);
+    expect(src).toContain("OPS_010_DEMO_WATERMARK"); // referenced via import
   });
 });
 

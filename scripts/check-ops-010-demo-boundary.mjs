@@ -51,7 +51,7 @@ if (fs.existsSync(MIGRATIONS_DIR)) {
       }
       // 3. reset_demo_workspace must scope by BOTH is_demo and dataset id.
       const resetBlock = (src.match(
-        /create or replace function[\s\S]+?reset_demo_workspace[\s\S]+?\$\$ language plpgsql/i,
+        /create or replace function[\s\S]+?reset_demo_workspace[\s\S]+?\$fn\$;/i,
       ) || [""])[0];
       if (resetBlock && !/is_demo[\s\S]+demo_dataset_id|demo_dataset_id[\s\S]+is_demo/i.test(resetBlock)) {
         console.error(
@@ -61,7 +61,7 @@ if (fs.existsSync(MIGRATIONS_DIR)) {
       }
       // 2. Reason length enforcement (min 20)
       for (const fn of ["create_demo_workspace", "reset_demo_workspace", "archive_demo_workspace"]) {
-        const fnBlock = (src.match(new RegExp(`create or replace function[\\s\\S]+?${fn}[\\s\\S]+?\\$\\$ language plpgsql`, "i")) || [""])[0];
+        const fnBlock = (src.match(new RegExp(`create or replace function[\\s\\S]+?${fn}[\\s\\S]+?\\$fn\\$;`, "i")) || [""])[0];
         if (fnBlock && !/length\s*\(\s*(p_reason|reason)\s*\)\s*<\s*20|char_length\s*\(\s*(p_reason|reason)\s*\)\s*<\s*20/i.test(fnBlock)) {
           console.error(
             `[ops-010-demo-boundary] ${fn} in ${f} must enforce reason length >= 20`,
