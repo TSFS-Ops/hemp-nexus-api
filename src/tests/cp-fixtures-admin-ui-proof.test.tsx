@@ -11,15 +11,15 @@ const CP012_ENGAGEMENT_ID = "cd661af0-95fe-4268-bf2d-5d20b505b134";
 const CP015_OLD_ENGAGEMENT_ID = "4226aff0-246c-406b-9c4f-ae64c89cc9e7";
 const CP015_NEW_ENGAGEMENT_ID = "848a2ec1-e89c-4781-9f22-1713b86a6630";
 
-const mockState: {
+const mockState = vi.hoisted((): {
   engagements: MockEngagement[];
   autoBindAuditIds: string[];
   invoke: any;
-} = {
+} => ({
   engagements: [],
   autoBindAuditIds: [],
   invoke: vi.fn(),
-};
+}));
 
 function makeQuery(table: string) {
   const filters: Record<string, unknown> = {};
