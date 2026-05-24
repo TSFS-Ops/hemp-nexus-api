@@ -309,6 +309,14 @@ function LegacyRepairTab() {
       </Surface>
     </>;
 }
+function LegalHoldsTab() {
+  return <>
+      <TabHeader id="legal-holds" />
+      <Surface label="DATA-003 · public.legal_holds · platform_admin + AAL2 · blocks deletion/anonymisation/purge/export-destruction">
+        <AdminLegalHoldsPanel />
+      </Surface>
+    </>;
+}
 function DisputesTab() {
   // Sub-tabs: Disputes · Challenges · Trade Approvals · Verification Queue (clip-on)
   const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification"]);
