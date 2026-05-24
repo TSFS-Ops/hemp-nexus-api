@@ -2257,7 +2257,9 @@ export function AdminPendingEngagementsPanel() {
                                 <Send className="h-3 w-3 mr-1" /> Record contact
                               </Button>
                             )}
-                            {!isTerminal && (
+                            {!isTerminal &&
+                              e.engagement_status !== "late_acceptance_pending_initiator_reconfirmation" &&
+                              e.engagement_status !== "disputed_being_named" && (
                               <Button
                                 size="sm" variant="outline"
                                 onClick={() => setStatus(e, "declined")}
