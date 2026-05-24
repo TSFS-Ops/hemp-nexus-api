@@ -14,6 +14,10 @@ import {
   assertMatchProgressable,
   buildProgressionGuardResponse,
 } from "../_shared/match-progression-guard.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+} from "../_shared/governance-audit-integration.ts";
 
 // Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
 // with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
