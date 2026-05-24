@@ -227,6 +227,18 @@ Deno.serve(async (req) => {
     user_agent: ua,
     requested_at: inserted.requested_at,
   }, primaryOrgId);
+  // DATA-005 / DATA-010 Phase 2A canonical dual-write (legacy preserved above).
+  await writeCanonical(admin, "data.export_request_received", {
+    request_id: inserted.id,
+    user_id: user.id,
+    org_id: primaryOrgId,
+    kind: "user_export",
+    requested_categories: requestedCategories,
+    reason: reason ?? null,
+    actor_ip: ip,
+    user_agent: ua,
+    requested_at: inserted.requested_at,
+  }, primaryOrgId);
 
   // Blocked by legal/security hold: transition straight to `blocked`.
   if (hold.blocked) {
