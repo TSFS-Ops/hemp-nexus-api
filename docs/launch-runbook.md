@@ -187,3 +187,6 @@ Rollback steps:
 - Screenshot of HealthBoard with Closeout Drift = green.
 - `docs/deferred-policy-register.md` with each item annotated **Accepted / Deferred-to-Tplus / Rejected** by the client.
 - Sign-off block from §0 completed.
+
+## COMP-002 / COMP-012 Phase 2A
+Compliance freshness gates active synchronously at WaD / p3-WaD / collapse. Sanctions stale > 30d or verification stale > 365d → 409 with canonical code, opens `compliance_holds` row + Verification Queue item, emits canonical audit. Admin release/close require platform_admin + AAL2 + ≥20-char reason. Cron auto-open and baseline notifications deferred to Phase 2B.
