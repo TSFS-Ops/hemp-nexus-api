@@ -256,6 +256,30 @@ Deno.serve(async (req) => {
       },
     });
 
+    // ── DEC-004 (signed): canonical per-engagement "SLA scan flagged
+    // manual follow-up" rows (dual-write). One row per engagement
+    // included in the digest so HQ → Audit can filter by canonical
+    // action name. SSOT: src/lib/outreach/dec-004-states.ts.
+    if (ids.length > 0) {
+      try {
+        await supabase.from("admin_audit_logs").insert(
+          ids.map((engagementId) => ({
+            action: "outreach.sla_scan_flagged_manual_follow_up",
+            target_type: "poi_engagement",
+            target_id: engagementId,
+            details: {
+              dec_rule: "DEC-004",
+              manual_owner: "izenzo_platform_admin",
+              canonical_state: "reminder_review_required",
+              threshold_hours: settings.threshold_hours,
+              request_id: requestId,
+            },
+          })),
+        );
+      } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
+    }
+
+
     console.log(
       `[${requestId}] SLA digest dispatched: ${ids.length} engagement(s) to ${settings.reminder_email}`
     );
