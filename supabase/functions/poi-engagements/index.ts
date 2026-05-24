@@ -1403,6 +1403,78 @@ Deno.serve(async (req) => {
         } catch (snapErr) {
           console.warn(`[${requestId}] Failed to write governance snapshot audit row:`, snapErr);
         }
+
+        // ── DEC-005 / DEC-006 (signed): pre-acceptance wording-state ledger.
+        // The atomic RPC above wrote the engagement.outreach_email_queued
+        // state-transition row. These additive rows record that the
+        // approved cautious wording (PENDING_ENGAGEMENT_LABEL +
+        // INITIATOR_PENDING_COPY for the engagement and DRAFT_POI_LABEL
+        // for any pre-acceptance POI surface) was the wording actually
+        // applied. No state change, no POI/WaD/credit/payment side
+        // effects. Best-effort writes — log + continue on failure.
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "legal.pre_acceptance_wording_applied",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-005",
+              engagement_id: engagementId,
+              match_id: eng.match_id ?? null,
+              poi_id: (eng as { poi_id?: string | null }).poi_id ?? null,
+              counterparty_name: parsed.data.counterparty_name ?? null,
+              counterparty_email: recipient,
+              initiator_user_id: authCtx.userId,
+              initiator_organisation_id: eng.org_id,
+              counterparty_acceptance_status: "not_accepted",
+              approved_wording_used: {
+                engagement_label: PENDING_ENGAGEMENT_LABEL,
+                initiator_copy: INITIATOR_PENDING_COPY,
+                outreach_invitation_copy: OUTREACH_INVITATION_COPY,
+              },
+              displayed_status: "contacted",
+              document_status: "pre_acceptance_invitation",
+              notification_template_id: "outreach-intent-to-trade",
+              surface: "live_edge_function:send-outreach",
+              created_at: new Date().toISOString(),
+              request_id: requestId,
+            },
+          });
+        } catch (e) {
+          console.warn(`[${requestId}] DEC-005 pre_acceptance_wording_applied audit insert failed (non-fatal):`, e);
+        }
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "legal.poi_binding_wording_applied",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-006",
+              poi_id: (eng as { poi_id?: string | null }).poi_id ?? null,
+              match_id: eng.match_id ?? null,
+              engagement_id: engagementId,
+              initiator_user_id: authCtx.userId,
+              initiator_organisation_id: eng.org_id,
+              counterparty_user_id: null,
+              counterparty_organisation_id:
+                (eng as { counterparty_org_id?: string | null }).counterparty_org_id ?? null,
+              counterparty_acceptance_status: "not_accepted",
+              poi_wording_state: "draft_intent_record",
+              approved_wording_used: {
+                poi_label: DRAFT_POI_LABEL,
+              },
+              surface: "live_edge_function:send-outreach",
+              created_at: new Date().toISOString(),
+              request_id: requestId,
+            },
+          });
+        } catch (e) {
+          console.warn(`[${requestId}] DEC-006 poi_binding_wording_applied (draft) audit insert failed (non-fatal):`, e);
+        }
       } else {
         // Post-engagement follow-up: log to outreach_logs + audit_logs without
         // changing engagement state.
