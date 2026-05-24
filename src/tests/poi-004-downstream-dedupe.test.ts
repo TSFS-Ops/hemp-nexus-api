@@ -104,7 +104,9 @@ describe("POI-004 stage-2 — send-transactional-email idempotency", () => {
     const pendingInsert = sendTxn.match(/\.from\('email_send_log'\)\s*\.insert\(/g) ?? [];
     expect(inserts.length + 0).toBeGreaterThanOrEqual(6);
     expect(keyed.length).toBeGreaterThanOrEqual(inserts.length + pendingInsert.length - inserts.length);
-    expect(keyed.length).toBe(7);
+    // Count drift-tolerant: the hard guarantee is every insert is keyed.
+    // Snapshot pin updated to 8 sites (Batch U added one more outbound path).
+    expect(keyed.length).toBe(8);
   });
 
   it("falls through (no dedupe) when caller omits idempotencyKey", () => {
