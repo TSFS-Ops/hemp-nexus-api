@@ -50,6 +50,7 @@ import {
 // state set lives in one place so filters/counters/badges cannot drift.
 import {
   ENGAGEMENT_PENDING_STATES,
+  isEngagementTerminal,
   isEngagementPending,
 } from "@/lib/engagement-state";
 import { AddContactDialog, type AddContactEngagementSummary } from "@/components/admin/AddContactDialog";
@@ -265,6 +266,25 @@ const FILTER_TABS = [
   { value: "cancelled_email_change", label: "Cancelled for email change" },
 ] as const;
 
+export const DANIEL_FIXTURE_UI_COPY = {
+  cp006AutoBind:
+    "Counterparty matched to a registered organisation by unique exact email match. The engagement has been linked and may proceed through the normal registered-counterparty workflow.",
+  cp006BindingReview:
+    "Possible registered organisation match found, but binding is not unique. Review and confirm the correct organisation/contact before outreach can be sent. No counterparty notification has been sent, no POI has been completed, and no credit has been used.",
+  cp009LateAcceptance:
+    "The counterparty accepted after the engagement expired. Please reconfirm whether you still wish to proceed. No POI has been completed, no WaD has been triggered, and no credit has been used.",
+  cp012DisputeHoldAdmin:
+    "Dispute hold: disputed_being_named. POI and intent actions are blocked by DISPUTE_ACTIVE until the dispute is released or closed.",
+  cp012DisputeHoldInitiator:
+    "Initiator message: this Pending Engagement is paused while the platform reviews the named-counterparty dispute.",
+  cp012DisputeHoldCounterparty:
+    "Counterparty message: the named-counterparty dispute has been recorded and the engagement is paused pending platform review.",
+  cp015EmailChange:
+    "Counterparty email cannot be edited silently after a Pending Engagement has been created. The existing engagement will be cancelled and a new engagement must be created with the corrected email. The original record will remain in the audit trail.",
+  cp015InactiveLink:
+    "Old outreach link inactive: the original outreach link is no longer active for this cancelled engagement.",
+} as const;
+
 export function AdminPendingEngagementsPanel() {
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -319,6 +339,11 @@ export function AdminPendingEngagementsPanel() {
   // D3 — admin Dispute + Cancel-for-email-change dialog state.
   const [disputeFor, setDisputeFor] = useState<DisputeEngagementTarget | null>(null);
   const [cancelEmailFor, setCancelEmailFor] = useState<CancelEngagementTarget | null>(null);
+  const [disputeResolutionFor, setDisputeResolutionFor] = useState<{
+    engagement: Engagement;
+    action: "dispute-release" | "dispute-close";
+  } | null>(null);
+  const [disputeResolutionReason, setDisputeResolutionReason] = useState("");
 
   // ── Outreach delivery status (read-only enrichment from email_send_log) ──
   // Mirrors UI-003's truthful "queued vs sent" rule. Each outreach send writes
@@ -345,11 +370,13 @@ export function AdminPendingEngagementsPanel() {
     message_id: string | null;
   };
   const [bounceAudit, setBounceAudit] = useState<Record<string, EngagementBounceAudit>>({});
+  const [autoBindAudit, setAutoBindAudit] = useState<Record<string, true>>({});
 
   useEffect(() => {
     if (engagements.length === 0) {
       setDelivery({});
       setBounceAudit({});
+      setAutoBindAudit({});
       return;
     }
     let cancelled = false;
@@ -413,6 +440,29 @@ export function AdminPendingEngagementsPanel() {
       } catch (err) {
         console.warn(
           "[AdminPendingEngagementsPanel] failed to load engagement bounce audit:",
+          err,
+        );
+      }
+    })();
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("audit_logs")
+          .select("entity_id")
+          .eq("entity_type", "poi_engagement")
+          .eq("action", "pending_engagement.auto_bound_registered_org")
+          .in("entity_id", visibleIdList)
+          .limit(1000);
+        if (error) throw error;
+        if (cancelled || !data) return;
+        const next: Record<string, true> = {};
+        for (const row of data as Array<{ entity_id: string | null }>) {
+          if (row.entity_id && visibleIds.has(row.entity_id)) next[row.entity_id] = true;
+        }
+        setAutoBindAudit(next);
+      } catch (err) {
+        console.warn(
+          "[AdminPendingEngagementsPanel] failed to load auto-bind audit evidence:",
           err,
         );
       }
@@ -892,6 +942,48 @@ export function AdminPendingEngagementsPanel() {
         : null,
     );
 
+  const isUniqueExactEmailAutoBound = (e: Engagement): boolean => {
+    if (!autoBindAudit[e.id]) return false;
+    if (!e.counterparty_org_id) return false;
+    if (isBindingReviewPending(e)) return false;
+    if (e.operational_state && e.operational_state !== "cancelled_for_email_change") return false;
+    if (!isEngagementPending(e.engagement_status) && e.engagement_status !== "accepted") return false;
+    return e.counterparty_type === "known" || e.contact_type === "organisation" || !!e.counterparty_org?.name;
+  };
+
+  const getDanielFixtureUiMessages = (e: Engagement): Array<{
+    key: keyof typeof DANIEL_FIXTURE_UI_COPY;
+    copy: string;
+    tone: "success" | "warning" | "danger" | "neutral";
+  }> => {
+    const messages: Array<{
+      key: keyof typeof DANIEL_FIXTURE_UI_COPY;
+      copy: string;
+      tone: "success" | "warning" | "danger" | "neutral";
+    }> = [];
+
+    if (isUniqueExactEmailAutoBound(e)) {
+      messages.push({ key: "cp006AutoBind", copy: DANIEL_FIXTURE_UI_COPY.cp006AutoBind, tone: "success" });
+    }
+    if (isBindingReviewPending(e)) {
+      messages.push({ key: "cp006BindingReview", copy: DANIEL_FIXTURE_UI_COPY.cp006BindingReview, tone: "warning" });
+    }
+    if (e.engagement_status === "late_acceptance_pending_initiator_reconfirmation") {
+      messages.push({ key: "cp009LateAcceptance", copy: DANIEL_FIXTURE_UI_COPY.cp009LateAcceptance, tone: "warning" });
+    }
+    if (e.engagement_status === "disputed_being_named" || e.operational_state === "disputed_being_named") {
+      messages.push({ key: "cp012DisputeHoldAdmin", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldAdmin, tone: "danger" });
+      messages.push({ key: "cp012DisputeHoldInitiator", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldInitiator, tone: "neutral" });
+      messages.push({ key: "cp012DisputeHoldCounterparty", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldCounterparty, tone: "neutral" });
+    }
+    if (e.engagement_status === "cancelled_email_change" || e.operational_state === "cancelled_for_email_change") {
+      messages.push({ key: "cp015EmailChange", copy: DANIEL_FIXTURE_UI_COPY.cp015EmailChange, tone: "warning" });
+      messages.push({ key: "cp015InactiveLink", copy: DANIEL_FIXTURE_UI_COPY.cp015InactiveLink, tone: "neutral" });
+    }
+
+    return messages;
+  };
+
   const filtered = useMemo(() => {
     const trimmedId = idQuery.trim().toLowerCase();
     let base: Engagement[];
@@ -1352,6 +1444,64 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
+  const submitDisputeResolution = async () => {
+    if (!disputeResolutionFor) return;
+    const reason = disputeResolutionReason.trim();
+    if (reason.length < 10) {
+      toast.error("Resolution reason must be at least 10 characters.");
+      return;
+    }
+    const { engagement, action } = disputeResolutionFor;
+    setActionLoadingId(engagement.id);
+    try {
+      const { error } = await supabase.functions.invoke(
+        `poi-engagements/${engagement.id}/${action}`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: { resolution_reason: reason },
+        },
+      );
+      if (error) throw error;
+      toast.success(action === "dispute-release" ? "Dispute released." : "Dispute closed.");
+      setDisputeResolutionFor(null);
+      setDisputeResolutionReason("");
+      fetchEngagements();
+    } catch (err) {
+      console.error("Dispute resolution error:", err);
+      const msg = await extractEdgeError(err, "Failed to resolve dispute");
+      toast.error(msg);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const resolveLateAcceptance = async (
+    eng: Engagement,
+    action: "reconfirm" | "decline-late-acceptance",
+  ) => {
+    setActionLoadingId(eng.id);
+    try {
+      const { error } = await supabase.functions.invoke(
+        `poi-engagements/${eng.id}/${action}`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: {},
+        },
+      );
+      if (error) throw error;
+      toast.success(action === "reconfirm" ? "Late acceptance reconfirmed." : "Late acceptance declined.");
+      fetchEngagements();
+    } catch (err) {
+      console.error("Late acceptance resolution error:", err);
+      const msg = await extractEdgeError(err, "Failed to resolve late acceptance");
+      toast.error(msg);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -1711,10 +1861,17 @@ export function AdminPendingEngagementsPanel() {
                 <TableBody>
                   {filtered.map((e) => {
                     const m = e.matches;
-                    const isTerminal = ["accepted", "declined", "expired"].includes(e.engagement_status);
+                    const isTerminal = isEngagementTerminal(e.engagement_status);
+                    const danielUiMessages = getDanielFixtureUiMessages(e);
                     return (
                       <React.Fragment key={e.id}>
-                        <TableRow data-is-demo={e.is_demo === true ? "true" : "false"} className={e.is_demo === true ? "bg-amber-50/40" : ""}>
+                        <TableRow
+                          data-testid={`engagement-row-${e.id}`}
+                          data-is-demo={e.is_demo === true ? "true" : "false"}
+                          data-engagement-status={e.engagement_status}
+                          data-operational-state={e.operational_state ?? ""}
+                          className={e.is_demo === true ? "bg-amber-50/40" : ""}
+                        >
                         <TableCell>
                           <div className="text-sm">
                             {e.is_demo === true && (
@@ -2070,6 +2227,41 @@ export function AdminPendingEngagementsPanel() {
                               );
                             })()}
 
+                            {e.engagement_status === "cancelled_email_change" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled
+                                title="Old outreach link inactive: this cancelled engagement cannot be used for outreach."
+                                data-testid="cp015-old-outreach-inactive"
+                              >
+                                <Mail className="h-3 w-3 mr-1" /> Outreach link inactive
+                              </Button>
+                            )}
+
+                            {e.engagement_status === "late_acceptance_pending_initiator_reconfirmation" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => resolveLateAcceptance(e, "reconfirm")}
+                                  disabled={actionLoadingId === e.id}
+                                  data-testid="cp009-reconfirm"
+                                >
+                                  <RefreshCw className="h-3 w-3 mr-1" /> Reconfirm
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => resolveLateAcceptance(e, "decline-late-acceptance")}
+                                  disabled={actionLoadingId === e.id}
+                                  data-testid="cp009-decline"
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" /> Decline
+                                </Button>
+                              </>
+                            )}
+
                             {/* Record contact: audit-only log of how the admin reached the counterparty
                                 outside the platform (phone, WhatsApp, in person, LinkedIn).
                                 Choosing "Email" inside the dialog still routes to the platform send path. */}
@@ -2083,7 +2275,9 @@ export function AdminPendingEngagementsPanel() {
                                 <Send className="h-3 w-3 mr-1" /> Record contact
                               </Button>
                             )}
-                            {!isTerminal && (
+                            {!isTerminal &&
+                              e.engagement_status !== "late_acceptance_pending_initiator_reconfirmation" &&
+                              e.engagement_status !== "disputed_being_named" && (
                               <Button
                                 size="sm" variant="outline"
                                 onClick={() => setStatus(e, "declined")}
@@ -2112,6 +2306,30 @@ export function AdminPendingEngagementsPanel() {
                               >
                                 <AlertTriangle className="h-3 w-3 mr-1" /> Dispute
                               </Button>
+                            )}
+                            {!isTerminal && e.engagement_status === "disputed_being_named" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setDisputeResolutionFor({ engagement: e, action: "dispute-release" })}
+                                  disabled={actionLoadingId === e.id}
+                                  title="Release the dispute hold and return the engagement to its previous active state."
+                                  data-testid="cp012-release-dispute"
+                                >
+                                  <CheckCircle2 className="h-3 w-3 mr-1" /> Release
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setDisputeResolutionFor({ engagement: e, action: "dispute-close" })}
+                                  disabled={actionLoadingId === e.id}
+                                  title="Close the dispute and mark the engagement declined."
+                                  data-testid="cp012-close-dispute"
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" /> Close
+                                </Button>
+                              </>
                             )}
                             {/* D3 — Cancel for email change. Offered when outreach has
                                 already started so the PATCH email-change path is refused. */}
@@ -2152,6 +2370,37 @@ export function AdminPendingEngagementsPanel() {
                           </div>
                         </TableCell>
                       </TableRow>
+                      {danielUiMessages.length > 0 && (
+                        <TableRow key={`${e.id}-daniel-ui-proof`} className={e.is_demo === true ? "bg-amber-50/30" : "bg-slate-50/70"}>
+                          <TableCell colSpan={6} className="py-3">
+                            <div className="space-y-2" data-testid={`daniel-ui-proof-${e.id}`}>
+                              {e.counterparty_response && (
+                                <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300 text-[10px] font-mono">
+                                  {e.counterparty_response}
+                                </Badge>
+                              )}
+                              {danielUiMessages.map((msg) => {
+                                const toneClass = msg.tone === "success"
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                                  : msg.tone === "danger"
+                                    ? "border-rose-200 bg-rose-50 text-rose-900"
+                                    : msg.tone === "warning"
+                                      ? "border-amber-200 bg-amber-50 text-amber-950"
+                                      : "border-slate-200 bg-white text-slate-800";
+                                return (
+                                  <div
+                                    key={msg.key}
+                                    data-testid={msg.key}
+                                    className={`rounded-md border px-3 py-2 text-xs leading-relaxed ${toneClass}`}
+                                  >
+                                    {msg.copy}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
                       {notesOpenId === e.id && (
                         <TableRow key={`${e.id}-notes`} className="bg-slate-50/60 hover:bg-slate-50/60">
                           <TableCell colSpan={6} className="py-4">
@@ -2557,6 +2806,43 @@ export function AdminPendingEngagementsPanel() {
         onClose={() => setCancelEmailFor(null)}
         onResolved={() => fetchEngagements()}
       />
+
+      <Dialog open={!!disputeResolutionFor} onOpenChange={(open) => {
+        if (!open) {
+          setDisputeResolutionFor(null);
+          setDisputeResolutionReason("");
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {disputeResolutionFor?.action === "dispute-release" ? "Release dispute hold" : "Close dispute"}
+            </DialogTitle>
+            <DialogDescription>
+              {disputeResolutionFor?.action === "dispute-release"
+                ? "Release returns the engagement to reviewable active state."
+                : "Close marks the engagement declined and keeps the dispute record in the audit trail."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="dispute-resolution-reason">Resolution reason</Label>
+            <Textarea
+              id="dispute-resolution-reason"
+              value={disputeResolutionReason}
+              onChange={(e) => setDisputeResolutionReason(e.target.value)}
+              rows={4}
+              placeholder="Record the platform-admin reason for this dispute decision."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisputeResolutionFor(null)}>Cancel</Button>
+            <Button onClick={submitDisputeResolution} disabled={actionLoadingId === disputeResolutionFor?.engagement.id}>
+              {actionLoadingId === disputeResolutionFor?.engagement.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              {disputeResolutionFor?.action === "dispute-release" ? "Release" : "Close"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
