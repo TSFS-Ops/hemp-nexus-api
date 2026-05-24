@@ -54,7 +54,9 @@ describe('NOT-008 / DEC-009 — signed 7-category classification', () => {
 
   it('every registered template has a signed-category mapping', () => {
     const reg = read('supabase/functions/_shared/transactional-email-templates/registry.ts');
-    const names = Array.from(reg.matchAll(/['"]([a-z0-9-]+)['"]:\s*\{/g)).map((m) => m[1]);
+    // Match keys inside `TEMPLATES: Record<string, TemplateEntry> = { ... }`
+    const block = reg.split('TEMPLATES')[1] ?? '';
+    const names = Array.from(block.matchAll(/['"]([a-z][a-z0-9-]+)['"]\s*:/g)).map((m) => m[1]);
     expect(names.length).toBeGreaterThan(0);
     for (const n of names) {
       expect(SIGNED_TEMPLATE_CATEGORY[n], `template "${n}" missing signed category`).toBeDefined();
