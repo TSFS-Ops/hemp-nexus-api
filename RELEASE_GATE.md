@@ -42,6 +42,7 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-legal-claims.mjs` — DEC-005/006/010 forbidden wording guard on public pages
 - `check-aal-registry-drift.mjs` — SEC-001 AAL2 call-site ↔ preflight registry drift guard
 - `check-export-audit-payload.mjs` — DATA-010 Phase 1: admin CSV/JSON exports must carry `purpose`, `reason`, `data_categories`, `target_type`; admin exports require AAL2 server-side; Phase 2 signed-URL/TTL/file-destruction lifecycle is deferred
+- `check-user-export-categories.mjs` — DATA-005 Phase 1: user self-export category SSOT (Deno ↔ client mirror) drift guard, forbidden category names blocked, canonical Phase 1 audit names required, Phase 2 audit names forbidden until lifecycle ships
 
 ### Edge functions requiring deploy
 
