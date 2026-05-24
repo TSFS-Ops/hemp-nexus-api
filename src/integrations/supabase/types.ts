@@ -637,9 +637,11 @@ export type Database = {
           actor_api_key_id: string | null
           actor_user_id: string | null
           created_at: string
+          demo_dataset_id: string | null
           entity_id: string | null
           entity_type: string
           id: string
+          is_demo: boolean
           metadata: Json | null
           org_id: string
         }
@@ -648,9 +650,11 @@ export type Database = {
           actor_api_key_id?: string | null
           actor_user_id?: string | null
           created_at?: string
+          demo_dataset_id?: string | null
           entity_id?: string | null
           entity_type: string
           id?: string
+          is_demo?: boolean
           metadata?: Json | null
           org_id: string
         }
@@ -659,9 +663,11 @@ export type Database = {
           actor_api_key_id?: string | null
           actor_user_id?: string | null
           created_at?: string
+          demo_dataset_id?: string | null
           entity_id?: string | null
           entity_type?: string
           id?: string
+          is_demo?: boolean
           metadata?: Json | null
           org_id?: string
         }
@@ -1221,8 +1227,10 @@ export type Database = {
           decided_at: string | null
           decided_by: string | null
           decision_notes: string | null
+          demo_dataset_id: string | null
           entity_id: string
           id: string
+          is_demo: boolean
           org_id: string
           status: string
         }
@@ -1231,8 +1239,10 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_notes?: string | null
+          demo_dataset_id?: string | null
           entity_id: string
           id?: string
+          is_demo?: boolean
           org_id: string
           status?: string
         }
@@ -1241,8 +1251,10 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_notes?: string | null
+          demo_dataset_id?: string | null
           entity_id?: string
           id?: string
+          is_demo?: boolean
           org_id?: string
           status?: string
         }
@@ -1266,9 +1278,11 @@ export type Database = {
       compliance_holds: {
         Row: {
           created_at: string
+          demo_dataset_id: string | null
           entity_id: string | null
           hold_type: string
           id: string
+          is_demo: boolean
           metadata: Json
           opened_at: string
           opened_by: string | null
@@ -1284,9 +1298,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          demo_dataset_id?: string | null
           entity_id?: string | null
           hold_type: string
           id?: string
+          is_demo?: boolean
           metadata?: Json
           opened_at?: string
           opened_by?: string | null
@@ -1302,9 +1318,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          demo_dataset_id?: string | null
           entity_id?: string | null
           hold_type?: string
           id?: string
+          is_demo?: boolean
           metadata?: Json
           opened_at?: string
           opened_by?: string | null
@@ -1900,7 +1918,9 @@ export type Database = {
           completed_roles: string[]
           created_at: string
           dedup_key: string | null
+          demo_dataset_id: string | null
           id: string
+          is_demo: boolean
           kind: string | null
           metadata: Json
           reason: string | null
@@ -1915,7 +1935,9 @@ export type Database = {
           completed_roles?: string[]
           created_at?: string
           dedup_key?: string | null
+          demo_dataset_id?: string | null
           id?: string
+          is_demo?: boolean
           kind?: string | null
           metadata?: Json
           reason?: string | null
@@ -1930,7 +1952,9 @@ export type Database = {
           completed_roles?: string[]
           created_at?: string
           dedup_key?: string | null
+          demo_dataset_id?: string | null
           id?: string
+          is_demo?: boolean
           kind?: string | null
           metadata?: Json
           reason?: string | null
@@ -2104,6 +2128,59 @@ export type Database = {
           },
           {
             foreignKeyName: "deal_terms_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_workspaces: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          created_at: string
+          created_by: string | null
+          dataset_id: string
+          id: string
+          last_reset_by: string | null
+          metadata: Json
+          notes: string | null
+          org_id: string
+          reset_at: string | null
+          status: string
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          dataset_id: string
+          id?: string
+          last_reset_by?: string | null
+          metadata?: Json
+          notes?: string | null
+          org_id: string
+          reset_at?: string | null
+          status?: string
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          dataset_id?: string
+          id?: string
+          last_reset_by?: string | null
+          metadata?: Json
+          notes?: string | null
+          org_id?: string
+          reset_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_workspaces_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2551,9 +2628,11 @@ export type Database = {
           contact_detail: string | null
           contact_method: string | null
           created_at: string
+          demo_dataset_id: string | null
           engagement_id: string
           entry_type: string
           id: string
+          is_demo: boolean
           new_status: string
           notes: string | null
           previous_status: string
@@ -2566,9 +2645,11 @@ export type Database = {
           contact_detail?: string | null
           contact_method?: string | null
           created_at?: string
+          demo_dataset_id?: string | null
           engagement_id: string
           entry_type?: string
           id?: string
+          is_demo?: boolean
           new_status: string
           notes?: string | null
           previous_status: string
@@ -2581,9 +2662,11 @@ export type Database = {
           contact_detail?: string | null
           contact_method?: string | null
           created_at?: string
+          demo_dataset_id?: string | null
           engagement_id?: string
           entry_type?: string
           id?: string
+          is_demo?: boolean
           new_status?: string
           notes?: string | null
           previous_status?: string
@@ -4339,6 +4422,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           declared_value_usd: number | null
+          demo_dataset_id: string | null
           destination_country: string | null
           event_chain_hash: string | null
           finality_tokens_burned: number | null
@@ -4378,6 +4462,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           declared_value_usd?: number | null
+          demo_dataset_id?: string | null
           destination_country?: string | null
           event_chain_hash?: string | null
           finality_tokens_burned?: number | null
@@ -4417,6 +4502,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           declared_value_usd?: number | null
+          demo_dataset_id?: string | null
           destination_country?: string | null
           event_chain_hash?: string | null
           finality_tokens_burned?: number | null
@@ -4625,9 +4711,11 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string | null
+          demo_dataset_id: string | null
           entity_id: string | null
           entity_type: string | null
           id: string
+          is_demo: boolean
           link: string | null
           org_id: string | null
           read: boolean | null
@@ -4639,9 +4727,11 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string | null
+          demo_dataset_id?: string | null
           entity_id?: string | null
           entity_type?: string | null
           id?: string
+          is_demo?: boolean
           link?: string | null
           org_id?: string | null
           read?: boolean | null
@@ -4653,9 +4743,11 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string | null
+          demo_dataset_id?: string | null
           entity_id?: string | null
           entity_type?: string | null
           id?: string
+          is_demo?: boolean
           link?: string | null
           org_id?: string | null
           read?: boolean | null
@@ -4681,7 +4773,9 @@ export type Database = {
           completed_at: string | null
           compliance_hold_id: string | null
           created_at: string
+          demo_dataset_id: string | null
           id: string
+          is_demo: boolean
           kind: string
           match_id: string | null
           org_id: string | null
@@ -4705,7 +4799,9 @@ export type Database = {
           completed_at?: string | null
           compliance_hold_id?: string | null
           created_at?: string
+          demo_dataset_id?: string | null
           id?: string
+          is_demo?: boolean
           kind: string
           match_id?: string | null
           org_id?: string | null
@@ -4729,7 +4825,9 @@ export type Database = {
           completed_at?: string | null
           compliance_hold_id?: string | null
           created_at?: string
+          demo_dataset_id?: string | null
           id?: string
+          is_demo?: boolean
           kind?: string
           match_id?: string | null
           org_id?: string | null
@@ -4936,6 +5034,7 @@ export type Database = {
           cross_border_consent: boolean
           data_region: string
           data_residency_region: string | null
+          demo_dataset_id: string | null
           frozen: boolean
           frozen_at: string | null
           frozen_by: string | null
@@ -4966,6 +5065,7 @@ export type Database = {
           cross_border_consent?: boolean
           data_region?: string
           data_residency_region?: string | null
+          demo_dataset_id?: string | null
           frozen?: boolean
           frozen_at?: string | null
           frozen_by?: string | null
@@ -4996,6 +5096,7 @@ export type Database = {
           cross_border_consent?: boolean
           data_region?: string
           data_residency_region?: string | null
+          demo_dataset_id?: string | null
           frozen?: boolean
           frozen_at?: string | null
           frozen_by?: string | null
@@ -5301,6 +5402,7 @@ export type Database = {
           counterparty_response: string | null
           counterparty_type: Database["public"]["Enums"]["counterparty_type"]
           created_at: string
+          demo_dataset_id: string | null
           dispute_metadata: Json | null
           dispute_reason: string | null
           dispute_source: string | null
@@ -5352,6 +5454,7 @@ export type Database = {
           counterparty_response?: string | null
           counterparty_type?: Database["public"]["Enums"]["counterparty_type"]
           created_at?: string
+          demo_dataset_id?: string | null
           dispute_metadata?: Json | null
           dispute_reason?: string | null
           dispute_source?: string | null
@@ -5403,6 +5506,7 @@ export type Database = {
           counterparty_response?: string | null
           counterparty_type?: Database["public"]["Enums"]["counterparty_type"]
           created_at?: string
+          demo_dataset_id?: string | null
           dispute_metadata?: Json | null
           dispute_reason?: string | null
           dispute_source?: string | null
@@ -5590,8 +5694,10 @@ export type Database = {
           buyer_entity_id: string
           completion_probability: number | null
           created_at: string
+          demo_dataset_id: string | null
           id: string
           industry_code: string
+          is_demo: boolean
           jurisdiction_code: string
           last_activity_at: string
           org_id: string
@@ -5604,8 +5710,10 @@ export type Database = {
           buyer_entity_id: string
           completion_probability?: number | null
           created_at?: string
+          demo_dataset_id?: string | null
           id?: string
           industry_code: string
+          is_demo?: boolean
           jurisdiction_code: string
           last_activity_at?: string
           org_id: string
@@ -5618,8 +5726,10 @@ export type Database = {
           buyer_entity_id?: string
           completion_probability?: number | null
           created_at?: string
+          demo_dataset_id?: string | null
           id?: string
           industry_code?: string
+          is_demo?: boolean
           jurisdiction_code?: string
           last_activity_at?: string
           org_id?: string
@@ -5658,10 +5768,12 @@ export type Database = {
           deletion_category: string | null
           deletion_reason: string | null
           deletion_requested_at: string | null
+          demo_dataset_id: string | null
           email: string
           full_name: string | null
           full_name_previous: string | null
           id: string
+          is_demo: boolean
           org_id: string
           selected_persona: string | null
           status: string
@@ -5672,10 +5784,12 @@ export type Database = {
           deletion_category?: string | null
           deletion_reason?: string | null
           deletion_requested_at?: string | null
+          demo_dataset_id?: string | null
           email: string
           full_name?: string | null
           full_name_previous?: string | null
           id: string
+          is_demo?: boolean
           org_id: string
           selected_persona?: string | null
           status?: string
@@ -5686,10 +5800,12 @@ export type Database = {
           deletion_category?: string | null
           deletion_reason?: string | null
           deletion_requested_at?: string | null
+          demo_dataset_id?: string | null
           email?: string
           full_name?: string | null
           full_name_previous?: string | null
           id?: string
+          is_demo?: boolean
           org_id?: string
           selected_persona?: string | null
           status?: string
@@ -6381,8 +6497,10 @@ export type Database = {
       screening_results: {
         Row: {
           created_at: string
+          demo_dataset_id: string | null
           entity_id: string | null
           id: string
+          is_demo: boolean
           matched_entities: Json | null
           metadata: Json
           next_screening_at: string | null
@@ -6398,8 +6516,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          demo_dataset_id?: string | null
           entity_id?: string | null
           id?: string
+          is_demo?: boolean
           matched_entities?: Json | null
           metadata?: Json
           next_screening_at?: string | null
@@ -6415,8 +6535,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          demo_dataset_id?: string | null
           entity_id?: string | null
           id?: string
+          is_demo?: boolean
           matched_entities?: Json | null
           metadata?: Json
           next_screening_at?: string | null
@@ -6449,9 +6571,11 @@ export type Database = {
       }
       screening_runs: {
         Row: {
+          demo_dataset_id: string | null
           details: Json | null
           entity_id: string
           id: string
+          is_demo: boolean
           org_id: string
           provider: string
           ran_at: string
@@ -6459,9 +6583,11 @@ export type Database = {
           status: string
         }
         Insert: {
+          demo_dataset_id?: string | null
           details?: Json | null
           entity_id: string
           id?: string
+          is_demo?: boolean
           org_id: string
           provider: string
           ran_at?: string
@@ -6469,9 +6595,11 @@ export type Database = {
           status: string
         }
         Update: {
+          demo_dataset_id?: string | null
           details?: Json | null
           entity_id?: string
           id?: string
+          is_demo?: boolean
           org_id?: string
           provider?: string
           ran_at?: string
@@ -6949,9 +7077,11 @@ export type Database = {
           action_type: string
           api_key_id: string | null
           created_at: string
+          demo_dataset_id: string | null
           endpoint: string
           entity_id: string | null
           id: string
+          is_demo: boolean
           metadata: Json | null
           org_id: string
           outcome: string
@@ -6963,9 +7093,11 @@ export type Database = {
           action_type: string
           api_key_id?: string | null
           created_at?: string
+          demo_dataset_id?: string | null
           endpoint: string
           entity_id?: string | null
           id?: string
+          is_demo?: boolean
           metadata?: Json | null
           org_id: string
           outcome: string
@@ -6977,9 +7109,11 @@ export type Database = {
           action_type?: string
           api_key_id?: string | null
           created_at?: string
+          demo_dataset_id?: string | null
           endpoint?: string
           entity_id?: string | null
           id?: string
+          is_demo?: boolean
           metadata?: Json | null
           org_id?: string
           outcome?: string
@@ -7289,7 +7423,9 @@ export type Database = {
           commodity: string | null
           created_at: string
           created_by: string
+          demo_dataset_id: string | null
           id: string
+          is_demo: boolean
           location: string | null
           match_type: string | null
           metadata: Json | null
@@ -7310,7 +7446,9 @@ export type Database = {
           commodity?: string | null
           created_at?: string
           created_by: string
+          demo_dataset_id?: string | null
           id?: string
+          is_demo?: boolean
           location?: string | null
           match_type?: string | null
           metadata?: Json | null
@@ -7331,7 +7469,9 @@ export type Database = {
           commodity?: string | null
           created_at?: string
           created_by?: string
+          demo_dataset_id?: string | null
           id?: string
+          is_demo?: boolean
           location?: string | null
           match_type?: string | null
           metadata?: Json | null
@@ -7672,8 +7812,10 @@ export type Database = {
           certificate_path: string | null
           created_at: string
           created_by: string | null
+          demo_dataset_id: string | null
           evidence_bundle: Json
           id: string
+          is_demo: boolean
           ledger_entry_hash: string | null
           org_id: string
           poi_id: string
@@ -7698,8 +7840,10 @@ export type Database = {
           certificate_path?: string | null
           created_at?: string
           created_by?: string | null
+          demo_dataset_id?: string | null
           evidence_bundle?: Json
           id?: string
+          is_demo?: boolean
           ledger_entry_hash?: string | null
           org_id: string
           poi_id: string
@@ -7724,8 +7868,10 @@ export type Database = {
           certificate_path?: string | null
           created_at?: string
           created_by?: string | null
+          demo_dataset_id?: string | null
           evidence_bundle?: Json
           id?: string
+          is_demo?: boolean
           ledger_entry_hash?: string | null
           org_id?: string
           poi_id?: string
@@ -8046,9 +8192,11 @@ export type Database = {
           created_at: string
           delivered: boolean | null
           delivered_at: string | null
+          demo_dataset_id: string | null
           error_message: string | null
           event_type: string
           id: string
+          is_demo: boolean
           org_id: string
           payload: Json
           retry_count: number | null
@@ -8059,9 +8207,11 @@ export type Database = {
           created_at?: string
           delivered?: boolean | null
           delivered_at?: string | null
+          demo_dataset_id?: string | null
           error_message?: string | null
           event_type: string
           id?: string
+          is_demo?: boolean
           org_id: string
           payload: Json
           retry_count?: number | null
@@ -8072,9 +8222,11 @@ export type Database = {
           created_at?: string
           delivered?: boolean | null
           delivered_at?: string | null
+          demo_dataset_id?: string | null
           error_message?: string | null
           event_type?: string
           id?: string
+          is_demo?: boolean
           org_id?: string
           payload?: Json
           retry_count?: number | null
@@ -8722,6 +8874,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      archive_demo_workspace: {
+        Args: {
+          p_admin_user_id: string
+          p_dataset_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       archive_programme_participant: {
         Args: {
           p_actor_org_id: string
@@ -9082,6 +9242,10 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: string
       }
+      create_demo_workspace: {
+        Args: { p_admin_user_id: string; p_org_name: string; p_reason: string }
+        Returns: Json
+      }
       cron_invoke: {
         Args: { p_body?: Json; p_job_name: string; p_url: string }
         Returns: number
@@ -9415,6 +9579,14 @@ export type Database = {
       reset_auth_rate_limit: {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: undefined
+      }
+      reset_demo_workspace: {
+        Args: {
+          p_admin_user_id: string
+          p_dataset_id: string
+          p_reason: string
+        }
+        Returns: Json
       }
       resolve_admin_risk_item: {
         Args: {
