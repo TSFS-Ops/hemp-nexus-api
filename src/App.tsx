@@ -14,6 +14,7 @@ import { LegacyRedirectBanner } from "@/components/LegacyRedirectBanner";
 import { AuthRedirectNoticeBanner } from "@/components/AuthRedirectNoticeBanner";
 import { RequireAuth } from "@/components/RequireAuth";
 import { TestModeBanner } from "@/components/TestModeBanner";
+import { DemoModeBanner } from "@/components/ops/DemoModeBanner";
 import { MaintenanceBanner } from "@/components/MaintenanceBanner";
 import { MaintenancePage, MAINTENANCE_MODE } from "@/components/MaintenancePage";
 import { SessionExpiredModal } from "@/components/SessionExpiredModal";
