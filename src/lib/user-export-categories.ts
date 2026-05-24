@@ -58,3 +58,43 @@ export const USER_EXPORT_CATEGORY_LABELS: Record<UserExportCategory, string> = {
   my_billing_usage: "My billing & credit usage",
   my_documents: "Documents I uploaded",
 };
+
+const _ALLOWED_SET: ReadonlySet<string> = new Set(ALLOWED_USER_EXPORT_CATEGORIES);
+const _FORBIDDEN_SET: ReadonlySet<string> = new Set(
+  FORBIDDEN_USER_EXPORT_CATEGORIES,
+);
+
+export interface ResolveExportScopeResult {
+  resolved: UserExportCategory[];
+  stripped: string[];
+  empty: boolean;
+}
+
+/**
+ * Pure mirror of the Deno helper in
+ * supabase/functions/_shared/user-export-categories.ts. Used by tests and
+ * for any future client-side pre-validation. Server is still authoritative.
+ */
+export function resolveExportScope(
+  userId: string,
+  _orgIds: string[],
+  requestedCategories: readonly string[],
+): ResolveExportScopeResult {
+  if (!userId) {
+    return { resolved: [], stripped: [...requestedCategories], empty: true };
+  }
+  const resolved: UserExportCategory[] = [];
+  const stripped: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of requestedCategories) {
+    const c = String(raw ?? "").trim();
+    if (!c || seen.has(c)) continue;
+    seen.add(c);
+    if (_FORBIDDEN_SET.has(c) || !_ALLOWED_SET.has(c)) {
+      stripped.push(c);
+      continue;
+    }
+    resolved.push(c as UserExportCategory);
+  }
+  return { resolved, stripped, empty: resolved.length === 0 };
+}
