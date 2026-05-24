@@ -68,6 +68,7 @@ import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
 import { AdminTradeRequestArchivePanel } from "@/components/admin/AdminTradeRequestArchivePanel";
 import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHoldPanel";
 import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspacesPanel";
+import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyReviewsPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
@@ -334,6 +335,7 @@ function DisputesTab() {
           <TabsTrigger value="trade-request-archive">Trade Request Archive</TabsTrigger>
           <TabsTrigger value="compliance-holds">Compliance Holds</TabsTrigger>
           <TabsTrigger value="demo-workspaces">Demo Workspaces</TabsTrigger>
+          <TabsTrigger value="residency-reviews">Residency Reviews</TabsTrigger>
         </TabsList>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
@@ -363,6 +365,16 @@ function DisputesTab() {
         <TabsContent value="compliance-holds">
           <Surface label="COMP-002 / COMP-012 · public.compliance_holds · sanctions (30d) + verification (365d) freshness gate · AAL2-gated release/close · no payment/credit side effects">
             <AdminComplianceHoldPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="demo-workspaces">
+          <Surface label="OPS-010 · controlled demo workspaces · service_role-only create/reset/archive · AAL2-gated; live data fully isolated">
+            <AdminDemoWorkspacesPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="residency-reviews">
+          <Surface label="DATA-009 Phase 2 · public.data_residency_reviews · onboarding hold + approve/decline · AAL2-gated; policy exception only, no technical hosting/region/migration/backup/export/deletion control">
+            <AdminResidencyReviewsPanel />
           </Surface>
         </TabsContent>
       </Tabs>

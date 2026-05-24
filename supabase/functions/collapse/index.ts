@@ -15,6 +15,8 @@ import {
   buildComplianceFreshnessResponse,
 } from "../_shared/compliance-freshness-guard.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
+import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
@@ -112,6 +114,10 @@ Deno.serve(async (req: Request) => {
     );
     const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "collapse", artefact: true });
     if (_demoBlocked) return _demoBlocked;
+    // DATA-009 Phase 2 residency gate.
+    const _resGate = await residencyGateForMatchRequest(_demoAdmin, req);
+    if (_resGate) return _resGate;
+    void checkResidencyHoldAny; void residencyBlockResponse;
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";

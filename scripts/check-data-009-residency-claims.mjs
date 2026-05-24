@@ -46,6 +46,9 @@ const SCAN_FILES = [
   "src/components/PublicHeader.tsx",
   "docs/getting-started.md",
   "docs/infrastructure-requirements.md",
+  "src/components/admin/AdminResidencyReviewsPanel.tsx",
+  "src/components/data-residency/ResidencyReviewBanner.tsx",
+  "src/components/data-residency/ResidencyRequestForm.tsx",
 ];
 
 // Forbidden unapproved-residency phrases (case-insensitive substring).

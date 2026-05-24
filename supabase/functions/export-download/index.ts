@@ -19,6 +19,11 @@ import {
   writeLifecycleAudit,
 } from "../_shared/export-lifecycle-audit.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
+import {
+  checkResidencyHoldAny,
+  residencyBlockResponse,
+} from "../_shared/residency-claim-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,6 +61,10 @@ Deno.serve(async (req) => {
     );
     const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "export-download", artefact: true });
     if (_demoBlocked) return _demoBlocked;
+    // DATA-009 Phase 2 residency gate (best-effort; deeper org check after request lookup).
+    const _resGate = await residencyGateForMatchRequest(_demoAdmin, req);
+    if (_resGate) return _resGate;
+    void checkResidencyHoldAny; void residencyBlockResponse;
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
