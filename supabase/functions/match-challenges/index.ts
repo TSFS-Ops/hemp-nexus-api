@@ -24,6 +24,10 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { readAal } from "../_shared/aal.ts";
 import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+} from "../_shared/governance-audit-integration.ts";
 
 /**
  * Batch J Required Fix 2 — AAL2 gate.
