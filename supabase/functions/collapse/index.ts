@@ -17,6 +17,11 @@ import {
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
 import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+  writeGovernanceEventBestEffort,
+} from "../_shared/governance-audit-integration.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
