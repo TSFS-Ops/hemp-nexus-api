@@ -1444,6 +1444,38 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
+  const submitDisputeResolution = async () => {
+    if (!disputeResolutionFor) return;
+    const reason = disputeResolutionReason.trim();
+    if (reason.length < 10) {
+      toast.error("Resolution reason must be at least 10 characters.");
+      return;
+    }
+    const { engagement, action } = disputeResolutionFor;
+    setActionLoadingId(engagement.id);
+    try {
+      const { error } = await supabase.functions.invoke(
+        `poi-engagements/${engagement.id}/${action}`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: { resolution_reason: reason },
+        },
+      );
+      if (error) throw error;
+      toast.success(action === "dispute-release" ? "Dispute released." : "Dispute closed.");
+      setDisputeResolutionFor(null);
+      setDisputeResolutionReason("");
+      fetchEngagements();
+    } catch (err) {
+      console.error("Dispute resolution error:", err);
+      const msg = await extractEdgeError(err, "Failed to resolve dispute");
+      toast.error(msg);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
