@@ -1622,6 +1622,65 @@ export type Database = {
         }
         Relationships: []
       }
+      data_residency_reviews: {
+        Row: {
+          created_at: string
+          decision_reason: string | null
+          expires_at: string | null
+          id: string
+          legal_basis: string | null
+          metadata: Json
+          org_id: string
+          requested_country: string | null
+          requested_region: string | null
+          requirement_source: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision_reason?: string | null
+          expires_at?: string | null
+          id?: string
+          legal_basis?: string | null
+          metadata?: Json
+          org_id: string
+          requested_country?: string | null
+          requested_region?: string | null
+          requirement_source: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision_reason?: string | null
+          expires_at?: string | null
+          id?: string
+          legal_basis?: string | null
+          metadata?: Json
+          org_id?: string
+          requested_country?: string | null
+          requested_region?: string | null
+          requirement_source?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_residency_reviews_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_source_performance: {
         Row: {
           created_at: string
@@ -5046,6 +5105,8 @@ export type Database = {
           legal_name: string | null
           logo_url: string | null
           name: string
+          onboarding_hold_reason: string | null
+          onboarding_hold_review_id: string | null
           registration_number: string | null
           sandbox_enabled: boolean | null
           status: string
@@ -5077,6 +5138,8 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name: string
+          onboarding_hold_reason?: string | null
+          onboarding_hold_review_id?: string | null
           registration_number?: string | null
           sandbox_enabled?: boolean | null
           status?: string
@@ -5108,6 +5171,8 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name?: string
+          onboarding_hold_reason?: string | null
+          onboarding_hold_review_id?: string | null
           registration_number?: string | null
           sandbox_enabled?: boolean | null
           status?: string
@@ -5118,7 +5183,15 @@ export type Database = {
           vat_number?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_onboarding_hold_review_fk"
+            columns: ["onboarding_hold_review_id"]
+            isOneToOne: false
+            referencedRelation: "data_residency_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ownership_links: {
         Row: {
@@ -8874,6 +8947,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      approve_residency_review: {
+        Args: { p_admin_user_id: string; p_reason: string; p_review_id: string }
+        Returns: Json
+      }
       archive_demo_workspace: {
         Args: {
           p_admin_user_id: string
@@ -9251,6 +9328,10 @@ export type Database = {
         Returns: number
       }
       cron_reconcile_heartbeats: { Args: never; Returns: undefined }
+      decline_residency_review: {
+        Args: { p_admin_user_id: string; p_reason: string; p_review_id: string }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -9571,6 +9652,17 @@ export type Database = {
           p_target_org_id: string
         }
         Returns: string
+      }
+      request_residency_review: {
+        Args: {
+          p_legal_basis?: string
+          p_metadata?: Json
+          p_org_id: string
+          p_requested_country?: string
+          p_requested_region?: string
+          p_requirement_source: string
+        }
+        Returns: Json
       }
       request_user_export: {
         Args: { p_requested_categories: string[]; p_subject_user_id: string }
