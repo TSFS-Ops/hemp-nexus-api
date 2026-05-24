@@ -25,6 +25,7 @@ import { z } from 'npm:zod@3.23.8';
 import { handleCorsPreflight, withCors } from '../_shared/cors.ts';
 import { assertAal2 } from '../_shared/aal.ts';
 import { ApiException } from '../_shared/errors.ts';
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -83,6 +84,16 @@ async function writeAudit(
 }
 
 Deno.serve(async (req) => {
+  // OPS-010: short-circuit live side effects for demo data.
+  try {
+    const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "admin-credit-org", artefact: false });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const __pf = handleCorsPreflight(req);
   if (__pf) return __pf;
 

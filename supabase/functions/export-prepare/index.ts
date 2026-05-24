@@ -23,6 +23,7 @@ import {
   safeProjection,
   toCsv,
 } from "../_shared/export-redaction.ts";
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +52,16 @@ const USER_EXPORT_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
 const ADMIN_EXPORT_TTL_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 Deno.serve(async (req) => {
+  // OPS-010: short-circuit live side effects for demo data.
+  try {
+    const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "export-prepare", artefact: true });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 

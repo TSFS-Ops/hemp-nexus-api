@@ -5,6 +5,7 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { encryptSecret } from "../_shared/webhook-crypto.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 
 const webhookCreateSchema = z.object({
   url: z.string().url("Invalid URL"),
@@ -19,6 +20,16 @@ const webhookUpdateSchema = z.object({
 });
 
 Deno.serve(async (req) => {
+  // OPS-010: short-circuit live side effects for demo data.
+  try {
+    const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "webhooks", artefact: false });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
   const origin = req.headers.get("origin");

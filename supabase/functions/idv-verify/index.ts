@@ -7,6 +7,7 @@ import { isBypassEnabled, recordBypassUsage, bypassEnvelope, checkMaintenanceMod
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { fetchWithTimeout, ProviderTimeoutError, isProviderFailureStatus } from "../_shared/fetch-with-timeout.ts";
 import { checkProviderCooldown, recordProviderFailure, cooldownResponseEnvelope } from "../_shared/provider-retry.ts";
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 
 /** Batch F: thrown by provider helpers when the provider is unreachable/degraded. */
 class IdvProviderError extends Error {
@@ -154,6 +155,16 @@ async function verifyWithStub(entityId: string, entityType: string, name: string
 }
 
 Deno.serve(async (req: Request) => {
+  // OPS-010: short-circuit live side effects for demo data.
+  try {
+    const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "idv-verify", artefact: false });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
   const origin = req.headers.get("origin");

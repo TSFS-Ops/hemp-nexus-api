@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 
 /**
  * Webhook Retry Background Job
@@ -19,6 +20,16 @@ import { ApiException, errorResponse } from "../_shared/errors.ts";
  */
 
 Deno.serve(async (req) => {
+  // OPS-010: short-circuit live side effects for demo data.
+  try {
+    const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "webhook-retry", artefact: false });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   console.log(`[AUTH CHECK] INTERNAL_CRON_KEY: ${Deno.env.has("INTERNAL_CRON_KEY") ? "LOCKED 🔒" : "MISSING 🔓"}`);
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";

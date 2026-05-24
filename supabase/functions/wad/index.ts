@@ -23,6 +23,7 @@ import {
   assertCompliantFreshness,
   buildComplianceFreshnessResponse,
 } from "../_shared/compliance-freshness-guard.ts";
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -92,6 +93,16 @@ function isPartyToWad(wad: any, orgId: string): boolean {
 }
 
 Deno.serve(async (req) => {
+  // OPS-010: short-circuit live side effects for demo data.
+  try {
+    const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "wad", artefact: true });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
   const origin = req.headers.get("origin");

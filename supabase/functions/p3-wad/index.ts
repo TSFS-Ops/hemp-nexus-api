@@ -13,6 +13,7 @@ import {
   assertCompliantFreshness,
   buildComplianceFreshnessResponse,
 } from "../_shared/compliance-freshness-guard.ts";
+import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 
 /**
  * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
@@ -50,6 +51,16 @@ interface HardGateResult {
 }
 
 Deno.serve(async (req: Request) => {
+  // OPS-010: short-circuit live side effects for demo data.
+  try {
+    const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "p3-wad", artefact: true });
+    if (_demoBlocked) return _demoBlocked;
+  } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   if (req.method === "OPTIONS") return handleCors(req);
 
   const correlationId = req.headers.get("X-Correlation-ID") || crypto.randomUUID();
