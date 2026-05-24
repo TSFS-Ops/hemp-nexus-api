@@ -6,6 +6,10 @@ import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { deriveActorIds } from "../_shared/actor-context.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
 import { assertNoOpenChallenge } from "../_shared/challenge-progression-guard.ts";
+import {
+  assertMatchProgressable,
+  buildProgressionGuardResponse,
+} from "../_shared/match-progression-guard.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
