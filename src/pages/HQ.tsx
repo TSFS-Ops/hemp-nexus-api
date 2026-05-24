@@ -68,6 +68,7 @@ import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
 import { AdminTradeRequestArchivePanel } from "@/components/admin/AdminTradeRequestArchivePanel";
 import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHoldPanel";
 import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspacesPanel";
+import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyReviewsPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
