@@ -2554,7 +2554,6 @@ Deno.serve(async (req) => {
               nextState === "contact_incomplete" &&
               isUsableContactEmail(nextEmail)
             ) {
-              try {
               const cp003PatchMeta = {
                 ...baseMeta,
                 cp_rule: "CP-003",
