@@ -19,6 +19,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { assertNoLegalHold } from "../_shared/legal-hold.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Headers":
