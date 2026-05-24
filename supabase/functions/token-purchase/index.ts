@@ -27,6 +27,10 @@ import { assertIdempotencyKey, cachedResponseToHttp, sha256Hex } from "../_share
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertNotReplayed } from "../_shared/replay-guard.ts";
 import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
+import {
+  buildPostureSnapshot,
+  writeCriticalEventWithPosture,
+} from "../_shared/governance-audit-integration.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
