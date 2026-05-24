@@ -65,6 +65,7 @@ import { AdminCanonicalSpinePanel } from "@/components/admin/AdminCanonicalSpine
 import { AdminLifecycleRunPanel } from "@/components/admin/AdminLifecycleRunPanel";
 import { AdminLegacyRepairPanel } from "@/components/admin/AdminLegacyRepairPanel";
 import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
+import { AdminTradeRequestArchivePanel } from "@/components/admin/AdminTradeRequestArchivePanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
