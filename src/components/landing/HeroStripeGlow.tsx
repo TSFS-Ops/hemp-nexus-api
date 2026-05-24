@@ -109,9 +109,10 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
               {[0, 1].map((dup) => (
                 <div key={dup} className="flex gap-x-12 shrink-0 pr-12">
                   <div className="flex items-center gap-3 text-muted-foreground shrink-0">
-                    <div className="w-2 h-2 rounded-full bg-[hsl(var(--emerald))] animate-pulse" />
-                    <span className="text-sm font-mono tracking-tight">SYSTEM: OPERATIONAL</span>
+                    <div className="w-2 h-2 rounded-full bg-[hsl(var(--emerald))]" />
+                    <span className="text-sm font-mono tracking-tight">LEDGER: APPEND-ONLY</span>
                   </div>
+
                   <div className="flex items-center gap-3 text-muted-foreground shrink-0">
                     <ShieldCheck className="w-4 h-4 text-muted-foreground/70" strokeWidth={1.75} />
                     <span className="text-sm font-mono tracking-tight">LEDGER: SHA-256</span>
