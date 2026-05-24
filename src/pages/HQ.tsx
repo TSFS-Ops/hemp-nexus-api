@@ -335,6 +335,7 @@ function DisputesTab() {
           <TabsTrigger value="trade-request-archive">Trade Request Archive</TabsTrigger>
           <TabsTrigger value="compliance-holds">Compliance Holds</TabsTrigger>
           <TabsTrigger value="demo-workspaces">Demo Workspaces</TabsTrigger>
+          <TabsTrigger value="residency-reviews">Residency Reviews</TabsTrigger>
         </TabsList>
         <TabsContent value="disputes">
           <Surface label="Disputed trades · public.disputes · escalation queue">
