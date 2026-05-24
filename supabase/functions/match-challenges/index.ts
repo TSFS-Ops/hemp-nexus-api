@@ -564,6 +564,39 @@ Deno.serve(async (req) => {
             requestId,
             source: `match-challenges:transitioned_${p.to_status}`,
           });
+
+          // Phase 2 canonical (FAIL-CLOSED): dispute.released for withdrawals,
+          // dispute.closed for outcome_recorded / closed_no_action.
+          const eventType = p.to_status === "withdrawn" ? "dispute.released" : "dispute.closed";
+          try {
+            await writeCriticalEventWithPosture(admin, {
+              event_type: eventType,
+              org_id: challenge.org_id ?? orgId,
+              aggregate_type: "match_challenge",
+              aggregate_id: p.challenge_id,
+              actor_user_id: userId,
+              actor_role: isPlatformAdmin ? "platform_admin" : "org_admin",
+              source_function: "match-challenges",
+              request_id: requestId,
+              match_id: challenge.match_id,
+              previous_state: challenge.status,
+              new_state: p.to_status,
+              allowed_or_blocked: p.to_status === "withdrawn" ? "neutral" : "allowed",
+              reason_code: (update.outcome_code as string | undefined) ?? p.to_status,
+              posture: buildPostureSnapshot("Standard", {
+                check_status: { via_platform_admin: isPlatformAdmin, to_status: p.to_status },
+              }),
+              metadata: {
+                outcome_code: (update.outcome_code as string | undefined) ?? null,
+                outcome_summary_length:
+                  typeof update.outcome_summary === "string" ? update.outcome_summary.length : 0,
+              },
+              idempotency_extra: p.to_status,
+            });
+          } catch (govErr) {
+            console.error(`[match-challenges] CRITICAL: ${eventType} audit failed:`, govErr);
+            return err("GOV_AUDIT_WRITE_FAILED", "Challenge transitioned but governance proof write failed", 500);
+          }
         }
         return json({ challenge: row }, 200);
       }
