@@ -339,6 +339,11 @@ export function AdminPendingEngagementsPanel() {
   // D3 — admin Dispute + Cancel-for-email-change dialog state.
   const [disputeFor, setDisputeFor] = useState<DisputeEngagementTarget | null>(null);
   const [cancelEmailFor, setCancelEmailFor] = useState<CancelEngagementTarget | null>(null);
+  const [disputeResolutionFor, setDisputeResolutionFor] = useState<{
+    engagement: Engagement;
+    action: "dispute-release" | "dispute-close";
+  } | null>(null);
+  const [disputeResolutionReason, setDisputeResolutionReason] = useState("");
 
   // ── Outreach delivery status (read-only enrichment from email_send_log) ──
   // Mirrors UI-003's truthful "queued vs sent" rule. Each outreach send writes
