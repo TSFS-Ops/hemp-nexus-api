@@ -2015,5 +2015,15 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
         newBalance,
       },
     );
+
+    // PAY-009 governed dual-write — LOST path emits a detection audit but
+    // does NOT call resolve_payment_dispute_lost (would double-debit the
+    // legacy chargeback ledger row). Formal RPC resolution is deferred to
+    // admin AAL2 sign-off via HQ → Billing Review.
+    await dualWriteGovernedDisputeResolve(supabase, {
+      disputeRef,
+      terminalStatus,
+      paystackStatus,
+    });
   }
 }
