@@ -129,9 +129,49 @@ Deno.serve(async (req: Request) => {
 
     let processed = 0;
     let failed = 0;
+    let skippedLegalHold = 0;
     const errors: Array<{ flag_id: string; error: string }> = [];
 
+    // DATA-003: batch-level sentinel hold blocks the whole archive pipeline.
+    const batchHold = await assertNoLegalHold(admin, [
+      { scope_type: "record_group", scope_id: RECORD_GROUP_IDS.cold_storage_archive },
+    ], {
+      action: "cold-storage-archive.batch",
+      actorUserId: null,
+      actorOrgId: null,
+      requestId,
+    });
+    if (batchHold.blocked) {
+      return new Response(JSON.stringify({
+        success: true,
+        request_id: requestId,
+        processed: 0,
+        failed: 0,
+        skipped_legal_hold: pendingFlags.length,
+        legal_hold_id: batchHold.activeHold?.id ?? null,
+        message: "Cold storage archival blocked by active legal hold",
+      }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+    }
+
     for (const flag of pendingFlags) {
+      // DATA-003: per-record check. Skip archiving if the underlying
+      // entity is under an active legal hold.
+      const scopeType = COLD_TABLE_TO_SCOPE[flag.table_name];
+      if (scopeType) {
+        const rowHold = await assertNoLegalHold(admin, [
+          { scope_type: scopeType, scope_id: flag.record_id },
+        ], {
+          action: `cold-storage-archive.${flag.table_name}`,
+          actorUserId: null,
+          actorOrgId: flag.org_id ?? null,
+          requestId,
+          relatedRequestId: flag.id,
+        });
+        if (rowHold.blocked) {
+          skippedLegalHold++;
+          continue;
+        }
+      }
       try {
         // 1. Fetch the source record
         const { data: sourceRecord, error: sourceErr } = await admin
