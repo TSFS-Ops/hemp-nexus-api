@@ -257,7 +257,7 @@ async function fetchMatch(admin: ReturnType<typeof createClient>, matchId: strin
 async function fetchChallenge(admin: ReturnType<typeof createClient>, challengeId: string) {
   const { data, error } = await admin
     .from("match_challenges")
-    .select("id, match_id, status, raised_by_user_id, raised_by_org_id, raised_by_role")
+    .select("id, match_id, org_id, status, raised_by_user_id, raised_by_org_id, raised_by_role")
     .eq("id", challengeId)
     .maybeSingle();
   return { challenge: data, error };
