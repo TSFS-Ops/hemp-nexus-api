@@ -429,6 +429,20 @@ Deno.serve(async (req: Request) => {
 
     // ── State machine check: POI must be in ELIGIBLE or COMPLETION_REQUESTED state ──
     if (match_id && UUID_RE.test(match_id)) {
+      // ── MT-008 / MT-009 server-side progression guard (collapse/finality) ──
+      {
+        const mtDecision = await assertMatchProgressable({
+          supabase: adminClient,
+          matchId: match_id,
+          action: "collapse",
+          sourceFunction: "collapse",
+          actorUserId: null,
+          actorOrgId: (body as { org_id?: string }).org_id ?? null,
+        });
+        const blocked = buildProgressionGuardResponse(mtDecision, headers);
+        if (blocked) return blocked;
+      }
+
       const { data: match } = await adminClient
         .from("matches")
         .select("poi_state, completion_probability")
