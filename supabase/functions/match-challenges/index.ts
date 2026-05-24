@@ -383,6 +383,31 @@ Deno.serve(async (req) => {
           requestId,
           extra: { subject_code: p.subject_code, raised_by_role: p.raised_by_role },
         });
+        // Phase 2 canonical (FAIL-CLOSED): dispute.opened
+        try {
+          await writeCriticalEventWithPosture(admin, {
+            event_type: "dispute.opened",
+            org_id: insertOrgId,
+            aggregate_type: "match_challenge",
+            aggregate_id: row.id,
+            actor_user_id: userId,
+            actor_role: p.raised_by_role,
+            source_function: "match-challenges",
+            request_id: requestId,
+            match_id: p.match_id,
+            new_state: "open",
+            allowed_or_blocked: "allowed",
+            reason_code: p.subject_code,
+            posture: buildPostureSnapshot("Standard", {
+              check_status: { raised_by_role: p.raised_by_role },
+            }),
+            metadata: { subject_code: p.subject_code, summary_length: p.summary.length },
+            idempotency_extra: "raised",
+          });
+        } catch (govErr) {
+          console.error("[match-challenges] CRITICAL: dispute.opened audit failed:", govErr);
+          return err("GOV_AUDIT_WRITE_FAILED", "Challenge raised but governance proof write failed", 500);
+        }
         return json({ challenge: row }, 201);
       }
 
