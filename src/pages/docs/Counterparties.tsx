@@ -52,6 +52,13 @@ export default function DocsCounterparties() {
               <InlineCode>seller_org_id</InlineCode> from a buyer's). This is always
               relative to the viewer.
             </li>
+            <li>
+              <strong className="text-foreground">named lead</strong> — the specific
+              person/email named on the trade (the contact you would actually reach out to).
+              A named lead is bound to an org but is not the same thing as a counterparty
+              record; multiple named leads can resolve to one counterparty record, and a
+              named lead can exist before any verified counterparty record does.
+            </li>
           </ul>
         </Callout>
 
