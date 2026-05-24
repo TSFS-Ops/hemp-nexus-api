@@ -290,6 +290,33 @@ Deno.serve(async (req) => {
         related_request_id: related_request_id ?? null,
         request_id: requestId,
       });
+
+      // Phase 2 canonical (FAIL-CLOSED): legal_hold.applied
+      try {
+        await writeCriticalEventWithPosture(admin, {
+          event_type: "legal_hold.applied",
+          org_id: scope_type === "org" ? scope_id : (scope_id),
+          aggregate_type: "legal_hold",
+          aggregate_id: inserted.id,
+          actor_user_id: callerId,
+          actor_role: "platform_admin",
+          source_function: "admin-legal-hold",
+          request_id: requestId,
+          allowed_or_blocked: "allowed",
+          reason_code: `scope:${scope_type}`,
+          posture: buildPostureSnapshot("Standard", {
+            check_status: { aal: observedAal, scope_type, scope_id },
+          }),
+          metadata: { reason, scope_type, scope_id, related_request_id: related_request_id ?? null },
+          idempotency_extra: `apply:${inserted.id}`,
+        });
+      } catch (govErr) {
+        console.error("[admin-legal-hold] CRITICAL: legal_hold.applied audit failed:", govErr);
+        return jsonResponse(req, {
+          error: "Hold inserted but governance proof write failed",
+          code: "GOV_AUDIT_WRITE_FAILED",
+        }, 500);
+      }
       await writeAdminAudit(admin, callerId, "admin.legal_hold.applied", inserted.id, {
         request_id: requestId,
         scope_type,
