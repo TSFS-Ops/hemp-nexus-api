@@ -3205,6 +3205,45 @@ export type Database = {
           },
         ]
       }
+      governance_taxonomy_violations: {
+        Row: {
+          aggregate_id: string | null
+          aggregate_type: string | null
+          domain: string | null
+          event_id: string
+          event_type: string
+          id: string
+          observed_at: string
+          org_id: string
+          payload_keys: string[] | null
+          reason: string
+        }
+        Insert: {
+          aggregate_id?: string | null
+          aggregate_type?: string | null
+          domain?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          observed_at?: string
+          org_id: string
+          payload_keys?: string[] | null
+          reason: string
+        }
+        Update: {
+          aggregate_id?: string | null
+          aggregate_type?: string | null
+          domain?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          observed_at?: string
+          org_id?: string
+          payload_keys?: string[] | null
+          reason?: string
+        }
+        Relationships: []
+      }
       idempotency_keys: {
         Row: {
           created_at: string
