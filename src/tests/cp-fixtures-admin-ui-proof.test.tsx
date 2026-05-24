@@ -196,7 +196,7 @@ describe("Daniel fixture admin UI proof — CP-006", () => {
     expect(await screen.findByText(DANIEL_FIXTURE_UI_COPY.cp006BindingReview)).toBeInTheDocument();
     expect(screen.getAllByText("Binding review required").length).toBeGreaterThan(0);
     expect(buttonWithVisibleText(/send outreach/i)).toBeDisabled();
-    expect(screen.getByRole("button", { name: /resolve binding/i })).toBeInTheDocument();
+    expect(buttonWithVisibleText(/^resolve binding$/i)).toBeInTheDocument();
   });
 });
 
