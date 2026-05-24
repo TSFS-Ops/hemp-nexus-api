@@ -620,6 +620,7 @@ function HQLayout() {
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
           <TabsContent value="legacy-repair" className="mt-0 animate-section-enter"><LegacyRepairTab /></TabsContent>
           <TabsContent value="legal-holds" className="mt-0 animate-section-enter"><LegalHoldsTab /></TabsContent>
+          <TabsContent value="governance-records" className="mt-0 animate-section-enter"><GovernanceRecordsTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
