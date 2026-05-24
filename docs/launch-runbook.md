@@ -190,3 +190,11 @@ Rollback steps:
 
 ## COMP-002 / COMP-012 Phase 2A
 Compliance freshness gates active synchronously at WaD / p3-WaD / collapse. Sanctions stale > 30d or verification stale > 365d → 409 with canonical code, opens `compliance_holds` row + Verification Queue item, emits canonical audit. Admin release/close require platform_admin + AAL2 + ≥20-char reason. Cron auto-open and baseline notifications deferred to Phase 2B.
+
+## OPS-010 Demo workspace operations
+- Create/reset/archive demo workspaces via HQ → Demo Workspaces (`AdminDemoWorkspacesPanel`). Each action requires platform_admin, AAL2, and a reason ≥ 20 characters.
+- The deterministic seeder (`seed-ops010-demo-workspace`) populates buyer/seller orgs, trade requests, matches and ledger entries using the `ops010-` dataset prefix. Never seeds real client / CP fixture names.
+- Live external calls are short-circuited at the edge-function boundary by `_shared/demo-mode-entry.ts`. Audited as `ops.demo_*` actions.
+- Demo artefacts (WaD, p3-WaD, collapse, deal certificate, evidence pack, exports) carry the `DEMO — NOT A PRODUCTION ARTEFACT` watermark and a `DEMO_` seal prefix.
+- Email policy: zero outbound for demo orgs (Phase 2A). Verified by `check-ops-010-guard-coverage.mjs`.
+- Prebuild guards: `check-ops-010-audit-names.mjs`, `check-ops-010-guard-coverage.mjs`, `check-ops-010-demo-boundary.mjs`.
