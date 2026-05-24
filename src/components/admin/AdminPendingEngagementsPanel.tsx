@@ -988,10 +988,11 @@ export function AdminPendingEngagementsPanel() {
       messages.push({ key: "cp012DisputeHoldInitiator", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldInitiator, tone: "neutral" });
       messages.push({ key: "cp012DisputeHoldCounterparty", copy: DANIEL_FIXTURE_UI_COPY.cp012DisputeHoldCounterparty, tone: "neutral" });
     }
-    if (e.engagement_status === "cancelled_email_change" || e.operational_state === "cancelled_for_email_change") {
-      messages.push({ key: "cp015EmailChange", copy: DANIEL_FIXTURE_UI_COPY.cp015EmailChange, tone: "warning" });
-      messages.push({ key: "cp015InactiveLink", copy: DANIEL_FIXTURE_UI_COPY.cp015InactiveLink, tone: "neutral" });
-    }
+    // CP-015 wording is rendered by the inline cp015-hq-evidence-block in
+    // the counterparty cell (full Daniel-acceptance paragraph + replacement
+    // engagement reference + direct-edit-blocked + side-effects note), so we
+    // do not also emit it via the fixture-message renderer to avoid
+    // duplicate text nodes.
 
     return messages;
   };
