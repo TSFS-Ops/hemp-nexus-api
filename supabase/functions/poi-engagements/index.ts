@@ -548,6 +548,28 @@ Deno.serve(async (req) => {
               });
             }
           } catch (_e) { /* non-fatal */ }
+          // DEC-001 (signed): canonical blocked row (dual-write).
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "pending_engagement.off_platform_outreach_blocked",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                dec_rule: "DEC-001",
+                surface: "preview-outreach",
+                blocked_reason:
+                  gate.code === "DISPUTED_BEING_NAMED"
+                    ? "disputed_being_named"
+                    : "binding_review_required",
+                guard_code: gate.code,
+                outreach_sent: false,
+                credit_burned: false,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
           throw new ApiException(gate.code, gate.message, 409);
         }
       }
@@ -663,6 +685,30 @@ Deno.serve(async (req) => {
           }
         } catch (_e) { /* non-fatal */ }
 
+        // DEC-001 (signed): canonical blocked row (dual-write).
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: (eng as { org_id: string }).org_id,
+            actor_user_id: authCtx.userId,
+            action: "pending_engagement.off_platform_outreach_blocked",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-001",
+              surface: "preview-outreach",
+              blocked_reason:
+                previewState === "email_missing"
+                  ? "contact_email_missing"
+                  : "contact_incomplete",
+              code,
+              state: previewState,
+              outreach_sent: false,
+              credit_burned: false,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
+
         throw new ApiException(code, reason, 409);
       }
 
@@ -753,6 +799,26 @@ Deno.serve(async (req) => {
       if (!uuidRegex.test(engagementId)) {
         throw new ApiException("VALIDATION_ERROR", "Invalid engagement ID format", 400);
       }
+
+      // ── DEC-001 (signed): canonical "evaluated" audit row ──
+      // Dual-write with existing per-reason audits. Records THAT an
+      // off-platform outreach decision was walked through every gate
+      // (identity, supersession, binding review, dispute, MT-008/MT-009
+      // progression), regardless of outcome. SSOT: src/lib/outreach/
+      // dec-001-audit.ts → OFF_PLATFORM_OUTREACH_EVALUATED.
+      try {
+        await supabase.from("audit_logs").insert({
+          actor_user_id: authCtx.userId,
+          action: "pending_engagement.off_platform_outreach_evaluated",
+          entity_type: "poi_engagement",
+          entity_id: engagementId,
+          metadata: {
+            dec_rule: "DEC-001",
+            surface: "send-outreach",
+            request_id: requestId,
+          },
+        });
+      } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
 
 
       // ── Validate body FIRST so we can derive a stable idempotency key from
@@ -1064,6 +1130,28 @@ Deno.serve(async (req) => {
               }
             } catch (_e) { /* non-fatal */ }
           }
+          // DEC-001 (signed): canonical blocked row (dual-write).
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "pending_engagement.off_platform_outreach_blocked",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                dec_rule: "DEC-001",
+                surface: "send-outreach",
+                blocked_reason:
+                  gate.code === "DISPUTED_BEING_NAMED"
+                    ? "disputed_being_named"
+                    : "binding_review_required",
+                guard_code: gate.code,
+                outreach_sent: false,
+                credit_burned: false,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
           throw new ApiException(gate.code, gate.message, 409);
         }
       }
@@ -1175,6 +1263,29 @@ Deno.serve(async (req) => {
             }
 
           } catch (_e) { /* non-fatal */ }
+          // DEC-001 (signed): canonical blocked row (dual-write).
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: (eng as { org_id: string }).org_id,
+              actor_user_id: authCtx.userId,
+              action: "pending_engagement.off_platform_outreach_blocked",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: {
+                dec_rule: "DEC-001",
+                surface: "send-outreach",
+                blocked_reason:
+                  sendState === "email_missing"
+                    ? "contact_email_missing"
+                    : "contact_incomplete",
+                code,
+                state: sendState,
+                outreach_sent: false,
+                credit_burned: false,
+                request_id: requestId,
+              },
+            });
+          } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
           throw new ApiException(code, reason, 422);
         }
       }
@@ -1457,6 +1568,51 @@ Deno.serve(async (req) => {
         } catch (snapErr) {
           console.warn(`[${requestId}] Failed to write governance snapshot audit row:`, snapErr);
         }
+
+        // ── DEC-001 (signed): canonical "sent" row (dual-write). ──
+        // Pairs with the operational engagement.outreach_email_queued
+        // state-transition row. SSOT: src/lib/outreach/dec-001-audit.ts.
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "pending_engagement.off_platform_outreach_sent",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-001",
+              surface: "send-outreach",
+              recipient,
+              outreach_sent: true,
+              credit_burned: false,
+              poi_minted: false,
+              wad_triggered: false,
+              payment_event: false,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
+
+        // ── DEC-004 (signed): canonical "manual follow-up assigned" row. ──
+        // Engagement now sits in `contacted` awaiting counterparty
+        // response — i.e. it has entered the manual follow-up cycle
+        // owned by the Izenzo platform admin. SSOT:
+        // src/lib/outreach/dec-004-states.ts.
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: eng.org_id,
+            actor_user_id: authCtx.userId,
+            action: "outreach.manual_follow_up_assigned",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-004",
+              manual_owner: "izenzo_platform_admin",
+              canonical_state: "contacted_awaiting_response",
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
 
         // ── DEC-005 / DEC-006 (signed): pre-acceptance wording-state ledger.
         // The atomic RPC above wrote the engagement.outreach_email_queued
@@ -2698,6 +2854,25 @@ Deno.serve(async (req) => {
             auditErr,
           );
         }
+        // DEC-004 (signed): canonical manual-action-recorded row (dual-write).
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: current.org_id,
+            actor_user_id: authCtx.userId,
+            action: "outreach.manual_follow_up_action_recorded",
+            entity_type: "poi_engagement",
+            entity_id: engagementId,
+            metadata: {
+              dec_rule: "DEC-004",
+              manual_owner: "izenzo_platform_admin",
+              admin_action: "record_contact",
+              contact_method: parsed.data.contact_method,
+              previous_status: current.engagement_status,
+              new_status: targetStatus,
+              request_id: requestId,
+            },
+          });
+        } catch (_e) { /* non-fatal — Phase 1 dual-write */ }
       }
 
       // ── Admin audit log: explicit entry whenever support notes are created/updated/cleared ──
