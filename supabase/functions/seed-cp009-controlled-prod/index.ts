@@ -371,7 +371,7 @@ async function ensureExpiredEngagement(
       engagement_status: "expired",
       counterparty_email: COUNTERPARTY_EMAIL,
       counterparty_org_id: args.counterparty_org_id,
-      counterparty_type: "named_individual",
+      counterparty_type: "known",
       contact_type: "named_individual",
       contact_name: COUNTERPARTY_CONTACT_NAME,
       contact_method: "email",
