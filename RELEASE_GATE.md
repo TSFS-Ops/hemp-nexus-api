@@ -225,3 +225,15 @@ After clicking **Publish → Update**:
 - HQ → "Demo Workspaces" tab (`AdminDemoWorkspacesPanel`).
 - Prebuild guards: `check-ops-010-audit-names.mjs`, `check-ops-010-guard-coverage.mjs`, `check-ops-010-demo-boundary.mjs`.
 - Phase 2B deferred: cron-driven dataset cleanup, demo-aware live-dashboard filters, allowlisted internal inbox for demo email preview, screenshot watermark renderer on UI artefact previews.
+
+## DATA-009 Phase 2 — residency review workflow
+
+Prebuild guards enforced:
+- `scripts/check-data-009-phase2-audit-emission.mjs`
+- `scripts/check-data-009-phase2-no-technical-side-effects.mjs`
+- `scripts/check-data-009-phase2-guard-coverage.mjs`
+
+Approval records the policy exception only. No automatic data migration,
+region split, backup change, export restriction, deletion, or re-hosting
+occurs as a result of a residency request. Any technical change requires
+a separate engineering decision.

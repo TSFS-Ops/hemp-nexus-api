@@ -198,3 +198,19 @@ Compliance freshness gates active synchronously at WaD / p3-WaD / collapse. Sanc
 - Demo artefacts (WaD, p3-WaD, collapse, deal certificate, evidence pack, exports) carry the `DEMO — NOT A PRODUCTION ARTEFACT` watermark and a `DEMO_` seal prefix.
 - Email policy: zero outbound for demo orgs (Phase 2A). Verified by `check-ops-010-guard-coverage.mjs`.
 - Prebuild guards: `check-ops-010-audit-names.mjs`, `check-ops-010-guard-coverage.mjs`, `check-ops-010-demo-boundary.mjs`.
+
+## DATA-009 Phase 2 — residency review workflow
+
+- Org submits requirement via `residency-review-request` edge function.
+- Platform admin reviews in HQ → Residency Reviews tab.
+- Approve / decline via `admin-residency-review-approve` /
+  `admin-residency-review-decline` edge functions (AAL2 + reason ≥ 20).
+- Open hold blocks: `export-prepare`, `export-download`, `wad`, `p3-wad`,
+  `collapse`, `deal-certificate`, `evidence-pack`.
+- Approval is a POLICY EXCEPTION ONLY. No hosting/region/backup/export/
+  deletion side effect is performed.
+
+Prebuild guards:
+- `scripts/check-data-009-phase2-audit-emission.mjs`
+- `scripts/check-data-009-phase2-no-technical-side-effects.mjs`
+- `scripts/check-data-009-phase2-guard-coverage.mjs`
