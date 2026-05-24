@@ -72,6 +72,25 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = await admin.rpc("is_admin", { user_id: caller.id });
     if (!isAdmin) return json(req, { error: "Admin access required" }, 403);
 
+    // SEC-001 — dispatching a password-recovery email to a fixture inbox is a
+    // sensitive identity-adjacent admin action. Require AAL2 (MFA) on the
+    // caller's session before sending. Audit row written by assertAal2 on
+    // denial; success path continues to the existing
+    // `uat.fixture_recovery_email_sent` audit row below.
+    try {
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: caller.id,
+        action: "admin.user_recovery_dispatch",
+        context: { fixture: FIXTURE_LABEL },
+      });
+    } catch (e) {
+      if (e instanceof ApiException) {
+        return json(req, { error: e.code, message: e.message, ...e.details }, e.statusCode);
+      }
+      throw e;
+    }
+
     const body = await req.json().catch(() => ({}));
     const email = String(body?.email ?? "").trim().toLowerCase();
     if (!ALLOWED_EMAILS.has(email)) {
