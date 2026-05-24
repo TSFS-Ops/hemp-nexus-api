@@ -6,6 +6,7 @@ const TABS = [
   { to: "/desk/settings/notifications", label: "Notification Rules" },
   { to: "/desk/settings/balance", label: "Credit Balance" },
   { to: "/desk/settings/security", label: "Security" },
+  { to: "/desk/settings/data-export", label: "My Data" },
 ];
 
 export function SettingsTabs() {
