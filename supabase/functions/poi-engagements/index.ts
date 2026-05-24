@@ -49,6 +49,14 @@ import {
   isCounterpartySide,
   describeMatchSide,
 } from "../_shared/engagement-counterparty.ts";
+// MT-008 / MT-009 — server-side progression guard. Must run before any
+// outreach side effect (email send, immutable outreach-log row, status
+// transition, credit-related event) on a match-bound engagement.
+import {
+  assertMatchProgressable,
+  buildProgressionGuardResponse,
+} from "../_shared/match-progression-guard.ts";
+
 
 const EngagementStatusSchema = z.enum([
   "pending",
