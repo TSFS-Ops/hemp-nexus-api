@@ -186,7 +186,9 @@ describe("Batch M :: count query failure → heuristic fallback", () => {
 
     fireEvent.click(exportBtn);
 
-    expect(downloadCSVSpy).toHaveBeenCalledTimes(1);
+    // Click handler is async (dynamic import of export-purpose +
+    // auditedDownloadCSV await). Wait for the spy to be called.
+    await waitFor(() => expect(downloadCSVSpy).toHaveBeenCalledTimes(1));
     const [headers, csvRows, filename] = downloadCSVSpy.mock.calls[0] as [
       string[],
       unknown[][],
