@@ -2374,6 +2374,11 @@ export function AdminPendingEngagementsPanel() {
                         <TableRow key={`${e.id}-daniel-ui-proof`} className={e.is_demo === true ? "bg-amber-50/30" : "bg-slate-50/70"}>
                           <TableCell colSpan={6} className="py-3">
                             <div className="space-y-2" data-testid={`daniel-ui-proof-${e.id}`}>
+                              {e.counterparty_response && (
+                                <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300 text-[10px] font-mono">
+                                  {e.counterparty_response}
+                                </Badge>
+                              )}
                               {danielUiMessages.map((msg) => {
                                 const toneClass = msg.tone === "success"
                                   ? "border-emerald-200 bg-emerald-50 text-emerald-900"
