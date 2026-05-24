@@ -258,6 +258,18 @@ Deno.serve(async (req) => {
       user_agent: ua,
       blocked_at: new Date().toISOString(),
     }, primaryOrgId);
+    // DATA-005 / DATA-010 Phase 2A canonical dual-write.
+    await writeCanonical(admin, "data.export_blocked_verification_failed", {
+      request_id: inserted.id,
+      user_id: user.id,
+      org_id: primaryOrgId,
+      kind: "user_export",
+      reason_for_block: hold.reason,
+      hold_id: hold.holdId ?? null,
+      actor_ip: ip,
+      user_agent: ua,
+      blocked_at: new Date().toISOString(),
+    }, primaryOrgId);
     return json({
       ok: true,
       request_id: inserted.id,
