@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
   const summary = {
     processed,
     failed,
+    skipped_legal_hold: skippedLegalHold,
     total_queued: pendingItems.length,
     timestamp: new Date().toISOString(),
   };
