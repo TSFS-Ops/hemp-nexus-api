@@ -31,6 +31,10 @@ const REQUIRED_KEYS = [
   "admin.manual_override",
   // DATA-010 Phase 1 sensitive export gate
   "export.admin_pii_export",
+  // SEC-001 follow-up — fixture password-recovery dispatch
+  "admin.user_recovery_dispatch",
+  // SEC-001 follow-up — governance-doc validate (token burn)
+  "governance.doc_validate",
 ];
 
 Deno.test("registry: every required SEC-001 + DATA-010 key is present and aal2", () => {
