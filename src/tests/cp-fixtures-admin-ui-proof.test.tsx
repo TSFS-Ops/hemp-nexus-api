@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
-import { DANIEL_FIXTURE_UI_COPY } from "@/components/admin/AdminPendingEngagementsPanel";
-
 type MockEngagement = Record<string, unknown>;
 
 const CP006A_ENGAGEMENT_ID = "2b83c8e9-9289-4e96-ba8a-e2644513dc4e";
@@ -16,7 +14,7 @@ const CP015_NEW_ENGAGEMENT_ID = "848a2ec1-e89c-4781-9f22-1713b86a6630";
 const mockState: {
   engagements: MockEngagement[];
   autoBindAuditIds: string[];
-  invoke: ReturnType<typeof vi.fn>;
+  invoke: any;
 } = {
   engagements: [],
   autoBindAuditIds: [],
@@ -31,6 +29,8 @@ function makeQuery(table: string) {
     gte: () => chain,
     order: () => chain,
     limit: () => chain,
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    or: () => chain,
     eq: (column: string, value: unknown) => {
       filters[column] = value;
       return chain;
@@ -79,7 +79,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-import { AdminPendingEngagementsPanel } from "@/components/admin/AdminPendingEngagementsPanel";
+import { AdminPendingEngagementsPanel, DANIEL_FIXTURE_UI_COPY } from "@/components/admin/AdminPendingEngagementsPanel";
 
 const baseMatch = {
   id: "match-base",
