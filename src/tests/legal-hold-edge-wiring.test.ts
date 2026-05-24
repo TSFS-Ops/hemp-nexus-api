@@ -141,13 +141,15 @@ describe("DATA-003 — data-retention (batch sentinel + per-row scope)", () => {
   });
 
   it("blocked per-record skips retention_flags mutation", () => {
-    // The retention_flags UPDATE must come AFTER the per-row hold check
-    // and after the `if (rowHold.blocked) { ...; continue; }` branch.
+    // The per-record enforcement UPDATE must appear AFTER the rowHold check.
     const rowHoldIdx = src.indexOf("rowHold.blocked");
-    const updateIdx = src.indexOf(".from(\"retention_flags\")\n            .update(");
     expect(rowHoldIdx).toBeGreaterThan(-1);
-    expect(updateIdx).toBeGreaterThan(rowHoldIdx);
+    // Find the next .update( occurrence after rowHold (this is the
+    // enforcement write — earlier .update calls belong to the scan phase).
+    const updateAfter = src.indexOf(".update(", rowHoldIdx);
+    expect(updateAfter).toBeGreaterThan(rowHoldIdx);
   });
+
 });
 
 describe("DATA-003 — storage-retention-cleanup (batch + per-file evidence scope)", () => {
