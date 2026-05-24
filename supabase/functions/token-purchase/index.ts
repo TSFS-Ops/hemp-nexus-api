@@ -1135,6 +1135,44 @@ async function handleChargeSuccess(
     }
   }
 
+  // ── Phase 2 canonical governance proof (FAIL-CLOSED) ──
+  // payment.event_created carries the canonical record of the settlement.
+  // Idempotency key derived from the Paystack reference so the webhook +
+  // verify-fallback race is dedup-safe at the writer.
+  try {
+    await writeCriticalEventWithPosture(supabase, {
+      event_type: "payment.event_created",
+      org_id: orgId,
+      aggregate_type: "payment",
+      aggregate_id: reference,
+      actor_user_id: userId || null,
+      actor_role: userId ? "billing_user" : "system",
+      system_actor: userId ? null : "paystack-webhook",
+      source_function: "token-purchase/webhook",
+      payment_reference: reference,
+      allowed_or_blocked: "allowed",
+      reason_code: "charge.success",
+      posture: buildPostureSnapshot("Standard", {
+        check_status: { paystack_event: "charge.success", credits_added: credits },
+      }),
+      metadata: {
+        package_id: metadata.package_id,
+        credits_added: credits,
+        new_balance: newBalance,
+        price_usd: metadata.price_usd ?? null,
+        currency: metadata.currency ?? "USD",
+        fx_basis: metadata.fx_basis ?? "native_usd",
+        paid_at,
+      },
+      idempotency_extra: reference,
+    });
+  } catch (govErr) {
+    console.error(`[Webhook] CRITICAL: payment.event_created audit failed for ${reference}:`, govErr);
+    // Fail-closed: surface a 5xx so Paystack retries; ledger row is
+    // idempotent on `request_id` so the retry will be safe.
+    throw new Error(`GOV_AUDIT_WRITE_FAILED: ${(govErr as Error).message ?? govErr}`);
+  }
+
   // Batch C — Fix 3: mark the token_purchases pending row as completed.
   await supabase
     .from("token_purchases")
