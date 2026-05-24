@@ -16,6 +16,23 @@
 //   - admin_audit_logs entry written (action: 'account.self_deleted').
 //   - auth.users record signed out — they can sign back in within 30 days
 //     to cancel deletion (hard-delete sweep handled by future scheduled job).
+//
+// SEC-001 — AAL2 EXEMPTION (deliberate)
+// ────────────────────────────────────
+// This endpoint is SELF-ONLY: there is no `target_user_id` parameter and the
+// deletion subject is always derived from the caller's own JWT via
+// `userClient.auth.getUser()`. A caller cannot delete another account, and
+// admins cannot reach this endpoint to delete a user on someone else's behalf
+// (admin-driven deletions, if/when added, must live in a separate edge
+// function and gate on `assertAal2({ action: "admin.account_delete" })`).
+//
+// Because the action is bounded to the caller's own identity and additionally
+// requires typing the exact account email as a confirmation string, the SEC-001
+// "sensitive admin action" criteria do not apply — there is no privilege
+// elevation, no third-party effect, and no money movement. Adding AAL2 here
+// would lock users out of their own off-boarding flow without a corresponding
+// risk reduction. If admin-driven deletion is ever added, that path MUST gate
+// on AAL2 and add an `admin.account_delete` registry key.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";

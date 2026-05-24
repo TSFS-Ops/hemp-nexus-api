@@ -86,9 +86,48 @@ describe("SEC-001 — assertAal2 is wired on every sensitive admin mutating endp
     expect(importsAssertAal2(src)).toBe(true);
     expect(src).toMatch(/action:\s*["']reputation\.recalculate["']/);
   });
+
+  it("hq-fixture-recovery-email/index.ts imports and calls assertAal2 with admin.user_recovery_dispatch before recovery dispatch", () => {
+    const src = FN("hq-fixture-recovery-email");
+    expect(importsAssertAal2(src)).toBe(true);
+    expect(src).toMatch(/action:\s*["']admin\.user_recovery_dispatch["']/);
+    // assertAal2 must run BEFORE resetPasswordForEmail dispatch.
+    const gateIdx = src.indexOf("admin.user_recovery_dispatch");
+    const dispatchIdx = src.indexOf("resetPasswordForEmail");
+    expect(gateIdx).toBeGreaterThan(-1);
+    expect(dispatchIdx).toBeGreaterThan(-1);
+    expect(gateIdx).toBeLessThan(dispatchIdx);
+  });
+
+  it("governance-docs/index.ts imports and gates PATCH with governance.doc_validate before token burn", () => {
+    const src = FN("governance-docs");
+    expect(importsAssertAal2(src)).toBe(true);
+    expect(src).toMatch(/action:\s*["']governance\.doc_validate["']/);
+    // assertAal2 must run BEFORE the atomic_validate_governance_doc RPC.
+    const gateIdx = src.indexOf("governance.doc_validate");
+    const burnIdx = src.indexOf("atomic_validate_governance_doc");
+    expect(gateIdx).toBeGreaterThan(-1);
+    expect(burnIdx).toBeGreaterThan(-1);
+    expect(gateIdx).toBeLessThan(burnIdx);
+    // The gate must be inside the PATCH branch and skipped for API-key callers.
+    expect(src).toMatch(/if\s*\(\s*!authCtx\.isApiKey\s*\)\s*\{[\s\S]*?assertAal2/);
+  });
+
+  it("delete-account/index.ts documents the self-only AAL2 exemption and does NOT call assertAal2", () => {
+    const src = FN("delete-account");
+    expect(src).toMatch(/SEC-001 — AAL2 EXEMPTION/);
+    expect(src).toMatch(/SELF-ONLY/);
+    // No real assertAal2 call must exist (comments referring to it for
+    // documentation are fine — strip line comments before scanning).
+    const codeOnly = src
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("//"))
+      .join("\n");
+    expect(codeOnly).not.toMatch(/assertAal2\s*\(/);
+  });
 });
 
-describe("SEC-001 — aal-preflight registry contains every SEC-001 + DATA-010 key", () => {
+describe("SEC-001 — aal-preflight registry contains every SEC-001 + DATA-010 + follow-up key", () => {
   const REQUIRED_KEYS = [
     "entity.mutate",
     "organisation.mutate",
@@ -97,6 +136,9 @@ describe("SEC-001 — aal-preflight registry contains every SEC-001 + DATA-010 k
     "pending_engagement.send_outreach",
     "reputation.recalculate",
     "export.admin_pii_export",
+    // SEC-001 follow-up patches
+    "admin.user_recovery_dispatch",
+    "governance.doc_validate",
   ];
 
   for (const key of REQUIRED_KEYS) {

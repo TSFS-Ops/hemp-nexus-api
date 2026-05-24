@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
+import { assertAal2 } from "../_shared/aal.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import {
   assertIdempotencyKey,
@@ -257,6 +258,21 @@ Deno.serve(async (req: Request) => {
       );
       if (!isComplianceOrAdmin) {
         throw new ApiException("FORBIDDEN", "Only compliance or admin roles can validate governance documents", 403);
+      }
+
+      // SEC-001 — governance-doc validation burns tokens and finalises the
+      // doc's compliance state. For human admin sessions this MUST be
+      // MFA-protected (AAL2). API-key callers are exempted because they
+      // authenticate via scoped sk_* keys (validated server-side) which
+      // already require out-of-band issuance; the JWT aal claim does not
+      // apply to API-key requests.
+      if (!authCtx.isApiKey) {
+        await assertAal2(req.headers.get("Authorization"), {
+          adminClient: admin,
+          callerUserId: authCtx.userId ?? null,
+          action: "governance.doc_validate",
+          context: { correlation_id: correlationId },
+        });
       }
 
       // Idempotency guard — token burns must never double-charge on retry.
