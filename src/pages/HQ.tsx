@@ -367,6 +367,16 @@ function DisputesTab() {
             <AdminComplianceHoldPanel />
           </Surface>
         </TabsContent>
+        <TabsContent value="demo-workspaces">
+          <Surface label="OPS-010 · controlled demo workspaces · service_role-only create/reset/archive · AAL2-gated; live data fully isolated">
+            <AdminDemoWorkspacesPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="residency-reviews">
+          <Surface label="DATA-009 Phase 2 · public.data_residency_reviews · onboarding hold + approve/decline · AAL2-gated; policy exception only, no technical hosting/region/migration/backup/export/deletion control">
+            <AdminResidencyReviewsPanel />
+          </Surface>
+        </TabsContent>
       </Tabs>
     </>;
 }
