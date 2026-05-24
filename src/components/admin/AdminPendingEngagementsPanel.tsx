@@ -2238,6 +2238,30 @@ export function AdminPendingEngagementsPanel() {
                                 <AlertTriangle className="h-3 w-3 mr-1" /> Dispute
                               </Button>
                             )}
+                            {!isTerminal && e.engagement_status === "disputed_being_named" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setDisputeResolutionFor({ engagement: e, action: "dispute-release" })}
+                                  disabled={actionLoadingId === e.id}
+                                  title="Release the dispute hold and return the engagement to its previous active state."
+                                  data-testid="cp012-release-dispute"
+                                >
+                                  <CheckCircle2 className="h-3 w-3 mr-1" /> Release
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setDisputeResolutionFor({ engagement: e, action: "dispute-close" })}
+                                  disabled={actionLoadingId === e.id}
+                                  title="Close the dispute and mark the engagement declined."
+                                  data-testid="cp012-close-dispute"
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" /> Close
+                                </Button>
+                              </>
+                            )}
                             {/* D3 — Cancel for email change. Offered when outreach has
                                 already started so the PATCH email-change path is refused. */}
                             {!isTerminal && e.engagement_status !== "cancelled_email_change" && (
