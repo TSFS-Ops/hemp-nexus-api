@@ -119,9 +119,10 @@ describe("DATA-009 Phase 1 — policy SSOT", () => {
     ).toBeTruthy();
   });
 
-  it("is currently Phase 1 — exception workflow is Phase 2 / not implemented", () => {
-    expect(DATA_RESIDENCY_POLICY_PHASE).toBe(1);
+  it("policy SSOT has advanced to Phase 2 (review workflow wired)", () => {
+    expect(DATA_RESIDENCY_POLICY_PHASE).toBe(2);
   });
+
 });
 
 describe("DATA-009 Phase 1 — canonical audit action constants", () => {
