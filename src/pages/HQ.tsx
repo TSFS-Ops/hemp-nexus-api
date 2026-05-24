@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -70,11 +70,12 @@ import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHold
 import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspacesPanel";
 import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyReviewsPanel";
 import { AdminBillingReviewPanel } from "@/components/admin/AdminBillingReviewPanel";
+import { GovernanceRecordsPanel } from "@/components/admin/governance/GovernanceRecordsPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -120,6 +121,11 @@ const TABS: {
   label: "Legal Holds",
   icon: Lock,
   blurb: "Apply and release legal holds. Active holds block deletion, anonymisation, purge and export destruction for the scoped entity."
+}, {
+  id: "governance-records",
+  label: "Governance Records",
+  icon: FileSearch,
+  blurb: "HQ-only Governance Record per transaction · merges audit_logs · admin_audit_logs · event_store · match_events · Phase 1 visibility only."
 }, {
   id: "audit",
   label: "Audit & Health",
@@ -319,6 +325,14 @@ function LegalHoldsTab() {
       <TabHeader id="legal-holds" />
       <Surface label="DATA-003 · public.legal_holds · platform_admin + AAL2 · blocks deletion/anonymisation/purge/export-destruction">
         <AdminLegalHoldsPanel />
+      </Surface>
+    </>;
+}
+function GovernanceRecordsTab() {
+  return <>
+      <TabHeader id="governance-records" />
+      <Surface label="Governance Records · HQ-only · merged audit_logs · admin_audit_logs · event_store · match_events · Phase 1 visibility only">
+        <GovernanceRecordsPanel />
       </Surface>
     </>;
 }
@@ -606,6 +620,7 @@ function HQLayout() {
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
           <TabsContent value="legacy-repair" className="mt-0 animate-section-enter"><LegacyRepairTab /></TabsContent>
           <TabsContent value="legal-holds" className="mt-0 animate-section-enter"><LegalHoldsTab /></TabsContent>
+          <TabsContent value="governance-records" className="mt-0 animate-section-enter"><GovernanceRecordsTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
