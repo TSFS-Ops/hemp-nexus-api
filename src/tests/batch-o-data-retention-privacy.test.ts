@@ -159,11 +159,17 @@ describe("Batch O — CSV export wiring", () => {
   });
 
   it("[10] AdminAuditLogs records export audit BEFORE writing CSV", () => {
+    // Batch U AUD-018: the panel routes through `auditedDownloadCSV` (wrapper
+    // that re-asserts the prebuild CSV-audit guard). The audit MUST still be
+    // emitted before the CSV is serialised/downloaded.
     expect(auditPanel).toContain("recordExportAudit");
     const idxAudit = auditPanel.indexOf("recordExportAudit(");
-    const idxDownload = auditPanel.indexOf("downloadCSV(headers, rows");
+    const idxDownload = auditPanel.indexOf("auditedDownloadCSV(headers, rows");
     expect(idxAudit).toBeGreaterThan(-1);
     expect(idxDownload).toBeGreaterThan(idxAudit);
+    // Guard against regression: the panel must NOT call the raw `downloadCSV(`
+    // helper directly, which would bypass the audit wrapper.
+    expect(auditPanel).not.toMatch(/(?<!audited)downloadCSV\(/);
   });
 
   it("[11] AAL2 rejection blocks the export and surfaces a toast", () => {
