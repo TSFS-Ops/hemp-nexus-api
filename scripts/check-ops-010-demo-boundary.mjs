@@ -62,7 +62,7 @@ if (fs.existsSync(MIGRATIONS_DIR)) {
       // 2. Reason length enforcement (min 20)
       for (const fn of ["create_demo_workspace", "reset_demo_workspace", "archive_demo_workspace"]) {
         const fnBlock = (src.match(new RegExp(`create or replace function[\\s\\S]+?${fn}[\\s\\S]+?\\$fn\\$;`, "i")) || [""])[0];
-        if (fnBlock && !/length\s*\(\s*(p_reason|reason)\s*\)\s*<\s*20|char_length\s*\(\s*(p_reason|reason)\s*\)\s*<\s*20/i.test(fnBlock)) {
+        if (fnBlock && !/length\s*\([^)]*p_reason[^)]*\)\s*<\s*20/i.test(fnBlock)) {
           console.error(
             `[ops-010-demo-boundary] ${fn} in ${f} must enforce reason length >= 20`,
           );
