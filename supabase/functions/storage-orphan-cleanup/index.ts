@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse } from "../_shared/errors.ts";
+import { assertNoLegalHold, RECORD_GROUP_IDS } from "../_shared/legal-hold.ts";
 
 /**
  * Storage Orphan Cleanup — Batch E hardened
