@@ -43,6 +43,8 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-aal-registry-drift.mjs` — SEC-001 AAL2 call-site ↔ preflight registry drift guard
 - `check-export-audit-payload.mjs` — DATA-010 Phase 1: admin CSV/JSON exports must carry `purpose`, `reason`, `data_categories`, `target_type`; admin exports require AAL2 server-side; Phase 2 signed-URL/TTL/file-destruction lifecycle is deferred
 - `check-user-export-categories.mjs` — DATA-005 Phase 1: user self-export category SSOT (Deno ↔ client mirror) drift guard, forbidden category names blocked, canonical Phase 1 audit names required, Phase 2 audit names forbidden until lifecycle ships
+- `check-legal-hold-audit-names.mjs` — DATA-003 Phase 1: legal-hold enforcement audit-name SSOT drift guard across helper + 8 wired enforcement paths
+- `check-cp003-audit-names.mjs` — CP-003 audit-name parity guard: signed canonical `pending_engagement.outreach_blocked_missing_counterparty_name` must be emitted alongside legacy `pending_engagement.outreach_blocked_missing_name` across all 3 code surfaces and the controlled-prod seed
 
 ### Edge functions requiring deploy
 
