@@ -34,6 +34,8 @@ const ROOTS = [
 const ALLOW_FILES = new Set([
   "scripts/check-data-009-phase2-no-technical-side-effects.mjs",
   "docs/deferred-policy-register.md",
+  "src/tests/data-009-phase-2-review-workflow.test.ts",
+  "src/tests/data-009-residency-claims.test.ts",
 ]);
 
 function walk(dir) {
