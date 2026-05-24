@@ -69,7 +69,7 @@ import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
