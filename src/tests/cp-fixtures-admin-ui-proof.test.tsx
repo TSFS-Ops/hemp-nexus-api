@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
 
 type MockEngagement = Record<string, unknown>;
@@ -126,7 +127,12 @@ function engagement(overrides: MockEngagement): MockEngagement {
 }
 
 async function renderPanel() {
-  render(<AdminPendingEngagementsPanel />);
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <AdminPendingEngagementsPanel />
+    </QueryClientProvider>,
+  );
   await waitFor(() => expect(screen.getByTestId("show-demo-toggle")).toBeInTheDocument());
   fireEvent.click(screen.getByTestId("show-demo-toggle"));
 }
