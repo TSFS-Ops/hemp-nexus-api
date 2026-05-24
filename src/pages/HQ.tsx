@@ -75,7 +75,7 @@ import { GovernanceRecordsPanel } from "@/components/admin/governance/Governance
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
