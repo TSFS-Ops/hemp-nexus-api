@@ -26,8 +26,18 @@ export const FORBIDDEN_PRE_ACCEPTANCE_TERMS: readonly string[] = [
 ];
 
 /**
- * DEC-010 — phrases that may never appear on public marketing or docs pages
- * without explicit "in development" / "planned hardening" qualification.
+ * DEC-010 — phrases that may never appear on public marketing, docs,
+ * UI, email, generated-document, or investor-facing surfaces.
+ *
+ * Phase 1 expands this list with the explicit DEC-010 prohibited prose
+ * (Izenzo replaces legal/financial/regulatory/human review;
+ * production-grade audit; regulator-ready audit; demo/test data
+ * presented as live traction).
+ *
+ * Manual-review-required phrases (e.g. "enterprise-ready") are NOT
+ * on this list — they are classified in
+ * `src/lib/legal/claims-register.ts` under
+ * `MANUAL_REVIEW_REQUIRED_CLAIMS` and are not auto-blocked.
  */
 export const FORBIDDEN_PUBLIC_CLAIM_PHRASES: readonly string[] = [
   "binding POI",
@@ -43,6 +53,21 @@ export const FORBIDDEN_PUBLIC_CLAIM_PHRASES: readonly string[] = [
   "fully automated end-to-end",
   "guarantees compliance",
   "prevents all fraud",
+  // DEC-010 Phase 1 additions — prohibited prose claims.
+  "Izenzo replaces legal review",
+  "Izenzo replaces financial review",
+  "Izenzo replaces regulatory review",
+  "Izenzo replaces human review",
+  "replaces legal review",
+  "replaces financial review",
+  "replaces regulatory review",
+  "replaces human review",
+  "production-grade audit",
+  "regulator-ready audit",
+  "demo data is live traction",
+  "test data is live traction",
+  "controlled demo records are live commercial traction",
+  "live production traction from demo records",
 ];
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
