@@ -270,7 +270,7 @@ function MatchDetailsContent() {
       {(displayEngagement?.engagement_status as string | null) === "disputed_being_named" && displayEngagement?.id && (
         <MatchDisputeBeingNamedPanel
           engagementId={displayEngagement.id}
-          engagementStatus={displayEngagement.engagement_status}
+          engagementStatus={displayEngagement.engagement_status as string}
           operationalState={(displayEngagement as any).operational_state ?? null}
           counterpartyResponse={(displayEngagement as any).counterparty_response ?? null}
           viewerRole={
