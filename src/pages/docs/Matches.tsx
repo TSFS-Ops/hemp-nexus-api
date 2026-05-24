@@ -133,7 +133,7 @@ export default function DocsMatches() {
         <Callout>
           POI mint is a hold-point: the call returns <InlineCode>409 ENGAGEMENT_PENDING</InlineCode>{" "}
           until the org in the opposite slot has accepted the engagement. Acceptance is
-          single-side and is <em>not</em> the same as bilateral commitment — both parties
+          single-side and is <em>not</em> the same as bilateral acceptance — both parties
           must mint POI for the match to reach <InlineCode>committed</InlineCode>. See{" "}
           <a href="/docs/counterparties" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">Counterparties</a>{" "}
           for the engagement flow.
