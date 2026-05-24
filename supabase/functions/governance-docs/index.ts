@@ -260,6 +260,21 @@ Deno.serve(async (req: Request) => {
         throw new ApiException("FORBIDDEN", "Only compliance or admin roles can validate governance documents", 403);
       }
 
+      // SEC-001 — governance-doc validation burns tokens and finalises the
+      // doc's compliance state. For human admin sessions this MUST be
+      // MFA-protected (AAL2). API-key callers are exempted because they
+      // authenticate via scoped sk_* keys (validated server-side) which
+      // already require out-of-band issuance; the JWT aal claim does not
+      // apply to API-key requests.
+      if (!authCtx.isApiKey) {
+        await assertAal2(req.headers.get("Authorization"), {
+          adminClient: admin,
+          callerUserId: authCtx.userId ?? null,
+          action: "governance.doc_validate",
+          context: { correlation_id: correlationId },
+        });
+      }
+
       // Idempotency guard — token burns must never double-charge on retry.
       // Header is REQUIRED (hard-mode).
       const patchKey = req.headers.get("Idempotency-Key");
