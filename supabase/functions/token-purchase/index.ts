@@ -503,6 +503,33 @@ async function _serve(req: Request): Promise<Response> {
       }
     }
 
+    // ============================================================
+    // DEC-007 / PAY-009 — Billing hold guard (defence in depth).
+    // Refuse new purchases for orgs on billing_hold; mirrored at DB
+    // level by atomic_token_burn returning BILLING_HOLD_ACTIVE.
+    // ============================================================
+    {
+      const { assertNoBillingHold, BillingHoldActiveError } = await import("../_shared/billing-hold-guard.ts");
+      try {
+        await assertNoBillingHold(supabase, profile.org_id);
+      } catch (e) {
+        if (e instanceof BillingHoldActiveError) {
+          return new Response(
+            JSON.stringify({
+              error: "BILLING_HOLD_ACTIVE",
+              code: "BILLING_HOLD_ACTIVE",
+              message: "Organisation is on billing hold; credit purchases are blocked until released.",
+              reason: e.reason,
+            }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw e;
+      }
+    }
+
+
+
     // OPS-010 Phase 2A — block live Paystack init for demo orgs.
     // Demo orgs simulate purchase via admin-credit-org demo path; never call Paystack.
     {
