@@ -140,11 +140,16 @@ describe("POI-004 stage-2 — revenue-notify dedupe", () => {
 
 describe("POI-004 stage-2 — _shared/webhooks.ts dedupe", () => {
   it("triggerWebhooks accepts and forwards eventIdempotencyKey", () => {
+    // Stricter than the original POI-004 contract: `eventIdempotencyKey`
+    // is now REQUIRED (not optional). The prebuild guard
+    // scripts/check-webhook-callsite-idempotency.mjs refuses any callsite
+    // that omits it.
     expect(webhooks).toMatch(
-      /export async function triggerWebhooks\(\s*supabase: SupabaseClient,\s*orgId: string,\s*event: string,\s*data: Record<string, any>,\s*options\?: { eventIdempotencyKey\?: string \| null }/,
+      /export async function triggerWebhooks\(\s*supabase: SupabaseClient,\s*orgId: string,\s*event: string,\s*data: Record<string, any>,\s*options:\s*{\s*eventIdempotencyKey:\s*string\s*}/,
     );
     expect(webhooks).toMatch(/deliverWebhook\([\s\S]*?eventIdempotencyKey,?\s*\)/);
   });
+
 
   it("deliverWebhook short-circuits when prior delivery for (endpoint, key) exists", () => {
     expect(webhooks).toMatch(
