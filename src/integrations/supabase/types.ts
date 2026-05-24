@@ -2639,6 +2639,181 @@ export type Database = {
           },
         ]
       }
+      export_files: {
+        Row: {
+          byte_size: number
+          created_at: string
+          destroy_reason: string | null
+          destroyed_at: string | null
+          downloads: Json
+          expires_at: string
+          export_request_id: string
+          format: string
+          generated_at: string
+          id: string
+          row_counts: Json
+          sha256: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          byte_size: number
+          created_at?: string
+          destroy_reason?: string | null
+          destroyed_at?: string | null
+          downloads?: Json
+          expires_at: string
+          export_request_id: string
+          format: string
+          generated_at?: string
+          id?: string
+          row_counts?: Json
+          sha256: string
+          storage_bucket: string
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          byte_size?: number
+          created_at?: string
+          destroy_reason?: string | null
+          destroyed_at?: string | null
+          downloads?: Json
+          expires_at?: string
+          export_request_id?: string
+          format?: string
+          generated_at?: string
+          id?: string
+          row_counts?: Json
+          sha256?: string
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_files_export_request_id_fkey"
+            columns: ["export_request_id"]
+            isOneToOne: false
+            referencedRelation: "export_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          export_request_id: string
+          finished_at: string | null
+          id: string
+          job_kind: string
+          last_error: string | null
+          scheduled_for: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          export_request_id: string
+          finished_at?: string | null
+          id?: string
+          job_kind: string
+          last_error?: string | null
+          scheduled_for?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          export_request_id?: string
+          finished_at?: string | null
+          id?: string
+          job_kind?: string
+          last_error?: string | null
+          scheduled_for?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_jobs_export_request_id_fkey"
+            columns: ["export_request_id"]
+            isOneToOne: false
+            referencedRelation: "export_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_requests: {
+        Row: {
+          approval: Json
+          block_reason: string | null
+          created_at: string
+          date_range: Json | null
+          expires_at: string | null
+          id: string
+          kind: string
+          purpose: string | null
+          reason: string | null
+          requested_at: string
+          requested_categories: string[]
+          requester_user_id: string
+          resolved_categories: string[]
+          status: string
+          subject_user_id: string | null
+          target_org_id: string | null
+          updated_at: string
+          verification: Json
+        }
+        Insert: {
+          approval?: Json
+          block_reason?: string | null
+          created_at?: string
+          date_range?: Json | null
+          expires_at?: string | null
+          id?: string
+          kind: string
+          purpose?: string | null
+          reason?: string | null
+          requested_at?: string
+          requested_categories?: string[]
+          requester_user_id: string
+          resolved_categories?: string[]
+          status: string
+          subject_user_id?: string | null
+          target_org_id?: string | null
+          updated_at?: string
+          verification?: Json
+        }
+        Update: {
+          approval?: Json
+          block_reason?: string | null
+          created_at?: string
+          date_range?: Json | null
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          purpose?: string | null
+          reason?: string | null
+          requested_at?: string
+          requested_categories?: string[]
+          requester_user_id?: string
+          resolved_categories?: string[]
+          status?: string
+          subject_user_id?: string | null
+          target_org_id?: string | null
+          updated_at?: string
+          verification?: Json
+        }
+        Relationships: []
+      }
       fund_flows: {
         Row: {
           amount: number
@@ -8404,6 +8579,39 @@ export type Database = {
         Args: { p_days?: number; p_dry_run?: boolean }
         Returns: Json
       }
+      approve_admin_export: {
+        Args: {
+          p_approval_method: string
+          p_approver_user_id: string
+          p_request_id: string
+        }
+        Returns: {
+          approval: Json
+          block_reason: string | null
+          created_at: string
+          date_range: Json | null
+          expires_at: string | null
+          id: string
+          kind: string
+          purpose: string | null
+          reason: string | null
+          requested_at: string
+          requested_categories: string[]
+          requester_user_id: string
+          resolved_categories: string[]
+          status: string
+          subject_user_id: string | null
+          target_org_id: string | null
+          updated_at: string
+          verification: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "export_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       archive_programme_participant: {
         Args: {
           p_actor_org_id: string
@@ -8475,6 +8683,40 @@ export type Database = {
       atomic_expire_late_acceptance_reconfirmation_window: {
         Args: { p_engagement_id: string }
         Returns: Json
+      }
+      atomic_export_transition: {
+        Args: {
+          p_expected_from: string
+          p_new_status: string
+          p_patch: Json
+          p_request_id: string
+        }
+        Returns: {
+          approval: Json
+          block_reason: string | null
+          created_at: string
+          date_range: Json | null
+          expires_at: string | null
+          id: string
+          kind: string
+          purpose: string | null
+          reason: string | null
+          requested_at: string
+          requested_categories: string[]
+          requester_user_id: string
+          resolved_categories: string[]
+          status: string
+          subject_user_id: string | null
+          target_org_id: string | null
+          updated_at: string
+          verification: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "export_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       atomic_generate_poi_v2: {
         Args: {
@@ -8833,6 +9075,32 @@ export type Database = {
         Returns: boolean
       }
       is_test_mode_bypass_enabled: { Args: { _gate: string }; Returns: boolean }
+      mark_export_file_destroyed: {
+        Args: { p_file_id: string; p_reason: string }
+        Returns: {
+          byte_size: number
+          created_at: string
+          destroy_reason: string | null
+          destroyed_at: string | null
+          downloads: Json
+          expires_at: string
+          export_request_id: string
+          format: string
+          generated_at: string
+          id: string
+          row_counts: Json
+          sha256: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "export_files"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -8947,6 +9215,45 @@ export type Database = {
         Args: { p_reason: Json; p_request_id: string }
         Returns: undefined
       }
+      record_export_download: {
+        Args: { p_actor_meta: Json; p_file_id: string }
+        Returns: {
+          byte_size: number
+          created_at: string
+          destroy_reason: string | null
+          destroyed_at: string | null
+          downloads: Json
+          expires_at: string
+          export_request_id: string
+          format: string
+          generated_at: string
+          id: string
+          row_counts: Json
+          sha256: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "export_files"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_export_file: {
+        Args: {
+          p_bucket: string
+          p_byte_size: number
+          p_expires_at: string
+          p_format: string
+          p_path: string
+          p_request_id: string
+          p_row_counts: Json
+          p_sha256: string
+        }
+        Returns: string
+      }
       record_role_confirmation: {
         Args: {
           p_confirmed_side: string
@@ -8970,6 +9277,22 @@ export type Database = {
         Returns: Json
       }
       release_lifecycle_lock: { Args: never; Returns: undefined }
+      request_admin_export: {
+        Args: {
+          p_date_range: Json
+          p_purpose: string
+          p_reason: string
+          p_requested_categories: string[]
+          p_requester_user_id: string
+          p_subject_user_id: string
+          p_target_org_id: string
+        }
+        Returns: string
+      }
+      request_user_export: {
+        Args: { p_requested_categories: string[]; p_subject_user_id: string }
+        Returns: string
+      }
       reset_auth_rate_limit: {
         Args: { p_identifier: string; p_identifier_type: string }
         Returns: undefined
