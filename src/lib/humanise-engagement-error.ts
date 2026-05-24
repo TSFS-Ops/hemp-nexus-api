@@ -50,9 +50,9 @@ export function humaniseEngagementError(input: unknown): HumanisedEngagementErro
   if (/EMAIL_CHANGE_REQUIRES_CANCEL_RECREATE/i.test(raw)) {
     return withRid({
       headline:
-        "Email cannot be edited after outreach has started.",
+        "Counterparty email cannot be edited silently after a Pending Engagement has been created. The existing engagement will be cancelled and a new engagement must be created with the corrected email. The original record will remain in the audit trail.",
       hint:
-        "Use \"Cancel for email change\" on this engagement and create a replacement with the corrected email.",
+        "Use \"Cancel for email change\" on this engagement and create a replacement engagement with the corrected email. The original engagement remains in the audit trail.",
       technical: raw,
     });
   }

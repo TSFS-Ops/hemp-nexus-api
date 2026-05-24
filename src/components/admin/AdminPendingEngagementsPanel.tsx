@@ -323,7 +323,19 @@ export function AdminPendingEngagementsPanel() {
   // ID query is present we widen the base set to ALL engagements regardless
   // of the active tab — operators looking up a specific row by ID should
   // never have it hidden by the current tab.
-  const [idQuery, setIdQuery] = useState<string>("");
+  // Pre-scope from URL: links like /admin/engagements?match=<uuid> or
+  // ?engagement=<uuid> (used in Daniel-fixture acceptance emails) must
+  // land directly on the row. Initialise idQuery from those params so
+  // the panel filters down to that single row on first render.
+  const [idQuery, setIdQuery] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      return (sp.get("match") ?? sp.get("engagement") ?? "").trim();
+    } catch {
+      return "";
+    }
+  });
 
   // ── Support-notes editor (admin/reviewer-only, per row) ──
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
@@ -1035,7 +1047,10 @@ export function AdminPendingEngagementsPanel() {
       });
     }
     // Phase 1 demo isolation: hide is_demo rows unless operator opts in.
-    if (!showDemo) base = base.filter((e) => e.is_demo !== true);
+    // BUT when an explicit ID lookup is active (e.g. Daniel landing from
+    // /admin/engagements?match=<uuid>), surface demo rows too — otherwise
+    // the targeted fixture row would be silently filtered out.
+    if (!showDemo && idQuery.trim().length === 0) base = base.filter((e) => e.is_demo !== true);
     return base;
   }, [engagements, filter, notesFilter, notesFrom, notesTo, idQuery, showDemo]);
 
