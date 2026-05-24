@@ -54,6 +54,7 @@ All three must exit 0. Attach the terminal output to the release ticket.
 - `check-user-export-categories.mjs` (DATA-005 Phase 1: user self-export category SSOT drift, forbidden categories blocked, Phase 1 canonical audit names required, Phase 2 names forbidden until lifecycle ships under `DATA-005-FU-EXPORT-LIFECYCLE-001`)
 - `check-legal-hold-audit-names.mjs` (DATA-003 Phase 1: legal-hold helper + 8 wired enforcement paths audit-name SSOT drift guard)
 - `check-cp003-audit-names.mjs` (CP-003 audit-name parity: signed canonical `outreach_blocked_missing_counterparty_name` paired with legacy `outreach_blocked_missing_name` across 3 emit surfaces + controlled-prod seed)
+- `check-data-002-audit-names.mjs` (DATA-002 Phase 1 account self-deletion: dual-write of legacy `account.*` and canonical `data.deletion_window_elapsed` / `data.profile_deleted_or_anonymised` / `data.deletion_deferred_retention_required` audits across `delete-account` and `account-deletion-sweeper`)
 
 ### DATA-005 Phase 1 — User self-export of data (subject-access request)
 
