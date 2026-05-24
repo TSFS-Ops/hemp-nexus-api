@@ -1313,6 +1313,13 @@ export type Database = {
             foreignKeyName: "consents_granted_by_fkey"
             columns: ["granted_by"]
             isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consents_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1687,6 +1694,13 @@ export type Database = {
             foreignKeyName: "data_source_registrations_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_source_registrations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1703,6 +1717,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "account_hard_delete_status"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "data_source_registrations_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "data_source_registrations_submitted_by_fkey"
@@ -3746,6 +3767,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "account_hard_delete_status"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "match_documents_uploader_user_id_fkey"
+            columns: ["uploader_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "match_documents_uploader_user_id_fkey"
@@ -6290,6 +6318,13 @@ export type Database = {
             foreignKeyName: "selections_selected_by_fkey"
             columns: ["selected_by"]
             isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selections_selected_by_fkey"
+            columns: ["selected_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6386,6 +6421,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "account_hard_delete_status"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "signals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "signals_created_by_fkey"
@@ -7326,6 +7368,13 @@ export type Database = {
             foreignKeyName: "wad_attestations_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wad_attestations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7443,6 +7492,13 @@ export type Database = {
             foreignKeyName: "wads_buyer_signatory_user_id_fkey"
             columns: ["buyer_signatory_user_id"]
             isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_buyer_signatory_user_id_fkey"
+            columns: ["buyer_signatory_user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7459,6 +7515,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "account_hard_delete_status"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "wads_created_by_fkey"
@@ -7506,6 +7569,13 @@ export type Database = {
             foreignKeyName: "wads_revoked_by_fkey"
             columns: ["revoked_by"]
             isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wads_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7529,6 +7599,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "account_hard_delete_status"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wads_seller_signatory_user_id_fkey"
+            columns: ["seller_signatory_user_id"]
+            isOneToOne: false
+            referencedRelation: "org_colleagues_v"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "wads_seller_signatory_user_id_fkey"
@@ -7990,6 +8067,38 @@ export type Database = {
         }
         Relationships: []
       }
+      org_colleagues_v: {
+        Row: {
+          full_name: string | null
+          id: string | null
+          org_id: string | null
+          selected_persona: string | null
+          status: string | null
+        }
+        Insert: {
+          full_name?: string | null
+          id?: string | null
+          org_id?: string | null
+          selected_persona?: string | null
+          status?: string | null
+        }
+        Update: {
+          full_name?: string | null
+          id?: string | null
+          org_id?: string | null
+          selected_persona?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_token_balances_v: {
         Row: {
           balance: number | null
@@ -8083,14 +8192,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "audit_logs_org_id_fkey"
-            columns: ["settled_org_id"]
+            columns: ["init_org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "audit_logs_org_id_fkey"
-            columns: ["init_org_id"]
+            columns: ["settled_org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
