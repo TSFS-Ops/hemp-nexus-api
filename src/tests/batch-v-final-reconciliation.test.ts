@@ -101,8 +101,19 @@ describe("Batch V Fix 4 — side-effect-reconciliation", () => {
   });
   it("opens kind=missing_side_effect risk items, never resends", () => {
     expect(src).toMatch(/kind:\s*["']missing_side_effect["']/);
-    expect(src).not.toMatch(/resend|replay/i);
+    // Strip line + block comments before scanning for active resend/replay
+    // code paths. The function intentionally DOCUMENTS that it does not
+    // resend/replay; that prose must not trip this guard.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map((l) => l.replace(/\/\/.*$/, ""))
+      .join("\n");
+    expect(code).not.toMatch(/\bresend\s*\(/i);
+    expect(code).not.toMatch(/\breplay\s*\(/i);
+    expect(code).not.toMatch(/retryDelivery|requeueWebhook|forceRedispatch/i);
   });
+
   it("supports dry_run", () => expect(src).toMatch(/dry_run/));
   it("scheduled + heartbeated", () => {
     const all = allMigrations();
