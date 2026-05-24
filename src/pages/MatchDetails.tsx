@@ -286,6 +286,12 @@ function MatchDetailsContent() {
         />
       )}
 
+      <MatchEmailChangeHistoryPanel
+        current={(engagementModel?.current_engagement ?? null) as any}
+        latestHistorical={(engagementModel?.latest_historical_engagement ?? null) as any}
+        history={(engagementModel?.history ?? []) as any}
+      />
+
       <PendingEngagementSection
         engagement={displayEngagement}
         match={match as any}
