@@ -51,8 +51,12 @@ describe("Phase 1 — lifecycle scheduler skips demo rows (source pin)", () => {
   });
 
   it("expired-matches scan calls .eq('is_demo', false)", () => {
-    expect(src).toMatch(/expiredMatches[\s\S]{0,500}\.eq\("is_demo",\s*false\)/);
+    // The filter is applied to the UPSTREAM `matchesToExpire` select
+    // (before the `expiredMatches` variable name is introduced). Pin
+    // on the upstream variable instead.
+    expect(src).toMatch(/matchesToExpire[\s\S]{0,500}\.eq\("is_demo",\s*false\)/);
   });
+
 });
 
 describe("Phase 1 — outreach SLA monitor skips demo rows (source pin)", () => {
