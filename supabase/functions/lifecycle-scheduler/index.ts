@@ -756,6 +756,37 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ── Batch D2: Governance waivers/bypasses scheduled expiry ──
+    // Flip all past-expiry active governance_waivers rows to "expired" and
+    // emit `governance.{waiver|bypass}_expired` for each. Idempotent — only
+    // touches rows whose `expires_at <= now()` and `status='active'`. Lazy
+    // expiry inside assertWaiverActive still applies; this is a safety net
+    // for waivers that were granted but never asserted.
+    // SKIPPED in dry-run (UPDATE + canonical event write).
+    if (dryRun) {
+      results.governance_waivers_expired = {
+        expired: 0,
+        skipped_dry_run: true,
+        error: null,
+      };
+    } else {
+      try {
+        const { expireGovernanceWaivers } = await import(
+          "../_shared/governance-waivers.ts"
+        );
+        const { expired } = await expireGovernanceWaivers(admin);
+        results.governance_waivers_expired = {
+          expired,
+          error: null,
+        };
+      } catch (waiverErr) {
+        results.governance_waivers_expired = {
+          expired: 0,
+          error: waiverErr instanceof Error ? waiverErr.message : String(waiverErr),
+        };
+      }
+    }
+
     // ── Batch I Fix 4: WaD / POI drift reconciliation ──
     // Read-only probe. Sealed WaDs whose underlying POI later became
     // terminal/disputed/cancelled, or that have a missing POI, are surfaced as
