@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,6 +55,17 @@ Deno.serve(async (req) => {
     const code = r?.code ?? "RELEASE_FAILED";
     const status = code === "BILLING_HOLD_NOT_ACTIVE" ? 409 : 400;
     return json({ error: code.toLowerCase(), code }, status);
+  }
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-billing-hold-release", actionCode: "billing_hold.release",
+      actorUserId: u.user.id, actorRole: "platform_admin",
+      orgId: p.data.org_id, aggregateId: p.data.org_id, aggregateType: "billing_hold",
+      reason: p.data.reason, requestId: req.headers.get("x-request-id"), aal: "aal2",
+    });
+  } catch (govErr) {
+    console.error("[admin-billing-hold-release] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
   }
   return json(r, 200);
 });

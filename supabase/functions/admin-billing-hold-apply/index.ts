@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,5 +50,16 @@ Deno.serve(async (req) => {
     p_reason: p.data.reason,
   });
   if (error) return json({ error: "rpc_failed", message: error.message }, 500);
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-billing-hold-apply", actionCode: "billing_hold.apply",
+      actorUserId: u.user.id, actorRole: "platform_admin",
+      orgId: p.data.org_id, aggregateId: p.data.org_id, aggregateType: "billing_hold",
+      reason: p.data.reason, requestId: req.headers.get("x-request-id"), aal: "aal2",
+    });
+  } catch (govErr) {
+    console.error("[admin-billing-hold-apply] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
+  }
   return json(data, 200);
 });
