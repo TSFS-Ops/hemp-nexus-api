@@ -5,6 +5,7 @@ import {
   writeCriticalEventWithPosture,
   writeGovernanceEventBestEffort,
 } from "./governance-audit-integration.ts";
+import { CREDIT_POLICY_VERSION } from "./governance-policy-versions.ts";
 
 // Endpoints that are NOT billable (free)
 const NON_BILLABLE_ENDPOINTS = [
