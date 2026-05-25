@@ -210,7 +210,7 @@ BEGIN
   INSERT INTO public.compliance_holds (
     id, org_id, hold_type, reason, status, opened_by
   ) VALUES (
-    v_hold_close_id, v_org, 'verification_refresh_required',
+    v_hold_close_id, v_org, 'compliance_hold_verification_failed',
     'F4 proof seed compliance hold to close', 'active', v_actor
   );
 
