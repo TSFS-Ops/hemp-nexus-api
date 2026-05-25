@@ -17,7 +17,30 @@ const WIRED_ENDPOINTS = [
   ["admin-payment-dispute-resolve-lost",   "payment_dispute.resolve_lost"],
   ["admin-billing-hold-apply",             "billing_hold.apply"],
   ["admin-billing-hold-release",           "billing_hold.release"],
+  // Pass 3 — remaining sensitive admin endpoints.
+  ["admin-compliance-hold-release",        "compliance_hold.release"],
+  ["admin-compliance-hold-close",          "compliance_hold.close"],
+  ["admin-residency-review-approve",       "residency_review.approve"],
+  ["admin-residency-review-decline",       "residency_review.decline"],
+  ["admin-credit-org",                     "credit_org.adjust"],
+  ["admin-trade-request-exception-hold-release", "trade_request_exception.release"],
+  ["admin-trade-request-archive-override", "trade_request.archive_override"],
 ] as const;
+
+const MULTI_OP_ENDPOINTS: Array<[string, readonly string[]]> = [
+  ["admin-counterparty-corrections", [
+    "counterparty.correct.link_to_org",
+    "counterparty.correct.merge",
+  ]],
+  ["admin-match-corrections", [
+    "match.correct.jurisdiction",
+    "match.correct.relink_counterparty",
+    "match.correct.archive_duplicate",
+  ]],
+  ["admin-manual-overrides", [
+    "manual_override.${parsed.operation}",
+  ]],
+];
 
 for (const [endpoint, actionCode] of WIRED_ENDPOINTS) {
   Deno.test(`${endpoint} wires admin.hq_decision_recorded fail-closed`, async () => {
@@ -27,9 +50,26 @@ for (const [endpoint, actionCode] of WIRED_ENDPOINTS) {
     assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
     assertStringIncludes(src, `sourceFunction: "${endpoint}"`);
     // Reason must be the operator-supplied reason, not a hard-coded string.
-    assert(/reason:\s*p\.data\.reason/.test(src), `${endpoint} must forward operator reason`);
+    assert(
+      /reason:\s*(p\.data\.reason|reason|parsed\.data\.reason|parsed\.reason|\(parsed as \{ reason: string \}\)\.reason)/
+        .test(src),
+      `${endpoint} must forward operator reason`,
+    );
   });
 }
+
+for (const [endpoint, actionCodes] of MULTI_OP_ENDPOINTS) {
+  Deno.test(`${endpoint} wires admin.hq_decision_recorded (multi-operation) fail-closed`, async () => {
+    const src = await read(`${endpoint}/index.ts`);
+    assertStringIncludes(src, "recordAdminHqDecision");
+    assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
+    assertStringIncludes(src, `sourceFunction: "${endpoint}"`);
+    for (const code of actionCodes) {
+      assertStringIncludes(src, code);
+    }
+  });
+}
+
 
 Deno.test("recordAdminHqDecision rejects short / empty reason (REASON_REQUIRED contract)", async () => {
   let threw = false;

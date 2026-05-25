@@ -29,6 +29,8 @@ import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 const ENDPOINT = "POST /admin-manual-overrides";
 
@@ -150,6 +152,8 @@ Deno.serve(async (req) => {
     let targetId = "";
     let auditAction = `admin.manual_override.${parsed.operation}`;
     let operationResult: unknown = null;
+    let govOrgId: string | null = null;
+    let govMatchId: string | null = null;
 
     if (parsed.operation === "force_status" || parsed.operation === "void_match") {
       targetId = parsed.match_id;
@@ -166,6 +170,8 @@ Deno.serve(async (req) => {
         return jsonResponse(req, { error: "MATCH_NOT_FOUND", requestId }, 404);
       }
       beforeSnapshot = before;
+      govOrgId = before.org_id ?? null;
+      govMatchId = targetId;
       const newState = parsed.operation === "void_match" ? "voided" : parsed.new_status;
 
       const { data: rpcResult, error: rpcErr } = await admin.rpc(
@@ -202,10 +208,11 @@ Deno.serve(async (req) => {
       targetId = parsed.entity_id;
       const { data: entityBefore } = await admin
         .from("entities")
-        .select("id, name, verification_status, jurisdiction, updated_at")
+        .select("id, name, org_id, verification_status, jurisdiction, updated_at")
         .eq("id", targetId)
         .maybeSingle();
       beforeSnapshot = entityBefore;
+      govOrgId = (entityBefore as { org_id?: string } | null)?.org_id ?? null;
       const { data, error: invokeErr } = await admin.functions.invoke("dilisense-screen", {
         body: { entity_id: targetId, force: true },
       });
@@ -233,6 +240,8 @@ Deno.serve(async (req) => {
         .eq("id", targetId)
         .maybeSingle();
       beforeSnapshot = matchBefore;
+      govOrgId = (matchBefore as { org_id?: string } | null)?.org_id ?? null;
+      govMatchId = targetId;
       const { data, error: invokeErr } = await admin.functions.invoke("evidence-pack", {
         body: { match_id: targetId, force_regenerate: true },
       });
@@ -268,6 +277,27 @@ Deno.serve(async (req) => {
       },
       user_agent: userAgent,
     });
+
+    try {
+      await recordAdminHqDecision({
+        admin, sourceFunction: "admin-manual-overrides",
+        actionCode: `manual_override.${parsed.operation}`,
+        actorUserId: caller.id, actorRole: "platform_admin",
+        orgId: govOrgId ?? "00000000-0000-0000-0000-000000000000",
+        aggregateId: targetId,
+        aggregateType: targetType,
+        matchId: govMatchId,
+        reason: (parsed as { reason: string }).reason,
+        requestId, aal: "aal2",
+        extra: {
+          operation: parsed.operation,
+          ...(parsed.operation === "force_status" ? { requested_status: parsed.new_status } : {}),
+        },
+      });
+    } catch (govErr) {
+      console.error(`[admin-manual-overrides][${requestId}] CRITICAL: gov audit failed:`, govErr);
+      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED", requestId }, 500);
+    }
 
     return jsonResponse(req, {
       ok: true,

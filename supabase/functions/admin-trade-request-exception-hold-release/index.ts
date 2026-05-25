@@ -8,6 +8,8 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { MT012_MIN_REASON_LENGTH } from "../_shared/mt-012-audit.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -102,6 +104,26 @@ Deno.serve(async (req) => {
     }
     console.error("[admin-trade-request-exception-hold-release] rpc error:", error);
     return json({ error: "release_failed" }, 500);
+  }
+
+  const { data: trRow } = await admin
+    .from("trade_requests")
+    .select("id, org_id")
+    .eq("id", trade_request_id)
+    .maybeSingle();
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-trade-request-exception-hold-release",
+      actionCode: "trade_request_exception.release",
+      actorUserId: admin_user.id, actorRole: "platform_admin",
+      orgId: (trRow as { org_id?: string } | null)?.org_id ?? "00000000-0000-0000-0000-000000000000",
+      aggregateId: trade_request_id,
+      aggregateType: "trade_request",
+      reason, requestId: req.headers.get("x-request-id"), aal: "aal2",
+    });
+  } catch (govErr) {
+    console.error("[admin-trade-request-exception-hold-release] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
   }
 
   return json({ ok: true, result: data }, 200);

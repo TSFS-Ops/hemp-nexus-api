@@ -7,6 +7,8 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { RESIDENCY_ADMIN_REASON_MIN_LENGTH } from "../_shared/data-009-audit.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -82,6 +84,30 @@ Deno.serve(async (req) => {
     if (msg.includes("reason_required_min_20")) return json({ error: msg, code: "REASON_REQUIRED" }, 400);
     console.error("[admin-residency-review-decline] rpc failed:", error);
     return json({ error: "rpc_failed", message: msg }, 500);
+  }
+  const { data: reviewRow } = await admin
+    .from("data_residency_reviews")
+    .select("id, org_id, requested_region, requested_country")
+    .eq("id", parsed.data.review_id)
+    .maybeSingle();
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-residency-review-decline",
+      actionCode: "residency_review.decline",
+      actorUserId: u.user.id, actorRole: "platform_admin",
+      orgId: (reviewRow?.org_id as string | undefined) ?? "00000000-0000-0000-0000-000000000000",
+      aggregateId: parsed.data.review_id,
+      aggregateType: "data_residency_review",
+      reason: parsed.data.reason,
+      requestId: req.headers.get("x-request-id"), aal: "aal2",
+      extra: {
+        requested_region: reviewRow?.requested_region ?? null,
+        requested_country: reviewRow?.requested_country ?? null,
+      },
+    });
+  } catch (govErr) {
+    console.error("[admin-residency-review-decline] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
   }
   return json({ ok: true, ...(data ?? {}) }, 200);
 });
