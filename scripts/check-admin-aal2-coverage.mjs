@@ -126,6 +126,11 @@ const GOV_WRITER_PATTERNS = [
   /from\s+["'][^"']*_shared\/[^"']*audit[^"']*["']/,
   /from\s+["'][^"']*_shared\/export-lifecycle-audit[^"']*["']/,
   /from\s+["'][^"']*_shared\/legal-hold[^"']*["']/,
+  // Atomic RPC wrappers that perform the governance/audit write inside a
+  // single SECURITY DEFINER transaction (Batch F atomicity series). The
+  // underlying RPC writes to event_store; the edge function is satisfied
+  // by invoking the *_with_governance wrapper.
+  /\.rpc\(\s*["'][a-z0-9_]+_with_governance["']/,
 ];
 
 function readAllSourceUnder(dir) {
