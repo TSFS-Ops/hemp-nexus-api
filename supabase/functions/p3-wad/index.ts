@@ -579,6 +579,7 @@ Deno.serve(async (req: Request) => {
             allowed_or_blocked: "manual_review",
             reason_code: "UBO_INCOMPLETE",
             posture_snapshot: buildPostureSnapshot("Manual Review Required", {
+              policy_version: WAD_POLICY_VERSION,
               check_status: { gate: "UBO_COMPLETENESS", reason: uboFailed.reason },
               manual_review_required: true,
             }),
@@ -586,6 +587,7 @@ Deno.serve(async (req: Request) => {
               dedup_key: dedupKey,
               gate: "UBO_COMPLETENESS",
               reason: uboFailed.reason,
+              policy_version: WAD_POLICY_VERSION,
             },
           });
         }
