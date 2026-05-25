@@ -655,21 +655,58 @@ Deno.serve(async (req: Request) => {
           .eq("id", parsed.poi_id);
       }
 
-      // Issue WaD
-      const { data: wad, error: wadError } = await admin
-        .from("p3_wads")
-        .insert({
-          org_id: orgId,
-          poi_id: parsed.poi_id,
-          state: "ISSUED",
-          issued_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // ── Atomic WaD issue: insert p3_wads(ISSUED) + emit wad.passed
+      //    in a single SECURITY DEFINER transaction. If gov_emit_event
+      //    fails, the p3_wads row is rolled back. ──
+      const wadIssueGovPayload = {
+        actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+        actor_role: authCtx.roles?.[0] || null,
+        source_function: "p3-wad",
+        correlation_id: correlationId,
+        new_state: "ISSUED",
+        allowed_or_blocked: "allowed",
+        posture_snapshot: buildPostureSnapshot("Standard", {
+          policy_version: WAD_POLICY_VERSION,
+          check_status: { gates_passed: gates.length, carry_forward: carryForwardLog },
+        }),
+        metadata: { gates_passed: gates.length, policy_version: WAD_POLICY_VERSION },
+        idempotency_key: `${parsed.poi_id}|wad.passed|${correlationId}|issued`,
+      };
 
-      if (wadError) throw new ApiException("INTERNAL_ERROR", wadError.message, 500);
+      const { data: wadIssueResult, error: wadIssueError } = await admin.rpc(
+        "atomic_wad_issue",
+        {
+          p_org_id: orgId,
+          p_poi_id: parsed.poi_id,
+          p_governance: wadIssueGovPayload,
+        },
+      );
 
-      // Record event
+      if (wadIssueError || !wadIssueResult?.success) {
+        console.error(`[${correlationId}] CRITICAL: atomic_wad_issue failed:`, wadIssueError ?? wadIssueResult);
+        throw new ApiException(
+          "GOV_AUDIT_WRITE_FAILED",
+          "WaD issue rolled back: governance proof write failed",
+          500,
+        );
+      }
+      if (!wadIssueResult.governance_event_id && !wadIssueResult.idempotent) {
+        throw new ApiException(
+          "GOV_AUDIT_WRITE_FAILED",
+          "WaD issue atomic RPC did not return governance_event_id",
+          500,
+        );
+      }
+
+      const wad = {
+        id: wadIssueResult.wad_id as string,
+        poi_id: parsed.poi_id,
+        state: "ISSUED",
+        issued_at: wadIssueResult.issued_at ?? new Date().toISOString(),
+      };
+
+      // Legacy event_store mirror (non-canonical; preserves existing
+      // trust.wad.issued lane for downstream consumers).
       await admin.from("event_store").insert({
         org_id: orgId,
         domain: "trust",
@@ -680,28 +717,6 @@ Deno.serve(async (req: Request) => {
         actor_role: authCtx.roles?.[0] || null,
         payload: { poi_id: parsed.poi_id, gates_passed: gates.length, carry_forward: carryForwardLog },
         event_hash: await computeHash(JSON.stringify({ wad_id: wad.id })),
-      });
-
-      // Phase 2 canonical (fail-closed: WaD pass is critical proof)
-      await writeCriticalEventWithPosture(admin, {
-        event_type: "wad.passed",
-        org_id: orgId,
-        aggregate_type: "wad",
-        aggregate_id: wad.id,
-        actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
-        actor_role: authCtx.roles?.[0] || null,
-        source_function: "p3-wad",
-        correlation_id: correlationId,
-        poi_id: parsed.poi_id,
-        wad_id: wad.id,
-        new_state: "ISSUED",
-        allowed_or_blocked: "allowed",
-        posture: buildPostureSnapshot("Standard", {
-          policy_version: WAD_POLICY_VERSION,
-          check_status: { gates_passed: gates.length, carry_forward: carryForwardLog },
-        }),
-        metadata: { gates_passed: gates.length, policy_version: WAD_POLICY_VERSION },
-        idempotency_extra: "issued",
       });
 
       const responseData = successEnvelope(
@@ -718,6 +733,7 @@ Deno.serve(async (req: Request) => {
 
       // Store idempotency key
       await admin.from("idempotency_keys").insert({
+
         org_id: orgId,
         idempotency_key: idempotencyKey,
         endpoint: "p3-wad",
