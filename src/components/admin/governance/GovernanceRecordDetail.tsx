@@ -61,6 +61,8 @@ import {
 } from "@/lib/governance/governance-record";
 import { GovernanceEventDrawer } from "./GovernanceEventDrawer";
 import { HqNotesPanel } from "./HqNotesPanel";
+import { GovernanceWaiversPanel } from "./GovernanceWaiversPanel";
+
 
 interface Props {
   anchor: GovernanceAnchor;
