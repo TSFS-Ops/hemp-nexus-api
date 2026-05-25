@@ -469,12 +469,18 @@ export function AdminVerificationQueuePanel() {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     {r.match_id ? (
-                      <Link
-                        to={`/dashboard/matches/${r.match_id}`}
-                        className="text-xs underline inline-flex items-center gap-1"
-                      >
-                        Open <ExternalLink className="h-3 w-3" />
-                      </Link>
+                      <div className="flex flex-col gap-1">
+                        <Link
+                          to={`/dashboard/matches/${r.match_id}`}
+                          className="text-xs underline inline-flex items-center gap-1"
+                        >
+                          Open <ExternalLink className="h-3 w-3" />
+                        </Link>
+                        <OpenGovernanceRecordLink
+                          matchId={r.match_id}
+                          variant="inline"
+                        />
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
