@@ -158,5 +158,19 @@ Deno.serve(async (req) => {
     },
   });
 
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-compliance-hold-release",
+      actionCode: "compliance_hold.release",
+      actorUserId: admin_user.id, actorRole: "platform_admin",
+      orgId: hold.org_id, aggregateId: hold_id, aggregateType: "compliance_hold",
+      reason, requestId: req.headers.get("x-request-id"), aal: "aal2",
+      extra: { hold_type: hold.hold_type, entity_id: hold.entity_id ?? null },
+    });
+  } catch (govErr) {
+    console.error("[admin-compliance-hold-release] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
+  }
+
   return json({ ok: true, hold_id, status: "released" }, 200);
 });
