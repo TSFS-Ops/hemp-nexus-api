@@ -586,12 +586,14 @@ Deno.serve(async (req) => {
               allowed_or_blocked: p.to_status === "withdrawn" ? "neutral" : "allowed",
               reason_code: (update.outcome_code as string | undefined) ?? p.to_status,
               posture: buildPostureSnapshot("Standard", {
+                policy_version: DISPUTE_POLICY_VERSION,
                 check_status: { via_platform_admin: isPlatformAdmin, to_status: p.to_status },
               }),
               metadata: {
                 outcome_code: (update.outcome_code as string | undefined) ?? null,
                 outcome_summary_length:
                   typeof update.outcome_summary === "string" ? update.outcome_summary.length : 0,
+                policy_version: DISPUTE_POLICY_VERSION,
               },
               idempotency_extra: p.to_status,
             });
