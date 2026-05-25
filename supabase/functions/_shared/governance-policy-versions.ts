@@ -28,6 +28,7 @@ export const DISPUTE_POLICY_VERSION = "dispute-governance/v1";
 export const ADMIN_HQ_DECISION_POLICY_VERSION = "admin-hq-decision/v1";
 export const LEGAL_HOLD_POLICY_VERSION = "legal-hold/v1";
 export const HQ_NOTE_POLICY_VERSION = "hq-note/v1";
+export const GOVERNANCE_WAIVER_POLICY_VERSION = "governance-waiver/v1";
 
 /** Map from canonical event_type → its owning policy version. Used by tests
  *  to assert posture stamping and by helpers that need a default. */
@@ -53,4 +54,13 @@ export const POLICY_VERSION_BY_EVENT_TYPE: Readonly<Record<string, string>> = {
   "admin.hq_decision_recorded": ADMIN_HQ_DECISION_POLICY_VERSION,
   "hq.note_added": HQ_NOTE_POLICY_VERSION,
   "hq.event_corrected": HQ_NOTE_POLICY_VERSION,
+  "governance.waiver_granted": GOVERNANCE_WAIVER_POLICY_VERSION,
+  "governance.waiver_renewed": GOVERNANCE_WAIVER_POLICY_VERSION,
+  "governance.waiver_consumed": GOVERNANCE_WAIVER_POLICY_VERSION,
+  "governance.waiver_expired": GOVERNANCE_WAIVER_POLICY_VERSION,
+  "governance.bypass_granted": GOVERNANCE_WAIVER_POLICY_VERSION,
+  "governance.bypass_renewed": GOVERNANCE_WAIVER_POLICY_VERSION,
+  "governance.bypass_consumed": GOVERNANCE_WAIVER_POLICY_VERSION,
+  "governance.bypass_expired": GOVERNANCE_WAIVER_POLICY_VERSION,
 } as const;
+

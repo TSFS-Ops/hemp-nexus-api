@@ -55,8 +55,10 @@ export const EVENT_FAMILIES = [
   "legal_hold",
   "demo",
   "system",
+  "governance",
 ] as const;
 export type EventFamily = (typeof EVENT_FAMILIES)[number];
+
 
 /**
  * Whitelisted event names. Names not in this set are rejected.
@@ -108,7 +110,17 @@ export const CONTROLLED_TAXONOMY = new Set<string>([
   // demo / system
   "demo.event_recorded",
   "system.audit_writer_health_check",
+  // governance waivers / bypasses (Batch D — 1 use / 7 days, renewal = new event)
+  "governance.waiver_granted",
+  "governance.waiver_consumed",
+  "governance.waiver_expired",
+  "governance.waiver_renewed",
+  "governance.bypass_granted",
+  "governance.bypass_consumed",
+  "governance.bypass_expired",
+  "governance.bypass_renewed",
 ]);
+
 
 // ── Controlled reason codes (David's approved list, non-document subset) ─────
 // WARN-only enforcement: writes are not rejected when reason_code is unknown,
@@ -145,7 +157,17 @@ export const APPROVED_REASON_CODES: ReadonlySet<string> = new Set([
   "system_recovery",
   "legal_hold",
   "other",
+  // Batch D — waiver/bypass lifecycle reason codes (governance namespace).
+  // Approved as part of David's waiver/bypass expiry rule.
+  "waiver_missing",
+  "waiver_expired",
+  "waiver_consumed",
+  "waiver_revoked",
+  "waiver_renewed",
+  "bypass_granted_for_record",
+  "waiver_granted_for_record",
 ]);
+
 
 /**
  * WARN-only validator for reason codes. Returns true when the code is on the
@@ -210,7 +232,20 @@ const CRITICAL_SPECIFIC_NAMES = new Set<string>([
   // is not in CRITICAL_FAMILIES so they are opted-in by name here.
   "hq.note_added",
   "hq.event_corrected",
+  // Batch D — waiver/bypass grant/renew/consume/expire MUST be fail-closed:
+  // the writer dropping a waiver event would let progression happen with no
+  // governance trail. The family ("governance") is not blanket-critical because
+  // future non-money governance events may be best-effort; opt these in by name.
+  "governance.waiver_granted",
+  "governance.waiver_renewed",
+  "governance.waiver_consumed",
+  "governance.waiver_expired",
+  "governance.bypass_granted",
+  "governance.bypass_renewed",
+  "governance.bypass_consumed",
+  "governance.bypass_expired",
 ]);
+
 
 // ── Posture labels ───────────────────────────────────────────────────────────
 
@@ -323,7 +358,9 @@ const FAMILY_TO_DOMAIN: Record<EventFamily, "trade" | "trust" | "core" | "intel"
   export: "core",
   demo: "core",
   system: "core",
+  governance: "core",
 };
+
 
 // ── Writer types ─────────────────────────────────────────────────────────────
 

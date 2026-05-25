@@ -61,6 +61,8 @@ import {
 } from "@/lib/governance/governance-record";
 import { GovernanceEventDrawer } from "./GovernanceEventDrawer";
 import { HqNotesPanel } from "./HqNotesPanel";
+import { GovernanceWaiversPanel } from "./GovernanceWaiversPanel";
+
 
 interface Props {
   anchor: GovernanceAnchor;
@@ -141,6 +143,10 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
   hq_decision: "HQ decision",
   hq_note: "HQ note",
   hq_correction: "HQ correction",
+  waiver_grant: "Waiver/Bypass grant",
+  waiver_consumed: "Waiver/Bypass consumed",
+  waiver_expired: "Waiver/Bypass expired",
+
   dispute: "Dispute",
   credit: "Credit",
   payment: "Payment",
@@ -465,6 +471,13 @@ export function GovernanceRecordDetail({ anchor }: Props) {
         correctingEventId={correctingEventId}
         onCorrectingHandled={() => setCorrectingEventId(null)}
       />
+
+      {/* Batch D — Governance waivers / bypasses panel */}
+      <GovernanceWaiversPanel
+        anchor={anchor}
+        orgId={m?.buyer_org_id ?? m?.seller_org_id ?? null}
+      />
+
 
 
 

@@ -3244,6 +3244,80 @@ export type Database = {
         }
         Relationships: []
       }
+      governance_waivers: {
+        Row: {
+          created_at: string
+          expires_at: string
+          granted_at: string
+          granted_by: string
+          match_id: string | null
+          max_uses: number
+          note: string | null
+          org_id: string
+          poi_id: string | null
+          posture: string
+          reason_code: string
+          renewed_from: string | null
+          scope: string
+          scope_id: string | null
+          status: string
+          updated_at: string
+          uses: number
+          wad_id: string | null
+          waiver_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          granted_at?: string
+          granted_by: string
+          match_id?: string | null
+          max_uses?: number
+          note?: string | null
+          org_id: string
+          poi_id?: string | null
+          posture: string
+          reason_code: string
+          renewed_from?: string | null
+          scope: string
+          scope_id?: string | null
+          status?: string
+          updated_at?: string
+          uses?: number
+          wad_id?: string | null
+          waiver_id?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          granted_at?: string
+          granted_by?: string
+          match_id?: string | null
+          max_uses?: number
+          note?: string | null
+          org_id?: string
+          poi_id?: string | null
+          posture?: string
+          reason_code?: string
+          renewed_from?: string | null
+          scope?: string
+          scope_id?: string | null
+          status?: string
+          updated_at?: string
+          uses?: number
+          wad_id?: string | null
+          waiver_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_waivers_renewed_from_fkey"
+            columns: ["renewed_from"]
+            isOneToOne: false
+            referencedRelation: "governance_waivers"
+            referencedColumns: ["waiver_id"]
+          },
+        ]
+      }
       idempotency_keys: {
         Row: {
           created_at: string
