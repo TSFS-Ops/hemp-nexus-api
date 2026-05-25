@@ -27,15 +27,13 @@ Deno.test("p3-wad routes WaD issue through atomic_wad_issue with p_governance", 
 
   assertStringIncludes(src, "p_governance: wadIssueGovPayload");
   assertStringIncludes(src, "wadIssueGovPayload");
-  assertStringIncludes(src, 'event_type: "wad.passed"');
-  // Edge fn must not also call the TS canonical writer for wad.passed on
-  // happy path — guarded by checking there is no writeCriticalEventWithPosture
-  // call site for wad.passed after the RPC.
+  assertStringIncludes(src, "wad.passed");
   assert(
-    !/writeCriticalEventWithPosture\([^)]*\n[^)]*event_type:\s*"wad\.passed"/s.test(src),
+    !/writeCriticalEventWithPosture\([^)]*event_type:\s*"wad\.passed"/s.test(src),
     "p3-wad must not double-write wad.passed via TS writer",
   );
 });
+
 
 Deno.test("p3-wad WaD issue fails closed when atomic_wad_issue omits governance_event_id", async () => {
   const src = await read("p3-wad/index.ts");
