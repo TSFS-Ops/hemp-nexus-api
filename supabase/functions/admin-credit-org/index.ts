@@ -300,6 +300,23 @@ Deno.serve(async (req) => {
       new_balance: result.new_balance,
     });
 
+    try {
+      await recordAdminHqDecision({
+        admin, sourceFunction: "admin-credit-org",
+        actionCode: "credit_org.adjust",
+        actorUserId: callerId!, actorRole: "platform_admin",
+        orgId: org_id, aggregateId: referenceId,
+        aggregateType: "credit_adjustment",
+        paymentReference: referenceId,
+        reason: reason,
+        requestId: req.headers.get("x-request-id"), aal: "aal2",
+        extra: { credits, credit_kind: creditKind, demo: isDemo, new_balance: result.new_balance },
+      });
+    } catch (govErr) {
+      console.error("[admin-credit-org] CRITICAL: gov audit failed:", govErr);
+      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
+    }
+
     return jsonResponse(req, {
       success: true,
       new_balance: result.new_balance,
