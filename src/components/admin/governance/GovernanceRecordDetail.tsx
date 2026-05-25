@@ -258,6 +258,7 @@ export function applyEventFilters(
 
 export function GovernanceRecordDetail({ anchor }: Props) {
   const summary = useMatchSummary(anchor.matchId);
+  const { isPlatformAdmin } = useAuth();
   const { data, isLoading, isError } = useGovernanceEvents(anchor);
   const events = data?.events;
   const capsHit = data?.capsHit ?? [];
