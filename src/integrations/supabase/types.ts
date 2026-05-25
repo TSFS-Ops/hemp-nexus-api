@@ -9292,6 +9292,14 @@ export type Database = {
         }
         Returns: number
       }
+      atomic_collapse_record: {
+        Args: {
+          p_collapse: Json
+          p_governance_execution: Json
+          p_governance_finality: Json
+        }
+        Returns: Json
+      }
       atomic_decline_late_acceptance: {
         Args: {
           p_actor_email: string
@@ -9512,6 +9520,19 @@ export type Database = {
           p_governance_doc_id: string
           p_org_id: string
         }
+        Returns: Json
+      }
+      atomic_wad_deny: {
+        Args: {
+          p_denial_reasons: Json
+          p_governance?: Json
+          p_org_id: string
+          p_poi_id: string
+        }
+        Returns: Json
+      }
+      atomic_wad_issue: {
+        Args: { p_governance?: Json; p_org_id: string; p_poi_id: string }
         Returns: Json
       }
       bill_clip_on_request: { Args: { p_request_id: string }; Returns: Json }
