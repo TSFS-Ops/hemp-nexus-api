@@ -28,6 +28,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
+import { DISPUTE_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 /**
  * Batch J Required Fix 2 — AAL2 gate.
