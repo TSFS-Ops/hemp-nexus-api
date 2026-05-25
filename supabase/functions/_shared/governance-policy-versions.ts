@@ -27,6 +27,7 @@ export const PAYMENT_POLICY_VERSION = "payment-governance/v1";
 export const DISPUTE_POLICY_VERSION = "dispute-governance/v1";
 export const ADMIN_HQ_DECISION_POLICY_VERSION = "admin-hq-decision/v1";
 export const LEGAL_HOLD_POLICY_VERSION = "legal-hold/v1";
+export const HQ_NOTE_POLICY_VERSION = "hq-note/v1";
 
 /** Map from canonical event_type → its owning policy version. Used by tests
  *  to assert posture stamping and by helpers that need a default. */
@@ -50,4 +51,6 @@ export const POLICY_VERSION_BY_EVENT_TYPE: Readonly<Record<string, string>> = {
   "legal_hold.applied": LEGAL_HOLD_POLICY_VERSION,
   "legal_hold.released": LEGAL_HOLD_POLICY_VERSION,
   "admin.hq_decision_recorded": ADMIN_HQ_DECISION_POLICY_VERSION,
+  "hq.note_added": HQ_NOTE_POLICY_VERSION,
+  "hq.event_corrected": HQ_NOTE_POLICY_VERSION,
 } as const;
