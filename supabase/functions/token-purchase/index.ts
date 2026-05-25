@@ -1242,6 +1242,21 @@ async function handleChargeFailed(
       entity_type: "token_balance",
       metadata: { payment_reference: data.reference },
     });
+    // Phase 2 canonical proof — best-effort with risk-item escalation
+    // (webhook safety: replay guard would swallow a retry, so we cannot
+    // hard fail-closed; HQ reconciles via risk item if the write fails).
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "charge.failed",
+      payment_reference: data.reference,
+      org_id: data.metadata.org_id,
+      actor_user_id: data.metadata.user_id || null,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:charge.failed",
+      payment_status: "failed",
+      allowed_or_blocked: "blocked",
+      reason_code: "charge.failed",
+      policy_version: null,
+    });
   }
 }
 
