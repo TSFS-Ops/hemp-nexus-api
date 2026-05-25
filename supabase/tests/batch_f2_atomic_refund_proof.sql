@@ -113,10 +113,15 @@ BEGIN
     format('F2-C: structured failure must not write a governance event, got %s', v_event_count);
 
   -- ── D. Failure rollback on decline with invalid reason (< 20 chars). ─
+  -- Use a distinct token_purchase_id to avoid the unique pending-per-purchase index.
   INSERT INTO public.refund_requests (
-    id, org_id, token_purchase_id, status, credits_at_request, created_at
+    id, org_id, requested_by, token_purchase_id,
+    reason_code, reason_detail,
+    status, credits_at_request, credits_used_at_request, created_at
   ) VALUES (
-    v_refund_d, v_org, v_purchase, 'pending', 0, now()
+    v_refund_d, v_org, v_actor, gen_random_uuid(),
+    'other', 'batch f2 proof seed reason detail bbbbbb',
+    'pending', 0, 0, now()
   );
 
   BEGIN
