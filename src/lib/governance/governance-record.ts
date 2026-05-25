@@ -190,6 +190,13 @@ const CATEGORY_RULES: Array<{ test: RegExp; cat: EventCategory }> = [
   // rule so they get their own controlled label and never fold into hq_decision.
   { test: /^hq\.note_added$/i, cat: "hq_note" },
   { test: /^hq\.event_corrected$/i, cat: "hq_correction" },
+  // Batch D — waiver/bypass lifecycle events get their own categories so the
+  // timeline labels each lifecycle moment cleanly without folding into HQ
+  // decisions or sensitive_admin.
+  { test: /^governance\.(waiver|bypass)_(granted|renewed)$/i, cat: "waiver_grant" },
+  { test: /^governance\.(waiver|bypass)_consumed$/i, cat: "waiver_consumed" },
+  { test: /^governance\.(waiver|bypass)_expired$/i, cat: "waiver_expired" },
+
   { test: /^trade_request\.|^mt[-_]?012/i, cat: "trade_request" },
   { test: /^match\./i, cat: "match" },
   { test: /^poi\.|poi_/i, cat: "poi" },
