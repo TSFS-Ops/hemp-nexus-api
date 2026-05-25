@@ -208,10 +208,11 @@ Deno.serve(async (req) => {
       targetId = parsed.entity_id;
       const { data: entityBefore } = await admin
         .from("entities")
-        .select("id, name, verification_status, jurisdiction, updated_at")
+        .select("id, name, org_id, verification_status, jurisdiction, updated_at")
         .eq("id", targetId)
         .maybeSingle();
       beforeSnapshot = entityBefore;
+      govOrgId = (entityBefore as { org_id?: string } | null)?.org_id ?? null;
       const { data, error: invokeErr } = await admin.functions.invoke("dilisense-screen", {
         body: { entity_id: targetId, force: true },
       });
