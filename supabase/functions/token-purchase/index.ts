@@ -1155,6 +1155,7 @@ async function handleChargeSuccess(
       allowed_or_blocked: "allowed",
       reason_code: "charge.success",
       posture: buildPostureSnapshot("Standard", {
+        policy_version: PAYMENT_POLICY_VERSION,
         check_status: { paystack_event: "charge.success", credits_added: credits },
       }),
       metadata: {
@@ -1165,6 +1166,7 @@ async function handleChargeSuccess(
         currency: metadata.currency ?? "USD",
         fx_basis: metadata.fx_basis ?? "native_usd",
         paid_at,
+        policy_version: PAYMENT_POLICY_VERSION,
       },
       idempotency_extra: reference,
     });
