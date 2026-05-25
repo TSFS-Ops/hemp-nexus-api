@@ -265,9 +265,10 @@ export async function burnTokens(
         allowed_or_blocked: "blocked",
         reason_code: burnResult?.error ?? "INSUFFICIENT_TOKENS",
         posture_snapshot: buildPostureSnapshot("Standard", {
+          policy_version: CREDIT_POLICY_VERSION,
           check_status: { current_balance: burnResult?.current_balance ?? 0 },
         }),
-        metadata: { endpoint, requested: tokensToBurn, available: burnResult?.current_balance ?? 0 },
+        metadata: { endpoint, requested: tokensToBurn, available: burnResult?.current_balance ?? 0, policy_version: CREDIT_POLICY_VERSION },
       });
       throw new ApiException(
         "INSUFFICIENT_TOKEN_BALANCE",
