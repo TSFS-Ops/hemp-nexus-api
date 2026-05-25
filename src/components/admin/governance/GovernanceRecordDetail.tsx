@@ -786,14 +786,18 @@ export function GovernanceRecordDetail({ anchor }: Props) {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] bg-amber-50 border-amber-300 text-amber-900 cursor-help"
+                                <span
+                                  className="inline-flex"
                                   data-testid="corrected-badge"
                                   data-correction-event-id={e.correctedBy.eventId}
                                 >
-                                  {HQ_CORRECTED_BADGE_COPY}
-                                </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] bg-amber-50 border-amber-300 text-amber-900 cursor-help"
+                                  >
+                                    {HQ_CORRECTED_BADGE_COPY}
+                                  </Badge>
+                                </span>
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs text-xs space-y-1">
                                 <p className="font-medium">{HQ_CORRECTED_BADGE_COPY}</p>
