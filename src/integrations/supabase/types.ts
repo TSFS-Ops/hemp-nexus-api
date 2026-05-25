@@ -9157,6 +9157,22 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_credit_org_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_actor_user_id: string
+          p_amount: number
+          p_credit_kind: string
+          p_demo: boolean
+          p_org_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_reference_id: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       admin_get_reconciliation_alarms: {
         Args: {
           p_alarm_type?: string
