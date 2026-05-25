@@ -46,7 +46,8 @@ Deno.test("p3-wad WaD issue fails closed when atomic_wad_issue omits governance_
 
 Deno.test("p3-wad routes WaD denial through atomic_wad_deny with p_governance", async () => {
   const src = await read("p3-wad/index.ts");
-  assertStringIncludes(src, 'admin.rpc(\n          "atomic_wad_deny"');
+  assert(/admin\.rpc\(\s*"atomic_wad_deny"/.test(src), "must call admin.rpc(\"atomic_wad_deny\")");
+
   assertStringIncludes(src, "p_governance: wadDenyGovPayload");
   assertStringIncludes(src, 'event_type: "wad.failed"');
   assert(
