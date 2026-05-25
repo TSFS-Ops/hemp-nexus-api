@@ -71,8 +71,8 @@ BEGIN
      'f7-h-' || v_match_evidence::text, 'F7-COMMODITY', v_org, 'bilateral', 'ZA', 'AE')
   ON CONFLICT (id) DO NOTHING;
 
-  INSERT INTO public.entities (id, org_id, name, jurisdiction)
-  VALUES (v_entity, v_org, 'F7 Entity', 'ZA')
+  INSERT INTO public.entities (id, org_id, entity_type, legal_name, jurisdiction_code, status)
+  VALUES (v_entity, v_org, 'COMPANY', 'F7 Entity', 'ZA', 'PENDING')
   ON CONFLICT (id) DO NOTHING;
 
   -- =====================================================================
