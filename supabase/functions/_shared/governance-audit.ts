@@ -222,7 +222,20 @@ const CRITICAL_SPECIFIC_NAMES = new Set<string>([
   // is not in CRITICAL_FAMILIES so they are opted-in by name here.
   "hq.note_added",
   "hq.event_corrected",
+  // Batch D — waiver/bypass grant/renew/consume/expire MUST be fail-closed:
+  // the writer dropping a waiver event would let progression happen with no
+  // governance trail. The family ("governance") is not blanket-critical because
+  // future non-money governance events may be best-effort; opt these in by name.
+  "governance.waiver_granted",
+  "governance.waiver_renewed",
+  "governance.waiver_consumed",
+  "governance.waiver_expired",
+  "governance.bypass_granted",
+  "governance.bypass_renewed",
+  "governance.bypass_consumed",
+  "governance.bypass_expired",
 ]);
+
 
 // ── Posture labels ───────────────────────────────────────────────────────────
 
