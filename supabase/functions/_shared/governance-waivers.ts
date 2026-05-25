@@ -23,13 +23,12 @@
  * and no INSERT/UPDATE/DELETE policy exists for authenticated users.
  */
 
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
-  type AdminLike,
 } from "./governance-audit-integration.ts";
 import { GOVERNANCE_WAIVER_POLICY_VERSION } from "./governance-policy-versions.ts";
+
 
 
 export type WaiverPosture = "waiver" | "bypass";
