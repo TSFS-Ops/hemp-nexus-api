@@ -3,22 +3,43 @@
  * transaction. Anchor: match_id (primary). Falls back to poi_id or
  * engagement_id where given.
  *
- * Phase 1 only:
+ * Phase 1 + alignment patch:
  *  - Reads existing audit sources via useGovernanceEvents.
  *  - Surfaces verification posture, current risk flag and demo/test/live
  *    label derived from already-fetched data; never invents values.
  *  - Renders the controlled HQ_DECISION_COPY inline for hq_decision rows.
  *  - Warns HQ when any source hit the per-source row cap.
+ *  - Deterministic non-AI "full story" summary at the top (§38).
+ *  - Memory record field renders "Not wired in this build" with HQ tooltip.
+ *  - HQ filters: actor type, organisation, event family, exact event type,
+ *    POI ID, engagement ID, WaD ID, payment reference, allowed/blocked,
+ *    posture, risk flag, demo/live (document filters intentionally excluded).
+ *  - Identical repeated events within 5 min collapse into one row with
+ *    "repeated [x] times" — underlying events accessible via the drawer.
  */
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, HelpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   GovernanceAnchor,
   useGovernanceEvents,
@@ -28,7 +49,10 @@ import {
   EventCategory,
   GovernanceEvent,
   HQ_DECISION_COPY,
+  MEMORY_NOT_WIRED_COPY,
   NO_EVENT_COPY,
+  buildFullStorySummary,
+  groupRepeatedEvents,
   statusCopy,
 } from "@/lib/governance/governance-record";
 import { GovernanceEventDrawer } from "./GovernanceEventDrawer";
@@ -55,7 +79,17 @@ function useMatchSummary(matchId: string | null | undefined) {
   });
 }
 
-function SummaryField({ label, value }: { label: string; value: React.ReactNode }) {
+function SummaryField({
+  label,
+  value,
+  tooltip,
+  testId,
+}: {
+  label: string;
+  value: React.ReactNode;
+  tooltip?: string;
+  testId?: string;
+}) {
   const display =
     value === null || value === undefined || value === "" ? (
       <span className="text-muted-foreground">Not recorded</span>
@@ -63,9 +97,24 @@ function SummaryField({ label, value }: { label: string; value: React.ReactNode 
       value
     );
   return (
-    <div>
-      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-1">
+    <div data-testid={testId}>
+      <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mb-1 flex items-center gap-1">
         {label}
+        {tooltip && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle
+                  className="h-3 w-3 text-muted-foreground/70 cursor-help"
+                  aria-label={`${label} help`}
+                />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </p>
       <div className="font-mono text-xs text-foreground break-all">{display}</div>
     </div>
@@ -97,6 +146,34 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
   other: "Other",
 };
 
+const CATEGORY_VALUES = Object.keys(CATEGORY_LABEL) as EventCategory[];
+
+const ACTOR_TYPES = [
+  "System",
+  "User",
+  "Organisation Admin",
+  "HQ Admin",
+  "Provider",
+  "Scheduled Job",
+  "Payment Provider",
+  "Notification Service",
+  "Unknown actor — needs review",
+] as const;
+
+const POSTURE_OPTIONS = [
+  "Standard",
+  "Pending Verification",
+  "Manual Review Required",
+  "Waiver Applied",
+  "Bypass Applied",
+  "Demo/Test",
+  "Failed Verification",
+  "Expired/Stale Verification",
+  "Not recorded",
+] as const;
+
+const ANY = "__any__";
+
 /** Latest event in a given category from already-fetched timeline. */
 function latestByCategory(
   events: GovernanceEvent[] | undefined,
@@ -109,12 +186,76 @@ function latestByCategory(
   return null;
 }
 
+interface EventFilters {
+  actorType: string;
+  orgId: string;
+  family: string;
+  eventType: string;
+  poiId: string;
+  engagementId: string;
+  wadId: string;
+  paymentRef: string;
+  allowedBlocked: string;
+  posture: string;
+  riskFlag: string;
+  demoLive: string;
+}
+
+const EMPTY_FILTERS: EventFilters = {
+  actorType: ANY,
+  orgId: "",
+  family: ANY,
+  eventType: "",
+  poiId: "",
+  engagementId: "",
+  wadId: "",
+  paymentRef: "",
+  allowedBlocked: ANY,
+  posture: ANY,
+  riskFlag: ANY,
+  demoLive: ANY,
+};
+
+export function applyEventFilters(
+  events: GovernanceEvent[],
+  f: EventFilters,
+): GovernanceEvent[] {
+  const norm = (s: string) => s.trim().toLowerCase();
+  return events.filter((e) => {
+    if (f.actorType !== ANY && e.actorType !== f.actorType) return false;
+    if (f.orgId && norm(e.links.orgId ?? "") !== norm(f.orgId)) return false;
+    if (f.family !== ANY && e.category !== f.family) return false;
+    if (f.eventType && !e.action.toLowerCase().includes(norm(f.eventType))) return false;
+    if (f.poiId && norm(e.links.poiId ?? "") !== norm(f.poiId)) return false;
+    if (
+      f.engagementId &&
+      norm(e.links.engagementId ?? "") !== norm(f.engagementId)
+    )
+      return false;
+    if (f.wadId && norm(e.links.wadId ?? "") !== norm(f.wadId)) return false;
+    if (
+      f.paymentRef &&
+      norm(e.links.paymentReference ?? "") !== norm(f.paymentRef)
+    )
+      return false;
+    if (f.allowedBlocked !== ANY && e.status !== f.allowedBlocked) return false;
+    if (f.posture !== ANY && e.posture !== f.posture) return false;
+    if (f.riskFlag === "risk_only") {
+      if (e.status !== "blocked" && e.status !== "manual_review") return false;
+    }
+    if (f.demoLive === "demo" && !e.isDemo) return false;
+    if (f.demoLive === "live" && e.isDemo) return false;
+    return true;
+  });
+}
+
 export function GovernanceRecordDetail({ anchor }: Props) {
   const summary = useMatchSummary(anchor.matchId);
   const { data, isLoading, isError } = useGovernanceEvents(anchor);
   const events = data?.events;
   const capsHit = data?.capsHit ?? [];
   const [selected, setSelected] = useState<GovernanceEvent | null>(null);
+  const [filters, setFilters] = useState<EventFilters>(EMPTY_FILTERS);
 
   const recordRef = useMemo(() => {
     if (anchor.matchId) return `GR-MATCH-${anchor.matchId.slice(0, 8).toUpperCase()}`;
@@ -176,7 +317,6 @@ export function GovernanceRecordDetail({ anchor }: Props) {
   const demoTestLive: string | null = (() => {
     if (summary.isLoading) return null;
     if (!m) {
-      // Fall back to events if any are flagged demo.
       if (events && events.some((e) => e.isDemo)) return "Demo/Test";
       return null;
     }
@@ -188,6 +328,49 @@ export function GovernanceRecordDetail({ anchor }: Props) {
     events && events.length > 0
       ? format(new Date(events[0].occurredAt), "yyyy-MM-dd HH:mm")
       : null;
+
+  // ── Deterministic "full story" summary (§38). Non-AI, no documentation. ──
+  const executionEvent = latestByCategory(events, ["execution"]);
+  const executionStatus = executionEvent
+    ? executionEvent.status === "blocked"
+      ? "blocked"
+      : executionEvent.status === "allowed"
+        ? "permitted"
+        : "not recorded"
+    : m?.status === "settled"
+      ? "permitted"
+      : "not recorded";
+  const executionReason =
+    executionEvent?.reasonCode ??
+    (executionEvent?.status === "allowed" ? "required conditions satisfied" : null);
+  const fullStory = buildFullStorySummary({
+    recordStatus: m?.state ?? m?.status ?? null,
+    poiStatus: m?.poi_state ?? null,
+    wadStatus: wadStatus,
+    executionStatus,
+    executionReason,
+    lastEvent: events && events.length > 0
+      ? { action: events[0].action, occurredAt: events[0].occurredAt }
+      : null,
+  });
+
+  // ── Filtered + grouped timeline ──
+  const filtered = useMemo(
+    () => (events ? applyEventFilters(events, filters) : []),
+    [events, filters],
+  );
+  const grouped = useMemo(() => groupRepeatedEvents(filtered), [filtered]);
+
+  const setF = <K extends keyof EventFilters>(k: K, v: EventFilters[K]) =>
+    setFilters((prev) => ({ ...prev, [k]: v }));
+  const resetFilters = () => setFilters(EMPTY_FILTERS);
+  const activeFilterCount = useMemo(
+    () =>
+      Object.entries(filters).filter(([, v]) =>
+        v === ANY ? false : Boolean(v && v !== ""),
+      ).length,
+    [filters],
+  );
 
   return (
     <div className="space-y-6" data-testid="governance-record-detail">
@@ -222,6 +405,14 @@ export function GovernanceRecordDetail({ anchor }: Props) {
             )}
           </div>
 
+          {/* Deterministic non-AI full-story summary (§38). */}
+          <p
+            data-testid="governance-full-story"
+            className="text-xs text-foreground leading-relaxed bg-muted/30 border border-border rounded-sm px-3 py-2"
+          >
+            {fullStory}
+          </p>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-4">
             <SummaryField label="Match ID" value={anchor.matchId ?? null} />
             <SummaryField label="Buyer organisation" value={m?.buyer_name ?? null} />
@@ -235,7 +426,16 @@ export function GovernanceRecordDetail({ anchor }: Props) {
               label="Finality status"
               value={m?.settled_at ? format(new Date(m.settled_at), "yyyy-MM-dd") : null}
             />
-            <SummaryField label="Memory record" value={null} />
+            <SummaryField
+              label="Memory record"
+              testId="memory-record-field"
+              value={
+                <span className="text-muted-foreground italic">
+                  Not wired in this build
+                </span>
+              }
+              tooltip={MEMORY_NOT_WIRED_COPY}
+            />
             <SummaryField label="Credit / payment" value={creditPayment} />
             <SummaryField label="Current risk flag" value={riskFlag} />
             <SummaryField label="Verification posture" value={postureLabel} />
@@ -245,7 +445,7 @@ export function GovernanceRecordDetail({ anchor }: Props) {
         </CardContent>
       </Card>
 
-      {/* Per-source cap warning (HQ only — this whole component is HQ-only). */}
+      {/* Per-source cap warning (HQ only). */}
       {capsHit.length > 0 && (
         <div
           data-testid="row-cap-warning"
@@ -265,6 +465,201 @@ export function GovernanceRecordDetail({ anchor }: Props) {
         </div>
       )}
 
+      {/* HQ filters (non-document) */}
+      <Card>
+        <CardContent className="p-4" data-testid="governance-filters">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+              Filters · {activeFilterCount} active
+            </p>
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                data-testid="governance-filters-reset"
+                className="text-[11px] underline text-muted-foreground hover:text-foreground"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Actor type
+              </label>
+              <Select
+                value={filters.actorType}
+                onValueChange={(v) => setF("actorType", v)}
+              >
+                <SelectTrigger className="h-8 text-xs" data-testid="filter-actor-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>Any</SelectItem>
+                  {ACTOR_TYPES.map((a) => (
+                    <SelectItem key={a} value={a}>{a}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Event family
+              </label>
+              <Select value={filters.family} onValueChange={(v) => setF("family", v)}>
+                <SelectTrigger className="h-8 text-xs" data-testid="filter-family">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>Any</SelectItem>
+                  {CATEGORY_VALUES.map((c) => (
+                    <SelectItem key={c} value={c}>{CATEGORY_LABEL[c]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Allowed / blocked
+              </label>
+              <Select
+                value={filters.allowedBlocked}
+                onValueChange={(v) => setF("allowedBlocked", v)}
+              >
+                <SelectTrigger className="h-8 text-xs" data-testid="filter-allowed-blocked">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>Any</SelectItem>
+                  <SelectItem value="allowed">Allowed</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
+                  <SelectItem value="manual_review">Manual review</SelectItem>
+                  <SelectItem value="neutral">Neutral</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Posture
+              </label>
+              <Select value={filters.posture} onValueChange={(v) => setF("posture", v)}>
+                <SelectTrigger className="h-8 text-xs" data-testid="filter-posture">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>Any</SelectItem>
+                  {POSTURE_OPTIONS.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Risk flag
+              </label>
+              <Select value={filters.riskFlag} onValueChange={(v) => setF("riskFlag", v)}>
+                <SelectTrigger className="h-8 text-xs" data-testid="filter-risk">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>Any</SelectItem>
+                  <SelectItem value="risk_only">Risk only (blocked + manual review)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Demo / live
+              </label>
+              <Select value={filters.demoLive} onValueChange={(v) => setF("demoLive", v)}>
+                <SelectTrigger className="h-8 text-xs" data-testid="filter-demo-live">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>Any</SelectItem>
+                  <SelectItem value="demo">Demo/Test only</SelectItem>
+                  <SelectItem value="live">Live only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Exact event type
+              </label>
+              <Input
+                className="h-8 text-xs"
+                value={filters.eventType}
+                onChange={(e) => setF("eventType", e.target.value)}
+                placeholder="e.g. poi.state_changed"
+                data-testid="filter-event-type"
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Organisation ID
+              </label>
+              <Input
+                className="h-8 text-xs"
+                value={filters.orgId}
+                onChange={(e) => setF("orgId", e.target.value)}
+                placeholder="uuid"
+                data-testid="filter-org-id"
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                POI ID
+              </label>
+              <Input
+                className="h-8 text-xs"
+                value={filters.poiId}
+                onChange={(e) => setF("poiId", e.target.value)}
+                placeholder="uuid"
+                data-testid="filter-poi-id"
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Engagement ID
+              </label>
+              <Input
+                className="h-8 text-xs"
+                value={filters.engagementId}
+                onChange={(e) => setF("engagementId", e.target.value)}
+                placeholder="uuid"
+                data-testid="filter-engagement-id"
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                WaD ID
+              </label>
+              <Input
+                className="h-8 text-xs"
+                value={filters.wadId}
+                onChange={(e) => setF("wadId", e.target.value)}
+                placeholder="uuid"
+                data-testid="filter-wad-id"
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-muted-foreground">
+                Payment reference
+              </label>
+              <Input
+                className="h-8 text-xs"
+                value={filters.paymentRef}
+                onChange={(e) => setF("paymentRef", e.target.value)}
+                placeholder="ref"
+                data-testid="filter-payment-ref"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Timeline */}
       <Card>
         <CardContent className="p-0">
@@ -274,7 +669,9 @@ export function GovernanceRecordDetail({ anchor }: Props) {
             </p>
             {events && (
               <p className="font-mono text-[10px] text-muted-foreground">
-                {events.length} event{events.length === 1 ? "" : "s"}
+                {grouped.length} row{grouped.length === 1 ? "" : "s"} ·{" "}
+                {filtered.length} event{filtered.length === 1 ? "" : "s"}
+                {filtered.length !== events.length && ` (of ${events.length})`}
               </p>
             )}
           </div>
@@ -299,9 +696,18 @@ export function GovernanceRecordDetail({ anchor }: Props) {
             </div>
           )}
 
-          {events && events.length > 0 && (
+          {events && events.length > 0 && grouped.length === 0 && (
+            <div
+              className="p-5 text-sm text-muted-foreground italic"
+              data-testid="no-events-after-filters"
+            >
+              No events match the current filters.
+            </div>
+          )}
+
+          {grouped.length > 0 && (
             <ul className="divide-y divide-border">
-              {events.map((e) => (
+              {grouped.map((e) => (
                 <li
                   key={e.id}
                   className="px-5 py-3 hover:bg-muted/40 cursor-pointer"
@@ -310,6 +716,7 @@ export function GovernanceRecordDetail({ anchor }: Props) {
                   data-source={e.source}
                   data-status={e.status}
                   data-category={e.category}
+                  data-repeated={e.repeatedCount}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -343,6 +750,15 @@ export function GovernanceRecordDetail({ anchor }: Props) {
                         <Badge variant="outline" className="text-[10px] font-mono">
                           {e.source}
                         </Badge>
+                        {e.repeatedCount > 1 && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px]"
+                            data-testid="repeated-badge"
+                          >
+                            repeated {e.repeatedCount} times
+                          </Badge>
+                        )}
                       </div>
                       {e.category === "hq_decision" && (
                         <p
