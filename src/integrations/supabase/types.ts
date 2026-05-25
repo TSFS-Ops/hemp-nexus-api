@@ -9232,6 +9232,46 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_payment_dispute_record_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_credits_issued: number
+          p_org_id: string
+          p_policy_version?: string
+          p_provider: string
+          p_provider_dispute_reference: string
+          p_reason: string
+          p_request_id: string
+          p_token_purchase_id: string
+        }
+        Returns: Json
+      }
+      admin_payment_dispute_resolve_lost_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_payment_dispute_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      admin_payment_dispute_resolve_won_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_payment_dispute_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       admin_record_legacy_detections: {
         Args: { p_admin_user_id: string; p_match_ids?: string[] }
         Returns: Json
