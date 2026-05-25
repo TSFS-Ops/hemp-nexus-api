@@ -410,6 +410,20 @@ export function validateGovernanceInput(input: GovernanceWriteInput): void {
     }
   }
 
+  // Batch C — normalise legacy/provider-shaped reason codes into controlled
+  // namespaces (WARN-only). Preserve the original literal in safe metadata
+  // as `original_reason_code` when normalisation actually changed the value.
+  // The canonical payload then carries the normalised value going forward.
+  const rawReason = input.reason_code ?? null;
+  const normalisedReason = normaliseReasonCode(rawReason);
+  if (rawReason && normalisedReason && rawReason !== normalisedReason) {
+    input.metadata = {
+      ...(input.metadata ?? {}),
+      original_reason_code: rawReason,
+    };
+  }
+  input.reason_code = normalisedReason;
+
   // WARN-only reason-code allow-list check (does not throw).
   warnIfUnknownReasonCode(input.reason_code ?? null, {
     event_type: input.event_type,
