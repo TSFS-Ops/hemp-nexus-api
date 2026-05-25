@@ -134,6 +134,8 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
   execution: "Execution",
   admin_review: "Admin review",
   hq_decision: "HQ decision",
+  hq_note: "HQ note",
+  hq_correction: "HQ correction",
   dispute: "Dispute",
   credit: "Credit",
   payment: "Payment",
