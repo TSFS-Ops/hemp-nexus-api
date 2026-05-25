@@ -55,8 +55,10 @@ export const EVENT_FAMILIES = [
   "legal_hold",
   "demo",
   "system",
+  "governance",
 ] as const;
 export type EventFamily = (typeof EVENT_FAMILIES)[number];
+
 
 /**
  * Whitelisted event names. Names not in this set are rejected.
