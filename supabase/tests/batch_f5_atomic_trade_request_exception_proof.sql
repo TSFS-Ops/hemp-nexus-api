@@ -47,10 +47,13 @@ BEGIN
     RAISE EXCEPTION 'F5 proof: no platform_admin user available';
   END IF;
 
-  -- Scratch org (FK satisfied by orgs table NOT being needed here —
-  -- trade_requests and matches only need their own UUIDs + org_id field;
-  -- audit_logs accepts NULL/any org_id).
+  -- Scratch org (FK target for trade_requests.org_id).
+  INSERT INTO public.organizations (id, name, status, data_region)
+  VALUES (v_org, 'F5 Proof Org ' || v_org::text, 'active', 'ZA')
+  ON CONFLICT (id) DO NOTHING;
+
   -- ===================================================================
+
   -- 1. ARCHIVE OVERRIDE — happy path + dedupe + rollback
   -- ===================================================================
   INSERT INTO public.trade_requests (id, org_id, created_by, side, status)
