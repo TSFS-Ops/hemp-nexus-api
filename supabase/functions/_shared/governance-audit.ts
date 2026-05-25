@@ -358,7 +358,9 @@ const FAMILY_TO_DOMAIN: Record<EventFamily, "trade" | "trust" | "core" | "intel"
   export: "core",
   demo: "core",
   system: "core",
+  governance: "core",
 };
+
 
 // ── Writer types ─────────────────────────────────────────────────────────────
 
