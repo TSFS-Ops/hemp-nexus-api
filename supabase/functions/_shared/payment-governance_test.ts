@@ -96,7 +96,7 @@ function makeFakeAdmin(opts: { failEventStoreInsert?: boolean } = {}): {
 
 const ORG = "11111111-1111-1111-1111-111111111111";
 
-Deno.test("recordPaymentGovernanceEventBestEffort writes one payment.event_created row", async () => {
+Deno.test("[payment-governance] recordPaymentGovernanceEventBestEffort writes one payment.event_created row", async () => {
   const { admin, rows } = makeFakeAdmin();
   const res = await recordPaymentGovernanceEventBestEffort(admin, {
     event_subtype: "charge.failed",
@@ -117,7 +117,7 @@ Deno.test("recordPaymentGovernanceEventBestEffort writes one payment.event_creat
   assertEquals(ev[0].row.aggregate_id, "ref_abc");
 });
 
-Deno.test("refund.processed emits payment.event_created", async () => {
+Deno.test("[payment-governance] refund.processed emits payment.event_created", async () => {
   const { admin, rows } = makeFakeAdmin();
   const res = await recordPaymentGovernanceEventBestEffort(admin, {
     event_subtype: "refund.processed",
@@ -140,7 +140,7 @@ Deno.test("refund.processed emits payment.event_created", async () => {
   assertEquals(metadata.event_subtype, "refund.processed");
 });
 
-Deno.test("dispute.create + chargeback.won both emit payment.event_created", async () => {
+Deno.test("[payment-governance] dispute.create + chargeback.won both emit payment.event_created", async () => {
   const { admin, rows } = makeFakeAdmin();
   await recordPaymentGovernanceEventBestEffort(admin, {
     event_subtype: "dispute.create",
@@ -171,7 +171,7 @@ Deno.test("dispute.create + chargeback.won both emit payment.event_created", asy
   }
 });
 
-Deno.test("idempotency: same provider_event_id + event_subtype + reference dedupes", async () => {
+Deno.test("[payment-governance] idempotency: same provider_event_id + event_subtype + reference dedupes", async () => {
   const { admin, rows } = makeFakeAdmin();
   // Same input fields → derived idempotency_key is identical; underlying
   // writer detects the duplicate within the idempotency window and returns
@@ -193,7 +193,7 @@ Deno.test("idempotency: same provider_event_id + event_subtype + reference dedup
   assertEquals(ev.length, 1, "second call must dedupe via idempotency_key");
 });
 
-Deno.test("unattributed payment event (no org_id) is rejected without writing", async () => {
+Deno.test("[payment-governance] unattributed payment event (no org_id) is rejected without writing", async () => {
   const { admin, rows } = makeFakeAdmin();
   const res = await recordPaymentGovernanceEventBestEffort(admin, {
     event_subtype: "dispute.create",
@@ -210,7 +210,7 @@ Deno.test("unattributed payment event (no org_id) is rejected without writing", 
   assertEquals(rows.filter((r) => r.table === "event_store").length, 0);
 });
 
-Deno.test("recordPaymentGovernanceOrEscalate opens risk item + audit row when writer fails", async () => {
+Deno.test("[payment-governance] recordPaymentGovernanceOrEscalate opens risk item + audit row when writer fails", async () => {
   const { admin, rows } = makeFakeAdmin({ failEventStoreInsert: true });
   await recordPaymentGovernanceOrEscalate(admin, {
     event_subtype: "refund.processed",
@@ -232,7 +232,7 @@ Deno.test("recordPaymentGovernanceOrEscalate opens risk item + audit row when wr
   assertStringIncludes(String((risks[0].row as any).title), "Governance proof missing for refund.processed");
 });
 
-Deno.test("redaction still applies — secret-like keys in metadata are stripped", async () => {
+Deno.test("[payment-governance] redaction still applies — secret-like keys in metadata are stripped", async () => {
   const { admin, rows } = makeFakeAdmin();
   await recordPaymentGovernanceEventBestEffort(admin, {
     event_subtype: "charge.failed",
@@ -260,7 +260,7 @@ Deno.test("redaction still applies — secret-like keys in metadata are stripped
 // ── Adoption / wiring grep tests ─────────────────────────────────────────
 // These guarantee future drift cannot quietly unwire a webhook path.
 
-Deno.test("token-purchase webhook wires payment.event_created for every exception path", async () => {
+Deno.test("[payment-governance] token-purchase webhook wires payment.event_created for every exception path", async () => {
   const src = await Deno.readTextFile("supabase/functions/token-purchase/index.ts");
 
   // helper import present
