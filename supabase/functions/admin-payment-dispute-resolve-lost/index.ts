@@ -5,6 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
