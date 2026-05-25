@@ -1,13 +1,13 @@
 // MT-012 — Admin override archive (active children → exception hold).
-// Requires platform_admin + AAL2 + mandatory reason (≥20 chars).
-
+// Batch F5: business mutation + canonical admin.hq_decision_recorded event
+// run in a single DB transaction via
+// admin_trade_request_archive_override_with_governance.
+// If either part fails, both roll back.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { MT012_MIN_REASON_LENGTH } from "../_shared/mt-012-audit.ts";
-import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
-
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,11 +83,16 @@ Deno.serve(async (req) => {
   }
   const { trade_request_id, reason } = parsed.data;
 
-  const { data, error } = await admin.rpc("admin_archive_trade_request_override", {
-    p_trade_request_id: trade_request_id,
-    p_admin_user_id: admin_user.id,
-    p_reason: reason,
-  });
+  const { data, error } = await admin.rpc(
+    "admin_trade_request_archive_override_with_governance",
+    {
+      p_trade_request_id: trade_request_id,
+      p_admin_user_id: admin_user.id,
+      p_reason: reason,
+      p_request_id: req.headers.get("x-request-id"),
+      p_aal: "aal2",
+    },
+  );
 
   if (error) {
     const msg = (error.message ?? "").toString();
@@ -100,29 +105,16 @@ Deno.serve(async (req) => {
     if (msg.includes("NOT_FOUND")) {
       return json({ error: "not_found" }, 404);
     }
-    console.error("[admin-trade-request-archive-override] rpc error:", error);
-    return json({ error: "override_failed" }, 500);
+    console.error("[admin-trade-request-archive-override] atomic rpc failed:", error);
+    return json({ error: "rpc_failed", code: "ATOMIC_TRADE_REQUEST_ARCHIVE_OVERRIDE_FAILED", message: error.message }, 500);
   }
 
-  const { data: trRow } = await admin
-    .from("trade_requests")
-    .select("id, org_id")
-    .eq("id", trade_request_id)
-    .maybeSingle();
-  try {
-    await recordAdminHqDecision({
-      admin, sourceFunction: "admin-trade-request-archive-override",
-      actionCode: "trade_request.archive_override",
-      actorUserId: admin_user.id, actorRole: "platform_admin",
-      orgId: (trRow as { org_id?: string } | null)?.org_id ?? "00000000-0000-0000-0000-000000000000",
-      aggregateId: trade_request_id,
-      aggregateType: "trade_request",
-      reason, requestId: req.headers.get("x-request-id"), aal: "aal2",
-    });
-  } catch (govErr) {
-    console.error("[admin-trade-request-archive-override] CRITICAL: gov audit failed:", govErr);
-    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
-  }
-
-  return json({ ok: true, result: data }, 200);
+  const r = data as { success?: boolean; deduplicated?: boolean; event_id?: string; result?: unknown };
+  return json({
+    ok: true,
+    success: true,
+    governance_event_id: r?.event_id ?? null,
+    deduplicated: !!r?.deduplicated,
+    result: r?.result ?? null,
+  }, 200);
 });
