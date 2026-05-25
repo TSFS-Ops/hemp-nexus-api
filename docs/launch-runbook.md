@@ -50,6 +50,7 @@ All three must exit 0. Attach the terminal output to the release ticket.
 - `check-release-gate-sync.mjs` (Batch W)
 - `check-legal-claims.mjs` (DEC-005/006/010)
 - `check-aal-registry-drift.mjs` (SEC-001)
+- `check-admin-aal2-coverage.mjs` (Batch E governance drift guard: sensitive admin edge functions must carry both `assertAal2` and a governance/audit writer surface; prebuild-only textual check)
 - `check-export-audit-payload.mjs` (DATA-010 Phase 1: admin exports require AAL2 + `purpose`/`reason`/`data_categories`/`target_type`; Phase 2 signed-URL/TTL/file-destruction lifecycle deferred)
 - `check-user-export-categories.mjs` (DATA-005 Phase 1: user self-export category SSOT drift, forbidden categories blocked, Phase 1 canonical audit names required, Phase 2 names forbidden until lifecycle ships under `DATA-005-FU-EXPORT-LIFECYCLE-001`)
 - `check-legal-hold-audit-names.mjs` (DATA-003 Phase 1: legal-hold helper + 8 wired enforcement paths audit-name SSOT drift guard)
