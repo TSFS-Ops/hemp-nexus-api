@@ -60,5 +60,21 @@ Deno.serve(async (req) => {
     p_metadata: { admin_reason: p.data.reason },
   });
   if (error) return json({ error: "rpc_failed", message: error.message }, 500);
+  const aggregateId = (data && typeof data === "object" && "payment_dispute_id" in (data as any))
+    ? String((data as any).payment_dispute_id) : p.data.provider_dispute_reference;
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-payment-dispute-record",
+      actionCode: "payment_dispute.record_manual",
+      actorUserId: u.user.id, actorRole: "platform_admin",
+      orgId: p.data.org_id, aggregateId, aggregateType: "payment_dispute",
+      reason: p.data.reason, requestId: req.headers.get("x-request-id"),
+      paymentReference: p.data.provider_dispute_reference,
+      extra: { provider: p.data.provider, credits_issued: p.data.credits_issued }, aal: "aal2",
+    });
+  } catch (govErr) {
+    console.error("[admin-payment-dispute-record] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
+  }
   return json(data, 200);
 });
