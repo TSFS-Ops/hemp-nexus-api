@@ -21,8 +21,10 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
-import { AlertTriangle, HelpCircle } from "lucide-react";
+import { AlertTriangle, HelpCircle, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -256,6 +258,7 @@ export function applyEventFilters(
 
 export function GovernanceRecordDetail({ anchor }: Props) {
   const summary = useMatchSummary(anchor.matchId);
+  const { isPlatformAdmin } = useAuth();
   const { data, isLoading, isError } = useGovernanceEvents(anchor);
   const events = data?.events;
   const capsHit = data?.capsHit ?? [];
@@ -779,6 +782,48 @@ export function GovernanceRecordDetail({ anchor }: Props) {
                             repeated {e.repeatedCount} times
                           </Badge>
                         )}
+                        {e.correctedBy && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span
+                                  className="inline-flex"
+                                  data-testid="corrected-badge"
+                                  data-correction-event-id={e.correctedBy.eventId}
+                                >
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] bg-amber-50 border-amber-300 text-amber-900 cursor-help"
+                                  >
+                                    {HQ_CORRECTED_BADGE_COPY}
+                                  </Badge>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs text-xs space-y-1">
+                                <p className="font-medium">{HQ_CORRECTED_BADGE_COPY}</p>
+                                <p className="font-mono text-[10px] break-all">
+                                  Correction event: {e.correctedBy.eventId}
+                                </p>
+                                <p className="font-mono text-[10px]">
+                                  {format(new Date(e.correctedBy.occurredAt), "yyyy-MM-dd HH:mm:ss")}
+                                </p>
+                                {e.correctedBy.actorId && (
+                                  <p className="font-mono text-[10px] break-all">
+                                    By: {e.correctedBy.actorId}
+                                  </p>
+                                )}
+                                {e.correctedBy.reasonCode && (
+                                  <p className="font-mono text-[10px]">
+                                    Reason: {e.correctedBy.reasonCode}
+                                  </p>
+                                )}
+                                <p className="text-[10px] text-muted-foreground italic">
+                                  Original event is preserved unedited.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                       {e.category === "hq_decision" && (
                         <p
@@ -799,13 +844,32 @@ export function GovernanceRecordDetail({ anchor }: Props) {
                         </p>
                       )}
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
                       <p className="font-mono text-[11px] text-muted-foreground">
                         {format(new Date(e.occurredAt), "yyyy-MM-dd HH:mm:ss")}
                       </p>
-                      <p className="font-mono text-[10px] text-muted-foreground/70 mt-0.5">
+                      <p className="font-mono text-[10px] text-muted-foreground/70">
                         {e.actorType}
                       </p>
+                      {isPlatformAdmin &&
+                        e.source === "event_store" &&
+                        e.sourceRowId &&
+                        e.action !== "hq.event_corrected" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-[10px] gap-1"
+                            data-testid="correct-event-button"
+                            data-source-row-id={e.sourceRowId}
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              setCorrectingEventId(String(e.sourceRowId));
+                            }}
+                          >
+                            <Pencil className="h-3 w-3" aria-hidden />
+                            Correct this event
+                          </Button>
+                        )}
                     </div>
                   </div>
                 </li>
