@@ -126,7 +126,8 @@ function eventName(p: WaiverPosture, action: "granted" | "renewed" | "consumed" 
 }
 
 // deno-lint-ignore no-explicit-any
-type Admin = SupabaseClient<any, any, any>;
+type Admin = AdminLike & { from: any; rpc?: any } & SupabaseClient<any, any, any>;
+
 
 /**
  * Grant a NEW waiver/bypass row, then emit the canonical
