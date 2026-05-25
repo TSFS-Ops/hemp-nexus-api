@@ -56,5 +56,20 @@ Deno.serve(async (req) => {
     const status = code === "REFUND_NOT_FOUND" ? 404 : code === "REFUND_ALREADY_DECIDED" ? 409 : 400;
     return json({ error: code.toLowerCase(), code }, status);
   }
+  const { data: rr } = await admin.from("refund_requests")
+    .select("org_id, token_purchase_id").eq("id", p.data.refund_request_id).maybeSingle();
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-refund-decline", actionCode: "refund.decline",
+      actorUserId: u.user.id, actorRole: "platform_admin",
+      orgId: rr?.org_id ?? "00000000-0000-0000-0000-000000000000",
+      aggregateId: p.data.refund_request_id, aggregateType: "refund_request",
+      reason: p.data.reason, requestId: req.headers.get("x-request-id"),
+      paymentReference: rr?.token_purchase_id ?? null, aal: "aal2",
+    });
+  } catch (govErr) {
+    console.error("[admin-refund-decline] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
+  }
   return json(r, 200);
 });
