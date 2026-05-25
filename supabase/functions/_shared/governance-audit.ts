@@ -32,6 +32,7 @@ export const EVENT_FAMILIES = [
   "wad",
   "execution",
   "admin",
+  "hq",
   "dispute",
   "evidence",
   "payment",
@@ -77,6 +78,9 @@ export const CONTROLLED_TAXONOMY = new Set<string>([
   // admin
   "admin.hq_decision_recorded",
   "admin.mfa_required_denied",
+  // hq notes / corrections (Batch B — append-only, original event never edited)
+  "hq.note_added",
+  "hq.event_corrected",
   // credit / payment
   "credit.burn_attempted",
   "credit.burned",
@@ -178,6 +182,11 @@ export const CRITICAL_FAMILIES: ReadonlySet<EventFamily> = new Set([
 
 const CRITICAL_SPECIFIC_NAMES = new Set<string>([
   "admin.hq_decision_recorded",
+  // Both HQ note types are fail-closed: David requires that a recorded note
+  // or correction cannot silently fail to persist. The note family ("hq")
+  // is not in CRITICAL_FAMILIES so they are opted-in by name here.
+  "hq.note_added",
+  "hq.event_corrected",
 ]);
 
 // ── Posture labels ───────────────────────────────────────────────────────────
@@ -286,6 +295,7 @@ const FAMILY_TO_DOMAIN: Record<EventFamily, "trade" | "trust" | "core" | "intel"
   credit: "trade",
   dispute: "trade",
   admin: "core",
+  hq: "core",
   memory: "core",
   export: "core",
   demo: "core",

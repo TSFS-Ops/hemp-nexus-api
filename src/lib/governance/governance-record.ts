@@ -51,6 +51,8 @@ export type EventCategory =
   | "execution"
   | "admin_review"
   | "hq_decision"
+  | "hq_note"
+  | "hq_correction"
   | "dispute"
   | "credit"
   | "payment"
@@ -103,6 +105,20 @@ export interface GovernanceEvent {
   /** Previous / new state if present. */
   prevState?: string | null;
   newState?: string | null;
+  /**
+   * Batch B — populated by `annotateCorrections` when a later
+   * `hq.event_corrected` event references this row. Original event is
+   * never edited; this is purely a derived UI hint.
+   */
+  correctedBy?: CorrectionRef | null;
+}
+
+export interface CorrectionRef {
+  eventId: string;
+  occurredAt: string;
+  actorId?: string | null;
+  reasonCode?: string | null;
+  note?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -166,6 +182,10 @@ export function redactMetadata(input: unknown, depth = 0): Record<string, unknow
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CATEGORY_RULES: Array<{ test: RegExp; cat: EventCategory }> = [
+  // HQ notes / corrections must be matched before the generic admin / hq_decision
+  // rule so they get their own controlled label and never fold into hq_decision.
+  { test: /^hq\.note_added$/i, cat: "hq_note" },
+  { test: /^hq\.event_corrected$/i, cat: "hq_correction" },
   { test: /^trade_request\.|^mt[-_]?012/i, cat: "trade_request" },
   { test: /^match\./i, cat: "match" },
   { test: /^poi\.|poi_/i, cat: "poi" },
@@ -653,3 +673,80 @@ export function buildFullStorySummary(i: FullStoryInputs): string {
   return `This record is currently ${record}. POI is ${poi}. WaD is ${wad}. Execution is ${exec} because ${reason}. Last material event was ${last}.`;
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Batch B — Manual HQ notes + correction events.
+//
+// Append-only. We never mutate the original event. `annotateCorrections`
+// produces a NEW list of events where each event referenced by a later
+// `hq.event_corrected` carries a derived `correctedBy` hint so the UI can
+// render a "Corrected by later HQ note" badge.
+//
+// Repeated-event grouping must not collapse a correction with the event
+// it corrects: they have different actions ("hq.event_corrected" vs the
+// original action) and so already fall into different repeat groups.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const HQ_NOTE_LABEL = "Manual HQ note";
+export const HQ_CORRECTED_BADGE_COPY = "Corrected by later HQ note";
+export const HQ_NOTE_INTRO_COPY =
+  "HQ may add manual notes or correction notes here. Notes never edit, hide or delete the original event — they are recorded as separate, append-only governance events.";
+
+/**
+ * Allowed reason codes the UI offers for HQ notes / corrections. Mirrors
+ * `HQ_NOTE_REASON_CODES` in supabase/functions/hq-note-add/handler.ts.
+ */
+export const HQ_NOTE_REASON_CODES = [
+  "client_instruction",
+  "incorrect_data_correction",
+  "dispute_reviewed",
+  "manual_verification_completed",
+  "system_recovery",
+  "other",
+] as const;
+export type HqNoteReasonCode = (typeof HQ_NOTE_REASON_CODES)[number];
+
+export const MIN_HQ_NOTE_LENGTH = 8;
+export const MIN_HQ_NOTE_LENGTH_OTHER = 16;
+
+/**
+ * Walk the events and, for every `hq.event_corrected` whose payload links
+ * `corrects_event_id` to another event_store row in the list, attach a
+ * `correctedBy` reference to the target. Returns a NEW list; never mutates
+ * the input. Stable order preserved.
+ */
+export function annotateCorrections(
+  events: GovernanceEvent[],
+): GovernanceEvent[] {
+  // Build a map of event_store row id → index in the list.
+  const indexBySourceRowId = new Map<string, number>();
+  events.forEach((e, i) => {
+    if (e.source === "event_store") indexBySourceRowId.set(String(e.sourceRowId), i);
+  });
+
+  // Clone before mutating.
+  const out = events.map((e) => ({ ...e }));
+
+  for (const corr of events) {
+    if (corr.action !== "hq.event_corrected") continue;
+    const targetId = (corr.safeMetadata?.corrects_event_id as string | undefined) ?? null;
+    if (!targetId) continue;
+    const idx = indexBySourceRowId.get(targetId);
+    if (idx === undefined) continue;
+    const existing = out[idx].correctedBy ?? null;
+    // Prefer the EARLIEST correction (highest in chronological order). The
+    // input is newest-first so the LAST matching correction iterated is the
+    // earliest one — keep overwriting so we end up with that one.
+    const ref: CorrectionRef = {
+      eventId: String(corr.sourceRowId),
+      occurredAt: corr.occurredAt,
+      actorId: corr.actorId ?? null,
+      reasonCode: corr.reasonCode ?? null,
+      note: (corr.safeMetadata?.note as string | undefined) ?? null,
+    };
+    if (!existing || new Date(ref.occurredAt) <= new Date(existing.occurredAt)) {
+      out[idx].correctedBy = ref;
+    }
+  }
+  return out;
+}

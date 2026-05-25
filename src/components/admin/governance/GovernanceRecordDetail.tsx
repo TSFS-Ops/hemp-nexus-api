@@ -49,13 +49,16 @@ import {
   EventCategory,
   GovernanceEvent,
   HQ_DECISION_COPY,
+  HQ_CORRECTED_BADGE_COPY,
   MEMORY_NOT_WIRED_COPY,
   NO_EVENT_COPY,
+  annotateCorrections,
   buildFullStorySummary,
   groupRepeatedEvents,
   statusCopy,
 } from "@/lib/governance/governance-record";
 import { GovernanceEventDrawer } from "./GovernanceEventDrawer";
+import { HqNotesPanel } from "./HqNotesPanel";
 
 interface Props {
   anchor: GovernanceAnchor;
@@ -134,6 +137,8 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
   execution: "Execution",
   admin_review: "Admin review",
   hq_decision: "HQ decision",
+  hq_note: "HQ note",
+  hq_correction: "HQ correction",
   dispute: "Dispute",
   credit: "Credit",
   payment: "Payment",
@@ -256,6 +261,7 @@ export function GovernanceRecordDetail({ anchor }: Props) {
   const capsHit = data?.capsHit ?? [];
   const [selected, setSelected] = useState<GovernanceEvent | null>(null);
   const [filters, setFilters] = useState<EventFilters>(EMPTY_FILTERS);
+  const [correctingEventId, setCorrectingEventId] = useState<string | null>(null);
 
   const recordRef = useMemo(() => {
     if (anchor.matchId) return `GR-MATCH-${anchor.matchId.slice(0, 8).toUpperCase()}`;
@@ -354,10 +360,14 @@ export function GovernanceRecordDetail({ anchor }: Props) {
       : null,
   });
 
-  // ── Filtered + grouped timeline ──
+  // ── Annotated + filtered + grouped timeline (Batch B: correction hints) ──
+  const annotated = useMemo(
+    () => (events ? annotateCorrections(events) : []),
+    [events],
+  );
   const filtered = useMemo(
-    () => (events ? applyEventFilters(events, filters) : []),
-    [events, filters],
+    () => applyEventFilters(annotated, filters),
+    [annotated, filters],
   );
   const grouped = useMemo(() => groupRepeatedEvents(filtered), [filtered]);
 
@@ -444,6 +454,16 @@ export function GovernanceRecordDetail({ anchor }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Batch B — HQ Notes panel */}
+      <HqNotesPanel
+        anchor={anchor}
+        orgId={m?.buyer_org_id ?? m?.seller_org_id ?? null}
+        correctingEventId={correctingEventId}
+        onCorrectingHandled={() => setCorrectingEventId(null)}
+      />
+
+
 
       {/* Per-source cap warning (HQ only). */}
       {capsHit.length > 0 && (
