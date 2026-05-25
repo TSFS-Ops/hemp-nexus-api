@@ -771,14 +771,15 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         completed: true,
         idempotent: false,
-        collapse_id: record.id,
+        collapse_id: collapseResult.collapse_id,
         payload_hash: payloadHash,
         signature_valid: signatureValid,
         poi_state: "COMPLETED",
-        created_at: record.created_at,
+        created_at: collapseResult.created_at,
       }),
       { status: 201, headers: { ...headers, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     console.error(`[${requestId}] Collapse engine error:`, err);
     return errorResponse(err as Error, requestId, headers);
