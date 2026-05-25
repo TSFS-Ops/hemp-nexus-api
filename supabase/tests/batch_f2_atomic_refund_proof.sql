@@ -45,9 +45,13 @@ BEGIN
 
   -- Seed a refund_request in 'pending' so approve_refund accepts it.
   INSERT INTO public.refund_requests (
-    id, org_id, token_purchase_id, status, credits_at_request, created_at
+    id, org_id, requested_by, token_purchase_id,
+    reason_code, reason_detail,
+    status, credits_at_request, credits_used_at_request, created_at
   ) VALUES (
-    v_refund_a, v_org, v_purchase, 'pending', 0, now()
+    v_refund_a, v_org, v_actor, v_purchase,
+    'other', 'batch f2 proof seed reason detail aaaaaa',
+    'pending', 0, 0, now()
   );
 
   -- ── A. Happy path ────────────────────────────────────────────────────
