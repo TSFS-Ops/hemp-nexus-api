@@ -278,6 +278,27 @@ Deno.serve(async (req) => {
       user_agent: userAgent,
     });
 
+    try {
+      await recordAdminHqDecision({
+        admin, sourceFunction: "admin-manual-overrides",
+        actionCode: `manual_override.${parsed.operation}`,
+        actorUserId: caller.id, actorRole: "platform_admin",
+        orgId: govOrgId ?? "00000000-0000-0000-0000-000000000000",
+        aggregateId: targetId,
+        aggregateType: targetType,
+        matchId: govMatchId,
+        reason: (parsed as { reason: string }).reason,
+        requestId, aal: "aal2",
+        extra: {
+          operation: parsed.operation,
+          ...(parsed.operation === "force_status" ? { requested_status: parsed.new_status } : {}),
+        },
+      });
+    } catch (govErr) {
+      console.error(`[admin-manual-overrides][${requestId}] CRITICAL: gov audit failed:`, govErr);
+      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED", requestId }, 500);
+    }
+
     return jsonResponse(req, {
       ok: true,
       operation: parsed.operation,
