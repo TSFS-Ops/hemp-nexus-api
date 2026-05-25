@@ -141,6 +141,42 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
     }
 
+    // Resolve org_id + aggregate metadata for governance proof.
+    let cpOrgId: string | null = null;
+    let cpAggregateId: string;
+    if (parsed.operation === "link_to_org") {
+      cpOrgId = parsed.org_id;
+      cpAggregateId = parsed.counterparty_id;
+    } else {
+      cpAggregateId = parsed.primary_id;
+      const { data: cpRow } = await admin
+        .from("counterparties")
+        .select("id, org_id")
+        .eq("id", parsed.primary_id)
+        .maybeSingle();
+      cpOrgId = (cpRow as { org_id?: string } | null)?.org_id ?? null;
+    }
+    try {
+      await recordAdminHqDecision({
+        admin, sourceFunction: "admin-counterparty-corrections",
+        actionCode: parsed.operation === "link_to_org"
+          ? "counterparty.correct.link_to_org"
+          : "counterparty.correct.merge",
+        actorUserId: caller.id, actorRole: "platform_admin",
+        orgId: cpOrgId ?? "00000000-0000-0000-0000-000000000000",
+        aggregateId: cpAggregateId,
+        aggregateType: "counterparty",
+        reason: parsed.reason,
+        requestId, aal: "aal2",
+        extra: parsed.operation === "merge"
+          ? { duplicate_id: parsed.duplicate_id }
+          : { linked_org_id: parsed.org_id },
+      });
+    } catch (govErr) {
+      console.error(`[admin-counterparty-corrections][${requestId}] CRITICAL: gov audit failed:`, govErr);
+      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED", requestId }, 500);
+    }
+
     return jsonResponse(req, { ok: true, result: rpcResult, requestId }, 200);
   } catch (err) {
     console.error(`[admin-counterparty-corrections][${requestId}] unhandled:`, err);
