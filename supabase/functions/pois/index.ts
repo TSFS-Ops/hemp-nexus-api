@@ -323,9 +323,10 @@ Deno.serve(async (req: Request) => {
         allowed_or_blocked: "allowed",
         reason_code: parsed.reason || null,
         posture: buildPostureSnapshot("Not recorded", {
+          policy_version: POI_POLICY_VERSION,
           reason: "posture not derived in pois transition flow",
         }),
-        metadata: { poi_type: poi.poi_type },
+        metadata: { poi_type: poi.poi_type, policy_version: POI_POLICY_VERSION },
         idempotency_extra: `${fromState}->${toState}`,
       });
 
