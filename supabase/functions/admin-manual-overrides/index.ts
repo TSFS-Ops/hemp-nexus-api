@@ -29,6 +29,8 @@ import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 const ENDPOINT = "POST /admin-manual-overrides";
 
