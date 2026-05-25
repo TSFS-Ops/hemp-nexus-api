@@ -22,6 +22,7 @@ import {
   writeCriticalEventWithPosture,
   writeGovernanceEventBestEffort,
 } from "../_shared/governance-audit-integration.ts";
+import { EXECUTION_POLICY_VERSION, FINALITY_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
