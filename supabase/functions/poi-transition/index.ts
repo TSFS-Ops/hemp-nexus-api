@@ -437,9 +437,10 @@ async function _serve(req: Request): Promise<Response> {
         allowed_or_blocked: "allowed",
         reason_code: reason ?? null,
         posture: buildPostureSnapshot("Not recorded", {
+          policy_version: POI_POLICY_VERSION,
           reason: "posture not derived in poi-transition flow",
         }),
-        metadata: { poi_event_id: event.id },
+        metadata: { poi_event_id: event.id, policy_version: POI_POLICY_VERSION },
         idempotency_extra: `${fromState}->${toState}`,
       });
     } catch (govErr) {
