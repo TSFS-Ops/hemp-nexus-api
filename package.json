@@ -9,6 +9,7 @@
     "test:regression": "vitest run src/tests/batch-*.test.ts src/tests/batch-*.test.tsx",
     "closeout:snapshot": "node scripts/closeout-snapshot.mjs",
     "check:public-imports": "node scripts/check-public-page-imports.mjs",
+    "check:admin-aal2": "node scripts/check-admin-aal2-coverage.mjs",
     "check:legacy-admin-rls": "node scripts/check-legacy-admin-rls.mjs",
     "check:match-lifecycle-mirror": "node scripts/check-match-lifecycle-mirror.mjs",
     "test:match-lifecycle": "node scripts/test-match-lifecycle.mjs",
