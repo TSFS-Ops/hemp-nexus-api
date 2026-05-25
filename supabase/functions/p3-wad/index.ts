@@ -686,9 +686,10 @@ Deno.serve(async (req: Request) => {
         new_state: "ISSUED",
         allowed_or_blocked: "allowed",
         posture: buildPostureSnapshot("Standard", {
+          policy_version: WAD_POLICY_VERSION,
           check_status: { gates_passed: gates.length, carry_forward: carryForwardLog },
         }),
-        metadata: { gates_passed: gates.length },
+        metadata: { gates_passed: gates.length, policy_version: WAD_POLICY_VERSION },
         idempotency_extra: "issued",
       });
 
