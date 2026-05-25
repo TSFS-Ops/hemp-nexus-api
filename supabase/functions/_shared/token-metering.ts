@@ -653,6 +653,7 @@ export async function burnTokensForAction(
       allowed_or_blocked: "allowed",
       reason_code: `action:${actionType}`,
       posture: buildPostureSnapshot("Standard", {
+        policy_version: CREDIT_POLICY_VERSION,
         check_status: { balance_before: previousBalance, balance_after: newBalance },
       }),
       metadata: {
@@ -661,6 +662,7 @@ export async function burnTokensForAction(
         balance_before: previousBalance,
         balance_after: newBalance,
         entity_id: entityId ?? null,
+        policy_version: CREDIT_POLICY_VERSION,
         ...(metadata ?? {}),
       },
       idempotency_extra: requestId,
