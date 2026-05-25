@@ -511,17 +511,55 @@ Deno.serve(async (req: Request) => {
           },
         };
 
-        // Record denial in p3_wads
-        await admin.from("p3_wads").insert({
-          org_id: orgId,
-          poi_id: parsed.poi_id,
-          state: "DENIED",
-          denial_reasons: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
-        });
+        // ── Atomic WaD denial: insert p3_wads(DENIED) + emit wad.failed
+        //    in a single SECURITY DEFINER transaction. If gov_emit_event
+        //    fails, the p3_wads row is rolled back. ──
+        const wadDenyGovPayload = {
+          actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+          actor_role: authCtx.roles?.[0] || null,
+          source_function: "p3-wad",
+          correlation_id: correlationId,
+          allowed_or_blocked: "blocked",
+          reason_code: "HARD_GATE_FAILED",
+          posture_snapshot: buildPostureSnapshot("Failed Verification", {
+            policy_version: WAD_POLICY_VERSION,
+            check_status: { failed_gates: failedGates.map((g) => g.gate) },
+            manual_review_required: !!failedGates.find((g) => g.gate === "UBO_COMPLETENESS"),
+          }),
+          metadata: {
+            failed_gates: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
+            policy_version: WAD_POLICY_VERSION,
+          },
+          idempotency_key: `${parsed.poi_id}|wad.failed|${correlationId}|denied`,
+        };
+
+        const { data: wadDenyResult, error: wadDenyError } = await admin.rpc(
+          "atomic_wad_deny",
+          {
+            p_org_id: orgId,
+            p_poi_id: parsed.poi_id,
+            p_denial_reasons: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
+            p_governance: wadDenyGovPayload,
+          },
+        );
+
+        if (wadDenyError || !wadDenyResult?.success) {
+          console.error(`[${correlationId}] CRITICAL: atomic_wad_deny failed:`, wadDenyError ?? wadDenyResult);
+          throw new ApiException(
+            "GOV_AUDIT_WRITE_FAILED",
+            "WaD denial rolled back: governance proof write failed",
+            500,
+          );
+        }
+        if (!wadDenyResult.governance_event_id && !wadDenyResult.idempotent) {
+          throw new ApiException(
+            "GOV_AUDIT_WRITE_FAILED",
+            "WaD denial atomic RPC did not return governance_event_id",
+            500,
+          );
+        }
 
         // ── Batch I Fix 5: UBO incomplete → durable compliance follow-up ──
-        // Create an idempotent dd_approval_requests row + audit so admins have
-        // a queue item, not just a 422 toast for the end user.
         const uboFailed = failedGates.find((g) => g.gate === "UBO_COMPLETENESS");
         if (uboFailed) {
           const todayUtc = new Date().toISOString().slice(0, 10);
@@ -561,11 +599,7 @@ Deno.serve(async (req: Request) => {
             },
           });
 
-          // Phase 2 canonical: WaD manual-review-required event (best-effort,
-          // observability — runs alongside the fail-closed `wad.failed` write
-          // below so the timeline carries both signals). Non-blocking so the
-          // user-facing 422 path cannot be silently broken by a transient
-          // audit write failure on this secondary event.
+          // Best-effort secondary observability event — non-blocking.
           await writeGovernanceEventBestEffort(admin, {
             event_type: "wad.manual_review_required",
             org_id: orgId,
@@ -592,7 +626,8 @@ Deno.serve(async (req: Request) => {
           });
         }
 
-        // Record event
+        // Legacy event_store mirror (non-canonical; preserves existing
+        // trust.wad.denied lane for downstream consumers).
         await admin.from("event_store").insert({
           org_id: orgId,
           domain: "trust",
@@ -605,36 +640,12 @@ Deno.serve(async (req: Request) => {
           event_hash: await computeHash(JSON.stringify(failedGates)),
         });
 
-        // Phase 2 canonical (fail-closed: WaD finality is critical)
-        await writeCriticalEventWithPosture(admin, {
-          event_type: "wad.failed",
-          org_id: orgId,
-          aggregate_type: "wad",
-          aggregate_id: parsed.poi_id,
-          actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
-          actor_role: authCtx.roles?.[0] || null,
-          source_function: "p3-wad",
-          correlation_id: correlationId,
-          poi_id: parsed.poi_id,
-          allowed_or_blocked: "blocked",
-          reason_code: "HARD_GATE_FAILED",
-          posture: buildPostureSnapshot("Failed Verification", {
-            policy_version: WAD_POLICY_VERSION,
-            check_status: { failed_gates: failedGates.map((g) => g.gate) },
-            manual_review_required: !!failedGates.find((g) => g.gate === "UBO_COMPLETENESS"),
-          }),
-          metadata: {
-            failed_gates: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
-            policy_version: WAD_POLICY_VERSION,
-          },
-          idempotency_extra: "denied",
-        });
-
         return new Response(JSON.stringify(responseData), {
           status: 422,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
 
       // All gates passed — propagate jurisdiction selection to the POI record
       if (jurisdictionSel?.selected_jurisdiction && jurisdictionSel.selected_jurisdiction !== poi.jurisdiction_code) {
@@ -644,21 +655,58 @@ Deno.serve(async (req: Request) => {
           .eq("id", parsed.poi_id);
       }
 
-      // Issue WaD
-      const { data: wad, error: wadError } = await admin
-        .from("p3_wads")
-        .insert({
-          org_id: orgId,
-          poi_id: parsed.poi_id,
-          state: "ISSUED",
-          issued_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // ── Atomic WaD issue: insert p3_wads(ISSUED) + emit wad.passed
+      //    in a single SECURITY DEFINER transaction. If gov_emit_event
+      //    fails, the p3_wads row is rolled back. ──
+      const wadIssueGovPayload = {
+        actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+        actor_role: authCtx.roles?.[0] || null,
+        source_function: "p3-wad",
+        correlation_id: correlationId,
+        new_state: "ISSUED",
+        allowed_or_blocked: "allowed",
+        posture_snapshot: buildPostureSnapshot("Standard", {
+          policy_version: WAD_POLICY_VERSION,
+          check_status: { gates_passed: gates.length, carry_forward: carryForwardLog },
+        }),
+        metadata: { gates_passed: gates.length, policy_version: WAD_POLICY_VERSION },
+        idempotency_key: `${parsed.poi_id}|wad.passed|${correlationId}|issued`,
+      };
 
-      if (wadError) throw new ApiException("INTERNAL_ERROR", wadError.message, 500);
+      const { data: wadIssueResult, error: wadIssueError } = await admin.rpc(
+        "atomic_wad_issue",
+        {
+          p_org_id: orgId,
+          p_poi_id: parsed.poi_id,
+          p_governance: wadIssueGovPayload,
+        },
+      );
 
-      // Record event
+      if (wadIssueError || !wadIssueResult?.success) {
+        console.error(`[${correlationId}] CRITICAL: atomic_wad_issue failed:`, wadIssueError ?? wadIssueResult);
+        throw new ApiException(
+          "GOV_AUDIT_WRITE_FAILED",
+          "WaD issue rolled back: governance proof write failed",
+          500,
+        );
+      }
+      if (!wadIssueResult.governance_event_id && !wadIssueResult.idempotent) {
+        throw new ApiException(
+          "GOV_AUDIT_WRITE_FAILED",
+          "WaD issue atomic RPC did not return governance_event_id",
+          500,
+        );
+      }
+
+      const wad = {
+        id: wadIssueResult.wad_id as string,
+        poi_id: parsed.poi_id,
+        state: "ISSUED",
+        issued_at: wadIssueResult.issued_at ?? new Date().toISOString(),
+      };
+
+      // Legacy event_store mirror (non-canonical; preserves existing
+      // trust.wad.issued lane for downstream consumers).
       await admin.from("event_store").insert({
         org_id: orgId,
         domain: "trust",
@@ -669,28 +717,6 @@ Deno.serve(async (req: Request) => {
         actor_role: authCtx.roles?.[0] || null,
         payload: { poi_id: parsed.poi_id, gates_passed: gates.length, carry_forward: carryForwardLog },
         event_hash: await computeHash(JSON.stringify({ wad_id: wad.id })),
-      });
-
-      // Phase 2 canonical (fail-closed: WaD pass is critical proof)
-      await writeCriticalEventWithPosture(admin, {
-        event_type: "wad.passed",
-        org_id: orgId,
-        aggregate_type: "wad",
-        aggregate_id: wad.id,
-        actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
-        actor_role: authCtx.roles?.[0] || null,
-        source_function: "p3-wad",
-        correlation_id: correlationId,
-        poi_id: parsed.poi_id,
-        wad_id: wad.id,
-        new_state: "ISSUED",
-        allowed_or_blocked: "allowed",
-        posture: buildPostureSnapshot("Standard", {
-          policy_version: WAD_POLICY_VERSION,
-          check_status: { gates_passed: gates.length, carry_forward: carryForwardLog },
-        }),
-        metadata: { gates_passed: gates.length, policy_version: WAD_POLICY_VERSION },
-        idempotency_extra: "issued",
       });
 
       const responseData = successEnvelope(
@@ -707,6 +733,7 @@ Deno.serve(async (req: Request) => {
 
       // Store idempotency key
       await admin.from("idempotency_keys").insert({
+
         org_id: orgId,
         idempotency_key: idempotencyKey,
         endpoint: "p3-wad",
