@@ -85,5 +85,29 @@ Deno.serve(async (req) => {
     console.error("[admin-residency-review-decline] rpc failed:", error);
     return json({ error: "rpc_failed", message: msg }, 500);
   }
+  const { data: reviewRow } = await admin
+    .from("data_residency_reviews")
+    .select("id, org_id, requested_region, requested_country")
+    .eq("id", parsed.data.review_id)
+    .maybeSingle();
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-residency-review-decline",
+      actionCode: "residency_review.decline",
+      actorUserId: u.user.id, actorRole: "platform_admin",
+      orgId: (reviewRow?.org_id as string | undefined) ?? "00000000-0000-0000-0000-000000000000",
+      aggregateId: parsed.data.review_id,
+      aggregateType: "data_residency_review",
+      reason: parsed.data.reason,
+      requestId: req.headers.get("x-request-id"), aal: "aal2",
+      extra: {
+        requested_region: reviewRow?.requested_region ?? null,
+        requested_country: reviewRow?.requested_country ?? null,
+      },
+    });
+  } catch (govErr) {
+    console.error("[admin-residency-review-decline] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
+  }
   return json({ ok: true, ...(data ?? {}) }, 200);
 });
