@@ -1,10 +1,13 @@
 // PAY-009 — Manual admin record of a payment dispute / chargeback.
 // platform_admin + AAL2 + reason ≥ 20 chars.
+//
+// Batch F3: dispute record + canonical Governance Record event are written
+// in a single DB transaction via admin_payment_dispute_record_with_governance.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
-import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,32 +52,30 @@ Deno.serve(async (req) => {
     const issues = p.error.flatten().fieldErrors;
     return json({ error: issues.reason ? "reason_required" : "invalid_body", code: issues.reason ? "REASON_REQUIRED" : "INVALID_BODY", details: issues }, 400);
   }
-  const { data, error } = await admin.rpc("record_payment_dispute", {
+
+  // F3: atomic dispute record + governance.
+  const { data, error } = await admin.rpc("admin_payment_dispute_record_with_governance", {
     p_org_id: p.data.org_id,
     p_token_purchase_id: p.data.token_purchase_id ?? null,
     p_provider: p.data.provider,
     p_provider_dispute_reference: p.data.provider_dispute_reference,
-    p_source: "manual_admin",
     p_credits_issued: p.data.credits_issued,
-    p_actor_user_id: u.user.id,
-    p_metadata: { admin_reason: p.data.reason },
+    p_admin_user_id: u.user.id,
+    p_reason: p.data.reason,
+    p_request_id: req.headers.get("x-request-id"),
+    p_aal: "aal2",
   });
-  if (error) return json({ error: "rpc_failed", message: error.message }, 500);
-  const aggregateId = (data && typeof data === "object" && "payment_dispute_id" in (data as any))
-    ? String((data as any).payment_dispute_id) : p.data.provider_dispute_reference;
-  try {
-    await recordAdminHqDecision({
-      admin, sourceFunction: "admin-payment-dispute-record",
-      actionCode: "payment_dispute.record_manual",
-      actorUserId: u.user.id, actorRole: "platform_admin",
-      orgId: p.data.org_id, aggregateId, aggregateType: "payment_dispute",
-      reason: p.data.reason, requestId: req.headers.get("x-request-id"),
-      paymentReference: p.data.provider_dispute_reference,
-      extra: { provider: p.data.provider, credits_issued: p.data.credits_issued }, aal: "aal2",
-    });
-  } catch (govErr) {
-    console.error("[admin-payment-dispute-record] CRITICAL: gov audit failed:", govErr);
-    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
+  if (error) {
+    console.error("[admin-payment-dispute-record] atomic rpc failed:", error);
+    return json({ error: "rpc_failed", code: "ATOMIC_DISPUTE_FAILED", message: error.message }, 500);
   }
-  return json(data, 200);
+  const r = data as { success?: boolean; code?: string; payment_dispute_id?: string; event_id?: string; deduplicated?: boolean };
+  if (!r?.success) {
+    const code = r?.code ?? "DISPUTE_FAILED";
+    return json({ error: code.toLowerCase(), code }, 400);
+  }
+  return json({
+    ...(r as Record<string, unknown>),
+    governance_event_id: r.event_id,
+  }, 200);
 });
