@@ -1572,6 +1572,30 @@ async function handleRefundProcessed(
     }
   }
 
+  // Phase 2 canonical proof — best-effort with risk-item escalation
+  // (webhook safety: see payment-governance.ts header).
+  await recordPaymentGovernanceOrEscalate(supabase, {
+    event_subtype: "refund.processed",
+    payment_reference: originalTxRef ?? refundRef,
+    provider_event_id: refundRef,
+    org_id: orgId,
+    system_actor: "paystack-webhook",
+    source_function: "token-purchase/webhook:refund.processed",
+    payment_status: "refunded",
+    allowed_or_blocked: "allowed",
+    reason_code: "refund.processed",
+    amount: refundUsd,
+    currency: refundCurrency,
+    policy_version: null,
+    metadata: {
+      refund_reference: refundRef,
+      original_reference: originalTxRef,
+      credits_reversed: creditsToDeduct,
+      new_balance: newBalance,
+    },
+  });
+
+
   // Revenue notification (idempotent by refund reference — duplicate
   // deliveries dedupe in the email queue).
   try {
