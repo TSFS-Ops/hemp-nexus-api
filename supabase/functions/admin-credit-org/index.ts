@@ -26,6 +26,8 @@ import { handleCorsPreflight, withCors } from '../_shared/cors.ts';
 import { assertAal2 } from '../_shared/aal.ts';
 import { ApiException } from '../_shared/errors.ts';
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
