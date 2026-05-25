@@ -1853,6 +1853,27 @@ async function handleDisputeCreated(supabase: any, data: DisputeData): Promise<v
     paymentRef,
     credits: credits ?? 0,
   });
+
+  // Phase 2 canonical proof — best-effort with risk-item escalation.
+  await recordPaymentGovernanceOrEscalate(supabase, {
+    event_subtype: "dispute.create",
+    payment_reference: paymentRef ?? disputeRef,
+    provider_event_id: disputeRef,
+    org_id: orgId,
+    system_actor: "paystack-webhook",
+    source_function: "token-purchase/webhook:dispute.create",
+    payment_status: "disputed",
+    allowed_or_blocked: "blocked",
+    reason_code: "dispute.create",
+    amount: lookup.price_usd ?? null,
+    currency: "USD",
+    policy_version: null,
+    metadata: {
+      dispute_reference: disputeRef,
+      payment_reference: paymentRef,
+      credits_held: credits,
+    },
+  });
 }
 
 // PAY-009 governed dual-write helpers (webhook-side mirrors of the
