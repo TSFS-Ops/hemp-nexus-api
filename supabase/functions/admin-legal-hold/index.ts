@@ -34,6 +34,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
+import { LEGAL_HOLD_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers":
@@ -305,9 +306,10 @@ Deno.serve(async (req) => {
           allowed_or_blocked: "allowed",
           reason_code: `scope:${scope_type}`,
           posture: buildPostureSnapshot("Standard", {
+            policy_version: LEGAL_HOLD_POLICY_VERSION,
             check_status: { aal: observedAal, scope_type, scope_id },
           }),
-          metadata: { reason, scope_type, scope_id, related_request_id: related_request_id ?? null },
+          metadata: { reason, scope_type, scope_id, related_request_id: related_request_id ?? null, policy_version: LEGAL_HOLD_POLICY_VERSION },
           idempotency_extra: `apply:${inserted.id}`,
         });
       } catch (govErr) {
@@ -409,9 +411,10 @@ Deno.serve(async (req) => {
           allowed_or_blocked: "allowed",
           reason_code: `scope:${hold.scope_type}`,
           posture: buildPostureSnapshot("Standard", {
+            policy_version: LEGAL_HOLD_POLICY_VERSION,
             check_status: { aal: observedAal, scope_type: hold.scope_type, scope_id: hold.scope_id },
           }),
-          metadata: { released_reason, scope_type: hold.scope_type, scope_id: hold.scope_id },
+          metadata: { released_reason, scope_type: hold.scope_type, scope_id: hold.scope_id, policy_version: LEGAL_HOLD_POLICY_VERSION },
           idempotency_extra: `release:${legal_hold_id}`,
         });
       } catch (govErr) {

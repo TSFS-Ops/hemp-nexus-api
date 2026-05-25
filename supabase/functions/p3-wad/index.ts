@@ -21,6 +21,7 @@ import {
   writeCriticalEventWithPosture,
   writeGovernanceEventBestEffort,
 } from "../_shared/governance-audit-integration.ts";
+import { WAD_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 /**
  * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
@@ -486,9 +487,10 @@ Deno.serve(async (req: Request) => {
             allowed_or_blocked: "blocked",
             reason_code: "DISCOVERY_GATE_FAILED",
             posture_snapshot: buildPostureSnapshot("Failed Verification", {
+              policy_version: WAD_POLICY_VERSION,
               check_status: { gate: "DISCOVERY_ELIGIBILITY", passed: false },
             }),
-            metadata: { reason: discoveryReason, gate: "DISCOVERY_ELIGIBILITY" },
+            metadata: { reason: discoveryReason, gate: "DISCOVERY_ELIGIBILITY", policy_version: WAD_POLICY_VERSION },
           });
         }
       }
@@ -577,6 +579,7 @@ Deno.serve(async (req: Request) => {
             allowed_or_blocked: "manual_review",
             reason_code: "UBO_INCOMPLETE",
             posture_snapshot: buildPostureSnapshot("Manual Review Required", {
+              policy_version: WAD_POLICY_VERSION,
               check_status: { gate: "UBO_COMPLETENESS", reason: uboFailed.reason },
               manual_review_required: true,
             }),
@@ -584,6 +587,7 @@ Deno.serve(async (req: Request) => {
               dedup_key: dedupKey,
               gate: "UBO_COMPLETENESS",
               reason: uboFailed.reason,
+              policy_version: WAD_POLICY_VERSION,
             },
           });
         }
@@ -615,11 +619,13 @@ Deno.serve(async (req: Request) => {
           allowed_or_blocked: "blocked",
           reason_code: "HARD_GATE_FAILED",
           posture: buildPostureSnapshot("Failed Verification", {
+            policy_version: WAD_POLICY_VERSION,
             check_status: { failed_gates: failedGates.map((g) => g.gate) },
             manual_review_required: !!failedGates.find((g) => g.gate === "UBO_COMPLETENESS"),
           }),
           metadata: {
             failed_gates: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
+            policy_version: WAD_POLICY_VERSION,
           },
           idempotency_extra: "denied",
         });
@@ -680,9 +686,10 @@ Deno.serve(async (req: Request) => {
         new_state: "ISSUED",
         allowed_or_blocked: "allowed",
         posture: buildPostureSnapshot("Standard", {
+          policy_version: WAD_POLICY_VERSION,
           check_status: { gates_passed: gates.length, carry_forward: carryForwardLog },
         }),
-        metadata: { gates_passed: gates.length },
+        metadata: { gates_passed: gates.length, policy_version: WAD_POLICY_VERSION },
         idempotency_extra: "issued",
       });
 

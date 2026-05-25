@@ -13,6 +13,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
+import { POI_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -322,9 +323,10 @@ Deno.serve(async (req: Request) => {
         allowed_or_blocked: "allowed",
         reason_code: parsed.reason || null,
         posture: buildPostureSnapshot("Not recorded", {
+          policy_version: POI_POLICY_VERSION,
           reason: "posture not derived in pois transition flow",
         }),
-        metadata: { poi_type: poi.poi_type },
+        metadata: { poi_type: poi.poi_type, policy_version: POI_POLICY_VERSION },
         idempotency_extra: `${fromState}->${toState}`,
       });
 
@@ -540,6 +542,7 @@ async function handleBilateralCreate(
     new_state: poi.state,
     allowed_or_blocked: "allowed",
     posture: buildPostureSnapshot("Not recorded", {
+      policy_version: POI_POLICY_VERSION,
       reason: "posture not derived in pois bilateral create",
     }),
     metadata: {
@@ -547,6 +550,7 @@ async function handleBilateralCreate(
       jurisdiction_code: parsed.jurisdiction_code,
       industry_code: parsed.industry_code,
       completion_probability: parsed.completion_probability,
+      policy_version: POI_POLICY_VERSION,
     },
     idempotency_extra: idempotencyKey,
   });
@@ -651,12 +655,14 @@ async function handleUnilateralCreate(
     new_state: poi.state,
     allowed_or_blocked: "allowed",
     posture: buildPostureSnapshot("Not recorded", {
+      policy_version: POI_POLICY_VERSION,
       reason: "posture not derived in pois unilateral create",
     }),
     metadata: {
       poi_type: "unilateral",
       jurisdiction_code: parsed.jurisdiction_code,
       industry_code: parsed.industry_code,
+      policy_version: POI_POLICY_VERSION,
     },
     idempotency_extra: idempotencyKey,
   });

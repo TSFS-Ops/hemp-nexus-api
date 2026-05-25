@@ -24,6 +24,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "./governance-audit-integration.ts";
+import { PAYMENT_POLICY_VERSION } from "./governance-policy-versions.ts";
 
 export type PaymentEventSubtype =
   | "charge.success"
@@ -124,7 +125,7 @@ export async function recordPaymentGovernanceEventBestEffort(
       allowed_or_blocked: input.allowed_or_blocked ?? "neutral",
       reason_code: input.reason_code ?? input.event_subtype,
       posture: buildPostureSnapshot("Standard", {
-        policy_version: input.policy_version ?? null,
+        policy_version: input.policy_version ?? PAYMENT_POLICY_VERSION,
         check_status: {
           paystack_event: input.event_subtype,
           payment_status: input.payment_status ?? null,
@@ -135,7 +136,7 @@ export async function recordPaymentGovernanceEventBestEffort(
         payment_status: input.payment_status ?? null,
         amount: input.amount ?? null,
         currency: input.currency ?? "USD",
-        policy_version: input.policy_version ?? null,
+        policy_version: input.policy_version ?? PAYMENT_POLICY_VERSION,
         provider_event_id: input.provider_event_id ?? null,
         provider_event_ts: input.provider_event_ts ?? null,
         ...(input.metadata ?? {}),

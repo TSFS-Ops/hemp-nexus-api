@@ -32,6 +32,7 @@ import {
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
 import { recordPaymentGovernanceOrEscalate } from "../_shared/payment-governance.ts";
+import { PAYMENT_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
@@ -1154,6 +1155,7 @@ async function handleChargeSuccess(
       allowed_or_blocked: "allowed",
       reason_code: "charge.success",
       posture: buildPostureSnapshot("Standard", {
+        policy_version: PAYMENT_POLICY_VERSION,
         check_status: { paystack_event: "charge.success", credits_added: credits },
       }),
       metadata: {
@@ -1164,6 +1166,7 @@ async function handleChargeSuccess(
         currency: metadata.currency ?? "USD",
         fx_basis: metadata.fx_basis ?? "native_usd",
         paid_at,
+        policy_version: PAYMENT_POLICY_VERSION,
       },
       idempotency_extra: reference,
     });

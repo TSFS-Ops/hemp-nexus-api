@@ -5,6 +5,7 @@ import {
   writeCriticalEventWithPosture,
   writeGovernanceEventBestEffort,
 } from "./governance-audit-integration.ts";
+import { CREDIT_POLICY_VERSION } from "./governance-policy-versions.ts";
 
 // Endpoints that are NOT billable (free)
 const NON_BILLABLE_ENDPOINTS = [
@@ -243,9 +244,10 @@ export async function burnTokens(
         allowed_or_blocked: "blocked",
         reason_code: "TOKEN_BURN_RPC_ERROR",
         posture_snapshot: buildPostureSnapshot("Not recorded", {
+          policy_version: CREDIT_POLICY_VERSION,
           reason: "atomic_token_burn RPC error before settlement",
         }),
-        metadata: { endpoint, error_message: String(burnError.message ?? burnError) },
+        metadata: { endpoint, error_message: String(burnError.message ?? burnError), policy_version: CREDIT_POLICY_VERSION },
       });
       throw new ApiException("TOKEN_BURN_FAILED", "Failed to burn tokens", 500);
     }
@@ -263,9 +265,10 @@ export async function burnTokens(
         allowed_or_blocked: "blocked",
         reason_code: burnResult?.error ?? "INSUFFICIENT_TOKENS",
         posture_snapshot: buildPostureSnapshot("Standard", {
+          policy_version: CREDIT_POLICY_VERSION,
           check_status: { current_balance: burnResult?.current_balance ?? 0 },
         }),
-        metadata: { endpoint, requested: tokensToBurn, available: burnResult?.current_balance ?? 0 },
+        metadata: { endpoint, requested: tokensToBurn, available: burnResult?.current_balance ?? 0, policy_version: CREDIT_POLICY_VERSION },
       });
       throw new ApiException(
         "INSUFFICIENT_TOKEN_BALANCE",
@@ -296,6 +299,7 @@ export async function burnTokens(
         allowed_or_blocked: "allowed",
         reason_code: `api:${endpoint}`,
         posture: buildPostureSnapshot("Standard", {
+          policy_version: CREDIT_POLICY_VERSION,
           check_status: { balance_before: previousBalance, balance_after: newBalance },
         }),
         metadata: {
@@ -304,6 +308,7 @@ export async function burnTokens(
           balance_before: previousBalance,
           balance_after: newBalance,
           api_key_id: apiKeyId,
+          policy_version: CREDIT_POLICY_VERSION,
           ...(metadata ?? {}),
         },
         idempotency_extra: requestId,
@@ -584,9 +589,10 @@ export async function burnTokensForAction(
       allowed_or_blocked: "blocked",
       reason_code: "TOKEN_BURN_RPC_ERROR",
       posture_snapshot: buildPostureSnapshot("Not recorded", {
+        policy_version: CREDIT_POLICY_VERSION,
         reason: "atomic_token_burn RPC error before settlement",
       }),
-      metadata: { actionType, error_message: String(burnError.message ?? burnError) },
+      metadata: { actionType, error_message: String(burnError.message ?? burnError), policy_version: CREDIT_POLICY_VERSION },
     });
     throw new ApiException("TOKEN_BURN_FAILED", "Failed to burn tokens", 500);
   }
@@ -604,12 +610,14 @@ export async function burnTokensForAction(
       allowed_or_blocked: "blocked",
       reason_code: burnResult?.error ?? "INSUFFICIENT_TOKENS",
       posture_snapshot: buildPostureSnapshot("Standard", {
+        policy_version: CREDIT_POLICY_VERSION,
         check_status: { current_balance: burnResult?.current_balance ?? 0 },
       }),
       metadata: {
         actionType,
         required: tokensToBurn,
         available: burnResult?.current_balance ?? 0,
+        policy_version: CREDIT_POLICY_VERSION,
       },
     });
     throw new ApiException(
@@ -645,6 +653,7 @@ export async function burnTokensForAction(
       allowed_or_blocked: "allowed",
       reason_code: `action:${actionType}`,
       posture: buildPostureSnapshot("Standard", {
+        policy_version: CREDIT_POLICY_VERSION,
         check_status: { balance_before: previousBalance, balance_after: newBalance },
       }),
       metadata: {
@@ -653,6 +662,7 @@ export async function burnTokensForAction(
         balance_before: previousBalance,
         balance_after: newBalance,
         entity_id: entityId ?? null,
+        policy_version: CREDIT_POLICY_VERSION,
         ...(metadata ?? {}),
       },
       idempotency_extra: requestId,

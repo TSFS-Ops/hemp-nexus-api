@@ -22,6 +22,7 @@ import {
   writeCriticalEventWithPosture,
   writeGovernanceEventBestEffort,
 } from "../_shared/governance-audit-integration.ts";
+import { EXECUTION_POLICY_VERSION, FINALITY_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 // ── Mandatory fields ──
 const MANDATORY_FIELDS = [
@@ -760,6 +761,7 @@ Deno.serve(async (req: Request) => {
         allowed_or_blocked: "allowed",
         reason_code: "COLLAPSE_OK",
         posture: buildPostureSnapshot("Standard", {
+          policy_version: EXECUTION_POLICY_VERSION,
           check_status: {
             signature_valid: signatureValid,
             ntp_status: ntpStatus,
@@ -771,6 +773,7 @@ Deno.serve(async (req: Request) => {
           counterparty_org_id,
           asset_id,
           currency,
+          policy_version: EXECUTION_POLICY_VERSION,
         },
         idempotency_extra: idempotency_key,
       });
@@ -790,6 +793,7 @@ Deno.serve(async (req: Request) => {
         allowed_or_blocked: "allowed",
         reason_code: "COLLAPSE_FINAL",
         posture: buildPostureSnapshot("Standard", {
+          policy_version: FINALITY_POLICY_VERSION,
           check_status: {
             signature_valid: signatureValid,
             ntp_status: ntpStatus,
@@ -802,6 +806,7 @@ Deno.serve(async (req: Request) => {
           quantity,
           price,
           currency,
+          policy_version: FINALITY_POLICY_VERSION,
         },
         idempotency_extra: idempotency_key,
       });

@@ -28,6 +28,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
+import { DISPUTE_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 /**
  * Batch J Required Fix 2 — AAL2 gate.
@@ -399,9 +400,10 @@ Deno.serve(async (req) => {
             allowed_or_blocked: "allowed",
             reason_code: p.subject_code,
             posture: buildPostureSnapshot("Standard", {
+              policy_version: DISPUTE_POLICY_VERSION,
               check_status: { raised_by_role: p.raised_by_role },
             }),
-            metadata: { subject_code: p.subject_code, summary_length: p.summary.length },
+            metadata: { subject_code: p.subject_code, summary_length: p.summary.length, policy_version: DISPUTE_POLICY_VERSION },
             idempotency_extra: "raised",
           });
         } catch (govErr) {
@@ -584,12 +586,14 @@ Deno.serve(async (req) => {
               allowed_or_blocked: p.to_status === "withdrawn" ? "neutral" : "allowed",
               reason_code: (update.outcome_code as string | undefined) ?? p.to_status,
               posture: buildPostureSnapshot("Standard", {
+                policy_version: DISPUTE_POLICY_VERSION,
                 check_status: { via_platform_admin: isPlatformAdmin, to_status: p.to_status },
               }),
               metadata: {
                 outcome_code: (update.outcome_code as string | undefined) ?? null,
                 outcome_summary_length:
                   typeof update.outcome_summary === "string" ? update.outcome_summary.length : 0,
+                policy_version: DISPUTE_POLICY_VERSION,
               },
               idempotency_extra: p.to_status,
             });

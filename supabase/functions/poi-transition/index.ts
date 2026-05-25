@@ -18,6 +18,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
+import { POI_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 // Stage 2A CORS hardening (2026-05-01): replaced local wildcard `corsHeaders`
 // with the shared `_shared/cors.ts` helper. Stub keeps existing spreads valid.
@@ -436,9 +437,10 @@ async function _serve(req: Request): Promise<Response> {
         allowed_or_blocked: "allowed",
         reason_code: reason ?? null,
         posture: buildPostureSnapshot("Not recorded", {
+          policy_version: POI_POLICY_VERSION,
           reason: "posture not derived in poi-transition flow",
         }),
-        metadata: { poi_event_id: event.id },
+        metadata: { poi_event_id: event.id, policy_version: POI_POLICY_VERSION },
         idempotency_extra: `${fromState}->${toState}`,
       });
     } catch (govErr) {
