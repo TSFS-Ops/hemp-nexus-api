@@ -51,6 +51,14 @@ BEGIN
   VALUES (v_org, 'F2 proof org', false)
   ON CONFLICT (id) DO NOTHING;
 
+  -- Seed a token_purchase to satisfy the refund_requests FK.
+  INSERT INTO public.token_purchases (
+    id, org_id, paystack_reference, package_id, token_amount, amount_usd, status
+  ) VALUES (
+    v_purchase, v_org, 'f2-proof-' || v_purchase::text, 'single', 0, 0, 'completed'
+  );
+
+
 
   -- Seed a refund_request in 'pending' so approve_refund accepts it.
   INSERT INTO public.refund_requests (
