@@ -9310,6 +9310,14 @@ export type Database = {
         }
         Returns: Json
       }
+      atomic_dispute_open: {
+        Args: { p_governance?: Json; p_input: Json }
+        Returns: Json
+      }
+      atomic_dispute_transition: {
+        Args: { p_governance?: Json; p_input: Json }
+        Returns: Json
+      }
       atomic_engagement_transition: {
         Args: {
           p_actor_email: string
@@ -9389,6 +9397,14 @@ export type Database = {
             }
             Returns: Json
           }
+      atomic_legal_hold_apply: {
+        Args: { p_governance?: Json; p_input: Json }
+        Returns: Json
+      }
+      atomic_legal_hold_release: {
+        Args: { p_governance?: Json; p_input: Json }
+        Returns: Json
+      }
       atomic_poi_match_transition: {
         Args: {
           p_actor_user_id: string

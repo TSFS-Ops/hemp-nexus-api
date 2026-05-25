@@ -227,99 +227,99 @@ Deno.serve(async (req) => {
     if (parsed.data.action === "apply") {
       const { scope_type, scope_id, reason, related_request_id, metadata } = parsed.data;
 
-      // Idempotency: refuse if an active hold already exists for this scope.
-      const { data: existing, error: existingErr } = await admin
-        .from("legal_holds")
-        .select("id, applied_at, applied_by, reason")
-        .eq("scope_type", scope_type)
-        .eq("scope_id", scope_id)
-        .eq("status", "active")
-        .limit(1)
-        .maybeSingle();
-      if (existingErr) {
-        return jsonResponse(req, { error: "Query failed", detail: existingErr.message }, 500);
-      }
-      if (existing) {
-        await writeAdminAudit(admin, callerId, "admin.legal_hold.apply_idempotent_skip", existing.id, {
-          request_id: requestId,
+      // Atomic apply: insert legal_holds + emit legal_hold.applied in one tx.
+      const legalHoldApplyGovPayload = {
+        actor_user_id: callerId,
+        actor_role: "platform_admin",
+        source_function: "admin-legal-hold",
+        request_id: requestId,
+        allowed_or_blocked: "allowed",
+        reason_code: `scope:${scope_type}`,
+        posture_snapshot: buildPostureSnapshot("Standard", {
+          policy_version: LEGAL_HOLD_POLICY_VERSION,
+          check_status: { aal: observedAal, scope_type, scope_id },
+        }),
+        metadata: {
+          reason,
           scope_type,
           scope_id,
-          existing_hold_id: existing.id,
-        });
-        return jsonResponse(
-          req,
-          {
+          related_request_id: related_request_id ?? null,
+          policy_version: LEGAL_HOLD_POLICY_VERSION,
+        },
+        idempotency_key: `${scope_type}:${scope_id}|legal_hold.applied|${requestId}|apply`,
+      };
+
+      const { data: applyResult, error: applyErr } = await admin.rpc(
+        "atomic_legal_hold_apply",
+        {
+          p_input: {
+            scope_type,
+            scope_id,
+            reason,
+            applied_by: callerId,
+            gov_org_id: scope_type === "org" ? scope_id : scope_id,
+            metadata: {
+              ...(metadata ?? {}),
+              related_request_id: related_request_id ?? null,
+              applied_via: "admin-legal-hold",
+              request_id: requestId,
+            },
+          },
+          p_governance: legalHoldApplyGovPayload,
+        },
+      );
+      if (applyErr) {
+        return jsonResponse(req, { error: "Insert failed", detail: applyErr.message }, 500);
+      }
+      const aR = applyResult as {
+        success: boolean;
+        error?: string;
+        existing_hold_id?: string;
+        applied_at?: string;
+        legal_hold_id?: string;
+        governance_event_id?: string | null;
+      } | null;
+      if (!aR?.success) {
+        if (aR?.error === "LEGAL_HOLD_ALREADY_ACTIVE") {
+          await writeAdminAudit(admin, callerId, "admin.legal_hold.apply_idempotent_skip", aR.existing_hold_id ?? null, {
+            request_id: requestId,
+            scope_type,
+            scope_id,
+            existing_hold_id: aR.existing_hold_id,
+          });
+          return jsonResponse(req, {
             ok: false,
             code: "LEGAL_HOLD_ALREADY_ACTIVE",
             message: "An active legal hold already exists for this scope.",
-            existing_hold: existing,
+            existing_hold: { id: aR.existing_hold_id, applied_at: aR.applied_at },
             request_id: requestId,
-          },
-          409,
-        );
+          }, 409);
+        }
+        console.error("[admin-legal-hold] CRITICAL: atomic_legal_hold_apply failed:", aR);
+        return jsonResponse(req, {
+          error: "Hold rolled back: governance proof write failed",
+          code: "GOV_AUDIT_WRITE_FAILED",
+        }, 500);
       }
-
-      const { data: inserted, error: insertErr } = await admin
-        .from("legal_holds")
-        .insert({
-          scope_type,
-          scope_id,
-          reason,
-          status: "active",
-          applied_by: callerId,
-          metadata: {
-            ...(metadata ?? {}),
-            related_request_id: related_request_id ?? null,
-            applied_via: "admin-legal-hold",
-            request_id: requestId,
-          },
-        })
-        .select("id, applied_at")
-        .single();
-      if (insertErr || !inserted) {
-        return jsonResponse(req, { error: "Insert failed", detail: insertErr?.message ?? "unknown" }, 500);
+      if (!aR.governance_event_id) {
+        return jsonResponse(req, {
+          error: "Legal hold apply atomic RPC did not return governance_event_id",
+          code: "GOV_AUDIT_WRITE_FAILED",
+        }, 500);
       }
 
       await writeCanonicalAudit(admin, LEGAL_HOLD_AUDIT_NAMES.applied, {
-        legal_hold_id: inserted.id,
+        legal_hold_id: aR.legal_hold_id,
         scope_type,
         scope_id,
         reason,
         actor_user_id: callerId,
         aal: observedAal,
-        applied_at: inserted.applied_at,
+        applied_at: aR.applied_at,
         related_request_id: related_request_id ?? null,
         request_id: requestId,
       });
-
-      // Phase 2 canonical (FAIL-CLOSED): legal_hold.applied
-      try {
-        await writeCriticalEventWithPosture(admin, {
-          event_type: "legal_hold.applied",
-          org_id: scope_type === "org" ? scope_id : (scope_id),
-          aggregate_type: "legal_hold",
-          aggregate_id: inserted.id,
-          actor_user_id: callerId,
-          actor_role: "platform_admin",
-          source_function: "admin-legal-hold",
-          request_id: requestId,
-          allowed_or_blocked: "allowed",
-          reason_code: `scope:${scope_type}`,
-          posture: buildPostureSnapshot("Standard", {
-            policy_version: LEGAL_HOLD_POLICY_VERSION,
-            check_status: { aal: observedAal, scope_type, scope_id },
-          }),
-          metadata: { reason, scope_type, scope_id, related_request_id: related_request_id ?? null, policy_version: LEGAL_HOLD_POLICY_VERSION },
-          idempotency_extra: `apply:${inserted.id}`,
-        });
-      } catch (govErr) {
-        console.error("[admin-legal-hold] CRITICAL: legal_hold.applied audit failed:", govErr);
-        return jsonResponse(req, {
-          error: "Hold inserted but governance proof write failed",
-          code: "GOV_AUDIT_WRITE_FAILED",
-        }, 500);
-      }
-      await writeAdminAudit(admin, callerId, "admin.legal_hold.applied", inserted.id, {
+      await writeAdminAudit(admin, callerId, "admin.legal_hold.applied", aR.legal_hold_id ?? null, {
         request_id: requestId,
         scope_type,
         scope_id,
@@ -329,111 +329,113 @@ Deno.serve(async (req) => {
 
       return jsonResponse(req, {
         ok: true,
-        legal_hold_id: inserted.id,
-        applied_at: inserted.applied_at,
+        legal_hold_id: aR.legal_hold_id,
+        applied_at: aR.applied_at,
         message: "Legal hold applied — deletion/anonymisation suspended for this scope.",
         request_id: requestId,
       });
     }
 
+
     // ── ACTION: release ──────────────────────────────────────────────
     if (parsed.data.action === "release") {
       const { legal_hold_id, released_reason, related_request_id } = parsed.data;
 
-      const { data: hold, error: fetchErr } = await admin
-        .from("legal_holds")
-        .select("id, status, scope_type, scope_id")
-        .eq("id", legal_hold_id)
-        .maybeSingle();
-      if (fetchErr) {
-        return jsonResponse(req, { error: "Query failed", detail: fetchErr.message }, 500);
+      const legalHoldReleaseGovPayload = {
+        actor_user_id: callerId,
+        actor_role: "platform_admin",
+        source_function: "admin-legal-hold",
+        request_id: requestId,
+        allowed_or_blocked: "allowed",
+        posture_snapshot: buildPostureSnapshot("Standard", {
+          policy_version: LEGAL_HOLD_POLICY_VERSION,
+          check_status: { aal: observedAal },
+        }),
+        metadata: {
+          released_reason,
+          policy_version: LEGAL_HOLD_POLICY_VERSION,
+        },
+        idempotency_key: `${legal_hold_id}|legal_hold.released|${requestId}|release`,
+      };
+
+      const { data: relResult, error: relErr } = await admin.rpc(
+        "atomic_legal_hold_release",
+        {
+          p_input: {
+            legal_hold_id,
+            released_by: callerId,
+            released_reason,
+            gov_org_id: null,
+          },
+          p_governance: legalHoldReleaseGovPayload,
+        },
+      );
+      if (relErr) {
+        return jsonResponse(req, { error: "Update failed", detail: relErr.message }, 500);
       }
-      if (!hold) {
-        return jsonResponse(req, { error: "Legal hold not found", code: "NOT_FOUND" }, 404);
-      }
-      if (hold.status !== "active") {
-        return jsonResponse(
-          req,
-          {
+      const rR = relResult as {
+        success: boolean;
+        error?: string;
+        current_status?: string;
+        legal_hold_id?: string;
+        released_at?: string;
+        scope_type?: string;
+        scope_id?: string;
+        governance_event_id?: string | null;
+      } | null;
+      if (!rR?.success) {
+        if (rR?.error === "NOT_FOUND") {
+          return jsonResponse(req, { error: "Legal hold not found", code: "NOT_FOUND" }, 404);
+        }
+        if (rR?.error === "LEGAL_HOLD_NOT_ACTIVE") {
+          return jsonResponse(req, {
             error: "Legal hold is not active",
             code: "LEGAL_HOLD_NOT_ACTIVE",
-            current_status: hold.status,
-          },
-          409,
-        );
+            current_status: rR.current_status,
+          }, 409);
+        }
+        console.error("[admin-legal-hold] CRITICAL: atomic_legal_hold_release failed:", rR);
+        return jsonResponse(req, {
+          error: "Hold release rolled back: governance proof write failed",
+          code: "GOV_AUDIT_WRITE_FAILED",
+        }, 500);
       }
-
-      const releasedAt = new Date().toISOString();
-      const { error: updateErr } = await admin
-        .from("legal_holds")
-        .update({
-          status: "released",
-          released_by: callerId,
-          released_at: releasedAt,
-          released_reason,
-        })
-        .eq("id", legal_hold_id)
-        .eq("status", "active"); // optimistic concurrency
-      if (updateErr) {
-        return jsonResponse(req, { error: "Update failed", detail: updateErr.message }, 500);
+      if (!rR.governance_event_id) {
+        return jsonResponse(req, {
+          error: "Legal hold release atomic RPC did not return governance_event_id",
+          code: "GOV_AUDIT_WRITE_FAILED",
+        }, 500);
       }
 
       await writeCanonicalAudit(admin, LEGAL_HOLD_AUDIT_NAMES.released, {
         legal_hold_id,
-        scope_type: hold.scope_type as LegalHoldScopeType,
-        scope_id: hold.scope_id,
+        scope_type: rR.scope_type as LegalHoldScopeType,
+        scope_id: rR.scope_id!,
         reason: released_reason,
         actor_user_id: callerId,
         aal: observedAal,
-        released_at: releasedAt,
+        released_at: rR.released_at,
         related_request_id: related_request_id ?? null,
         request_id: requestId,
       });
       await writeAdminAudit(admin, callerId, "admin.legal_hold.released", legal_hold_id, {
         request_id: requestId,
-        scope_type: hold.scope_type,
-        scope_id: hold.scope_id,
+        scope_type: rR.scope_type,
+        scope_id: rR.scope_id,
         released_reason,
         aal: observedAal,
       });
 
-      // Phase 2 canonical (FAIL-CLOSED): legal_hold.released
-      try {
-        await writeCriticalEventWithPosture(admin, {
-          event_type: "legal_hold.released",
-          org_id: hold.scope_id,
-          aggregate_type: "legal_hold",
-          aggregate_id: legal_hold_id,
-          actor_user_id: callerId,
-          actor_role: "platform_admin",
-          source_function: "admin-legal-hold",
-          request_id: requestId,
-          allowed_or_blocked: "allowed",
-          reason_code: `scope:${hold.scope_type}`,
-          posture: buildPostureSnapshot("Standard", {
-            policy_version: LEGAL_HOLD_POLICY_VERSION,
-            check_status: { aal: observedAal, scope_type: hold.scope_type, scope_id: hold.scope_id },
-          }),
-          metadata: { released_reason, scope_type: hold.scope_type, scope_id: hold.scope_id, policy_version: LEGAL_HOLD_POLICY_VERSION },
-          idempotency_extra: `release:${legal_hold_id}`,
-        });
-      } catch (govErr) {
-        console.error("[admin-legal-hold] CRITICAL: legal_hold.released audit failed:", govErr);
-        return jsonResponse(req, {
-          error: "Hold released but governance proof write failed",
-          code: "GOV_AUDIT_WRITE_FAILED",
-        }, 500);
-      }
-
       return jsonResponse(req, {
         ok: true,
         legal_hold_id,
-        released_at: releasedAt,
+        released_at: rR.released_at,
         message:
           "Legal hold released — deletion/anonymisation may resume where otherwise permitted.",
         request_id: requestId,
       });
     }
+
 
     return jsonResponse(req, { error: "Unknown action" }, 400);
   } catch (err) {
