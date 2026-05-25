@@ -149,7 +149,7 @@ BEGIN
   INSERT INTO public.compliance_holds (
     id, org_id, hold_type, reason, status, opened_by
   ) VALUES (
-    v_hold_release_id, v_org, 'verification_required',
+    v_hold_release_id, v_org, 'verification_refresh_required',
     'F4 proof seed compliance hold', 'active', v_actor
   );
 
@@ -177,7 +177,7 @@ BEGIN
   INSERT INTO public.compliance_holds (
     id, org_id, hold_type, reason, status, opened_by
   ) VALUES (
-    v_hold_rollback_id, v_org, 'verification_required',
+    v_hold_rollback_id, v_org, 'verification_refresh_required',
     'F4 rollback seed compliance hold', 'active', v_actor
   );
 
@@ -210,7 +210,7 @@ BEGIN
   INSERT INTO public.compliance_holds (
     id, org_id, hold_type, reason, status, opened_by
   ) VALUES (
-    v_hold_close_id, v_org, 'verification_required',
+    v_hold_close_id, v_org, 'verification_refresh_required',
     'F4 proof seed compliance hold to close', 'active', v_actor
   );
 
