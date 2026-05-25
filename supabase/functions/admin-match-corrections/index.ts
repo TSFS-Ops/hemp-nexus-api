@@ -159,6 +159,41 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
     }
 
+    // Resolve org_id for governance proof. All ops carry a primary match_id.
+    const { data: matchRow } = await admin
+      .from("matches")
+      .select("id, org_id")
+      .eq("id", parsed.match_id)
+      .maybeSingle();
+    const matchOrgId = (matchRow as { org_id?: string } | null)?.org_id
+      ?? "00000000-0000-0000-0000-000000000000";
+    const actionCode = parsed.operation === "correct_jurisdiction"
+      ? "match.correct.jurisdiction"
+      : parsed.operation === "relink_counterparty"
+        ? "match.correct.relink_counterparty"
+        : "match.correct.archive_duplicate";
+    try {
+      await recordAdminHqDecision({
+        admin, sourceFunction: "admin-match-corrections",
+        actionCode,
+        actorUserId: caller.id, actorRole: "platform_admin",
+        orgId: matchOrgId,
+        aggregateId: parsed.match_id,
+        aggregateType: "match",
+        matchId: parsed.match_id,
+        reason: parsed.reason,
+        requestId, aal: "aal2",
+        extra: parsed.operation === "correct_jurisdiction"
+          ? { origin_country: parsed.origin_country, destination_country: parsed.destination_country }
+          : parsed.operation === "relink_counterparty"
+            ? { side: parsed.side, new_org_id: parsed.new_org_id }
+            : { duplicate_of_match_id: parsed.duplicate_of_match_id },
+      });
+    } catch (govErr) {
+      console.error(`[admin-match-corrections][${requestId}] CRITICAL: gov audit failed:`, govErr);
+      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED", requestId }, 500);
+    }
+
     return jsonResponse(req, { ok: true, result: rpcResult, requestId }, 200);
   } catch (err) {
     console.error(`[admin-match-corrections][${requestId}] unhandled:`, err);
