@@ -1393,6 +1393,26 @@ async function handleRefundProcessed(
       severity: "high",
       status: "open",
     });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "refund.rejected",
+      payment_reference: originalTxRef ?? refundRef,
+      provider_event_id: refundRef,
+      org_id: orgId,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:refund.processed:org_mismatch",
+      payment_status: "refund_rejected",
+      allowed_or_blocked: "blocked",
+      reason_code: "refund.rejected:org_mismatch",
+      amount: refundUsdSafe(data),
+      currency: data.currency ?? "USD",
+      policy_version: null,
+      metadata: {
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        refund_org_id: orgId,
+        purchase_org_id: originalPurchase.org_id,
+      },
+    });
     return;
   }
 
