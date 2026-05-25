@@ -154,16 +154,27 @@ export const APPROVED_REASON_CODES: ReadonlySet<string> = new Set([
  * many legacy/dynamic codes (e.g. "charge.success", "api:endpoint",
  * "scope:org") that must keep working until a separate enforcement phase.
  */
+/**
+ * True when the reason_code is on the David-approved business allow-list OR
+ * carries one of the controlled namespace prefixes (legacy:, system:,
+ * payment:, api:, action:, scope:). Absent/null is treated as approved
+ * because reason_code is optional.
+ *
+ * NOTE: callers should pass the NORMALISED code (run `normaliseReasonCode`
+ * first). The canonical writer normalises inside validateGovernanceInput.
+ */
 export function isApprovedReasonCode(code: string | null | undefined): boolean {
   if (!code) return true;
-  return APPROVED_REASON_CODES.has(code);
+  if (APPROVED_REASON_CODES.has(code)) return true;
+  if (isApprovedNamespacedReasonCode(code)) return true;
+  return false;
 }
 
 export function warnIfUnknownReasonCode(
   code: string | null | undefined,
   ctx: { event_type: string; aggregate_id: string; source_function?: string | null },
 ): void {
-  if (!code || APPROVED_REASON_CODES.has(code)) return;
+  if (isApprovedReasonCode(code)) return;
   console.warn(
     "[governance-audit] reason_code outside approved list (WARN-only):",
     JSON.stringify({
