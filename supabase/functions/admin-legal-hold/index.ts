@@ -34,6 +34,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
+import { LEGAL_HOLD_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers":
