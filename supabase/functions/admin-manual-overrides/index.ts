@@ -240,6 +240,8 @@ Deno.serve(async (req) => {
         .eq("id", targetId)
         .maybeSingle();
       beforeSnapshot = matchBefore;
+      govOrgId = (matchBefore as { org_id?: string } | null)?.org_id ?? null;
+      govMatchId = targetId;
       const { data, error: invokeErr } = await admin.functions.invoke("evidence-pack", {
         body: { match_id: targetId, force_regenerate: true },
       });
