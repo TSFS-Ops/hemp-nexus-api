@@ -9236,6 +9236,30 @@ export type Database = {
         Args: { p_admin_user_id: string; p_match_ids?: string[] }
         Returns: Json
       }
+      admin_refund_approve_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_refund_request_id: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      admin_refund_decline_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_refund_request_id: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       admin_release_trade_request_exception_hold: {
         Args: {
           p_admin_user_id: string
