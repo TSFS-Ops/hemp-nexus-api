@@ -51,6 +51,8 @@ export type EventCategory =
   | "execution"
   | "admin_review"
   | "hq_decision"
+  | "hq_note"
+  | "hq_correction"
   | "dispute"
   | "credit"
   | "payment"
@@ -166,6 +168,10 @@ export function redactMetadata(input: unknown, depth = 0): Record<string, unknow
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CATEGORY_RULES: Array<{ test: RegExp; cat: EventCategory }> = [
+  // HQ notes / corrections must be matched before the generic admin / hq_decision
+  // rule so they get their own controlled label and never fold into hq_decision.
+  { test: /^hq\.note_added$/i, cat: "hq_note" },
+  { test: /^hq\.event_corrected$/i, cat: "hq_correction" },
   { test: /^trade_request\.|^mt[-_]?012/i, cat: "trade_request" },
   { test: /^match\./i, cat: "match" },
   { test: /^poi\.|poi_/i, cat: "poi" },
