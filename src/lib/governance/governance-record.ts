@@ -517,3 +517,139 @@ export const DEMO_EVENT_COPY =
 
 export const HQ_DECISION_COPY =
   "HQ decision recorded. An authorised HQ user allowed this step after manual review. The reason and supporting note are recorded in the event details.";
+
+export const MEMORY_NOT_WIRED_COPY =
+  "Memory status is not wired into the Governance Record in this build. The Memory record subsystem will be connected in a later phase.";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Controlled reason codes — mirror of the backend WARN-only allow-list.
+// Document-specific codes are intentionally excluded (separate AI/doc scope).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const APPROVED_REASON_CODES: ReadonlySet<string> = new Set([
+  "missing_email",
+  "missing_name",
+  "binding_review_required",
+  "expired_engagement",
+  "late_acceptance_needs_reconfirmation",
+  "dispute_active",
+  "counterparty_not_accepted",
+  "wad_not_passed",
+  "wad_manual_review_required",
+  "stale_verification",
+  "missing_authority",
+  "mfa_required",
+  "insufficient_permission",
+  "payment_unsettled",
+  "credit_burn_not_allowed",
+  "demo_test_block",
+  "legal_hold_active",
+  "client_instruction",
+  "incorrect_data_correction",
+  "manual_verification_completed",
+  "duplicate_or_mistaken_record",
+  "dispute_reviewed",
+  "late_acceptance_approved",
+  "payment_correction",
+  "system_recovery",
+  "legal_hold",
+  "other",
+]);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Repeated-event grouping — UI-side only (does not change event_store writes).
+// Same actor + same record/anchor + same event type + same reason code +
+// same allowed/blocked status within 5 minutes → collapsed into one visible
+// row with `repeatedCount` and the original events preserved under `members`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface GroupedGovernanceEvent extends GovernanceEvent {
+  /** Number of identical events folded into this row (1 = not collapsed). */
+  repeatedCount: number;
+  /** All underlying events, newest first. Includes the head event. */
+  members: GovernanceEvent[];
+}
+
+export const REPEAT_GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+function anchorKey(e: GovernanceEvent): string {
+  return (
+    e.links.matchId ??
+    e.links.poiId ??
+    e.links.engagementId ??
+    e.links.wadId ??
+    e.links.paymentReference ??
+    e.links.entityId ??
+    ""
+  );
+}
+
+function repeatKey(e: GovernanceEvent): string {
+  return [
+    e.actorId ?? e.actorType,
+    anchorKey(e),
+    e.action,
+    e.reasonCode ?? "",
+    e.status,
+  ].join("|");
+}
+
+/**
+ * Collapse adjacent (newest-first) identical events within the 5-minute
+ * window into a single grouped row. Events outside the window or with a
+ * different key break the group and start a new one. Stable: never reorders.
+ */
+export function groupRepeatedEvents(
+  events: GovernanceEvent[],
+): GroupedGovernanceEvent[] {
+  const out: GroupedGovernanceEvent[] = [];
+  for (const e of events) {
+    const last = out[out.length - 1];
+    if (last && repeatKey(last) === repeatKey(e)) {
+      const lastTs = new Date(last.occurredAt).getTime();
+      const thisTs = new Date(e.occurredAt).getTime();
+      if (Math.abs(lastTs - thisTs) <= REPEAT_GROUP_WINDOW_MS) {
+        last.repeatedCount += 1;
+        last.members.push(e);
+        continue;
+      }
+    }
+    out.push({ ...e, repeatedCount: 1, members: [e] });
+  }
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Deterministic "full story" summary (§38). Never AI, never speculative.
+// Documentation status is intentionally excluded (separate scope).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface FullStoryInputs {
+  recordStatus?: string | null;
+  poiStatus?: string | null;
+  wadStatus?: string | null;
+  executionStatus?: "blocked" | "permitted" | "not recorded" | string | null;
+  executionReason?: string | null;
+  lastEvent?: { action: string; occurredAt: string } | null;
+}
+
+function fmtDate(iso: string): string {
+  try {
+    return new Date(iso).toISOString().slice(0, 10);
+  } catch {
+    return "not recorded";
+  }
+}
+
+export function buildFullStorySummary(i: FullStoryInputs): string {
+  const record = i.recordStatus?.trim() || "not recorded";
+  const poi = i.poiStatus?.trim() || "not recorded";
+  const wad = i.wadStatus?.trim() || "not recorded";
+  const exec = i.executionStatus?.toString().trim() || "not recorded";
+  const reason = i.executionReason?.trim() || "not recorded";
+  const last = i.lastEvent
+    ? `${i.lastEvent.action} on ${fmtDate(i.lastEvent.occurredAt)}`
+    : "not recorded";
+  return `This record is currently ${record}. POI is ${poi}. WaD is ${wad}. Execution is ${exec} because ${reason}. Last material event was ${last}.`;
+}
+
