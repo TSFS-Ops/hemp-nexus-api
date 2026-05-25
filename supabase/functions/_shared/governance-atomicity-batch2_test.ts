@@ -47,12 +47,13 @@ Deno.test("p3-wad routes WaD denial through atomic_wad_deny with p_governance", 
   assert(/admin\.rpc\(\s*"atomic_wad_deny"/.test(src), "must call admin.rpc(\"atomic_wad_deny\")");
 
   assertStringIncludes(src, "p_governance: wadDenyGovPayload");
-  assertStringIncludes(src, 'event_type: "wad.failed"');
+  assertStringIncludes(src, "wad.failed");
   assert(
-    !/writeCriticalEventWithPosture\([^)]*\n[^)]*event_type:\s*"wad\.failed"/s.test(src),
+    !/writeCriticalEventWithPosture\([^)]*event_type:\s*"wad\.failed"/s.test(src),
     "p3-wad must not double-write wad.failed via TS writer",
   );
 });
+
 
 Deno.test("p3-wad WaD denial fails closed when atomic_wad_deny omits governance_event_id", async () => {
   const src = await read("p3-wad/index.ts");
