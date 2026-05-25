@@ -53,6 +53,9 @@ export type EventCategory =
   | "hq_decision"
   | "hq_note"
   | "hq_correction"
+  | "waiver_grant"
+  | "waiver_consumed"
+  | "waiver_expired"
   | "dispute"
   | "credit"
   | "payment"
@@ -63,6 +66,7 @@ export type EventCategory =
   | "sensitive_admin"
   | "demo_test"
   | "other";
+
 
 export type AllowedStatus = "allowed" | "blocked" | "manual_review" | "neutral";
 
