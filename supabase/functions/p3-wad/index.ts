@@ -619,11 +619,13 @@ Deno.serve(async (req: Request) => {
           allowed_or_blocked: "blocked",
           reason_code: "HARD_GATE_FAILED",
           posture: buildPostureSnapshot("Failed Verification", {
+            policy_version: WAD_POLICY_VERSION,
             check_status: { failed_gates: failedGates.map((g) => g.gate) },
             manual_review_required: !!failedGates.find((g) => g.gate === "UBO_COMPLETENESS"),
           }),
           metadata: {
             failed_gates: failedGates.map((g) => ({ gate: g.gate, reason: g.reason })),
+            policy_version: WAD_POLICY_VERSION,
           },
           idempotency_extra: "denied",
         });
