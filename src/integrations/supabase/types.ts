@@ -9399,6 +9399,30 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_trade_request_archive_override_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+          p_trade_request_id: string
+        }
+        Returns: Json
+      }
+      admin_trade_request_exception_hold_release_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+          p_trade_request_id: string
+        }
+        Returns: Json
+      }
       ai_meter_check_and_increment: {
         Args: { p_call_type: string; p_daily_cap: number; p_org_id: string }
         Returns: number
