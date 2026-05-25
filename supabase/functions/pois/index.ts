@@ -542,6 +542,7 @@ async function handleBilateralCreate(
     new_state: poi.state,
     allowed_or_blocked: "allowed",
     posture: buildPostureSnapshot("Not recorded", {
+      policy_version: POI_POLICY_VERSION,
       reason: "posture not derived in pois bilateral create",
     }),
     metadata: {
@@ -549,6 +550,7 @@ async function handleBilateralCreate(
       jurisdiction_code: parsed.jurisdiction_code,
       industry_code: parsed.industry_code,
       completion_probability: parsed.completion_probability,
+      policy_version: POI_POLICY_VERSION,
     },
     idempotency_extra: idempotencyKey,
   });
