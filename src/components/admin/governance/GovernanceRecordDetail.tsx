@@ -143,6 +143,10 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
   hq_decision: "HQ decision",
   hq_note: "HQ note",
   hq_correction: "HQ correction",
+  waiver_grant: "Waiver/Bypass grant",
+  waiver_consumed: "Waiver/Bypass consumed",
+  waiver_expired: "Waiver/Bypass expired",
+
   dispute: "Dispute",
   credit: "Credit",
   payment: "Payment",
