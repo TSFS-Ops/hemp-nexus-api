@@ -207,7 +207,7 @@ BEGIN
         'raised_by_org_id', v_match.buyer_org_id::text,
         'raised_by_user_id', v_user::text,
         'raised_by_role','buyer_org_admin',
-        'subject_code','rollback_proof',
+        'subject_code','other',
         'summary','rollback proof test'),
       jsonb_build_object('event_type','dispute.opened','aggregate_type','match_challenge',
         'source_function','rollback-proof-harness','system_actor','rollback-proof',
