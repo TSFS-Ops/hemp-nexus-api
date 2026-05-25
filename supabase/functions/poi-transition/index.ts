@@ -355,104 +355,47 @@ async function _serve(req: Request): Promise<Response> {
       );
     }
 
-    // ── Execute transition atomically ──
-    // 1. Insert append-only event
-    const { data: event, error: eventError } = await adminClient
-      .from("poi_events")
-      .insert({
-        match_id: matchId,
-        org_id: matchRow.org_id,
-        from_state: fromState,
-        to_state: toState,
-        actor_user_id: user.id,
-        reason: reason || null,
-        metadata: metadata || {},
-      })
-      .select()
-      .single();
-
-    if (eventError) {
-      console.error("Failed to insert poi_event:", eventError);
-      return new Response(
-        JSON.stringify({ error: "Failed to record transition event" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 2. Update match poi_state
-    const { error: updateError } = await adminClient
-      .from("matches")
-      .update({ poi_state: toState })
-      .eq("id", matchId);
-
-
-
-    if (updateError) {
-      console.error("Failed to update match poi_state:", updateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to update Intent state" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 3. Audit log - MANDATORY: failure must propagate as HTTP 500
-    const { error: auditError } = await adminClient.from("audit_logs").insert({
-      org_id: matchRow.org_id,
-      actor_user_id: user.id,
-      action: `poi.transition.${fromState.toLowerCase()}_to_${toState.toLowerCase()}`,
-      entity_type: "match",
-      entity_id: matchId,
-      metadata: {
-        from_state: fromState,
-        to_state: toState,
-        reason: reason || null,
-        poi_event_id: event.id,
-      },
-    });
-
-    if (auditError) {
-      console.error("CRITICAL: Audit log insert failed for POI transition:", auditError);
-      return new Response(
-        JSON.stringify({ error: "Audit log failed - transition recorded but audit trail incomplete", code: "AUDIT_LOG_ERROR" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ── Phase 2 canonical governance event (fail-closed) ──
-    // Writes the controlled `poi.state_changed` event to event_store with a
-    // posture_snapshot. Idempotency key is derived so retries dedupe.
-    try {
-      await writeCriticalEventWithPosture(adminClient, {
+    // ── Batch 1 atomicity: poi_events insert + matches.poi_state update +
+    //    audit_logs insert + canonical Governance Record event run in one
+    //    DB transaction via atomic_poi_match_transition. If any step (incl.
+    //    the governance write) fails, the whole transition rolls back.
+    const { data: txResult, error: txErr } = await adminClient.rpc("atomic_poi_match_transition", {
+      p_match_id: matchId,
+      p_org_id: matchRow.org_id,
+      p_from_state: fromState,
+      p_to_state: toState,
+      p_actor_user_id: user.id,
+      p_reason: reason || null,
+      p_metadata: metadata || {},
+      p_governance: {
         event_type: "poi.state_changed",
-        org_id: matchRow.org_id,
-        aggregate_type: "match",
-        aggregate_id: matchId,
         actor_user_id: user.id,
         source_function: "poi-transition",
         request_id: req.headers.get("x-request-id") ?? null,
         correlation_id: req.headers.get("x-correlation-id") ?? null,
-        match_id: matchId,
-        previous_state: fromState,
-        new_state: toState,
-        allowed_or_blocked: "allowed",
-        reason_code: reason ?? null,
-        posture: buildPostureSnapshot("Not recorded", {
+        idempotency_key: `${matchId}:${fromState}->${toState}`,
+        posture_snapshot: buildPostureSnapshot("Not recorded", {
           policy_version: POI_POLICY_VERSION,
           reason: "posture not derived in poi-transition flow",
         }),
-        metadata: { poi_event_id: event.id, policy_version: POI_POLICY_VERSION },
-        idempotency_extra: `${fromState}->${toState}`,
-      });
-    } catch (govErr) {
-      console.error("CRITICAL: Governance audit write failed for POI transition:", govErr);
+        metadata: { policy_version: POI_POLICY_VERSION },
+      },
+    });
+
+    if (txErr || !txResult?.success) {
+      console.error("CRITICAL: atomic_poi_match_transition failed:", txErr ?? txResult);
       return new Response(
         JSON.stringify({
-          error: "Governance audit write failed - transition recorded but proof trail incomplete",
+          error: "POI transition failed atomically — no state change recorded",
           code: "GOV_AUDIT_WRITE_FAILED",
+          detail: txErr?.message ?? txResult?.error ?? null,
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const event = { id: txResult.event_id, created_at: txResult.created_at };
+
 
     const successPayload = {
       success: true,
