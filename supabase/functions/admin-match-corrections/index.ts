@@ -111,35 +111,39 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "VALIDATION_ERROR", message: detail, requestId }, 400);
     }
 
-    let rpcResult: unknown;
-    let rpcError: { message?: string } | null = null;
+    // Batch F6: single atomic wrapper — business mutation +
+    // admin.hq_decision_recorded event commit together.
+    let params: Record<string, unknown>;
     if (parsed.operation === "correct_jurisdiction") {
-      const { data, error } = await admin.rpc("admin_correct_match_jurisdiction", {
-        p_match_id: parsed.match_id,
-        p_origin_country: parsed.origin_country,
-        p_destination_country: parsed.destination_country,
-        p_reason: parsed.reason,
-        p_admin_user_id: caller.id,
-      });
-      rpcResult = data; rpcError = error;
+      params = {
+        match_id: parsed.match_id,
+        origin_country: parsed.origin_country,
+        destination_country: parsed.destination_country,
+      };
     } else if (parsed.operation === "relink_counterparty") {
-      const { data, error } = await admin.rpc("admin_relink_match_counterparty", {
-        p_match_id: parsed.match_id,
-        p_side: parsed.side,
-        p_new_org_id: parsed.new_org_id,
-        p_reason: parsed.reason,
-        p_admin_user_id: caller.id,
-      });
-      rpcResult = data; rpcError = error;
+      params = {
+        match_id: parsed.match_id,
+        side: parsed.side,
+        new_org_id: parsed.new_org_id,
+      };
     } else {
-      const { data, error } = await admin.rpc("admin_archive_duplicate_match", {
-        p_match_id: parsed.match_id,
-        p_duplicate_of_match_id: parsed.duplicate_of_match_id,
-        p_reason: parsed.reason,
-        p_admin_user_id: caller.id,
-      });
-      rpcResult = data; rpcError = error;
+      params = {
+        match_id: parsed.match_id,
+        duplicate_of_match_id: parsed.duplicate_of_match_id,
+      };
     }
+
+    const { data: rpcData, error: rpcError } = await admin.rpc(
+      "admin_match_corrections_with_governance",
+      {
+        p_operation: parsed.operation,
+        p_admin_user_id: caller.id,
+        p_reason: parsed.reason,
+        p_request_id: requestId,
+        p_params: params,
+        p_aal: "aal2",
+      },
+    );
 
     if (rpcError) {
       const msg = (rpcError.message ?? "").toLowerCase();
@@ -159,42 +163,15 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
     }
 
-    // Resolve org_id for governance proof. All ops carry a primary match_id.
-    const { data: matchRow } = await admin
-      .from("matches")
-      .select("id, org_id")
-      .eq("id", parsed.match_id)
-      .maybeSingle();
-    const matchOrgId = (matchRow as { org_id?: string } | null)?.org_id
-      ?? "00000000-0000-0000-0000-000000000000";
-    const actionCode = parsed.operation === "correct_jurisdiction"
-      ? "match.correct.jurisdiction"
-      : parsed.operation === "relink_counterparty"
-        ? "match.correct.relink_counterparty"
-        : "match.correct.archive_duplicate";
-    try {
-      await recordAdminHqDecision({
-        admin, sourceFunction: "admin-match-corrections",
-        actionCode,
-        actorUserId: caller.id, actorRole: "platform_admin",
-        orgId: matchOrgId,
-        aggregateId: parsed.match_id,
-        aggregateType: "match",
-        matchId: parsed.match_id,
-        reason: parsed.reason,
-        requestId, aal: "aal2",
-        extra: parsed.operation === "correct_jurisdiction"
-          ? { origin_country: parsed.origin_country, destination_country: parsed.destination_country }
-          : parsed.operation === "relink_counterparty"
-            ? { side: parsed.side, new_org_id: parsed.new_org_id }
-            : { duplicate_of_match_id: parsed.duplicate_of_match_id },
-      });
-    } catch (govErr) {
-      console.error(`[admin-match-corrections][${requestId}] CRITICAL: gov audit failed:`, govErr);
-      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED", requestId }, 500);
-    }
+    const r = rpcData as { success?: boolean; deduplicated?: boolean; event_id?: string; result?: unknown };
+    return jsonResponse(req, {
+      ok: true,
+      result: r?.result ?? null,
+      governance_event_id: r?.event_id ?? null,
+      deduplicated: !!r?.deduplicated,
+      requestId,
+    }, 200);
 
-    return jsonResponse(req, { ok: true, result: rpcResult, requestId }, 200);
   } catch (err) {
     console.error(`[admin-match-corrections][${requestId}] unhandled:`, err);
     return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
