@@ -220,17 +220,65 @@ export async function burnTokens(
   let previousBalance = 0;
   
   if (tokensToBurn > 0) {
+    // ── Batch 1 atomicity: build governance payload and pass to RPC so
+    // credit_ledger row + credit.burned event_store row commit in a SINGLE
+    // SQL transaction. RPC returns governance_event_id on success.
+    const posture = buildPostureSnapshot("Standard", {
+      policy_version: CREDIT_POLICY_VERSION,
+    });
+    const idempotencyKey = `credit.burned:${orgId}:${requestId}`;
+    const matchIdMeta =
+      typeof metadata?.match_id === "string" ? metadata.match_id : null;
+    const poiIdMeta =
+      typeof metadata?.poi_id === "string" ? metadata.poi_id : null;
+    const engagementIdMeta =
+      typeof metadata?.engagement_id === "string" ? metadata.engagement_id : null;
+    const paymentRefMeta =
+      typeof metadata?.payment_reference === "string"
+        ? metadata.payment_reference
+        : null;
+
+    const governancePayload = {
+      event_type: "credit.burned",
+      aggregate_type: "credit_burn",
+      aggregate_id: orgId,
+      actor_user_id: null,
+      actor_role: apiKeyId ? "api_key" : "system",
+      system_actor: "token-metering",
+      source_function: "burnTokens",
+      request_id: requestId,
+      correlation_id: requestId,
+      idempotency_key: idempotencyKey,
+      allowed_or_blocked: "allowed",
+      reason_code: `api:${endpoint}`,
+      match_id: matchIdMeta,
+      poi_id: poiIdMeta,
+      engagement_id: engagementIdMeta,
+      payment_reference: paymentRefMeta,
+      posture_snapshot: posture,
+      metadata: {
+        endpoint,
+        amount: tokensToBurn,
+        api_key_id: apiKeyId,
+        policy_version: CREDIT_POLICY_VERSION,
+        ...(metadata ?? {}),
+      },
+    };
+
     // Use atomic DB function - single UPDATE ... WHERE balance >= amount
+    // Now in-transaction with governance event_store insert.
     const { data: burnResult, error: burnError } = await supabase.rpc("atomic_token_burn", {
       p_org_id: orgId,
       p_amount: tokensToBurn,
       p_reason: `api:${endpoint}`,
       p_reference_id: requestId,
+      p_governance: governancePayload,
     });
 
     if (burnError) {
       console.error("Error in atomic_token_burn:", burnError);
-      // Best-effort attempt audit (do not block the throw)
+      // Best-effort attempt audit (do not block the throw). If the RPC failed
+      // mid-transaction the burn was rolled back and no credit.burned row exists.
       await writeGovernanceEventBestEffort(supabase as any, {
         event_type: "credit.burn_attempted",
         org_id: orgId,
@@ -284,44 +332,18 @@ export async function burnTokens(
     // Check if we crossed any low balance thresholds
     await checkAndTriggerLowBalanceWebhooks(supabase, orgId, previousBalance, newBalance);
 
-    // Phase 2 canonical credit.burned event (fail-closed)
-    try {
-      await writeCriticalEventWithPosture(supabase as any, {
-        event_type: "credit.burned",
-        org_id: orgId,
-        aggregate_type: "credit_burn",
-        aggregate_id: orgId,
-        actor_user_id: null,
-        actor_role: apiKeyId ? "api_key" : "system",
-        system_actor: "token-metering",
-        source_function: "burnTokens",
-        request_id: requestId,
-        allowed_or_blocked: "allowed",
-        reason_code: `api:${endpoint}`,
-        posture: buildPostureSnapshot("Standard", {
-          policy_version: CREDIT_POLICY_VERSION,
-          check_status: { balance_before: previousBalance, balance_after: newBalance },
-        }),
-        metadata: {
-          endpoint,
-          amount: tokensToBurn,
-          balance_before: previousBalance,
-          balance_after: newBalance,
-          api_key_id: apiKeyId,
-          policy_version: CREDIT_POLICY_VERSION,
-          ...(metadata ?? {}),
-        },
-        idempotency_extra: requestId,
-      });
-    } catch (govErr) {
-      // Credit burn already debited the ledger; fail-closed means we surface
-      // a 500 so the caller does NOT report success for an unaudited burn.
-      console.error("CRITICAL: governance audit write failed after burnTokens", govErr);
+    // ── Batch 1 atomicity: credit.burned was written INSIDE atomic_token_burn.
+    // Fail-closed: if RPC returned success but no governance_event_id, treat as
+    // an unaudited burn (should not happen because p_governance was supplied).
+    if (!burnResult.governance_event_id) {
+      console.error(
+        "CRITICAL: atomic_token_burn returned success without governance_event_id",
+        { orgId, requestId },
+      );
       throw new ApiException(
         "GOV_AUDIT_WRITE_FAILED",
-        "Credit burned but governance audit write failed",
+        "Credit burned but governance audit row missing",
         500,
-        { underlying: String((govErr as Error)?.message ?? govErr) }
       );
     }
   } else {
