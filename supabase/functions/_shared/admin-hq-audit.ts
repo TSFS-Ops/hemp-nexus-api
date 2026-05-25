@@ -21,6 +21,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "./governance-audit-integration.ts";
+import { ADMIN_HQ_DECISION_POLICY_VERSION } from "./governance-policy-versions.ts";
 
 export interface AdminHqDecisionInput {
   admin: any;
