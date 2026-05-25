@@ -18,7 +18,7 @@
  * Pre-F7 the endpoint did:
  *   safe_transition_match_state | invoke()
  *      → admin_audit_logs.insert
- *      → recordAdminHqDecision (separate ts call)
+ *      → governance writer (separate ts call)
  * which left a gap where the mutation could commit without governance.
  *
  * Gates preserved: platform_admin (is_admin), AAL2 (assertAal2),
