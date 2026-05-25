@@ -8,6 +8,8 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { MT012_MIN_REASON_LENGTH } from "../_shared/mt-012-audit.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
