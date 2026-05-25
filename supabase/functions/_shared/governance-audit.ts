@@ -94,6 +94,71 @@ export const CONTROLLED_TAXONOMY = new Set<string>([
   "system.audit_writer_health_check",
 ]);
 
+// ── Controlled reason codes (David's approved list, non-document subset) ─────
+// WARN-only enforcement: writes are not rejected when reason_code is unknown,
+// but a structured warning is logged so HQ can audit drift. Document-specific
+// reason codes are intentionally excluded — they belong to the separate
+// AI/documentation-governance scope.
+export const APPROVED_REASON_CODES: ReadonlySet<string> = new Set([
+  // Blocked reason codes
+  "missing_email",
+  "missing_name",
+  "binding_review_required",
+  "expired_engagement",
+  "late_acceptance_needs_reconfirmation",
+  "dispute_active",
+  "counterparty_not_accepted",
+  "wad_not_passed",
+  "wad_manual_review_required",
+  "stale_verification",
+  "missing_authority",
+  "mfa_required",
+  "insufficient_permission",
+  "payment_unsettled",
+  "credit_burn_not_allowed",
+  "demo_test_block",
+  "legal_hold_active",
+  // Admin-decision reason codes
+  "client_instruction",
+  "incorrect_data_correction",
+  "manual_verification_completed",
+  "duplicate_or_mistaken_record",
+  "dispute_reviewed",
+  "late_acceptance_approved",
+  "payment_correction",
+  "system_recovery",
+  "legal_hold",
+  "other",
+]);
+
+/**
+ * WARN-only validator for reason codes. Returns true when the code is on the
+ * approved list (or absent/null). When the code is present but unknown, logs
+ * a structured warning and returns false. Never throws — production flows use
+ * many legacy/dynamic codes (e.g. "charge.success", "api:endpoint",
+ * "scope:org") that must keep working until a separate enforcement phase.
+ */
+export function isApprovedReasonCode(code: string | null | undefined): boolean {
+  if (!code) return true;
+  return APPROVED_REASON_CODES.has(code);
+}
+
+export function warnIfUnknownReasonCode(
+  code: string | null | undefined,
+  ctx: { event_type: string; aggregate_id: string; source_function?: string | null },
+): void {
+  if (!code || APPROVED_REASON_CODES.has(code)) return;
+  console.warn(
+    "[governance-audit] reason_code outside approved list (WARN-only):",
+    JSON.stringify({
+      reason_code: code,
+      event_type: ctx.event_type,
+      aggregate_id: ctx.aggregate_id,
+      source_function: ctx.source_function ?? null,
+    }),
+  );
+}
+
 /**
  * Critical families: posture_snapshot MUST be supplied, and writes MUST be
  * treated as fail-closed by callers (use writeCriticalGovernanceEvent).
