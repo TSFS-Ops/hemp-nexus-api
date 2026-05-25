@@ -9283,6 +9283,23 @@ export type Database = {
           status: string
         }[]
       }
+      admin_manual_override_with_governance: {
+        Args: {
+          p_aal?: string
+          p_actor_ip?: string
+          p_admin_user_id: string
+          p_after_snapshot?: Json
+          p_before_snapshot?: Json
+          p_operation: string
+          p_operation_result?: Json
+          p_params: Json
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+          p_user_agent?: string
+        }
+        Returns: Json
+      }
       admin_match_corrections_with_governance: {
         Args: {
           p_aal?: string

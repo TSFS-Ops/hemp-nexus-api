@@ -1,26 +1,28 @@
 /**
- * Batch S SUP-001 / AUD-016 — admin-manual-overrides
+ * Batch F7 — admin-manual-overrides atomic rewire.
  *
- * Server-side replacement for the former client-side `AdminManualOverrides`
- * mutation path. All four supported operations now go through this route so
- * the audit row is server-authored with reason floor, AAL2, and before/after.
+ * Single atomic RPC `admin_manual_override_with_governance` now performs
+ * the manual-override mutation, the admin_audit_logs insert, and the
+ * canonical `admin.hq_decision_recorded` event in ONE PostgreSQL
+ * transaction. If any part fails, the whole tx rolls back; there is no
+ * split-commit path between the business mutation and the governance
+ * event.
  *
- * Supported operations:
- *   - force_status         → safe_transition_match_state(p_new_state)
- *   - rerun_screening      → invoke dilisense-screen (force=true)
- *   - regenerate_evidence  → invoke evidence-pack (force_regenerate=true)
- *   - void_match           → safe_transition_match_state('voided')
+ * For `force_status` / `void_match` the wrapper performs
+ * `safe_transition_match_state` internally.
+ * For `rerun_screening` / `regenerate_evidence` the external edge
+ * function (dilisense-screen / evidence-pack) is invoked first to
+ * trigger the side-effect; the wrapper then atomically commits the
+ * audit row and governance event together.
  *
- * Gates:
- *   - platform_admin (is_admin) required
- *   - AAL2 (MFA) required
- *   - reason ≥ 10 chars
- *   - Zod strict body
- *   - Idempotency-Key required
+ * Pre-F7 the endpoint did:
+ *   safe_transition_match_state | invoke()
+ *      → admin_audit_logs.insert
+ *      → governance writer (separate ts call)
+ * which left a gap where the mutation could commit without governance.
  *
- * Audit:
- *   - admin_audit_logs row with before/after snapshot, actor_ip, user_agent,
- *     request_id captured in details.
+ * Gates preserved: platform_admin (is_admin), AAL2 (assertAal2),
+ * reason ≥ 10 chars, Idempotency-Key required, Zod strict body.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
@@ -29,8 +31,6 @@ import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
-import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
-
 
 const ENDPOINT = "POST /admin-manual-overrides";
 
@@ -146,75 +146,23 @@ Deno.serve(async (req) => {
 
     const actorIp = readActorIp(req);
     const userAgent = req.headers.get("user-agent") ?? null;
-    let beforeSnapshot: unknown = null;
-    let afterSnapshot: unknown = null;
-    let targetType = "match";
-    let targetId = "";
-    let auditAction = `admin.manual_override.${parsed.operation}`;
+
+    // For the two external-side-effect operations, invoke the external
+    // edge function BEFORE the atomic wrapper. If the invocation fails,
+    // no audit row and no governance event are written.
     let operationResult: unknown = null;
-    let govOrgId: string | null = null;
-    let govMatchId: string | null = null;
+    let externalBefore: unknown = null;
+    let externalAfter: unknown = null;
 
-    if (parsed.operation === "force_status" || parsed.operation === "void_match") {
-      targetId = parsed.match_id;
-      const { data: before, error: beforeErr } = await admin
-        .from("matches")
-        .select("id, state, status, org_id, counterparty_org_id, updated_at")
-        .eq("id", targetId)
-        .maybeSingle();
-      if (beforeErr) {
-        console.error(`[admin-manual-overrides][${requestId}] match lookup`, beforeErr);
-        return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
-      }
-      if (!before) {
-        return jsonResponse(req, { error: "MATCH_NOT_FOUND", requestId }, 404);
-      }
-      beforeSnapshot = before;
-      govOrgId = before.org_id ?? null;
-      govMatchId = targetId;
-      const newState = parsed.operation === "void_match" ? "voided" : parsed.new_status;
-
-      const { data: rpcResult, error: rpcErr } = await admin.rpc(
-        "safe_transition_match_state",
-        {
-          p_match_id: targetId,
-          p_org_id: before.org_id,
-          p_expected_state: before.state ?? "discovery",
-          p_new_state: newState,
-          p_update_fields: { status: newState },
-        },
-      );
-      if (rpcErr) {
-        console.error(`[admin-manual-overrides][${requestId}] rpc`, rpcErr);
-        return jsonResponse(req, { error: "TRANSITION_FAILED", message: rpcErr.message, requestId }, 422);
-      }
-      const ok = (rpcResult as { success?: boolean })?.success !== false;
-      if (!ok) {
-        return jsonResponse(req, {
-          error: "TRANSITION_REJECTED",
-          message: (rpcResult as { message?: string })?.message ?? "rejected",
-          requestId,
-        }, 422);
-      }
-      const { data: after } = await admin
-        .from("matches")
-        .select("id, state, status, org_id, counterparty_org_id, updated_at")
-        .eq("id", targetId)
-        .maybeSingle();
-      afterSnapshot = after;
-      operationResult = rpcResult;
-    } else if (parsed.operation === "rerun_screening") {
-      targetType = "entity";
-      targetId = parsed.entity_id;
+    if (parsed.operation === "rerun_screening") {
       const { data: entityBefore } = await admin
         .from("entities")
         .select("id, name, org_id, verification_status, jurisdiction, updated_at")
-        .eq("id", targetId)
+        .eq("id", parsed.entity_id)
         .maybeSingle();
-      beforeSnapshot = entityBefore;
-      govOrgId = (entityBefore as { org_id?: string } | null)?.org_id ?? null;
+      externalBefore = entityBefore;
       const { data, error: invokeErr } = await admin.functions.invoke("dilisense-screen", {
-        body: { entity_id: targetId, force: true },
+        body: { entity_id: parsed.entity_id, force: true },
       });
       if (invokeErr) {
         console.error(`[admin-manual-overrides][${requestId}] dilisense`, invokeErr);
@@ -228,22 +176,18 @@ Deno.serve(async (req) => {
       const { data: entityAfter } = await admin
         .from("entities")
         .select("id, name, verification_status, jurisdiction, updated_at")
-        .eq("id", targetId)
+        .eq("id", parsed.entity_id)
         .maybeSingle();
-      afterSnapshot = entityAfter;
-    } else {
-      // regenerate_evidence
-      targetId = parsed.match_id;
+      externalAfter = entityAfter;
+    } else if (parsed.operation === "regenerate_evidence") {
       const { data: matchBefore } = await admin
         .from("matches")
         .select("id, state, status, org_id, updated_at")
-        .eq("id", targetId)
+        .eq("id", parsed.match_id)
         .maybeSingle();
-      beforeSnapshot = matchBefore;
-      govOrgId = (matchBefore as { org_id?: string } | null)?.org_id ?? null;
-      govMatchId = targetId;
+      externalBefore = matchBefore;
       const { data, error: invokeErr } = await admin.functions.invoke("evidence-pack", {
-        body: { match_id: targetId, force_regenerate: true },
+        body: { match_id: parsed.match_id, force_regenerate: true },
       });
       if (invokeErr) {
         console.error(`[admin-manual-overrides][${requestId}] evidence-pack`, invokeErr);
@@ -254,55 +198,62 @@ Deno.serve(async (req) => {
         }, 502);
       }
       operationResult = data;
-      afterSnapshot = matchBefore; // evidence pack regen does not mutate match row
+      externalAfter = matchBefore; // evidence-pack does not mutate the match row
     }
 
-    // Server-authored audit row.
-    await admin.from("admin_audit_logs").insert({
-      admin_user_id: caller.id,
-      action: auditAction,
-      target_type: targetType,
-      target_id: targetId,
-      details: {
-        operation: parsed.operation,
-        reason: (parsed as { reason: string }).reason,
-        before: beforeSnapshot,
-        after: afterSnapshot,
-        actor_ip: actorIp,
-        request_id: requestId,
-        source: "admin-manual-overrides",
-        ...(parsed.operation === "force_status"
-          ? { requested_status: parsed.new_status }
-          : {}),
+    // Build params for the atomic wrapper.
+    const params: Record<string, unknown> = {};
+    if (parsed.operation === "force_status") {
+      params.match_id = parsed.match_id;
+      params.new_status = parsed.new_status;
+    } else if (parsed.operation === "void_match") {
+      params.match_id = parsed.match_id;
+    } else if (parsed.operation === "rerun_screening") {
+      params.entity_id = parsed.entity_id;
+    } else {
+      params.match_id = parsed.match_id;
+    }
+
+    const { data: rpcData, error: rpcErr } = await admin.rpc(
+      "admin_manual_override_with_governance",
+      {
+        p_operation: parsed.operation,
+        p_admin_user_id: caller.id,
+        p_reason: parsed.reason,
+        p_request_id: requestId,
+        p_params: params,
+        p_before_snapshot: externalBefore as object | null,
+        p_after_snapshot: externalAfter as object | null,
+        p_operation_result: operationResult as object | null,
+        p_actor_ip: actorIp,
+        p_user_agent: userAgent,
+        p_aal: "aal2",
+        p_policy_version: "admin-hq-decision/v1",
       },
-      user_agent: userAgent,
-    });
+    );
 
-    try {
-      await recordAdminHqDecision({
-        admin, sourceFunction: "admin-manual-overrides",
-        actionCode: `manual_override.${parsed.operation}`,
-        actorUserId: caller.id, actorRole: "platform_admin",
-        orgId: govOrgId ?? "00000000-0000-0000-0000-000000000000",
-        aggregateId: targetId,
-        aggregateType: targetType,
-        matchId: govMatchId,
-        reason: (parsed as { reason: string }).reason,
-        requestId, aal: "aal2",
-        extra: {
-          operation: parsed.operation,
-          ...(parsed.operation === "force_status" ? { requested_status: parsed.new_status } : {}),
-        },
-      });
-    } catch (govErr) {
-      console.error(`[admin-manual-overrides][${requestId}] CRITICAL: gov audit failed:`, govErr);
-      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED", requestId }, 500);
+    if (rpcErr) {
+      console.error(`[admin-manual-overrides][${requestId}] atomic rpc`, rpcErr);
+      const msg = rpcErr.message ?? "";
+      if (/match not found/i.test(msg)) {
+        return jsonResponse(req, { error: "MATCH_NOT_FOUND", requestId }, 404);
+      }
+      if (/transition rejected/i.test(msg)) {
+        return jsonResponse(req, { error: "TRANSITION_REJECTED", message: msg, requestId }, 422);
+      }
+      if (/invalid input|invalid new_status|unknown operation|missing/i.test(msg)) {
+        return jsonResponse(req, { error: "VALIDATION_ERROR", message: msg, requestId }, 400);
+      }
+      return jsonResponse(req, { error: "INTERNAL_ERROR", message: msg, requestId }, 500);
     }
 
+    const result = (rpcData ?? {}) as Record<string, unknown>;
     return jsonResponse(req, {
       ok: true,
       operation: parsed.operation,
-      result: operationResult,
+      result: result.result ?? operationResult,
+      governance_event_id: result.event_id ?? null,
+      deduplicated: result.deduplicated === true,
       requestId,
     }, 200);
   } catch (err) {
