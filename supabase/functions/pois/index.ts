@@ -565,97 +565,96 @@ async function handleUnilateralCreate(
   const { data: buyer } = await admin.from("entities").select("id").eq("id", parsed.buyer_entity_id).maybeSingle();
   if (!buyer) throw new ApiException("NOT_FOUND", "Declaring entity not found", 404);
 
-  const { data: poi, error } = await admin
-    .from("pois")
-    .insert({
-      org_id: orgId,
-      poi_type: "unilateral",
-      buyer_entity_id: parsed.buyer_entity_id,
-      seller_entity_id: null,
-      jurisdiction_code: parsed.jurisdiction_code,
-      industry_code: parsed.industry_code,
-      completion_probability: null,
-      terms: parsed.terms || {},
-      state: "DRAFT",
-    })
-    .select()
-    .single();
-
-  if (error) throw new ApiException("INTERNAL_ERROR", error.message, 500);
-
-  const eventHash = await computeHash(JSON.stringify({ poi_id: poi.id, ts: new Date().toISOString() }));
+  // Batch 1 atomicity: pois.insert + legacy event_store + idempotency_keys
+  // + Governance Record in a single DB transaction.
+  const eventHash = await computeHash(JSON.stringify({ buyer: parsed.buyer_entity_id, ts: new Date().toISOString() }));
   const requestHash = await computeHash(JSON.stringify(parsed));
 
-  const responseData = successEnvelope(
+  const responseShellPre = successEnvelope(
     {
-      poi_id: poi.id,
-      poi_type: poi.poi_type,
-      state: poi.state,
-      buyer_entity_id: poi.buyer_entity_id,
+      poi_id: "00000000-0000-0000-0000-000000000000",
+      poi_type: "unilateral",
+      state: "DRAFT",
+      buyer_entity_id: parsed.buyer_entity_id,
       seller_entity_id: null,
       completion_probability: null,
-      jurisdiction_code: poi.jurisdiction_code,
-      industry_code: poi.industry_code,
-      created_at: poi.created_at,
+      jurisdiction_code: parsed.jurisdiction_code,
+      industry_code: parsed.industry_code,
+      created_at: null,
       unilateral_state_cap: "ELIGIBLE",
     },
     correlationId,
-    poi.state
+    "DRAFT"
   );
 
-  // Fire both writes in parallel
-  await Promise.all([
-    admin.from("event_store").insert({
-      org_id: orgId,
-      domain: "trust",
-      aggregate_type: "poi",
-      aggregate_id: poi.id,
-      event_type: "trust.poi.issued.unilateral",
-      actor_id: authCtx.isApiKey ? null : authCtx.userId,
-      actor_role: authCtx.roles?.[0] || null,
-      payload: {
-        poi_type: "unilateral",
-        buyer_entity_id: parsed.buyer_entity_id,
-        jurisdiction_code: parsed.jurisdiction_code,
-        industry_code: parsed.industry_code,
-      },
-      event_hash: eventHash,
-    }),
-    admin.from("idempotency_keys").insert({
-      org_id: orgId,
-      idempotency_key: idempotencyKey,
-      endpoint: "pois",
-      request_hash: requestHash,
-      response_data: responseData,
-      response_status_code: 201,
-    }),
-  ]);
-
-  // Phase 2 canonical governance event (fail-closed)
-  await writeCriticalEventWithPosture(admin, {
-    event_type: "poi.created",
-    org_id: orgId,
-    aggregate_type: "poi",
-    aggregate_id: poi.id,
-    actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
-    actor_role: authCtx.roles?.[0] || null,
-    source_function: "pois",
-    correlation_id: correlationId,
-    poi_id: poi.id,
-    new_state: poi.state,
-    allowed_or_blocked: "allowed",
-    posture: buildPostureSnapshot("Not recorded", {
-      policy_version: POI_POLICY_VERSION,
-      reason: "posture not derived in pois unilateral create",
-    }),
-    metadata: {
+  const { data: createRes, error: createErr } = await admin.rpc("atomic_pois_create", {
+    p_org_id: orgId,
+    p_poi_type: "unilateral",
+    p_buyer_entity_id: parsed.buyer_entity_id,
+    p_seller_entity_id: null,
+    p_jurisdiction_code: parsed.jurisdiction_code,
+    p_industry_code: parsed.industry_code,
+    p_completion_probability: null,
+    p_terms: parsed.terms || {},
+    p_actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+    p_actor_role: authCtx.roles?.[0] || null,
+    p_idempotency_key: idempotencyKey,
+    p_idempotency_request_hash: requestHash,
+    p_idempotency_response: responseShellPre,
+    p_idempotency_status: 201,
+    p_legacy_event_type: "trust.poi.issued.unilateral",
+    p_legacy_event_hash: eventHash,
+    p_legacy_event_payload: {
       poi_type: "unilateral",
+      buyer_entity_id: parsed.buyer_entity_id,
       jurisdiction_code: parsed.jurisdiction_code,
       industry_code: parsed.industry_code,
-      policy_version: POI_POLICY_VERSION,
     },
-    idempotency_extra: idempotencyKey,
+    p_governance: {
+      event_type: "poi.created",
+      actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+      actor_role: authCtx.roles?.[0] || null,
+      source_function: "pois",
+      correlation_id: correlationId,
+      idempotency_key: idempotencyKey,
+      posture_snapshot: buildPostureSnapshot("Not recorded", {
+        policy_version: POI_POLICY_VERSION,
+        reason: "posture not derived in pois unilateral create",
+      }),
+      metadata: {
+        poi_type: "unilateral",
+        jurisdiction_code: parsed.jurisdiction_code,
+        industry_code: parsed.industry_code,
+        policy_version: POI_POLICY_VERSION,
+      },
+    },
   });
+
+  if (createErr || !createRes?.success) {
+    throw new ApiException(
+      "INTERNAL_ERROR",
+      `Unilateral POI create atomic RPC failed: ${createErr?.message ?? createRes?.error ?? "unknown"}`,
+      500
+    );
+  }
+
+  const responseData = successEnvelope(
+    {
+      poi_id: createRes.poi_id,
+      poi_type: createRes.poi_type,
+      state: createRes.state,
+      buyer_entity_id: createRes.buyer_entity_id,
+      seller_entity_id: null,
+      completion_probability: null,
+      jurisdiction_code: createRes.jurisdiction_code,
+      industry_code: createRes.industry_code,
+      created_at: createRes.created_at,
+      unilateral_state_cap: "ELIGIBLE",
+    },
+    correlationId,
+    createRes.state
+  );
+
 
 
   return new Response(JSON.stringify(responseData), {
