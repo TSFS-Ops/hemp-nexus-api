@@ -1,21 +1,39 @@
 /**
  * Phase 2 Writer Adoption — P3-P7 static live-flow tests.
- * Asserts execution, dispute, payment, finality, legal-hold flows now
- * call the canonical writer with controlled taxonomy and fail-closed.
+ *
+ * Asserts execution/finality, dispute, payment, and legal-hold flows are
+ * canonically wired. After Atomicity Batch 1+2 cleanup, the collapse flow
+ * routes through the atomic_collapse_record RPC instead of TS-side
+ * writeCriticalEventWithPosture for execution.permitted / finality.recorded.
+ * Other flows (disputes, payment exception, legal hold) still use the TS
+ * writer pattern and remain sequential pending Batch 3.
  */
 import { assert, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 const ROOT = new URL("../", import.meta.url);
 const read = (rel: string) => Deno.readTextFile(new URL(rel, ROOT));
 
-Deno.test("collapse wires execution.permitted + finality.recorded fail-closed", async () => {
+Deno.test("collapse routes execution.permitted + finality.recorded through atomic_collapse_record (fail-closed)", async () => {
   const src = await read("collapse/index.ts");
-  assertStringIncludes(src, 'writeCriticalEventWithPosture');
-  assertStringIncludes(src, '"execution.permitted"');
-  assertStringIncludes(src, '"finality.recorded"');
+  // Atomicity Batch 2: canonical writes happen inside the RPC, not TS.
+  assertStringIncludes(src, 'atomic_collapse_record');
+  assertStringIncludes(src, 'p_governance_execution: govExecution');
+  assertStringIncludes(src, 'p_governance_finality: govFinality');
   assertStringIncludes(src, 'source_function: "collapse"');
+  // Fail-closed: missing event IDs roll back.
+  assertStringIncludes(src, 'collapseResult.execution_event_id');
+  assertStringIncludes(src, 'collapseResult.finality_event_id');
   assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
-  assertStringIncludes(src, "idempotency_extra: idempotency_key");
+  assertStringIncludes(src, "Collapse rolled back");
+  // Duplicate-write guard: no TS-side critical write for these canonical types.
+  assert(
+    !/writeCriticalEventWithPosture\(adminClient,\s*\{[^}]*event_type:\s*"execution\.permitted"/s.test(src),
+    "collapse must not double-write execution.permitted via TS writer",
+  );
+  assert(
+    !/writeCriticalEventWithPosture\(adminClient,\s*\{[^}]*event_type:\s*"finality\.recorded"/s.test(src),
+    "collapse must not double-write finality.recorded via TS writer",
+  );
 });
 
 Deno.test("match-challenges wires dispute.opened/closed/released fail-closed", async () => {
@@ -51,7 +69,7 @@ Deno.test("admin-hq-audit helper exists and requires reason + fail-closed wrappe
   assertStringIncludes(src, "writeCriticalEventWithPosture");
 });
 
-Deno.test("posture snapshot present at every new critical adoption site", async () => {
+Deno.test("posture snapshot present at every critical adoption site", async () => {
   for (const f of [
     "collapse/index.ts",
     "match-challenges/index.ts",
@@ -59,6 +77,11 @@ Deno.test("posture snapshot present at every new critical adoption site", async 
     "admin-legal-hold/index.ts",
   ]) {
     const src = await read(f);
-    assert(/posture: buildPostureSnapshot\(/.test(src), `${f} must include buildPostureSnapshot`);
+    // Accept either the TS-writer `posture:` field or the atomic-RPC
+    // `posture_snapshot:` field inside a p_governance payload.
+    assert(
+      /posture(_snapshot)?:\s*buildPostureSnapshot\(/.test(src),
+      `${f} must include buildPostureSnapshot`,
+    );
   }
 });
