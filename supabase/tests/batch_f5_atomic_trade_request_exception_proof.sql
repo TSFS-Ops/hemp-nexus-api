@@ -62,7 +62,7 @@ BEGIN
 
   -- Add one active child match so override has something to flip.
   INSERT INTO public.matches (id, trade_request_id, status, state, poi_state, metadata, hash, commodity, org_id, match_type)
-  VALUES (v_match_archive, v_tr_archive, 'active', 'active', 'DRAFT', '{}'::jsonb, 'f5-hash-' || v_match_archive::text, 'F5-COMMODITY', v_org, 'bilateral')
+  VALUES (v_match_archive, v_tr_archive, 'matched', 'discovery', 'DRAFT', '{}'::jsonb, 'f5-hash-' || v_match_archive::text, 'F5-COMMODITY', v_org, 'bilateral')
   ON CONFLICT (id) DO NOTHING;
 
   v_call := public.admin_trade_request_archive_override_with_governance(
@@ -120,7 +120,7 @@ BEGIN
 
   INSERT INTO public.matches (id, trade_request_id, status, state, poi_state, metadata, hash, commodity, org_id, match_type)
   VALUES (
-    v_match_release, v_tr_release, 'active', 'active', 'DRAFT',
+    v_match_release, v_tr_release, 'matched', 'discovery', 'DRAFT',
     jsonb_build_object(
       'parent_archived_admin_exception_hold', true,
       'parent_archived_admin_exception_hold_at', now()
@@ -183,7 +183,7 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
 
   INSERT INTO public.matches (id, trade_request_id, status, state, poi_state, metadata, hash, commodity, org_id, match_type)
-  VALUES (v_match_rollback, v_tr_rollback, 'active', 'active', 'DRAFT', '{}'::jsonb, 'f5-hash-' || v_match_rollback::text, 'F5-COMMODITY', v_org, 'bilateral')
+  VALUES (v_match_rollback, v_tr_rollback, 'matched', 'discovery', 'DRAFT', '{}'::jsonb, 'f5-hash-' || v_match_rollback::text, 'F5-COMMODITY', v_org, 'bilateral')
   ON CONFLICT (id) DO NOTHING;
 
   v_bad_caught := false;
