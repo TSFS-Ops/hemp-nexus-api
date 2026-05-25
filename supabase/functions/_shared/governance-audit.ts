@@ -20,6 +20,18 @@
 
 // deno-lint-ignore-file no-explicit-any
 
+import {
+  APPROVED_REASON_CODE_NAMESPACES,
+  isApprovedNamespacedReasonCode,
+  normaliseReasonCode,
+} from "./governance-reason-codes.ts";
+
+export {
+  APPROVED_REASON_CODE_NAMESPACES,
+  isApprovedNamespacedReasonCode,
+  normaliseReasonCode,
+};
+
 // ── Controlled taxonomy ──────────────────────────────────────────────────────
 
 export const EVENT_FAMILIES = [
