@@ -10,6 +10,8 @@ import {
   COMP_002_SANCTIONS_HOLD_RELEASED,
   COMP_012_VERIFICATION_HOLD_RELEASED,
 } from "../_shared/comp-002-012-audit.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 const MIN_REASON_LENGTH = 20;
 
