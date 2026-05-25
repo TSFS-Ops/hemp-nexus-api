@@ -630,194 +630,142 @@ Deno.serve(async (req: Request) => {
       ? (Math.abs(measuredDriftMs) <= 1000 ? "hardened" : "drift-detected")
       : "not-measurable";
 
-    // ── Insert into append-only ledger (incl. BRD §7 fields) ──
-    const { data: record, error: insertError } = await adminClient
-      .from("collapse_ledger")
-      .insert({
-        org_id,
+    // ── Atomic collapse: insert collapse_ledger + match state update +
+    //    poi_events + audit_logs + execution.permitted + finality.recorded
+    //    in a single SECURITY DEFINER transaction. If either governance
+    //    write fails, the entire collapse is rolled back. ──
+    const govExecution = {
+      actor_user_id: actorUserId || null,
+      source_function: "collapse",
+      request_id: requestId,
+      allowed_or_blocked: "allowed",
+      reason_code: "COLLAPSE_OK",
+      posture_snapshot: buildPostureSnapshot("Standard", {
+        policy_version: EXECUTION_POLICY_VERSION,
+        check_status: {
+          signature_valid: signatureValid,
+          ntp_status: ntpStatus,
+          ntp_drift_ms: measuredDriftMs,
+        },
+      }),
+      metadata: {
+        payload_hash: payloadHash,
         counterparty_org_id,
-        match_id: match_id && UUID_RE.test(match_id) ? match_id : null,
+        asset_id,
+        currency,
+        policy_version: EXECUTION_POLICY_VERSION,
+      },
+      idempotency_key: `${(match_id && UUID_RE.test(match_id)) ? match_id : ""}|execution.permitted|${requestId}|${idempotency_key}`,
+    };
+
+    const govFinality = {
+      actor_user_id: actorUserId || null,
+      source_function: "collapse",
+      request_id: requestId,
+      previous_state: "COMPLETION_REQUESTED",
+      new_state: "COMPLETED",
+      allowed_or_blocked: "allowed",
+      reason_code: "COLLAPSE_FINAL",
+      posture_snapshot: buildPostureSnapshot("Standard", {
+        policy_version: FINALITY_POLICY_VERSION,
+        check_status: {
+          signature_valid: signatureValid,
+          ntp_status: ntpStatus,
+        },
+      }),
+      metadata: {
+        payload_hash: payloadHash,
+        counterparty_org_id,
         asset_id,
         quantity,
         price,
         currency,
+        policy_version: FINALITY_POLICY_VERSION,
+      },
+      idempotency_key: `finality.recorded|${requestId}|${idempotency_key}`,
+    };
+
+    const collapseInput = {
+      org_id,
+      counterparty_org_id,
+      match_id: match_id && UUID_RE.test(match_id) ? match_id : null,
+      asset_id,
+      quantity,
+      price,
+      currency,
+      client_timestamp,
+      idempotency_key,
+      signed_payload,
+      signature_key_id: signature_key_id || null,
+      signature_valid: signatureValid,
+      payload_hash: payloadHash,
+      poi_state: "COMPLETED",
+      metadata: metadata || {},
+      actor_user_id: actorUserId || null,
+      actor_api_key_id: actorApiKeyId || null,
+      payload_ciphertext: body.payload_ciphertext || null,
+      ntp_source: ntpSource,
+      ntp_drift_ms: measuredDriftMs,
+      timestamp_source_metadata: {
+        source: ntpSource,
         client_timestamp,
-        idempotency_key,
-        signed_payload,
-        signature_key_id: signature_key_id || null,
-        signature_valid: signatureValid,
-        payload_hash: payloadHash,
-        poi_state: "COMPLETED",
-        metadata: metadata || {},
-        actor_user_id: actorUserId || null,
-        payload_ciphertext: body.payload_ciphertext || null,
-        ntp_source: ntpSource,
-        ntp_drift_ms: measuredDriftMs,
-        timestamp_source_metadata: {
-          source: ntpSource,
-          client_timestamp,
-          server_timestamp: serverNow.toISOString(),
-          ntp_status: ntpStatus,
-          ntp_server: body.ntp_server || "edge-runtime-clock",
-          drift_ms: measuredDriftMs,
-          measurement_method: "server-client-delta",
-          drift_acceptable: measuredDriftMs !== null ? Math.abs(measuredDriftMs) <= 1000 : null,
-        },
-        annulment_reference: body.annulment_reference || null,
-      })
-      .select()
-      .single();
+        server_timestamp: serverNow.toISOString(),
+        ntp_status: ntpStatus,
+        ntp_server: body.ntp_server || "edge-runtime-clock",
+        drift_ms: measuredDriftMs,
+        measurement_method: "server-client-delta",
+        drift_acceptable: measuredDriftMs !== null ? Math.abs(measuredDriftMs) <= 1000 : null,
+      },
+      annulment_reference: body.annulment_reference || null,
+      request_id: requestId,
+    };
 
-    if (insertError) {
-      if (insertError.message?.includes("unique_idempotency_per_org") || insertError.code === "23505") {
-        const { data: raceExisting } = await adminClient
-          .from("collapse_ledger")
-          .select("id, payload_hash, created_at")
-          .eq("org_id", org_id)
-          .eq("idempotency_key", idempotency_key)
-          .single();
+    const { data: collapseResult, error: collapseError } = await adminClient.rpc(
+      "atomic_collapse_record",
+      {
+        p_collapse: collapseInput,
+        p_governance_execution: govExecution,
+        p_governance_finality: govFinality,
+      },
+    );
 
-        if (raceExisting) {
-          return new Response(
-            JSON.stringify({
-              completed: true,
-              idempotent: true,
-              collapse_id: raceExisting.id,
-              payload_hash: raceExisting.payload_hash,
-              created_at: raceExisting.created_at,
-              message: "Duplicate request - returning original collapse record",
-            }),
-            { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
-          );
-        }
+    if (collapseError || !collapseResult?.success) {
+      // Distinguish governance failure from generic insert failure
+      const msg = String(collapseError?.message ?? collapseResult?.error ?? "");
+      if (msg.includes("GOV_AUDIT")) {
+        console.error(`[${requestId}] CRITICAL: governance audit write failed during atomic collapse:`, collapseError ?? collapseResult);
+        throw new ApiException(
+          "GOV_AUDIT_WRITE_FAILED",
+          "Collapse rolled back: governance proof write failed",
+          500,
+        );
       }
-
-      console.error("Collapse insert error:", insertError);
+      console.error(`[${requestId}] Collapse RPC error:`, collapseError ?? collapseResult);
       throw new ApiException("INTERNAL_ERROR", "Failed to create collapse record", 500);
     }
 
-    // ── Update match state if linked ──
-    if (match_id && UUID_RE.test(match_id)) {
-      await adminClient
-        .from("matches")
-        .update({ poi_state: "COMPLETED" })
-        .eq("id", match_id);
-
-      await adminClient.from("poi_events").insert({
-        match_id,
-        org_id,
-        from_state: "COMPLETION_REQUESTED",
-        to_state: "COMPLETED",
-        actor_user_id: actorUserId || null,
-        actor_api_key_id: actorApiKeyId || null,
-        reason: "Deterministic collapse via collapse engine",
-        metadata: {
-          collapse_id: record.id,
-          payload_hash: payloadHash,
-          signature_valid: signatureValid,
-          idempotency_key,
-        },
-      });
+    if (collapseResult.idempotent) {
+      return new Response(
+        JSON.stringify({
+          completed: true,
+          idempotent: true,
+          collapse_id: collapseResult.collapse_id,
+          payload_hash: collapseResult.payload_hash,
+          created_at: collapseResult.created_at,
+          message: "Duplicate request - returning original collapse record",
+        }),
+        { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
+      );
     }
 
-    // ── Audit log ──
-    await adminClient.from("audit_logs").insert({
-      org_id,
-      actor_user_id: actorUserId || null,
-      actor_api_key_id: actorApiKeyId || null,
-      action: "poi.completed",
-      entity_type: "collapse_ledger",
-      entity_id: record.id,
-      metadata: {
-        payload_hash: payloadHash,
-        signature_valid: signatureValid,
-        idempotency_key,
-        counterparty_org_id,
-        asset_id,
-        quantity,
-        price,
-        currency,
-        request_id: requestId,
-      },
-    });
-
-    // ── Phase 2 canonical governance proof (FAIL-CLOSED) ──
-    // Collapse is the terminal commercial event for a match: emit both
-    // `execution.permitted` (the gate let the trade settle) and
-    // `finality.recorded` (the proof of finality itself). Idempotency key
-    // = (collapse_id, event_type, idempotency_key) so Paystack-style retries
-    // dedupe cleanly.
-    try {
-      await writeCriticalEventWithPosture(adminClient, {
-        event_type: "execution.permitted",
-        org_id,
-        aggregate_type: "match",
-        aggregate_id: (match_id && UUID_RE.test(match_id)) ? match_id : record.id,
-        actor_user_id: actorUserId || null,
-        source_function: "collapse",
-        request_id: requestId,
-        match_id: (match_id && UUID_RE.test(match_id)) ? match_id : null,
-        credit_ledger_id: record.id,
-        allowed_or_blocked: "allowed",
-        reason_code: "COLLAPSE_OK",
-        posture: buildPostureSnapshot("Standard", {
-          policy_version: EXECUTION_POLICY_VERSION,
-          check_status: {
-            signature_valid: signatureValid,
-            ntp_status: ntpStatus,
-            ntp_drift_ms: measuredDriftMs,
-          },
-        }),
-        metadata: {
-          payload_hash: payloadHash,
-          counterparty_org_id,
-          asset_id,
-          currency,
-          policy_version: EXECUTION_POLICY_VERSION,
-        },
-        idempotency_extra: idempotency_key,
-      });
-
-      await writeCriticalEventWithPosture(adminClient, {
-        event_type: "finality.recorded",
-        org_id,
-        aggregate_type: "collapse_ledger",
-        aggregate_id: record.id,
-        actor_user_id: actorUserId || null,
-        source_function: "collapse",
-        request_id: requestId,
-        match_id: (match_id && UUID_RE.test(match_id)) ? match_id : null,
-        credit_ledger_id: record.id,
-        previous_state: "COMPLETION_REQUESTED",
-        new_state: "COMPLETED",
-        allowed_or_blocked: "allowed",
-        reason_code: "COLLAPSE_FINAL",
-        posture: buildPostureSnapshot("Standard", {
-          policy_version: FINALITY_POLICY_VERSION,
-          check_status: {
-            signature_valid: signatureValid,
-            ntp_status: ntpStatus,
-          },
-        }),
-        metadata: {
-          payload_hash: payloadHash,
-          counterparty_org_id,
-          asset_id,
-          quantity,
-          price,
-          currency,
-          policy_version: FINALITY_POLICY_VERSION,
-        },
-        idempotency_extra: idempotency_key,
-      });
-    } catch (govErr) {
-      console.error(`[${requestId}] CRITICAL: governance audit write failed after collapse:`, govErr);
+    if (!collapseResult.execution_event_id || !collapseResult.finality_event_id) {
       throw new ApiException(
         "GOV_AUDIT_WRITE_FAILED",
-        "Collapse recorded but governance proof write failed",
+        "Collapse atomic RPC did not return governance event IDs",
         500,
       );
     }
+
 
     return new Response(
       JSON.stringify({
