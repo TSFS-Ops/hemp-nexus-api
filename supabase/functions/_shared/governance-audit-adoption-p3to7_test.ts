@@ -36,13 +36,17 @@ Deno.test("collapse routes execution.permitted + finality.recorded through atomi
   );
 });
 
-Deno.test("match-challenges wires dispute.opened/closed/released fail-closed", async () => {
+Deno.test("match-challenges wires dispute.opened/closed/released fail-closed via atomic RPCs (Batch 3A)", async () => {
   const src = await read("match-challenges/index.ts");
-  assertStringIncludes(src, '"dispute.opened"');
-  assertStringIncludes(src, '"dispute.closed"');
-  assertStringIncludes(src, '"dispute.released"');
+  // Event types now live in the atomic-RPC payloads / SQL defaults rather than
+  // raw TS writer call sites. Adoption is proven via RPC call + fail-closed branch.
+  assert(/admin\.rpc\(\s*"atomic_dispute_open"/.test(src));
+  assert(/admin\.rpc\(\s*"atomic_dispute_transition"/.test(src));
   assertStringIncludes(src, 'source_function: "match-challenges"');
   assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
+  // Terminal event names still appear in the TS branch picking event_type.
+  assertStringIncludes(src, "dispute.released");
+  assertStringIncludes(src, "dispute.closed");
 });
 
 Deno.test("token-purchase webhook wires payment.event_created fail-closed", async () => {
@@ -53,13 +57,17 @@ Deno.test("token-purchase webhook wires payment.event_created fail-closed", asyn
   assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
 });
 
-Deno.test("admin-legal-hold wires legal_hold.applied + legal_hold.released fail-closed", async () => {
+Deno.test("admin-legal-hold wires legal_hold.applied + legal_hold.released fail-closed via atomic RPCs (Batch 3A)", async () => {
   const src = await read("admin-legal-hold/index.ts");
-  assertStringIncludes(src, '"legal_hold.applied"');
-  assertStringIncludes(src, '"legal_hold.released"');
+  assert(/admin\.rpc\(\s*\n?\s*"atomic_legal_hold_apply"/.test(src));
+  assert(/admin\.rpc\(\s*\n?\s*"atomic_legal_hold_release"/.test(src));
   assertStringIncludes(src, 'source_function: "admin-legal-hold"');
   assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
+  // Event names persist in canonical audit + policy version constant references.
+  assertStringIncludes(src, "LEGAL_HOLD_AUDIT_NAMES.applied");
+  assertStringIncludes(src, "LEGAL_HOLD_AUDIT_NAMES.released");
 });
+
 
 Deno.test("admin-hq-audit helper exists and requires reason + fail-closed wrapper", async () => {
   const src = await read("_shared/admin-hq-audit.ts");
