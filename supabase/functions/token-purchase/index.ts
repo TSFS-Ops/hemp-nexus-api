@@ -1456,6 +1456,27 @@ async function handleRefundProcessed(
       severity: "medium",
       status: "open",
     });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "refund.partial",
+      payment_reference: originalTxRef ?? refundRef,
+      provider_event_id: refundRef,
+      org_id: orgId,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:refund.processed:partial",
+      payment_status: "refund_partial_parked",
+      allowed_or_blocked: "blocked",
+      reason_code: "refund.partial:manual_review",
+      amount: refundUsd,
+      currency: refundCurrency,
+      policy_version: null,
+      metadata: {
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        refund_amount_usd: refundUsd,
+        original_price_usd: originalPriceUsd,
+        original_credits: originalCredits,
+      },
+    });
     return;
   }
 
