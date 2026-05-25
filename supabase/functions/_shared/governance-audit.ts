@@ -108,7 +108,17 @@ export const CONTROLLED_TAXONOMY = new Set<string>([
   // demo / system
   "demo.event_recorded",
   "system.audit_writer_health_check",
+  // governance waivers / bypasses (Batch D — 1 use / 7 days, renewal = new event)
+  "governance.waiver_granted",
+  "governance.waiver_consumed",
+  "governance.waiver_expired",
+  "governance.waiver_renewed",
+  "governance.bypass_granted",
+  "governance.bypass_consumed",
+  "governance.bypass_expired",
+  "governance.bypass_renewed",
 ]);
+
 
 // ── Controlled reason codes (David's approved list, non-document subset) ─────
 // WARN-only enforcement: writes are not rejected when reason_code is unknown,
