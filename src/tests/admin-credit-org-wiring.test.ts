@@ -1,16 +1,19 @@
 /**
- * Static wiring guard for the admin-credit-org follow-up.
+ * Static wiring guard for the admin-credit-org follow-up (Batch F1 atomicity).
  *
  * Asserts:
  *   1. AdminTokenManagement.tsx invokes the admin-credit-org edge function.
  *   2. AdminTokenManagement.tsx no longer calls atomic_token_credit directly
- *      via supabase.rpc(). (Comments mentioning the function are allowed —
- *      we only ban active rpc() invocations.)
- *   3. The edge function source declares the 10,000 credit cap.
+ *      via supabase.rpc().
+ *   3. The edge function source declares the 10,000 credit cap and uses
+ *      has_role for RBAC.
+ *   4. Batch F1: the edge function calls the atomic wrapper RPC
+ *      `admin_credit_org_with_governance` and does NOT split credit and
+ *      governance into two separate calls (no rpc('atomic_token_credit'),
+ *      no post-mutation recordAdminHqDecision import).
  *
- * This test is the canary that proves the Stage C admin-top-up follow-up
- * stayed in place. If anyone re-introduces a direct rpc('atomic_token_credit')
- * call from an authenticated client surface, this test fails.
+ * If anyone re-introduces the credit-then-governance sequence (which is
+ * the gap Batch F1 exists to close), this test fails.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -37,14 +40,12 @@ describe('admin-credit-org wiring', () => {
   });
 
   it('AdminTokenManagement does not call atomic_token_credit via rpc()', () => {
-    // Allow comments referencing the name, ban actual rpc invocations.
     const rpcCallRegex = /\.rpc\s*\(\s*["']atomic_token_credit["']/;
     expect(rpcCallRegex.test(adminUiSource)).toBe(false);
   });
 
   it('admin-credit-org edge function declares the 10,000 credit cap', () => {
     expect(edgeFnSource).toMatch(/MAX_CREDITS_PER_CALL\s*=\s*10[_,]?000/);
-    // Cap must also be enforced via Zod .max
     expect(edgeFnSource).toMatch(/\.max\(\s*MAX_CREDITS_PER_CALL/);
   });
 
@@ -53,13 +54,38 @@ describe('admin-credit-org wiring', () => {
     expect(edgeFnSource).toMatch(/_role:\s*['"]platform_admin['"]/);
   });
 
-  it('admin-credit-org edge function calls atomic_token_credit under service-role', () => {
-    expect(edgeFnSource).toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
-    expect(edgeFnSource).toMatch(/rpc\(\s*[\n\s]*['"]atomic_token_credit['"]/);
-  });
-
-  it('admin-credit-org edge function writes admin audit logs', () => {
+  it('admin-credit-org edge function writes legacy admin audit logs', () => {
     expect(edgeFnSource).toMatch(/admin_audit_logs/);
     expect(edgeFnSource).toMatch(/action:\s*['"]admin\.credit_org['"]/);
   });
+
+  // ── Batch F1: atomic credit + governance ──────────────────────────────
+  it('F1: edge function calls the atomic admin_credit_org_with_governance RPC', () => {
+    expect(edgeFnSource).toMatch(
+      /\.rpc\(\s*[\n\s]*['"]admin_credit_org_with_governance['"]/,
+    );
+  });
+
+  it('F1: edge function no longer calls atomic_token_credit directly', () => {
+    // The atomic wrapper RPC calls atomic_token_credit internally; the edge
+    // function itself must not, otherwise we recreate the split commit gap.
+    expect(edgeFnSource).not.toMatch(
+      /\.rpc\(\s*[\n\s]*['"]atomic_token_credit['"]/,
+    );
+  });
+
+  it('F1: edge function does not import recordAdminHqDecision (atomic RPC writes governance)', () => {
+    expect(edgeFnSource).not.toMatch(
+      /^\s*import\s+\{[^}]*recordAdminHqDecision[^}]*\}\s+from/m,
+    );
+  });
+
+  it('F1: edge function does not call recordAdminHqDecision after the mutation', () => {
+    expect(edgeFnSource).not.toMatch(/\brecordAdminHqDecision\s*\(/);
+  });
+
+  it('F1: edge function surfaces governance_event_id from the atomic RPC', () => {
+    expect(edgeFnSource).toMatch(/governance_event_id/);
+  });
 });
+
