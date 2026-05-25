@@ -9205,6 +9205,18 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_counterparty_corrections_with_governance: {
+        Args: {
+          p_aal?: string
+          p_admin_user_id: string
+          p_operation: string
+          p_params: Json
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       admin_credit_org_with_governance: {
         Args: {
           p_aal?: string
@@ -9270,6 +9282,18 @@ export type Database = {
           state: string
           status: string
         }[]
+      }
+      admin_match_corrections_with_governance: {
+        Args: {
+          p_aal?: string
+          p_admin_user_id: string
+          p_operation: string
+          p_params: Json
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
       }
       admin_merge_counterparties: {
         Args: {
