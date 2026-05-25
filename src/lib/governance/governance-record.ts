@@ -105,6 +105,20 @@ export interface GovernanceEvent {
   /** Previous / new state if present. */
   prevState?: string | null;
   newState?: string | null;
+  /**
+   * Batch B — populated by `annotateCorrections` when a later
+   * `hq.event_corrected` event references this row. Original event is
+   * never edited; this is purely a derived UI hint.
+   */
+  correctedBy?: CorrectionRef | null;
+}
+
+export interface CorrectionRef {
+  eventId: string;
+  occurredAt: string;
+  actorId?: string | null;
+  reasonCode?: string | null;
+  note?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
