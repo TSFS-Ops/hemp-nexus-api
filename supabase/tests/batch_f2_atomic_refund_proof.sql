@@ -26,7 +26,7 @@ BEGIN;
 DO $$
 DECLARE
   v_org uuid := gen_random_uuid();
-  v_actor uuid := gen_random_uuid();
+  v_actor uuid;
   v_purchase uuid := gen_random_uuid();
   v_refund_a uuid := gen_random_uuid();
   v_refund_d uuid := gen_random_uuid();
@@ -38,10 +38,19 @@ DECLARE
   v_status text;
   v_bad_caught boolean := false;
 BEGIN
+  -- Pick a real auth user via public.profiles (auth.users not readable
+  -- from this script). Any active profile id satisfies the
+  -- refund_requests.requested_by FK to auth.users.
+  SELECT id INTO v_actor FROM public.profiles ORDER BY created_at LIMIT 1;
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'F2 proof: no auth user available via public.profiles to seed refund';
+  END IF;
+
   -- Minimal org row so refund + credit_adjustment audit writes succeed.
   INSERT INTO public.organizations (id, name, is_demo)
   VALUES (v_org, 'F2 proof org', false)
   ON CONFLICT (id) DO NOTHING;
+
 
   -- Seed a refund_request in 'pending' so approve_refund accepts it.
   INSERT INTO public.refund_requests (
