@@ -114,11 +114,14 @@ Deno.test("token-metering passes p_governance into atomic_token_burn", async () 
 
 Deno.test("token-metering no longer TS-writes credit.burned on the happy burn path", async () => {
   const src = await read("_shared/token-metering.ts");
-  // The post-RPC writeCriticalEventWithPosture call for credit.burned must be gone.
-  // We allow the import to remain because the same file still uses it for other
-  // event families (e.g. action-charge governance), but the burnTokens body
-  // must not invoke it after atomic_token_burn returns success.
-  const burnTokensBody = src.slice(src.indexOf("export async function burnTokens"));
+  // Scope strictly to the burnTokens function body.
+  const startIdx = src.indexOf("export async function burnTokens");
+  assert(startIdx >= 0, "burnTokens export not found");
+  // Use the next "export " (function/const) as the end of the body.
+  const tail = src.slice(startIdx + 1);
+  const nextExportRel = tail.indexOf("\nexport ");
+  const endIdx = nextExportRel >= 0 ? startIdx + 1 + nextExportRel : src.length;
+  const burnTokensBody = src.slice(startIdx, endIdx);
   const afterRpc = burnTokensBody.slice(burnTokensBody.indexOf('rpc("atomic_token_burn"'));
   assert(
     !/writeCriticalEventWithPosture\([^)]*event_type:\s*"credit\.burned"/s.test(afterRpc),
