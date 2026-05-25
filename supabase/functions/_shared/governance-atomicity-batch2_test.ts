@@ -23,7 +23,8 @@ const read = (rel: string) => Deno.readTextFile(new URL(rel, ROOT));
 
 Deno.test("p3-wad routes WaD issue through atomic_wad_issue with p_governance", async () => {
   const src = await read("p3-wad/index.ts");
-  assertStringIncludes(src, 'admin.rpc(\n        "atomic_wad_issue"');
+  assert(/admin\.rpc\(\s*"atomic_wad_issue"/.test(src), "must call admin.rpc(\"atomic_wad_issue\")");
+
   assertStringIncludes(src, "p_governance: wadIssueGovPayload");
   assertStringIncludes(src, "wadIssueGovPayload");
   assertStringIncludes(src, 'event_type: "wad.passed"');
