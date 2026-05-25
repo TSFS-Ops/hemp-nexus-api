@@ -1,9 +1,12 @@
 // DEC-007 — Admin decline refund. platform_admin + AAL2 + reason ≥ 20 chars.
+//
+// Batch F2: refund decision + canonical Governance Record event are written
+// in a single DB transaction via admin_refund_decline_with_governance.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
-import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,32 +47,28 @@ Deno.serve(async (req) => {
     const issues = p.error.flatten().fieldErrors;
     return json({ error: issues.reason ? "reason_required" : "invalid_body", code: issues.reason ? "REASON_REQUIRED" : "INVALID_BODY", details: issues }, 400);
   }
-  const { data, error } = await admin.rpc("decline_refund", {
+
+  // F2: atomic decline + governance.
+  const { data, error } = await admin.rpc("admin_refund_decline_with_governance", {
     p_refund_request_id: p.data.refund_request_id,
     p_admin_user_id: u.user.id,
     p_reason: p.data.reason,
+    p_request_id: req.headers.get("x-request-id"),
+    p_aal: "aal2",
   });
-  if (error) return json({ error: "rpc_failed", message: error.message }, 500);
-  const r = data as { success?: boolean; code?: string };
+  if (error) {
+    console.error("[admin-refund-decline] atomic rpc failed:", error);
+    return json({ error: "rpc_failed", code: "ATOMIC_REFUND_FAILED", message: error.message }, 500);
+  }
+  const r = data as { success?: boolean; code?: string; deduplicated?: boolean; event_id?: string };
   if (!r?.success) {
     const code = r?.code ?? "REFUND_FAILED";
     const status = code === "REFUND_NOT_FOUND" ? 404 : code === "REFUND_ALREADY_DECIDED" ? 409 : 400;
     return json({ error: code.toLowerCase(), code }, status);
   }
-  const { data: rr } = await admin.from("refund_requests")
-    .select("org_id, token_purchase_id").eq("id", p.data.refund_request_id).maybeSingle();
-  try {
-    await recordAdminHqDecision({
-      admin, sourceFunction: "admin-refund-decline", actionCode: "refund.decline",
-      actorUserId: u.user.id, actorRole: "platform_admin",
-      orgId: rr?.org_id ?? "00000000-0000-0000-0000-000000000000",
-      aggregateId: p.data.refund_request_id, aggregateType: "refund_request",
-      reason: p.data.reason, requestId: req.headers.get("x-request-id"),
-      paymentReference: rr?.token_purchase_id ?? null, aal: "aal2",
-    });
-  } catch (govErr) {
-    console.error("[admin-refund-decline] CRITICAL: gov audit failed:", govErr);
-    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
-  }
-  return json(r, 200);
+  return json({
+    success: true,
+    governance_event_id: r.event_id,
+    deduplicated: !!r.deduplicated,
+  }, 200);
 });
