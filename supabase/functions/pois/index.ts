@@ -655,12 +655,14 @@ async function handleUnilateralCreate(
     new_state: poi.state,
     allowed_or_blocked: "allowed",
     posture: buildPostureSnapshot("Not recorded", {
+      policy_version: POI_POLICY_VERSION,
       reason: "posture not derived in pois unilateral create",
     }),
     metadata: {
       poi_type: "unilateral",
       jurisdiction_code: parsed.jurisdiction_code,
       industry_code: parsed.industry_code,
+      policy_version: POI_POLICY_VERSION,
     },
     idempotency_extra: idempotencyKey,
   });
