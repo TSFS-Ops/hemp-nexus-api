@@ -170,6 +170,8 @@ Deno.serve(async (req) => {
         return jsonResponse(req, { error: "MATCH_NOT_FOUND", requestId }, 404);
       }
       beforeSnapshot = before;
+      govOrgId = before.org_id ?? null;
+      govMatchId = targetId;
       const newState = parsed.operation === "void_match" ? "voided" : parsed.new_status;
 
       const { data: rpcResult, error: rpcErr } = await admin.rpc(
