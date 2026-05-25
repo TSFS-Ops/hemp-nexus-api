@@ -26,7 +26,10 @@ import { handleCorsPreflight, withCors } from '../_shared/cors.ts';
 import { assertAal2 } from '../_shared/aal.ts';
 import { ApiException } from '../_shared/errors.ts';
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
-import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+// Batch F1: recordAdminHqDecision removed from the happy path — the
+// canonical Governance Record event is now written inside the atomic
+// admin_credit_org_with_governance RPC in the same DB transaction as
+// the credit grant. Importing it here would re-introduce the gap.
 
 
 const corsHeaders = {
@@ -231,55 +234,56 @@ Deno.serve(async (req) => {
       isDemo = (orgRow as { is_demo?: boolean }).is_demo === true;
     }
 
-    // ── 4. Service-role credit ─────────────────────────────────────────
+    // ── 4. Atomic credit + Governance Record (Batch F1) ───────────────
+    // Single SECURITY DEFINER RPC performs atomic_token_credit AND inserts
+    // the canonical admin.hq_decision_recorded event into event_store in
+    // ONE transaction. If either step fails, BOTH roll back — no orphan
+    // credit and no orphan governance row. This replaces the previous
+    // sequence of `rpc(atomic_token_credit)` followed by a separate
+    // `recordAdminHqDecision` call, which could leave credit granted with
+    // no governance proof if the governance write failed afterwards.
     const referenceId =
       reference_id ?? `admin-credit-${callerId}-${Date.now()}`;
 
-    // Batch G Fix 3: explicit ledger metadata so manual credits are
-    // distinguishable from paid purchases in token_ledger.
     const creditKind = isDemo ? 'admin_manual_demo' : 'admin_manual';
-    const extraMetadata: Record<string, unknown> = {
-      credit_kind: creditKind,
-      reference_id: referenceId,
-      payment_reference: referenceId,
-      reason,
-      actor_user_id: callerId,
-      target_org_id: org_id,
-      demo: isDemo,
-    };
 
-    const { data: creditResult, error: creditError } = await admin.rpc(
-      'atomic_token_credit',
+    const { data: atomicResult, error: atomicError } = await admin.rpc(
+      'admin_credit_org_with_governance',
       {
         p_org_id: org_id,
         p_amount: credits,
-        p_reason: `admin_top_up:${reason}`.slice(0, 500),
+        p_reason: reason,
         p_reference_id: referenceId,
-        p_extra_metadata: extraMetadata,
+        p_actor_user_id: callerId,
+        p_request_id: req.headers.get('x-request-id'),
+        p_credit_kind: creditKind,
+        p_demo: isDemo,
       },
     );
 
-    if (creditError) {
-      console.error('[admin-credit-org] atomic_token_credit error:', creditError);
+    if (atomicError) {
+      console.error('[admin-credit-org] atomic RPC error:', atomicError);
       await writeAudit(admin, callerId, targetOrgId, 'failure', {
-        stage: 'atomic_token_credit',
+        stage: 'admin_credit_org_with_governance',
         credits,
         reason,
         reference_id: referenceId,
-        error: creditError.message,
+        error: atomicError.message,
       });
+      // The RPC raises on credit_failed AND on event_store insert failure;
+      // either way the transaction has rolled back so no partial state.
       return jsonResponse(
         req,
-        { error: 'Credit operation failed', details: creditError.message },
+        { error: 'Credit operation failed', details: atomicError.message },
         500,
       );
     }
 
-    const result = creditResult as Record<string, unknown> | null;
+    const result = atomicResult as Record<string, unknown> | null;
     if (!result || result.success !== true) {
       const errMsg = (result?.error as string) ?? 'unknown';
       await writeAudit(admin, callerId, targetOrgId, 'failure', {
-        stage: 'atomic_token_credit_result',
+        stage: 'admin_credit_org_with_governance_result',
         credits,
         reason,
         reference_id: referenceId,
@@ -288,7 +292,9 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: errMsg }, 500);
     }
 
-    // ── 5. Success audit ───────────────────────────────────────────────
+    // ── 5. Legacy admin_audit_logs success row (best-effort) ──────────
+    // The canonical event_store row is the source of truth; this legacy
+    // row is preserved for existing AdminTokenManagement panels.
     await writeAudit(admin, callerId, targetOrgId, 'success', {
       stage: 'completed',
       credits,
@@ -298,24 +304,9 @@ Deno.serve(async (req) => {
       credit_kind: creditKind,
       demo: isDemo,
       new_balance: result.new_balance,
+      governance_event_id: result.event_id,
+      deduplicated: result.deduplicated === true,
     });
-
-    try {
-      await recordAdminHqDecision({
-        admin, sourceFunction: "admin-credit-org",
-        actionCode: "credit_org.adjust",
-        actorUserId: callerId!, actorRole: "platform_admin",
-        orgId: org_id, aggregateId: referenceId,
-        aggregateType: "credit_adjustment",
-        paymentReference: referenceId,
-        reason: reason,
-        requestId: req.headers.get("x-request-id"), aal: "aal2",
-        extra: { credits, credit_kind: creditKind, demo: isDemo, new_balance: result.new_balance },
-      });
-    } catch (govErr) {
-      console.error("[admin-credit-org] CRITICAL: gov audit failed:", govErr);
-      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
-    }
 
     return jsonResponse(req, {
       success: true,
@@ -323,6 +314,8 @@ Deno.serve(async (req) => {
       reference_id: referenceId,
       credit_kind: creditKind,
       demo: isDemo,
+      governance_event_id: result.event_id,
+      deduplicated: result.deduplicated === true,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown error';
