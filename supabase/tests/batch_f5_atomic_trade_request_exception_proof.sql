@@ -54,7 +54,7 @@ BEGIN
   -- 1. ARCHIVE OVERRIDE — happy path + dedupe + rollback
   -- ===================================================================
   INSERT INTO public.trade_requests (id, org_id, created_by, side, status)
-  VALUES (v_tr_archive, v_org, v_actor, 'buy', 'active')
+  VALUES (v_tr_archive, v_org, v_actor, 'buyer', 'active')
   ON CONFLICT (id) DO NOTHING;
 
   -- Add one active child match so override has something to flip.
@@ -111,7 +111,7 @@ BEGIN
   -- 2. EXCEPTION-HOLD RELEASE — happy path + dedupe
   -- ===================================================================
   INSERT INTO public.trade_requests (id, org_id, created_by, side, status, archived_at, archive_mode)
-  VALUES (v_tr_release, v_org, v_actor, 'buy', 'active', now(),
+  VALUES (v_tr_release, v_org, v_actor, 'buyer', 'active', now(),
           'admin_override_active_children')
   ON CONFLICT (id) DO NOTHING;
 
@@ -175,7 +175,7 @@ BEGIN
   --    - NOT insert a gov event
   -- ===================================================================
   INSERT INTO public.trade_requests (id, org_id, created_by, side, status)
-  VALUES (v_tr_rollback, v_org, v_actor, 'buy', 'active')
+  VALUES (v_tr_rollback, v_org, v_actor, 'buyer', 'active')
   ON CONFLICT (id) DO NOTHING;
 
   INSERT INTO public.matches (id, trade_request_id, status, state, poi_state, metadata)
