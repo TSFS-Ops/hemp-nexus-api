@@ -71,7 +71,7 @@ export interface RecordPaymentGovernanceInput {
   /** Policy version, if known. Pass null explicitly if not known. */
   policy_version?: string | null;
   /** Allowed/blocked summary for the canonical record. */
-  allowed_or_blocked?: "allowed" | "blocked" | "observed";
+  allowed_or_blocked?: "allowed" | "blocked" | "neutral";
   /** Free-form reason code, controlled vocabulary. */
   reason_code?: string;
   /** Additional sanitized metadata. */
@@ -121,7 +121,7 @@ export async function recordPaymentGovernanceEventBestEffort(
       match_id: input.match_id ?? null,
       poi_id: input.poi_id ?? null,
       engagement_id: input.engagement_id ?? null,
-      allowed_or_blocked: input.allowed_or_blocked ?? "observed",
+      allowed_or_blocked: input.allowed_or_blocked ?? "neutral",
       reason_code: input.reason_code ?? input.event_subtype,
       posture: buildPostureSnapshot("Standard", {
         policy_version: input.policy_version ?? null,
