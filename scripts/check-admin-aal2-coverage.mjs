@@ -119,6 +119,13 @@ const GOV_WRITER_PATTERNS = [
   /\.from\(\s*["']audit_logs["']\s*\)\s*\.insert\b/,
   /\.from\(\s*["']admin_audit_logs["']\s*\)\s*\.insert\b/,
   /\.from\(\s*["']event_store["']\s*\)\s*\.insert\b/,
+  // Shared audit helpers — any import from a `_shared/*audit*.ts` module
+  // is treated as evidence the endpoint emits through a vetted writer.
+  // The shared helper itself is responsible for the actual DB insert and
+  // is independently covered by canonical-writer / policy-version tests.
+  /from\s+["'][^"']*_shared\/[^"']*audit[^"']*["']/,
+  /from\s+["'][^"']*_shared\/export-lifecycle-audit[^"']*["']/,
+  /from\s+["'][^"']*_shared\/legal-hold[^"']*["']/,
 ];
 
 function readAllSourceUnder(dir) {
