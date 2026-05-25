@@ -2225,5 +2225,48 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
       terminalStatus,
       paystackStatus,
     });
+
+    // Phase 2 canonical proof — chargeback.lost (and umbrella dispute.resolve).
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "dispute.resolve",
+      payment_reference: hold.payment_reference ?? disputeRef,
+      provider_event_id: disputeRef,
+      org_id: hold.org_id,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:dispute.resolve:lost",
+      payment_status: "dispute_lost",
+      allowed_or_blocked: "blocked",
+      reason_code: "chargeback.lost",
+      amount: hold.price_usd ?? null,
+      currency: "USD",
+      policy_version: null,
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        credits_deducted: hold.credits_held,
+        new_balance: newBalance,
+        terminal_status: terminalStatus,
+      },
+    });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "chargeback.lost",
+      payment_reference: hold.payment_reference ?? disputeRef,
+      provider_event_id: disputeRef,
+      org_id: hold.org_id,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:chargeback.lost",
+      payment_status: "dispute_lost",
+      allowed_or_blocked: "blocked",
+      reason_code: "chargeback.lost",
+      amount: hold.price_usd ?? null,
+      currency: "USD",
+      policy_version: null,
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        credits_deducted: hold.credits_held,
+        new_balance: newBalance,
+      },
+    });
   }
 }
