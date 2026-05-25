@@ -31,6 +31,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
+import { recordPaymentGovernanceOrEscalate } from "../_shared/payment-governance.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
@@ -1241,6 +1242,21 @@ async function handleChargeFailed(
       entity_type: "token_balance",
       metadata: { payment_reference: data.reference },
     });
+    // Phase 2 canonical proof — best-effort with risk-item escalation
+    // (webhook safety: replay guard would swallow a retry, so we cannot
+    // hard fail-closed; HQ reconciles via risk item if the write fails).
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "charge.failed",
+      payment_reference: data.reference,
+      org_id: data.metadata.org_id,
+      actor_user_id: data.metadata.user_id || null,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:charge.failed",
+      payment_status: "failed",
+      allowed_or_blocked: "blocked",
+      reason_code: "charge.failed",
+      policy_version: null,
+    });
   }
 }
 
@@ -1339,6 +1355,21 @@ async function handleRefundProcessed(
       severity: "high",
       status: "open",
     });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "refund.rejected",
+      payment_reference: originalTxRef ?? refundRef,
+      provider_event_id: refundRef,
+      org_id: orgId,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:refund.processed:no_matching_purchase",
+      payment_status: "refund_rejected",
+      allowed_or_blocked: "blocked",
+      reason_code: "refund.rejected:no_matching_purchase",
+      amount: typeof data.amount === "number" ? data.amount / 100 : null,
+      currency: data.currency ?? "USD",
+      policy_version: null,
+      metadata: { refund_reference: refundRef, original_reference: originalTxRef },
+    });
     return;
   }
 
@@ -1361,6 +1392,26 @@ async function handleRefundProcessed(
       description: `Refund metadata.org_id=${orgId} does not match the org on credit_purchase ${originalTxRef} (${originalPurchase.org_id}). Balance NOT mutated.`,
       severity: "high",
       status: "open",
+    });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "refund.rejected",
+      payment_reference: originalTxRef ?? refundRef,
+      provider_event_id: refundRef,
+      org_id: orgId,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:refund.processed:org_mismatch",
+      payment_status: "refund_rejected",
+      allowed_or_blocked: "blocked",
+      reason_code: "refund.rejected:org_mismatch",
+      amount: typeof data.amount === "number" ? data.amount / 100 : null,
+      currency: data.currency ?? "USD",
+      policy_version: null,
+      metadata: {
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        refund_org_id: orgId,
+        purchase_org_id: originalPurchase.org_id,
+      },
     });
     return;
   }
@@ -1404,6 +1455,27 @@ async function handleRefundProcessed(
       description: `Partial refund (${refundUsd} ${refundCurrency} of ${originalPriceUsd} ${originalCurrency}) for org ${orgId}. Published policy is full refund only; no automatic proportional deduction. Resolve manually via admin-credit-org if needed.`,
       severity: "medium",
       status: "open",
+    });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "refund.partial",
+      payment_reference: originalTxRef ?? refundRef,
+      provider_event_id: refundRef,
+      org_id: orgId,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:refund.processed:partial",
+      payment_status: "refund_partial_parked",
+      allowed_or_blocked: "blocked",
+      reason_code: "refund.partial:manual_review",
+      amount: refundUsd,
+      currency: refundCurrency,
+      policy_version: null,
+      metadata: {
+        refund_reference: refundRef,
+        original_reference: originalTxRef,
+        refund_amount_usd: refundUsd,
+        original_price_usd: originalPriceUsd,
+        original_credits: originalCredits,
+      },
     });
     return;
   }
@@ -1499,6 +1571,30 @@ async function handleRefundProcessed(
       console.error(`[Webhook] credits.refunded audit insert failed:`, auditErr);
     }
   }
+
+  // Phase 2 canonical proof — best-effort with risk-item escalation
+  // (webhook safety: see payment-governance.ts header).
+  await recordPaymentGovernanceOrEscalate(supabase, {
+    event_subtype: "refund.processed",
+    payment_reference: originalTxRef ?? refundRef,
+    provider_event_id: refundRef,
+    org_id: orgId,
+    system_actor: "paystack-webhook",
+    source_function: "token-purchase/webhook:refund.processed",
+    payment_status: "refunded",
+    allowed_or_blocked: "allowed",
+    reason_code: "refund.processed",
+    amount: refundUsd,
+    currency: refundCurrency,
+    policy_version: null,
+    metadata: {
+      refund_reference: refundRef,
+      original_reference: originalTxRef,
+      credits_reversed: creditsToDeduct,
+      new_balance: newBalance,
+    },
+  });
+
 
   // Revenue notification (idempotent by refund reference — duplicate
   // deliveries dedupe in the email queue).
@@ -1757,6 +1853,27 @@ async function handleDisputeCreated(supabase: any, data: DisputeData): Promise<v
     paymentRef,
     credits: credits ?? 0,
   });
+
+  // Phase 2 canonical proof — best-effort with risk-item escalation.
+  await recordPaymentGovernanceOrEscalate(supabase, {
+    event_subtype: "dispute.create",
+    payment_reference: paymentRef ?? disputeRef,
+    provider_event_id: disputeRef,
+    org_id: orgId,
+    system_actor: "paystack-webhook",
+    source_function: "token-purchase/webhook:dispute.create",
+    payment_status: "disputed",
+    allowed_or_blocked: "blocked",
+    reason_code: "dispute.create",
+    amount: lookup.price_usd ?? null,
+    currency: "USD",
+    policy_version: null,
+    metadata: {
+      dispute_reference: disputeRef,
+      payment_reference: paymentRef,
+      credits_held: credits,
+    },
+  });
 }
 
 // PAY-009 governed dual-write helpers (webhook-side mirrors of the
@@ -1973,6 +2090,47 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
       terminalStatus: "won",
       paystackStatus,
     });
+
+    // Phase 2 canonical proof — chargeback.won (and umbrella dispute.resolve).
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "dispute.resolve",
+      payment_reference: hold.payment_reference ?? disputeRef,
+      provider_event_id: disputeRef,
+      org_id: hold.org_id,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:dispute.resolve:won",
+      payment_status: "dispute_won",
+      allowed_or_blocked: "allowed",
+      reason_code: "chargeback.won",
+      amount: hold.price_usd ?? null,
+      currency: "USD",
+      policy_version: null,
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        credits_released: hold.credits_held,
+        terminal_status: "won",
+      },
+    });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "chargeback.won",
+      payment_reference: hold.payment_reference ?? disputeRef,
+      provider_event_id: disputeRef,
+      org_id: hold.org_id,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:chargeback.won",
+      payment_status: "dispute_won",
+      allowed_or_blocked: "allowed",
+      reason_code: "chargeback.won",
+      amount: hold.price_usd ?? null,
+      currency: "USD",
+      policy_version: null,
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        credits_released: hold.credits_held,
+      },
+    });
   } else {
     // LOST or MERCHANT_ACCEPTED → real deduction via atomic_token_credit.
     const { data: debit, error: debitErr } = await supabase.rpc("atomic_token_credit", {
@@ -2066,6 +2224,49 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
       disputeRef,
       terminalStatus,
       paystackStatus,
+    });
+
+    // Phase 2 canonical proof — chargeback.lost (and umbrella dispute.resolve).
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "dispute.resolve",
+      payment_reference: hold.payment_reference ?? disputeRef,
+      provider_event_id: disputeRef,
+      org_id: hold.org_id,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:dispute.resolve:lost",
+      payment_status: "dispute_lost",
+      allowed_or_blocked: "blocked",
+      reason_code: "chargeback.lost",
+      amount: hold.price_usd ?? null,
+      currency: "USD",
+      policy_version: null,
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        credits_deducted: hold.credits_held,
+        new_balance: newBalance,
+        terminal_status: terminalStatus,
+      },
+    });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "chargeback.lost",
+      payment_reference: hold.payment_reference ?? disputeRef,
+      provider_event_id: disputeRef,
+      org_id: hold.org_id,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:chargeback.lost",
+      payment_status: "dispute_lost",
+      allowed_or_blocked: "blocked",
+      reason_code: "chargeback.lost",
+      amount: hold.price_usd ?? null,
+      currency: "USD",
+      policy_version: null,
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        credits_deducted: hold.credits_held,
+        new_balance: newBalance,
+      },
     });
   }
 }
