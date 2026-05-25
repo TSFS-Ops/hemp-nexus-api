@@ -576,6 +576,35 @@ export const APPROVED_REASON_CODES: ReadonlySet<string> = new Set([
   "other",
 ]);
 
+// Batch C — Approved namespace prefixes (mirror of the backend WARN-only
+// allow-list). A reason code carrying one of these prefixes is treated as
+// KNOWN even if the suffix is dynamic (e.g. `api:my-endpoint`,
+// `payment:charge_success`, `scope:org`).
+export const APPROVED_REASON_CODE_NAMESPACES: ReadonlySet<string> = new Set([
+  "legacy",
+  "system",
+  "payment",
+  "api",
+  "action",
+  "scope",
+]);
+
+/**
+ * Returns true when the code is on the David-approved business allow-list OR
+ * carries one of the controlled namespace prefixes. Absent/null is approved.
+ * Document-specific codes are intentionally excluded from this set.
+ */
+export function isApprovedReasonCode(code: string | null | undefined): boolean {
+  if (!code) return true;
+  if (APPROVED_REASON_CODES.has(code)) return true;
+  const idx = code.indexOf(":");
+  if (idx > 0) {
+    const ns = code.slice(0, idx);
+    if (APPROVED_REASON_CODE_NAMESPACES.has(ns)) return true;
+  }
+  return false;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Repeated-event grouping — UI-side only (does not change event_store writes).
 // Same actor + same record/anchor + same event type + same reason code +

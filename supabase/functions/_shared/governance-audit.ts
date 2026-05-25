@@ -20,6 +20,18 @@
 
 // deno-lint-ignore-file no-explicit-any
 
+import {
+  APPROVED_REASON_CODE_NAMESPACES,
+  isApprovedNamespacedReasonCode,
+  normaliseReasonCode,
+} from "./governance-reason-codes.ts";
+
+export {
+  APPROVED_REASON_CODE_NAMESPACES,
+  isApprovedNamespacedReasonCode,
+  normaliseReasonCode,
+};
+
 // ── Controlled taxonomy ──────────────────────────────────────────────────────
 
 export const EVENT_FAMILIES = [
@@ -142,16 +154,27 @@ export const APPROVED_REASON_CODES: ReadonlySet<string> = new Set([
  * many legacy/dynamic codes (e.g. "charge.success", "api:endpoint",
  * "scope:org") that must keep working until a separate enforcement phase.
  */
+/**
+ * True when the reason_code is on the David-approved business allow-list OR
+ * carries one of the controlled namespace prefixes (legacy:, system:,
+ * payment:, api:, action:, scope:). Absent/null is treated as approved
+ * because reason_code is optional.
+ *
+ * NOTE: callers should pass the NORMALISED code (run `normaliseReasonCode`
+ * first). The canonical writer normalises inside validateGovernanceInput.
+ */
 export function isApprovedReasonCode(code: string | null | undefined): boolean {
   if (!code) return true;
-  return APPROVED_REASON_CODES.has(code);
+  if (APPROVED_REASON_CODES.has(code)) return true;
+  if (isApprovedNamespacedReasonCode(code)) return true;
+  return false;
 }
 
 export function warnIfUnknownReasonCode(
   code: string | null | undefined,
   ctx: { event_type: string; aggregate_id: string; source_function?: string | null },
 ): void {
-  if (!code || APPROVED_REASON_CODES.has(code)) return;
+  if (isApprovedReasonCode(code)) return;
   console.warn(
     "[governance-audit] reason_code outside approved list (WARN-only):",
     JSON.stringify({
@@ -386,6 +409,20 @@ export function validateGovernanceInput(input: GovernanceWriteInput): void {
       throw new Error("GOV_AUDIT_POSTURE_REASON_REQUIRED: posture 'Not recorded' must include posture_reason");
     }
   }
+
+  // Batch C — normalise legacy/provider-shaped reason codes into controlled
+  // namespaces (WARN-only). Preserve the original literal in safe metadata
+  // as `original_reason_code` when normalisation actually changed the value.
+  // The canonical payload then carries the normalised value going forward.
+  const rawReason = input.reason_code ?? null;
+  const normalisedReason = normaliseReasonCode(rawReason);
+  if (rawReason && normalisedReason && rawReason !== normalisedReason) {
+    input.metadata = {
+      ...(input.metadata ?? {}),
+      original_reason_code: rawReason,
+    };
+  }
+  input.reason_code = normalisedReason;
 
   // WARN-only reason-code allow-list check (does not throw).
   warnIfUnknownReasonCode(input.reason_code ?? null, {
