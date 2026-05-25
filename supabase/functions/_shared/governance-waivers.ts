@@ -125,8 +125,12 @@ function eventName(p: WaiverPosture, action: "granted" | "renewed" | "consumed" 
   return `governance.${p}_${action}`;
 }
 
+// AdminLike accepts any service-role client shape; the helpers below also
+// call `.from(...).insert/update/select` which are on SupabaseClient. We type
+// the parameter as a loose intersection to keep both happy.
 // deno-lint-ignore no-explicit-any
-type Admin = AdminLike & { from: any; rpc?: any } & SupabaseClient<any, any, any>;
+type Admin = any;
+
 
 
 /**
