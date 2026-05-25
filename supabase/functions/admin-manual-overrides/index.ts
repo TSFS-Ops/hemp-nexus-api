@@ -152,6 +152,8 @@ Deno.serve(async (req) => {
     let targetId = "";
     let auditAction = `admin.manual_override.${parsed.operation}`;
     let operationResult: unknown = null;
+    let govOrgId: string | null = null;
+    let govMatchId: string | null = null;
 
     if (parsed.operation === "force_status" || parsed.operation === "void_match") {
       targetId = parsed.match_id;
