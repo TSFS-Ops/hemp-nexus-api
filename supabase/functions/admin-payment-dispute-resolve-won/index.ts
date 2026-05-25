@@ -56,5 +56,21 @@ Deno.serve(async (req) => {
     const status = code === "DISPUTE_NOT_FOUND" ? 404 : code === "DISPUTE_ALREADY_RESOLVED" ? 409 : 400;
     return json({ error: code.toLowerCase(), code }, status);
   }
+  const { data: pd } = await admin.from("payment_disputes")
+    .select("org_id, provider_dispute_reference").eq("id", p.data.payment_dispute_id).maybeSingle();
+  try {
+    await recordAdminHqDecision({
+      admin, sourceFunction: "admin-payment-dispute-resolve-won",
+      actionCode: "payment_dispute.resolve_won",
+      actorUserId: u.user.id, actorRole: "platform_admin",
+      orgId: pd?.org_id ?? "00000000-0000-0000-0000-000000000000",
+      aggregateId: p.data.payment_dispute_id, aggregateType: "payment_dispute",
+      reason: p.data.reason, requestId: req.headers.get("x-request-id"),
+      paymentReference: pd?.provider_dispute_reference ?? null, aal: "aal2",
+    });
+  } catch (govErr) {
+    console.error("[admin-payment-dispute-resolve-won] CRITICAL: gov audit failed:", govErr);
+    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
+  }
   return json(r, 200);
 });
