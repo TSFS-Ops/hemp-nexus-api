@@ -13,6 +13,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
+import { POI_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
