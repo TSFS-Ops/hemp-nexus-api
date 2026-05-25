@@ -32,6 +32,7 @@ import {
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
 import { recordPaymentGovernanceOrEscalate } from "../_shared/payment-governance.ts";
+import { PAYMENT_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
