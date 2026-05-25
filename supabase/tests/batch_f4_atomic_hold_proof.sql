@@ -177,7 +177,7 @@ BEGIN
   INSERT INTO public.compliance_holds (
     id, org_id, hold_type, reason, status, opened_by
   ) VALUES (
-    v_hold_rollback_id, v_org, 'verification_refresh_required',
+    v_hold_rollback_id, v_org, 'compliance_hold_verification_refresh',
     'F4 rollback seed compliance hold', 'active', v_actor
   );
 
