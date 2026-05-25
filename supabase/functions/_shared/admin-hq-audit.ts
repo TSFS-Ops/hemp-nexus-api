@@ -87,7 +87,7 @@ export async function recordAdminHqDecision(
     allowed_or_blocked: "allowed",
     reason_code: input.actionCode,
     posture: buildPostureSnapshot("Standard", {
-      policy_version: input.policyVersion ?? null,
+      policy_version: input.policyVersion ?? ADMIN_HQ_DECISION_POLICY_VERSION,
       evidence_level: input.evidenceLevel ?? null,
       check_status: { aal: input.aal ?? null },
     }),
@@ -95,6 +95,7 @@ export async function recordAdminHqDecision(
       action_code: input.actionCode,
       reason: input.reason,
       aal: input.aal ?? null,
+      policy_version: input.policyVersion ?? ADMIN_HQ_DECISION_POLICY_VERSION,
       ...(input.extra ?? {}),
     },
     idempotency_extra: input.actionCode,
