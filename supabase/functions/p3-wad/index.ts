@@ -487,9 +487,10 @@ Deno.serve(async (req: Request) => {
             allowed_or_blocked: "blocked",
             reason_code: "DISCOVERY_GATE_FAILED",
             posture_snapshot: buildPostureSnapshot("Failed Verification", {
+              policy_version: WAD_POLICY_VERSION,
               check_status: { gate: "DISCOVERY_ELIGIBILITY", passed: false },
             }),
-            metadata: { reason: discoveryReason, gate: "DISCOVERY_ELIGIBILITY" },
+            metadata: { reason: discoveryReason, gate: "DISCOVERY_ELIGIBILITY", policy_version: WAD_POLICY_VERSION },
           });
         }
       }
