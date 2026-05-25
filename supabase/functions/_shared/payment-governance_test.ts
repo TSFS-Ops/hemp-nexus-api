@@ -261,7 +261,8 @@ Deno.test("[payment-governance] redaction still applies — secret-like keys in 
 // These guarantee future drift cannot quietly unwire a webhook path.
 
 Deno.test("[payment-governance] token-purchase webhook wires payment.event_created for every exception path", async () => {
-  const src = await Deno.readTextFile("supabase/functions/token-purchase/index.ts");
+  // Resolve relative to this test file so it works from any CWD.
+  const src = await Deno.readTextFile(new URL("../token-purchase/index.ts", import.meta.url));
 
   // helper import present
   assertStringIncludes(src, 'from "../_shared/payment-governance.ts"');

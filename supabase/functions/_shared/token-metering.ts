@@ -589,12 +589,57 @@ export async function burnTokensForAction(
     return { success: true, newBalance: bal?.balance || 0, ledgerEntryId: "" };
   }
 
+  // ── Batch 1 cleanup: build governance payload so credit_ledger row +
+  // credit.burned event_store row commit in a SINGLE SQL transaction via
+  // atomic_token_burn. RPC returns governance_event_id on success.
+  const matchIdMeta =
+    typeof metadata?.match_id === "string" ? metadata.match_id : null;
+  const poiIdMeta =
+    typeof metadata?.poi_id === "string" ? metadata.poi_id : null;
+  const engagementIdMeta =
+    typeof metadata?.engagement_id === "string" ? metadata.engagement_id : null;
+  const paymentRefMeta =
+    typeof metadata?.payment_reference === "string"
+      ? metadata.payment_reference
+      : null;
+
+  const actionGovPayload = {
+    event_type: "credit.burned",
+    aggregate_type: "credit_burn",
+    aggregate_id: entityId ?? orgId,
+    actor_user_id: null,
+    actor_role: apiKeyId ? "api_key" : "system",
+    system_actor: "token-metering",
+    source_function: "burnTokensForAction",
+    request_id: requestId,
+    correlation_id: requestId,
+    idempotency_key: `credit.burned:${orgId}:${actionType}:${requestId}`,
+    allowed_or_blocked: "allowed",
+    reason_code: `action:${actionType}`,
+    match_id: matchIdMeta,
+    poi_id: poiIdMeta,
+    engagement_id: engagementIdMeta,
+    payment_reference: paymentRefMeta,
+    posture_snapshot: buildPostureSnapshot("Standard", {
+      policy_version: CREDIT_POLICY_VERSION,
+    }),
+    metadata: {
+      actionType,
+      amount: tokensToBurn,
+      entity_id: entityId ?? null,
+      policy_version: CREDIT_POLICY_VERSION,
+      ...(metadata ?? {}),
+    },
+  };
+
   // Use atomic DB function - single UPDATE ... WHERE balance >= amount
+  // Now in-transaction with governance event_store insert.
   const { data: burnResult, error: burnError } = await supabase.rpc("atomic_token_burn", {
     p_org_id: orgId,
     p_amount: tokensToBurn,
     p_reason: `action:${actionType}`,
     p_reference_id: requestId,
+    p_governance: actionGovPayload,
   });
 
   if (burnError) {
@@ -660,42 +705,18 @@ export async function burnTokensForAction(
   // Check if we crossed any low balance thresholds
   await checkAndTriggerLowBalanceWebhooks(supabase, orgId, previousBalance, newBalance);
 
-  // Phase 2 canonical credit.burned event (fail-closed)
-  try {
-    await writeCriticalEventWithPosture(supabase as any, {
-      event_type: "credit.burned",
-      org_id: orgId,
-      aggregate_type: "credit_burn",
-      aggregate_id: entityId ?? orgId,
-      actor_user_id: null,
-      actor_role: apiKeyId ? "api_key" : "system",
-      system_actor: "token-metering",
-      source_function: "burnTokensForAction",
-      request_id: requestId,
-      allowed_or_blocked: "allowed",
-      reason_code: `action:${actionType}`,
-      posture: buildPostureSnapshot("Standard", {
-        policy_version: CREDIT_POLICY_VERSION,
-        check_status: { balance_before: previousBalance, balance_after: newBalance },
-      }),
-      metadata: {
-        actionType,
-        amount: tokensToBurn,
-        balance_before: previousBalance,
-        balance_after: newBalance,
-        entity_id: entityId ?? null,
-        policy_version: CREDIT_POLICY_VERSION,
-        ...(metadata ?? {}),
-      },
-      idempotency_extra: requestId,
-    });
-  } catch (govErr) {
-    console.error("CRITICAL: governance audit write failed after burnTokensForAction", govErr);
+  // ── Batch 1 cleanup: credit.burned was written INSIDE atomic_token_burn.
+  // Fail-closed: if RPC returned success but no governance_event_id, treat
+  // as an unaudited burn (should not happen because p_governance was supplied).
+  if (!burnResult.governance_event_id) {
+    console.error(
+      "CRITICAL: atomic_token_burn (action) returned success without governance_event_id",
+      { orgId, actionType, requestId },
+    );
     throw new ApiException(
       "GOV_AUDIT_WRITE_FAILED",
-      "Credit burned but governance audit write failed",
+      "Credit burned but governance audit row missing",
       500,
-      { underlying: String((govErr as Error)?.message ?? govErr) }
     );
   }
 

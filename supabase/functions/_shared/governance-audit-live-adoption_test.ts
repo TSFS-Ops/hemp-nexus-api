@@ -1,12 +1,17 @@
 /**
- * Phase 2 live-flow adoption tests.
+ * Phase 2 live-flow adoption tests — updated for Atomicity Batch 1+2.
  *
- * These are not unit tests of the writer — they assert that the production
- * edge-function source code for the three critical flows wired in this turn
- * (POI transitions, WaD pass/fail/manual-review, credit burn) actually
- * imports the canonical governance-audit writer AND calls it with the
- * expected controlled event names. This catches the failure mode where the
- * writer exists but no live flow has adopted it.
+ * After Batch 1+2, the critical canonical events for POI, WaD pass/fail,
+ * primary credit burn (burnTokens), and credit burn for action
+ * (burnTokensForAction) are emitted inside SECURITY DEFINER RPCs:
+ *   - atomic_pois_create / atomic_pois_transition / atomic_poi_match_transition
+ *   - atomic_wad_issue / atomic_wad_deny
+ *   - atomic_token_burn (with p_governance)
+ *
+ * These tests assert the production edge-function source code now routes
+ * through the atomic RPCs with p_governance, fails closed on missing
+ * governance_event_id, and does not double-write via the TS critical
+ * writer on the happy path.
  *
  * Run with: deno test supabase/functions/_shared/governance-audit-live-adoption_test.ts
  */
@@ -14,93 +19,47 @@
 import { assert, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 const ROOT = new URL("../", import.meta.url);
-
-async function read(rel: string): Promise<string> {
-  const url = new URL(rel, ROOT);
-  return await Deno.readTextFile(url);
-}
-
-function assertWires(
-  source: string,
-  file: string,
-  required: {
-    eventTypes: string[];
-    helpers: string[];
-    sourceFunctionLiteral?: string;
-  },
-) {
-  for (const helper of required.helpers) {
-    assert(
-      source.includes(helper),
-      `[${file}] expected to import/call "${helper}" — canonical writer not adopted`,
-    );
-  }
-  for (const evt of required.eventTypes) {
-    assertStringIncludes(
-      source,
-      `"${evt}"`,
-      `[${file}] expected event_type "${evt}" to be wired into a writer call`,
-    );
-  }
-  if (required.sourceFunctionLiteral) {
-    assertStringIncludes(
-      source,
-      `source_function: "${required.sourceFunctionLiteral}"`,
-      `[${file}] expected source_function literal "${required.sourceFunctionLiteral}"`,
-    );
-  }
-}
+const read = (rel: string) => Deno.readTextFile(new URL(rel, ROOT));
 
 // ── POI flows ────────────────────────────────────────────────────────────────
 
-Deno.test("poi-transition live flow: writes poi.state_changed via critical writer", async () => {
+Deno.test("poi-transition live flow: atomic_poi_match_transition with p_governance (fail-closed)", async () => {
   const src = await read("poi-transition/index.ts");
-  assertWires(src, "poi-transition/index.ts", {
-    helpers: [
-      "writeCriticalEventWithPosture",
-      "governance-audit-integration",
-    ],
-    eventTypes: ["poi.state_changed"],
-    sourceFunctionLiteral: "poi-transition",
-  });
-  // fail-closed: must surface GOV_AUDIT_WRITE_FAILED on writer throw
-  assertStringIncludes(
-    src,
-    "GOV_AUDIT_WRITE_FAILED",
-    "poi-transition must fail closed when the governance audit write throws",
-  );
-  // idempotency_extra used so retries dedupe
-  assertStringIncludes(
-    src,
-    "idempotency_extra",
-    "poi-transition must derive an idempotency key for the critical event",
-  );
+  assertStringIncludes(src, 'atomic_poi_match_transition');
+  assertStringIncludes(src, 'p_governance');
+  // event_type literal still present in the governance payload built in TS.
+  assertStringIncludes(src, '"poi.state_changed"');
+  assertStringIncludes(src, 'source_function: "poi-transition"');
+  assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
 });
 
-Deno.test("pois live flow: writes poi.created (bilateral + unilateral) and poi.state_changed", async () => {
+Deno.test("pois live flow: atomic_pois_create + atomic_pois_transition with p_governance", async () => {
   const src = await read("pois/index.ts");
-  assertWires(src, "pois/index.ts", {
-    helpers: ["writeCriticalEventWithPosture"],
-    eventTypes: ["poi.created", "poi.state_changed"],
-    sourceFunctionLiteral: "pois",
-  });
-  // Bilateral + unilateral handlers both call the writer.
-  const matches = src.match(/writeCriticalEventWithPosture/g) ?? [];
+  assertStringIncludes(src, 'atomic_pois_create');
+  assertStringIncludes(src, 'atomic_pois_transition');
+  assertStringIncludes(src, '"poi.created"');
+  assertStringIncludes(src, '"poi.state_changed"');
+  // p_governance must appear for both create and transition paths.
+  const govCalls = src.match(/p_governance:/g) ?? [];
   assert(
-    matches.length >= 3,
-    `pois/index.ts expected ≥3 writeCriticalEventWithPosture call sites, got ${matches.length}`,
+    govCalls.length >= 3,
+    `pois/index.ts expected ≥3 p_governance call sites (bilateral create + unilateral create + transition), got ${govCalls.length}`,
   );
 });
 
 // ── WaD flows ────────────────────────────────────────────────────────────────
 
-Deno.test("p3-wad live flow: writes wad.passed (fail-closed) and wad.failed (fail-closed)", async () => {
+Deno.test("p3-wad live flow: atomic_wad_issue + atomic_wad_deny with p_governance (fail-closed)", async () => {
   const src = await read("p3-wad/index.ts");
-  assertWires(src, "p3-wad/index.ts", {
-    helpers: ["writeCriticalEventWithPosture"],
-    eventTypes: ["wad.passed", "wad.failed"],
-    sourceFunctionLiteral: "p3-wad",
-  });
+  assertStringIncludes(src, 'atomic_wad_issue');
+  assertStringIncludes(src, 'atomic_wad_deny');
+  // Canonical event types appear inside governance payloads (idempotency_key).
+  assertStringIncludes(src, 'wad.passed');
+  assertStringIncludes(src, 'wad.failed');
+  assertStringIncludes(src, 'source_function: "p3-wad"');
+  assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
+  assertStringIncludes(src, "WaD issue rolled back");
+  assertStringIncludes(src, "WaD denial rolled back");
 });
 
 Deno.test("p3-wad live flow: emits wad.manual_review_required on UBO incomplete", async () => {
@@ -110,11 +69,11 @@ Deno.test("p3-wad live flow: emits wad.manual_review_required on UBO incomplete"
     '"wad.manual_review_required"',
     "p3-wad must emit wad.manual_review_required when UBO_COMPLETENESS gate is incomplete",
   );
-  // Manual-review event runs alongside the fail-closed wad.failed write.
+  // Manual-review event runs alongside the fail-closed atomic wad.failed.
   assertStringIncludes(
     src,
     "writeGovernanceEventBestEffort",
-    "wad.manual_review_required should be a best-effort write (observability alongside fail-closed wad.failed)",
+    "wad.manual_review_required should be a best-effort write (observability alongside fail-closed atomic wad.failed)",
   );
 });
 
@@ -129,27 +88,41 @@ Deno.test("p3-wad live flow: emits wad.check_failed on discovery gate block", as
 
 // ── Credit burn flows ────────────────────────────────────────────────────────
 
-Deno.test("token-metering live flow: writes credit.burned (fail-closed) for both burnTokens and burnTokensForAction", async () => {
+Deno.test("token-metering live flow: atomic_token_burn with p_governance for BOTH burnTokens and burnTokensForAction", async () => {
   const src = await read("_shared/token-metering.ts");
-  assertWires(src, "_shared/token-metering.ts", {
-    helpers: ["writeCriticalEventWithPosture"],
-    eventTypes: ["credit.burned"],
-  });
-  // Two distinct burn helpers must each call the critical writer.
-  const critCalls = src.match(/writeCriticalEventWithPosture/g) ?? [];
+  // Both burn helpers must call the atomic RPC with p_governance.
+  const rpcCalls = src.match(/rpc\("atomic_token_burn"/g) ?? [];
   assert(
-    critCalls.length >= 2,
-    `token-metering expected ≥2 writeCriticalEventWithPosture call sites (burnTokens + burnTokensForAction), got ${critCalls.length}`,
+    rpcCalls.length >= 2,
+    `token-metering expected ≥2 atomic_token_burn call sites, got ${rpcCalls.length}`,
   );
-  // Fail-closed contract — caller surfaces GOV_AUDIT_WRITE_FAILED
-  assertStringIncludes(
-    src,
-    "GOV_AUDIT_WRITE_FAILED",
-    "token-metering must fail closed when the credit.burned audit write fails",
+  const govCalls = src.match(/p_governance:\s*\w+/g) ?? [];
+  assert(
+    govCalls.length >= 2,
+    `token-metering expected ≥2 p_governance args (burnTokens + burnTokensForAction), got ${govCalls.length}`,
   );
-  // source_function literals for both helpers
+  // event_type literal in both governance payloads.
+  const burnedLits = src.match(/event_type:\s*"credit\.burned"/g) ?? [];
+  assert(
+    burnedLits.length >= 2,
+    `token-metering expected ≥2 event_type "credit.burned" literals in governance payloads, got ${burnedLits.length}`,
+  );
+  // Fail-closed governance_event_id check in both helpers.
+  const idChecks = src.match(/!burnResult\.governance_event_id/g) ?? [];
+  assert(
+    idChecks.length >= 2,
+    `token-metering expected ≥2 governance_event_id fail-closed guards, got ${idChecks.length}`,
+  );
+  // source_function literals for both helpers.
   assertStringIncludes(src, 'source_function: "burnTokens"');
   assertStringIncludes(src, 'source_function: "burnTokensForAction"');
+  // Duplicate-write guard: no TS-side critical writer for credit.burned on
+  // either happy path (best-effort burn_attempted / burn_blocked are allowed).
+  assert(
+    !/writeCriticalEventWithPosture\([^)]*event_type:\s*"credit\.burned"/s.test(src),
+    "token-metering must not double-write credit.burned via TS critical writer",
+  );
+  assertStringIncludes(src, "GOV_AUDIT_WRITE_FAILED");
 });
 
 Deno.test("token-metering live flow: emits credit.burn_blocked and credit.burn_attempted (best-effort)", async () => {
@@ -165,18 +138,18 @@ Deno.test("token-metering live flow: emits credit.burn_blocked and credit.burn_a
 
 // ── Posture + idempotency hygiene across all wired flows ─────────────────────
 
-Deno.test("all wired flows include posture_snapshot or buildPostureSnapshot at every critical call", async () => {
+Deno.test("all wired flows include buildPostureSnapshot at every critical write", async () => {
   const files = [
     "poi-transition/index.ts",
     "pois/index.ts",
     "p3-wad/index.ts",
+    "collapse/index.ts",
     "_shared/token-metering.ts",
   ];
   for (const f of files) {
     const src = await read(f);
     assert(
-      /posture: buildPostureSnapshot\(/.test(src) ||
-        /posture_snapshot: buildPostureSnapshot\(/.test(src),
+      /posture(_snapshot)?:\s*buildPostureSnapshot\(/.test(src),
       `[${f}] every critical write must include a buildPostureSnapshot() posture`,
     );
   }

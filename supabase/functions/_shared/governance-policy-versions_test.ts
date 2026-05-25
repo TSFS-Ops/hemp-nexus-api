@@ -62,10 +62,14 @@ for (const f of POI_FILES) {
 Deno.test("p3-wad stamps WAD_POLICY_VERSION on all wired WaD events", async () => {
   const src = await read("p3-wad/index.ts");
   assertStringIncludes(src, "WAD_POLICY_VERSION");
-  const writes = (src.match(/event_type:\s*"wad\.(passed|failed|manual_review_required|check_failed)"/g) ?? []).length;
+  // After Batch 2, wad.passed/wad.failed live inside atomic_wad_issue /
+  // atomic_wad_deny governance payloads; only wad.manual_review_required
+  // and wad.check_failed remain as TS-side event_type literals. Both
+  // atomic payloads still stamp WAD_POLICY_VERSION twice (posture + metadata).
+  const tsWrites = (src.match(/event_type:\s*"wad\.(manual_review_required|check_failed)"/g) ?? []).length;
+  assertEquals(tsWrites, 2, "expected 2 TS-side wad.* writes (manual_review_required + check_failed)");
   const stamps = (src.match(/policy_version:\s*WAD_POLICY_VERSION/g) ?? []).length;
-  assertEquals(writes, 4, "expected 4 wad.* canonical writes");
-  assert(stamps >= writes, `expected ≥${writes} WAD stamps, got ${stamps}`);
+  assert(stamps >= 4, `expected ≥4 WAD policy-version stamps across TS writes + atomic payloads, got ${stamps}`);
 });
 
 Deno.test("collapse stamps EXECUTION + FINALITY policy versions", async () => {
@@ -77,9 +81,13 @@ Deno.test("collapse stamps EXECUTION + FINALITY policy versions", async () => {
 Deno.test("token-metering stamps CREDIT_POLICY_VERSION on every credit.* event", async () => {
   const src = await read("_shared/token-metering.ts");
   assertStringIncludes(src, "CREDIT_POLICY_VERSION");
+  // After Batch 1 cleanup, credit.burned lives inside atomic_token_burn
+  // p_governance payloads for BOTH burnTokens and burnTokensForAction.
+  // burn_attempted / burn_blocked remain TS-side best-effort writes
+  // in both helpers. Total event_type literals: 6 (3 per helper).
   const writes = (src.match(/event_type:\s*"credit\.(burned|burn_attempted|burn_blocked)"/g) ?? []).length;
   const stamps = (src.match(/policy_version:\s*CREDIT_POLICY_VERSION/g) ?? []).length;
-  assertEquals(writes, 6, "expected 6 credit.* writes (3 per burn function)");
+  assertEquals(writes, 6, "expected 6 credit.* event_type literals (3 per burn helper)");
   assert(stamps >= writes, `expected ≥${writes} CREDIT stamps, got ${stamps}`);
 });
 
