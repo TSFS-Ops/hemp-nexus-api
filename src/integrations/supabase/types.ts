@@ -9147,6 +9147,54 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_billing_hold_apply_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_org_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      admin_billing_hold_release_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_org_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      admin_compliance_hold_close_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_hold_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      admin_compliance_hold_release_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_hold_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       admin_correct_match_jurisdiction: {
         Args: {
           p_admin_user_id: string
@@ -9324,6 +9372,30 @@ export type Database = {
           p_match_id: string
           p_notes: string
           p_operation: string
+        }
+        Returns: Json
+      }
+      admin_residency_review_approve_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+          p_review_id: string
+        }
+        Returns: Json
+      }
+      admin_residency_review_decline_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_policy_version?: string
+          p_reason: string
+          p_request_id: string
+          p_review_id: string
         }
         Returns: Json
       }
