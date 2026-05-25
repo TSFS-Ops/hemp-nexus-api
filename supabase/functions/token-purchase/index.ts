@@ -2090,6 +2090,47 @@ async function handleDisputeResolved(supabase: any, data: DisputeData): Promise<
       terminalStatus: "won",
       paystackStatus,
     });
+
+    // Phase 2 canonical proof — chargeback.won (and umbrella dispute.resolve).
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "dispute.resolve",
+      payment_reference: hold.payment_reference ?? disputeRef,
+      provider_event_id: disputeRef,
+      org_id: hold.org_id,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:dispute.resolve:won",
+      payment_status: "dispute_won",
+      allowed_or_blocked: "allowed",
+      reason_code: "chargeback.won",
+      amount: hold.price_usd ?? null,
+      currency: "USD",
+      policy_version: null,
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        credits_released: hold.credits_held,
+        terminal_status: "won",
+      },
+    });
+    await recordPaymentGovernanceOrEscalate(supabase, {
+      event_subtype: "chargeback.won",
+      payment_reference: hold.payment_reference ?? disputeRef,
+      provider_event_id: disputeRef,
+      org_id: hold.org_id,
+      system_actor: "paystack-webhook",
+      source_function: "token-purchase/webhook:chargeback.won",
+      payment_status: "dispute_won",
+      allowed_or_blocked: "allowed",
+      reason_code: "chargeback.won",
+      amount: hold.price_usd ?? null,
+      currency: "USD",
+      policy_version: null,
+      metadata: {
+        dispute_reference: disputeRef,
+        paystack_status: paystackStatus,
+        credits_released: hold.credits_held,
+      },
+    });
   } else {
     // LOST or MERCHANT_ACCEPTED → real deduction via atomic_token_credit.
     const { data: debit, error: debitErr } = await supabase.rpc("atomic_token_credit", {
