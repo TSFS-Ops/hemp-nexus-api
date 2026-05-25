@@ -208,7 +208,7 @@ BEGIN
         'raised_by_user_id', v_user::text,
         'raised_by_role','buyer_org_admin',
         'subject_code','other',
-        'summary','rollback proof test'),
+        'summary','rollback proof test ensuring atomicity of dispute creation in governance flow'),
       jsonb_build_object('event_type','dispute.opened','aggregate_type','match_challenge',
         'source_function','rollback-proof-harness','system_actor','rollback-proof',
         'posture_snapshot', jsonb_build_object('verification_posture','BOGUS_LABEL')));
