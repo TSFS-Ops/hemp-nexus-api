@@ -9357,14 +9357,77 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      atomic_generate_poi_v2: {
+      atomic_generate_poi_v2:
+        | {
+            Args: {
+              p_acks?: Json
+              p_actor_user_id?: string
+              p_match_id: string
+              p_org_id: string
+              p_settled_at: string
+              p_terms_hash?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_acks?: Json
+              p_actor_user_id?: string
+              p_governance?: Json
+              p_match_id: string
+              p_org_id: string
+              p_settled_at: string
+              p_terms_hash?: string
+            }
+            Returns: Json
+          }
+      atomic_poi_match_transition: {
         Args: {
-          p_acks?: Json
-          p_actor_user_id?: string
+          p_actor_user_id: string
+          p_from_state: string
+          p_governance?: Json
           p_match_id: string
+          p_metadata?: Json
           p_org_id: string
-          p_settled_at: string
-          p_terms_hash?: string
+          p_reason?: string
+          p_to_state: string
+        }
+        Returns: Json
+      }
+      atomic_pois_create: {
+        Args: {
+          p_actor_role: string
+          p_actor_user_id: string
+          p_buyer_entity_id: string
+          p_completion_probability: number
+          p_governance?: Json
+          p_idempotency_key: string
+          p_idempotency_request_hash: string
+          p_idempotency_response: Json
+          p_idempotency_status: number
+          p_industry_code: string
+          p_jurisdiction_code: string
+          p_legacy_event_hash: string
+          p_legacy_event_payload: Json
+          p_legacy_event_type: string
+          p_org_id: string
+          p_poi_type: string
+          p_seller_entity_id: string
+          p_terms: Json
+        }
+        Returns: Json
+      }
+      atomic_pois_transition: {
+        Args: {
+          p_actor_api_key_id?: string
+          p_actor_role?: string
+          p_actor_user_id?: string
+          p_governance?: Json
+          p_legacy_event_hash?: string
+          p_org_id: string
+          p_poi_id: string
+          p_reason?: string
+          p_to_state: string
         }
         Returns: Json
       }
@@ -9401,15 +9464,26 @@ export type Database = {
         }
         Returns: Json
       }
-      atomic_token_burn: {
-        Args: {
-          p_amount: number
-          p_org_id: string
-          p_reason?: string
-          p_reference_id?: string
-        }
-        Returns: Json
-      }
+      atomic_token_burn:
+        | {
+            Args: {
+              p_amount: number
+              p_org_id: string
+              p_reason?: string
+              p_reference_id?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_governance?: Json
+              p_org_id: string
+              p_reason?: string
+              p_reference_id?: string
+            }
+            Returns: Json
+          }
       atomic_token_credit:
         | {
             Args: {
@@ -9688,6 +9762,12 @@ export type Database = {
       get_test_mode_bypass_state: { Args: never; Returns: Json }
       get_test_mode_lockout_state: { Args: never; Returns: Json }
       get_user_email: { Args: { target_user_id: string }; Returns: string }
+      gov_domain_for: { Args: { p_event_type: string }; Returns: string }
+      gov_emit_event: { Args: { p_input: Json }; Returns: string }
+      gov_redact_jsonb: {
+        Args: { p_depth?: number; p_input: Json }
+        Returns: Json
+      }
       has_dd_role: {
         Args: { _org_id: string; _role: string; _user_id: string }
         Returns: boolean
