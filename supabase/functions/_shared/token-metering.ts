@@ -244,9 +244,10 @@ export async function burnTokens(
         allowed_or_blocked: "blocked",
         reason_code: "TOKEN_BURN_RPC_ERROR",
         posture_snapshot: buildPostureSnapshot("Not recorded", {
+          policy_version: CREDIT_POLICY_VERSION,
           reason: "atomic_token_burn RPC error before settlement",
         }),
-        metadata: { endpoint, error_message: String(burnError.message ?? burnError) },
+        metadata: { endpoint, error_message: String(burnError.message ?? burnError), policy_version: CREDIT_POLICY_VERSION },
       });
       throw new ApiException("TOKEN_BURN_FAILED", "Failed to burn tokens", 500);
     }
