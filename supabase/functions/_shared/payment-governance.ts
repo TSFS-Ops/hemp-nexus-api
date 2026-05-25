@@ -24,6 +24,7 @@ import {
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "./governance-audit-integration.ts";
+import { PAYMENT_POLICY_VERSION } from "./governance-policy-versions.ts";
 
 export type PaymentEventSubtype =
   | "charge.success"
