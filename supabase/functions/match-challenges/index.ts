@@ -400,9 +400,10 @@ Deno.serve(async (req) => {
             allowed_or_blocked: "allowed",
             reason_code: p.subject_code,
             posture: buildPostureSnapshot("Standard", {
+              policy_version: DISPUTE_POLICY_VERSION,
               check_status: { raised_by_role: p.raised_by_role },
             }),
-            metadata: { subject_code: p.subject_code, summary_length: p.summary.length },
+            metadata: { subject_code: p.subject_code, summary_length: p.summary.length, policy_version: DISPUTE_POLICY_VERSION },
             idempotency_extra: "raised",
           });
         } catch (govErr) {
