@@ -15,7 +15,7 @@ import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
-import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 
 const ENDPOINT = "POST /admin-counterparty-corrections";
@@ -102,25 +102,23 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "VALIDATION_ERROR", message: detail, requestId }, 400);
     }
 
-    let rpcResult: unknown;
-    let rpcError: { message?: string } | null = null;
-    if (parsed.operation === "link_to_org") {
-      const { data, error } = await admin.rpc("admin_link_counterparty_to_org", {
-        p_counterparty_id: parsed.counterparty_id,
-        p_org_id: parsed.org_id,
-        p_reason: parsed.reason,
+    // Batch F6: single atomic wrapper — business mutation +
+    // admin.hq_decision_recorded event commit together.
+    const params = parsed.operation === "link_to_org"
+      ? { counterparty_id: parsed.counterparty_id, org_id: parsed.org_id }
+      : { primary_id: parsed.primary_id, duplicate_id: parsed.duplicate_id };
+
+    const { data: rpcData, error: rpcError } = await admin.rpc(
+      "admin_counterparty_corrections_with_governance",
+      {
+        p_operation: parsed.operation,
         p_admin_user_id: caller.id,
-      });
-      rpcResult = data; rpcError = error;
-    } else {
-      const { data, error } = await admin.rpc("admin_merge_counterparties", {
-        p_primary_id: parsed.primary_id,
-        p_duplicate_id: parsed.duplicate_id,
         p_reason: parsed.reason,
-        p_admin_user_id: caller.id,
-      });
-      rpcResult = data; rpcError = error;
-    }
+        p_request_id: requestId,
+        p_params: params,
+        p_aal: "aal2",
+      },
+    );
 
     if (rpcError) {
       const msg = (rpcError.message ?? "").toLowerCase();
@@ -141,43 +139,15 @@ Deno.serve(async (req) => {
       return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
     }
 
-    // Resolve org_id + aggregate metadata for governance proof.
-    let cpOrgId: string | null = null;
-    let cpAggregateId: string;
-    if (parsed.operation === "link_to_org") {
-      cpOrgId = parsed.org_id;
-      cpAggregateId = parsed.counterparty_id;
-    } else {
-      cpAggregateId = parsed.primary_id;
-      const { data: cpRow } = await admin
-        .from("counterparties")
-        .select("id, org_id")
-        .eq("id", parsed.primary_id)
-        .maybeSingle();
-      cpOrgId = (cpRow as { org_id?: string } | null)?.org_id ?? null;
-    }
-    try {
-      await recordAdminHqDecision({
-        admin, sourceFunction: "admin-counterparty-corrections",
-        actionCode: parsed.operation === "link_to_org"
-          ? "counterparty.correct.link_to_org"
-          : "counterparty.correct.merge",
-        actorUserId: caller.id, actorRole: "platform_admin",
-        orgId: cpOrgId ?? "00000000-0000-0000-0000-000000000000",
-        aggregateId: cpAggregateId,
-        aggregateType: "counterparty",
-        reason: parsed.reason,
-        requestId, aal: "aal2",
-        extra: parsed.operation === "merge"
-          ? { duplicate_id: parsed.duplicate_id }
-          : { linked_org_id: parsed.org_id },
-      });
-    } catch (govErr) {
-      console.error(`[admin-counterparty-corrections][${requestId}] CRITICAL: gov audit failed:`, govErr);
-      return jsonResponse(req, { error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED", requestId }, 500);
-    }
+    const r = rpcData as { success?: boolean; deduplicated?: boolean; event_id?: string; result?: unknown };
+    return jsonResponse(req, {
+      ok: true,
+      result: r?.result ?? null,
+      governance_event_id: r?.event_id ?? null,
+      deduplicated: !!r?.deduplicated,
+      requestId,
+    }, 200);
 
-    return jsonResponse(req, { ok: true, result: rpcResult, requestId }, 200);
   } catch (err) {
     console.error(`[admin-counterparty-corrections][${requestId}] unhandled:`, err);
     return jsonResponse(req, { error: "INTERNAL_ERROR", requestId }, 500);
