@@ -186,6 +186,45 @@ jobs:
             --fail-fast \
             supabase/functions/match/e2e_soft_route_test.ts
 
+  governance-rollback-proof:
+    # Live empirical proof that the atomic SECURITY DEFINER RPC pattern
+    # actually rolls back the business mutation when gov_emit_event fails.
+    # Covers the six atomic families: Credit, Legal Hold, POI, WaD,
+    # Finality/Collapse, Dispute. Payment webhooks and admin HQ decisions
+    # are sequential by design and intentionally NOT covered here.
+    #
+    # The SQL harness wraps the whole run in BEGIN; … ROLLBACK; so it
+    # leaves zero residue. See docs/governance-rollback-proof.md.
+    #
+    # Conditional gate: runs only when the repo secret
+    # GOVERNANCE_ROLLBACK_DATABASE_URL is configured. Without it the job
+    # logs a clear skip message and exits 0 — we never fake success, and
+    # we never run unauthenticated.
+    name: Governance rollback proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Run rollback proof (skips if secret missing)
+        env:
+          GOVERNANCE_ROLLBACK_DATABASE_URL: ${{ secrets.GOVERNANCE_ROLLBACK_DATABASE_URL }}
+        run: |
+          if [ -z "$GOVERNANCE_ROLLBACK_DATABASE_URL" ]; then
+            echo "::notice::GOVERNANCE_ROLLBACK_DATABASE_URL secret not configured — skipping live rollback proof."
+            echo "::notice::Add a staging/test postgres URL as a repo secret to activate this gate."
+            echo "::notice::See docs/governance-rollback-proof.md."
+            exit 0
+          fi
+          bash scripts/governance-rollback-proof.sh
+
+
   dependency-audit:
     # Fails the build on HIGH or CRITICAL CVEs in production deps.
     # Dev-only vulnerabilities are surfaced in logs but do not block.

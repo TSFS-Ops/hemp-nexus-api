@@ -28,7 +28,8 @@
     "test:summary:strict": "node scripts/test-summary.mjs --strict",
     "check:d1-drift": "node scripts/check-d1-drift.mjs",
     "check:d1.5-drift": "node scripts/check-d1.5-drift.mjs",
-    "check:d1.6-drift": "node scripts/check-d1.6-drift.mjs"
+    "check:d1.6-drift": "node scripts/check-d1.6-drift.mjs",
+    "governance:rollback-proof": "bash scripts/governance-rollback-proof.sh"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",
