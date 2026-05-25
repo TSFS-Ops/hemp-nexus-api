@@ -274,11 +274,11 @@ describe("Phase 1 fixes — GovernanceRecordDetail top summary", () => {
     });
   });
 
-  it("renders 'Not recorded' for Memory record (Phase 1 has no Memory source)", async () => {
+  it("renders 'Not wired in this build' for Memory record (alignment patch)", async () => {
     renderDetail();
     await waitFor(() => {
-      const block = screen.getByText(/Memory record/i).parentElement!;
-      expect(block.textContent).toMatch(/Not recorded/);
+      const block = screen.getByTestId("memory-record-field");
+      expect(block.textContent).toMatch(/Not wired in this build/);
     });
   });
 
