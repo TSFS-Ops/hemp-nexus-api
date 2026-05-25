@@ -411,9 +411,10 @@ Deno.serve(async (req) => {
           allowed_or_blocked: "allowed",
           reason_code: `scope:${hold.scope_type}`,
           posture: buildPostureSnapshot("Standard", {
+            policy_version: LEGAL_HOLD_POLICY_VERSION,
             check_status: { aal: observedAal, scope_type: hold.scope_type, scope_id: hold.scope_id },
           }),
-          metadata: { released_reason, scope_type: hold.scope_type, scope_id: hold.scope_id },
+          metadata: { released_reason, scope_type: hold.scope_type, scope_id: hold.scope_id, policy_version: LEGAL_HOLD_POLICY_VERSION },
           idempotency_extra: `release:${legal_hold_id}`,
         });
       } catch (govErr) {
