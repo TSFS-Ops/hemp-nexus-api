@@ -21,6 +21,7 @@ import {
   writeCriticalEventWithPosture,
   writeGovernanceEventBestEffort,
 } from "../_shared/governance-audit-integration.ts";
+import { WAD_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 /**
  * P3 WaD (Signed Deal) Edge Function - V3 Sprint 3
