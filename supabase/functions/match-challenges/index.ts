@@ -554,21 +554,88 @@ Deno.serve(async (req) => {
           update.closed_by_user_id = userId;
         }
 
-        const { data: row, error: updErr } = await admin
+        const isTerminal = TERMINAL_STATUSES.has(p.to_status);
+
+        // Build governance payload for terminal transitions (the RPC only
+        // emits when terminal; passing it for non-terminal is harmless).
+        const disputeTransitionGovPayload = isTerminal
+          ? {
+              actor_user_id: userId,
+              actor_role: isPlatformAdmin ? "platform_admin" : "org_admin",
+              source_function: "match-challenges",
+              request_id: requestId,
+              match_id: challenge.match_id,
+              previous_state: challenge.status,
+              new_state: p.to_status,
+              event_type: p.to_status === "withdrawn" ? "dispute.released" : "dispute.closed",
+              allowed_or_blocked: p.to_status === "withdrawn" ? "neutral" : "allowed",
+              reason_code: (update.outcome_code as string | undefined) ?? p.to_status,
+              posture_snapshot: buildPostureSnapshot("Standard", {
+                policy_version: DISPUTE_POLICY_VERSION,
+                check_status: { via_platform_admin: isPlatformAdmin, to_status: p.to_status },
+              }),
+              metadata: {
+                outcome_code: (update.outcome_code as string | undefined) ?? null,
+                outcome_summary_length:
+                  typeof update.outcome_summary === "string" ? update.outcome_summary.length : 0,
+                policy_version: DISPUTE_POLICY_VERSION,
+              },
+              idempotency_key: `${p.challenge_id}|${p.to_status === "withdrawn" ? "dispute.released" : "dispute.closed"}|${requestId}|${p.to_status}`,
+            }
+          : null;
+
+        const { data: transitionResult, error: transErr } = await admin.rpc(
+          "atomic_dispute_transition",
+          {
+            p_input: {
+              challenge_id: p.challenge_id,
+              expected_from_status: challenge.status,
+              to_status: p.to_status,
+              outcome_code: (update.outcome_code as string | undefined) ?? null,
+              outcome_summary: (update.outcome_summary as string | undefined) ?? null,
+              closed_by_user_id: (update.closed_by_user_id as string | undefined) ?? null,
+            },
+            p_governance: disputeTransitionGovPayload,
+          },
+        );
+        if (transErr) {
+          return err("INVALID_TRANSITION", transErr.message, 409);
+        }
+        const tR = transitionResult as {
+          success: boolean;
+          error?: string;
+          message?: string;
+          current_status?: string;
+          challenge_id?: string;
+          previous_state?: string;
+          new_state?: string;
+          terminal?: boolean;
+          governance_event_id?: string | null;
+        } | null;
+        if (!tR?.success) {
+          if (tR?.error === "NOT_FOUND") {
+            return err("NOT_FOUND", "Challenge not found", 404);
+          }
+          if (tR?.error === "CONFLICT") {
+            return err("CONFLICT", tR.message ?? "Challenge state changed concurrently; please reload", 409);
+          }
+          if (tR?.error === "INVALID_INPUT") {
+            return err("VALIDATION_ERROR", tR.message ?? "Invalid input", 400);
+          }
+          console.error("[match-challenges] CRITICAL: atomic_dispute_transition failed:", tR);
+          return err("GOV_AUDIT_WRITE_FAILED", "Challenge transition rolled back: governance proof write failed", 500);
+        }
+        if (isTerminal && !tR.governance_event_id) {
+          return err("GOV_AUDIT_WRITE_FAILED", "Dispute transition atomic RPC did not return governance_event_id", 500);
+        }
+
+        // Re-fetch the updated row for the response (RPC returns minimal shape).
+        const { data: row } = await admin
           .from("match_challenges")
-          .update(update)
-          .eq("id", p.challenge_id)
-          .eq("status", challenge.status) // optimistic guard
           .select("*")
+          .eq("id", p.challenge_id)
           .maybeSingle();
-        if (updErr) {
-          // Trigger-raised errors land here (immutable fields, terminal protection,
-          // invalid transition). Surface as INVALID_TRANSITION with the DB message.
-          return err("INVALID_TRANSITION", updErr.message, 409);
-        }
-        if (!row) {
-          return err("CONFLICT", "Challenge state changed concurrently; please reload", 409);
-        }
+
         await writeChallengeAudit(admin, {
           action: "match_challenge.transitioned",
           challengeId: p.challenge_id,
@@ -583,51 +650,15 @@ Deno.serve(async (req) => {
             via_platform_admin: isPlatformAdmin,
           },
         });
-        // NOT-008: when a challenge reaches a terminal status, resolve any
-        // unread in-app notifications attached to this challenge so the bell
-        // doesn't keep nagging after withdrawal / outcome / no-action close.
-        if (TERMINAL_STATUSES.has(p.to_status)) {
+        // NOT-008: terminal closures should clear any unread challenge notifications.
+        if (isTerminal) {
           await resolveNotificationsFor(admin, "match_challenge", p.challenge_id, {
             requestId,
             source: `match-challenges:transitioned_${p.to_status}`,
           });
-
-          // Phase 2 canonical (FAIL-CLOSED): dispute.released for withdrawals,
-          // dispute.closed for outcome_recorded / closed_no_action.
-          const eventType = p.to_status === "withdrawn" ? "dispute.released" : "dispute.closed";
-          try {
-            await writeCriticalEventWithPosture(admin, {
-              event_type: eventType,
-              org_id: challenge.org_id ?? orgId,
-              aggregate_type: "match_challenge",
-              aggregate_id: p.challenge_id,
-              actor_user_id: userId,
-              actor_role: isPlatformAdmin ? "platform_admin" : "org_admin",
-              source_function: "match-challenges",
-              request_id: requestId,
-              match_id: challenge.match_id,
-              previous_state: challenge.status,
-              new_state: p.to_status,
-              allowed_or_blocked: p.to_status === "withdrawn" ? "neutral" : "allowed",
-              reason_code: (update.outcome_code as string | undefined) ?? p.to_status,
-              posture: buildPostureSnapshot("Standard", {
-                policy_version: DISPUTE_POLICY_VERSION,
-                check_status: { via_platform_admin: isPlatformAdmin, to_status: p.to_status },
-              }),
-              metadata: {
-                outcome_code: (update.outcome_code as string | undefined) ?? null,
-                outcome_summary_length:
-                  typeof update.outcome_summary === "string" ? update.outcome_summary.length : 0,
-                policy_version: DISPUTE_POLICY_VERSION,
-              },
-              idempotency_extra: p.to_status,
-            });
-          } catch (govErr) {
-            console.error(`[match-challenges] CRITICAL: ${eventType} audit failed:`, govErr);
-            return err("GOV_AUDIT_WRITE_FAILED", "Challenge transitioned but governance proof write failed", 500);
-          }
         }
         return json({ challenge: row }, 200);
+
       }
 
       // ─────────────────────────────────────────────────────────────
