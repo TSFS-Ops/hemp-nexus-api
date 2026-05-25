@@ -1365,7 +1365,7 @@ async function handleRefundProcessed(
       payment_status: "refund_rejected",
       allowed_or_blocked: "blocked",
       reason_code: "refund.rejected:no_matching_purchase",
-      amount: refundUsdSafe(data),
+      amount: typeof data.amount === "number" ? data.amount / 100 : null,
       currency: data.currency ?? "USD",
       policy_version: null,
       metadata: { refund_reference: refundRef, original_reference: originalTxRef },
@@ -1403,7 +1403,7 @@ async function handleRefundProcessed(
       payment_status: "refund_rejected",
       allowed_or_blocked: "blocked",
       reason_code: "refund.rejected:org_mismatch",
-      amount: refundUsdSafe(data),
+      amount: typeof data.amount === "number" ? data.amount / 100 : null,
       currency: data.currency ?? "USD",
       policy_version: null,
       metadata: {
