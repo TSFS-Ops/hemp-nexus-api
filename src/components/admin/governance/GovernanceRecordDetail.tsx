@@ -49,13 +49,16 @@ import {
   EventCategory,
   GovernanceEvent,
   HQ_DECISION_COPY,
+  HQ_CORRECTED_BADGE_COPY,
   MEMORY_NOT_WIRED_COPY,
   NO_EVENT_COPY,
+  annotateCorrections,
   buildFullStorySummary,
   groupRepeatedEvents,
   statusCopy,
 } from "@/lib/governance/governance-record";
 import { GovernanceEventDrawer } from "./GovernanceEventDrawer";
+import { HqNotesPanel } from "./HqNotesPanel";
 
 interface Props {
   anchor: GovernanceAnchor;
@@ -356,10 +359,14 @@ export function GovernanceRecordDetail({ anchor }: Props) {
       : null,
   });
 
-  // ── Filtered + grouped timeline ──
+  // ── Annotated + filtered + grouped timeline (Batch B: correction hints) ──
+  const annotated = useMemo(
+    () => (events ? annotateCorrections(events) : []),
+    [events],
+  );
   const filtered = useMemo(
-    () => (events ? applyEventFilters(events, filters) : []),
-    [events, filters],
+    () => applyEventFilters(annotated, filters),
+    [annotated, filters],
   );
   const grouped = useMemo(() => groupRepeatedEvents(filtered), [filtered]);
 
