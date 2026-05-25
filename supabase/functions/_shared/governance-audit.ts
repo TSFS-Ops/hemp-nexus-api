@@ -157,7 +157,17 @@ export const APPROVED_REASON_CODES: ReadonlySet<string> = new Set([
   "system_recovery",
   "legal_hold",
   "other",
+  // Batch D — waiver/bypass lifecycle reason codes (governance namespace).
+  // Approved as part of David's waiver/bypass expiry rule.
+  "waiver_missing",
+  "waiver_expired",
+  "waiver_consumed",
+  "waiver_revoked",
+  "waiver_renewed",
+  "bypass_granted_for_record",
+  "waiver_granted_for_record",
 ]);
+
 
 /**
  * WARN-only validator for reason codes. Returns true when the code is on the
