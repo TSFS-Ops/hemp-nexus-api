@@ -793,6 +793,7 @@ Deno.serve(async (req: Request) => {
         allowed_or_blocked: "allowed",
         reason_code: "COLLAPSE_FINAL",
         posture: buildPostureSnapshot("Standard", {
+          policy_version: FINALITY_POLICY_VERSION,
           check_status: {
             signature_valid: signatureValid,
             ntp_status: ntpStatus,
@@ -805,6 +806,7 @@ Deno.serve(async (req: Request) => {
           quantity,
           price,
           currency,
+          policy_version: FINALITY_POLICY_VERSION,
         },
         idempotency_extra: idempotency_key,
       });
