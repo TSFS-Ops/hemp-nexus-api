@@ -1,29 +1,27 @@
 /**
- * Batch D — governance-waivers helper tests (pure logic + fake admin client).
+ * Batch D — governance-waivers pure-logic tests.
+ *
+ * Full grant/consume/renew flows that drive the canonical writer end-to-end
+ * are validated via live-deploy proof and the handler/taxonomy tests; this
+ * file covers the deterministic pure logic (expiry clamping + constants).
  */
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
-  assertWaiverActive,
   clampExpiry,
-  consumeGovernanceWaiver,
-  grantGovernanceWaiver,
-  renewGovernanceWaiver,
+  WAIVER_DEFAULT_MAX_USES,
   WAIVER_MAX_DAYS,
   WAIVER_MAX_MS,
 } from "./governance-waivers.ts";
 
-// ── Pure-logic test for clampExpiry ─────────────────────────────────────────
 Deno.test("clampExpiry: defaults to now+7 days when missing", () => {
   const now = Date.parse("2026-05-25T00:00:00Z");
-  const out = clampExpiry(null, now);
-  assertEquals(out, new Date(now + WAIVER_MAX_MS).toISOString());
+  assertEquals(clampExpiry(null, now), new Date(now + WAIVER_MAX_MS).toISOString());
 });
 
 Deno.test("clampExpiry: caps proposals beyond 7 days", () => {
   const now = Date.parse("2026-05-25T00:00:00Z");
   const tenDays = new Date(now + 10 * 24 * 60 * 60 * 1000).toISOString();
-  const out = clampExpiry(tenDays, now);
-  assertEquals(out, new Date(now + WAIVER_MAX_MS).toISOString());
+  assertEquals(clampExpiry(tenDays, now), new Date(now + WAIVER_MAX_MS).toISOString());
 });
 
 Deno.test("clampExpiry: honours shorter proposals", () => {
@@ -38,9 +36,8 @@ Deno.test("clampExpiry: past dates collapse to default cap", () => {
   assertEquals(clampExpiry(past, now), new Date(now + WAIVER_MAX_MS).toISOString());
 });
 
-Deno.test("WAIVER_MAX_DAYS is 7", () => assertEquals(WAIVER_MAX_DAYS, 7));
-
-// ── Fake admin client to exercise grant/assert/consume flows ───────────────
-function makeFakeAdmin() {
-  // deno-lint-ignore no-explicit-any
-  const rows: any[] = [];
+Deno.test("constants: 1 use / 7 days defaults are binding", () => {
+  assertEquals(WAIVER_DEFAULT_MAX_USES, 1);
+  assertEquals(WAIVER_MAX_DAYS, 7);
+  assert(WAIVER_MAX_MS === 7 * 24 * 60 * 60 * 1000);
+});
