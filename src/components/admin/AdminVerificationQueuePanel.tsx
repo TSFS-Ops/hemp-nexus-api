@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { VerificationWalkthroughCard } from "./VerificationWalkthroughCard";
 import { ClipOnBillingFailuresPanel } from "./ClipOnBillingFailuresPanel";
+import { OpenGovernanceRecordLink } from "@/components/admin/governance/OpenGovernanceRecordLink";
 
 type Kind = "idv" | "org" | "both";
 type Status = "pending" | "in_progress" | "completed" | "cancelled";
