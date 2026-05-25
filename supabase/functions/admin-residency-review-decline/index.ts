@@ -7,6 +7,8 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { RESIDENCY_ADMIN_REASON_MIN_LENGTH } from "../_shared/data-009-audit.ts";
+import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
+
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
