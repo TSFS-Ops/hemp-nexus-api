@@ -299,6 +299,7 @@ export async function burnTokens(
         allowed_or_blocked: "allowed",
         reason_code: `api:${endpoint}`,
         posture: buildPostureSnapshot("Standard", {
+          policy_version: CREDIT_POLICY_VERSION,
           check_status: { balance_before: previousBalance, balance_after: newBalance },
         }),
         metadata: {
@@ -307,6 +308,7 @@ export async function burnTokens(
           balance_before: previousBalance,
           balance_after: newBalance,
           api_key_id: apiKeyId,
+          policy_version: CREDIT_POLICY_VERSION,
           ...(metadata ?? {}),
         },
         idempotency_extra: requestId,
