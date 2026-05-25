@@ -1,11 +1,15 @@
 // PAY-009 — Admin resolve payment dispute as LOST (issuer prevailed).
 // Records append-only administrative_adjustment for any frozen credits.
 // Never deletes burned ledger or POI/WaD/execution rows.
+//
+// Batch F3: dispute resolution + canonical Governance Record event are
+// written in a single DB transaction via
+// admin_payment_dispute_resolve_lost_with_governance.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
-import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,33 +50,28 @@ Deno.serve(async (req) => {
     const issues = p.error.flatten().fieldErrors;
     return json({ error: issues.reason ? "reason_required" : "invalid_body", code: issues.reason ? "REASON_REQUIRED" : "INVALID_BODY", details: issues }, 400);
   }
-  const { data, error } = await admin.rpc("resolve_payment_dispute_lost", {
+
+  // F3: atomic resolve-lost + governance.
+  const { data, error } = await admin.rpc("admin_payment_dispute_resolve_lost_with_governance", {
     p_payment_dispute_id: p.data.payment_dispute_id,
     p_admin_user_id: u.user.id,
     p_reason: p.data.reason,
+    p_request_id: req.headers.get("x-request-id"),
+    p_aal: "aal2",
   });
-  if (error) return json({ error: "rpc_failed", message: error.message }, 500);
-  const r = data as { success?: boolean; code?: string };
+  if (error) {
+    console.error("[admin-payment-dispute-resolve-lost] atomic rpc failed:", error);
+    return json({ error: "rpc_failed", code: "ATOMIC_DISPUTE_FAILED", message: error.message }, 500);
+  }
+  const r = data as { success?: boolean; code?: string; event_id?: string; deduplicated?: boolean };
   if (!r?.success) {
     const code = r?.code ?? "DISPUTE_FAILED";
     const status = code === "DISPUTE_NOT_FOUND" ? 404 : code === "DISPUTE_ALREADY_RESOLVED" ? 409 : 400;
     return json({ error: code.toLowerCase(), code }, status);
   }
-  const { data: pd } = await admin.from("payment_disputes")
-    .select("org_id, provider_dispute_reference").eq("id", p.data.payment_dispute_id).maybeSingle();
-  try {
-    await recordAdminHqDecision({
-      admin, sourceFunction: "admin-payment-dispute-resolve-lost",
-      actionCode: "payment_dispute.resolve_lost",
-      actorUserId: u.user.id, actorRole: "platform_admin",
-      orgId: pd?.org_id ?? "00000000-0000-0000-0000-000000000000",
-      aggregateId: p.data.payment_dispute_id, aggregateType: "payment_dispute",
-      reason: p.data.reason, requestId: req.headers.get("x-request-id"),
-      paymentReference: pd?.provider_dispute_reference ?? null, aal: "aal2",
-    });
-  } catch (govErr) {
-    console.error("[admin-payment-dispute-resolve-lost] CRITICAL: gov audit failed:", govErr);
-    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
-  }
-  return json(r, 200);
+  return json({
+    success: true,
+    governance_event_id: r.event_id,
+    deduplicated: !!r.deduplicated,
+  }, 200);
 });
