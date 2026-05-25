@@ -1,11 +1,16 @@
 // DEC-007 — Admin approve refund.
 // platform_admin + AAL2 + reason ≥ 20 chars.
+//
+// Batch F2: refund decision + canonical Governance Record event are written
+// in a single DB transaction via admin_refund_approve_with_governance.
+// If governance fails, the refund decision rolls back. If the refund
+// decision fails, no governance event is written. The previous split-
+// commit flow (approve_refund → recordAdminHqDecision) is removed.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
-import { recordAdminHqDecision } from "../_shared/admin-hq-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,13 +66,27 @@ Deno.serve(async (req) => {
     }, 400);
   }
 
-  const { data, error } = await admin.rpc("approve_refund", {
+  // F2: atomic refund + governance. If either part fails, the whole tx
+  // rolls back inside the RPC (or raises and the edge fn maps to 500).
+  const { data, error } = await admin.rpc("admin_refund_approve_with_governance", {
     p_refund_request_id: p.data.refund_request_id,
     p_admin_user_id: u.user.id,
     p_reason: p.data.reason,
+    p_request_id: req.headers.get("x-request-id"),
+    p_aal: "aal2",
   });
-  if (error) return json({ error: "rpc_failed", message: error.message }, 500);
-  const r = data as { success?: boolean; code?: string };
+  if (error) {
+    console.error("[admin-refund-approve] atomic rpc failed:", error);
+    return json({ error: "rpc_failed", code: "ATOMIC_REFUND_FAILED", message: error.message }, 500);
+  }
+  const r = data as {
+    success?: boolean;
+    code?: string;
+    deduplicated?: boolean;
+    event_id?: string;
+    ledger_id?: string;
+    governance_event_id?: string;
+  };
   if (!r?.success) {
     const code = r?.code ?? "REFUND_FAILED";
     const status = code === "REFUND_NOT_FOUND" ? 404
@@ -76,27 +95,10 @@ Deno.serve(async (req) => {
     return json({ error: code.toLowerCase(), code }, status);
   }
 
-  // Phase 2 — fail-closed governance proof of HQ decision.
-  const { data: rr } = await admin.from("refund_requests")
-    .select("org_id, token_purchase_id").eq("id", p.data.refund_request_id).maybeSingle();
-  try {
-    await recordAdminHqDecision({
-      admin,
-      sourceFunction: "admin-refund-approve",
-      actionCode: "refund.approve",
-      actorUserId: u.user.id,
-      actorRole: "platform_admin",
-      orgId: rr?.org_id ?? "00000000-0000-0000-0000-000000000000",
-      aggregateId: p.data.refund_request_id,
-      aggregateType: "refund_request",
-      reason: p.data.reason,
-      requestId: req.headers.get("x-request-id"),
-      paymentReference: rr?.token_purchase_id ?? null,
-      aal: "aal2",
-    });
-  } catch (govErr) {
-    console.error("[admin-refund-approve] CRITICAL: gov audit failed:", govErr);
-    return json({ error: "gov_audit_write_failed", code: "GOV_AUDIT_WRITE_FAILED" }, 500);
-  }
-  return json(r, 200);
+  return json({
+    success: true,
+    ledger_id: r.ledger_id,
+    governance_event_id: r.event_id,
+    deduplicated: !!r.deduplicated,
+  }, 200);
 });
