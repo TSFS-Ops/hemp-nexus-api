@@ -466,6 +466,13 @@ export function GovernanceRecordDetail({ anchor }: Props) {
         onCorrectingHandled={() => setCorrectingEventId(null)}
       />
 
+      {/* Batch D — Governance waivers / bypasses panel */}
+      <GovernanceWaiversPanel
+        anchor={anchor}
+        orgId={m?.buyer_org_id ?? m?.seller_org_id ?? null}
+      />
+
+
 
 
       {/* Per-source cap warning (HQ only). */}
