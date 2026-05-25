@@ -376,6 +376,13 @@ export function validateGovernanceInput(input: GovernanceWriteInput): void {
       throw new Error("GOV_AUDIT_POSTURE_REASON_REQUIRED: posture 'Not recorded' must include posture_reason");
     }
   }
+
+  // WARN-only reason-code allow-list check (does not throw).
+  warnIfUnknownReasonCode(input.reason_code ?? null, {
+    event_type: input.event_type,
+    aggregate_id: input.aggregate_id,
+    source_function: input.source_function,
+  });
 }
 
 export function isCriticalEvent(event_type: string): boolean {
