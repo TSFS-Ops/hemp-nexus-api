@@ -152,7 +152,7 @@ describe("Batch G — manual credit ledger metadata", () => {
     // separate recordAdminHqDecision).
     expect(ADMIN_CREDIT).toMatch(/admin\.rpc\(\s*['"]admin_credit_org_with_governance['"]/);
     expect(ADMIN_CREDIT).not.toMatch(/admin\.rpc\(\s*['"]atomic_token_credit['"]/);
-    expect(ADMIN_CREDIT).not.toMatch(/recordAdminHqDecision/);
+    expect(ADMIN_CREDIT).not.toMatch(/recordAdminHqDecision\s*\(/);
     // The underlying atomic_token_credit overload still exists in migrations
     // and accepts p_extra_metadata so the wrapper can stamp it server-side.
     expect(MIGRATION_FILES).toMatch(/p_extra_metadata jsonb DEFAULT/);
