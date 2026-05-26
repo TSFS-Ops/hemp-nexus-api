@@ -34,7 +34,12 @@ interface RequireAuthProps {
 }
 
 export function RequireAuth({ children, role, fallbackRoute, loader }: RequireAuthProps) {
-  const { isLoading, isAuthenticated, roles, rolesLoaded } = useAuth();
+  const auth = useAuth();
+  const { isLoading, isAuthenticated, roles } = auth;
+  // Treat `rolesLoaded` as true when the AuthContext shim does not provide it
+  // (older test mocks). In real app code the provider always sets this.
+  const rolesLoaded = (auth as { rolesLoaded?: boolean }).rolesLoaded ?? true;
+
   const navigate = useNavigate();
   const location = useLocation();
 
