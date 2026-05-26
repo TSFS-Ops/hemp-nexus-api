@@ -5,7 +5,33 @@
     "seed-mt009-controlled-prod",
     "unseed-mt009-controlled-prod",
     "seed-cp002-controlled-prod",
-    "unseed-cp002-controlled-prod"
+    "unseed-cp002-controlled-prod",
+    "admin-legal-hold",
+    "user-export-request",
+    "export-prepare",
+    "export-download",
+    "admin-residency-review-approve",
+    "admin-residency-review-decline",
+    "residency-review-request",
+    "admin-billing-hold-apply",
+    "admin-billing-hold-release",
+    "admin-refund-approve",
+    "admin-refund-decline",
+    "admin-payment-dispute-record",
+    "admin-payment-dispute-resolve-won",
+    "admin-payment-dispute-resolve-lost"
   ],
-  "exempt_invokes": []
+  "exempt_invokes": [
+    "admin-residency-review-approve",
+    "admin-residency-review-decline",
+    "admin-billing-hold-apply",
+    "admin-billing-hold-release",
+    "admin-refund-approve",
+    "admin-refund-decline",
+    "admin-payment-dispute-record",
+    "admin-payment-dispute-resolve-won",
+    "admin-payment-dispute-resolve-lost",
+    "admin-legal-hold",
+    "export-download"
+  ]
 }

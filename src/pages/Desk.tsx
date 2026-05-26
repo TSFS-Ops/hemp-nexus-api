@@ -13,6 +13,7 @@ import { NotificationRulesTab } from "@/components/desk/settings/NotificationRul
 import { TokenBalanceTab } from "@/components/desk/settings/TokenBalanceTab";
 import { SecurityTab } from "@/components/desk/settings/SecurityTab";
 import { DataExportTab } from "@/components/desk/settings/DataExportTab";
+import { DataResidencyTab } from "@/components/desk/settings/DataResidencyTab";
 import { MatchCompiler } from "@/components/desk/match/MatchCompiler";
 import { SealedEngagement } from "@/components/desk/match/SealedEngagement";
 import { RejectedMatch } from "@/components/desk/match/RejectedMatch";
@@ -232,6 +233,7 @@ export default function Desk() {
                   <Route path="balance" element={<TokenBalanceTab />} />
                   <Route path="security" element={<SecurityTab />} />
                   <Route path="data-export" element={<DataExportTab />} />
+                  <Route path="data-residency" element={<DataResidencyTab />} />
                 </Route>
                 <Route path="new-trade" element={<NewTradeInitiation />} />
               </Routes>
