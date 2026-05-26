@@ -71,6 +71,7 @@ import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspaces
 import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyReviewsPanel";
 import { AdminBillingReviewPanel } from "@/components/admin/AdminBillingReviewPanel";
 import { GovernanceRecordsPanel } from "@/components/admin/governance/GovernanceRecordsPanel";
+import { AdminBasicMemoryPanel } from "@/components/admin/AdminBasicMemoryPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
