@@ -21,7 +21,10 @@
     "admin-refund-decline",
     "admin-payment-dispute-record",
     "admin-payment-dispute-resolve-won",
-    "admin-payment-dispute-resolve-lost"
+    "admin-payment-dispute-resolve-lost",
+    "admin-compliance-hold-release",
+    "admin-trade-request-archive-override",
+    "refund-request"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
