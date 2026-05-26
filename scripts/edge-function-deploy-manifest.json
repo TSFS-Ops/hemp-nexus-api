@@ -38,6 +38,7 @@
     "admin-payment-dispute-resolve-won",
     "admin-payment-dispute-resolve-lost",
     "admin-legal-hold",
-    "export-download"
+    "export-download",
+    "basic-memory-record-write"
   ]
 }
