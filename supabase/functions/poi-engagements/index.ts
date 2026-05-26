@@ -3440,6 +3440,49 @@ Deno.serve(async (req) => {
         );
       }
 
+      // ── Basic Memory v1: best-effort retained-outcome record for the
+      //    resolved dispute. Fail-OPEN — a Memory failure must NOT
+      //    reverse the dispute resolution that has already committed.
+      //    Only emitted when an actual disputes row was resolved
+      //    (resolvedDisputeId !== null); otherwise we have no
+      //    source_record_id to anchor on.
+      if (resolvedDisputeId) {
+        try {
+          const { writeBasicMemoryRecord, deriveEnvironmentFromMatch } =
+            await import("../_shared/basic-memory.ts");
+          const env = await deriveEnvironmentFromMatch(
+            supabase,
+            matchIdLinked,
+          );
+          await writeBasicMemoryRecord(
+            {
+              trigger_event_type: "dispute.resolved",
+              outcome: "dispute_resolved",
+              outcome_reason: "dispute_resolved",
+              source_table: "disputes",
+              source_record_id: resolvedDisputeId,
+              source_function: "poi-engagements",
+              dispute_id: resolvedDisputeId,
+              match_id: matchIdLinked,
+              engagement_id: engagementId,
+              status_snapshot: {
+                cp_rule: "CP-012",
+                action,
+                previous_engagement_status: "disputed_being_named",
+                new_engagement_status: newEngagementStatus,
+              },
+              environment_classification: env,
+            },
+            { requestId },
+          );
+        } catch (e) {
+          console.warn(
+            `[${requestId}] basic-memory dispute.resolved hook threw (fail-open):`,
+            e instanceof Error ? e.message : "exception",
+          );
+        }
+      }
+
       const responseBody = {
         engagement: updated,
         dispute: {
@@ -3454,6 +3497,7 @@ Deno.serve(async (req) => {
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
+
 
 
     // ── POST /poi-engagements/:id/cancel-by-initiator — Batch J F3 ──

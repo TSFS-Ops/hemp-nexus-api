@@ -1094,6 +1094,46 @@ Deno.serve(async (req) => {
 
       await writeAuditLog("wad.sealed", wadId, { seal_hash: sealHash });
 
+      // ── Basic Memory v1: best-effort retained-outcome record.
+      //    Fail-OPEN — a Memory write failure must NOT reverse the
+      //    committed seal. Anchored on wad_id (canonical) + poi_id
+      //    (which doubles as match_id in the WaD schema).
+      try {
+        const { writeBasicMemoryRecord, deriveEnvironmentFromMatch } =
+          await import("../_shared/basic-memory.ts");
+        const linkedMatchId =
+          (wad as { match_id?: string | null }).match_id ?? wad.poi_id ?? null;
+        const env = await deriveEnvironmentFromMatch(supabase, linkedMatchId);
+        await writeBasicMemoryRecord(
+          {
+            trigger_event_type: "wad.sealed",
+            outcome: "wad_sealed",
+            outcome_reason: "attestations_complete",
+            source_table: "wads",
+            source_record_id: wadId,
+            source_function: "wad",
+            wad_id: wadId,
+            poi_id: wad.poi_id ?? null,
+            match_id: linkedMatchId,
+            status_snapshot: {
+              attestation_count: attestations.length,
+              document_count: documents.length,
+              seal_hash_prefix: sealHash.slice(0, 16),
+            },
+            environment_classification: env,
+          },
+          { requestId },
+        );
+      } catch (e) {
+        // Defence-in-depth: helper is already fail-open, but never let
+        // an unexpected import/runtime error reverse the seal.
+        console.warn(
+          `[${requestId}] basic-memory wad.sealed hook threw (fail-open):`,
+          e instanceof Error ? e.message : "exception",
+        );
+      }
+
+
       // ── Revenue notification → support@izenzo.co.za ──
       // Sealing is the moment a trade is certified ("the sale completes").
       // Best-effort, never blocks the seal response. Idempotency keyed on

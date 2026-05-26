@@ -766,6 +766,39 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // ── Basic Memory v1: best-effort retained-outcome record.
+    //    Fail-OPEN — a Memory write failure must NOT reverse the
+    //    committed collapse. Runs after the atomic RPC has succeeded.
+    {
+      const { writeBasicMemoryRecord, deriveEnvironmentFromMatch } =
+        await import("../_shared/basic-memory.ts");
+      const linkedMatchId =
+        match_id && UUID_RE.test(match_id) ? match_id : null;
+      const env = await deriveEnvironmentFromMatch(adminClient, linkedMatchId);
+      await writeBasicMemoryRecord(
+        {
+          trigger_event_type: "finality.collapsed",
+          outcome: "completed",
+          outcome_reason: "collapse_recorded",
+          source_table: "collapse_ledger",
+          source_record_id: collapseResult.collapse_id,
+          source_function: "collapse",
+          match_id: linkedMatchId,
+          status_snapshot: {
+            poi_state: "COMPLETED",
+            signature_valid: signatureValid,
+            ntp_status: ntpStatus,
+            currency,
+          },
+          audit_event_ids: [
+            collapseResult.execution_event_id,
+            collapseResult.finality_event_id,
+          ].filter(Boolean) as string[],
+          environment_classification: env,
+        },
+        { requestId },
+      );
+    }
 
     return new Response(
       JSON.stringify({
