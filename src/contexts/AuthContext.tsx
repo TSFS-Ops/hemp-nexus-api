@@ -380,6 +380,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isLoading,
+        rolesLoaded,
+
         isAuthenticated: !!session,
         isPlatformAdmin,
         isOrgAdmin,
