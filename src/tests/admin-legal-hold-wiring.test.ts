@@ -115,10 +115,12 @@ describe("admin-legal-hold — RELEASE", () => {
     expect(SRC).toMatch(/LEGAL_HOLD_NOT_ACTIVE[\s\S]{0,200}409/);
   });
 
-  it("optimistic concurrency on UPDATE (.eq status active)", () => {
-    expect(SRC).toMatch(
-      /\.update\(\s*\{[\s\S]{0,400}status:\s*"released"[\s\S]{0,400}\}\)\s*\.eq\(\s*"id",\s*legal_hold_id\s*\)\s*\.eq\(\s*"status",\s*"active"\s*\)/,
-    );
+  it("optimistic concurrency on UPDATE lives in the atomic RPC (F8)", () => {
+    // After the F-series atomic refactor, the .eq("status","active") guard
+    // lives inside atomic_legal_hold_release. The endpoint now calls the RPC
+    // and relies on its CONFLICT/LEGAL_HOLD_NOT_ACTIVE returns instead.
+    expect(SRC).toMatch(/\.rpc\(\s*"atomic_legal_hold_release"/);
+    expect(SRC).toMatch(/LEGAL_HOLD_NOT_ACTIVE/);
   });
 
   it("emits canonical data.legal_hold_released audit on success", () => {
