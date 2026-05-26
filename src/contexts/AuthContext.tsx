@@ -13,6 +13,14 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  /**
+   * True once the initial role fetch for the current authenticated user has
+   * resolved at least once (success or failure), OR when there is no
+   * authenticated user. Route guards MUST wait for this before deciding to
+   * redirect on a missing required role — otherwise a valid platform_admin
+   * gets bounced to /desk?denied=1 on hard reload before fetchRoles resolves.
+   */
+  rolesLoaded: boolean;
   isAuthenticated: boolean;
   // Granular role checks
   isPlatformAdmin: boolean;
@@ -27,6 +35,7 @@ interface AuthContextType {
   suppressExpiry: () => void;
 }
 
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -34,6 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  // See AuthContextType.rolesLoaded for the contract.
+  const [rolesLoaded, setRolesLoaded] = useState(false);
+
   // Track whether user explicitly clicked sign-out (not session expiry)
   const explicitSignOutRef = useRef(false);
   // Track which user IDs have already had their profile verified this session
@@ -136,8 +148,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("[AuthContext] Unexpected error fetching roles:", err);
       setRoles([]);
+    } finally {
+      // Mark the first (or refreshed) role fetch as resolved so route guards
+      // can safely make a redirect decision. Without this flag, RequireAuth
+      // would see roles=[] in the brief window between session restore and
+      // fetchRoles resolving, and bounce valid admins to /desk?denied=1.
+      setRolesLoaded(true);
     }
   }, [invalidateRoleScopedCaches]);
+
 
   const refreshSession = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -156,6 +175,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setRoles([]);
+    // No authenticated user => no role gating to wait for.
+    setRolesLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -188,11 +209,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         hadUserRef.current = false;
         setRoles([]);
+        // No user => guards have nothing to wait for.
+        setRolesLoaded(true);
         return;
       }
 
       if (session?.user) {
         hadUserRef.current = true;
+        // A new authenticated user appeared — the next role fetch is the
+        // authoritative one. Mark roles as not-yet-loaded so RequireAuth
+        // shows the loader instead of redirecting on stale roles=[].
+        setRolesLoaded(false);
         // Only verify profile on sign-in/sign-up, not every token refresh
         const needsProfileCheck = event === "SIGNED_IN" || event === "INITIAL_SESSION";
         setTimeout(async () => {
@@ -203,6 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, 0);
       } else {
         setRoles([]);
+        setRolesLoaded(true);
       }
     });
 
@@ -213,13 +241,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       
       if (session?.user) {
+        // Initial restore — roles fetch is in flight; guards must wait.
+        setRolesLoaded(false);
         await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
         fetchRoles(session.user.id);
+      } else {
+        setRolesLoaded(true);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [fetchRoles, ensureProfileIfNeeded]);
+
 
   // ── Role refresh on tab focus / visibility change ──
   // We previously used a Realtime subscription on user_roles, but publishing
@@ -347,6 +380,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isLoading,
+        rolesLoaded,
+
         isAuthenticated: !!session,
         isPlatformAdmin,
         isOrgAdmin,

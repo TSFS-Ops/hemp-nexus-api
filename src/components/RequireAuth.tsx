@@ -34,7 +34,12 @@ interface RequireAuthProps {
 }
 
 export function RequireAuth({ children, role, fallbackRoute, loader }: RequireAuthProps) {
-  const { isLoading, isAuthenticated, roles } = useAuth();
+  const auth = useAuth();
+  const { isLoading, isAuthenticated, roles } = auth;
+  // Treat `rolesLoaded` as true when the AuthContext shim does not provide it
+  // (older test mocks). In real app code the provider always sets this.
+  const rolesLoaded = (auth as { rolesLoaded?: boolean }).rolesLoaded ?? true;
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -58,6 +63,14 @@ export function RequireAuth({ children, role, fallbackRoute, loader }: RequireAu
 
   // Role check
   if (role) {
+    // CRITICAL: do not redirect on missing role until the initial role fetch
+    // has resolved at least once. Otherwise a valid platform_admin gets
+    // bounced to /desk?denied=1 on hard reload in the brief window between
+    // session restore (isLoading=false) and fetchRoles resolving.
+    if (!rolesLoaded) {
+      return <>{loader ?? <FullPageLoader />}</>;
+    }
+
     const requiredRoles = Array.isArray(role) ? role : [role];
     const hasRequiredRole = requiredRoles.some(r => roles.includes(r));
 
@@ -69,6 +82,7 @@ export function RequireAuth({ children, role, fallbackRoute, loader }: RequireAu
 
   return <>{children}</>;
 }
+
 
 /** Small helper component to redirect on missing role without calling navigate during render */
 function RoleRedirect({ fallbackRoute }: { fallbackRoute: string }) {
