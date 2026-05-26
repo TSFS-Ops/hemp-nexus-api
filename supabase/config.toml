@@ -38,6 +38,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.basic-memory-record-write]
+    verify_jwt = false
   [functions.calculate-reputation]
     verify_jwt = false
   [functions.consents]

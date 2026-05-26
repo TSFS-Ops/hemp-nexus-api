@@ -24,7 +24,8 @@
     "admin-payment-dispute-resolve-lost",
     "admin-compliance-hold-release",
     "admin-trade-request-archive-override",
-    "refund-request"
+    "refund-request",
+    "basic-memory-record-write"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
@@ -37,6 +38,7 @@
     "admin-payment-dispute-resolve-won",
     "admin-payment-dispute-resolve-lost",
     "admin-legal-hold",
-    "export-download"
+    "export-download",
+    "basic-memory-record-write"
   ]
 }
