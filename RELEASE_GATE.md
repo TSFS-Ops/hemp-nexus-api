@@ -74,6 +74,8 @@ live in the production runtime before publishing.
 - `unseed-mt009-controlled-prod` — MT-009 controlled-production demo cleanup (admin/curl only)
 - `seed-cp002-controlled-prod` — CP-002 controlled-production demo seeder (admin/curl only)
 - `unseed-cp002-controlled-prod` — CP-002 controlled-production demo cleanup (admin/curl only)
+- `seed-cp009-controlled-prod` — CP-009 / DEC-003 controlled-production late-acceptance fixture seeder (admin/curl only)
+- `unseed-cp009-controlled-prod` — CP-009 / DEC-003 controlled-production fixture cleanup (admin/curl only)
 - `admin-legal-hold` — SEC-001 / DATA-003 Platform Admin legal-hold apply/release (AAL2 + reason required)
 - `user-export-request` — DATA-005 Desk → My Data user-initiated export request
 - `export-prepare` — DATA-005 / DATA-010 export preparation worker (cron + admin curl)

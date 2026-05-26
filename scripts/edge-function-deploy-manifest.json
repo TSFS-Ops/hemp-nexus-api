@@ -6,6 +6,8 @@
     "unseed-mt009-controlled-prod",
     "seed-cp002-controlled-prod",
     "unseed-cp002-controlled-prod",
+    "seed-cp009-controlled-prod",
+    "unseed-cp009-controlled-prod",
     "admin-legal-hold",
     "user-export-request",
     "export-prepare",
