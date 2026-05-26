@@ -792,6 +792,109 @@ export type Database = {
           },
         ]
       }
+      basic_memory_records: {
+        Row: {
+          audit_event_ids: string[]
+          created_at: string
+          dispute_id: string | null
+          engagement_id: string | null
+          environment_classification: string
+          id: string
+          match_id: string | null
+          outcome: string
+          outcome_reason: string
+          outcome_summary: string | null
+          poi_id: string | null
+          source_function: string
+          source_record_id: string
+          source_table: string
+          status_snapshot: Json
+          trigger_event_type: string
+          wad_id: string | null
+        }
+        Insert: {
+          audit_event_ids?: string[]
+          created_at?: string
+          dispute_id?: string | null
+          engagement_id?: string | null
+          environment_classification: string
+          id?: string
+          match_id?: string | null
+          outcome: string
+          outcome_reason: string
+          outcome_summary?: string | null
+          poi_id?: string | null
+          source_function: string
+          source_record_id: string
+          source_table: string
+          status_snapshot?: Json
+          trigger_event_type: string
+          wad_id?: string | null
+        }
+        Update: {
+          audit_event_ids?: string[]
+          created_at?: string
+          dispute_id?: string | null
+          engagement_id?: string | null
+          environment_classification?: string
+          id?: string
+          match_id?: string | null
+          outcome?: string
+          outcome_reason?: string
+          outcome_summary?: string | null
+          poi_id?: string | null
+          source_function?: string
+          source_record_id?: string
+          source_table?: string
+          status_snapshot?: Json
+          trigger_event_type?: string
+          wad_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "basic_memory_records_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "basic_memory_records_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "basic_memory_records_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "poi_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "basic_memory_records_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "basic_memory_records_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "basic_memory_records_wad_id_fkey"
+            columns: ["wad_id"]
+            isOneToOne: false
+            referencedRelation: "wads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       behavioral_signals: {
         Row: {
           action_type: string
