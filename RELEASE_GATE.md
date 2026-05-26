@@ -74,6 +74,20 @@ live in the production runtime before publishing.
 - `unseed-mt009-controlled-prod` — MT-009 controlled-production demo cleanup (admin/curl only)
 - `seed-cp002-controlled-prod` — CP-002 controlled-production demo seeder (admin/curl only)
 - `unseed-cp002-controlled-prod` — CP-002 controlled-production demo cleanup (admin/curl only)
+- `admin-legal-hold` — SEC-001 / DATA-003 Platform Admin legal-hold apply/release (AAL2 + reason required)
+- `user-export-request` — DATA-005 Desk → My Data user-initiated export request
+- `export-prepare` — DATA-005 / DATA-010 export preparation worker (cron + admin curl)
+- `export-download` — DATA-005 / DATA-010 signed export download endpoint
+- `residency-review-request` — DATA-009 Desk-user residency review submission
+- `admin-residency-review-approve` — DATA-009 Platform Admin residency review approval (AAL2 + reason required)
+- `admin-residency-review-decline` — DATA-009 Platform Admin residency review decline (AAL2 + reason required)
+- `admin-billing-hold-apply` — DEC-007 / PAY-009 Platform Admin billing hold apply (AAL2 + reason required)
+- `admin-billing-hold-release` — DEC-007 / PAY-009 Platform Admin billing hold release (AAL2 + reason required)
+- `admin-refund-approve` — DEC-007 Platform Admin refund approval (AAL2 + reason required)
+- `admin-refund-decline` — DEC-007 Platform Admin refund decline (AAL2 + reason required)
+- `admin-payment-dispute-record` — PAY-009 Platform Admin manual payment-dispute record (AAL2 + reason required)
+- `admin-payment-dispute-resolve-won` — PAY-009 Platform Admin payment-dispute resolve-won (AAL2 + reason required)
+- `admin-payment-dispute-resolve-lost` — PAY-009 Platform Admin payment-dispute resolve-lost (AAL2 + reason required)
 
 Closeout & handover artefacts (must be reviewed before client sign-off):
 
