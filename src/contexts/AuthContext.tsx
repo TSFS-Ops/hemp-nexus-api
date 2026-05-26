@@ -175,6 +175,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setRoles([]);
+    // No authenticated user => no role gating to wait for.
+    setRolesLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -207,11 +209,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         hadUserRef.current = false;
         setRoles([]);
+        // No user => guards have nothing to wait for.
+        setRolesLoaded(true);
         return;
       }
 
       if (session?.user) {
         hadUserRef.current = true;
+        // A new authenticated user appeared — the next role fetch is the
+        // authoritative one. Mark roles as not-yet-loaded so RequireAuth
+        // shows the loader instead of redirecting on stale roles=[].
+        setRolesLoaded(false);
         // Only verify profile on sign-in/sign-up, not every token refresh
         const needsProfileCheck = event === "SIGNED_IN" || event === "INITIAL_SESSION";
         setTimeout(async () => {
@@ -222,6 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, 0);
       } else {
         setRoles([]);
+        setRolesLoaded(true);
       }
     });
 
@@ -232,13 +241,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       
       if (session?.user) {
+        // Initial restore — roles fetch is in flight; guards must wait.
+        setRolesLoaded(false);
         await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
         fetchRoles(session.user.id);
+      } else {
+        setRolesLoaded(true);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [fetchRoles, ensureProfileIfNeeded]);
+
 
   // ── Role refresh on tab focus / visibility change ──
   // We previously used a Realtime subscription on user_roles, but publishing
