@@ -13,6 +13,8 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
 
+import { useLocation } from "react-router-dom";
+
 const mockUseAuth = vi.fn();
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
@@ -22,9 +24,11 @@ function Protected() {
   return <div>HQ_OK</div>;
 }
 function Desk() {
-  const params = new URLSearchParams(window.location.search);
+  const loc = useLocation();
+  const params = new URLSearchParams(loc.search);
   return <div>DESK_{params.get("denied") === "1" ? "DENIED" : "PLAIN"}</div>;
 }
+
 
 function renderAt(path: string) {
   return render(
