@@ -71,6 +71,7 @@ import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspaces
 import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyReviewsPanel";
 import { AdminBillingReviewPanel } from "@/components/admin/AdminBillingReviewPanel";
 import { GovernanceRecordsPanel } from "@/components/admin/governance/GovernanceRecordsPanel";
+import { AdminBasicMemoryPanel } from "@/components/admin/AdminBasicMemoryPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
@@ -329,11 +330,26 @@ function LegalHoldsTab() {
     </>;
 }
 function GovernanceRecordsTab() {
+  // Sub-tabs: Records (existing merged audit view) · Basic Memory (v1 retained outcomes)
+  const [sub, setSub] = useUrlTab("sub", "records", ["records", "memory"]);
   return <>
       <TabHeader id="governance-records" />
-      <Surface label="Governance Records · HQ-only · merged audit_logs · admin_audit_logs · event_store · match_events · Phase 1 visibility only">
-        <GovernanceRecordsPanel />
-      </Surface>
+      <Tabs value={sub} onValueChange={setSub} className="space-y-5">
+        <TabsList className="bg-card border border-border rounded-sm">
+          <TabsTrigger value="records">Records</TabsTrigger>
+          <TabsTrigger value="memory">Basic Memory</TabsTrigger>
+        </TabsList>
+        <TabsContent value="records">
+          <Surface label="Governance Records · HQ-only · merged audit_logs · admin_audit_logs · event_store · match_events · Phase 1 visibility only">
+            <GovernanceRecordsPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="memory">
+          <Surface label="Basic Memory Records · HQ-only · public.basic_memory_records · v1 retained outcomes · read-only · no export">
+            <AdminBasicMemoryPanel />
+          </Surface>
+        </TabsContent>
+      </Tabs>
     </>;
 }
 function DisputesTab() {
