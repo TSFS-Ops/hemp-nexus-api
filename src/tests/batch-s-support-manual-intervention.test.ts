@@ -46,14 +46,26 @@ describe("Batch S — Support manual intervention hardening", () => {
 
   it("admin-manual-overrides writes server-authored audit with before/after + actor context", () => {
     const src = read(overridesFn);
-    expect(src).toMatch(/admin_audit_logs/);
-    expect(src).toMatch(/before:\s*beforeSnapshot/);
-    expect(src).toMatch(/after:\s*afterSnapshot/);
-    expect(src).toMatch(/actor_ip/);
-    expect(src).toMatch(/user_agent/);
-    expect(src).toMatch(/request_id/);
-    expect(src).toMatch(/admin\.manual_override\./);
+    // Batch F7 rewired the endpoint to a single SECURITY DEFINER wrapper
+    // (admin_manual_override_with_governance) that performs the override
+    // mutation, the admin_audit_logs insert and the governance event
+    // commit in one DB transaction. The endpoint must call the wrapper
+    // and forward before/after snapshots + actor context as RPC params.
+    expect(src).toMatch(/admin\.rpc\(\s*["']admin_manual_override_with_governance["']/);
+    expect(src).toMatch(/p_before_snapshot:\s*externalBefore/);
+    expect(src).toMatch(/p_after_snapshot:\s*externalAfter/);
+    expect(src).toMatch(/p_actor_ip:\s*actorIp/);
+    expect(src).toMatch(/p_user_agent:\s*userAgent/);
+    expect(src).toMatch(/p_request_id:\s*requestId/);
+    // No legacy split-commit (direct admin_audit_logs insert or
+    // recordAdminHqDecision after the mutation).
+    expect(src).not.toMatch(/from\(\s*["']admin_audit_logs["']\s*\)\s*\.insert/);
+    expect(src).not.toMatch(/recordAdminHqDecision/);
+    // Still pins the canonical action namespace (in code comments and
+    // the writeAudit failure path).
+    expect(src).toMatch(/admin\.manual_override/);
   });
+
 
   it("admin-manual-overrides only accepts the four approved operations", () => {
     const src = read(overridesFn);

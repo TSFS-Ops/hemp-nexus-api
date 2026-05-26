@@ -125,10 +125,21 @@ describe("Batch Q — admin-counterparty-corrections edge function", () => {
     expect(fn).toMatch(/reason: z\.string\(\)\.trim\(\)\.min\(10\)\.max\(2000\)/);
   });
 
-  it("13. delegates to audited DEFINER RPCs", () => {
-    expect(fn).toMatch(/admin\.rpc\("admin_link_counterparty_to_org"/);
-    expect(fn).toMatch(/admin\.rpc\("admin_merge_counterparties"/);
+  it("13. delegates to the Batch F6 atomic governance wrapper (no split-commit)", () => {
+    // Batch F6 rewired this endpoint so a single SECURITY DEFINER wrapper
+    // performs the business mutation (admin_link_counterparty_to_org or
+    // admin_merge_counterparties) and writes admin.hq_decision_recorded
+    // in one transaction. The endpoint must call the wrapper directly and
+    // must NOT call the per-operation RPCs from the edge function or
+    // record the governance event in a second step.
+    expect(fn).toMatch(/admin\.rpc\(\s*["']admin_counterparty_corrections_with_governance["']/);
+    expect(fn).not.toMatch(/admin\.rpc\(\s*["']admin_link_counterparty_to_org["']/);
+    expect(fn).not.toMatch(/admin\.rpc\(\s*["']admin_merge_counterparties["']/);
+    expect(fn).not.toMatch(/recordAdminHqDecision/);
+    // Surfaces governance_event_id back to the client.
+    expect(fn).toMatch(/event_id/);
   });
+
 });
 
 describe("Batch Q — admin-match-corrections edge function", () => {
