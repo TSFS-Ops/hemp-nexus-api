@@ -106,7 +106,7 @@ describe("F8 — legacy mirror writers remain but are clearly mirrors", () => {
   });
   it("mirror writers run AFTER the atomic RPC success branch (not before)", () => {
     const rpcApplyIdx = SRC.indexOf('"atomic_legal_hold_apply"');
-    const mirrorIdx = SRC.indexOf("LEGAL_HOLD_AUDIT_NAMES.applied");
+    const mirrorIdx = SRC.indexOf("writeCanonicalAudit(admin, LEGAL_HOLD_AUDIT_NAMES.applied");
     expect(rpcApplyIdx).toBeGreaterThan(-1);
     expect(mirrorIdx).toBeGreaterThan(rpcApplyIdx);
   });
