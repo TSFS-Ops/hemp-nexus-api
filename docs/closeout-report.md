@@ -84,3 +84,10 @@ Remaining issues at handover: **10**, all classified as **policy-pending** (clie
 ```bash
 npm run test:regression   # vitest run src/tests/batch-*.test.ts
 ```
+
+## P-4 Governance Record closeout
+
+- [P-4 Governance Record Closeout Proof Pack](./p4-governance-record-closeout-proof-pack.md) — evidence index for the 18/18 admin HQ atomicity claim, UI surface, canonical writer, corrections, waivers, AAL2 coverage, deferred items.
+- [P-4 Safe Claim Language](./p4-governance-record-safe-claim-language.md) — approved client-facing wording plus explicit do-not-claim list.
+- [Governance Rollback Proof](./governance-rollback-proof.md) — how to run the live DB rollback proof against a staging tier.
+
