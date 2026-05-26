@@ -144,10 +144,20 @@ describe("Batch G — manual credit ledger metadata", () => {
     expect(ADMIN_CREDIT).toMatch(/isDemo \? 'admin_manual_demo' : 'admin_manual'/);
   });
 
-  it("calls atomic_token_credit with p_extra_metadata payload", () => {
-    expect(ADMIN_CREDIT).toMatch(/p_extra_metadata:\s*extraMetadata/);
+  it("calls atomic_token_credit (via Batch F1 atomic wrapper) and the overload accepts p_extra_metadata", () => {
+    // Batch F1 rewired the endpoint to a single transactional wrapper that
+    // performs atomic_token_credit + admin.hq_decision_recorded in one
+    // transaction. The endpoint must call the wrapper, never the legacy
+    // split-commit sequence (direct atomic_token_credit followed by a
+    // separate recordAdminHqDecision).
+    expect(ADMIN_CREDIT).toMatch(/admin\.rpc\(\s*['"]admin_credit_org_with_governance['"]/);
+    expect(ADMIN_CREDIT).not.toMatch(/admin\.rpc\(\s*['"]atomic_token_credit['"]/);
+    expect(ADMIN_CREDIT).not.toMatch(/recordAdminHqDecision/);
+    // The underlying atomic_token_credit overload still exists in migrations
+    // and accepts p_extra_metadata so the wrapper can stamp it server-side.
     expect(MIGRATION_FILES).toMatch(/p_extra_metadata jsonb DEFAULT/);
   });
+
 
   it("preserves admin.credit_org admin_audit_logs action", () => {
     expect(ADMIN_CREDIT).toMatch(/'admin\.credit_org'/);
