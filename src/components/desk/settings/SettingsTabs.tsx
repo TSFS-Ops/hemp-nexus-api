@@ -7,6 +7,7 @@ const TABS = [
   { to: "/desk/settings/balance", label: "Credit Balance" },
   { to: "/desk/settings/security", label: "Security" },
   { to: "/desk/settings/data-export", label: "My Data" },
+  { to: "/desk/settings/data-residency", label: "Data Residency" },
 ];
 
 export function SettingsTabs() {
