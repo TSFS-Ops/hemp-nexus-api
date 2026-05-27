@@ -32,10 +32,17 @@ interface PendingRefundRow {
   status: string;
 }
 
+interface BlockedRefundRow {
+  token_purchase_id: string;
+  status: "blocked_credits_used" | "blocked_expired" | string;
+  created_at: string;
+}
+
 interface ListOrgPurchasesResponse {
   success: boolean;
   purchases: PurchaseRow[];
   pending_refunds: PendingRefundRow[];
+  blocked_refunds?: BlockedRefundRow[];
 }
 
 interface PurchasesListProps {
