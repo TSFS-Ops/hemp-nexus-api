@@ -28,12 +28,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, AlertCircle } from "lucide-react";
 import {
   REFUND_REASON_CODES,
   DEC_007_REFUND_POLICY,
   type RefundReasonCode,
 } from "@/lib/policy/dec-007-refund-policy";
+import { parseEdgeError } from "@/lib/edge-error";
 
 const REASON_LABELS: Record<RefundReasonCode, string> = {
   unused_within_window: "Unused credits — within refund window",
@@ -64,6 +66,7 @@ export function RefundRequestDialog({
   const [reasonCode, setReasonCode] = useState<RefundReasonCode | "">("");
   const [reasonDetail, setReasonDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const detailTooShort = reasonDetail.trim().length < MIN_DETAIL;
   const canSubmit = !!reasonCode && !detailTooShort && !submitting;
@@ -72,11 +75,13 @@ export function RefundRequestDialog({
     setReasonCode("");
     setReasonDetail("");
     setSubmitting(false);
+    setSubmitError(null);
   };
 
   const handleSubmit = async () => {
     if (!canSubmit || !reasonCode) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const { data, error } = await supabase.functions.invoke("refund-request", {
         body: {
@@ -85,7 +90,12 @@ export function RefundRequestDialog({
           reason_detail: reasonDetail.trim(),
         },
       });
-      if (error) throw error;
+      if (error) {
+        const parsed = await parseEdgeError(error);
+        setSubmitError(parsed.message);
+        toast.error(parsed.message);
+        return;
+      }
       const code = (data as { code?: string; success?: boolean } | null)?.code;
       const success = (data as { success?: boolean } | null)?.success;
       if (success === false) {
@@ -97,6 +107,7 @@ export function RefundRequestDialog({
               : code === "REASON_REQUIRED"
                 ? "Please provide a reason of at least 20 characters."
                 : "We couldn't record your refund request. Please try again.";
+        setSubmitError(msg);
         toast.error(msg);
         return;
       }
@@ -106,7 +117,9 @@ export function RefundRequestDialog({
       onSuccess?.();
     } catch (err: unknown) {
       console.error("[refund-request] submit error", err);
-      toast.error("We couldn't record your refund request. Please try again.");
+      const parsed = await parseEdgeError(err);
+      setSubmitError(parsed.message);
+      toast.error(parsed.message);
     } finally {
       setSubmitting(false);
     }
