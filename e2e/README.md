@@ -44,18 +44,44 @@ The org is flagged `is_demo=true` so lifecycle / billing crons skip it.
 ## Run
 
 ```bash
+export SMOKE_ENV=staging                  # REQUIRED — TOTP helper refuses otherwise
 export SMOKE_BASE_URL="https://id-preview--95025ceb-b8ab-4906-adee-3188617c0dbc.lovable.app"
-export SMOKE_ADMIN_EMAIL="..."           # platform_admin, NO TOTP enrolled
+export SMOKE_ADMIN_EMAIL="..."            # platform_admin, NO TOTP enrolled
 export SMOKE_ADMIN_PASSWORD="..."
-export SMOKE_ADMIN_AAL2_EMAIL="..."      # platform_admin, TOTP enrolled
+export SMOKE_ADMIN_AAL2_EMAIL="..."       # platform_admin, TOTP enrolled
 export SMOKE_ADMIN_AAL2_PASSWORD="..."
-export SMOKE_ADMIN_AAL2_TOTP_SECRET="JBSWY3DPEHPK3PXP"   # base32
-export SMOKE_ORG_EMAIL="..."             # org with a completed purchase, no pending refund
+export SMOKE_ADMIN_AAL2_TOTP_SECRET="..." # base32; never commit, never echo
+export SMOKE_ORG_EMAIL="..."              # org with a completed purchase, no pending refund
 export SMOKE_ORG_PASSWORD="..."
 export SMOKE_LEGAL_HOLD_SCOPE_ID="00000000-0000-0000-0000-000000000000"
 
 npx playwright test
 ```
+
+## TOTP handling (staging only)
+
+Both the automated suite and the manual helper enforce two rules:
+
+1. **Staging-only.** `SMOKE_ENV` must be `staging` or `test`. Anything else
+   (including unset) makes the TOTP helper refuse. This prevents production
+   TOTP material from being used by test tooling.
+2. **No logging.** The secret and the generated 6-digit code are never
+   written to stdout, stderr, Playwright traces, error messages, or disk.
+   Call sites pass the env-var *name* (`"SMOKE_ADMIN_AAL2_TOTP_SECRET"`),
+   not the value — the helper reads it itself.
+
+**Manual code (interactive, no echo):**
+
+```bash
+SMOKE_ENV=staging node scripts/totp-prompt.mjs
+# Pastes the secret with terminal echo OFF, prints the current code once.
+# Nothing is persisted; secret is never echoed back.
+```
+
+Never paste the secret as an argv (`node script.mjs SECRET`) — argv lands
+in shell history and `ps` output. Always use the hidden prompt or env var.
+
+
 
 ## Gate
 
