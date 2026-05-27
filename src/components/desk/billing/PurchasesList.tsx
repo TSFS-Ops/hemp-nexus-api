@@ -32,6 +32,12 @@ interface PendingRefundRow {
   status: string;
 }
 
+interface ListOrgPurchasesResponse {
+  success: boolean;
+  purchases: PurchaseRow[];
+  pending_refunds: PendingRefundRow[];
+}
+
 interface PurchasesListProps {
   orgId: string | undefined;
 }
@@ -40,39 +46,25 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
   const queryClient = useQueryClient();
   const [activePurchase, setActivePurchase] = useState<PurchaseRow | null>(null);
 
-  const { data: purchases } = useQuery({
-    queryKey: ["billing-purchases", orgId],
-    queryFn: async (): Promise<PurchaseRow[]> => {
-      const { data, error } = await supabase
-        .from("token_purchases")
-        .select("id, package_id, token_amount, amount_usd, status, created_at, paystack_reference")
-        .eq("org_id", orgId!)
-        .order("created_at", { ascending: false })
-        .limit(25);
+  const { data } = useQuery({
+    queryKey: ["billing-org-purchases", orgId],
+    queryFn: async (): Promise<ListOrgPurchasesResponse> => {
+      const { data, error } = await supabase.functions.invoke("list-org-purchases", {
+        body: {},
+      });
       if (error) throw error;
-      return (data ?? []) as PurchaseRow[];
+      return data as ListOrgPurchasesResponse;
     },
     enabled: !!orgId,
   });
 
-  const { data: pendingRefunds } = useQuery({
-    queryKey: ["billing-pending-refunds", orgId],
-    queryFn: async (): Promise<PendingRefundRow[]> => {
-      const { data, error } = await supabase
-        .from("refund_requests")
-        .select("token_purchase_id, status")
-        .eq("org_id", orgId!)
-        .eq("status", "pending");
-      if (error) throw error;
-      return (data ?? []) as PendingRefundRow[];
-    },
-    enabled: !!orgId,
-  });
+  const purchases = data?.purchases ?? [];
+  const pendingRefunds = data?.pending_refunds ?? [];
 
-  const pendingSet = new Set((pendingRefunds ?? []).map((r) => r.token_purchase_id));
+  const pendingSet = new Set(pendingRefunds.map((r) => r.token_purchase_id));
 
   const onRefundSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ["billing-pending-refunds", orgId] });
+    queryClient.invalidateQueries({ queryKey: ["billing-org-purchases", orgId] });
   };
 
   return (
