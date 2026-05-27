@@ -87,3 +87,21 @@ in shell history and `ps` output. Always use the hidden prompt or env var.
 
 If any row fails — **do not send Daniel**. Fix and re-run. Only when all four
 rows are green is the status `DANIEL_RETEST_PACK_READY_TO_SEND`.
+
+## Evidence bundle
+
+Each test row writes structured evidence (milestone screenshots, console
+log, network trace with `x-request-id`/`sb-request-id` headers, summary
+JSON with status + error + duration) into `evidence/<row-slug>/`.
+
+After a run, package everything into one downloadable zip:
+
+```bash
+npm run smoke:daniel:evidence
+# → /mnt/documents/smoke-a-d-evidence-<timestamp>.zip
+```
+
+The zip contains `evidence/index.html` (per-row pass/fail table with
+request IDs to follow into edge-function logs) and the full Playwright
+HTML report. No request bodies, auth headers, or TOTP codes are ever
+captured — only response trace headers from a fixed allowlist.
