@@ -67,8 +67,10 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
 
   const purchases = data?.purchases ?? [];
   const pendingRefunds = data?.pending_refunds ?? [];
+  const blockedRefunds = data?.blocked_refunds ?? [];
 
   const pendingSet = new Set(pendingRefunds.map((r) => r.token_purchase_id));
+  const blockedMap = new Map(blockedRefunds.map((r) => [r.token_purchase_id, r.status]));
 
   const onRefundSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["billing-org-purchases", orgId] });
