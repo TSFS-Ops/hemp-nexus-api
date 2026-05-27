@@ -354,7 +354,7 @@ function GovernanceRecordsTab() {
 }
 function DisputesTab() {
   // Sub-tabs: Disputes · Challenges · Trade Approvals · Verification Queue (clip-on)
-  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification", "trade-request-archive", "billing-review"]);
+  const [sub, setSub] = useUrlTab("sub", "disputes", ["disputes", "challenges", "approvals", "verification", "trade-request-archive", "compliance-holds", "demo-workspaces", "residency-reviews", "billing-review"]);
   return <>
       <TabHeader id="disputes" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
