@@ -16,11 +16,17 @@ import { resolve } from "node:path";
 const HQ_PATH = resolve(__dirname, "../pages/HQ.tsx");
 const SRC = readFileSync(HQ_PATH, "utf8");
 
-function extractDisputesAllowedValues(): string[] {
-  // Find the DisputesTab block and pull its useUrlTab("sub", "disputes", [...]) array.
+function disputesTabSlice(): string {
   const fnIdx = SRC.indexOf("function DisputesTab()");
   expect(fnIdx, "DisputesTab function not found").toBeGreaterThan(-1);
-  const slice = SRC.slice(fnIdx, fnIdx + 4000);
+  // Bound the slice to just this function body — the next `function ` token
+  // marks the start of the following tab component.
+  const after = SRC.indexOf("\nfunction ", fnIdx + 1);
+  return SRC.slice(fnIdx, after === -1 ? undefined : after);
+}
+
+function extractDisputesAllowedValues(): string[] {
+  const slice = disputesTabSlice();
   const match = slice.match(/useUrlTab\(\s*"sub"\s*,\s*"disputes"\s*,\s*\[([^\]]+)\]\s*\)/);
   expect(match, "DisputesTab useUrlTab call not found").not.toBeNull();
   return match![1]
@@ -30,8 +36,7 @@ function extractDisputesAllowedValues(): string[] {
 }
 
 function extractDisputesTriggerValues(): string[] {
-  const fnIdx = SRC.indexOf("function DisputesTab()");
-  const slice = SRC.slice(fnIdx, fnIdx + 6000);
+  const slice = disputesTabSlice();
   const re = /<TabsTrigger\s+value="([^"]+)"/g;
   const out: string[] = [];
   let m: RegExpExecArray | null;
