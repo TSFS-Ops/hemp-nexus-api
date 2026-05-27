@@ -234,6 +234,24 @@ export function AdminLegalHoldsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Persistent MFA preflight banner — gate A. */}
+      {needsMfa && (
+        <Alert variant="destructive" data-testid="legal-holds-mfa-banner">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Multi-factor authentication required</AlertTitle>
+          <AlertDescription>
+            Applying or releasing a legal hold requires an MFA-verified
+            session. Open{" "}
+            <a href="/desk/settings/security" className="underline font-medium">
+              Settings → Security
+            </a>{" "}
+            to enrol an authenticator or verify your existing factor, then
+            return to this page. This banner stays visible until your session
+            is MFA-verified.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Apply form */}
       <div className="border border-border rounded-sm p-4 bg-muted/30">
         <h3 className="text-sm font-semibold mb-3">Apply legal hold</h3>
