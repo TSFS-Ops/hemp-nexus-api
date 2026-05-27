@@ -53,6 +53,12 @@ const state = vi.hoisted(() => ({
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     functions: { invoke: (...args: unknown[]) => state.invoke(...args) },
+    auth: {
+      mfa: {
+        getAuthenticatorAssuranceLevel: () =>
+          Promise.resolve({ data: { currentLevel: "aal2", nextLevel: "aal2" }, error: null }),
+      },
+    },
   },
 }));
 

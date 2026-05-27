@@ -65,19 +65,39 @@ Deno.serve(async (req) => {
     return json({ error: "query_failed" }, 500);
   }
 
-  const { data: pendingRefunds, error: rErr } = await admin
+  const { data: refundRows, error: rErr } = await admin
     .from("refund_requests")
-    .select("token_purchase_id, status")
+    .select("token_purchase_id, status, created_at")
     .eq("org_id", orgId)
-    .eq("status", "pending");
+    .in("status", ["pending", "blocked_credits_used", "blocked_expired"])
+    .order("created_at", { ascending: false });
   if (rErr) {
     console.error("[list-org-purchases] refunds", rErr);
     return json({ error: "query_failed" }, 500);
   }
+  const pendingRefunds = (refundRows ?? []).filter((r) => r.status === "pending");
+  // Latest blocked outcome per purchase — UI uses this to suppress the
+  // Request refund button and explain why.
+  const blockedByPurchase: Record<string, { status: string; created_at: string }> = {};
+  for (const row of refundRows ?? []) {
+    if (row.status === "pending") continue;
+    if (!blockedByPurchase[row.token_purchase_id]) {
+      blockedByPurchase[row.token_purchase_id] = {
+        status: row.status,
+        created_at: row.created_at,
+      };
+    }
+  }
+  const blockedRefunds = Object.entries(blockedByPurchase).map(([id, v]) => ({
+    token_purchase_id: id,
+    status: v.status,
+    created_at: v.created_at,
+  }));
 
   return json({
     success: true,
     purchases: purchases ?? [],
-    pending_refunds: pendingRefunds ?? [],
+    pending_refunds: pendingRefunds,
+    blocked_refunds: blockedRefunds,
   });
 });

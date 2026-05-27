@@ -72,6 +72,10 @@ export function AdminLegalHoldsPanel() {
   const [applying, setApplying] = useState(false);
   const [releasingId, setReleasingId] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<{ title: string; message: string } | null>(null);
+  // Preflight AAL state — drives the persistent inline MFA banner so that
+  // an aal1 caller sees a clear "MFA required" message BEFORE clicking
+  // Apply hold (DANIEL_RETEST gate A).
+  const [aalState, setAalState] = useState<"loading" | "aal1" | "aal2" | "unknown">("loading");
 
 
   // Apply form
@@ -109,6 +113,29 @@ export function AdminLegalHoldsPanel() {
   }, [toast]);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Detect current session AAL so we can render a persistent MFA banner.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } =
+          await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (cancelled) return;
+        if (error) {
+          setAalState("unknown");
+          return;
+        }
+        const current = data?.currentLevel;
+        setAalState(current === "aal2" ? "aal2" : current === "aal1" ? "aal1" : "unknown");
+      } catch {
+        if (!cancelled) setAalState("unknown");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const needsMfa = aalState === "aal1" || aalState === "unknown";
 
   const applyDisabled = useMemo(() => {
     return applying || !UUID_RE.test(scopeId.trim()) || reason.trim().length < 10;
@@ -207,6 +234,24 @@ export function AdminLegalHoldsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Persistent MFA preflight banner — gate A. */}
+      {needsMfa && (
+        <Alert variant="destructive" data-testid="legal-holds-mfa-banner">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Multi-factor authentication required</AlertTitle>
+          <AlertDescription>
+            Applying or releasing a legal hold requires an MFA-verified
+            session. Open{" "}
+            <a href="/desk/settings/security" className="underline font-medium">
+              Settings → Security
+            </a>{" "}
+            to enrol an authenticator or verify your existing factor, then
+            return to this page. This banner stays visible until your session
+            is MFA-verified.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Apply form */}
       <div className="border border-border rounded-sm p-4 bg-muted/30">
         <h3 className="text-sm font-semibold mb-3">Apply legal hold</h3>

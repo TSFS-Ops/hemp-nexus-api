@@ -106,7 +106,11 @@ export function RefundRequestDialog({
               ? "Purchase not found."
               : code === "REASON_REQUIRED"
                 ? "Please provide a reason of at least 20 characters."
-                : "We couldn't record your refund request. Please try again.";
+                : code === "BLOCKED_CREDITS_USED"
+                  ? "Credits from this purchase have already been used, so a refund cannot be requested."
+                  : code === "BLOCKED_EXPIRED"
+                    ? "This purchase is outside the refund window and cannot be refunded."
+                    : "We couldn't record your refund request. Please try again.";
         setSubmitError(msg);
         toast.error(msg);
         return;

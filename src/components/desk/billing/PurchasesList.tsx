@@ -32,10 +32,17 @@ interface PendingRefundRow {
   status: string;
 }
 
+interface BlockedRefundRow {
+  token_purchase_id: string;
+  status: "blocked_credits_used" | "blocked_expired" | string;
+  created_at: string;
+}
+
 interface ListOrgPurchasesResponse {
   success: boolean;
   purchases: PurchaseRow[];
   pending_refunds: PendingRefundRow[];
+  blocked_refunds?: BlockedRefundRow[];
 }
 
 interface PurchasesListProps {
@@ -60,8 +67,10 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
 
   const purchases = data?.purchases ?? [];
   const pendingRefunds = data?.pending_refunds ?? [];
+  const blockedRefunds = data?.blocked_refunds ?? [];
 
   const pendingSet = new Set(pendingRefunds.map((r) => r.token_purchase_id));
+  const blockedMap = new Map(blockedRefunds.map((r) => [r.token_purchase_id, r.status]));
 
   const onRefundSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["billing-org-purchases", orgId] });
@@ -91,6 +100,13 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
               {purchases.map((p) => {
                 const eligible = p.status === "completed";
                 const hasPending = pendingSet.has(p.id);
+                const blockedStatus = blockedMap.get(p.id);
+                const blockedLabel =
+                  blockedStatus === "blocked_credits_used"
+                    ? "Refund unavailable — credits already used"
+                    : blockedStatus === "blocked_expired"
+                      ? "Refund unavailable — outside window"
+                      : null;
                 return (
                   <div
                     key={p.id}
@@ -116,6 +132,15 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                           data-testid={`refund-pending-${p.id}`}
                         >
                           Refund request pending
+                        </Badge>
+                      ) : blockedLabel ? (
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                          data-testid={`refund-blocked-${p.id}`}
+                          title={blockedLabel}
+                        >
+                          {blockedLabel}
                         </Badge>
                       ) : eligible ? (
                         <Button

@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     console.error("[refund-request] rpc error", error);
     return json({ error: "rpc_failed", message: error.message }, 500);
   }
-  const r = result as { success?: boolean; code?: string };
+  const r = result as { success?: boolean; code?: string; status?: string };
   if (!r?.success) {
     const code = r?.code ?? "REFUND_FAILED";
     const status = code === "REASON_REQUIRED" ? 400
@@ -90,6 +90,31 @@ Deno.serve(async (req) => {
       : code === "REFUND_ALREADY_PENDING" ? 409
       : 400;
     return json({ error: code.toLowerCase(), code, details: r }, status);
+  }
+  // DEC-007 retest fix — when the RPC persists a blocked outcome
+  // (credits already burned / refund window expired) it still returns
+  // success=true with a status of 'blocked_credits_used' / 'blocked_expired'.
+  // From the caller's perspective this is NOT a successful refund request
+  // — surface it as a hard failure with a stable code so the dialog can
+  // render a persistent inline alert instead of a misleading
+  // "submitted for review" toast.
+  if (r.status === "blocked_credits_used") {
+    return json({
+      error: "blocked_credits_used",
+      code: "BLOCKED_CREDITS_USED",
+      message:
+        "Credits from this purchase have already been used, so a refund cannot be requested.",
+      details: r,
+    }, 409);
+  }
+  if (r.status === "blocked_expired") {
+    return json({
+      error: "blocked_expired",
+      code: "BLOCKED_EXPIRED",
+      message:
+        "This purchase is outside the refund window and cannot be refunded.",
+      details: r,
+    }, 409);
   }
   return json(r, 200);
 });
