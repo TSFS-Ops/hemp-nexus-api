@@ -181,6 +181,13 @@ export function RefundRequestDialog({
             </div>
           </div>
         </div>
+        {submitError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Refund request not submitted</AlertTitle>
+            <AlertDescription>{submitError}</AlertDescription>
+          </Alert>
+        )}
         <DialogFooter>
           <Button
             variant="outline"
