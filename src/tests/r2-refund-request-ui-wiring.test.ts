@@ -102,13 +102,33 @@ describe("DEC-007 / R2 — org-side refund request UI wiring", () => {
     expect(LIST).toMatch(/supabase\.functions\.invoke\(\s*["']list-org-purchases["']/);
   });
 
-  it("Billing page mounts <PurchasesList />", () => {
+  it("Billing page (legacy /billing) mounts <PurchasesList />", () => {
     expect(BILLING).toMatch(/import\s*\{\s*PurchasesList\s*\}\s*from\s*["']@\/components\/desk\/billing\/PurchasesList["']/);
     expect(BILLING).toMatch(/<PurchasesList\s+orgId=\{billingProfile\?\.org_id\}\s*\/>/);
   });
 
+  it("R2B — /desk/billing route renders <BillingOverview />", () => {
+    // src/pages/Desk.tsx must mount BillingOverview at the billing route.
+    expect(DESK).toMatch(/path=["']billing["']\s+element=\{<BillingOverview\s*\/>\}/);
+    expect(DESK).toMatch(/import\s*\{\s*BillingOverview\s*\}\s*from\s*["']@\/components\/desk\/billing\/BillingOverview["']/);
+  });
+
+  it("R2B — BillingOverview (actual /desk/billing surface) mounts <PurchasesList />", () => {
+    // Regression guard: PurchasesList must live in the rendered route,
+    // not only in the orphaned src/pages/Billing.tsx shell.
+    expect(BILLING_OVERVIEW).toMatch(/import\s*\{\s*PurchasesList\s*\}\s*from\s*["']\.\/PurchasesList["']/);
+    expect(BILLING_OVERVIEW).toMatch(/<PurchasesList\s+orgId=\{orgId\s*\?\?\s*undefined\}\s*\/>/);
+  });
+
+  it("R2B — BillingOverview preserves existing sections (Provisioning / Usage History / Balance)", () => {
+    expect(BILLING_OVERVIEW).toMatch(/Provisioning/);
+    expect(BILLING_OVERVIEW).toMatch(/Usage History/);
+    expect(BILLING_OVERVIEW).toMatch(/Available Balance/);
+    expect(BILLING_OVERVIEW).toMatch(/PaymentReferenceStatus/);
+  });
+
   it("no client-side surface calls Paystack or any provider refund directly", () => {
-    for (const src of [DIALOG, LIST, BILLING]) {
+    for (const src of [DIALOG, LIST, BILLING, BILLING_OVERVIEW]) {
       expect(src).not.toMatch(/paystack\.com/i);
       expect(src).not.toMatch(/api\.paystack/i);
       expect(src).not.toMatch(/transaction\/refund/i);
@@ -116,7 +136,7 @@ describe("DEC-007 / R2 — org-side refund request UI wiring", () => {
   });
 
   it("org refund UI does NOT call admin approve/decline endpoints", () => {
-    for (const src of [DIALOG, LIST, BILLING]) {
+    for (const src of [DIALOG, LIST, BILLING, BILLING_OVERVIEW]) {
       expect(src).not.toMatch(/admin-refund-approve/);
       expect(src).not.toMatch(/admin-refund-decline/);
       expect(src).not.toMatch(/AdminBillingReviewPanel/);
