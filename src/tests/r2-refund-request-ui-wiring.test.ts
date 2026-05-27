@@ -36,6 +36,14 @@ const BILLING = readFileSync(
   resolve(__dirname, "../pages/Billing.tsx"),
   "utf8",
 );
+const BILLING_OVERVIEW = readFileSync(
+  resolve(__dirname, "../components/desk/billing/BillingOverview.tsx"),
+  "utf8",
+);
+const DESK = readFileSync(
+  resolve(__dirname, "../pages/Desk.tsx"),
+  "utf8",
+);
 const EDGE = readFileSync(
   resolve(__dirname, "../../supabase/functions/list-org-purchases/index.ts"),
   "utf8",
