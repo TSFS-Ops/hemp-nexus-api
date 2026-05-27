@@ -114,6 +114,29 @@ export function AdminLegalHoldsPanel() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // Detect current session AAL so we can render a persistent MFA banner.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } =
+          await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (cancelled) return;
+        if (error) {
+          setAalState("unknown");
+          return;
+        }
+        const current = data?.currentLevel;
+        setAalState(current === "aal2" ? "aal2" : current === "aal1" ? "aal1" : "unknown");
+      } catch {
+        if (!cancelled) setAalState("unknown");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const needsMfa = aalState === "aal1" || aalState === "unknown";
+
   const applyDisabled = useMemo(() => {
     return applying || !UUID_RE.test(scopeId.trim()) || reason.trim().length < 10;
   }, [applying, scopeId, reason]);
