@@ -26,7 +26,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, ShieldAlert, ShieldCheck, AlertCircle } from "lucide-react";
+import { parseEdgeError } from "@/lib/edge-error";
 
 const SCOPE_TYPES = [
   "user", "org", "match", "engagement", "poi",
@@ -69,6 +71,8 @@ export function AdminLegalHoldsPanel() {
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [releasingId, setReleasingId] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState<{ title: string; message: string } | null>(null);
+
 
   // Apply form
   const [scopeType, setScopeType] = useState<ScopeType>("user");
@@ -112,6 +116,7 @@ export function AdminLegalHoldsPanel() {
 
   const handleApply = async () => {
     setApplying(true);
+    setApplyError(null);
     try {
       const { data, error } = await supabase.functions.invoke("admin-legal-hold", {
         body: {
@@ -121,13 +126,22 @@ export function AdminLegalHoldsPanel() {
           reason: reason.trim(),
         },
       });
-      if (error) throw error;
+      if (error) {
+        const parsed = await parseEdgeError(error);
+        const title =
+          parsed.code === "MFA_REQUIRED"
+            ? "Multi-factor authentication required"
+            : parsed.code === "NOT_PLATFORM_ADMIN" || parsed.status === 403
+              ? "Not authorised"
+              : "Apply failed";
+        setApplyError({ title, message: parsed.message });
+        toast({ title, description: parsed.message, variant: "destructive" });
+        return;
+      }
       if (data?.ok === false) {
-        toast({
-          title: "Could not apply hold",
-          description: data?.message ?? "Unknown error",
-          variant: "destructive",
-        });
+        const msg = data?.message ?? "Unknown error";
+        setApplyError({ title: "Could not apply hold", message: msg });
+        toast({ title: "Could not apply hold", description: msg, variant: "destructive" });
       } else {
         toast({
           title: "Legal hold applied",
@@ -138,11 +152,9 @@ export function AdminLegalHoldsPanel() {
         refresh();
       }
     } catch (e) {
-      toast({
-        title: "Apply failed",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
+      const parsed = await parseEdgeError(e);
+      setApplyError({ title: "Apply failed", message: parsed.message });
+      toast({ title: "Apply failed", description: parsed.message, variant: "destructive" });
     } finally {
       setApplying(false);
     }
@@ -231,6 +243,13 @@ export function AdminLegalHoldsPanel() {
             rows={2}
           />
         </div>
+        {applyError && (
+          <Alert variant="destructive" className="mt-3">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>{applyError.title}</AlertTitle>
+            <AlertDescription>{applyError.message}</AlertDescription>
+          </Alert>
+        )}
         <div className="mt-3 flex justify-end">
           <Button onClick={handleApply} disabled={applyDisabled}>
             {applying && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
