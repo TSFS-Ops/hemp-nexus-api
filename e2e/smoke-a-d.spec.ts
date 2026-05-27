@@ -14,44 +14,46 @@
  * Toast-only failures are explicitly rejected — every error row asserts
  * an element with role="alert" remains visible after the toast TTL.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/evidence";
 import { signIn, signOut, completeTotpIfPrompted, requireEnv } from "./helpers/auth";
+
 
 const TOAST_TTL_MS = 6_000;
 
 test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", () => {
-  test("inline alert remains after toast TTL", async ({ page }) => {
+  test("inline alert remains after toast TTL", async ({ page, ev }) => {
     const email = requireEnv("SMOKE_ADMIN_EMAIL");
     const password = requireEnv("SMOKE_ADMIN_PASSWORD");
     const scopeId = requireEnv("SMOKE_LEGAL_HOLD_SCOPE_ID");
 
     await signIn(page, email, password);
     await page.goto("/hq/legal-holds");
+    await ev.snapshot("legal-holds-loaded");
 
     await page.locator("#lh-scope-id").fill(scopeId);
     await page.locator("#lh-reason").fill("Smoke A — non-AAL2 expected MFA block " + Date.now());
     await page.getByRole("button", { name: /apply hold/i }).click();
 
-    // Persistent inline alert (not toast-only).
     const alert = page.getByRole("alert").filter({ hasText: /multi-factor|MFA|authentication/i });
     await expect(alert).toBeVisible({ timeout: 15_000 });
+    await ev.snapshot("mfa-alert-shown");
     await page.waitForTimeout(TOAST_TTL_MS + 500);
     await expect(alert, "alert must survive toast TTL — no silent failure").toBeVisible();
+    await ev.snapshot("mfa-alert-after-toast-ttl");
   });
+
 });
 
 test.describe("Smoke B — Legal hold AAL2 apply succeeds and persists hard refresh", () => {
-  test("active row survives hard refresh", async ({ page }) => {
+  test("active row survives hard refresh", async ({ page, ev }) => {
     const email = requireEnv("SMOKE_ADMIN_AAL2_EMAIL");
     const password = requireEnv("SMOKE_ADMIN_AAL2_PASSWORD");
-    // NB: pass the env var *name*, not the secret value. The TOTP
-    // helper reads it itself so the secret never appears in argv,
-    // traces, or thrown error messages.
     requireEnv("SMOKE_ADMIN_AAL2_TOTP_SECRET");
     const scopeId = requireEnv("SMOKE_LEGAL_HOLD_SCOPE_ID");
 
     await signIn(page, email, password);
     await completeTotpIfPrompted(page, "SMOKE_ADMIN_AAL2_TOTP_SECRET");
+    await ev.snapshot("post-aal2");
 
     await page.goto("/hq/legal-holds");
 
@@ -65,25 +67,27 @@ test.describe("Smoke B — Legal hold AAL2 apply succeeds and persists hard refr
     const row = page.locator("li", { hasText: scopeId }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     await expect(row).toContainText(/active/i);
+    await ev.snapshot("row-active-before-refresh");
 
-    // Hard refresh persistence.
     await page.reload({ waitUntil: "load" });
     await activeTab.click();
     const refreshedRow = page.locator("li", { hasText: scopeId }).first();
     await expect(refreshedRow, "Active hold must survive hard refresh").toBeVisible({ timeout: 15_000 });
     await expect(refreshedRow).toContainText(/active/i);
+    await ev.snapshot("row-active-after-refresh");
   });
+
 });
 
 test.describe("Smoke C — Refund request succeeds and persists hard refresh", () => {
-  test("pending badge survives hard refresh", async ({ page }) => {
+  test("pending badge survives hard refresh", async ({ page, ev }) => {
     const email = requireEnv("SMOKE_ORG_EMAIL");
     const password = requireEnv("SMOKE_ORG_PASSWORD");
 
     await signIn(page, email, password);
     await page.goto("/desk/billing");
+    await ev.snapshot("billing-loaded");
 
-    // Find first eligible purchase row with a refund button.
     const requestBtn = page.locator('[data-testid^="refund-request-button-"]').first();
     await expect(requestBtn).toBeVisible({ timeout: 15_000 });
     const testId = await requestBtn.getAttribute("data-testid");
@@ -95,23 +99,26 @@ test.describe("Smoke C — Refund request succeeds and persists hard refresh", (
     await page.locator('[data-testid="refund-reason-detail"]').fill(
       "Smoke C automated refund request — at least twenty characters " + Date.now(),
     );
+    await ev.snapshot("refund-dialog-filled");
     await page.locator('[data-testid="refund-submit"]').click();
 
     const pendingBadge = page.locator(`[data-testid="refund-pending-${purchaseId}"]`);
     await expect(pendingBadge).toBeVisible({ timeout: 15_000 });
     await expect(pendingBadge).toHaveText(/refund request pending/i);
+    await ev.snapshot("refund-pending-before-refresh");
 
-    // Hard refresh persistence.
     await page.reload({ waitUntil: "load" });
     await expect(
       page.locator(`[data-testid="refund-pending-${purchaseId}"]`),
       "Refund pending badge must survive hard refresh",
     ).toBeVisible({ timeout: 15_000 });
+    await ev.snapshot("refund-pending-after-refresh");
   });
+
 });
 
 test.describe("Smoke D — Duplicate refund surfaces persistent inline alert", () => {
-  test("inline 'already pending' alert remains after toast TTL", async ({ page }) => {
+  test("inline 'already pending' alert remains after toast TTL", async ({ page, ev }) => {
     const email = requireEnv("SMOKE_ORG_EMAIL");
     const password = requireEnv("SMOKE_ORG_PASSWORD");
 
@@ -164,12 +171,12 @@ test.describe("Smoke D — Duplicate refund surfaces persistent inline alert", (
     expect(result, "duplicate refund must return REFUND_ALREADY_PENDING").toMatchObject({
       body: { code: "REFUND_ALREADY_PENDING" },
     });
+    await ev.snapshot("duplicate-refund-server-rejected");
 
-    // Now also verify the UI surface: the pending badge is still there
-    // (no silent removal) and no orphaned "Request refund" button has
-    // reappeared for that purchase.
     await page.reload({ waitUntil: "load" });
     await expect(page.locator(`[data-testid="refund-pending-${purchaseId}"]`)).toBeVisible({ timeout: 15_000 });
     await expect(page.locator(`[data-testid="refund-request-button-${purchaseId}"]`)).toHaveCount(0);
+    await ev.snapshot("duplicate-refund-ui-unchanged");
   });
+
 });
