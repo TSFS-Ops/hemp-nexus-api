@@ -25,6 +25,7 @@
     "admin-compliance-hold-release",
     "admin-trade-request-archive-override",
     "refund-request",
+    "list-org-purchases",
     "basic-memory-record-write"
   ],
   "exempt_invokes": [

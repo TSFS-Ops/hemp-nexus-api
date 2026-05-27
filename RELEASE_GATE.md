@@ -92,6 +92,7 @@ live in the production runtime before publishing.
 - `admin-payment-dispute-resolve-won` — PAY-009 Platform Admin payment-dispute resolve-won (AAL2 + reason required)
 - `admin-payment-dispute-resolve-lost` — PAY-009 Platform Admin payment-dispute resolve-lost (AAL2 + reason required)
 - `basic-memory-record-write` — Basic Memory Record v1 internal writer (server-to-server only: called by `collapse`, `wad`, `poi-engagements` via `_shared/basic-memory.ts`; rejects browser callers with 401; must be live for Batch 3 hooks to record `finality.collapsed` / `wad.sealed` / `dispute.resolved` Memory rows)
+- `list-org-purchases` — DEC-007 read-only listing of caller's org token_purchases + open refund_requests; powers the "Request refund" affordance on `/desk/billing` (no provider mutation)
 
 
 
