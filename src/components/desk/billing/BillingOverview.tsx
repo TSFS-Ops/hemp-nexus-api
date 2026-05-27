@@ -21,6 +21,7 @@ import { PendingPurchaseNotice } from "./PendingPurchaseNotice";
 import { BillingUnavailableNotice } from "./BillingUnavailableNotice";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
+import { PurchasesList } from "./PurchasesList";
 
 interface LedgerEntry {
   id: string;
@@ -231,6 +232,11 @@ export function BillingOverview() {
         activeReference={activeReference}
         onCredited={() => void refresh()}
       />
+
+      {/* ── DEC-007 — YOUR PURCHASES (refund request affordance) ── */}
+      <section className="mb-20">
+        <PurchasesList orgId={orgId ?? undefined} />
+      </section>
 
       {/* ── TOP-UP / PROVISIONING ─────────────────────────────── */}
       <section className="mb-20">
