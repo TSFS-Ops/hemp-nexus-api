@@ -21,6 +21,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { TokenBalanceDisplay } from "@/components/TokenBalanceDisplay";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
+import { PurchasesList } from "@/components/desk/billing/PurchasesList";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { cn } from "@/lib/utils";
 import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
@@ -579,6 +580,11 @@ function BillingContent() {
         </Card>
 
         <Separator />
+
+        {/* DEC-007 — Org-side purchases + refund request affordance */}
+        <PurchasesList orgId={billingProfile?.org_id} />
+
+
 
 
         {/* Refund Policy */}
