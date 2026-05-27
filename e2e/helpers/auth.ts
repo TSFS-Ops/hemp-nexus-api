@@ -28,26 +28,26 @@ export async function signOut(page: Page) {
 
 /**
  * Completes a TOTP challenge if the AAL2 prompt is shown after sign-in.
- * Pass a base32 secret; we generate the current 6-digit code with
- * `otpauth` (peer-installed alongside @playwright/test). If `otpauth`
- * is not installed, this throws with a clear remediation message.
+ *
+ * The secret is read from an env var *name* (never passed as a literal
+ * through call sites) and routed through e2e/helpers/totp.ts, which
+ * enforces:
+ *   - SMOKE_ENV ∈ {staging, test} (refuses otherwise)
+ *   - no logging of the secret or generated code
+ *
+ * The generated code is filled directly into the DOM input and never
+ * surfaced to stdout, traces, or error messages.
  */
-export async function completeTotpIfPrompted(page: Page, secretBase32: string) {
+export async function completeTotpIfPrompted(page: Page, secretEnvVar: string) {
   const challenge = page.locator('input[name="code"], input[autocomplete="one-time-code"]').first();
   if (!(await challenge.isVisible({ timeout: 5_000 }).catch(() => false))) return;
-  let totp: string;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { TOTP, Secret } = await import("otpauth");
-    const code = new TOTP({ secret: Secret.fromBase32(secretBase32), digits: 6, period: 30 }).generate();
-    totp = code;
-  } catch {
-    throw new Error("Install `otpauth` (npm i -D otpauth) to drive AAL2 row B.");
-  }
-  await challenge.fill(totp);
+  const { generateTotp } = await import("./totp");
+  const code = await generateTotp(secretEnvVar);
+  await challenge.fill(code);
   await page.getByRole("button", { name: /verify|continue|submit/i }).first().click();
   await expect(challenge).not.toBeVisible({ timeout: 15_000 });
 }
+
 
 export function requireEnv(name: string): string {
   const v = process.env[name];

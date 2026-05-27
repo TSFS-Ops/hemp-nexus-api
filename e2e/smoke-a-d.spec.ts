@@ -44,11 +44,15 @@ test.describe("Smoke B — Legal hold AAL2 apply succeeds and persists hard refr
   test("active row survives hard refresh", async ({ page }) => {
     const email = requireEnv("SMOKE_ADMIN_AAL2_EMAIL");
     const password = requireEnv("SMOKE_ADMIN_AAL2_PASSWORD");
-    const totp = requireEnv("SMOKE_ADMIN_AAL2_TOTP_SECRET");
+    // NB: pass the env var *name*, not the secret value. The TOTP
+    // helper reads it itself so the secret never appears in argv,
+    // traces, or thrown error messages.
+    requireEnv("SMOKE_ADMIN_AAL2_TOTP_SECRET");
     const scopeId = requireEnv("SMOKE_LEGAL_HOLD_SCOPE_ID");
 
     await signIn(page, email, password);
-    await completeTotpIfPrompted(page, totp);
+    await completeTotpIfPrompted(page, "SMOKE_ADMIN_AAL2_TOTP_SECRET");
+
     await page.goto("/hq/legal-holds");
 
     const stamp = "Smoke B AAL2 " + Date.now();
