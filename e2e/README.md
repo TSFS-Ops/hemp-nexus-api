@@ -16,6 +16,31 @@ npm i -D @playwright/test otpauth
 npx playwright install chromium
 ```
 
+## Provision staging fixtures (one command)
+
+```bash
+export SUPABASE_URL="https://<ref>.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="..."
+export SMOKE_PASSWORD="ChangeMe-Smoke-A-D-2026"
+bash scripts/seed-smoke-a-d.sh > .env.smoke
+source .env.smoke
+```
+
+The `seed-smoke-a-d-fixtures` edge function provisions, idempotently:
+
+| Account | Email | Notes |
+|---------|-------|-------|
+| Platform admin (no MFA) | `smoke-admin-nomfa@test.izenzo.co.za` | Row A |
+| Platform admin (TOTP) | `smoke-admin-mfa@test.izenzo.co.za` | Row B — verified `auth.mfa_factors` row with the base32 secret |
+| Org admin | `smoke-org-admin@test.izenzo.co.za` | Rows C + D |
+
+Plus on the org:
+- `token_purchases` ref `smoke-ad-clean-001` — completed, no refund (Row C)
+- `token_purchases` ref `smoke-ad-pending-001` — completed, pre-seeded `pending` refund (Row D precondition)
+
+The org is flagged `is_demo=true` so lifecycle / billing crons skip it.
+
+
 ## Run
 
 ```bash
