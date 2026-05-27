@@ -72,6 +72,10 @@ export function AdminLegalHoldsPanel() {
   const [applying, setApplying] = useState(false);
   const [releasingId, setReleasingId] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<{ title: string; message: string } | null>(null);
+  // Preflight AAL state — drives the persistent inline MFA banner so that
+  // an aal1 caller sees a clear "MFA required" message BEFORE clicking
+  // Apply hold (DANIEL_RETEST gate A).
+  const [aalState, setAalState] = useState<"loading" | "aal1" | "aal2" | "unknown">("loading");
 
 
   // Apply form
