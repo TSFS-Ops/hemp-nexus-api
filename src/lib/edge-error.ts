@@ -28,6 +28,12 @@ const FRIENDLY: Record<string, string> = {
   PURCHASE_NOT_FOUND: "Purchase not found.",
   NO_ORG: "Your account is not linked to an organisation.",
   BILLING_HOLD_ACTIVE: "Your organisation has an active billing hold. Contact support.",
+  BLOCKED_CREDITS_USED:
+    "Credits from this purchase have already been used, so a refund cannot be requested.",
+  BLOCKED_EXPIRED:
+    "This purchase is outside the refund window and cannot be refunded.",
+  LEGAL_HOLD_ALREADY_ACTIVE:
+    "An active legal hold already exists for this scope.",
 };
 
 export async function parseEdgeError(error: unknown): Promise<ParsedEdgeError> {
