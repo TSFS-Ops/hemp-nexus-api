@@ -100,6 +100,13 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
               {purchases.map((p) => {
                 const eligible = p.status === "completed";
                 const hasPending = pendingSet.has(p.id);
+                const blockedStatus = blockedMap.get(p.id);
+                const blockedLabel =
+                  blockedStatus === "blocked_credits_used"
+                    ? "Refund unavailable — credits already used"
+                    : blockedStatus === "blocked_expired"
+                      ? "Refund unavailable — outside window"
+                      : null;
                 return (
                   <div
                     key={p.id}
@@ -125,6 +132,15 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                           data-testid={`refund-pending-${p.id}`}
                         >
                           Refund request pending
+                        </Badge>
+                      ) : blockedLabel ? (
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                          data-testid={`refund-blocked-${p.id}`}
+                          title={blockedLabel}
+                        >
+                          {blockedLabel}
                         </Badge>
                       ) : eligible ? (
                         <Button
