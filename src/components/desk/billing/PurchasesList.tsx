@@ -174,6 +174,19 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                         >
                           {blockedLabel}
                         </Badge>
+                      ) : resolvedLabel ? (
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                          data-testid={`refund-resolved-${p.id}`}
+                          title={
+                            resolved?.decision_reason
+                              ? `${resolvedLabel} — ${resolved.decision_reason}`
+                              : resolvedLabel
+                          }
+                        >
+                          {resolvedLabel}
+                        </Badge>
                       ) : eligible ? (
                         <Button
                           variant="outline"
@@ -189,6 +202,17 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                 );
               })}
             </div>
+          )}
+          {pagination && pagination.has_more && (
+            <p
+              className="mt-3 text-xs text-muted-foreground"
+              data-testid="billing-purchases-truncated-notice"
+            >
+              Showing the {pagination.limit} most recent of{" "}
+              {pagination.total_count} purchases. Older rows are not shown
+              here, but any purchase with an open or blocked refund request is
+              always included above.
+            </p>
           )}
         </CardContent>
       </Card>
