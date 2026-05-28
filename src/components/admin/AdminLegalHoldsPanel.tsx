@@ -135,11 +135,29 @@ export function AdminLegalHoldsPanel() {
     return () => { cancelled = true; };
   }, []);
 
+  // Server requires AAL2 for BOTH apply and release (see
+  // supabase/functions/admin-legal-hold/index.ts — assertAal2 around L174-186,
+  // applied to both `apply` and `release`; `list` is read-only). We therefore
+  // gate both destructive actions in the UI when the preflight reports
+  // anything other than aal2. We distinguish:
+  //   • aal1     → user definitely needs to verify MFA (banner is firm).
+  //   • unknown  → preflight failed transiently; show a cautious "could not
+  //                confirm" state and still block destructive actions
+  //                client-side rather than surface a misleading enabled
+  //                button that would only fail server-side.
   const needsMfa = aalState === "aal1" || aalState === "unknown";
+  const mfaUnknown = aalState === "unknown";
+  const mfaLoading = aalState === "loading";
 
   const applyDisabled = useMemo(() => {
-    return applying || !UUID_RE.test(scopeId.trim()) || reason.trim().length < 10;
-  }, [applying, scopeId, reason]);
+    return (
+      applying ||
+      needsMfa ||
+      mfaLoading ||
+      !UUID_RE.test(scopeId.trim()) ||
+      reason.trim().length < 10
+    );
+  }, [applying, needsMfa, mfaLoading, scopeId, reason]);
 
   const handleApply = async () => {
     setApplying(true);
