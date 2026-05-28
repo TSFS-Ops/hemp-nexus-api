@@ -25,13 +25,14 @@
  *   - All seeded emails match @test.izenzo.co.za (gate matches provision-test-user)
  *   - Organisation flagged is_demo=true (skipped by lifecycle / billing crons)
  *   - Idempotent: re-running upserts and never duplicates
- *   - TOTP secret is a fixed, well-known base32 string scoped to *test fixtures only*
- *     and rotated by re-seeding with a different `totp_secret` in the request body
+ *   - TOTP is enrolled through the supported auth API; the generated base32
+ *     secret is returned only in the seeder response for staging smoke use
  */
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const INTERNAL_CRON_KEY = Deno.env.get("INTERNAL_CRON_KEY") ?? "";
 
@@ -63,11 +64,42 @@ const ACCOUNTS = {
 const PURCHASE_CLEAN_REF = "smoke-ad-clean-001";
 const PURCHASE_PENDING_REF = "smoke-ad-pending-001";
 
-// Default TOTP secret — overridable in request body. Base32, 16 chars.
-const DEFAULT_TOTP_SECRET = "JBSWY3DPEHPK3PXP";
-
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: corsHeaders });
+}
+
+function base32ToBytes(input: string): Uint8Array {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const ch of input.toUpperCase().replace(/=+$/g, "").replace(/\s+/g, "")) {
+    const value = alphabet.indexOf(ch);
+    if (value < 0) throw new Error("invalid totp secret");
+    bits += value.toString(2).padStart(5, "0");
+  }
+  const out = new Uint8Array(Math.floor(bits.length / 8));
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(bits.slice(i * 8, i * 8 + 8), 2);
+  return out;
+}
+
+async function totpCode(secret: string, at = Date.now()): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    base32ToBytes(secret),
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"],
+  );
+  const counter = Math.floor(at / 30_000);
+  const msg = new ArrayBuffer(8);
+  const view = new DataView(msg);
+  view.setUint32(4, counter, false);
+  const hmac = new Uint8Array(await crypto.subtle.sign("HMAC", key, msg));
+  const offset = hmac[hmac.length - 1] & 0x0f;
+  const bin = ((hmac[offset] & 0x7f) << 24)
+    | (hmac[offset + 1] << 16)
+    | (hmac[offset + 2] << 8)
+    | hmac[offset + 3];
+  return String(bin % 1_000_000).padStart(6, "0");
 }
 
 function authorised(req: Request): boolean {
@@ -121,41 +153,38 @@ async function ensureRole(admin: SupabaseClient, userId: string, role: string) {
 async function ensureVerifiedTotp(
   admin: SupabaseClient,
   userId: string,
-  secret: string,
+  email: string,
+  password: string,
 ) {
-  // Direct insert into auth.mfa_factors — only possible via service_role.
-  // GoTrue treats a status='verified' totp factor as fully enrolled, so
-  // subsequent password sign-ins step up to aal2 via a TOTP challenge.
-  const { data: existing } = await admin
-    .schema("auth" as never)
-    .from("mfa_factors" as never)
-    .select("id, status, secret")
-    .eq("user_id", userId)
-    .eq("factor_type", "totp" as never);
-  const rows = (existing as Array<{ id: string; status: string; secret: string }> | null) ?? [];
-  const verified = rows.find((r) => r.status === "verified");
-  if (verified && verified.secret === secret) return verified.id;
-  // Remove any stale factors so we converge on a single known-good one.
-  for (const r of rows) {
-    await admin.schema("auth" as never).from("mfa_factors" as never).delete().eq("id", r.id);
+  const { data: factors, error: listError } = await admin.auth.admin.mfa.listFactors({ userId });
+  if (listError) throw new Error(`mfa list factors: ${listError.message}`);
+  for (const factor of factors?.factors ?? []) {
+    const { error } = await admin.auth.admin.mfa.deleteFactor({ userId, id: factor.id });
+    if (error) throw new Error(`mfa delete factor: ${error.message}`);
   }
-  const id = crypto.randomUUID();
-  const now = new Date().toISOString();
-  const { error } = await admin
-    .schema("auth" as never)
-    .from("mfa_factors" as never)
-    .insert({
-      id,
-      user_id: userId,
-      friendly_name: "smoke-a-d-fixture",
-      factor_type: "totp",
-      status: "verified",
-      secret,
-      created_at: now,
-      updated_at: now,
-    } as never);
-  if (error) throw new Error(`mfa_factors insert: ${error.message}`);
-  return id;
+
+  const userClient = createClient(SUPABASE_URL, ANON, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error: signInError } = await userClient.auth.signInWithPassword({ email, password });
+  if (signInError) throw new Error(`mfa fixture signin: ${signInError.message}`);
+  const { data: enrolled, error: enrollError } = await userClient.auth.mfa.enroll({
+    factorType: "totp",
+    friendlyName: "smoke-a-d-fixture",
+    issuer: "Izenzo Smoke",
+  });
+  if (enrollError || !enrolled) throw new Error(`mfa enroll: ${enrollError?.message}`);
+  const secret = enrolled.totp.secret;
+  const { data: challenge, error: challengeError } = await userClient.auth.mfa.challenge({ factorId: enrolled.id });
+  if (challengeError || !challenge) throw new Error(`mfa challenge: ${challengeError?.message}`);
+  const { error: verifyError } = await userClient.auth.mfa.verify({
+    factorId: enrolled.id,
+    challengeId: challenge.id,
+    code: await totpCode(secret),
+  });
+  if (verifyError) throw new Error(`mfa verify: ${verifyError.message}`);
+  await userClient.auth.signOut({ scope: "global" });
+  return { factorId: enrolled.id, secret };
 }
 
 async function ensureOrg(admin: SupabaseClient): Promise<string> {
@@ -247,7 +276,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   if (!authorised(req)) return json({ error: "unauthorized" }, 401);
 
-  let body: { confirm?: string; password?: string; totp_secret?: string };
+  let body: { confirm?: string; password?: string };
   try { body = await req.json(); } catch { return json({ error: "invalid_json" }, 400); }
   if (body.confirm !== "RUN_SEED_SMOKE_A_D") {
     return json({ error: "confirm phrase required: RUN_SEED_SMOKE_A_D" }, 400);
@@ -255,8 +284,6 @@ Deno.serve(async (req) => {
   if (!body.password || body.password.length < 12) {
     return json({ error: "password (≥12 chars) required" }, 400);
   }
-  const totpSecret = body.totp_secret ?? DEFAULT_TOTP_SECRET;
-
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -273,7 +300,7 @@ Deno.serve(async (req) => {
     const adminMfaId = await upsertUser(admin, ACCOUNTS.admin_mfa.email, body.password, ACCOUNTS.admin_mfa.full_name);
     await ensureRole(admin, adminMfaId, "platform_admin");
     await ensureProfile(admin, adminMfaId, orgId, ACCOUNTS.admin_mfa.email, ACCOUNTS.admin_mfa.full_name);
-    await ensureVerifiedTotp(admin, adminMfaId, totpSecret);
+    const mfa = await ensureVerifiedTotp(admin, adminMfaId, ACCOUNTS.admin_mfa.email, body.password);
 
     const orgAdminId = await upsertUser(admin, ACCOUNTS.org_admin.email, body.password, ACCOUNTS.org_admin.full_name);
     await ensureRole(admin, orgAdminId, "org_admin");
@@ -291,7 +318,7 @@ Deno.serve(async (req) => {
       `export SMOKE_ADMIN_PASSWORD="${body.password}"`,
       `export SMOKE_ADMIN_AAL2_EMAIL="${ACCOUNTS.admin_mfa.email}"`,
       `export SMOKE_ADMIN_AAL2_PASSWORD="${body.password}"`,
-      `export SMOKE_ADMIN_AAL2_TOTP_SECRET="${totpSecret}"`,
+      `export SMOKE_ADMIN_AAL2_TOTP_SECRET="${mfa.secret}"`,
       `export SMOKE_ORG_EMAIL="${ACCOUNTS.org_admin.email}"`,
       `export SMOKE_ORG_PASSWORD="${body.password}"`,
       `export SMOKE_LEGAL_HOLD_SCOPE_ID="${orgId}"`,
@@ -302,7 +329,7 @@ Deno.serve(async (req) => {
       org_id: orgId,
       users: {
         admin_no_mfa: { id: adminNoMfaId, email: ACCOUNTS.admin_no_mfa.email },
-        admin_mfa: { id: adminMfaId, email: ACCOUNTS.admin_mfa.email, totp_secret: totpSecret },
+        admin_mfa: { id: adminMfaId, email: ACCOUNTS.admin_mfa.email, totp_factor_id: mfa.factorId, totp_secret: mfa.secret },
         org_admin: { id: orgAdminId, email: ACCOUNTS.org_admin.email },
       },
       purchases: {
