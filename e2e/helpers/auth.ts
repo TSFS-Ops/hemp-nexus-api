@@ -11,10 +11,13 @@ export async function signIn(page: Page, email: string, password: string) {
   // Field selectors are intentionally loose — the auth page may iterate
   // copy. We anchor on input type instead of brittle text.
   await page.locator('input[type="email"]').first().fill(email);
+  if (!(await page.locator('input[type="password"]').first().isVisible({ timeout: 1_000 }).catch(() => false))) {
+    await page.getByRole("button", { name: /continue/i }).first().click();
+  }
   await page.locator('input[type="password"]').first().fill(password);
   await Promise.all([
     page.waitForURL((u) => !u.pathname.startsWith("/auth"), { timeout: 30_000 }),
-    page.getByRole("button", { name: /sign in|log in/i }).first().click(),
+    page.getByRole("button", { name: /sign in|log in|continue/i }).first().click(),
   ]);
 }
 
