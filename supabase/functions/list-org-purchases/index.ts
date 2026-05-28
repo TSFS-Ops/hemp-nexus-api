@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
   const { data: refundRows, error: rErr } = await admin
     .from("refund_requests")
     .select(
-      "id, token_purchase_id, status, reason_code, reason_detail, decided_at, decided_by, decision_notes, created_at",
+      "id, token_purchase_id, status, reason_code, reason_detail, reviewed_at, reviewed_by, decision_reason, created_at",
     )
     .eq("org_id", orgId)
     .order("created_at", { ascending: false })
