@@ -153,41 +153,38 @@ async function ensureRole(admin: SupabaseClient, userId: string, role: string) {
 async function ensureVerifiedTotp(
   admin: SupabaseClient,
   userId: string,
-  secret: string,
+  email: string,
+  password: string,
 ) {
-  // Direct insert into auth.mfa_factors — only possible via service_role.
-  // GoTrue treats a status='verified' totp factor as fully enrolled, so
-  // subsequent password sign-ins step up to aal2 via a TOTP challenge.
-  const { data: existing } = await admin
-    .schema("auth" as never)
-    .from("mfa_factors" as never)
-    .select("id, status, secret")
-    .eq("user_id", userId)
-    .eq("factor_type", "totp" as never);
-  const rows = (existing as Array<{ id: string; status: string; secret: string }> | null) ?? [];
-  const verified = rows.find((r) => r.status === "verified");
-  if (verified && verified.secret === secret) return verified.id;
-  // Remove any stale factors so we converge on a single known-good one.
-  for (const r of rows) {
-    await admin.schema("auth" as never).from("mfa_factors" as never).delete().eq("id", r.id);
+  const { data: factors, error: listError } = await admin.auth.admin.mfa.listFactors({ userId });
+  if (listError) throw new Error(`mfa list factors: ${listError.message}`);
+  for (const factor of factors?.factors ?? []) {
+    const { error } = await admin.auth.admin.mfa.deleteFactor({ userId, id: factor.id });
+    if (error) throw new Error(`mfa delete factor: ${error.message}`);
   }
-  const id = crypto.randomUUID();
-  const now = new Date().toISOString();
-  const { error } = await admin
-    .schema("auth" as never)
-    .from("mfa_factors" as never)
-    .insert({
-      id,
-      user_id: userId,
-      friendly_name: "smoke-a-d-fixture",
-      factor_type: "totp",
-      status: "verified",
-      secret,
-      created_at: now,
-      updated_at: now,
-    } as never);
-  if (error) throw new Error(`mfa_factors insert: ${error.message}`);
-  return id;
+
+  const userClient = createClient(SUPABASE_URL, ANON, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error: signInError } = await userClient.auth.signInWithPassword({ email, password });
+  if (signInError) throw new Error(`mfa fixture signin: ${signInError.message}`);
+  const { data: enrolled, error: enrollError } = await userClient.auth.mfa.enroll({
+    factorType: "totp",
+    friendlyName: "smoke-a-d-fixture",
+    issuer: "Izenzo Smoke",
+  });
+  if (enrollError || !enrolled) throw new Error(`mfa enroll: ${enrollError?.message}`);
+  const secret = enrolled.totp.secret;
+  const { data: challenge, error: challengeError } = await userClient.auth.mfa.challenge({ factorId: enrolled.id });
+  if (challengeError || !challenge) throw new Error(`mfa challenge: ${challengeError?.message}`);
+  const { error: verifyError } = await userClient.auth.mfa.verify({
+    factorId: enrolled.id,
+    challengeId: challenge.id,
+    code: await totpCode(secret),
+  });
+  if (verifyError) throw new Error(`mfa verify: ${verifyError.message}`);
+  await userClient.auth.signOut({ scope: "global" });
+  return { factorId: enrolled.id, secret };
 }
 
 async function ensureOrg(admin: SupabaseClient): Promise<string> {
