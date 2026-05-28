@@ -48,6 +48,8 @@ const RELEASED_HOLD = {
 const state = vi.hoisted(() => ({
   invoke: vi.fn(),
   toast: vi.fn(),
+  aalLevel: "aal2" as "aal1" | "aal2" | "unknown",
+  aalError: null as null | { message: string },
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -56,7 +58,12 @@ vi.mock("@/integrations/supabase/client", () => ({
     auth: {
       mfa: {
         getAuthenticatorAssuranceLevel: () =>
-          Promise.resolve({ data: { currentLevel: "aal2", nextLevel: "aal2" }, error: null }),
+          Promise.resolve({
+            data: state.aalError
+              ? null
+              : { currentLevel: state.aalLevel, nextLevel: state.aalLevel },
+            error: state.aalError,
+          }),
       },
     },
   },
