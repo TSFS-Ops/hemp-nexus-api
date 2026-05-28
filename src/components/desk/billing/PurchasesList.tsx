@@ -38,11 +38,27 @@ interface BlockedRefundRow {
   created_at: string;
 }
 
+interface ResolvedRefundRow {
+  id: string;
+  token_purchase_id: string;
+  status: "approved" | "declined" | "superseded" | string;
+  reviewed_at: string | null;
+  decision_reason: string | null;
+  created_at: string;
+}
+
 interface ListOrgPurchasesResponse {
   success: boolean;
-  purchases: PurchaseRow[];
+  purchases: (PurchaseRow & { out_of_page?: boolean })[];
   pending_refunds: PendingRefundRow[];
   blocked_refunds?: BlockedRefundRow[];
+  resolved_refunds?: ResolvedRefundRow[];
+  pagination?: {
+    limit: number;
+    offset: number;
+    total_count: number;
+    has_more: boolean;
+  };
 }
 
 interface PurchasesListProps {
@@ -68,9 +84,16 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
   const purchases = data?.purchases ?? [];
   const pendingRefunds = data?.pending_refunds ?? [];
   const blockedRefunds = data?.blocked_refunds ?? [];
+  const resolvedRefunds = data?.resolved_refunds ?? [];
+  const pagination = data?.pagination;
 
   const pendingSet = new Set(pendingRefunds.map((r) => r.token_purchase_id));
   const blockedMap = new Map(blockedRefunds.map((r) => [r.token_purchase_id, r.status]));
+  // Latest resolved outcome per purchase (rows are newest-first from server).
+  const resolvedMap = new Map<string, ResolvedRefundRow>();
+  for (const r of resolvedRefunds) {
+    if (!resolvedMap.has(r.token_purchase_id)) resolvedMap.set(r.token_purchase_id, r);
+  }
 
   const onRefundSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["billing-org-purchases", orgId] });
@@ -107,6 +130,15 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                     : blockedStatus === "blocked_expired"
                       ? "Refund unavailable — outside window"
                       : null;
+                const resolved = !hasPending ? resolvedMap.get(p.id) : undefined;
+                const resolvedLabel =
+                  resolved?.status === "approved"
+                    ? "Refund approved"
+                    : resolved?.status === "declined"
+                      ? "Refund declined"
+                      : resolved?.status === "superseded"
+                        ? "Refund superseded"
+                        : null;
                 return (
                   <div
                     key={p.id}
@@ -142,6 +174,19 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                         >
                           {blockedLabel}
                         </Badge>
+                      ) : resolvedLabel ? (
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                          data-testid={`refund-resolved-${p.id}`}
+                          title={
+                            resolved?.decision_reason
+                              ? `${resolvedLabel} — ${resolved.decision_reason}`
+                              : resolvedLabel
+                          }
+                        >
+                          {resolvedLabel}
+                        </Badge>
                       ) : eligible ? (
                         <Button
                           variant="outline"
@@ -157,6 +202,17 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                 );
               })}
             </div>
+          )}
+          {pagination && pagination.has_more && (
+            <p
+              className="mt-3 text-xs text-muted-foreground"
+              data-testid="billing-purchases-truncated-notice"
+            >
+              Showing the {pagination.limit} most recent of{" "}
+              {pagination.total_count} purchases. Older rows are not shown
+              here, but any purchase with an open or blocked refund request is
+              always included above.
+            </p>
           )}
         </CardContent>
       </Card>

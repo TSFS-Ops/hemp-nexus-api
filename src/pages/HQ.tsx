@@ -116,7 +116,7 @@ const TABS: {
   id: "legacy-repair",
   label: "Legacy Repair",
   icon: Wrench,
-  blurb: "Matches with conflicting status / state / POI fields. Hidden from user views, awaiting admin reconciliation. Read-only — repair/archive actions coming next."
+  blurb: "Matches with conflicting status / state / POI fields. Hidden from user views. Admin-only archive and bounded-repair actions are wired via admin-match-legacy-archive and admin-match-legacy-repair (see AdminLegacyRepairPanel)."
 }, {
   id: "legal-holds",
   label: "Legal Holds",

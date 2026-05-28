@@ -135,11 +135,29 @@ export function AdminLegalHoldsPanel() {
     return () => { cancelled = true; };
   }, []);
 
+  // Server requires AAL2 for BOTH apply and release (see
+  // supabase/functions/admin-legal-hold/index.ts — assertAal2 around L174-186,
+  // applied to both `apply` and `release`; `list` is read-only). We therefore
+  // gate both destructive actions in the UI when the preflight reports
+  // anything other than aal2. We distinguish:
+  //   • aal1     → user definitely needs to verify MFA (banner is firm).
+  //   • unknown  → preflight failed transiently; show a cautious "could not
+  //                confirm" state and still block destructive actions
+  //                client-side rather than surface a misleading enabled
+  //                button that would only fail server-side.
   const needsMfa = aalState === "aal1" || aalState === "unknown";
+  const mfaUnknown = aalState === "unknown";
+  const mfaLoading = aalState === "loading";
 
   const applyDisabled = useMemo(() => {
-    return applying || !UUID_RE.test(scopeId.trim()) || reason.trim().length < 10;
-  }, [applying, scopeId, reason]);
+    return (
+      applying ||
+      needsMfa ||
+      mfaLoading ||
+      !UUID_RE.test(scopeId.trim()) ||
+      reason.trim().length < 10
+    );
+  }, [applying, needsMfa, mfaLoading, scopeId, reason]);
 
   const handleApply = async () => {
     setApplying(true);
@@ -238,16 +256,34 @@ export function AdminLegalHoldsPanel() {
       {needsMfa && (
         <Alert variant="destructive" data-testid="legal-holds-mfa-banner">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Multi-factor authentication required</AlertTitle>
+          <AlertTitle>
+            {mfaUnknown
+              ? "Could not confirm MFA status"
+              : "Multi-factor authentication required"}
+          </AlertTitle>
           <AlertDescription>
-            Applying or releasing a legal hold requires an MFA-verified
-            session. Open{" "}
-            <a href="/desk/settings/security" className="underline font-medium">
-              Settings → Security
-            </a>{" "}
-            to enrol an authenticator or verify your existing factor, then
-            return to this page. This banner stays visible until your session
-            is MFA-verified.
+            {mfaUnknown ? (
+              <>
+                We could not verify your session's MFA status. Apply and
+                Release are blocked until this clears. Refresh the page, or
+                open{" "}
+                <a href="/desk/settings/security" className="underline font-medium">
+                  Settings → Security
+                </a>{" "}
+                to re-verify your factor.
+              </>
+            ) : (
+              <>
+                Applying or releasing a legal hold requires an MFA-verified
+                session. Open{" "}
+                <a href="/desk/settings/security" className="underline font-medium">
+                  Settings → Security
+                </a>{" "}
+                to enrol an authenticator or verify your existing factor, then
+                return to this page. This banner stays visible until your
+                session is MFA-verified.
+              </>
+            )}
           </AlertDescription>
         </Alert>
       )}
@@ -342,7 +378,12 @@ export function AdminLegalHoldsPanel() {
                         size="sm"
                         variant="outline"
                         className="w-full"
-                        disabled={releasingId === h.id || (releaseReasons[h.id] ?? "").trim().length < 10}
+                        disabled={
+                          releasingId === h.id ||
+                          needsMfa ||
+                          mfaLoading ||
+                          (releaseReasons[h.id] ?? "").trim().length < 10
+                        }
                         onClick={() => handleRelease(h)}
                       >
                         {releasingId === h.id && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
