@@ -256,16 +256,34 @@ export function AdminLegalHoldsPanel() {
       {needsMfa && (
         <Alert variant="destructive" data-testid="legal-holds-mfa-banner">
           <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Multi-factor authentication required</AlertTitle>
+          <AlertTitle>
+            {mfaUnknown
+              ? "Could not confirm MFA status"
+              : "Multi-factor authentication required"}
+          </AlertTitle>
           <AlertDescription>
-            Applying or releasing a legal hold requires an MFA-verified
-            session. Open{" "}
-            <a href="/desk/settings/security" className="underline font-medium">
-              Settings → Security
-            </a>{" "}
-            to enrol an authenticator or verify your existing factor, then
-            return to this page. This banner stays visible until your session
-            is MFA-verified.
+            {mfaUnknown ? (
+              <>
+                We could not verify your session's MFA status. Apply and
+                Release are blocked until this clears. Refresh the page, or
+                open{" "}
+                <a href="/desk/settings/security" className="underline font-medium">
+                  Settings → Security
+                </a>{" "}
+                to re-verify your factor.
+              </>
+            ) : (
+              <>
+                Applying or releasing a legal hold requires an MFA-verified
+                session. Open{" "}
+                <a href="/desk/settings/security" className="underline font-medium">
+                  Settings → Security
+                </a>{" "}
+                to enrol an authenticator or verify your existing factor, then
+                return to this page. This banner stays visible until your
+                session is MFA-verified.
+              </>
+            )}
           </AlertDescription>
         </Alert>
       )}
