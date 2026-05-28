@@ -25,13 +25,14 @@
  *   - All seeded emails match @test.izenzo.co.za (gate matches provision-test-user)
  *   - Organisation flagged is_demo=true (skipped by lifecycle / billing crons)
  *   - Idempotent: re-running upserts and never duplicates
- *   - TOTP secret is a fixed, well-known base32 string scoped to *test fixtures only*
- *     and rotated by re-seeding with a different `totp_secret` in the request body
+ *   - TOTP is enrolled through the supported auth API; the generated base32
+ *     secret is returned only in the seeder response for staging smoke use
  */
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const INTERNAL_CRON_KEY = Deno.env.get("INTERNAL_CRON_KEY") ?? "";
 
@@ -63,11 +64,42 @@ const ACCOUNTS = {
 const PURCHASE_CLEAN_REF = "smoke-ad-clean-001";
 const PURCHASE_PENDING_REF = "smoke-ad-pending-001";
 
-// Default TOTP secret — overridable in request body. Base32, 16 chars.
-const DEFAULT_TOTP_SECRET = "JBSWY3DPEHPK3PXP";
-
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: corsHeaders });
+}
+
+function base32ToBytes(input: string): Uint8Array {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const ch of input.toUpperCase().replace(/=+$/g, "").replace(/\s+/g, "")) {
+    const value = alphabet.indexOf(ch);
+    if (value < 0) throw new Error("invalid totp secret");
+    bits += value.toString(2).padStart(5, "0");
+  }
+  const out = new Uint8Array(Math.floor(bits.length / 8));
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(bits.slice(i * 8, i * 8 + 8), 2);
+  return out;
+}
+
+async function totpCode(secret: string, at = Date.now()): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    base32ToBytes(secret),
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"],
+  );
+  const counter = Math.floor(at / 30_000);
+  const msg = new ArrayBuffer(8);
+  const view = new DataView(msg);
+  view.setUint32(4, counter, false);
+  const hmac = new Uint8Array(await crypto.subtle.sign("HMAC", key, msg));
+  const offset = hmac[hmac.length - 1] & 0x0f;
+  const bin = ((hmac[offset] & 0x7f) << 24)
+    | (hmac[offset + 1] << 16)
+    | (hmac[offset + 2] << 8)
+    | hmac[offset + 3];
+  return String(bin % 1_000_000).padStart(6, "0");
 }
 
 function authorised(req: Request): boolean {
