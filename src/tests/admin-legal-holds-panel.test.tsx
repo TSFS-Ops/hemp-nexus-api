@@ -97,6 +97,89 @@ function setListResponse(opts: { active?: any[]; released?: any[] } = {}) {
 beforeEach(() => {
   state.invoke.mockReset();
   state.toast.mockReset();
+  state.aalLevel = "aal2";
+  state.aalError = null;
+});
+
+describe("AdminLegalHoldsPanel — MFA gating (Batch 1 fix #1)", () => {
+  it("disables Apply when needsMfa is true (aal1) and shows the MFA banner", async () => {
+    state.aalLevel = "aal1";
+    setListResponse({ active: [ACTIVE_HOLD] });
+    render(<AdminLegalHoldsPanel />);
+
+    // Fill in otherwise-valid inputs.
+    fireEvent.change(await screen.findByLabelText(/Scope ID/i), {
+      target: { value: "22222222-bbbb-4bbb-8bbb-222222222222" },
+    });
+    fireEvent.change(screen.getByLabelText(/Reason/i), {
+      target: { value: "Litigation hold reasoning that is long enough" },
+    });
+
+    // Banner present.
+    expect(
+      await screen.findByTestId("legal-holds-mfa-banner"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Multi-factor authentication required/i),
+    ).toBeInTheDocument();
+
+    // Apply disabled despite valid form.
+    expect(
+      screen.getByRole("button", { name: /Apply hold/i }),
+    ).toBeDisabled();
+
+    // Release disabled despite a valid release reason.
+    fireEvent.change(screen.getByPlaceholderText(/Release reason/i), {
+      target: { value: "Case closed; hold lifted by counsel" },
+    });
+    expect(
+      screen.getByRole("button", { name: /Release hold/i }),
+    ).toBeDisabled();
+  });
+
+  it("shows the cautious 'Could not confirm MFA status' banner when AAL is unknown and blocks destructive actions", async () => {
+    state.aalError = { message: "network" };
+    setListResponse({ active: [ACTIVE_HOLD] });
+    render(<AdminLegalHoldsPanel />);
+
+    fireEvent.change(await screen.findByLabelText(/Scope ID/i), {
+      target: { value: "22222222-bbbb-4bbb-8bbb-222222222222" },
+    });
+    fireEvent.change(screen.getByLabelText(/Reason/i), {
+      target: { value: "Litigation hold reasoning that is long enough" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Release reason/i), {
+      target: { value: "Case closed; hold lifted by counsel" },
+    });
+
+    expect(
+      await screen.findByText(/Could not confirm MFA status/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Apply hold/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Release hold/i }),
+    ).toBeDisabled();
+  });
+
+  it("does NOT render the MFA banner when AAL is aal2 and Apply enables on valid input", async () => {
+    state.aalLevel = "aal2";
+    setListResponse();
+    render(<AdminLegalHoldsPanel />);
+    fireEvent.change(await screen.findByLabelText(/Scope ID/i), {
+      target: { value: "22222222-bbbb-4bbb-8bbb-222222222222" },
+    });
+    fireEvent.change(screen.getByLabelText(/Reason/i), {
+      target: { value: "Litigation hold reasoning that is long enough" },
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId("legal-holds-mfa-banner")).not.toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: /Apply hold/i }),
+    ).not.toBeDisabled();
+  });
 });
 
 describe("AdminLegalHoldsPanel — render + scope selector", () => {
