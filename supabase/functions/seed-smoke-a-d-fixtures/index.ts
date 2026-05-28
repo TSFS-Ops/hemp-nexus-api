@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   if (!authorised(req)) return json({ error: "unauthorized" }, 401);
 
-  let body: { confirm?: string; password?: string; totp_secret?: string };
+  let body: { confirm?: string; password?: string };
   try { body = await req.json(); } catch { return json({ error: "invalid_json" }, 400); }
   if (body.confirm !== "RUN_SEED_SMOKE_A_D") {
     return json({ error: "confirm phrase required: RUN_SEED_SMOKE_A_D" }, 400);
@@ -284,8 +284,6 @@ Deno.serve(async (req) => {
   if (!body.password || body.password.length < 12) {
     return json({ error: "password (≥12 chars) required" }, 400);
   }
-  const totpSecret = body.totp_secret ?? DEFAULT_TOTP_SECRET;
-
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -302,7 +300,7 @@ Deno.serve(async (req) => {
     const adminMfaId = await upsertUser(admin, ACCOUNTS.admin_mfa.email, body.password, ACCOUNTS.admin_mfa.full_name);
     await ensureRole(admin, adminMfaId, "platform_admin");
     await ensureProfile(admin, adminMfaId, orgId, ACCOUNTS.admin_mfa.email, ACCOUNTS.admin_mfa.full_name);
-    await ensureVerifiedTotp(admin, adminMfaId, totpSecret);
+    const mfa = await ensureVerifiedTotp(admin, adminMfaId, ACCOUNTS.admin_mfa.email, body.password);
 
     const orgAdminId = await upsertUser(admin, ACCOUNTS.org_admin.email, body.password, ACCOUNTS.org_admin.full_name);
     await ensureRole(admin, orgAdminId, "org_admin");
@@ -320,7 +318,7 @@ Deno.serve(async (req) => {
       `export SMOKE_ADMIN_PASSWORD="${body.password}"`,
       `export SMOKE_ADMIN_AAL2_EMAIL="${ACCOUNTS.admin_mfa.email}"`,
       `export SMOKE_ADMIN_AAL2_PASSWORD="${body.password}"`,
-      `export SMOKE_ADMIN_AAL2_TOTP_SECRET="${totpSecret}"`,
+      `export SMOKE_ADMIN_AAL2_TOTP_SECRET="${mfa.secret}"`,
       `export SMOKE_ORG_EMAIL="${ACCOUNTS.org_admin.email}"`,
       `export SMOKE_ORG_PASSWORD="${body.password}"`,
       `export SMOKE_LEGAL_HOLD_SCOPE_ID="${orgId}"`,
@@ -331,7 +329,7 @@ Deno.serve(async (req) => {
       org_id: orgId,
       users: {
         admin_no_mfa: { id: adminNoMfaId, email: ACCOUNTS.admin_no_mfa.email },
-        admin_mfa: { id: adminMfaId, email: ACCOUNTS.admin_mfa.email, totp_secret: totpSecret },
+        admin_mfa: { id: adminMfaId, email: ACCOUNTS.admin_mfa.email, totp_factor_id: mfa.factorId, totp_secret: mfa.secret },
         org_admin: { id: orgAdminId, email: ACCOUNTS.org_admin.email },
       },
       purchases: {
