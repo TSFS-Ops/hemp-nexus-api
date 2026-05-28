@@ -84,9 +84,16 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
   const purchases = data?.purchases ?? [];
   const pendingRefunds = data?.pending_refunds ?? [];
   const blockedRefunds = data?.blocked_refunds ?? [];
+  const resolvedRefunds = data?.resolved_refunds ?? [];
+  const pagination = data?.pagination;
 
   const pendingSet = new Set(pendingRefunds.map((r) => r.token_purchase_id));
   const blockedMap = new Map(blockedRefunds.map((r) => [r.token_purchase_id, r.status]));
+  // Latest resolved outcome per purchase (rows are newest-first from server).
+  const resolvedMap = new Map<string, ResolvedRefundRow>();
+  for (const r of resolvedRefunds) {
+    if (!resolvedMap.has(r.token_purchase_id)) resolvedMap.set(r.token_purchase_id, r);
+  }
 
   const onRefundSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["billing-org-purchases", orgId] });
