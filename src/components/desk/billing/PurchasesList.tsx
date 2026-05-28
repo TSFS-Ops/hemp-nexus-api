@@ -130,6 +130,15 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                     : blockedStatus === "blocked_expired"
                       ? "Refund unavailable — outside window"
                       : null;
+                const resolved = !hasPending ? resolvedMap.get(p.id) : undefined;
+                const resolvedLabel =
+                  resolved?.status === "approved"
+                    ? "Refund approved"
+                    : resolved?.status === "declined"
+                      ? "Refund declined"
+                      : resolved?.status === "superseded"
+                        ? "Refund superseded"
+                        : null;
                 return (
                   <div
                     key={p.id}
