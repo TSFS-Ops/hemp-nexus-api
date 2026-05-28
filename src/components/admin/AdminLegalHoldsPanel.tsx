@@ -378,7 +378,12 @@ export function AdminLegalHoldsPanel() {
                         size="sm"
                         variant="outline"
                         className="w-full"
-                        disabled={releasingId === h.id || (releaseReasons[h.id] ?? "").trim().length < 10}
+                        disabled={
+                          releasingId === h.id ||
+                          needsMfa ||
+                          mfaLoading ||
+                          (releaseReasons[h.id] ?? "").trim().length < 10
+                        }
                         onClick={() => handleRelease(h)}
                       >
                         {releasingId === h.id && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
