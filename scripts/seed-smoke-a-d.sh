@@ -6,7 +6,6 @@
 #   SUPABASE_SERVICE_ROLE_KEY    - admin key
 #   SMOKE_PASSWORD               - shared password for all 3 accounts (≥12 chars)
 # Optional:
-#   SMOKE_TOTP_SECRET            - base32 TOTP secret (default JBSWY3DPEHPK3PXP)
 #
 # Usage:
 #   bash scripts/seed-smoke-a-d.sh > .env.smoke
@@ -17,9 +16,8 @@ set -euo pipefail
 : "${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY required}"
 : "${SMOKE_PASSWORD:?SMOKE_PASSWORD (≥12 chars) required}"
 
-payload=$(printf '{"confirm":"RUN_SEED_SMOKE_A_D","password":"%s"%s}' \
-  "$SMOKE_PASSWORD" \
-  "${SMOKE_TOTP_SECRET:+,\"totp_secret\":\"$SMOKE_TOTP_SECRET\"}")
+payload=$(printf '{"confirm":"RUN_SEED_SMOKE_A_D","password":"%s"}' \
+  "$SMOKE_PASSWORD")
 
 resp=$(curl -fsS -X POST \
   -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
