@@ -38,11 +38,27 @@ interface BlockedRefundRow {
   created_at: string;
 }
 
+interface ResolvedRefundRow {
+  id: string;
+  token_purchase_id: string;
+  status: "approved" | "declined" | "superseded" | string;
+  reviewed_at: string | null;
+  decision_reason: string | null;
+  created_at: string;
+}
+
 interface ListOrgPurchasesResponse {
   success: boolean;
-  purchases: PurchaseRow[];
+  purchases: (PurchaseRow & { out_of_page?: boolean })[];
   pending_refunds: PendingRefundRow[];
   blocked_refunds?: BlockedRefundRow[];
+  resolved_refunds?: ResolvedRefundRow[];
+  pagination?: {
+    limit: number;
+    offset: number;
+    total_count: number;
+    has_more: boolean;
+  };
 }
 
 interface PurchasesListProps {
