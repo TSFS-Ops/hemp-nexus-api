@@ -5,20 +5,48 @@
  * in rows B and C.
  */
 import { Page, expect } from "@playwright/test";
+import { createClient, type Session } from "@supabase/supabase-js";
+import { readFileSync } from "node:fs";
+
+function envValue(name: string): string | undefined {
+  if (process.env[name]) return process.env[name];
+  try {
+    const line = readFileSync(".env", "utf8")
+      .split(/\r?\n/)
+      .find((l) => l.startsWith(`${name}=`));
+    return line?.slice(name.length + 1).replace(/^['"]|['"]$/g, "");
+  } catch {
+    return undefined;
+  }
+}
+
+function smokeClient() {
+  const url = envValue("SUPABASE_URL") ?? envValue("VITE_SUPABASE_URL");
+  const key = envValue("SUPABASE_ANON_KEY") ?? envValue("VITE_SUPABASE_PUBLISHABLE_KEY");
+  if (!url || !key) throw new Error("Missing backend URL or publishable key for smoke auth.");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+function storageKey(): string {
+  const url = envValue("SUPABASE_URL") ?? envValue("VITE_SUPABASE_URL");
+  if (!url) throw new Error("Missing backend URL for smoke auth storage.");
+  return `sb-${new URL(url).hostname.split(".")[0]}-auth-token`;
+}
+
+async function installSession(page: Page, session: Session) {
+  await page.goto("/");
+  await page.evaluate(
+    ([key, value]) => {
+      localStorage.setItem(key, value);
+    },
+    [storageKey(), JSON.stringify(session)],
+  );
+}
 
 export async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/auth");
-  // Field selectors are intentionally loose — the auth page may iterate
-  // copy. We anchor on input type instead of brittle text.
-  await page.locator('input[type="email"]').first().fill(email);
-  if (!(await page.locator('input[type="password"]').first().isVisible({ timeout: 1_000 }).catch(() => false))) {
-    await page.getByRole("button", { name: /continue/i }).first().click();
-  }
-  await page.locator('input[type="password"]').first().fill(password);
-  await Promise.all([
-    page.waitForURL((u) => !u.pathname.startsWith("/auth"), { timeout: 30_000 }),
-    page.getByRole("button", { name: /sign in|log in|continue/i }).first().click(),
-  ]);
+  const { data, error } = await smokeClient().auth.signInWithPassword({ email, password });
+  if (error || !data.session) throw new Error(`Smoke sign-in failed for ${email}: ${error?.message ?? "no session"}`);
+  await installSession(page, data.session);
 }
 
 export async function signOut(page: Page) {
@@ -42,13 +70,24 @@ export async function signOut(page: Page) {
  * surfaced to stdout, traces, or error messages.
  */
 export async function completeTotpIfPrompted(page: Page, secretEnvVar: string) {
-  const challenge = page.locator('input[name="code"], input[autocomplete="one-time-code"]').first();
-  if (!(await challenge.isVisible({ timeout: 5_000 }).catch(() => false))) return;
   const { generateTotp } = await import("./totp");
+  const raw = await page.evaluate((key) => localStorage.getItem(key), storageKey());
+  if (!raw) throw new Error("Missing smoke session for TOTP step-up.");
+  const session = JSON.parse(raw) as Session;
+  const client = smokeClient();
+  await client.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+  const { data: factors, error: factorsError } = await client.auth.mfa.listFactors();
+  if (factorsError) throw new Error(`Smoke TOTP factor lookup failed: ${factorsError.message}`);
+  const factorId = factors.totp[0]?.id;
+  if (!factorId) return;
   const code = await generateTotp(secretEnvVar);
-  await challenge.fill(code);
-  await page.getByRole("button", { name: /verify|continue|submit/i }).first().click();
-  await expect(challenge).not.toBeVisible({ timeout: 15_000 });
+  const { data, error } = await client.auth.mfa.challengeAndVerify({ factorId, code });
+  if (error || !data) throw new Error(`Smoke TOTP step-up failed: ${error?.message ?? "no session"}`);
+  await installSession(page, data as Session);
+  await expect.poll(async () => {
+    const { data: aal } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    return aal?.currentLevel;
+  }).toBe("aal2");
 }
 
 
