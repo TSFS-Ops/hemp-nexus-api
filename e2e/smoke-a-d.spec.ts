@@ -21,8 +21,6 @@ import { signIn, signOut, completeTotpIfPrompted, requireEnv } from "./helpers/a
 const TOAST_TTL_MS = 6_000;
 
 test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", () => {
-  test("inline alert remains after toast TTL", async ({ page, ev }) => {
-test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", () => {
   test("inline alert remains after toast TTL and Apply stays disabled", async ({ page, ev }) => {
     const email = requireEnv("SMOKE_ADMIN_EMAIL");
     const password = requireEnv("SMOKE_ADMIN_PASSWORD");
@@ -58,10 +56,21 @@ test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", (
     await expect(applyBtn, "Apply must remain disabled after toast TTL").toBeDisabled();
     await ev.snapshot("mfa-banner-after-toast-ttl");
   });
-
 });
 
+test.describe("Smoke B — Legal hold AAL2 apply succeeds and persists hard refresh", () => {
   test("active row survives hard refresh", async ({ page, ev }) => {
+    const email = requireEnv("SMOKE_ADMIN_AAL2_EMAIL");
+    const password = requireEnv("SMOKE_ADMIN_AAL2_PASSWORD");
+    requireEnv("SMOKE_ADMIN_AAL2_TOTP_SECRET");
+    const scopeId = requireEnv("SMOKE_LEGAL_HOLD_SCOPE_ID");
+
+    await signIn(page, email, password);
+    await completeTotpIfPrompted(page, "SMOKE_ADMIN_AAL2_TOTP_SECRET");
+    await ev.snapshot("post-aal2");
+
+    await page.goto("/hq/legal-holds");
+
     const email = requireEnv("SMOKE_ADMIN_AAL2_EMAIL");
     const password = requireEnv("SMOKE_ADMIN_AAL2_PASSWORD");
     requireEnv("SMOKE_ADMIN_AAL2_TOTP_SECRET");
