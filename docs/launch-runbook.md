@@ -243,3 +243,10 @@ Prebuild guards:
 - `scripts/check-dec-007-pay-009-audit-names.mjs`
 - `scripts/check-dec-007-pay-009-guard-coverage.mjs`
 - `scripts/check-dec-007-pay-009-no-ledger-delete.mjs`
+
+## Batch 4 — Enterprise Identity (SSO/SAML shell + SCIM lifecycle)
+
+Status: BATCH_4_CODE_READY — staging operator verification required. Live SSO claim is only permitted when `ssoClaimAllowed()` returns true (status=live AND last_test_result=pass AND supabase_sso_provider_id set AND last_tested_at set). Promotion to `status=live` is gated by `org-sso-test-connection` and independently enforced by the `tg_org_sso_configs_guard_live_status` DB trigger. No custom SAML; no external SCIM HTTP endpoint.
+
+Prebuild guards:
+- `scripts/check-identity-audit-names.mjs`
