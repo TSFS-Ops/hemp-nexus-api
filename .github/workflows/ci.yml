@@ -252,3 +252,105 @@ jobs:
         continue-on-error: true
         run: npm audit --audit-level=high
 
+  staging-smoke:
+    # Smoke A–D against the deployed staging preview. Runs only when the
+    # full SMOKE_* secret set is configured on the repo — otherwise we
+    # skip with a clear ::notice:: rather than fake a green check or fail
+    # on a missing-secret error. Forks are excluded (no secret access).
+    #
+    # Required repo secrets (set under Settings → Secrets and variables → Actions):
+    #   - SMOKE_BASE_URL
+    #   - SMOKE_ADMIN_EMAIL              + SMOKE_ADMIN_PASSWORD             (Row A)
+    #   - SMOKE_ADMIN_AAL2_EMAIL         + SMOKE_ADMIN_AAL2_PASSWORD        (Row B)
+    #   - SMOKE_ADMIN_AAL2_TOTP_SECRET   (base32)                           (Row B)
+    #   - SMOKE_ORG_EMAIL                + SMOKE_ORG_PASSWORD               (Rows C/D)
+    #   - SMOKE_LEGAL_HOLD_SCOPE_ID      (UUID)                             (Row B)
+    name: Staging smoke A–D (skips if secrets missing)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: lint-typecheck-test
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Probe smoke secrets
+        id: probe
+        env:
+          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          SMOKE_ADMIN_EMAIL: ${{ secrets.SMOKE_ADMIN_EMAIL }}
+          SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+          SMOKE_ADMIN_AAL2_EMAIL: ${{ secrets.SMOKE_ADMIN_AAL2_EMAIL }}
+          SMOKE_ADMIN_AAL2_PASSWORD: ${{ secrets.SMOKE_ADMIN_AAL2_PASSWORD }}
+          SMOKE_ADMIN_AAL2_TOTP_SECRET: ${{ secrets.SMOKE_ADMIN_AAL2_TOTP_SECRET }}
+          SMOKE_ORG_EMAIL: ${{ secrets.SMOKE_ORG_EMAIL }}
+          SMOKE_ORG_PASSWORD: ${{ secrets.SMOKE_ORG_PASSWORD }}
+          SMOKE_LEGAL_HOLD_SCOPE_ID: ${{ secrets.SMOKE_LEGAL_HOLD_SCOPE_ID }}
+        run: |
+          required=(
+            SMOKE_BASE_URL
+            SMOKE_ADMIN_EMAIL SMOKE_ADMIN_PASSWORD
+            SMOKE_ADMIN_AAL2_EMAIL SMOKE_ADMIN_AAL2_PASSWORD SMOKE_ADMIN_AAL2_TOTP_SECRET
+            SMOKE_ORG_EMAIL SMOKE_ORG_PASSWORD
+            SMOKE_LEGAL_HOLD_SCOPE_ID
+          )
+          missing=()
+          for v in "${required[@]}"; do
+            if [ -z "${!v}" ]; then missing+=("$v"); fi
+          done
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::notice title=Staging smoke skipped::Missing SMOKE_* repo secret(s): ${missing[*]}. Configure them under Settings → Secrets and variables → Actions to enable the A–D smoke gate. This step is intentionally a SKIP, not a failure."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Staging smoke enabled::All SMOKE_* secrets present — running A–D pack against ${SMOKE_BASE_URL}."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Bun
+        if: steps.probe.outputs.should_run == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        if: steps.probe.outputs.should_run == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright chromium
+        if: steps.probe.outputs.should_run == 'true'
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run Smoke A–D pack + pack evidence
+        if: steps.probe.outputs.should_run == 'true'
+        env:
+          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          SMOKE_ADMIN_EMAIL: ${{ secrets.SMOKE_ADMIN_EMAIL }}
+          SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+          SMOKE_ADMIN_AAL2_EMAIL: ${{ secrets.SMOKE_ADMIN_AAL2_EMAIL }}
+          SMOKE_ADMIN_AAL2_PASSWORD: ${{ secrets.SMOKE_ADMIN_AAL2_PASSWORD }}
+          SMOKE_ADMIN_AAL2_TOTP_SECRET: ${{ secrets.SMOKE_ADMIN_AAL2_TOTP_SECRET }}
+          SMOKE_ORG_EMAIL: ${{ secrets.SMOKE_ORG_EMAIL }}
+          SMOKE_ORG_PASSWORD: ${{ secrets.SMOKE_ORG_PASSWORD }}
+          SMOKE_LEGAL_HOLD_SCOPE_ID: ${{ secrets.SMOKE_LEGAL_HOLD_SCOPE_ID }}
+          EVIDENCE_OUT_DIR: ${{ github.workspace }}/evidence-bundle
+        run: |
+          mkdir -p "$EVIDENCE_OUT_DIR"
+          bun run smoke:daniel:evidence
+
+      - name: Validate evidence bundle (all rows green + required files)
+        if: steps.probe.outputs.should_run == 'true'
+        run: bun run check:smoke-evidence
+
+      - name: Upload evidence bundle
+        if: steps.probe.outputs.should_run == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-a-d-evidence
+          path: |
+            evidence/
+            playwright-report/
+            evidence-bundle/
+          retention-days: 14
+
+
