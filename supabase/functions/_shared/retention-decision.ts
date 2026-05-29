@@ -61,7 +61,7 @@ const PLATFORM_FLOORS: Record<string, number> = {
 /**
  * Pure decision evaluator. Reads `org_retention_policies` directly so we
  * can distinguish "explicit" from "missing" (the SECURITY DEFINER reader
- * `get_effective_retention_days` collapses both into the platform floor,
+ * for effective retention days collapses both into the platform floor,
  * which would silently authorise deletion — exactly what Phase 3 must
  * not do).
  */

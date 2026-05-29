@@ -10450,6 +10450,14 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: Json
       }
+      discover_email_send_log_candidate_orgs: {
+        Args: { p_limit?: number }
+        Returns: {
+          oldest_created_at: string
+          org_id: string
+          row_count: number
+        }[]
+      }
       dry_run_legacy_reconciliation: { Args: never; Returns: Json }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }

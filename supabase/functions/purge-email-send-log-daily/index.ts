@@ -1,14 +1,29 @@
 /**
- * DATA-004 Phase 3 — First wired retention sweeper.
+ * DATA-004 Phase 3 (+ Phase 3.1 evidence hardening) — Wired retention sweeper.
  *
- * Purges (DELETEs) `email_send_log` rows whose age exceeds the
- * org's effective `email_send_log` retention window, ONLY when:
+ * Purges (DELETEs) `email_send_log` rows whose age exceeds the org's
+ * effective `email_send_log` retention window, ONLY when:
  *   - an explicit, enabled, valid `org_retention_policies` row exists
  *     for that org + record_class
  *   - no active legal hold (org-scope OR record_group sentinel) covers it
  *
  * Fail-closed in every other case. Decisions are produced by the shared
  * `decideRetention` helper so policy semantics live in exactly one place.
+ *
+ * Phase 3.1 hardening:
+ *  1. **Candidate discovery** — enumerate orgs that actually have
+ *     `email_send_log` rows (via `discover_email_send_log_candidate_orgs`),
+ *     so orgs WITHOUT an explicit retention policy are explicitly recorded
+ *     in `retention_run_evidence` as `skipped_due_to_missing_policy` rather
+ *     than silently protected by absence-from-iteration.
+ *  2. **Lifecycle is evidence-only.** Run-level lifecycle events
+ *     (`started`/`completed`/`partial`/`failed`) are written to
+ *     `retention_run_evidence`, NOT to `audit_logs`, because
+ *     `audit_logs.org_id` is NOT NULL and there is no platform-system org.
+ *     The canonical lifecycle SSOT is `retention_run_evidence`.
+ *  3. **Per-org `skipped` audits persist** to `audit_logs` (real `org_id`).
+ *     Audit-write failures are tracked and surfaced in the run evidence
+ *     and the function response — never silently swallowed.
  *
  * Auth: INTERNAL_CRON_KEY header OR service_role bearer.
  *
@@ -19,11 +34,13 @@
  *     "max_rows_per_org": <number>           // safety cap (default 5000)
  *   }
  *
- * Evidence: every run writes rows to public.retention_run_evidence and
- * emits canonical audit events:
- *   - data.retention_job.email_send_log.started
- *   - data.retention_job.email_send_log.completed | partial | failed
- *   - data.retention_job.email_send_log.skipped (per-org skip reasons)
+ * Canonical names (pinned by check-data-004-phase3-audit-names.mjs):
+ *   - data.retention_job.email_send_log.started     (evidence status only)
+ *   - data.retention_job.email_send_log.completed   (evidence status only)
+ *   - data.retention_job.email_send_log.partial     (evidence status only)
+ *   - data.retention_job.email_send_log.failed      (evidence status only)
+ *   - data.retention_job.email_send_log.skipped     (persists to audit_logs
+ *                                                    per-org with real org_id)
  *
  * This function is the ONLY sweeper authorised to consume
  * `org_retention_policies` in Phase 3 — enforced by
@@ -45,6 +62,23 @@ export const RETENTION_JOB_AUDIT_NAMES = {
   partial: "data.retention_job.email_send_log.partial",
   failed: "data.retention_job.email_send_log.failed",
   skipped: "data.retention_job.email_send_log.skipped",
+} as const;
+
+/**
+ * Persistence contract for the canonical names above (Phase 3.1):
+ *
+ *   - `skipped` → persists to public.audit_logs (per-org row, real org_id).
+ *   - `started`, `completed`, `partial`, `failed` → run-level lifecycle
+ *     events. They are recorded as `details.lifecycle_event_name` on
+ *     `retention_run_evidence` rows, NOT in `audit_logs`, because
+ *     `audit_logs.org_id` is NOT NULL and there is no platform org.
+ */
+export const RETENTION_JOB_AUDIT_PERSISTENCE = {
+  started: "evidence_only",
+  completed: "evidence_only",
+  partial: "evidence_only",
+  failed: "evidence_only",
+  skipped: "audit_logs_per_org",
 } as const;
 
 const JOB_NAME = "purge-email-send-log-daily";
@@ -93,7 +127,6 @@ function bumpForDecision(counts: OrgRunCounts, d: RetentionDecision, rows: numbe
       counts.rows_eligible += rows;
       break;
     case "retained_not_expired":
-      // age check: counted only in rows_seen
       break;
     case "skipped_due_to_missing_policy":
       counts.rows_skipped_missing_policy += rows;
@@ -113,34 +146,66 @@ function bumpForDecision(counts: OrgRunCounts, d: RetentionDecision, rows: numbe
   }
 }
 
+interface AuditWriteFailure {
+  action: string;
+  org_id: string | null;
+  error: string;
+}
+
 async function writeEvidence(
   admin: any,
   row: Record<string, unknown>,
-): Promise<void> {
+): Promise<{ ok: boolean; error?: string }> {
   try {
-    await admin.from("retention_run_evidence").insert(row);
+    const { error } = await admin.from("retention_run_evidence").insert(row);
+    if (error) {
+      console.error("[purge-email-send-log-daily] evidence write failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+    return { ok: true };
   } catch (e) {
-    console.error("[purge-email-send-log-daily] evidence write failed:", e);
+    const msg = (e as Error)?.message ?? "unknown";
+    console.error("[purge-email-send-log-daily] evidence write threw:", msg);
+    return { ok: false, error: msg };
   }
 }
 
-async function writeAudit(
+/**
+ * Phase 3.1: per-org `skipped` audit writer.
+ *
+ * Returns `{ ok, error }`; the caller MUST surface any failure into the
+ * run evidence + response so audit failures are never silently swallowed.
+ * This writer is only ever called with a real org_id (per-org skip).
+ */
+async function writePerOrgSkipAudit(
   admin: any,
-  action: string,
-  orgId: string | null,
+  orgId: string,
   metadata: Record<string, unknown>,
-): Promise<void> {
+): Promise<{ ok: boolean; error?: string }> {
   try {
-    await admin.from("audit_logs").insert({
+    const { error } = await admin.from("audit_logs").insert({
       org_id: orgId,
       actor_user_id: null,
-      action,
+      action: RETENTION_JOB_AUDIT_NAMES.skipped,
       entity_type: "retention_job",
       entity_id: null,
       metadata,
     });
+    if (error) {
+      console.error(
+        `[purge-email-send-log-daily] per-org skipped audit failed (org=${orgId}):`,
+        error.message,
+      );
+      return { ok: false, error: error.message };
+    }
+    return { ok: true };
   } catch (e) {
-    console.error(`[purge-email-send-log-daily] audit write failed (${action}):`, e);
+    const msg = (e as Error)?.message ?? "unknown";
+    console.error(
+      `[purge-email-send-log-daily] per-org skipped audit threw (org=${orgId}):`,
+      msg,
+    );
+    return { ok: false, error: msg };
   }
 }
 
@@ -185,24 +250,29 @@ Deno.serve(async (req) => {
 
   const runId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
+  const auditWriteFailures: AuditWriteFailure[] = [];
+  const evidenceWriteFailures: Array<{ phase: string; error: string }> = [];
 
-  await writeAudit(admin, RETENTION_JOB_AUDIT_NAMES.started, null, {
-    run_id: runId,
-    job_name: JOB_NAME,
-    record_class: RECORD_CLASS,
-    dry_run: dryRun,
-    started_at: startedAt,
-  });
-
-  await writeEvidence(admin, {
+  // Phase 3.1: lifecycle events are evidence-only — recorded in
+  // retention_run_evidence.details.lifecycle_event_name, not in audit_logs.
+  const startEv = await writeEvidence(admin, {
     run_id: runId,
     job_name: JOB_NAME,
     record_class: RECORD_CLASS,
     org_id: null,
     status: "started",
     started_at: startedAt,
-    details: { dry_run: dryRun, max_orgs: maxOrgs, max_rows_per_org: maxRowsPerOrg },
+    details: {
+      dry_run: dryRun,
+      max_orgs: maxOrgs,
+      max_rows_per_org: maxRowsPerOrg,
+      lifecycle_event_name: RETENTION_JOB_AUDIT_NAMES.started,
+      lifecycle_persistence: "evidence_only",
+    },
   });
+  if (!startEv.ok) {
+    evidenceWriteFailures.push({ phase: "started", error: startEv.error ?? "unknown" });
+  }
 
   const totals: OrgRunCounts = zeroCounts();
   const perOrgSummary: Array<{
@@ -210,18 +280,19 @@ Deno.serve(async (req) => {
     decision: RetentionDecision;
     counts: OrgRunCounts;
     retention_days: number | null;
+    reason: string;
   }> = [];
   let anyFailure = false;
   let anySkip = false;
 
   try {
-    // Discover orgs with explicit email_send_log policies.
-    const { data: policyRows, error: polErr } = await admin
-      .from("org_retention_policies")
-      .select("org_id, retention_days, metadata")
-      .eq("record_class", RECORD_CLASS)
-      .limit(maxOrgs);
-    if (polErr) {
+    // Phase 3.1: candidate discovery — orgs that actually have email_send_log
+    // rows, regardless of whether an explicit retention policy exists.
+    const { data: candRows, error: candErr } = await admin.rpc(
+      "discover_email_send_log_candidate_orgs",
+      { p_limit: maxOrgs },
+    );
+    if (candErr) {
       anyFailure = true;
       await writeEvidence(admin, {
         run_id: runId,
@@ -230,42 +301,43 @@ Deno.serve(async (req) => {
         org_id: null,
         status: "failed",
         decision: "skipped_due_to_error",
-        reason: `policy_discovery_failed: ${polErr.message}`,
+        reason: `candidate_discovery_failed: ${candErr.message}`,
         started_at: startedAt,
         finished_at: new Date().toISOString(),
-        details: { error: polErr.message },
+        details: {
+          error: candErr.message,
+          lifecycle_event_name: RETENTION_JOB_AUDIT_NAMES.failed,
+          lifecycle_persistence: "evidence_only",
+        },
       });
-      await writeAudit(admin, RETENTION_JOB_AUDIT_NAMES.failed, null, {
+      return json(500, {
+        ok: false,
         run_id: runId,
-        reason: "policy_discovery_failed",
-        error: polErr.message,
+        error: "candidate_discovery_failed",
+        detail: candErr.message,
+        audit_write_failures: auditWriteFailures,
+        evidence_write_failures: evidenceWriteFailures,
       });
-      return json(500, { ok: false, run_id: runId, error: "policy_discovery_failed" });
     }
 
-    const orgIds = Array.from(new Set((policyRows ?? []).map((r: any) => r.org_id as string)));
+    const candidates = (candRows ?? []) as Array<{
+      org_id: string;
+      row_count: number;
+      oldest_created_at: string | null;
+    }>;
 
-    for (const orgId of orgIds) {
+    for (const cand of candidates) {
+      const orgId = cand.org_id;
       const counts = zeroCounts();
       let orgDecision: RetentionDecision = "skipped_due_to_error";
       let retentionDays: number | null = null;
       let orgReason = "";
 
       try {
-        // Fetch a sample row to compute a representative age for decision evaluation.
-        // We use the OLDEST row so a decision of "retained" guarantees nothing is past
-        // retention. For purge we will re-check ages per row in the delete query.
-        const { data: oldestRows, error: oldestErr } = await admin
-          .from("email_send_log")
-          .select("id, created_at, metadata")
-          .filter("metadata->>org_id", "eq", orgId)
-          .order("created_at", { ascending: true })
-          .limit(1);
-        if (oldestErr) throw oldestErr;
-        const oldest = (oldestRows ?? [])[0];
+        const oldest = cand.oldest_created_at;
         const oldestAgeDays = oldest
           ? Math.floor(
-              (Date.now() - new Date(oldest.created_at as string).getTime()) /
+              (Date.now() - new Date(oldest).getTime()) /
                 (24 * 60 * 60 * 1000),
             )
           : 0;
@@ -282,19 +354,13 @@ Deno.serve(async (req) => {
         retentionDays = decision.retention_days;
         orgReason = decision.reason;
 
-        // rows_seen: count of rows for this org regardless of decision
-        const { count: seen } = await admin
-          .from("email_send_log")
-          .select("id", { count: "exact", head: true })
-          .filter("metadata->>org_id", "eq", orgId);
-        counts.rows_seen = seen ?? 0;
+        counts.rows_seen = Number(cand.row_count) || 0;
 
         if (decision.decision === "eligible_for_purge" && retentionDays) {
           const cutoff = new Date(
             Date.now() - retentionDays * 24 * 60 * 60 * 1000,
           ).toISOString();
 
-          // Count first (capped).
           const { count: eligible } = await admin
             .from("email_send_log")
             .select("id", { count: "exact", head: true })
@@ -303,7 +369,6 @@ Deno.serve(async (req) => {
           counts.rows_eligible = Math.min(eligible ?? 0, maxRowsPerOrg);
 
           if (!dryRun && counts.rows_eligible > 0) {
-            // Capped delete via id-in subquery.
             const { data: toDelete, error: pickErr } = await admin
               .from("email_send_log")
               .select("id")
@@ -322,8 +387,8 @@ Deno.serve(async (req) => {
             }
           }
         } else {
-          // Non-eligible decision: bucket all seen rows under the skip reason
-          // so the evidence table reflects what would NOT be purged.
+          // Bucket the candidate row count under the skip reason so evidence
+          // reflects what was protected (including missing-policy orgs).
           bumpForDecision(counts, decision.decision, counts.rows_seen);
           anySkip = true;
         }
@@ -334,7 +399,7 @@ Deno.serve(async (req) => {
         counts.rows_skipped_error = counts.rows_seen || counts.rows_skipped_error;
       }
 
-      await writeEvidence(admin, {
+      const orgEvidenceRow: Record<string, unknown> = {
         run_id: runId,
         job_name: JOB_NAME,
         record_class: RECORD_CLASS,
@@ -355,18 +420,58 @@ Deno.serve(async (req) => {
         rows_skipped_legal_hold: counts.rows_skipped_legal_hold,
         rows_skipped_error: counts.rows_skipped_error,
         details: { dry_run: dryRun, retention_days: retentionDays },
-      });
+      };
+      const evRes = await writeEvidence(admin, orgEvidenceRow);
+      if (!evRes.ok) {
+        evidenceWriteFailures.push({
+          phase: `org:${orgId}`,
+          error: evRes.error ?? "unknown",
+        });
+      }
 
+      // Per-org skipped audits land in audit_logs with real org_id.
       if (orgDecision !== "eligible_for_purge" && orgDecision !== "retained_not_expired") {
-        await writeAudit(admin, RETENTION_JOB_AUDIT_NAMES.skipped, orgId, {
+        const ar = await writePerOrgSkipAudit(admin, orgId, {
           run_id: runId,
           decision: orgDecision,
           reason: orgReason,
           retention_days: retentionDays,
+          job_name: JOB_NAME,
+          record_class: RECORD_CLASS,
         });
+        if (!ar.ok) {
+          auditWriteFailures.push({
+            action: RETENTION_JOB_AUDIT_NAMES.skipped,
+            org_id: orgId,
+            error: ar.error ?? "unknown",
+          });
+          // Surface inline in evidence too so HQ can see audit drift.
+          await writeEvidence(admin, {
+            run_id: runId,
+            job_name: JOB_NAME,
+            record_class: RECORD_CLASS,
+            org_id: orgId,
+            status: "skipped",
+            decision: orgDecision,
+            reason: `audit_write_failed: ${ar.error ?? "unknown"}`,
+            started_at: startedAt,
+            finished_at: new Date().toISOString(),
+            details: {
+              dry_run: dryRun,
+              audit_write_failure: true,
+              audit_action: RETENTION_JOB_AUDIT_NAMES.skipped,
+            },
+          });
+        }
       }
 
-      perOrgSummary.push({ org_id: orgId, decision: orgDecision, counts, retention_days: retentionDays });
+      perOrgSummary.push({
+        org_id: orgId,
+        decision: orgDecision,
+        counts,
+        retention_days: retentionDays,
+        reason: orgReason,
+      });
       Object.assign(totals, addCounts(totals, counts));
     }
 
@@ -379,7 +484,14 @@ Deno.serve(async (req) => {
       : "success";
 
     const finishedAt = new Date().toISOString();
-    await writeEvidence(admin, {
+    const finalEvent =
+      finalStatus === "success"
+        ? RETENTION_JOB_AUDIT_NAMES.completed
+        : finalStatus === "partial"
+        ? RETENTION_JOB_AUDIT_NAMES.partial
+        : RETENTION_JOB_AUDIT_NAMES.failed;
+
+    const finalEv = await writeEvidence(admin, {
       run_id: runId,
       job_name: JOB_NAME,
       record_class: RECORD_CLASS,
@@ -395,25 +507,18 @@ Deno.serve(async (req) => {
       rows_skipped_invalid_policy: totals.rows_skipped_invalid_policy,
       rows_skipped_legal_hold: totals.rows_skipped_legal_hold,
       rows_skipped_error: totals.rows_skipped_error,
-      details: { dry_run: dryRun, orgs_processed: perOrgSummary.length },
+      details: {
+        dry_run: dryRun,
+        orgs_processed: perOrgSummary.length,
+        lifecycle_event_name: finalEvent,
+        lifecycle_persistence: "evidence_only",
+        audit_write_failures: auditWriteFailures,
+        evidence_write_failures: evidenceWriteFailures,
+      },
     });
-
-    const summaryAuditAction =
-      finalStatus === "success"
-        ? RETENTION_JOB_AUDIT_NAMES.completed
-        : finalStatus === "partial"
-        ? RETENTION_JOB_AUDIT_NAMES.partial
-        : RETENTION_JOB_AUDIT_NAMES.failed;
-    await writeAudit(admin, summaryAuditAction, null, {
-      run_id: runId,
-      job_name: JOB_NAME,
-      record_class: RECORD_CLASS,
-      dry_run: dryRun,
-      totals,
-      orgs_processed: perOrgSummary.length,
-      started_at: startedAt,
-      finished_at: finishedAt,
-    });
+    if (!finalEv.ok) {
+      evidenceWriteFailures.push({ phase: "final", error: finalEv.error ?? "unknown" });
+    }
 
     return json(200, {
       ok: true,
@@ -421,11 +526,22 @@ Deno.serve(async (req) => {
       job_name: JOB_NAME,
       record_class: RECORD_CLASS,
       status: finalStatus,
+      lifecycle_event_name: finalEvent,
+      lifecycle_persistence: "evidence_only",
       dry_run: dryRun,
       totals,
       orgs_processed: perOrgSummary.length,
+      per_org: perOrgSummary.map((o) => ({
+        org_id: o.org_id,
+        decision: o.decision,
+        reason: o.reason,
+        retention_days: o.retention_days,
+        counts: o.counts,
+      })),
       started_at: startedAt,
       finished_at: finishedAt,
+      audit_write_failures: auditWriteFailures,
+      evidence_write_failures: evidenceWriteFailures,
     });
   } catch (e) {
     const msg = (e as Error)?.message ?? "unknown";
@@ -439,13 +555,21 @@ Deno.serve(async (req) => {
       reason: `job_threw: ${msg}`,
       started_at: startedAt,
       finished_at: new Date().toISOString(),
-      details: { error: msg },
+      details: {
+        error: msg,
+        lifecycle_event_name: RETENTION_JOB_AUDIT_NAMES.failed,
+        lifecycle_persistence: "evidence_only",
+        audit_write_failures: auditWriteFailures,
+        evidence_write_failures: evidenceWriteFailures,
+      },
     });
-    await writeAudit(admin, RETENTION_JOB_AUDIT_NAMES.failed, null, {
+    return json(500, {
+      ok: false,
       run_id: runId,
-      reason: "job_threw",
-      error: msg,
+      error: "job_failed",
+      detail: msg,
+      audit_write_failures: auditWriteFailures,
+      evidence_write_failures: evidenceWriteFailures,
     });
-    return json(500, { ok: false, run_id: runId, error: "job_failed", detail: msg });
   }
 });

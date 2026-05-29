@@ -67,6 +67,22 @@ interface ClassBreakdown {
   enforcement_wired: boolean;
 }
 
+interface LastRunEvidence {
+  run_id: string;
+  status: "started" | "success" | "partial" | "failed" | "skipped";
+  started_at: string;
+  finished_at: string | null;
+  rows_seen: number;
+  rows_eligible: number;
+  rows_purged: number;
+  rows_skipped_missing_policy: number;
+  rows_skipped_disabled_policy: number;
+  rows_skipped_invalid_policy: number;
+  rows_skipped_legal_hold: number;
+  rows_skipped_error: number;
+  details: Record<string, unknown> | null;
+}
+
 interface HealthResponse {
   ok: true;
   phase: string;
@@ -94,6 +110,7 @@ interface HealthResponse {
   orgs: OrgEntry[];
   orgs_returned: number;
   orgs_truncated: boolean;
+  last_run_email_send_log?: LastRunEvidence | null;
   request_id: string;
 }
 
@@ -155,7 +172,11 @@ export function OrgRetentionHealthPanel() {
           and any other retention/archival paths still do NOT consume{" "}
           <code>org_retention_policies</code>. Missing, disabled, or invalid org
           policies fail closed: rows are retained, not deleted. Active legal holds
-          block purge.
+          block purge. <strong>pg_cron is NOT scheduled.</strong> Run-level
+          lifecycle events (<code>started</code>/<code>completed</code>/
+          <code>partial</code>/<code>failed</code>) are recorded in{" "}
+          <code>retention_run_evidence</code> as the canonical source of truth;
+          only per-org <code>skipped</code> rows persist to <code>audit_logs</code>.
         </AlertDescription>
       </Alert>
 
@@ -235,6 +256,62 @@ export function OrgRetentionHealthPanel() {
               </table>
             </div>
           </section>
+
+          {/* Phase 3.1 — Latest email_send_log purge run evidence */}
+          {data.last_run_email_send_log && (
+            <section className="rounded-sm border border-border bg-card">
+              <header className="px-4 py-2 border-b border-border text-xs uppercase tracking-wider text-muted-foreground flex justify-between">
+                <span>Latest email_send_log purge run (canonical lifecycle = retention_run_evidence)</span>
+                <Badge
+                  variant={
+                    data.last_run_email_send_log.status === "success"
+                      ? "default"
+                      : data.last_run_email_send_log.status === "failed"
+                      ? "destructive"
+                      : "secondary"
+                  }
+                >
+                  {data.last_run_email_send_log.status}
+                </Badge>
+              </header>
+              <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <Tile label="Rows seen" value={data.last_run_email_send_log.rows_seen} />
+                <Tile label="Rows eligible" value={data.last_run_email_send_log.rows_eligible} />
+                <Tile label="Rows purged" value={data.last_run_email_send_log.rows_purged} tone={data.last_run_email_send_log.rows_purged > 0 ? "warn" : "ok"} />
+                <Tile label="Missing-policy skips" value={data.last_run_email_send_log.rows_skipped_missing_policy} tone="warn" />
+                <Tile label="Disabled-policy skips" value={data.last_run_email_send_log.rows_skipped_disabled_policy} tone="warn" />
+                <Tile label="Invalid-policy skips" value={data.last_run_email_send_log.rows_skipped_invalid_policy} tone="warn" />
+                <Tile label="Legal-hold skips" value={data.last_run_email_send_log.rows_skipped_legal_hold} tone="warn" />
+                <Tile label="Error skips" value={data.last_run_email_send_log.rows_skipped_error} tone={data.last_run_email_send_log.rows_skipped_error > 0 ? "warn" : "ok"} />
+              </div>
+              <div className="px-4 pb-3 text-[11px] text-muted-foreground space-y-1">
+                <div>
+                  run_id <code>{data.last_run_email_send_log.run_id}</code> · started{" "}
+                  {new Date(data.last_run_email_send_log.started_at).toLocaleString()}
+                  {data.last_run_email_send_log.finished_at
+                    ? ` · finished ${new Date(data.last_run_email_send_log.finished_at).toLocaleString()}`
+                    : ""}
+                </div>
+                {(() => {
+                  const d = data.last_run_email_send_log!.details ?? {};
+                  const awf = (d as any).audit_write_failures as Array<unknown> | undefined;
+                  const ewf = (d as any).evidence_write_failures as Array<unknown> | undefined;
+                  const warn = (awf?.length ?? 0) + (ewf?.length ?? 0);
+                  return warn > 0 ? (
+                    <div className="text-destructive">
+                      ⚠ {awf?.length ?? 0} audit-write failure(s), {ewf?.length ?? 0} evidence-write failure(s) surfaced on this run.
+                    </div>
+                  ) : (
+                    <div>No audit/evidence write failures on this run.</div>
+                  );
+                })()}
+                <div>
+                  Per-org <code>skipped</code> rows are mirrored to <code>audit_logs</code>{" "}
+                  with real <code>org_id</code>; lifecycle events are evidence-only.
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Per-org effective view */}
           <section className="rounded-sm border border-border bg-card">

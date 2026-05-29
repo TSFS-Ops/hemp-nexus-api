@@ -253,52 +253,55 @@ Prebuild guards:
 - `scripts/check-tenant-boundary-audit-names.mjs`
 - `scripts/check-data-org-retention-audit-names.mjs`
 
-## DATA-004 — Per-Org Retention (Phase 1 shell + Phase 2 evidence + Phase 3 partial enforcement)
+## DATA-004 — Per-Org Retention (Phase 1 shell + Phase 2 evidence + Phase 3 partial enforcement + Phase 3.1 evidence hardening)
 
-Status: **DATA-004 Phase 3 LIVE — PARTIAL ENFORCEMENT ONLY. Only `email_send_log` is wired to `org_retention_policies`. All other retention jobs remain deferred.**
+Status: **DATA-004 Phase 3.1 LIVE — PARTIAL ENFORCEMENT ONLY. Only `email_send_log` is wired to `org_retention_policies`. All other retention jobs remain deferred. pg_cron is NOT scheduled.**
 
 Surfaces:
 - HQ → Retention & Holds → **Per-Org Retention** (Phase 1 editor — `platform_admin` + AAL2; values recorded + audited; DB enforces ≥ platform floor).
-- HQ → Retention & Holds → **Retention Health** (Phase 2 + Phase 3 evidence — `platform_admin`, no AAL2; reports `enforcement_status: "partial_enforcement_email_send_log_only"` and surfaces the latest `retention_run_evidence` rows for the wired sweeper).
+- HQ → Retention & Holds → **Retention Health** (Phase 2 + Phase 3 + Phase 3.1 evidence — `platform_admin`, no AAL2; reports `enforcement_status: "partial_enforcement_email_send_log_only"`, surfaces the latest `retention_run_evidence` row for the wired sweeper, including missing-policy / disabled-policy / invalid-policy / legal-hold / error skip counts, and any audit/evidence write-failure warning from the latest run).
 
-Canonical audits:
-- Phase 1 (policy mutation, pinned by `check-data-org-retention-audit-names.mjs`):
+Canonical names:
+- Phase 1 (policy mutation — persist to `audit_logs`, pinned by `check-data-org-retention-audit-names.mjs`):
   - `data.org_retention_policy.set`
   - `data.org_retention_policy.cleared`
-- Phase 3 (wired sweeper, pinned by `check-data-004-phase3-audit-names.mjs`):
-  - `data.retention_job.email_send_log.started`
-  - `data.retention_job.email_send_log.completed`
-  - `data.retention_job.email_send_log.partial`
-  - `data.retention_job.email_send_log.failed`
-  - `data.retention_job.email_send_log.skipped`
+- Phase 3 / 3.1 (wired sweeper, pinned by `check-data-004-phase3-audit-names.mjs`):
+  - `data.retention_job.email_send_log.skipped` — **persists to `audit_logs`** with real per-org `org_id` (one row per skipped org per run).
+  - `data.retention_job.email_send_log.started` / `.completed` / `.partial` / `.failed` — **run-level lifecycle events, EVIDENCE-ONLY.** Recorded on `retention_run_evidence` rows via `details.lifecycle_event_name`. They do NOT persist to `audit_logs` because `audit_logs.org_id` is NOT NULL and there is no platform-system org. The canonical lifecycle source of truth is `retention_run_evidence`.
 
-Phase 3 enforcement contract (must hold):
+Phase 3.1 evidence-hardening contract (must hold):
+- The sweeper enumerates orgs from **candidate `email_send_log` rows** via the read-only helper `discover_email_send_log_candidate_orgs(p_limit)` (service_role EXECUTE only). Orgs without an explicit retention policy are visible in `retention_run_evidence` as `skipped_due_to_missing_policy` instead of being silently protected by absence-from-iteration.
+- Per-org `skipped` audit writes are tracked; on failure the run records an inline `audit_write_failed` evidence row AND surfaces an `audit_write_failures[]` array on both the run-final `retention_run_evidence.details` and the function response. Audit failures are never silently swallowed.
+- Evidence-write failures are also tracked in `evidence_write_failures[]` and surfaced in the response.
+- Lifecycle events remain evidence-only — the sweeper does NOT call any audit writer with `org_id: null`.
+
+Phase 3 enforcement contract (still holds):
 - ONLY `purge-email-send-log-daily` is wired to per-org retention. Enforced by `scripts/check-data-004-phase3-enforcement-scope.mjs`.
 - All other retention jobs remain DEFERRED and forbidden from consuming `org_retention_policies` / `get_effective_retention_days`:
   - `storage-retention-cleanup`
   - `account-deletion-sweeper`
   - `cold-storage-archive`
   - retention enforcement sentinel paths
-  - `email-log-anonymise`
+  - `email-log-anonymise` (remains global-floor, untouched)
   - Enforced by `scripts/check-data-004-phase2-no-enforcement.mjs` (still active for the deferred list above).
 - `purge-email-send-log-daily` is **manually / service-role invocable only**. **pg_cron is NOT scheduled.**
 - `dry_run=true` is the default. A live purge requires deliberate operator invocation with `dry_run=false`.
 - Fail-closed: missing, disabled, or invalid policy aborts the org with `skipped` evidence — never silent deletion-approval.
-- Active org-scoped legal hold (`org_legal_holds.status='active'`) blocks purge and writes `skipped` evidence.
+- Active org-scoped legal hold (`legal_holds.status='active'`, `scope_type='org'`) blocks purge and writes `skipped` evidence.
 - Every run writes append-only rows to `retention_run_evidence` (rows seen / purged / skipped / status / dry_run / job_name).
-- HQ Retention Health renders `enforcement_status: "partial_enforcement_email_send_log_only"` plus the latest run for the wired job.
 
 ### Operator checklist — manual verification of `purge-email-send-log-daily`
 
 1. Create or confirm an explicit valid `email_send_log` retention policy for a test org via HQ → Per-Org Retention (AAL2 required; `retention_days ≥ 90`).
-2. Confirm a separate org with **no explicit policy** fails closed — the dry-run evidence row for that org must be `status='skipped'` with a missing/invalid-policy reason.
-3. Confirm an active org-scoped legal hold on a third test org skips the purge for that org (`status='skipped'`, reason references the legal hold).
-4. Invoke `purge-email-send-log-daily` via service-role / curl with `{ "dry_run": true }` (the default). Confirm the function returns 200 and emits `data.retention_job.email_send_log.started` + a terminal audit.
-5. Inspect `retention_run_evidence` for the new run: per-org rows must include `rows_seen`, `rows_purged=0` (dry-run), `rows_skipped`, and `dry_run=true`.
-6. Confirm HQ → Retention & Holds → Retention Health shows the latest run under the email-send-log job summary.
+2. Confirm a separate org with **no explicit policy** AND candidate email_send_log rows produces an explicit `skipped_due_to_missing_policy` row in `retention_run_evidence` on the next run (Phase 3.1 hardening).
+3. Confirm an active org-scoped legal hold on a third test org skips the purge for that org (`status='skipped'`, `decision='skipped_due_to_legal_hold'`).
+4. Invoke `purge-email-send-log-daily` via service-role / curl with `{ "dry_run": true }` (the default). Confirm the function returns 200 and writes a `status='started'` evidence row with `details.lifecycle_event_name='data.retention_job.email_send_log.started'`.
+5. Inspect `retention_run_evidence` for the new run: per-org rows must include `rows_seen`, `rows_purged=0` (dry-run), populated skip counters per decision, and `dry_run=true`.
+6. Confirm HQ → Retention & Holds → Retention Health shows the latest run, including missing-policy / disabled-policy / invalid-policy / legal-hold / error skip counters.
 7. Only after dry-run evidence is clean, optionally re-invoke in a controlled fixture with `{ "dry_run": false }`. Treat this as a deliberate operator action.
 8. Confirm post-live-run evidence shows `rows_purged > 0` ONLY for eligible orgs (explicit valid policy, no active legal hold). Skipped/failed orgs must remain at `rows_purged=0`.
 9. Confirm no other record class or sweeper was touched: `storage-retention-cleanup`, `account-deletion-sweeper`, `cold-storage-archive`, `email-log-anonymise`, and retention sentinel paths must show no new activity tied to per-org retention.
+10. Confirm response/evidence `audit_write_failures` and `evidence_write_failures` arrays are empty. If non-empty, treat as a hard alert before scheduling.
 
 Phase 4+ (deferred — do NOT start without explicit sign-off):
 - Scheduling `purge-email-send-log-daily` under pg_cron.
@@ -308,9 +311,10 @@ Prebuild guards:
 - `scripts/check-data-org-retention-audit-names.mjs`
 - `scripts/check-data-004-phase2-no-enforcement.mjs` (deferred sweepers stay forbidden)
 - `scripts/check-data-004-phase3-enforcement-scope.mjs` (only `purge-email-send-log-daily` may consume per-org retention)
-- `scripts/check-data-004-phase3-audit-names.mjs`
+- `scripts/check-data-004-phase3-audit-names.mjs` (5 canonical names + persistence map: `skipped`=audit_logs_per_org, lifecycle=evidence_only)
 
 Vitest:
 - `src/tests/data-004-phase2-evidence-guard.test.ts`
-- `src/tests/data-004-phase3-enforcement-guard.test.ts`
+- `src/tests/data-004-phase3-enforcement-guard.test.ts` (covers Phase 3.1 hardening: candidate discovery, lifecycle persistence map, no run-level audit writes, audit/evidence write-failure surfacing)
+
 
