@@ -319,9 +319,9 @@ Vitest:
 
 
 
-## DATA-004 Phase 3.2 — scheduling readiness (pg_cron NOT scheduled)
+## DATA-004 Phase 3.2 — scheduling readiness (historical, superseded by Phase 4)
 
-Status: **DATA-004 Phase 3.2 LIVE — SCHEDULING READINESS ONLY. pg_cron is NOT scheduled. Enforcement scope is unchanged from Phase 3.1: only `email_send_log` is wired; `email-log-anonymise` is untouched / global-floor; all other sweepers remain deferred.**
+Status: **Phase 3.2 SUPERSEDED — see DATA-004 Phase 4 below for the current scheduled-dry-run state. Phase 3.2 was scheduling readiness only with no pg_cron schedule; that gate has now been ticked and Phase 4 added a dry-run-only schedule. The Phase 3.2 readiness checklist remains the historical sign-off record. Live purge is NOT scheduled.**
 
 Phase 3.2 prepares the platform for a future scheduling decision without
 making any destructive behaviour automatic.
