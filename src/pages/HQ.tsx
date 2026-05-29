@@ -330,11 +330,26 @@ function LegacyRepairTab() {
     </>;
 }
 function LegalHoldsTab() {
+  // Two sub-tabs: existing legal holds (DATA-003) + new per-org retention shell (DATA-004).
+  const [sub, setSub] = useUrlTab("sub", "holds", ["holds", "org-retention"]);
   return <>
       <TabHeader id="legal-holds" />
-      <Surface label="DATA-003 · public.legal_holds · platform_admin + AAL2 · blocks deletion/anonymisation/purge/export-destruction">
-        <AdminLegalHoldsPanel />
-      </Surface>
+      <Tabs value={sub} onValueChange={setSub} className="space-y-5">
+        <TabsList className="bg-card border border-border rounded-sm">
+          <TabsTrigger value="holds">Legal Holds</TabsTrigger>
+          <TabsTrigger value="org-retention">Per-Org Retention</TabsTrigger>
+        </TabsList>
+        <TabsContent value="holds">
+          <Surface label="DATA-003 · public.legal_holds · platform_admin + AAL2 · blocks deletion/anonymisation/purge/export-destruction">
+            <AdminLegalHoldsPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="org-retention">
+          <Surface label="DATA-004 Phase 1 SHELL · public.org_retention_policies · platform_admin + AAL2 · floors enforced at DB · sweepers not yet wired">
+            <OrgRetentionPanel />
+          </Surface>
+        </TabsContent>
+      </Tabs>
     </>;
 }
 function GovernanceRecordsTab() {
