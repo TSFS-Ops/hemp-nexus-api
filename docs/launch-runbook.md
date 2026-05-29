@@ -707,4 +707,59 @@ WHERE jobname IN (
 
 Replacements for any quarantined job require a separate batch with `retention_run_evidence` parity, per-org policy awareness, legal-hold enforcement, and a second explicit approval. See the corresponding entries in `docs/deferred-policy-register.md`.
 
+## DATA-004 Batch 8B — live cron-state evidence gate
+
+Status: **COMPLETE 2026-05-29 — live `cron.job` snapshot captured; state matches the DATA-004 contract; no schedule changes made.**
+
+Why: Batch 8A proved SQL-migration guards and docs can drift from live `cron.job` state. SQL guards are a regression net for migrations only — they cannot detect schedules added directly against the DB. Live cron state must therefore become release evidence before any future live-schedule decision.
+
+### Snapshot (2026-05-29)
+
+| jobid | jobname                                  | schedule     | active |
+|-------|------------------------------------------|--------------|--------|
+| 7     | storage-retention-cleanup-job            | `0 2 * * *`  | false  |
+| 25    | account-deletion-sweeper-daily-dryrun    | `15 3 * * *` | true   |
+| 39    | purge-email-send-log-daily-dryrun        | `20 3 * * *` | true   |
+
+Quarantined jobnames (`purge-email-send-log-daily`, `email-log-anonymise-daily`, `account-deletion-sweeper-daily`, `cold-storage-archive-weekly`): **0 rows** in live cron. `cold-storage-archive*`: 0 rows. ✅
+
+Full artifact: `evidence/data-004-batch-8b-cron-snapshot.md`.
+
+### Mandatory pre-Batch-9 operator checklist
+
+Before approving **any** future live-schedule batch (Batch 9A cold-storage scheduled dry-run, Batch 9B live email-purge replacement, etc.), the operator MUST:
+
+1. Run, against the **live DB**:
+   ```sql
+   SELECT jobid, jobname, schedule, active FROM cron.job
+   WHERE jobname IN (
+     'purge-email-send-log-daily',
+     'email-log-anonymise-daily',
+     'account-deletion-sweeper-daily',
+     'cold-storage-archive-weekly',
+     'purge-email-send-log-daily-dryrun',
+     'account-deletion-sweeper-daily-dryrun',
+     'storage-retention-cleanup-job'
+   ) ORDER BY jobid;
+   ```
+   plus a `WHERE jobname ILIKE '%cold-storage%'` probe.
+2. Confirm `0 rows` for every quarantined jobname.
+3. Confirm jobids `25` and `39` are still active on `15 3 * * *` / `20 3 * * *`, with bodies pinning `dry_run:true` / `p_dry_run:true` and `INTERNAL_CRON_KEY` from vault.
+4. Confirm jobid `7` is still `active=false`.
+5. Confirm no `cold-storage-archive*` jobname exists.
+6. Overwrite `evidence/data-004-batch-8b-cron-snapshot.md` (or write a dated sibling) with the fresh output.
+7. Only then proceed with the schedule change.
+
+A passing prebuild guard run is **not** a substitute. `scripts/check-data-004-batch-8a-cron-quarantine.mjs` scans SQL migrations only; any external SQL run against the DB bypasses it.
+
+### What Batch 8B does NOT change
+
+- No new cron schedule added.
+- No dry-run job converted to live.
+- No new sweeper wired.
+- No retention policy/floor change.
+- No edge function code change.
+- No destructive job touched.
+
+
 

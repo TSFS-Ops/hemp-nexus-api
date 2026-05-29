@@ -422,4 +422,65 @@ What Batch 8A does NOT change:
 
 Replacements for any quarantined job require a separate batch with `retention_run_evidence` parity, per-org policy awareness, legal-hold enforcement, and a second explicit approval. See `docs/deferred-policy-register.md` entries for "DATA-004 legacy live email purge", "DATA-004 live account deletion cron", and "DATA-004 live email anonymise cron".
 
+## DATA-004 Batch 8B — live cron-state evidence gate
+
+Status: **DATA-004 Batch 8B COMPLETE — live `cron.job` audited; state matches the DATA-004 contract; no schedule changes made.**
+
+Why this batch exists: Batch 8A demonstrated that SQL-migration guards and documentation can drift from live `cron.job` state (jobids 14/24/35/8 had been scheduled outside the documented contract). SQL-only regression nets are necessary but not sufficient — live cron state must itself become release evidence before any future Batch 9+ live-schedule decision.
+
+### Live cron snapshot (2026-05-29)
+
+Source query:
+```sql
+SELECT jobid, jobname, schedule, active FROM cron.job
+WHERE jobname IN (
+  'purge-email-send-log-daily',
+  'email-log-anonymise-daily',
+  'account-deletion-sweeper-daily',
+  'cold-storage-archive-weekly',
+  'purge-email-send-log-daily-dryrun',
+  'account-deletion-sweeper-daily-dryrun',
+  'storage-retention-cleanup-job'
+)
+ORDER BY jobid;
+```
+
+Result:
+
+| jobid | jobname                                  | schedule     | active | expected           |
+|-------|------------------------------------------|--------------|--------|--------------------|
+| 7     | storage-retention-cleanup-job            | `0 2 * * *`  | false  | inactive ✅        |
+| 25    | account-deletion-sweeper-daily-dryrun    | `15 3 * * *` | true   | dry-run live ✅    |
+| 39    | purge-email-send-log-daily-dryrun        | `20 3 * * *` | true   | dry-run live ✅    |
+
+All four quarantined jobnames (`purge-email-send-log-daily`, `email-log-anonymise-daily`, `account-deletion-sweeper-daily`, `cold-storage-archive-weekly`) returned **0 rows** — i.e. absent from live cron. ✅
+
+`cold-storage-archive` is absent from live cron (separate `ILIKE '%cold-storage%'` probe — 0 rows). ✅
+
+Evidence artifact: `evidence/data-004-batch-8b-cron-snapshot.md`.
+
+### Pre-Batch-9 live-cron audit checklist (operator, REQUIRED)
+
+Before approving any future live-schedule batch (Batch 9A cold-storage scheduled dry-run, Batch 9B live email-purge replacement, or any other) the operator MUST:
+
+1. Run the snapshot query above against the live DB.
+2. Confirm `0 rows` for every quarantined jobname.
+3. Confirm `25` and `39` are still present, active, on `15 3 * * *` and `20 3 * * *` respectively, with bodies pinning `dry_run:true` / `p_dry_run:true` and `INTERNAL_CRON_KEY` via vault.
+4. Confirm `7` is still `active=false`.
+5. Confirm no `cold-storage-archive*` jobname exists.
+6. Re-write `evidence/data-004-batch-8b-cron-snapshot.md` (or a dated sibling file) with the fresh output.
+7. Only then proceed with the schedule change.
+
+A passing prebuild guard run is **not** a substitute for this checklist — `scripts/check-data-004-batch-8a-cron-quarantine.mjs` only scans SQL migrations, and any external SQL run against the DB will bypass it.
+
+### What Batch 8B does NOT change
+
+- No new cron schedule added.
+- No dry-run job converted to live.
+- No new sweeper wired.
+- No retention policy/floor change.
+- No edge function code change.
+- No destructive job touched.
+
+
 
