@@ -14,6 +14,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { assertAal2 } from "../_shared/aal.ts";
+import { ApiException } from "../_shared/errors.ts";
 
 const ALLOWED_EMAILS = new Set<string>([
   "api@izenzo.co.za",
@@ -95,6 +97,21 @@ Deno.serve(async (req) => {
 
     const { data: isAdmin } = await admin.rpc("is_admin", { user_id: caller.id });
     if (!isAdmin) return json(req, { error: "Admin access required" }, 403);
+
+    // AAL2 — staging password mint is a credential-issuing admin action and
+    // mirrors the MFA enforcement on admin-legal-hold / admin-credit-org.
+    try {
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: caller.id,
+        action: "staging.set_fixture_password",
+      });
+    } catch (mfaErr) {
+      if (mfaErr instanceof ApiException && mfaErr.code === "MFA_REQUIRED") {
+        return json(req, { error: mfaErr.message, code: "MFA_REQUIRED" }, 403);
+      }
+      throw mfaErr;
+    }
 
     const body = await req.json().catch(() => ({}));
     const email = String(body?.email ?? "").trim().toLowerCase();

@@ -24,6 +24,9 @@ import { CrossTabCacheBridge } from "@/lib/cross-tab-bus";
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
 
+/** Roles permitted to enter the authenticated Developer Center (API keys, webhooks, schema explorer). */
+const DEVELOPER_ROLES = ["platform_admin", "org_admin"] as const;
+
 // Eagerly loaded - critical path
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
@@ -146,23 +149,27 @@ function App() {
                   <Route path="/desk/*" element={<Desk />} />
                   {/* Legacy /admin/*, every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old
-                      bookmarks, audit logs, and outbound links keep working. */}
-                  <Route path="/admin" element={<LegacyRedirect to="/hq/users" label="Admin Console" />} />
-                  <Route path="/admin/users" element={<LegacyRedirect to="/hq/users" label="Admin Users" />} />
-                  <Route path="/admin/orgs" element={<LegacyRedirect to="/hq/organisations" label="Admin Organisations" />} />
-                  <Route path="/admin/entities" element={<LegacyRedirect to="/hq/organisations?sub=entities" label="Admin Entities" />} />
-                  <Route path="/admin/compliance" element={<LegacyRedirect to="/hq/disputes?sub=disputes" label="Admin Compliance" />} />
-                  <Route path="/admin/deals" element={<LegacyRedirect to="/hq/disputes?sub=approvals" label="Admin Deals" />} />
-                  <Route path="/admin/settings" element={<LegacyRedirect to="/hq/settings?sub=platform" label="Admin Settings" />} />
-                  <Route path="/admin/data-governance" element={<LegacyRedirect to="/hq/settings?sub=platform" label="Data Governance" />} />
-                  <Route path="/admin/overrides" element={<LegacyRedirect to="/hq/settings?sub=overrides" label="Admin Overrides" />} />
+                      bookmarks, audit logs, and outbound links keep working.
+                      Each redirect is wrapped in RequireAuth role="platform_admin"
+                      so anonymous and non-admin users never execute the redirect
+                      logic — they hit /auth?returnTo=... or /desk?denied=1 first. */}
+                  <Route path="/admin" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/users" label="Admin Console" /></RequireAuth>} />
+                  <Route path="/admin/users" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/users" label="Admin Users" /></RequireAuth>} />
+                  <Route path="/admin/orgs" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/organisations" label="Admin Organisations" /></RequireAuth>} />
+                  <Route path="/admin/entities" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/organisations?sub=entities" label="Admin Entities" /></RequireAuth>} />
+                  <Route path="/admin/compliance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/disputes?sub=disputes" label="Admin Compliance" /></RequireAuth>} />
+                  <Route path="/admin/deals" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/disputes?sub=approvals" label="Admin Deals" /></RequireAuth>} />
+                  <Route path="/admin/settings" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/settings?sub=platform" label="Admin Settings" /></RequireAuth>} />
+                  <Route path="/admin/data-governance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/settings?sub=platform" label="Data Governance" /></RequireAuth>} />
+                  <Route path="/admin/overrides" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/settings?sub=overrides" label="Admin Overrides" /></RequireAuth>} />
                   {/* Daniel fixture / outreach links use /admin/engagements?match=…
                       and /admin/engagements?engagement=…. LegacyRedirect preserves
                       query string + hash, and the HQ Engagements panel reads
                       ?match= / ?engagement= to pre-scope the row. */}
-                  <Route path="/admin/engagements" element={<LegacyRedirect to="/hq/engagements" label="Admin Engagements" />} />
+                  <Route path="/admin/engagements" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/engagements" label="Admin Engagements" /></RequireAuth>} />
                   {/* Catch-all: anything else under /admin lands on Users (default tab) */}
-                  <Route path="/admin/*" element={<LegacyRedirect to="/hq/users" label="Admin Console" />} />
+                  <Route path="/admin/*" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/users" label="Admin Console" /></RequireAuth>} />
+
                   {/* Public docs hub, Stripe-style sidebar layout */}
                   <Route path="/docs" element={<DocsIndex />} />
                   <Route path="/docs/quickstart" element={<DocsQuickstart />} />
@@ -198,10 +205,14 @@ function App() {
                   <Route path="/developers/dlq" element={<LegacyRedirect to="/developer/webhooks" label="Dead-letter queue" />} />
                   <Route path="/developers/docs" element={<LegacyRedirect to="/developer/docs" label="Developer docs" />} />
                   <Route path="/developers/*" element={<Developers />} />
-                  {/* Authenticated developer surface. RequireAuth redirects
-                      anonymous visitors to /auth?returnTo=/developer/... so the
-                      Developer Center UI is never exposed to logged-out users. */}
-                  <Route path="/developer/*" element={<RequireAuth><DeveloperCenter /></RequireAuth>} />
+                  {/* Authenticated developer surface. Restricted to platform_admin
+                      and org_admin — the Developer Center exposes API keys,
+                      webhooks, and a schema explorer, which buyers, suppliers,
+                      brokers, org_members, and demo users must not see.
+                      Anonymous visitors are redirected to /auth?returnTo=/developer/...;
+                      authenticated users without the required role land on
+                      /desk?denied=1 via RequireAuth's fallbackRoute. */}
+                  <Route path="/developer/*" element={<RequireAuth role={[...DEVELOPER_ROLES]} fallbackRoute="/desk"><DeveloperCenter /></RequireAuth>} />
                   {/* Governance Console, restricted to platform_admin / auditor / org_admin.
                       Unauthorised users are bounced to /desk with denied=1 (see RequireAuth). */}
                   <Route path="/governance/triage" element={<RequireAuth role={[...GOVERNANCE_ROLES]} fallbackRoute="/desk"><GovernanceTriage /></RequireAuth>} />

@@ -288,7 +288,7 @@ function useActiveLanes(orgId: string | null, page: number) {
         return {
           id: m.id,
           commodity: m.commodity ?? "Unspecified commodity",
-          counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
+          counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty pending",
           volume: formatVolume(m.quantity_amount, m.quantity_unit),
           quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
           state,
@@ -370,7 +370,7 @@ function useSealedPage(orgId: string | null, page: number) {
           return {
             id: m.id,
             commodity: m.commodity ?? "Unspecified commodity",
-            counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty TBD",
+            counterparty: (isBuyer ? m.seller_name : m.buyer_name) ?? "Counterparty pending",
             volume: formatVolume(m.quantity_amount, m.quantity_unit),
             quantityValue: m.quantity_amount != null ? Number(m.quantity_amount) : null,
             state: m.state ?? "",
