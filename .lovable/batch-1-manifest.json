@@ -1,7 +1,7 @@
 {
   "label": "batch-1",
-  "commit": "9ff86b9ee5379b129be402ef8e66dd34ed1f99b2",
+  "commit": "0000000000000000000000000000000000000000",
   "recorded_at": "2026-05-29T12:01:24.211Z",
-  "note": "Baseline commit for the Smoke A–D pack. Update with --record after a sanctioned Batch 1 change.",
+  "note": "Baseline commit for the Smoke A\u2013D pack. Update with --record after a sanctioned Batch 1 change.",
   "allowed_dirty_paths": []
 }
