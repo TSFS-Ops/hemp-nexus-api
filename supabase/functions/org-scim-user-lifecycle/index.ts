@@ -16,7 +16,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { assertAal2 } from "../_shared/aal.ts";
-import { writeIdentityAudit, type IdentityAuditName } from "../_shared/identity-audit.ts";
+import { writeIdentityAudit } from "../_shared/identity-audit.ts";
 import {
   BodySchema,
   TRANSITIONS,
