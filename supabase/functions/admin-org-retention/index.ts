@@ -396,21 +396,51 @@ Deno.serve(async (req) => {
         console.error("[admin-org-retention] last_run lookup failed:", e);
       }
 
+      // DATA-004 Phase 4 — discover live pg_cron jobs for the sweeper
+      // so HQ Health can prove (a) the dry-run schedule is registered
+      // and (b) no live (non-dry-run) schedule exists.
+      let cronJobs: Array<{
+        jobid: number;
+        jobname: string;
+        schedule: string;
+        active: boolean;
+        is_dry_run: boolean;
+      }> = [];
+      try {
+        const { data: rows } = await admin.rpc("get_purge_email_send_log_cron_jobs");
+        cronJobs = (rows ?? []) as typeof cronJobs;
+      } catch (e) {
+        console.error("[admin-org-retention] cron.job lookup failed:", e);
+      }
+      const dryRunSchedules = cronJobs.filter((j) => j.is_dry_run && j.active);
+      const liveSchedules = cronJobs.filter((j) => !j.is_dry_run && j.active);
+
       return jsonResponse(req, {
         ok: true,
-        phase: "DATA-004 Phase 3.2",
+        phase: "DATA-004 Phase 4",
         enforcement_status: "partial_enforcement_email_send_log_only",
-        // Phase 3.2 — scheduling readiness only. pg_cron is NOT scheduled.
-        // Surfaces operator-readable readiness so HQ never implies that
-        // automated scheduling is active.
-        scheduling_status: "phase_3_1_verified_pg_cron_pending_approval",
+        // Phase 4 — scheduled dry-run for the sweeper is active.
+        // Live (non-dry-run) scheduling remains pending separate approval.
+        scheduling_status: liveSchedules.length > 0
+          ? "phase_4_unexpected_live_schedule_present"
+          : (dryRunSchedules.length > 0
+              ? "phase_4_scheduled_dry_run_active_live_purge_pending_approval"
+              : "phase_4_dry_run_schedule_missing_check_cron"),
         scheduling_notes: {
-          pg_cron_scheduled: false,
-          invocation_mode: "manual_service_role_only",
+          pg_cron_scheduled: dryRunSchedules.length > 0 || liveSchedules.length > 0,
+          pg_cron_mode: liveSchedules.length > 0
+            ? "LIVE_UNEXPECTED"
+            : (dryRunSchedules.length > 0 ? "dry_run_only" : "none"),
+          invocation_mode: "scheduled_dry_run_and_manual_service_role",
           dry_run_default: true,
+          dry_run_schedules: dryRunSchedules,
+          live_schedules: liveSchedules,
+          rollback_sql:
+            "SELECT cron.unschedule('purge-email-send-log-daily-dryrun');",
           next_step:
-            "scheduled_dry_run_requires_separate_approval_then_live_purge_requires_a_further_separate_approval",
+            "live_purge_scheduling_requires_a_separate_approval_after_dry_run_evidence_review",
         },
+
         summary: {
           orgs_total: orgsTotal ?? 0,
           orgs_with_explicit_policies: orgsWithExplicit,
