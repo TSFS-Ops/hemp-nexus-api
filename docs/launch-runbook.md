@@ -651,3 +651,60 @@ Scheduling `cold-storage-archive` (even as a dry-run cron) is a Batch 8 decision
 
 Until that gate is ticked, **cold-storage-archive is NOT scheduled**.
 
+## DATA-004 Batch 8A — cron contract breach cleanup / quarantine
+
+Status: **DATA-004 Batch 8A COMPLETE — three unauthorized live/destructive cron jobs unscheduled, no new live schedule added.**
+
+### Quarantined cron jobs (unscheduled 2026-05-29)
+
+- **jobid 14 `purge-email-send-log-daily`** (`0 3 * * *`) — called `SELECT public.purge_old_email_send_log();` which hard-DELETEs `email_send_log` rows older than 90 days every day. No per-org policy lookup, no legal-hold check, no `retention_run_evidence` write; only a legacy `admin_audit_logs` entry. Contradicted the documented contract that live email purge is NOT scheduled.
+- **jobid 24 `account-deletion-sweeper-daily`** (`0 2 * * *`) — invoked `account-deletion-sweeper` with `{dry_run:true, max_rows:50}` but with auth header `x-internal-key: current_setting('app.internal_cron_key', true)`. The GUC is not set, so the call silently 401s every day. Redundant with jobid 25, removed under fail-closed posture.
+- **jobid 35 `email-log-anonymise-daily`** (`30 3 * * *`) — invoked `email-log-anonymise` with `{p_days:90, p_dry_run:false}` (live irreversible PII masking). Contradicted the documented contract that `email-log-anonymise` is deferred and unscheduled.
+
+### Preserved (verified post-quarantine)
+
+- jobid 25 `account-deletion-sweeper-daily-dryrun` — body pins `dry_run:true`, `INTERNAL_CRON_KEY` via vault.
+- jobid 39 `purge-email-send-log-daily-dryrun` — body pins `dry_run:true`, `INTERNAL_CRON_KEY` via vault.
+- jobid 7 `storage-retention-cleanup-job` — inactive, untouched.
+- `cold-storage-archive` — no schedule, Batch 7 contract preserved.
+
+### Operator verification
+
+```sql
+-- Confirm none of the quarantined jobs are scheduled.
+SELECT jobid, jobname, schedule, active
+FROM cron.job
+WHERE jobname IN (
+  'purge-email-send-log-daily',
+  'account-deletion-sweeper-daily',
+  'email-log-anonymise-daily',
+  'cold-storage-archive-weekly'
+);
+-- Expected: zero rows.
+
+-- Confirm dry-run jobs are intact.
+SELECT jobid, jobname, schedule, active
+FROM cron.job
+WHERE jobname IN (
+  'account-deletion-sweeper-daily-dryrun',
+  'purge-email-send-log-daily-dryrun'
+);
+-- Expected: both active, both with INTERNAL_CRON_KEY auth, both pin dry_run=true.
+```
+
+### Guard
+
+`scripts/check-data-004-batch-8a-cron-quarantine.mjs` runs in prebuild and fails if any SQL migration re-schedules the quarantined jobs, the legacy purge function, the anonymise/sweeper without `p_dry_run`/`dry_run` set to `true`, or `cold-storage-archive` at all. Note: cron state lives in the DB, not source — the guard is a regression net for migrations only. Always audit `cron.job` directly before any live-schedule batch.
+
+### What Batch 8A does NOT change
+
+- No new live schedule added.
+- No DATA-004 dry-run job altered.
+- No retention enforcement broadened.
+- No retention policy/floor changes.
+- No edge function code or migration deleted.
+- Cold-storage-archive remains unscheduled.
+
+Replacements for any quarantined job require a separate batch with `retention_run_evidence` parity, per-org policy awareness, legal-hold enforcement, and a second explicit approval. See the corresponding entries in `docs/deferred-policy-register.md`.
+
+
