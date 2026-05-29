@@ -88,17 +88,37 @@ interface HealthResponse {
   phase: string;
   enforcement_status: string;
   /**
-   * Phase 3.2 readiness state. Always one of:
-   *   - "phase_3_1_verified_pg_cron_pending_approval" (current)
-   * Surfaced so HQ readers can never mistake "wired" for "scheduled".
+   * Phase 4 readiness state. One of:
+   *   - "phase_4_scheduled_dry_run_active_live_purge_pending_approval"
+   *   - "phase_4_dry_run_schedule_missing_check_cron"
+   *   - "phase_4_unexpected_live_schedule_present"
+   * Surfaced so HQ readers can never mistake the scheduled dry-run
+   * for a live (deleting) schedule.
    */
   scheduling_status?: string;
   scheduling_notes?: {
     pg_cron_scheduled: boolean;
+    pg_cron_mode?: "dry_run_only" | "LIVE_UNEXPECTED" | "none";
     invocation_mode: string;
     dry_run_default: boolean;
+    dry_run_schedules?: Array<{
+      jobid: number;
+      jobname: string;
+      schedule: string;
+      active: boolean;
+      is_dry_run: boolean;
+    }>;
+    live_schedules?: Array<{
+      jobid: number;
+      jobname: string;
+      schedule: string;
+      active: boolean;
+      is_dry_run: boolean;
+    }>;
+    rollback_sql?: string;
     next_step: string;
   };
+
   summary: {
     orgs_total: number;
     orgs_with_explicit_policies: number;
@@ -178,26 +198,30 @@ export function OrgRetentionHealthPanel() {
         <ShieldAlert className="h-4 w-4" />
         <AlertTitle>
           Enforcement status: PARTIAL — only email_send_log is wired ·
-          Scheduling readiness: pg_cron NOT scheduled (pending approval)
+          Scheduling: scheduled dry-run ACTIVE · live purge is NOT scheduled
         </AlertTitle>
         <AlertDescription>
-          DATA-004 Phase 3.2 is <strong>scheduling readiness only</strong>.{" "}
-          <code>purge-email-send-log-daily</code> is the first and only enforced
-          sweeper. <code>storage-retention-cleanup</code>,{" "}
-          <code>account-deletion-sweeper</code>, <code>cold-storage-archive</code>,
+          DATA-004 Phase 4 — <strong>scheduled dry-run only</strong>.{" "}
+          <code>purge-email-send-log-daily</code> runs daily under pg_cron in{" "}
+          <code>dry_run=true</code> mode; it counts and evidences but{" "}
+          <strong>cannot delete</strong>. <code>storage-retention-cleanup</code>,{" "}
+          <code>account-deletion-sweeper</code>, <code>cold-storage-archive</code>,{" "}
           and every other retention/archival path still do NOT consume{" "}
           <code>org_retention_policies</code>. Missing, disabled, or invalid org
-          policies fail closed: rows are retained, not deleted. Active legal
-          holds block purge.{" "}
-          <strong>pg_cron is NOT scheduled.</strong> Invocation is manual /
-          service-role only; <code>dry_run=true</code> is the default. Future
-          scheduling must start with a <em>scheduled dry-run</em> behind a
-          separate approval; a live scheduled purge requires a further separate
-          approval after dry-run stability. Run-level lifecycle events
-          (<code>started</code>/<code>completed</code>/<code>partial</code>/
-          <code>failed</code>) are recorded in <code>retention_run_evidence</code>{" "}
-          as the canonical source of truth; only per-org <code>skipped</code>{" "}
-          rows persist to <code>audit_logs</code>.
+          policies fail closed: rows are retained. Active legal holds block
+          purge. <strong>Live purge is NOT scheduled</strong> — moving to a
+          live scheduled purge requires a separate approval after dry-run
+          evidence review. Rollback at any time:{" "}
+          <code>SELECT cron.unschedule('purge-email-send-log-daily-dryrun');</code>
+          {data?.scheduling_notes?.pg_cron_mode === "LIVE_UNEXPECTED" && (
+            <>
+              {" "}
+              <strong className="text-destructive">
+                ALERT: unexpected LIVE schedule detected — investigate
+                immediately and unschedule.
+              </strong>
+            </>
+          )}
           {data?.scheduling_status && (
             <>
               {" "}
@@ -206,8 +230,20 @@ export function OrgRetentionHealthPanel() {
               </span>
             </>
           )}
+          {(data?.scheduling_notes?.dry_run_schedules?.length ?? 0) > 0 && (
+            <>
+              {" "}
+              <span className="font-mono text-[11px]">
+                · dry-run schedules:{" "}
+                {data!.scheduling_notes!.dry_run_schedules!
+                  .map((j) => `${j.jobname}@${j.schedule}`)
+                  .join(", ")}
+              </span>
+            </>
+          )}
         </AlertDescription>
       </Alert>
+
 
 
       <div className="flex items-center justify-between">

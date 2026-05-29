@@ -1,25 +1,25 @@
 #!/usr/bin/env node
 /**
- * DATA-004 Phase 3.2 — scheduling readiness guard.
+ * DATA-004 Phase 3.2 / Phase 4 — scheduling guard.
  *
- * Phase 3.2 explicitly does NOT schedule `purge-email-send-log-daily`
- * under pg_cron. Scheduling remains a separate, future, approval-gated
- * batch.
+ * Phase 3.2 forbade ANY pg_cron schedule for the sweeper. Phase 4
+ * (Batch 4 — scheduled dry-run only) relaxes that to permit a single
+ * dry-run schedule, but ONLY when the schedule body pins `dry_run`
+ * to true. Live (non-dry-run) scheduling for the sweeper remains a
+ * separate, future, approval-gated batch.
  *
  * This guard fails the build if:
- *   1. Any SQL migration installs an ACTIVE cron schedule for
- *      `purge-email-send-log-daily`. We detect this by scanning
- *      `supabase/migrations/**.sql` for non-comment lines that
- *      reference BOTH `cron.schedule` AND `purge-email-send-log-daily`,
- *      OR `net.http_post(...purge-email-send-log-daily...)` invoked
- *      from inside a cron.schedule(...) body.
+ *   1. Any SQL migration installs a cron schedule for the sweeper
+ *      that is NOT dry-run-only (body does not contain `dry_run`
+ *      literal true, or pins `dry_run` to false).
  *   2. The function source flips its `dry_run` default away from `true`.
  *   3. The function source removes the lifecycle `evidence_only`
  *      persistence classification.
- *   4. RELEASE_GATE.md / docs/launch-runbook.md ever claim pg_cron is
- *      active for the sweeper. The signed phrasing is
- *      "pg_cron is NOT scheduled" / "scheduling readiness only".
- *   5. Docs are missing the Phase 3.2 scheduling-readiness gate.
+ *   4. RELEASE_GATE.md / docs/launch-runbook.md ever claim the live
+ *      purge is scheduled. Signed phrasing: "live purge is NOT
+ *      scheduled" + "scheduled dry-run".
+ *   5. Docs are missing the Phase 3.2 readiness section or the
+ *      Phase 4 scheduled-dry-run section.
  *
  * Comments inside SQL files (lines starting with `--` after trim, or
  * fenced inside a `/* ... *​/` block) are intentionally ignored so the
@@ -64,27 +64,37 @@ function stripSqlComments(sql) {
 const errors = [];
 
 // 1. Migration scan -----------------------------------------------------
+// Phase 4 permits a dry-run-only schedule for the sweeper inside a
+// migration, but blocks any schedule whose body does not pin
+// `dry_run` to true (or pins it to false).
 const migDir = resolve(ROOT, "supabase/migrations");
 for (const file of walk(migDir)) {
   const raw = readFileSync(file, "utf8");
   const code = stripSqlComments(raw);
   if (!code.includes(SWEEPER_NAME)) continue;
 
-  // Allow pure read references (e.g. the get_email_retention_health
-  // function querying cron.job WHERE jobname = '<sweeper>'). Block any
-  // executable scheduling call that mentions the sweeper.
   const schedulesSweeper =
     /cron\.schedule\s*\([^)]*purge-email-send-log-daily/.test(code) ||
     /net\.http_post[\s\S]*purge-email-send-log-daily/.test(code);
+  if (!schedulesSweeper) continue;
 
-  if (schedulesSweeper) {
+  // Dry-run-only allow-list: body must contain dry_run=true and must
+  // NOT contain dry_run=false. Accepts both literal JSON
+  // (`"dry_run": true`) and jsonb_build_object (`'dry_run', true`).
+  const pinsDryRunTrue =
+    /['"]dry_run['"]\s*[:,]\s*true\b/i.test(code);
+  const pinsDryRunFalse =
+    /['"]dry_run['"]\s*[:,]\s*false\b/i.test(code);
+
+  if (!pinsDryRunTrue || pinsDryRunFalse) {
     errors.push(
-      `${file}: contains an ACTIVE pg_cron / net.http_post reference to '${SWEEPER_NAME}'. ` +
-        `Phase 3.2 is scheduling-readiness only — actual scheduling requires a separate approved batch. ` +
-        `Move template SQL into a comment block (-- or /​* ... *​/) inside docs/launch-runbook.md.`,
+      `${file}: schedules '${SWEEPER_NAME}' without pinning dry_run=true ` +
+        `(or pins it to false). Phase 4 permits dry-run-only schedules; ` +
+        `live scheduling requires a separate approved batch.`,
     );
   }
 }
+
 
 // 2. Sweeper defaults ---------------------------------------------------
 const sweeperPath = resolve(
@@ -139,9 +149,13 @@ for (const p of [releaseGatePath, runbookPath]) {
   if (!/DATA-004 Phase 3\.2/.test(txt)) {
     errors.push(`${p}: missing 'DATA-004 Phase 3.2' section.`);
   }
-  if (!/pg_cron is NOT scheduled/.test(txt)) {
-    errors.push(`${p}: must explicitly state 'pg_cron is NOT scheduled'.`);
+  if (!/DATA-004 Phase 4/.test(txt)) {
+    errors.push(`${p}: missing 'DATA-004 Phase 4' section.`);
   }
+  if (!/live purge is NOT scheduled/i.test(txt)) {
+    errors.push(`${p}: must explicitly state 'live purge is NOT scheduled'.`);
+  }
+
   // Detect drift wording that would imply scheduling is live.
   const lines = txt.split("\n");
   for (let i = 0; i < lines.length; i++) {
