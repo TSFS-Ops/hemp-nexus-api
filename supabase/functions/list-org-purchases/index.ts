@@ -21,13 +21,7 @@
 // only after resolving caller -> org_id via profile).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-request-id",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
@@ -40,7 +34,9 @@ const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 200;
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
   if (req.method !== "POST" && req.method !== "GET") {
     return json({ error: "method_not_allowed" }, 405);
   }

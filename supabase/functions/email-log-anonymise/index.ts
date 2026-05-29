@@ -12,21 +12,18 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { assertNoLegalHold, RECORD_GROUP_IDS } from "../_shared/legal-hold.ts";
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-internal-key, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const json = (status: number, body: unknown) =>
+Deno.serve(async (req) => {
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

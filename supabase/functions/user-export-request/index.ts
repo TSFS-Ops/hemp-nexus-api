@@ -18,18 +18,12 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { ApiException } from "../_shared/errors.ts";
 import {
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
   ALLOWED_USER_EXPORT_CATEGORIES,
   FORBIDDEN_USER_EXPORT_CATEGORIES,
   resolveExportScope,
 } from "../_shared/user-export-categories.ts";
 import { assertNoLegalHold, type LegalHoldScope } from "../_shared/legal-hold.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-request-id",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const ALLOWED_SET = new Set<string>(ALLOWED_USER_EXPORT_CATEGORIES);
 
@@ -104,7 +98,9 @@ async function writeCanonical(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

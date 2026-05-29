@@ -14,27 +14,23 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import {
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
   buildPostureSnapshot,
   writeCriticalEventWithPosture,
 } from "../_shared/governance-audit-integration.ts";
 import { HQ_NOTE_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 import { deriveAggregate, parseHqNoteBody } from "./handler.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-request-id",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const json = (b: unknown, s = 200) =>
+Deno.serve(async (req) => {
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
     status: s,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

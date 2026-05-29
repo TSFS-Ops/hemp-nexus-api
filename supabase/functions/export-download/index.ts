@@ -14,6 +14,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import {
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
   DATA_005_AUDIT_ACTIONS,
   DATA_010_AUDIT_ACTIONS,
   writeLifecycleAudit,
@@ -24,13 +25,6 @@ import {
   checkResidencyHoldAny,
   residencyBlockResponse,
 } from "../_shared/residency-claim-guard.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-request-id",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const BodySchema = z.object({
   file_id: z.string().uuid(),
@@ -52,6 +46,9 @@ async function sha256Hex(s: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
   // OPS-010: short-circuit live side effects for demo data.
   try {
     const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
@@ -66,7 +63,6 @@ Deno.serve(async (req) => {
     if (_resGate) return _resGate;
     void checkResidencyHoldAny; void residencyBlockResponse;
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
