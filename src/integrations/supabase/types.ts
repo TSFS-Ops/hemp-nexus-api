@@ -10494,6 +10494,16 @@ export type Database = {
         Returns: string
       }
       get_billing_availability: { Args: never; Returns: Json }
+      get_cold_storage_archive_cron_jobs: {
+        Args: never
+        Returns: {
+          active: boolean
+          is_dry_run: boolean
+          jobid: number
+          jobname: string
+          schedule: string
+        }[]
+      }
       get_effective_retention_days: {
         Args: {
           _org_id: string
