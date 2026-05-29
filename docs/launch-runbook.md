@@ -318,3 +318,186 @@ Vitest:
 - `src/tests/data-004-phase3-enforcement-guard.test.ts` (covers Phase 3.1 hardening: candidate discovery, lifecycle persistence map, no run-level audit writes, audit/evidence write-failure surfacing)
 
 
+
+## DATA-004 Phase 3.2 — scheduling readiness (pg_cron NOT scheduled)
+
+Status: **DATA-004 Phase 3.2 LIVE — SCHEDULING READINESS ONLY. pg_cron is NOT scheduled. Enforcement scope is unchanged from Phase 3.1: only `email_send_log` is wired; `email-log-anonymise` is untouched / global-floor; all other sweepers remain deferred.**
+
+Phase 3.2 prepares the platform for a future scheduling decision without
+making any destructive behaviour automatic.
+
+### What Phase 3.2 changes
+
+- HQ Retention Health response now carries an explicit
+  `scheduling_status: "phase_3_1_verified_pg_cron_pending_approval"` and a
+  `scheduling_notes` object stating `pg_cron_scheduled: false`,
+  `invocation_mode: "manual_service_role_only"`,
+  `dry_run_default: true`. HQ Retention Health panel surfaces this
+  readiness state in the top banner so no operator can misread "wired"
+  as "scheduled".
+- `scripts/check-data-004-phase3-2-no-schedule.mjs` is wired into
+  `npm run build` and fails the build if any migration installs an
+  active `cron.schedule(...purge-email-send-log-daily...)` /
+  `net.http_post(...purge-email-send-log-daily...)`; if the sweeper's
+  `dry_run` default flips away from `true`; if the lifecycle persistence
+  classification stops being `evidence_only`; or if the
+  readiness-gate language drifts in `RELEASE_GATE.md` /
+  `docs/launch-runbook.md`.
+
+### What Phase 3.2 does NOT change
+
+- No pg_cron schedule.
+- No new sweeper wired.
+- No change to `email-log-anonymise`.
+- No change to retention floors.
+- No change to the `dry_run=true` default.
+- No org-admin mutation of retention policies.
+- No automation of any destructive behaviour.
+
+### Scheduling readiness gate
+
+See `RELEASE_GATE.md` → "DATA-004 Phase 3.2 — scheduling readiness" for
+the operator checklist that must ALL be ticked before any future
+pg_cron migration is authored. Every box is operator-verifiable today.
+
+### Future scheduling sequence (documented, NOT implemented)
+
+This sequence is documented so the future scheduling batch is unambiguous.
+Phase 3.2 does NOT execute any of it.
+
+**Step A — scheduled dry-run only** (separate batch, separate approval):
+
+- Schedule `purge-email-send-log-daily` under pg_cron with
+  `{ "dry_run": true }`. No rows can be purged.
+- Define a minimum observation window (e.g. 7 consecutive successful runs
+  with zero `audit_write_failures[]` / `evidence_write_failures[]`)
+  before live scheduling is even considered.
+- Each scheduled run must create a `retention_run_evidence` row.
+- HQ → Retention & Holds → Retention Health must show the latest run.
+- Missing-policy, legal-hold, and error skip counters must be reviewed
+  before each progression decision.
+
+**Step B — scheduled live purge** (separate batch, separate approval, only after Step A stability):
+
+- Only after Step A stability has been independently reviewed.
+- Requires a second, separate human approval recorded in the release gate.
+- Fail-closed behaviour, legal-hold checks, and audit/evidence failure
+  visibility must be unchanged.
+- Rollback instructions must be tested in a non-production fixture before
+  the live schedule is committed.
+
+### pg_cron migration template (DOCS-ONLY, DISABLED)
+
+The SQL below is intentionally inside a Markdown code fence so it is
+**not** an executable migration. The build guard
+(`check-data-004-phase3-2-no-schedule.mjs`) strips SQL comments before
+scanning `supabase/migrations/**.sql`; an actual migration file containing
+this body would still trip the guard because the file path
+(`supabase/migrations/...`) is what the guard scans, not docs files.
+Copy this template into a real migration **only after every box in the
+Phase 3.2 readiness gate is ticked** and the explicit human approval is
+recorded.
+
+#### Step A — scheduled dry-run schedule (future, not committed)
+
+```sql
+-- DATA-004 Phase 4 (FUTURE — DO NOT APPLY UNTIL PHASE 3.2 GATE IS TICKED).
+-- Schedules purge-email-send-log-daily under pg_cron with dry_run=true.
+-- A LIVE purge schedule is a SEPARATE, LATER migration with its OWN approval.
+--
+-- Required extensions (must already be enabled):
+--   CREATE EXTENSION IF NOT EXISTS pg_cron;
+--   CREATE EXTENSION IF NOT EXISTS pg_net;
+--
+-- Secrets / headers:
+--   - INTERNAL_CRON_KEY  (preferred — least-privilege)
+--   - or SUPABASE_SERVICE_ROLE_KEY (only if INTERNAL_CRON_KEY is not yet rotated)
+--   - Content-Type: application/json
+--
+-- Cadence: daily 03:17 UTC (off-peak; avoids cleanly-rounded clashes).
+--
+-- DO NOT REMOVE THE dry_run=true BODY UNTIL STEP B IS APPROVED.
+SELECT cron.schedule(
+  'purge-email-send-log-daily-dry-run',
+  '17 3 * * *',
+  $$
+  SELECT net.http_post(
+    url     := 'https://<project-ref>.supabase.co/functions/v1/purge-email-send-log-daily',
+    headers := jsonb_build_object(
+      'Content-Type',   'application/json',
+      'x-internal-cron-key', '<INTERNAL_CRON_KEY>'
+    ),
+    body    := jsonb_build_object('dry_run', true)
+  ) AS request_id;
+  $$
+);
+```
+
+#### Step B — scheduled live purge (future, SEPARATE migration, SEPARATE approval)
+
+```sql
+-- DATA-004 Phase 4b (FUTURE — REQUIRES SEPARATE APPROVAL after Step A stability).
+-- Replaces the dry-run schedule with the live purge.
+-- Live purge requires the SECOND explicit approval recorded in RELEASE_GATE.md.
+SELECT cron.unschedule('purge-email-send-log-daily-dry-run');
+
+SELECT cron.schedule(
+  'purge-email-send-log-daily',
+  '17 3 * * *',
+  $$
+  SELECT net.http_post(
+    url     := 'https://<project-ref>.supabase.co/functions/v1/purge-email-send-log-daily',
+    headers := jsonb_build_object(
+      'Content-Type',   'application/json',
+      'x-internal-cron-key', '<INTERNAL_CRON_KEY>'
+    ),
+    body    := jsonb_build_object('dry_run', false)
+  ) AS request_id;
+  $$
+);
+```
+
+#### Rollback / unschedule
+
+```sql
+-- Cancel either the dry-run or the live schedule (whichever is installed).
+SELECT cron.unschedule('purge-email-send-log-daily-dry-run');
+SELECT cron.unschedule('purge-email-send-log-daily');
+
+-- Verify nothing is scheduled for the sweeper:
+SELECT jobid, jobname, schedule, active
+FROM cron.job
+WHERE jobname IN ('purge-email-send-log-daily-dry-run', 'purge-email-send-log-daily');
+```
+
+#### Evidence query — verify the latest run after each scheduled tick
+
+```sql
+SELECT id, started_at, finished_at, status, dry_run,
+       rows_seen, rows_eligible, rows_purged,
+       rows_skipped_missing_policy, rows_skipped_disabled_policy,
+       rows_skipped_invalid_policy, rows_skipped_legal_hold,
+       rows_skipped_error,
+       details -> 'lifecycle_event_name'      AS lifecycle_event_name,
+       details -> 'audit_write_failures'      AS audit_write_failures,
+       details -> 'evidence_write_failures'   AS evidence_write_failures
+FROM public.retention_run_evidence
+WHERE job_name = 'purge-email-send-log-daily'
+ORDER BY started_at DESC
+LIMIT 5;
+```
+
+### Prebuild guards (Phase 3.2 additions)
+
+- `scripts/check-data-004-phase3-2-no-schedule.mjs` (new) — blocks active
+  schedule migrations, pins `dry_run=true` default, pins lifecycle
+  `evidence_only` persistence, and pins the readiness-gate language in
+  this runbook and `RELEASE_GATE.md`.
+
+Vitest:
+
+- `src/tests/data-004-phase3-enforcement-guard.test.ts` is extended with
+  Phase 3.2 assertions: the guard exists, the sweeper's `dry_run` default
+  remains `true`, the lifecycle persistence map remains `evidence_only`,
+  HQ Retention Health renders the scheduling-readiness banner, and the
+  readiness-gate language is present in both docs.
