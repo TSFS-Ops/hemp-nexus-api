@@ -396,9 +396,10 @@ Deno.serve(async (req) => {
         console.error("[admin-org-retention] last_run lookup failed:", e);
       }
 
-      // DATA-004 Batch 7 — latest dry-run evidence for cold-storage-archive.
-      // Read-only surfacing. Cold-storage-archive is dry-run-only and never
-      // scheduled in this batch.
+      // DATA-004 Batch 7/9A — latest dry-run evidence for cold-storage-archive
+      // plus the live pg_cron schedule state (Batch 9A schedules a weekly
+      // dry-run; live archive scheduling remains gated behind a separate
+      // approval).
       let lastRunCold: Record<string, unknown> | null = null;
       try {
         const { data: coldRows } = await admin
@@ -413,6 +414,24 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error("[admin-org-retention] cold-storage last_run lookup failed:", e);
       }
+
+      // DATA-004 Batch 9A — surface live cron schedules for cold-storage-archive.
+      let coldStorageCronJobs: Array<{
+        jobid: number;
+        jobname: string;
+        schedule: string;
+        active: boolean;
+        is_dry_run: boolean;
+      }> = [];
+      try {
+        const { data: rows } = await admin.rpc("get_cold_storage_archive_cron_jobs");
+        coldStorageCronJobs = (rows ?? []) as typeof coldStorageCronJobs;
+      } catch (e) {
+        console.error("[admin-org-retention] cold-storage cron lookup failed:", e);
+      }
+      const coldDryRunSchedules = coldStorageCronJobs.filter((j) => j.is_dry_run && j.active);
+      const coldLiveSchedules = coldStorageCronJobs.filter((j) => !j.is_dry_run && j.active);
+
 
       // DATA-004 Phase 4 — discover live pg_cron jobs for the sweeper
       // so HQ Health can prove (a) the dry-run schedule is registered
@@ -480,19 +499,31 @@ Deno.serve(async (req) => {
         },
         enforced_classes: ["email_send_log"],
         last_run_email_send_log: lastRun,
-        // Batch 7: cold-storage-archive is wired as DRY-RUN-ONLY evidence
-        // path. It does not consume org_retention_policies and is never
-        // scheduled in this batch. Surface most recent run so HQ can prove
-        // the dry-run evidence is being written.
+        // Batch 7/9A: cold-storage-archive is a DRY-RUN-ONLY evidence path.
+        // Batch 9A schedules exactly one weekly dry-run cron; live archive
+        // scheduling remains gated behind a separate, second approval.
         cold_storage_archive: {
-          mode: "manual_dry_run_only",
-          scheduled: false,
+          mode: coldLiveSchedules.length > 0
+            ? "live_schedule_unexpected"
+            : (coldDryRunSchedules.length > 0
+                ? "scheduled_dry_run_and_manual"
+                : "manual_dry_run_only"),
+          scheduled: coldDryRunSchedules.length > 0 || coldLiveSchedules.length > 0,
           dry_run_default: true,
           deletes_source_records: false,
           mutates_source_records: false,
           consumes_org_retention_policies: false,
+          scheduling_status: coldLiveSchedules.length > 0
+            ? "batch_9a_unexpected_live_schedule_present"
+            : (coldDryRunSchedules.length > 0
+                ? "batch_9a_scheduled_dry_run_active_live_archive_pending_approval"
+                : "batch_9a_dry_run_schedule_missing_check_cron"),
+          dry_run_schedules: coldDryRunSchedules,
+          live_schedules: coldLiveSchedules,
+          rollback_sql: "SELECT cron.unschedule('cold-storage-archive-dryrun');",
           last_run: lastRunCold,
         },
+
         floors,
         record_classes: RECORD_CLASSES,
         class_breakdown: classBreakdown,

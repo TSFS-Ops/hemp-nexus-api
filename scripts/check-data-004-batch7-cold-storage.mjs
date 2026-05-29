@@ -130,16 +130,40 @@ if (!existsSync(FN)) {
   }
 }
 
-// (6) no pg_cron schedule for cold-storage-archive in any migration
+// (6) Batch 9A — exactly one `cold-storage-archive-dryrun` schedule is
+// permitted. Any other schedule referencing cold-storage-archive (live
+// jobname, missing `dry_run:true` pin, or anon Authorization Bearer)
+// is forbidden.
 const migDir = resolve(ROOT, "supabase/migrations");
+let dryRunScheduleCount = 0;
 for (const f of walkSql(migDir)) {
   const code = stripSql(readFileSync(f, "utf8"));
   if (!code.includes("cold-storage-archive")) continue;
-  if (
-    /cron\.schedule\s*\([^)]*cold-storage-archive/.test(code) ||
-    /net\.http_post[\s\S]*cold-storage-archive/.test(code)
-  ) {
-    errors.push(`${f}: Batch 7 forbids scheduling cold-storage-archive via pg_cron.`);
+
+  // any cron.schedule(...) call that references cold-storage-archive
+  const schedRe = /cron\.schedule\s*\(\s*['"`]([a-z0-9._-]+)['"`][\s\S]*?(?=cron\.schedule\s*\(|$)/gi;
+  for (const m of code.matchAll(schedRe)) {
+    const block = m[0];
+    const jobname = m[1];
+    if (!/cold-storage-archive/i.test(block)) continue;
+
+    if (jobname !== "cold-storage-archive-dryrun") {
+      errors.push(`${f}: cold-storage-archive schedule must be named 'cold-storage-archive-dryrun' (got '${jobname}').`);
+      continue;
+    }
+    dryRunScheduleCount += 1;
+    if (!/['"]dry_run['"]\s*,\s*true\b/i.test(block)) {
+      errors.push(`${f}: 'cold-storage-archive-dryrun' must pin 'dry_run', true in body.`);
+    }
+    if (/['"]dry_run['"]\s*,\s*false\b/i.test(block)) {
+      errors.push(`${f}: 'cold-storage-archive-dryrun' must NOT set dry_run=false.`);
+    }
+    if (/Authorization['"]\s*,\s*['"]Bearer\s+ey/i.test(block)) {
+      errors.push(`${f}: 'cold-storage-archive-dryrun' must NOT use anon Bearer auth — use x-internal-key from vault.`);
+    }
+    if (!/x-internal-key/i.test(block) || !/INTERNAL_CRON_KEY/.test(block)) {
+      errors.push(`${f}: 'cold-storage-archive-dryrun' must authenticate via x-internal-key + INTERNAL_CRON_KEY vault secret.`);
+    }
   }
 }
 
@@ -161,7 +185,7 @@ for (const name of [
   }
 }
 
-// (9) docs
+// (9) docs — must carry both Batch 7 and Batch 9A sections.
 for (const p of [
   resolve(ROOT, "RELEASE_GATE.md"),
   resolve(ROOT, "docs/launch-runbook.md"),
@@ -174,13 +198,21 @@ for (const p of [
   if (!/DATA-004 Batch 7/.test(txt)) {
     errors.push(`${p}: missing 'DATA-004 Batch 7' section.`);
   }
-  if (!/cold-storage-archive.*dry-run-only|dry-run-only.*cold-storage-archive/is.test(txt)) {
+  if (!/DATA-004 Batch 9A/.test(txt)) {
+    errors.push(`${p}: missing 'DATA-004 Batch 9A' section.`);
+  }
+  if (!/cold-storage-archive[\s\S]{0,200}dry-run-only/i.test(txt)) {
     errors.push(`${p}: must state cold-storage-archive is dry-run-only.`);
   }
-  if (!/cold-storage-archive[^.]*NOT scheduled/i.test(txt)) {
-    errors.push(`${p}: must state cold-storage-archive is NOT scheduled.`);
+  if (!/cold-storage-archive-dryrun/.test(txt)) {
+    errors.push(`${p}: must reference 'cold-storage-archive-dryrun' jobname.`);
+  }
+  if (!/live[- ]?cold[- ]?storage[- ]?archive[^.]*(NOT scheduled|gated|separate.*approval)/i.test(txt)
+      && !/cold-storage-archive[^.]*live[^.]*(NOT scheduled|gated|separate.*approval)/i.test(txt)) {
+    errors.push(`${p}: must state live cold-storage-archive schedule is gated behind a separate approval.`);
   }
 }
+
 
 if (errors.length) {
   console.error("✗ DATA-004 Batch 7 cold-storage guard FAILED:");

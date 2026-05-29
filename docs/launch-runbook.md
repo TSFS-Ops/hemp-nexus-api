@@ -763,3 +763,56 @@ A passing prebuild guard run is **not** a substitute. `scripts/check-data-004-ba
 
 
 
+
+## DATA-004 Batch 9A — schedule `cold-storage-archive` dry-run only
+
+Status: **DATA-004 Batch 9A LIVE — `cold-storage-archive` is scheduled as a weekly DRY-RUN ONLY job (`cold-storage-archive-dryrun`, Sundays 03:40 UTC). cold-storage-archive remains dry-run-only. Live cold-storage-archive scheduling remains gated behind a separate, second approval. No source deletion, no source mutation, and no broadening of any other sweeper.**
+
+### Live cron posture after Batch 9A
+
+Captured 2026-05-29 from `SELECT jobid, jobname, schedule, active FROM cron.job`:
+
+| jobid | jobname                                   | schedule       | active | mode     |
+|-------|-------------------------------------------|----------------|--------|----------|
+| 25    | `account-deletion-sweeper-daily-dryrun`   | `15 3 * * *`   | true   | dry-run  |
+| 39    | `purge-email-send-log-daily-dryrun`       | `20 3 * * *`   | true   | dry-run  |
+| 40    | `cold-storage-archive-dryrun`             | `40 3 * * 0`   | true   | dry-run  |
+| 7     | `storage-retention-cleanup-job`           | `0 2 * * *`    | false  | inactive |
+
+Quarantined jobnames absent: `purge-email-send-log-daily`, `email-log-anonymise-daily`, `account-deletion-sweeper-daily`, `cold-storage-archive-weekly` — 0 rows in `cron.job`. No live `cold-storage-archive` job exists.
+
+### Schedule body
+
+```
+url     := https://<project>.supabase.co/functions/v1/cold-storage-archive
+headers := { Content-Type, x-internal-key = vault.INTERNAL_CRON_KEY }
+body    := { "dry_run": true, "limit": 50, "source": "cron:cold-storage-archive-dryrun" }
+```
+
+Never anon Bearer. Never a legacy DB function.
+
+### Rollback
+
+```
+SELECT cron.unschedule('cold-storage-archive-dryrun');
+```
+
+### HQ surfacing
+
+HQ → Retention Health → "Cold storage archive — dry-run-only evidence path (Batch 7 / 9A)" shows:
+
+- `scheduling_status`: `batch_9a_scheduled_dry_run_active_live_archive_pending_approval` on a healthy live state.
+- Active dry-run schedules (`cold-storage-archive-dryrun (40 3 * * 0)`).
+- Live schedules (must be empty; surfaced in red if not).
+- Rollback SQL.
+- Latest `retention_run_evidence` for `cold-storage-archive` once the first scheduled tick lands.
+
+### Approval gate (Batch 9B, NOT in this batch)
+
+Live cold-storage-archive scheduling is a Batch 9B+ decision and requires:
+
+- A fresh `cron.job` snapshot (the live-cron-state evidence gate added in Batch 8B).
+- Operator review of at least one scheduled `cold-storage-archive-dryrun` tick from `retention_run_evidence`.
+- A second, separate explicit human approval.
+
+Until that gate is ticked, **live cold-storage-archive scheduling is NOT approved**.

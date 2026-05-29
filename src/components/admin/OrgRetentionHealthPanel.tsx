@@ -144,8 +144,9 @@ interface HealthResponse {
   orgs_truncated: boolean;
   last_run_email_send_log?: LastRunEvidence | null;
   /**
-   * DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path.
-   * Read-only surfacing. Not scheduled. Not destructive.
+   * DATA-004 Batch 7/9A — cold-storage-archive dry-run-only evidence path.
+   * Batch 9A: scheduled dry-run is now expected; live archive scheduling
+   * remains gated behind a separate approval.
    */
   cold_storage_archive?: {
     mode: string;
@@ -154,8 +155,13 @@ interface HealthResponse {
     deletes_source_records: boolean;
     mutates_source_records: boolean;
     consumes_org_retention_policies: boolean;
+    scheduling_status?: string;
+    dry_run_schedules?: Array<{ jobid: number; jobname: string; schedule: string; active: boolean; is_dry_run: boolean }>;
+    live_schedules?: Array<{ jobid: number; jobname: string; schedule: string; active: boolean; is_dry_run: boolean }>;
+    rollback_sql?: string;
     last_run: LastRunEvidence | null;
   };
+
   request_id: string;
 }
 
@@ -391,27 +397,51 @@ export function OrgRetentionHealthPanel() {
               </div>
             </section>
           )}
-          {/* Batch 7 — cold-storage-archive dry-run-only evidence path */}
+          {/* Batch 7/9A — cold-storage-archive dry-run-only evidence path */}
           {data.cold_storage_archive && (
             <section className="rounded-sm border border-border bg-card">
               <header className="px-4 py-2 border-b border-border text-xs uppercase tracking-wider text-muted-foreground flex justify-between">
-                <span>Cold storage archive — manual / dry-run-only evidence path (Batch 7)</span>
-                <Badge variant="secondary">{data.cold_storage_archive.mode}</Badge>
+                <span>Cold storage archive — dry-run-only evidence path (Batch 7 / 9A)</span>
+                <Badge variant={data.cold_storage_archive.live_schedules && data.cold_storage_archive.live_schedules.length > 0 ? "destructive" : "secondary"}>
+                  {data.cold_storage_archive.mode}
+                </Badge>
               </header>
               <div className="px-4 py-3 text-xs text-muted-foreground space-y-1">
                 <div>
-                  Scheduled: <strong>{data.cold_storage_archive.scheduled ? "YES (unexpected)" : "no"}</strong> ·
+                  Scheduled: <strong>{data.cold_storage_archive.scheduled ? "yes (dry-run)" : "no"}</strong> ·
                   dry-run default: <strong>{String(data.cold_storage_archive.dry_run_default)}</strong> ·
                   deletes source: <strong>{String(data.cold_storage_archive.deletes_source_records)}</strong> ·
                   mutates source: <strong>{String(data.cold_storage_archive.mutates_source_records)}</strong> ·
                   consumes org_retention_policies: <strong>{String(data.cold_storage_archive.consumes_org_retention_policies)}</strong>
                 </div>
                 <div>
-                  No pg_cron schedule is registered for <code>cold-storage-archive</code> in Batch 7.
-                  Manual / service-role invocation only. Bucket writes, legal-hold,
-                  duplicate, missing-source, and lookup-error skips are all written to
-                  <code>retention_run_evidence</code>.
+                  Batch 9A schedules exactly one weekly dry-run
+                  (<code>cold-storage-archive-dryrun</code>). Live archive scheduling
+                  remains gated behind a separate, second approval. Bucket writes,
+                  legal-hold, duplicate, missing-source, and lookup-error skips are
+                  all written to <code>retention_run_evidence</code>.
                 </div>
+                {(data.cold_storage_archive.dry_run_schedules ?? []).length > 0 && (
+                  <div>
+                    Active dry-run schedule(s):{" "}
+                    {(data.cold_storage_archive.dry_run_schedules ?? []).map((s) => (
+                      <code key={s.jobid} className="mr-2">{s.jobname} ({s.schedule})</code>
+                    ))}
+                  </div>
+                )}
+                {(data.cold_storage_archive.live_schedules ?? []).length > 0 && (
+                  <div className="text-destructive">
+                    ⚠ Unexpected LIVE schedule(s) present:{" "}
+                    {(data.cold_storage_archive.live_schedules ?? []).map((s) => (
+                      <code key={s.jobid} className="mr-2">{s.jobname} ({s.schedule})</code>
+                    ))}
+                  </div>
+                )}
+                {data.cold_storage_archive.rollback_sql && (
+                  <div>
+                    Rollback: <code>{data.cold_storage_archive.rollback_sql}</code>
+                  </div>
+                )}
                 {data.cold_storage_archive.last_run ? (
                   <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Tile label="Status" value={data.cold_storage_archive.last_run.status} />
@@ -422,11 +452,12 @@ export function OrgRetentionHealthPanel() {
                     <Tile label="Error skips" value={data.cold_storage_archive.last_run.rows_skipped_error} tone={data.cold_storage_archive.last_run.rows_skipped_error > 0 ? "warn" : "ok"} />
                   </div>
                 ) : (
-                  <div className="italic">No cold-storage-archive run evidence yet.</div>
+                  <div className="italic">No cold-storage-archive run evidence yet (first scheduled tick pending).</div>
                 )}
               </div>
             </section>
           )}
+
 
 
           {/* Per-org effective view */}

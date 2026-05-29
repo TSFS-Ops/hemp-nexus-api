@@ -484,3 +484,49 @@ A passing prebuild guard run is **not** a substitute for this checklist — `scr
 
 
 
+
+## DATA-004 Batch 9A — schedule `cold-storage-archive` dry-run only
+
+Status: **DATA-004 Batch 9A LIVE — `cold-storage-archive` is now scheduled as a weekly DRY-RUN ONLY job (`cold-storage-archive-dryrun`, Sundays 03:40 UTC). Live cold-storage-archive scheduling remains gated behind a separate, second approval. No source deletion. No source mutation. Existing dry-run jobs (jobid 25, 39) and inactive jobid 7 are unchanged.**
+
+Live cron posture after Batch 9A (verified via `SELECT jobid, jobname, schedule, active FROM cron.job` against live DB on 2026-05-29):
+
+| jobid | jobname                                   | schedule       | active | mode     |
+|-------|-------------------------------------------|----------------|--------|----------|
+| 25    | `account-deletion-sweeper-daily-dryrun`   | `15 3 * * *`   | true   | dry-run  |
+| 39    | `purge-email-send-log-daily-dryrun`       | `20 3 * * *`   | true   | dry-run  |
+| 40    | `cold-storage-archive-dryrun`             | `40 3 * * 0`   | true   | dry-run  |
+| 7     | `storage-retention-cleanup-job`           | `0 2 * * *`    | false  | inactive |
+
+Quarantined jobnames (`purge-email-send-log-daily`, `email-log-anonymise-daily`, `account-deletion-sweeper-daily`, `cold-storage-archive-weekly`) remain absent (0 rows in `cron.job`). No live `cold-storage-archive` job exists.
+
+Batch 9A schedule body pins:
+
+```
+body := jsonb_build_object(
+  'dry_run', true,
+  'limit', 50,
+  'source', 'cron:cold-storage-archive-dryrun'
+)
+```
+
+Auth: `x-internal-key` sourced from `vault.decrypted_secrets WHERE name = 'INTERNAL_CRON_KEY'`. Never anon Bearer. Target: `/functions/v1/cold-storage-archive` (the Batch 7 edge function).
+
+Rollback: `SELECT cron.unschedule('cold-storage-archive-dryrun');`
+
+What Batch 9A changes:
+
+- Exactly one scheduled dry-run for `cold-storage-archive` is added (jobid 40).
+- HQ → Retention Health → "Cold storage archive" tile now surfaces the scheduled dry-run, the `dry_run_schedules` / `live_schedules` arrays, and the rollback SQL.
+- `admin-org-retention` `health` action now reads `get_cold_storage_archive_cron_jobs()` and reports `scheduling_status` for cold-storage-archive parallel to the existing email-send-log path.
+- `scripts/check-data-004-batch9a-cold-storage-schedule.mjs` enforces: exactly one `cold-storage-archive-dryrun` schedule, dry_run:true pinned, `x-internal-key` + `INTERNAL_CRON_KEY` auth, never anon Bearer, target `/functions/v1/cold-storage-archive`, and that `cold-storage-archive-weekly` stays quarantined.
+
+What Batch 9A does NOT change:
+
+- No live cold-storage-archive schedule is added. Live archive scheduling is a separate, second approval gate (Batch 9B+).
+- No source records are deleted or mutated. The Batch 7 contract (`dry_run` defaults to TRUE, no `.delete(` in source, `org_retention_policies` not consumed) is preserved.
+- `purge-email-send-log-daily-dryrun` (jobid 39), `account-deletion-sweeper-daily-dryrun` (jobid 25), and `storage-retention-cleanup-job` (jobid 7, inactive) are unchanged.
+- No live email purge, live anonymise, or live account-deletion schedule is added.
+- Per-org retention policies, floors, source deletion behaviour, and sweeper wiring are unchanged.
+
+Operator evidence requirement: Batch 9B is the operator evidence tick capturing the first scheduled `cold-storage-archive-dryrun` run from `retention_run_evidence`. Live cold-storage scheduling stays gated until that evidence is reviewed.
