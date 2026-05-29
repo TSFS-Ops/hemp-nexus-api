@@ -149,25 +149,19 @@ test.describe("Smoke D — Duplicate refund surfaces persistent inline alert", (
     const pendingTestId = await pendingBadge.getAttribute("data-testid");
     const purchaseId = pendingTestId!.replace("refund-pending-", "");
 
-    // The button is hidden when pending exists, so re-trigger from a
-    // sibling completed purchase that is the SAME id is impossible by UI
-    // alone — duplicate-guard is the server's job. We exercise it via
-    // the same edge-function call the dialog uses, with the org's
-    // session token surfaced by the page.
-    const result = await page.evaluate(async (id) => {
-      // Find the live Supabase client instance via the global the app
-      // exposes for debugging in dev. If unavailable, fall back to a
-      // direct fetch using the session token from localStorage.
+    // The Request-refund button is hidden when a pending row exists, so
+    // exercise the server's duplicate guard via the same edge function
+    // the dialog calls. The Supabase URL must be passed in as an
+    // `evaluate` argument — `import.meta.env` is NOT available inside
+    // the browser-page context Playwright serialises the function into
+    // (root cause of the previous "Passed function is not
+    // well-serializable" failure).
+    const supabaseUrl = requireEnv("VITE_SUPABASE_URL");
+    const result = await page.evaluate(async ({ id, base }) => {
       const keys = Object.keys(localStorage).filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"));
       if (keys.length === 0) return { ok: false, reason: "no-session" };
       const tok = JSON.parse(localStorage.getItem(keys[0])!);
       const access = tok?.access_token ?? tok?.currentSession?.access_token;
-      const url = (window as unknown as { __SUPABASE_URL__?: string }).__SUPABASE_URL__
-        ?? (document.querySelector('meta[name="supabase-url"]') as HTMLMetaElement | null)?.content
-        ?? "";
-      // Fall back to env injected at build: VITE_SUPABASE_URL is baked in.
-      // Use functions invoke endpoint shape.
-      const base = (import.meta as unknown as { env?: { VITE_SUPABASE_URL?: string } }).env?.VITE_SUPABASE_URL ?? url;
       const r = await fetch(`${base}/functions/v1/refund-request`, {
         method: "POST",
         headers: {
@@ -182,7 +176,8 @@ test.describe("Smoke D — Duplicate refund surfaces persistent inline alert", (
       });
       const body = await r.json().catch(() => ({}));
       return { status: r.status, body };
-    }, purchaseId);
+    }, { id: purchaseId, base: supabaseUrl });
+
 
     expect(result, "duplicate refund must return REFUND_ALREADY_PENDING").toMatchObject({
       body: { code: "REFUND_ALREADY_PENDING" },
