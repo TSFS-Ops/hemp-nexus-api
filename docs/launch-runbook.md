@@ -583,3 +583,71 @@ critical preconditions:
 - A second, separate explicit human approval (not the Phase 4 approval).
 
 Until that gate is ticked, **live purge is NOT scheduled** — not via "edit the existing dry-run body to `dry_run=false`", not via a second cron job, and not via a manual SQL console run. Any drift triggers the Phase 3.2/4 build guard.
+
+## DATA-004 Batch 7 — `cold-storage-archive` dry-run-only evidence path
+
+Status: **DATA-004 Batch 7 LIVE — `cold-storage-archive` is wired as a dry-run-only, evidence-first retention job. cold-storage-archive is NOT scheduled in pg_cron. Live archive scheduling remains gated behind a separate, second approval. No source deletion. No source mutation beyond the existing safe archive contract.**
+
+### What Batch 7 changes
+
+- `cold-storage-archive` defaults `dry_run` to TRUE. Manual/service-role invocations are non-destructive unless an operator explicitly opts in with `dry_run=false`.
+- Candidate discovery uses the SECURITY DEFINER RPC `discover_cold_storage_archive_candidates` (service_role only). Already-exported rows are pre-classified so duplicates appear explicitly in evidence rather than being silently filtered.
+- `retention_run_evidence` parity with `purge-email-send-log-daily`: one run-level row (`started` / `completed` / `partial` / `failed`) plus one per-candidate row.
+- Lifecycle events are evidence-only (no `audit_logs` rows with null `org_id`).
+- Explicit skip categories: `skipped_due_to_legal_hold`, `skipped_due_to_duplicate`, `skipped_due_to_missing_source`, `skipped_due_to_bucket_write`, `skipped_due_to_lookup_error`.
+- `audit_write_failures[]` and `evidence_write_failures[]` are tracked and returned — never silently swallowed.
+- HQ → Retention & Holds → Retention Health renders a dedicated Cold Storage tile sourced from `last_run_cold_storage_archive`, including the mode label `manual_dry_run_only`.
+
+### What Batch 7 does NOT change
+
+- No pg_cron schedule for `cold-storage-archive` — cold-storage-archive is NOT scheduled.
+- No live archive scheduling.
+- No source deletion. No source mutation beyond the existing safe archive contract.
+- No changes to `email-log-anonymise`.
+- No changes to `account-deletion-sweeper`.
+- No changes to `storage-retention-cleanup`.
+- No changes to `data-retention` sentinel paths.
+- No conversion of `purge-email-send-log-daily` to live; the Phase 4 dry-run schedule is unchanged.
+- The Phase 3 single-consumer rule is preserved — `cold-storage-archive` does NOT consume `org_retention_policies` or `get_effective_retention_days`.
+
+### Operator verification — dry-run invocation (manual only)
+
+```bash
+# Dry-run (default). Service-role bearer OR x-internal-key from vault.
+curl -X POST "$SUPABASE_URL/functions/v1/cold-storage-archive" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"dry_run": true, "limit": 50}'
+```
+
+```sql
+-- Inspect the evidence row written by the dry-run.
+SELECT id, started_at, finished_at, status,
+       rows_seen, rows_eligible, rows_purged,
+       rows_skipped_legal_hold,
+       details -> 'lifecycle_event_name'    AS lifecycle_event_name,
+       details -> 'skipped_due_to_duplicate' AS duplicates,
+       details -> 'skipped_due_to_missing_source' AS missing_source,
+       details -> 'skipped_due_to_bucket_write'   AS bucket_write,
+       details -> 'skipped_due_to_lookup_error'   AS lookup_error,
+       details -> 'audit_write_failures'    AS audit_write_failures,
+       details -> 'evidence_write_failures' AS evidence_write_failures
+FROM public.retention_run_evidence
+WHERE job_name = 'cold-storage-archive'
+  AND org_id IS NULL
+ORDER BY started_at DESC
+LIMIT 3;
+```
+
+Expected on a dry-run tick: `rows_purged = 0`, lifecycle row present, the five skip-category buckets visible (even when empty), and both failure arrays present (empty is the expected state — any non-empty entry must be triaged before approving Batch 8 scheduling).
+
+### Approval gate (Batch 8, NOT in this batch)
+
+Scheduling `cold-storage-archive` (even as a dry-run cron) is a Batch 8 decision and requires a **separate**, **second** explicit human approval. Critical preconditions:
+
+- Multiple consecutive manual dry-run invocations with empty failure arrays.
+- Operator-reviewed skip-category counts (legal-hold / duplicate / missing-source / bucket-write / lookup-error).
+- A second, separate explicit human approval (not the Batch 7 approval).
+
+Until that gate is ticked, **cold-storage-archive is NOT scheduled**.
+
