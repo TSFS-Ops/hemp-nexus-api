@@ -499,19 +499,31 @@ Deno.serve(async (req) => {
         },
         enforced_classes: ["email_send_log"],
         last_run_email_send_log: lastRun,
-        // Batch 7: cold-storage-archive is wired as DRY-RUN-ONLY evidence
-        // path. It does not consume org_retention_policies and is never
-        // scheduled in this batch. Surface most recent run so HQ can prove
-        // the dry-run evidence is being written.
+        // Batch 7/9A: cold-storage-archive is a DRY-RUN-ONLY evidence path.
+        // Batch 9A schedules exactly one weekly dry-run cron; live archive
+        // scheduling remains gated behind a separate, second approval.
         cold_storage_archive: {
-          mode: "manual_dry_run_only",
-          scheduled: false,
+          mode: coldLiveSchedules.length > 0
+            ? "live_schedule_unexpected"
+            : (coldDryRunSchedules.length > 0
+                ? "scheduled_dry_run_and_manual"
+                : "manual_dry_run_only"),
+          scheduled: coldDryRunSchedules.length > 0 || coldLiveSchedules.length > 0,
           dry_run_default: true,
           deletes_source_records: false,
           mutates_source_records: false,
           consumes_org_retention_policies: false,
+          scheduling_status: coldLiveSchedules.length > 0
+            ? "batch_9a_unexpected_live_schedule_present"
+            : (coldDryRunSchedules.length > 0
+                ? "batch_9a_scheduled_dry_run_active_live_archive_pending_approval"
+                : "batch_9a_dry_run_schedule_missing_check_cron"),
+          dry_run_schedules: coldDryRunSchedules,
+          live_schedules: coldLiveSchedules,
+          rollback_sql: "SELECT cron.unschedule('cold-storage-archive-dryrun');",
           last_run: lastRunCold,
         },
+
         floors,
         record_classes: RECORD_CLASSES,
         class_breakdown: classBreakdown,
