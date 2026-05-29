@@ -202,10 +202,14 @@ function App() {
                   <Route path="/developers/dlq" element={<LegacyRedirect to="/developer/webhooks" label="Dead-letter queue" />} />
                   <Route path="/developers/docs" element={<LegacyRedirect to="/developer/docs" label="Developer docs" />} />
                   <Route path="/developers/*" element={<Developers />} />
-                  {/* Authenticated developer surface. RequireAuth redirects
-                      anonymous visitors to /auth?returnTo=/developer/... so the
-                      Developer Center UI is never exposed to logged-out users. */}
-                  <Route path="/developer/*" element={<RequireAuth><DeveloperCenter /></RequireAuth>} />
+                  {/* Authenticated developer surface. Restricted to platform_admin
+                      and org_admin — the Developer Center exposes API keys,
+                      webhooks, and a schema explorer, which buyers, suppliers,
+                      brokers, org_members, and demo users must not see.
+                      Anonymous visitors are redirected to /auth?returnTo=/developer/...;
+                      authenticated users without the required role land on
+                      /desk?denied=1 via RequireAuth's fallbackRoute. */}
+                  <Route path="/developer/*" element={<RequireAuth role={[...DEVELOPER_ROLES]} fallbackRoute="/desk"><DeveloperCenter /></RequireAuth>} />
                   {/* Governance Console, restricted to platform_admin / auditor / org_admin.
                       Unauthorised users are bounced to /desk with denied=1 (see RequireAuth). */}
                   <Route path="/governance/triage" element={<RequireAuth role={[...GOVERNANCE_ROLES]} fallbackRoute="/desk"><GovernanceTriage /></RequireAuth>} />
