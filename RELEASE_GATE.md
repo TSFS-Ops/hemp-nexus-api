@@ -343,3 +343,41 @@ zero rows and HQ Health surfaces
 Until every box above is ticked, **no live purge schedule may be added** —
 not as an "edit the existing dry-run body to dry_run=false" change,
 not as a second cron job, and not via a manual SQL console run.
+
+## DATA-004 Batch 7 — `cold-storage-archive` dry-run-only evidence path
+
+Status: **DATA-004 Batch 7 LIVE — `cold-storage-archive` is wired as a dry-run-only, evidence-first retention job. The function is NOT scheduled in pg_cron and the live archive path is gated behind a separate, second approval. No source records are deleted or mutated by Batch 7; the live archive contract (storage upload + `retention_flags` bookkeeping) is unchanged from prior versions but is now gated behind an explicit `dry_run=false` opt-in.**
+
+Batch 7 changes (cold-storage-archive is dry-run-only and NOT scheduled):
+
+- `dry_run` default is now TRUE — manual or service-role invocations are non-destructive unless an operator explicitly opts in.
+- Candidate discovery routes through `discover_cold_storage_archive_candidates` (SECURITY DEFINER, service-role only). Already-exported rows are pre-classified as duplicates so they appear explicitly in evidence instead of being silently filtered.
+- `retention_run_evidence` parity with `purge-email-send-log-daily` — one run-level `started`/`completed`/`partial`/`failed` row plus one per-candidate row. Lifecycle events are evidence-only (no `audit_logs` rows with null `org_id`).
+- Explicit skip categories surfaced in evidence + response: `skipped_due_to_legal_hold`, `skipped_due_to_duplicate`, `skipped_due_to_missing_source`, `skipped_due_to_bucket_write`, `skipped_due_to_lookup_error`.
+- `audit_write_failures[]` and `evidence_write_failures[]` are tracked and returned — never silently swallowed.
+- Idempotency preserved (RPC `already_exported=true`; storage upload uses `upsert: false`).
+- HQ → Retention & Holds → Retention Health renders a dedicated Cold Storage section sourced from `last_run_cold_storage_archive`, including the verbatim mode label `manual_dry_run_only`.
+
+What Batch 7 does NOT change:
+
+- No pg_cron schedule for `cold-storage-archive` is added — cold-storage-archive is NOT scheduled.
+- No live archive scheduling.
+- No source deletion. No source mutation beyond the existing safe archive contract.
+- No changes to `email-log-anonymise`.
+- No changes to `account-deletion-sweeper`.
+- No changes to `storage-retention-cleanup`.
+- No changes to `data-retention` sentinel paths.
+- No conversion of `purge-email-send-log-daily` to live (Phase 4 dry-run schedule is unchanged).
+- The Phase 3 single-consumer rule is preserved — `cold-storage-archive` does NOT consume `org_retention_policies` or `get_effective_retention_days`.
+
+Guards (prebuild):
+
+- `scripts/check-data-004-batch7-cold-storage.mjs` — pins `dry_run=true` default; pins the 5 canonical `cold_storage_archive.*` audit names and `RETENTION_JOB_AUDIT_PERSISTENCE` evidence-only lifecycle map; requires `discover_cold_storage_archive_candidates` and `retention_run_evidence` writes; forbids `.delete()` in the function source; forbids `org_retention_policies` / `get_effective_retention_days` consumption; forbids any migration that schedules `cold-storage-archive` via `cron.schedule`/`net.http_post`; reasserts that `storage-retention-cleanup`, `account-deletion-sweeper`, and `email-log-anonymise` remain unscheduled; requires `RELEASE_GATE.md` and `docs/launch-runbook.md` to carry a `DATA-004 Batch 7` section stating cold-storage-archive is dry-run-only and NOT scheduled.
+
+Batch 8+ (deferred — do NOT open without a separate, second approval):
+
+- Scheduling `cold-storage-archive` (would still be dry-run-only first, then live).
+- Wiring `email-log-anonymise` (still violates the dry-run-default posture; requires per-org policy lookup and `retention_run_evidence` parity first).
+- Wiring `account-deletion-sweeper` (irreversible account lifecycle — governance batch, not retention).
+- Wiring `storage-retention-cleanup` (needs per-item legal-hold upgrade before scheduling).
+
