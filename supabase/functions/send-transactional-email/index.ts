@@ -66,6 +66,53 @@ Deno.serve(async (req) => {
     ))
   }
 
+  // Auth: only accept service_role JWT or platform_admin / org_admin users.
+  // Prevents abuse via the publicly-bundled anon key (phishing from our domain).
+  const authHeader = req.headers.get('authorization') ?? req.headers.get('Authorization')
+  if (!authHeader?.toLowerCase().startsWith('bearer ')) {
+    return wrap(new Response(
+      JSON.stringify({ error: 'Unauthorised' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    ))
+  }
+  const callerToken = authHeader.slice(7)
+  let callerIsPrivileged = false
+  try {
+    // service_role token == the service key itself
+    if (callerToken === supabaseServiceKey) {
+      callerIsPrivileged = true
+    } else {
+      const authClient = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { persistSession: false },
+      })
+      const { data: claimsData } = await authClient.auth.getClaims(callerToken)
+      const claims: any = claimsData?.claims
+      if (claims?.role === 'service_role') {
+        callerIsPrivileged = true
+      } else if (claims?.sub) {
+        for (const role of ['platform_admin', 'org_admin']) {
+          const { data: hasRole } = await authClient.rpc('has_role', {
+            _user_id: claims.sub,
+            _role: role,
+          })
+          if (hasRole === true) {
+            callerIsPrivileged = true
+            break
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Auth verification failed', e)
+  }
+  if (!callerIsPrivileged) {
+    return wrap(new Response(
+      JSON.stringify({ error: 'Forbidden — privileged role required' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    ))
+  }
+
+
   // Parse request body
   let templateName: string
   let recipientEmail: string
