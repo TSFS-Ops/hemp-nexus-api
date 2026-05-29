@@ -111,6 +111,30 @@ Format for every entry:
 
 ---
 
+## 15. DATA-004 legacy live email purge (`purge_old_email_send_log()`)
+- **Current safe default**: **Quarantined.** pg_cron jobid 14 (`purge-email-send-log-daily`) was unscheduled on 2026-05-29 (Batch 8A). The DB function `public.purge_old_email_send_log()` still exists but is no longer invoked by cron. The DATA-004 dry-run path (jobid 39) remains scheduled and writes `retention_run_evidence` daily.
+- **Why deferred**: Any replacement must consume `org_retention_policies`, enforce `assertNoLegalHold`, and write `retention_run_evidence` parity with `purge-email-send-log-daily` — the legacy function does none of these.
+- **Owner**: Izenzo policy (DATA-004).
+- **Launch impact**: Not blocking — `email_send_log` simply grows; Phase 4 dry-run evidence accumulates pending operator review.
+- **Recommended decision date**: T-14 days. Resolution path: drop the legacy DB function or wrap a guarded edge function; either way, a second explicit approval is required before scheduling.
+
+## 16. DATA-004 live account deletion cron
+- **Current safe default**: **Quarantined.** pg_cron jobid 24 (`account-deletion-sweeper-daily`) was unscheduled on 2026-05-29 (Batch 8A). Its body was dry-run but its auth header referenced an unset GUC, so calls silently 401'd every day. The correctly authenticated dry-run job (jobid 25) is preserved.
+- **Why deferred**: Account deletion is irreversible. A live schedule is a governance decision, not a retention one — requires Phase 2 sign-off per the `mem://features/account-self-deletion` contract.
+- **Owner**: Client (Compliance + Legal).
+- **Launch impact**: Not blocking — DATA-002 Phase 1 sweeper still runs daily in dry-run only (jobid 25). Pending deletions accumulate; nothing is irreversibly deleted.
+- **Recommended decision date**: T-30 days.
+
+## 17. DATA-004 live email anonymisation cron
+- **Current safe default**: **Quarantined.** pg_cron jobid 35 (`email-log-anonymise-daily`) was unscheduled on 2026-05-29 (Batch 8A). It was calling `email-log-anonymise` with `p_dry_run:false` daily, irreversibly masking recipient_email on `email_send_log` rows older than 90 days. No `retention_run_evidence` parity, no per-org policy lookup (record-group legal hold was checked).
+- **Why deferred**: PII masking is irreversible. Any replacement must achieve `retention_run_evidence` parity, consume per-org policies, and ship with a second explicit approval.
+- **Owner**: Izenzo policy (DATA-004).
+- **Launch impact**: Not blocking — `email_send_log` retains recipient PII for longer than 90 days until a guarded path is wired.
+- **Recommended decision date**: T-30 days.
+
+---
+
 ## Summary
 
-None of the deferred items block platform operation. Items 5 and 12 are time-sensitive for go-live; the rest can be ratified in the first 30–60 days post-launch.
+None of the deferred items block platform operation. Items 5 and 12 are time-sensitive for go-live; the rest can be ratified in the first 30–60 days post-launch. Items 15–17 capture the three cron jobs quarantined under DATA-004 Batch 8A and the conditions under which they may be replaced.
+
