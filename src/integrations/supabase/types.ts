@@ -7096,6 +7096,75 @@ export type Database = {
         }
         Relationships: []
       }
+      retention_run_evidence: {
+        Row: {
+          created_at: string
+          decision: string | null
+          details: Json
+          finished_at: string | null
+          id: string
+          job_name: string
+          org_id: string | null
+          reason: string | null
+          record_class: string
+          rows_eligible: number
+          rows_purged: number
+          rows_seen: number
+          rows_skipped_disabled_policy: number
+          rows_skipped_error: number
+          rows_skipped_invalid_policy: number
+          rows_skipped_legal_hold: number
+          rows_skipped_missing_policy: number
+          run_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: string | null
+          details?: Json
+          finished_at?: string | null
+          id?: string
+          job_name: string
+          org_id?: string | null
+          reason?: string | null
+          record_class: string
+          rows_eligible?: number
+          rows_purged?: number
+          rows_seen?: number
+          rows_skipped_disabled_policy?: number
+          rows_skipped_error?: number
+          rows_skipped_invalid_policy?: number
+          rows_skipped_legal_hold?: number
+          rows_skipped_missing_policy?: number
+          run_id: string
+          started_at: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string | null
+          details?: Json
+          finished_at?: string | null
+          id?: string
+          job_name?: string
+          org_id?: string | null
+          reason?: string | null
+          record_class?: string
+          rows_eligible?: number
+          rows_purged?: number
+          rows_seen?: number
+          rows_skipped_disabled_policy?: number
+          rows_skipped_error?: number
+          rows_skipped_invalid_policy?: number
+          rows_skipped_legal_hold?: number
+          rows_skipped_missing_policy?: number
+          run_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       revenue_notification_audit: {
         Row: {
           created_at: string
