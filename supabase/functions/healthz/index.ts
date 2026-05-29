@@ -91,8 +91,11 @@ Deno.serve(async (req) => {
     );
   }
 
-  // === AUTHENTICATED CHECKS BELOW ===
-  // These expose internal metrics and are only available to authenticated users
+  // === PLATFORM_ADMIN CHECKS BELOW ===
+  // These expose platform-wide internal metrics (counts across all orgs,
+  // recent error rates, webhook system status) and are restricted to
+  // platform_admin only. Service role client is used to bypass RLS for
+  // legitimate aggregate observability.
 
   // 2. Auth system check
   const authStart = Date.now();
