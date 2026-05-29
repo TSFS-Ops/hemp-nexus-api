@@ -18,16 +18,12 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { z } from "https://esm.sh/zod@3.23.8";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { IDENTITY_AUDIT_NAMES, writeIdentityAudit } from "../_shared/identity-audit.ts";
-
-const BodySchema = z.object({
-  org_id: z.string().uuid().optional(),
-});
+import { BodySchema } from "./validation.ts";
 
 interface ProviderRecord {
   id: string;

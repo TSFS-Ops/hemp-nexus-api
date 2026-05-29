@@ -12,43 +12,17 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { z } from "https://esm.sh/zod@3.23.8";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse, handleDatabaseError } from "../_shared/errors.ts";
 import { authenticateRequest } from "../_shared/auth.ts";
 import { assertAal2 } from "../_shared/aal.ts";
-import { IDENTITY_AUDIT_NAMES, writeIdentityAudit } from "../_shared/identity-audit.ts";
-
-type ScimState = "invited" | "active" | "suspended" | "deprovisioned";
-
-// Mirror of src/lib/identity/sso-claim.ts SCIM_TRANSITIONS. Keep in lockstep.
-const TRANSITIONS: Record<ScimState, readonly ScimState[]> = {
-  invited: ["active", "suspended", "deprovisioned"],
-  active: ["suspended", "deprovisioned"],
-  suspended: ["active", "deprovisioned"],
-  deprovisioned: ["invited"],
-};
-
-const BodySchema = z.object({
-  org_id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  state: z.enum(["invited", "active", "suspended", "deprovisioned"]),
-  source: z.enum(["manual", "scim", "sso_jit"]).optional(),
-  external_id: z.string().max(255).nullable().optional(),
-  reason: z.string().min(1).max(500),
-});
-
-function auditNameForTransition(to: ScimState): string | null {
-  switch (to) {
-    case "invited":
-    case "active":
-      return IDENTITY_AUDIT_NAMES.scim_user_provisioned;
-    case "suspended":
-      return IDENTITY_AUDIT_NAMES.scim_user_suspended;
-    case "deprovisioned":
-      return IDENTITY_AUDIT_NAMES.scim_user_deprovisioned;
-  }
-}
+import { writeIdentityAudit } from "../_shared/identity-audit.ts";
+import {
+  BodySchema,
+  TRANSITIONS,
+  auditNameForTransition,
+  type ScimState,
+} from "./transitions.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();

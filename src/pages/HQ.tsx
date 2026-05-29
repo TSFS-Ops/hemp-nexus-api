@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,11 +72,12 @@ import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyRev
 import { AdminBillingReviewPanel } from "@/components/admin/AdminBillingReviewPanel";
 import { GovernanceRecordsPanel } from "@/components/admin/governance/GovernanceRecordsPanel";
 import { AdminBasicMemoryPanel } from "@/components/admin/AdminBasicMemoryPanel";
+import { AdminIdentityPanel } from "@/components/admin/AdminIdentityPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -97,6 +98,11 @@ const TABS: {
   label: "Organisation Management",
   icon: Building2,
   blurb: "KYB lifecycle, legal entities, KYC document verification."
+}, {
+  id: "identity",
+  label: "Enterprise Identity",
+  icon: KeyRound,
+  blurb: "Org-level SSO/SAML configuration shell (no custom SAML) and SCIM-style user lifecycle. Live SSO requires a passing connection test against a Supabase native SAML provider."
 }, {
   id: "engagements",
   label: "Engagements",
@@ -631,6 +637,16 @@ function HQLayout() {
           <TabsContent value="spine" className="mt-0 animate-section-enter"><SpineTab /></TabsContent>
           <TabsContent value="users" className="mt-0 animate-section-enter"><UsersTab /></TabsContent>
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
+          <TabsContent value="identity" className="mt-0 animate-section-enter">
+            <section className="bg-card border border-border rounded-sm overflow-hidden">
+              <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
+                <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                  Enterprise Identity · org_sso_configs × org_scim_user_states · shell only · no custom SAML
+                </p>
+              </header>
+              <div className="p-3 sm:p-5"><AdminIdentityPanel /></div>
+            </section>
+          </TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
