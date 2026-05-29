@@ -71,16 +71,6 @@ test.describe("Smoke B — Legal hold AAL2 apply succeeds and persists hard refr
 
     await page.goto("/hq/legal-holds");
 
-    const email = requireEnv("SMOKE_ADMIN_AAL2_EMAIL");
-    const password = requireEnv("SMOKE_ADMIN_AAL2_PASSWORD");
-    requireEnv("SMOKE_ADMIN_AAL2_TOTP_SECRET");
-    const scopeId = requireEnv("SMOKE_LEGAL_HOLD_SCOPE_ID");
-
-    await signIn(page, email, password);
-    await completeTotpIfPrompted(page, "SMOKE_ADMIN_AAL2_TOTP_SECRET");
-    await ev.snapshot("post-aal2");
-
-    await page.goto("/hq/legal-holds");
 
     const stamp = "Smoke B AAL2 " + Date.now();
     await page.locator("#lh-scope-id").fill(scopeId);
