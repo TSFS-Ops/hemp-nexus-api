@@ -3,12 +3,31 @@
   "suite": "smoke-a-d.spec.ts",
   "status": "failed",
   "expected": "passed",
-  "durationMs": 18671,
+  "durationMs": 17575,
   "retry": 0,
   "error": {
-    "message": "TimeoutError: locator.fill: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#lh-scope-id')\u001b[22m\n",
-    "stack": "TimeoutError: locator.fill: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#lh-scope-id')\u001b[22m\n\n    at /dev-server/e2e/smoke-a-d.spec.ts:33:40"
+    "message": "TimeoutError: locator.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /apply hold/i })\u001b[22m\n\u001b[2m    - locator resolved to <button disabled data-hover=\"commitment\" class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2\">Apply hold</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    28 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+    "stack": "TimeoutError: locator.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /apply hold/i })\u001b[22m\n\u001b[2m    - locator resolved to <button disabled data-hover=\"commitment\" class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2\">Apply hold</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    28 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at /dev-server/e2e/smoke-a-d.spec.ts:35:61"
   },
-  "requestIds": [],
-  "capturedAt": "2026-05-29T06:51:09.739Z"
+  "requestIds": [
+    "019e7281-ab62-7800-a790-112c5d24874c",
+    "019e7281-ac8d-7ada-8b06-f0fe84448c44",
+    "019e7281-acdc-7d76-a2cf-5f7716f3953f",
+    "019e7281-acde-7f70-8ff9-fc8da811f4bd",
+    "019e7281-ace0-7eeb-9815-d4a99c34b29b",
+    "019e7281-ace0-7721-a505-29ce5f7228fc",
+    "019e7281-acde-760b-a880-92e51e41d9f2",
+    "019e7281-acdf-7aa1-875f-17d9dbbad473",
+    "019e7281-ad23-7742-8d72-adf9a7fb4545",
+    "019e7281-ad34-7511-afc0-cb04439bf10c",
+    "019e7281-ad49-704c-9444-1cb073502ee1",
+    "019e7281-ad53-7472-b056-c3f557f63dd4",
+    "019e7281-ad82-7491-8b44-2c7a615d6695",
+    "019e7281-ad41-7275-acfd-9b6b94fe846a",
+    "019e7281-aee9-704b-a932-f303154d4de7",
+    "019e7281-aef6-716a-90d7-9311213dfabf",
+    "019e7281-b2dd-7cd0-bb00-0b548188cef7",
+    "019e7281-b317-7e04-b930-9bc54ed9eb52"
+  ],
+  "capturedAt": "2026-05-29T06:52:57.728Z"
 }
