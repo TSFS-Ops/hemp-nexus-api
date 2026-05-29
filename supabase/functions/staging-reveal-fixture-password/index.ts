@@ -59,6 +59,21 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = await admin.rpc("is_admin", { user_id: caller.id });
     if (!isAdmin) return json(req, { error: "Admin access required" }, 403);
 
+    // AAL2 — revealing a fixture password exposes a usable credential.
+    // Mirror the MFA enforcement applied to other sensitive admin endpoints.
+    try {
+      await assertAal2(authHeader, {
+        adminClient: admin,
+        callerUserId: caller.id,
+        action: "staging.reveal_fixture_password",
+      });
+    } catch (mfaErr) {
+      if (mfaErr instanceof ApiException && mfaErr.code === "MFA_REQUIRED") {
+        return json(req, { error: mfaErr.message, code: "MFA_REQUIRED" }, 403);
+      }
+      throw mfaErr;
+    }
+
     const body = await req.json().catch(() => ({}));
     const revealToken = String(body?.reveal_token ?? "").trim();
     if (!revealToken) return json(req, { error: "reveal_token required" }, 400);
