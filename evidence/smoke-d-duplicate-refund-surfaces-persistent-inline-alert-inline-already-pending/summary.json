@@ -3,12 +3,37 @@
   "suite": "smoke-a-d.spec.ts",
   "status": "failed",
   "expected": "passed",
-  "durationMs": 17519,
+  "durationMs": 6172,
   "retry": 0,
   "error": {
-    "message": "Error: Smoke C must have been run first or a pending refund seeded\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid^=\"refund-pending-\"]').first()\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Smoke C must have been run first or a pending refund seeded with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid^=\"refund-pending-\"]').first()\u001b[22m\n",
-    "stack": "Error: Smoke C must have been run first or a pending refund seeded\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid^=\"refund-pending-\"]').first()\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Smoke C must have been run first or a pending refund seeded with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid^=\"refund-pending-\"]').first()\u001b[22m\n\n    at /dev-server/e2e/smoke-a-d.spec.ts:132:95"
+    "message": "Error: page.evaluate: Passed function is not well-serializable!",
+    "stack": "Error: page.evaluate: Passed function is not well-serializable!\n    at /dev-server/e2e/smoke-a-d.spec.ts:141:31"
   },
-  "requestIds": [],
-  "capturedAt": "2026-05-28T04:57:34.297Z"
+  "requestIds": [
+    "019e7282-75c1-71f2-88ea-3b7751dc5c1b",
+    "019e7282-773a-702c-99ed-d2ed4ade0c05",
+    "019e7282-781f-7acc-a06d-660eb376aff8",
+    "019e7282-783b-7fc0-ba4e-6263bd13c359",
+    "019e7282-7837-720d-86cd-559fec370f2d",
+    "019e7282-782b-7f78-a7fe-74d9727e2615",
+    "019e7282-78c2-7d10-9998-c82846450a4a",
+    "019e7282-7839-7b0c-a198-f65623e18401",
+    "019e7282-7836-792d-90f2-eb3fb87f2f90",
+    "019e7282-78f9-7cb9-b635-570ebf4b5a3c",
+    "019e7282-7910-7ddb-8faa-60421f935174",
+    "019e7282-7939-778d-800e-c4f283fdfa91",
+    "019e7282-78d5-748f-9ef2-3fa54c1b3d37",
+    "019e7282-79ab-7c72-b565-b970d6ab8e86",
+    "019e7282-783c-733b-b696-1add7e5b82c8",
+    "019e7282-79be-7016-a12b-3130ccf0469e",
+    "019e7282-7a08-7ffb-b621-b613ef7d2879",
+    "019e7282-79eb-73ec-8cc6-fd97a98a3374",
+    "019e7282-7a05-722e-ab6e-a9f7ce1ecce0",
+    "019e7282-7a07-7561-929b-e07cb614df0b",
+    "019e7282-7a63-7a8a-8a59-0de08e4ee88e",
+    "019e7282-783c-7977-8488-355d8f71172e",
+    "019e7282-7fc0-7eac-8383-6e3725ca8528",
+    "019e7282-7fbe-7dae-b641-28cef071ac13"
+  ],
+  "capturedAt": "2026-05-29T06:53:36.157Z"
 }
