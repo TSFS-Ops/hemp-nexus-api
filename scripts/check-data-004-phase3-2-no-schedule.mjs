@@ -64,27 +64,37 @@ function stripSqlComments(sql) {
 const errors = [];
 
 // 1. Migration scan -----------------------------------------------------
+// Phase 4 permits a dry-run-only schedule for the sweeper inside a
+// migration, but blocks any schedule whose body does not pin
+// `dry_run` to true (or pins it to false).
 const migDir = resolve(ROOT, "supabase/migrations");
 for (const file of walk(migDir)) {
   const raw = readFileSync(file, "utf8");
   const code = stripSqlComments(raw);
   if (!code.includes(SWEEPER_NAME)) continue;
 
-  // Allow pure read references (e.g. the get_email_retention_health
-  // function querying cron.job WHERE jobname = '<sweeper>'). Block any
-  // executable scheduling call that mentions the sweeper.
   const schedulesSweeper =
     /cron\.schedule\s*\([^)]*purge-email-send-log-daily/.test(code) ||
     /net\.http_post[\s\S]*purge-email-send-log-daily/.test(code);
+  if (!schedulesSweeper) continue;
 
-  if (schedulesSweeper) {
+  // Dry-run-only allow-list: body must contain dry_run=true and must
+  // NOT contain dry_run=false. Accepts both literal JSON
+  // (`"dry_run": true`) and jsonb_build_object (`'dry_run', true`).
+  const pinsDryRunTrue =
+    /['"]dry_run['"]\s*[:,]\s*true\b/i.test(code);
+  const pinsDryRunFalse =
+    /['"]dry_run['"]\s*[:,]\s*false\b/i.test(code);
+
+  if (!pinsDryRunTrue || pinsDryRunFalse) {
     errors.push(
-      `${file}: contains an ACTIVE pg_cron / net.http_post reference to '${SWEEPER_NAME}'. ` +
-        `Phase 3.2 is scheduling-readiness only — actual scheduling requires a separate approved batch. ` +
-        `Move template SQL into a comment block (-- or /​* ... *​/) inside docs/launch-runbook.md.`,
+      `${file}: schedules '${SWEEPER_NAME}' without pinning dry_run=true ` +
+        `(or pins it to false). Phase 4 permits dry-run-only schedules; ` +
+        `live scheduling requires a separate approved batch.`,
     );
   }
 }
+
 
 // 2. Sweeper defaults ---------------------------------------------------
 const sweeperPath = resolve(
