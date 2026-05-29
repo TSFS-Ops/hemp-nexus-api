@@ -28,6 +28,15 @@ if (!existsSync(EVIDENCE_DIR)) {
   process.exit(2);
 }
 
+// Block packaging if the evidence contains a leaked secret. The scanner
+// itself exits non-zero on any hit and prints the offending file/line.
+await new Promise((res, rej) => {
+  const p = spawn("node", ["scripts/check-evidence-secret-leaks.mjs"], { stdio: "inherit", cwd: ROOT });
+  p.on("exit", (code) => code === 0
+    ? res(undefined)
+    : rej(new Error(`Refusing to pack — evidence secret-leak scan failed (exit ${code}).`)));
+});
+
 async function buildIndex() {
   const rows = [];
   for (const name of (await readdir(EVIDENCE_DIR)).sort()) {
