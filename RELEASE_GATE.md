@@ -530,3 +530,28 @@ What Batch 9A does NOT change:
 - Per-org retention policies, floors, source deletion behaviour, and sweeper wiring are unchanged.
 
 Operator evidence requirement: Batch 9B is the operator evidence tick capturing the first scheduled `cold-storage-archive-dryrun` run from `retention_run_evidence`. Live cold-storage scheduling stays gated until that evidence is reviewed.
+
+## DATA-004 Batch 9B — `cold-storage-archive-dryrun` scheduled-cron pathway evidence
+
+Status: **DATA-004 Batch 9B PASS (2026-05-29). The scheduled-cron pathway for `cold-storage-archive-dryrun` was exercised end-to-end without changing the schedule, using the exact body and `x-internal-key` auth the cron job uses. Five `retention_run_evidence` rows were written (`would_export`, `skipped_due_to_duplicate`, `skipped_due_to_missing_source`, plus `started` and `partial`), all with `dry_run=true` and `lifecycle_persistence=evidence_only`. `audit_write_failures=[]`, `evidence_write_failures=[]`. No source rows were deleted or destructively mutated; the eligible flag was NOT promoted to `archive_storage_path`. Cron state is identical before and after. No live cold-storage schedule appeared.**
+
+Evidence artifact: `evidence/data-004-batch-9b-scheduled-tick-evidence.md` (run_id `51554340-a074-4803-9465-ddf52bdb271f`).
+
+Skip-category coverage map:
+- `would_export` / dry-run — proved live in this run.
+- `skipped_due_to_duplicate` — proved live in this run.
+- `skipped_due_to_missing_source` — proved live in this run.
+- `skipped_due_to_legal_hold` (`legal_hold_batch`) — already proved by Batch 7 evidence row `run_id 6cea2c51-0f45-4e96-8d5d-4eaabea786ba`. Not re-exercised in Batch 9B to avoid mutating live `legal_holds`.
+- `legal_hold_row` — unreachable for `screening_results` by design (`COLD_TABLE_TO_SCOPE['screening_results'] = null`). Not a bug.
+
+Fixture cleanup: migration `20260529…_data_004_batch9b_fixture_cleanup.sql` removed the three fixture `retention_flags` and two fixture `screening_results` rows on demo org `aaaa0004-0004-0004-0004-aaaaaaaaaaaa`. Append-only `retention_run_evidence` rows preserved.
+
+What Batch 9B does NOT change:
+- No schedule edit (jobid 40 untouched).
+- No live cold-storage cron added.
+- No conversion to live archive.
+- No source deletion, no destructive source mutation.
+- `purge-email-send-log-daily-dryrun` (jobid 39), `account-deletion-sweeper-daily-dryrun` (jobid 25), `storage-retention-cleanup-job` (jobid 7), `email-log-anonymise`, and account-deletion live paths are all unchanged.
+- Quarantined live jobnames remain absent.
+
+Live cold-storage scheduling still requires a **separate, explicit Batch 10** approval AND a fresh live-cron snapshot. Batch 9B does NOT approve it.
