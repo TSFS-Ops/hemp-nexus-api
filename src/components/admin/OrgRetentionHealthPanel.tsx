@@ -87,6 +87,18 @@ interface HealthResponse {
   ok: true;
   phase: string;
   enforcement_status: string;
+  /**
+   * Phase 3.2 readiness state. Always one of:
+   *   - "phase_3_1_verified_pg_cron_pending_approval" (current)
+   * Surfaced so HQ readers can never mistake "wired" for "scheduled".
+   */
+  scheduling_status?: string;
+  scheduling_notes?: {
+    pg_cron_scheduled: boolean;
+    invocation_mode: string;
+    dry_run_default: boolean;
+    next_step: string;
+  };
   summary: {
     orgs_total: number;
     orgs_with_explicit_policies: number;
