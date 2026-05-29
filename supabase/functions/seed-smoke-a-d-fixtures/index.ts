@@ -339,6 +339,12 @@ Deno.serve(async (req) => {
     const pendingPurchaseId = await ensureCompletedPurchase(admin, orgId, orgAdminId, PURCHASE_PENDING_REF);
     const pendingRefundId = await ensurePendingRefund(admin, orgId, orgAdminId, pendingPurchaseId);
 
+    // Credit the org's balance so the clean purchase is eligible — the
+    // request_refund RPC blocks with `blocked_credits_used` whenever
+    // `token_balances.balance < purchase.token_amount`.
+    await ensureSeededTokenBalance(admin, orgId, 100);
+
+
     const env = [
       `# --- Smoke A–D fixture exports ---`,
       `export SMOKE_ADMIN_EMAIL="${ACCOUNTS.admin_no_mfa.email}"`,
