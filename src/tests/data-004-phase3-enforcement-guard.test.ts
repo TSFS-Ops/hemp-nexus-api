@@ -1,12 +1,13 @@
 /**
- * DATA-004 Phase 3 — enforcement layer static contract tests.
+ * DATA-004 Phase 3 (+ Phase 3.1) — enforcement-layer static contract tests.
  *
  * Pin the shape of:
- *   - the canonical retention-job audit names
+ *   - the canonical retention-job audit names + persistence map
  *   - the single-consumer enforcement-scope guard
  *   - the fail-closed decision helper
  *   - HQ Retention Health enforcement labelling
  *   - the retention_run_evidence access surface
+ *   - Phase 3.1 candidate-discovery + audit-failure visibility contract
  *
  * Static (source-level) only — does not hit the running backend.
  */
@@ -34,7 +35,7 @@ describe("DATA-004 Phase 3 — sweeper exists and is the only wired consumer", (
     expect(existsSync(resolve(ROOT, SWEEPER))).toBe(true);
   });
 
-  it("canonical retention-job audit names are pinned (prebuild guard)", () => {
+  it("canonical retention-job audit names + persistence map are pinned (prebuild guard)", () => {
     expect(() => run("check-data-004-phase3-audit-names.mjs")).not.toThrow();
   });
 
@@ -94,49 +95,82 @@ describe("DATA-004 Phase 3 — sweeper safety + auth", () => {
   it("defaults dry_run to TRUE", () => {
     expect(src).toMatch(/dry_run !== false/);
   });
-  it("emits per-org skip audits and a summary audit", () => {
-    expect(src).toMatch(/RETENTION_JOB_AUDIT_NAMES\.skipped/);
-    expect(src).toMatch(/RETENTION_JOB_AUDIT_NAMES\.(completed|partial|failed)/);
-  });
-  it("writes retention_run_evidence on start and finish", () => {
+  it("writes retention_run_evidence on start, per-org, and finish", () => {
     expect(src).toMatch(/status:\s*"started"/);
     expect(src.match(/retention_run_evidence/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
   });
-  it("only this sweeper imports the shared retention-decision helper among sweepers", () => {
-    // Walk supabase/functions/* and look for imports of retention-decision.
-    const fnRoot = resolve(ROOT, "supabase/functions");
-    const fs = require("node:fs") as typeof import("node:fs");
-    const path = require("node:path") as typeof import("node:path");
-    const offenders: string[] = [];
-    for (const name of fs.readdirSync(fnRoot)) {
-      if (name === "_shared" || name === "purge-email-send-log-daily") continue;
-      const dir = path.join(fnRoot, name);
-      if (!fs.statSync(dir).isDirectory()) continue;
-      const walk = (d: string): string[] =>
-        fs.readdirSync(d).flatMap((n) => {
-          const p = path.join(d, n);
-          return fs.statSync(p).isDirectory() ? walk(p) : [p];
-        });
-      for (const file of walk(dir)) {
-        if (!/\.(ts|js)$/.test(file)) continue;
-        if (fs.readFileSync(file, "utf8").includes("retention-decision")) {
-          offenders.push(file);
-        }
-      }
-    }
-    expect(offenders).toEqual([]);
+});
+
+describe("DATA-004 Phase 3.1 — evidence hardening", () => {
+  const src = read(SWEEPER);
+
+  it("enumerates orgs from candidate email_send_log rows (not only policy table)", () => {
+    expect(src).toMatch(/discover_email_send_log_candidate_orgs/);
+  });
+
+  it("missing-policy orgs are bucketed under rows_skipped_missing_policy", () => {
+    // bumpForDecision must wire 'skipped_due_to_missing_policy' to the counter
+    expect(src).toMatch(/skipped_due_to_missing_policy/);
+    expect(src).toMatch(/rows_skipped_missing_policy/);
+  });
+
+  it("lifecycle events are classified evidence_only (not audit_logs writes)", () => {
+    expect(src).toMatch(/RETENTION_JOB_AUDIT_PERSISTENCE/);
+    expect(src).toMatch(/started:\s*"evidence_only"/);
+    expect(src).toMatch(/completed:\s*"evidence_only"/);
+    expect(src).toMatch(/partial:\s*"evidence_only"/);
+    expect(src).toMatch(/failed:\s*"evidence_only"/);
+    expect(src).toMatch(/skipped:\s*"audit_logs_per_org"/);
+  });
+
+  it("does not attempt run-level audit_logs writes with null org_id", () => {
+    // Phase 3.1 removed the lifecycle audit writer. The sweeper must NOT
+    // call any helper that inserts a run-level audit row with null org_id.
+    expect(src).not.toMatch(/writeAudit\(/);
+    expect(src).toMatch(/lifecycle_persistence:\s*"evidence_only"/);
+  });
+
+  it("per-org skipped audits persist to audit_logs with real org_id", () => {
+    expect(src).toMatch(/writePerOrgSkipAudit/);
+    expect(src).toMatch(/action:\s*RETENTION_JOB_AUDIT_NAMES\.skipped/);
+  });
+
+  it("audit/evidence write failures are tracked and surfaced (never swallowed)", () => {
+    expect(src).toMatch(/auditWriteFailures/);
+    expect(src).toMatch(/evidenceWriteFailures/);
+    // surfaced in response
+    expect(src).toMatch(/audit_write_failures/);
+    expect(src).toMatch(/evidence_write_failures/);
+    // surfaced inline in evidence on per-org audit failure
+    expect(src).toMatch(/audit_write_failed/);
+  });
+
+  it("response payload includes per-org decisions for operator inspection", () => {
+    expect(src).toMatch(/per_org:/);
   });
 });
 
 describe("DATA-004 Phase 3 — HQ Retention Health labels email_send_log as enforced", () => {
   const panel = read(PANEL);
-  it("panel no longer claims full shell-only enforcement", () => {
+  it("panel renders email_send_log enforcement banner", () => {
     expect(panel).toMatch(/email_send_log/);
     expect(panel).toMatch(/enforced/i);
   });
-  it("admin-org-retention health surfaces enforcement metadata", () => {
+  it("panel exposes Phase 3.1 lifecycle-vs-audit distinction", () => {
+    expect(panel).toMatch(/retention_run_evidence/);
+    expect(panel).toMatch(/audit_logs/);
+    expect(panel).toMatch(/pg_cron is NOT scheduled/);
+  });
+  it("panel surfaces missing-policy / legal-hold skip counters", () => {
+    expect(panel).toMatch(/Missing-policy skips/);
+    expect(panel).toMatch(/Legal-hold skips/);
+  });
+  it("panel surfaces audit-write-failure warning when present", () => {
+    expect(panel).toMatch(/audit_write_failures/);
+  });
+  it("admin-org-retention health surfaces last_run_email_send_log", () => {
     const adminFn = read(ADMIN_FN);
-    expect(adminFn).toMatch(/email_send_log/);
+    expect(adminFn).toMatch(/last_run_email_send_log/);
   });
 });
 
