@@ -396,9 +396,10 @@ Deno.serve(async (req) => {
         console.error("[admin-org-retention] last_run lookup failed:", e);
       }
 
-      // DATA-004 Batch 7 — latest dry-run evidence for cold-storage-archive.
-      // Read-only surfacing. Cold-storage-archive is dry-run-only and never
-      // scheduled in this batch.
+      // DATA-004 Batch 7/9A — latest dry-run evidence for cold-storage-archive
+      // plus the live pg_cron schedule state (Batch 9A schedules a weekly
+      // dry-run; live archive scheduling remains gated behind a separate
+      // approval).
       let lastRunCold: Record<string, unknown> | null = null;
       try {
         const { data: coldRows } = await admin
@@ -413,6 +414,24 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error("[admin-org-retention] cold-storage last_run lookup failed:", e);
       }
+
+      // DATA-004 Batch 9A — surface live cron schedules for cold-storage-archive.
+      let coldStorageCronJobs: Array<{
+        jobid: number;
+        jobname: string;
+        schedule: string;
+        active: boolean;
+        is_dry_run: boolean;
+      }> = [];
+      try {
+        const { data: rows } = await admin.rpc("get_cold_storage_archive_cron_jobs");
+        coldStorageCronJobs = (rows ?? []) as typeof coldStorageCronJobs;
+      } catch (e) {
+        console.error("[admin-org-retention] cold-storage cron lookup failed:", e);
+      }
+      const coldDryRunSchedules = coldStorageCronJobs.filter((j) => j.is_dry_run && j.active);
+      const coldLiveSchedules = coldStorageCronJobs.filter((j) => !j.is_dry_run && j.active);
+
 
       // DATA-004 Phase 4 — discover live pg_cron jobs for the sweeper
       // so HQ Health can prove (a) the dry-run schedule is registered
