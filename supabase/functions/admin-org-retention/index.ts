@@ -396,6 +396,24 @@ Deno.serve(async (req) => {
         console.error("[admin-org-retention] last_run lookup failed:", e);
       }
 
+      // DATA-004 Batch 7 — latest dry-run evidence for cold-storage-archive.
+      // Read-only surfacing. Cold-storage-archive is dry-run-only and never
+      // scheduled in this batch.
+      let lastRunCold: Record<string, unknown> | null = null;
+      try {
+        const { data: coldRows } = await admin
+          .from("retention_run_evidence")
+          .select("*")
+          .eq("job_name", "cold-storage-archive")
+          .is("org_id", null)
+          .in("status", ["success", "partial", "failed"])
+          .order("started_at", { ascending: false })
+          .limit(1);
+        lastRunCold = (coldRows ?? [])[0] ?? null;
+      } catch (e) {
+        console.error("[admin-org-retention] cold-storage last_run lookup failed:", e);
+      }
+
       // DATA-004 Phase 4 — discover live pg_cron jobs for the sweeper
       // so HQ Health can prove (a) the dry-run schedule is registered
       // and (b) no live (non-dry-run) schedule exists.
