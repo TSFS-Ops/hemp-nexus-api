@@ -5299,6 +5299,56 @@ export type Database = {
         }
         Relationships: []
       }
+      org_retention_policies: {
+        Row: {
+          created_at: string
+          floor_days: number
+          id: string
+          metadata: Json
+          org_id: string
+          reason: string
+          record_class: Database["public"]["Enums"]["org_retention_record_class"]
+          retention_days: number
+          set_at: string
+          set_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          floor_days: number
+          id?: string
+          metadata?: Json
+          org_id: string
+          reason: string
+          record_class: Database["public"]["Enums"]["org_retention_record_class"]
+          retention_days: number
+          set_at?: string
+          set_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          floor_days?: number
+          id?: string
+          metadata?: Json
+          org_id?: string
+          reason?: string
+          record_class?: Database["public"]["Enums"]["org_retention_record_class"]
+          retention_days?: number
+          set_at?: string
+          set_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_retention_policies_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_scim_user_states: {
         Row: {
           created_at: string
@@ -9992,6 +10042,8 @@ export type Database = {
         Args: { p_governance?: Json; p_input: Json }
         Returns: Json
       }
+      atomic_org_retention_clear: { Args: { p_input: Json }; Returns: Json }
+      atomic_org_retention_set: { Args: { p_input: Json }; Returns: Json }
       atomic_poi_match_transition: {
         Args: {
           p_actor_user_id: string
@@ -10351,6 +10403,13 @@ export type Database = {
         Returns: string
       }
       get_billing_availability: { Args: never; Returns: Json }
+      get_effective_retention_days: {
+        Args: {
+          _org_id: string
+          _record_class: Database["public"]["Enums"]["org_retention_record_class"]
+        }
+        Returns: number
+      }
       get_email_retention_health: { Args: never; Returns: Json }
       get_match_evidence: {
         Args: { p_match_id: string; p_org_id: string }
@@ -10382,6 +10441,12 @@ export type Database = {
       get_org_gate_position: {
         Args: { _org_id: string }
         Returns: Database["public"]["Enums"]["gate_position"]
+      }
+      get_retention_floor_days: {
+        Args: {
+          _record_class: Database["public"]["Enums"]["org_retention_record_class"]
+        }
+        Returns: number
       }
       get_test_mode_bypass_state: { Args: never; Returns: Json }
       get_test_mode_lockout_state: { Args: never; Returns: Json }
@@ -10835,6 +10900,15 @@ export type Database = {
         | "disputed_being_named"
         | "cancelled_by_initiator"
       gate_position: "entry" | "poi_mint" | "wad_only"
+      org_retention_record_class:
+        | "matches"
+        | "trade_requests"
+        | "pois"
+        | "wads"
+        | "evidence"
+        | "audit_logs"
+        | "email_send_log"
+        | "governance_records"
       revenue_notification_status: "sent" | "failed" | "skipped"
       signal_type: "buyer" | "seller"
     }
@@ -10993,6 +11067,16 @@ export const Constants = {
         "cancelled_by_initiator",
       ],
       gate_position: ["entry", "poi_mint", "wad_only"],
+      org_retention_record_class: [
+        "matches",
+        "trade_requests",
+        "pois",
+        "wads",
+        "evidence",
+        "audit_logs",
+        "email_send_log",
+        "governance_records",
+      ],
       revenue_notification_status: ["sent", "failed", "skipped"],
       signal_type: ["buyer", "seller"],
     },
