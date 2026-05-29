@@ -23,12 +23,17 @@ import {
 } from "./demo-mode-guard.ts";
 import { OPS_010_AUDIT } from "./ops-010-audit.ts";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
-};
+import { corsHeaders as __buildCorsHeaders } from "./cors.ts";
+
+/**
+ * Build per-request CORS headers honouring the project ALLOWED_ORIGINS allowlist.
+ * Falls back to safe no-echo headers when no Request is provided.
+ */
+function buildCors(req?: Request): Record<string, string> {
+  const allowed = (globalThis as any).Deno?.env?.get?.("ALLOWED_ORIGINS") || "";
+  const origin = req?.headers.get("origin") ?? null;
+  return { ...__buildCorsHeaders(allowed, origin), "Content-Type": "application/json" };
+}
 
 export interface DemoShortCircuitArgs {
   /** Best-effort identifier extraction from request body / query params. */
@@ -56,6 +61,7 @@ export interface DemoShortCircuitArgs {
 export async function demoShortCircuit(
   admin: any,
   args: DemoShortCircuitArgs,
+  req?: Request,
 ): Promise<Response | null> {
   const ctx = await loadDemoContext(admin, args.ids);
   if (!ctx.isDemo) return null;
@@ -83,7 +89,7 @@ export async function demoShortCircuit(
 
   return new Response(JSON.stringify(payload), {
     status: 202,
-    headers: CORS,
+    headers: buildCors(req),
   });
 }
 
