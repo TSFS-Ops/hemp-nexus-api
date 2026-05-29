@@ -20,6 +20,7 @@ import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIc
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminIdentityPanel } from "@/components/admin/AdminIdentityPanel";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useUrlTab } from "@/hooks/use-url-tab";
