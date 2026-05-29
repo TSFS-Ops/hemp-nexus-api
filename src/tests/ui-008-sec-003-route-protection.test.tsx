@@ -185,10 +185,28 @@ describe("UI-008 / SEC-003 — route protection", () => {
       await waitFor(() => expect(screen.getByTestId("desk-content")).toBeInTheDocument());
     });
 
-    it("any authenticated user renders /developer/*", async () => {
-      mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: true, roles: ["org_member"] });
+    it("platform_admin renders /developer/*", async () => {
+      mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: true, roles: ["platform_admin"] });
       renderApp("/developer/keys");
       await waitFor(() => expect(screen.getByTestId("developer-content")).toBeInTheDocument());
+    });
+
+    it("org_admin renders /developer/*", async () => {
+      mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: true, roles: ["org_admin"] });
+      renderApp("/developer/webhooks");
+      await waitFor(() => expect(screen.getByTestId("developer-content")).toBeInTheDocument());
+    });
+
+    it("org_member is blocked from /developer/* (buyers/suppliers/brokers/demo users)", async () => {
+      mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: true, roles: ["org_member"] });
+      renderApp("/developer/keys");
+      expect(screen.queryByTestId("developer-content")).not.toBeInTheDocument();
+    });
+
+    it("buyer is blocked from /developer/*", async () => {
+      mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: true, roles: ["buyer"] });
+      renderApp("/developer/keys");
+      expect(screen.queryByTestId("developer-content")).not.toBeInTheDocument();
     });
   });
 
