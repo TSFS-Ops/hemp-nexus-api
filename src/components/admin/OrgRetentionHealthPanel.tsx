@@ -144,8 +144,9 @@ interface HealthResponse {
   orgs_truncated: boolean;
   last_run_email_send_log?: LastRunEvidence | null;
   /**
-   * DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path.
-   * Read-only surfacing. Not scheduled. Not destructive.
+   * DATA-004 Batch 7/9A — cold-storage-archive dry-run-only evidence path.
+   * Batch 9A: scheduled dry-run is now expected; live archive scheduling
+   * remains gated behind a separate approval.
    */
   cold_storage_archive?: {
     mode: string;
@@ -154,8 +155,13 @@ interface HealthResponse {
     deletes_source_records: boolean;
     mutates_source_records: boolean;
     consumes_org_retention_policies: boolean;
+    scheduling_status?: string;
+    dry_run_schedules?: Array<{ jobid: number; jobname: string; schedule: string; active: boolean; is_dry_run: boolean }>;
+    live_schedules?: Array<{ jobid: number; jobname: string; schedule: string; active: boolean; is_dry_run: boolean }>;
+    rollback_sql?: string;
     last_run: LastRunEvidence | null;
   };
+
   request_id: string;
 }
 
