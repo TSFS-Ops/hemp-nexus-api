@@ -36,7 +36,8 @@
     "smoke:daniel:evidence": "playwright test --config=playwright.config.ts; status=$?; node scripts/pack-evidence.mjs; exit $status",
     "smoke:run": "node scripts/run-smoke-a-d.mjs",
     "smoke:run:record": "node scripts/run-smoke-a-d.mjs --record",
-    "smoke:run:verify": "node scripts/run-smoke-a-d.mjs --verify-only"
+    "smoke:run:verify": "node scripts/run-smoke-a-d.mjs --verify-only",
+    "check:smoke-evidence": "node scripts/check-smoke-evidence-bundle.mjs"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",
