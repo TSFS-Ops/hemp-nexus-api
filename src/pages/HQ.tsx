@@ -73,6 +73,7 @@ import { AdminBillingReviewPanel } from "@/components/admin/AdminBillingReviewPa
 import { GovernanceRecordsPanel } from "@/components/admin/governance/GovernanceRecordsPanel";
 import { AdminBasicMemoryPanel } from "@/components/admin/AdminBasicMemoryPanel";
 import { AdminIdentityPanel } from "@/components/admin/AdminIdentityPanel";
+import { TenantBoundaryPanel } from "@/components/admin/TenantBoundaryPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
@@ -433,7 +434,7 @@ function RevenueTab() {
 }
 function AuditTab() {
   // Compliance & observability: tamper-evident audit trail, event store, system health, analytics.
-  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "notification-prefs", "outreach-blocks", "upload-audit", "revenue-notifications", "health", "event-store", "analytics"]);
+  const [sub, setSub] = useUrlTab("sub", "risk-alarms", ["risk-alarms", "rating-appeals", "audit-logs", "notification-prefs", "outreach-blocks", "upload-audit", "revenue-notifications", "tenant-boundary", "health", "event-store", "analytics"]);
   return <>
       <TabHeader id="audit" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -445,7 +446,7 @@ function AuditTab() {
           <TabsTrigger value="outreach-blocks">Outreach Blocks</TabsTrigger>
           <TabsTrigger value="upload-audit">Upload Audit</TabsTrigger>
           <TabsTrigger value="revenue-notifications">Revenue Notifications</TabsTrigger>
-          
+          <TabsTrigger value="tenant-boundary">Tenant Boundary</TabsTrigger>
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="event-store">Event Store</TabsTrigger>
           <TabsTrigger value="analytics">System Analytics</TabsTrigger>
@@ -483,6 +484,11 @@ function AuditTab() {
         <TabsContent value="revenue-notifications">
           <Surface label="Revenue email attempts · public.revenue_notification_audit · support@izenzo.co.za">
             <AdminRevenueNotificationsPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="tenant-boundary">
+          <Surface label="Stronger Tenant-Boundary Evidence Pack · public.tenant_boundary_evidence · append-only · SHA-256 sealed · platform_admin only · static RLS/policy probe over every org_id table">
+            <TenantBoundaryPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="health">
