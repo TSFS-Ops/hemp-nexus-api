@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       checks.push({
         name: "database",
         status: "unhealthy",
-        message: isAuthenticated ? error.message : "Database connection failed",
+        message: isPlatformAdmin ? error.message : "Database connection failed",
         responseTime
       });
       overallStatus = "unhealthy";
@@ -71,14 +71,14 @@ Deno.serve(async (req) => {
     checks.push({
       name: "database",
       status: "unhealthy",
-      message: isAuthenticated && error instanceof Error ? error.message : "Database check failed",
+      message: isPlatformAdmin && error instanceof Error ? error.message : "Database check failed",
       responseTime: Date.now() - dbStart
     });
     overallStatus = "unhealthy";
   }
 
   // If not authenticated, return minimal response with only overall status
-  if (!isAuthenticated) {
+  if (!isPlatformAdmin) {
     return new Response(
       JSON.stringify({
         status: overallStatus,
