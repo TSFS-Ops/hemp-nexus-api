@@ -21,7 +21,7 @@ import { signIn, signOut, completeTotpIfPrompted, requireEnv } from "./helpers/a
 const TOAST_TTL_MS = 6_000;
 
 test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", () => {
-  test("inline alert remains after toast TTL", async ({ page, ev }) => {
+  test("inline alert remains after toast TTL and Apply stays disabled", async ({ page, ev }) => {
     const email = requireEnv("SMOKE_ADMIN_EMAIL");
     const password = requireEnv("SMOKE_ADMIN_PASSWORD");
     const scopeId = requireEnv("SMOKE_LEGAL_HOLD_SCOPE_ID");
@@ -30,18 +30,32 @@ test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", (
     await page.goto("/hq/legal-holds");
     await ev.snapshot("legal-holds-loaded");
 
+    // Batch 1 product behaviour: Apply/Release are intentionally disabled
+    // for non-AAL2 admins. The smoke proves the persistent inline MFA
+    // banner is shown and that Apply is disabled — it must NOT attempt
+    // to click Apply (that would either be a no-op or, if the gate
+    // regressed, a destructive success we don't want to validate here).
+    const banner = page.getByTestId("legal-holds-mfa-banner");
+    await expect(banner, "persistent inline MFA banner must be visible for non-AAL2").toBeVisible({ timeout: 15_000 });
+    await expect(banner).toContainText(/multi-factor|MFA/i);
+    await ev.snapshot("mfa-banner-shown");
+
+    // Fill the form so we can assert the button is still disabled despite
+    // valid input — proving the disablement is AAL2-driven, not validation.
     await page.locator("#lh-scope-id").fill(scopeId);
     await page.locator("#lh-reason").fill("Smoke A — non-AAL2 expected MFA block " + Date.now());
-    await page.getByRole("button", { name: /apply hold/i }).click();
 
-    const alert = page.getByRole("alert").filter({ hasText: /multi-factor|MFA|authentication/i });
-    await expect(alert).toBeVisible({ timeout: 15_000 });
-    await ev.snapshot("mfa-alert-shown");
+    const applyBtn = page.getByRole("button", { name: /apply hold/i });
+    await expect(applyBtn, "Apply must be disabled for non-AAL2 sessions").toBeDisabled();
+    await ev.snapshot("apply-disabled");
+
+    // Banner must survive past the toast TTL — proves it is persistent
+    // inline state, not a transient toast.
     await page.waitForTimeout(TOAST_TTL_MS + 500);
-    await expect(alert, "alert must survive toast TTL — no silent failure").toBeVisible();
-    await ev.snapshot("mfa-alert-after-toast-ttl");
+    await expect(banner, "MFA banner must survive toast TTL — no silent failure").toBeVisible();
+    await expect(applyBtn, "Apply must remain disabled after toast TTL").toBeDisabled();
+    await ev.snapshot("mfa-banner-after-toast-ttl");
   });
-
 });
 
 test.describe("Smoke B — Legal hold AAL2 apply succeeds and persists hard refresh", () => {
@@ -56,6 +70,7 @@ test.describe("Smoke B — Legal hold AAL2 apply succeeds and persists hard refr
     await ev.snapshot("post-aal2");
 
     await page.goto("/hq/legal-holds");
+
 
     const stamp = "Smoke B AAL2 " + Date.now();
     await page.locator("#lh-scope-id").fill(scopeId);
@@ -133,25 +148,19 @@ test.describe("Smoke D — Duplicate refund surfaces persistent inline alert", (
     const pendingTestId = await pendingBadge.getAttribute("data-testid");
     const purchaseId = pendingTestId!.replace("refund-pending-", "");
 
-    // The button is hidden when pending exists, so re-trigger from a
-    // sibling completed purchase that is the SAME id is impossible by UI
-    // alone — duplicate-guard is the server's job. We exercise it via
-    // the same edge-function call the dialog uses, with the org's
-    // session token surfaced by the page.
-    const result = await page.evaluate(async (id) => {
-      // Find the live Supabase client instance via the global the app
-      // exposes for debugging in dev. If unavailable, fall back to a
-      // direct fetch using the session token from localStorage.
+    // The Request-refund button is hidden when a pending row exists, so
+    // exercise the server's duplicate guard via the same edge function
+    // the dialog calls. The Supabase URL must be passed in as an
+    // `evaluate` argument — `import.meta.env` is NOT available inside
+    // the browser-page context Playwright serialises the function into
+    // (root cause of the previous "Passed function is not
+    // well-serializable" failure).
+    const supabaseUrl = requireEnv("VITE_SUPABASE_URL");
+    const result = await page.evaluate(async ({ id, base }) => {
       const keys = Object.keys(localStorage).filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"));
       if (keys.length === 0) return { ok: false, reason: "no-session" };
       const tok = JSON.parse(localStorage.getItem(keys[0])!);
       const access = tok?.access_token ?? tok?.currentSession?.access_token;
-      const url = (window as unknown as { __SUPABASE_URL__?: string }).__SUPABASE_URL__
-        ?? (document.querySelector('meta[name="supabase-url"]') as HTMLMetaElement | null)?.content
-        ?? "";
-      // Fall back to env injected at build: VITE_SUPABASE_URL is baked in.
-      // Use functions invoke endpoint shape.
-      const base = (import.meta as unknown as { env?: { VITE_SUPABASE_URL?: string } }).env?.VITE_SUPABASE_URL ?? url;
       const r = await fetch(`${base}/functions/v1/refund-request`, {
         method: "POST",
         headers: {
@@ -166,7 +175,8 @@ test.describe("Smoke D — Duplicate refund surfaces persistent inline alert", (
       });
       const body = await r.json().catch(() => ({}));
       return { status: r.status, body };
-    }, purchaseId);
+    }, { id: purchaseId, base: supabaseUrl });
+
 
     expect(result, "duplicate refund must return REFUND_ALREADY_PENDING").toMatchObject({
       body: { code: "REFUND_ALREADY_PENDING" },

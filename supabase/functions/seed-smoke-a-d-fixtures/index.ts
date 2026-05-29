@@ -218,9 +218,12 @@ async function ensureCompletedPurchase(
   const { data: existing } = await admin
     .from("token_purchases").select("id").eq("paystack_reference", reference).maybeSingle();
   if (existing?.id) {
-    await admin.from("token_purchases").update({ status: "completed" } as never).eq("id", existing.id);
+    await admin.from("token_purchases").update(
+      { status: "completed", created_at: new Date().toISOString() } as never,
+    ).eq("id", existing.id);
     return existing.id;
   }
+
   const { data, error } = await admin.from("token_purchases").insert({
     org_id: orgId,
     user_id: userId,
@@ -267,9 +270,32 @@ async function ensurePendingRefund(
 }
 
 async function ensureCleanRefund(admin: SupabaseClient, purchaseId: string) {
-  // Smoke C requires NO pending refund on this purchase — drop any.
+  // Smoke C requires NO existing refund_request on this purchase (any
+  // status) — drop all so the row is fresh-eligible.
   await admin.from("refund_requests").delete().eq("token_purchase_id", purchaseId);
 }
+
+/**
+ * Smoke C precondition: the `request_refund` RPC blocks with
+ * `blocked_credits_used` whenever `token_balances.balance < purchase
+ * token_amount`. The seed creates token_purchases but does NOT credit
+ * the ledger, so without this step the org balance is 0 and the clean
+ * purchase is incorrectly classified as already-burned. Set the
+ * balance to comfortably exceed the seeded purchase amounts so the
+ * RPC takes the `pending` branch.
+ */
+async function ensureSeededTokenBalance(admin: SupabaseClient, orgId: string, minBalance: number) {
+  const { data: existing } = await admin
+    .from("token_balances").select("id, balance").eq("org_id", orgId).maybeSingle();
+  if (existing?.id) {
+    if ((existing.balance ?? 0) < minBalance) {
+      await admin.from("token_balances").update({ balance: minBalance } as never).eq("id", existing.id);
+    }
+    return;
+  }
+  await admin.from("token_balances").insert({ org_id: orgId, balance: minBalance } as never);
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -289,6 +315,7 @@ Deno.serve(async (req) => {
   });
 
   try {
+
     const orgId = await ensureOrg(admin);
 
     const adminNoMfaId = await upsertUser(admin, ACCOUNTS.admin_no_mfa.email, body.password, ACCOUNTS.admin_no_mfa.full_name);
@@ -311,6 +338,12 @@ Deno.serve(async (req) => {
 
     const pendingPurchaseId = await ensureCompletedPurchase(admin, orgId, orgAdminId, PURCHASE_PENDING_REF);
     const pendingRefundId = await ensurePendingRefund(admin, orgId, orgAdminId, pendingPurchaseId);
+
+    // Credit the org's balance so the clean purchase is eligible — the
+    // request_refund RPC blocks with `blocked_credits_used` whenever
+    // `token_balances.balance < purchase.token_amount`.
+    await ensureSeededTokenBalance(admin, orgId, 100);
+
 
     const env = [
       `# --- Smoke A–D fixture exports ---`,

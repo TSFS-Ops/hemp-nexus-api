@@ -92,7 +92,8 @@ export async function completeTotpIfPrompted(page: Page, secretEnvVar: string) {
 
 
 export function requireEnv(name: string): string {
-  const v = process.env[name];
+  const v = process.env[name] ?? envValue(name);
   if (!v) throw new Error(`Missing env ${name}. See playwright.config.ts header.`);
   return v;
 }
+
