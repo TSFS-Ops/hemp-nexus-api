@@ -17,19 +17,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { ApiException } from "../_shared/errors.ts";
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
 import {
   ALLOWED_USER_EXPORT_CATEGORIES,
   FORBIDDEN_USER_EXPORT_CATEGORIES,
   resolveExportScope,
 } from "../_shared/user-export-categories.ts";
 import { assertNoLegalHold, type LegalHoldScope } from "../_shared/legal-hold.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-request-id",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const ALLOWED_SET = new Set<string>(ALLOWED_USER_EXPORT_CATEGORIES);
 
@@ -40,13 +34,6 @@ const BodySchema = z.object({
   categories: z.array(z.string().trim().min(1).max(64)).min(1).max(32),
   reason: z.string().trim().max(500).optional(),
 }).strict();
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
 
 function extractIp(req: Request): string | null {
   const fwd = req.headers.get("x-forwarded-for");
@@ -104,7 +91,16 @@ async function writeCanonical(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
+  function json(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

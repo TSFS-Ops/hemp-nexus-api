@@ -12,6 +12,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
 import {
   DATA_005_AUDIT_ACTIONS,
   DATA_010_AUDIT_ACTIONS,
@@ -29,23 +30,9 @@ import {
   residencyBlockResponse,
 } from "../_shared/residency-claim-guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-request-id, x-internal-cron-key",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
 const BodySchema = z.object({
   request_id: z.string().uuid(),
 }).strict();
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
 
 async function sha256Hex(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -56,6 +43,16 @@ const USER_EXPORT_TTL_MS = 7 * 24 * 60 * 60 * 1000;  // 7 days
 const ADMIN_EXPORT_TTL_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 Deno.serve(async (req) => {
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
+  function json(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // OPS-010: short-circuit live side effects for demo data.
   try {
     const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
@@ -66,7 +63,6 @@ Deno.serve(async (req) => {
     const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "export-prepare", artefact: true });
     if (_demoBlocked) return _demoBlocked;
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

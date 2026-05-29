@@ -35,18 +35,11 @@
  */
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const INTERNAL_CRON_KEY = Deno.env.get("INTERNAL_CRON_KEY") ?? "";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, content-type, apikey, x-internal-key",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
-};
 
 const TEST_EMAIL_SUFFIX = "@test.izenzo.co.za";
 const ALLOWED_FIXTURE_SCOPE = "CP-003 Daniel UAT";
@@ -92,13 +85,6 @@ const ADMIN_FLAG_KEY = "allow_controlled_production_demo_fixtures_cp003";
 // does NOT carry a seller_name; the engagement contact_name is null too.
 const COUNTERPARTY_EMAIL =
   "daniel-cp003-unregistered-counterparty@test.izenzo.co.za";
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body, null, 2), {
-    status,
-    headers: corsHeaders,
-  });
-}
 
 function isProductionTier(): boolean {
   const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
@@ -438,7 +424,15 @@ async function emitCp003DetectionAudit(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
+  function json(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body, null, 2), {
+      status,
+      headers: corsHeaders,
+    });
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },

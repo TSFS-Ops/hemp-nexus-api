@@ -14,10 +14,14 @@ import {
   residencyBlockResponse,
 } from "./residency-claim-guard.ts";
 
+// Safe default CORS for residency-block short-circuit responses.
+// No Access-Control-Allow-Origin echo by default — callers should pass their
+// per-request CORS headers via the `cors` argument so the project allowlist is
+// honoured. The previous wildcard ('*') default has been removed.
 const DEFAULT_CORS = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-request-id",
+  "Vary": "Origin",
 } as const;
 
 async function peekBodyJson(req: Request): Promise<Record<string, unknown> | null> {

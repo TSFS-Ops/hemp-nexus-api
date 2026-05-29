@@ -23,17 +23,21 @@ Deno.serve(async (req) => {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Check if request is authenticated
+  // Check if request is authenticated AND caller has platform_admin role.
+  // Platform-wide metrics (api_keys, signals, matches, webhook_endpoints,
+  // api_request_logs aggregates) are restricted to platform_admin — any
+  // other authenticated caller (regular user, org admin, API key) receives
+  // the same minimal { status, timestamp } response as unauthenticated
+  // callers to prevent platform-wide info leakage.
   const authHeader = req.headers.get("authorization") || req.headers.get("x-api-key");
-  let isAuthenticated = false;
+  let isPlatformAdmin = false;
 
   if (authHeader) {
     try {
-      await authenticateRequest(req, supabaseUrl, supabaseKey);
-      isAuthenticated = true;
+      const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+      isPlatformAdmin = Array.isArray(authCtx.roles) && authCtx.roles.includes("platform_admin");
     } catch {
-      // Authentication failed - return minimal response
-      isAuthenticated = false;
+      isPlatformAdmin = false;
     }
   }
 
@@ -50,7 +54,7 @@ Deno.serve(async (req) => {
       checks.push({
         name: "database",
         status: "unhealthy",
-        message: isAuthenticated ? error.message : "Database connection failed",
+        message: isPlatformAdmin ? error.message : "Database connection failed",
         responseTime
       });
       overallStatus = "unhealthy";
@@ -67,14 +71,14 @@ Deno.serve(async (req) => {
     checks.push({
       name: "database",
       status: "unhealthy",
-      message: isAuthenticated && error instanceof Error ? error.message : "Database check failed",
+      message: isPlatformAdmin && error instanceof Error ? error.message : "Database check failed",
       responseTime: Date.now() - dbStart
     });
     overallStatus = "unhealthy";
   }
 
   // If not authenticated, return minimal response with only overall status
-  if (!isAuthenticated) {
+  if (!isPlatformAdmin) {
     return new Response(
       JSON.stringify({
         status: overallStatus,
@@ -87,8 +91,11 @@ Deno.serve(async (req) => {
     );
   }
 
-  // === AUTHENTICATED CHECKS BELOW ===
-  // These expose internal metrics and are only available to authenticated users
+  // === PLATFORM_ADMIN CHECKS BELOW ===
+  // These expose platform-wide internal metrics (counts across all orgs,
+  // recent error rates, webhook system status) and are restricted to
+  // platform_admin only. Service role client is used to bypass RLS for
+  // legitimate aggregate observability.
 
   // 2. Auth system check
   const authStart = Date.now();

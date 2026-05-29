@@ -33,18 +33,12 @@
 // ratings/legacy disputes — none of those code paths are touched.
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const PASSWORD = "D2bLiveProof!" + crypto.randomUUID().slice(0, 8);
-
-const baseHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-internal-key",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
-};
 
 type TestRecord = {
   id: string;
@@ -90,6 +84,9 @@ async function callEdge(
 }
 
 Deno.serve(async (req) => {
+  const baseHeaders = { ...__buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin")), "Content-Type": "application/json" };
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
   if (req.method === "OPTIONS") return new Response(null, { headers: baseHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "POST only" }), { status: 405, headers: baseHeaders });
