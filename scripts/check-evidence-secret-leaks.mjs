@@ -49,7 +49,7 @@ const ENV_ROOTS = process.env.EVIDENCE_SCAN_ROOTS
 const cliPathsIdx = process.argv.indexOf("--paths");
 const CLI_ROOTS = cliPathsIdx >= 0 ? process.argv.slice(cliPathsIdx + 1) : null;
 const ROOTS = (CLI_ROOTS ?? ENV_ROOTS ?? DEFAULT_ROOTS)
-  .map((r) => join(ROOT, r))
+  .map((r) => (r.startsWith("/") ? r : join(ROOT, r)))
   .filter((p) => existsSync(p));
 
 // Binary/irrelevant extensions we never scan — but we still scan playwright
