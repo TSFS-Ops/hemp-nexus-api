@@ -5299,6 +5299,124 @@ export type Database = {
         }
         Relationships: []
       }
+      org_scim_user_states: {
+        Row: {
+          created_at: string
+          external_id: string | null
+          id: string
+          last_state_change_at: string
+          last_state_change_reason: string | null
+          org_id: string
+          source: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          last_state_change_at?: string
+          last_state_change_reason?: string | null
+          org_id: string
+          source?: string
+          state?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          last_state_change_at?: string
+          last_state_change_reason?: string | null
+          org_id?: string
+          source?: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_scim_user_states_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_sso_configs: {
+        Row: {
+          acs_url: string | null
+          certificate_status: string
+          created_at: string
+          entity_id: string | null
+          failure_reason: string | null
+          id: string
+          last_test_result: string | null
+          last_tested_at: string | null
+          metadata_url: string | null
+          metadata_xml_ref: string | null
+          org_id: string
+          provider: string
+          requested_by: string | null
+          reviewed_by: string | null
+          status: string
+          supabase_sso_provider_id: string | null
+          updated_at: string
+          verified_domains: string[]
+        }
+        Insert: {
+          acs_url?: string | null
+          certificate_status?: string
+          created_at?: string
+          entity_id?: string | null
+          failure_reason?: string | null
+          id?: string
+          last_test_result?: string | null
+          last_tested_at?: string | null
+          metadata_url?: string | null
+          metadata_xml_ref?: string | null
+          org_id: string
+          provider?: string
+          requested_by?: string | null
+          reviewed_by?: string | null
+          status?: string
+          supabase_sso_provider_id?: string | null
+          updated_at?: string
+          verified_domains?: string[]
+        }
+        Update: {
+          acs_url?: string | null
+          certificate_status?: string
+          created_at?: string
+          entity_id?: string | null
+          failure_reason?: string | null
+          id?: string
+          last_test_result?: string | null
+          last_tested_at?: string | null
+          metadata_url?: string | null
+          metadata_xml_ref?: string | null
+          org_id?: string
+          provider?: string
+          requested_by?: string | null
+          reviewed_by?: string | null
+          status?: string
+          supabase_sso_provider_id?: string | null
+          updated_at?: string
+          verified_domains?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_sso_configs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           address: Json | null
