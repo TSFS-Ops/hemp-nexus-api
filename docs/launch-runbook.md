@@ -252,3 +252,36 @@ Prebuild guards:
 - `scripts/check-identity-audit-names.mjs`
 - `scripts/check-tenant-boundary-audit-names.mjs`
 - `scripts/check-data-org-retention-audit-names.mjs`
+
+## DATA-004 — Per-Org Retention (Phase 1 shell + Phase 2 evidence)
+
+Status: **DATA-004 Phase 2 LIVE — observational/evidence only. NO sweeper enforcement.**
+
+Surfaces:
+- HQ → Retention & Holds → **Per-Org Retention** (Phase 1 editor — `platform_admin` + AAL2; values recorded + audited; DB enforces ≥ platform floor; sweepers do NOT yet consume).
+- HQ → Retention & Holds → **Retention Health** (Phase 2 evidence — `platform_admin`, no AAL2; aggregate summary, per-class breakdown, per-org effective posture with `source ∈ {explicit, missing}`, active org-scoped legal holds, last canonical policy-change audit reference).
+
+Canonical audits (pinned by `check-data-org-retention-audit-names.mjs`):
+- `data.org_retention_policy.set`
+- `data.org_retention_policy.cleared`
+
+Phase 2 acceptance bar (must hold until Phase 3 sign-off):
+- HQ can see effective per-org retention posture for every org × record class.
+- Missing policies are surfaced as `missing → platform floor`, never silently treated as deletion-approved.
+- Active org-scoped legal holds are surfaced per-org in the health view.
+- `list` and `health` actions do NOT require AAL2; `set` and `clear` DO require AAL2 (single `assertAal2` callsite, asserted by vitest).
+- Non-platform admins cannot read cross-org retention state (edge fn rejects with 403; vitest asserts).
+- Non-platform admins cannot mutate policies (edge fn rejects with 403 + AAL2 wall).
+- **No destructive job consumes `org_retention_policies` or `get_effective_retention_days`.** Enforced by `scripts/check-data-004-phase2-no-enforcement.mjs` over `storage-retention-cleanup`, `account-deletion-sweeper`, `cold-storage-archive`, `email-log-anonymise`, and any `purge-email-send-log*` folder.
+- Phase 2 evidence panel renders "SHELL ONLY — no sweeper reads this yet" banner; UI states `enforcement_wired: false` everywhere.
+
+Phase 3 (deferred):
+- Wire enforcement one sweeper at a time, lowest-risk first (candidate: `purge-email-send-log-daily`).
+- Each Phase 3 wiring relaxes the non-enforcement guard for ONLY that one folder, paired with per-job negative-path tests, evidence, and sign-off.
+
+Prebuild guards:
+- `scripts/check-data-org-retention-audit-names.mjs`
+- `scripts/check-data-004-phase2-no-enforcement.mjs`
+
+Vitest:
+- `src/tests/data-004-phase2-evidence-guard.test.ts`
