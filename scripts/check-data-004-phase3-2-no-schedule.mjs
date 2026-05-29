@@ -149,9 +149,13 @@ for (const p of [releaseGatePath, runbookPath]) {
   if (!/DATA-004 Phase 3\.2/.test(txt)) {
     errors.push(`${p}: missing 'DATA-004 Phase 3.2' section.`);
   }
-  if (!/pg_cron is NOT scheduled/.test(txt)) {
-    errors.push(`${p}: must explicitly state 'pg_cron is NOT scheduled'.`);
+  if (!/DATA-004 Phase 4/.test(txt)) {
+    errors.push(`${p}: missing 'DATA-004 Phase 4' section.`);
   }
+  if (!/live purge is NOT scheduled/i.test(txt)) {
+    errors.push(`${p}: must explicitly state 'live purge is NOT scheduled'.`);
+  }
+
   // Detect drift wording that would imply scheduling is live.
   const lines = txt.split("\n");
   for (let i = 0; i < lines.length; i++) {
