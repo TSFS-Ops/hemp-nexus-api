@@ -24,6 +24,9 @@ import { CrossTabCacheBridge } from "@/lib/cross-tab-bus";
 /** Roles permitted to enter the Governance Console (matches ContextSwitcher matrix). */
 const GOVERNANCE_ROLES = ["platform_admin", "auditor", "org_admin"] as const;
 
+/** Roles permitted to enter the authenticated Developer Center (API keys, webhooks, schema explorer). */
+const DEVELOPER_ROLES = ["platform_admin", "org_admin"] as const;
+
 // Eagerly loaded - critical path
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
