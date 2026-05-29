@@ -20,17 +20,17 @@ const BodySchema = z.object({
   reason_detail: z.string().trim().min(20).max(2000),
 }).strict();
 
-function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), {
-    status: s,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
 Deno.serve(async (req) => {
   const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
   const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
   if (__pf) return __pf;
+  function json(b: unknown, s = 200) {
+    return new Response(JSON.stringify(b), {
+      status: s,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

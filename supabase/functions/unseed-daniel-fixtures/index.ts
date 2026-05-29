@@ -64,13 +64,6 @@ const DEMO_MATCH_HASHES = [
   "DEMO-MT009-NC-CLEAN-005",
 ];
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body, null, 2), {
-    status,
-    headers: corsHeaders,
-  });
-}
-
 async function authorise(
   req: Request,
   admin: SupabaseClient,
@@ -107,6 +100,13 @@ Deno.serve(async (req) => {
   const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
   const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
   if (__pf) return __pf;
+  function json(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body, null, 2), {
+      status,
+      headers: corsHeaders,
+    });
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });

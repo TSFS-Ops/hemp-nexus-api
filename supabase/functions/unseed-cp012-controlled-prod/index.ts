@@ -23,10 +23,6 @@ const ALLOWED_FIXTURE_SCOPE = "CP-012 Daniel UAT";
 const ALLOWED_FIXTURE_HASHES = ["DEMO-CP012-DISPUTE-NAMED-001"] as const;
 const ADMIN_FLAG_KEY = "allow_controlled_production_demo_fixtures_cp012";
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body, null, 2), { status, headers: corsHeaders });
-}
-
 function isProductionTier(): boolean {
   const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
   return tier === "production" || tier === "live" || tier === "prod";
@@ -72,6 +68,10 @@ Deno.serve(async (req) => {
   const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
   const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
   if (__pf) return __pf;
+  function json(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body, null, 2), { status, headers: corsHeaders });
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });

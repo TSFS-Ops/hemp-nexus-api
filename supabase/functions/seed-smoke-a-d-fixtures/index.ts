@@ -58,10 +58,6 @@ const ACCOUNTS = {
 const PURCHASE_CLEAN_REF = "smoke-ad-clean-001";
 const PURCHASE_PENDING_REF = "smoke-ad-pending-001";
 
-function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), { status: s, headers: corsHeaders });
-}
-
 function base32ToBytes(input: string): Uint8Array {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let bits = "";
@@ -295,6 +291,10 @@ Deno.serve(async (req) => {
   const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
   const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
   if (__pf) return __pf;
+  function json(b: unknown, s = 200) {
+    return new Response(JSON.stringify(b), { status: s, headers: corsHeaders });
+  }
+
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   if (!authorised(req)) return json({ error: "unauthorized" }, 401);
 

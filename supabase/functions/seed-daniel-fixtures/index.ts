@@ -152,13 +152,6 @@ const FIXTURES = [
   },
 ];
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body, null, 2), {
-    status,
-    headers: corsHeaders,
-  });
-}
-
 async function authorise(req: Request, admin: SupabaseClient): Promise<{ ok: true } | { ok: false; resp: Response }> {
   const internal = req.headers.get("x-internal-key");
   if (INTERNAL_CRON_KEY && internal && internal === INTERNAL_CRON_KEY) {
@@ -596,6 +589,13 @@ Deno.serve(async (req) => {
   const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
   const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
   if (__pf) return __pf;
+  function json(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body, null, 2), {
+      status,
+      headers: corsHeaders,
+    });
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });

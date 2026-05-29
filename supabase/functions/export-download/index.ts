@@ -33,13 +33,6 @@ const BodySchema = z.object({
 /** DATA-005 / DATA-010 contract: signed URL TTL is exactly 300 seconds. */
 export const EXPORT_DOWNLOAD_SIGNED_URL_TTL_SECONDS = 300;
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
 async function sha256Hex(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -49,6 +42,13 @@ Deno.serve(async (req) => {
   const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
   const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
   if (__pf) return __pf;
+  function json(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // OPS-010: short-circuit live side effects for demo data.
   try {
     const _demoAdmin = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(

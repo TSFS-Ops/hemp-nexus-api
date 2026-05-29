@@ -94,13 +94,6 @@ const COUNTERPARTY_ORG_LABEL = "DEMO Daniel Counterparty Org";
 const OUTREACH_AGE_DAYS = 10; // contacted 10 days ago
 const EXPIRY_AGE_DAYS = 3; // expired 3 days ago (> 7d after contact ⇒ past expiry)
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body, null, 2), {
-    status,
-    headers: corsHeaders,
-  });
-}
-
 function isProductionTier(): boolean {
   const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase();
   return tier === "production" || tier === "live" || tier === "prod";
@@ -432,6 +425,13 @@ Deno.serve(async (req) => {
   const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
   const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
   if (__pf) return __pf;
+  function json(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body, null, 2), {
+      status,
+      headers: corsHeaders,
+    });
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });
