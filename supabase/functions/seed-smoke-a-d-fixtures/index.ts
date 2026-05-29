@@ -267,9 +267,32 @@ async function ensurePendingRefund(
 }
 
 async function ensureCleanRefund(admin: SupabaseClient, purchaseId: string) {
-  // Smoke C requires NO pending refund on this purchase — drop any.
+  // Smoke C requires NO existing refund_request on this purchase (any
+  // status) — drop all so the row is fresh-eligible.
   await admin.from("refund_requests").delete().eq("token_purchase_id", purchaseId);
 }
+
+/**
+ * Smoke C precondition: the `request_refund` RPC blocks with
+ * `blocked_credits_used` whenever `token_balances.balance < purchase
+ * token_amount`. The seed creates token_purchases but does NOT credit
+ * the ledger, so without this step the org balance is 0 and the clean
+ * purchase is incorrectly classified as already-burned. Set the
+ * balance to comfortably exceed the seeded purchase amounts so the
+ * RPC takes the `pending` branch.
+ */
+async function ensureSeededTokenBalance(admin: SupabaseClient, orgId: string, minBalance: number) {
+  const { data: existing } = await admin
+    .from("token_balances").select("id, balance").eq("org_id", orgId).maybeSingle();
+  if (existing?.id) {
+    if ((existing.balance ?? 0) < minBalance) {
+      await admin.from("token_balances").update({ balance: minBalance } as never).eq("id", existing.id);
+    }
+    return;
+  }
+  await admin.from("token_balances").insert({ org_id: orgId, balance: minBalance } as never);
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
