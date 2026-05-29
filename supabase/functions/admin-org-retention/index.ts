@@ -72,7 +72,17 @@ const ClearSchema = z.object({
   reason: z.string().trim().min(10).max(500),
 });
 
-const BodySchema = z.discriminatedUnion("action", [ListSchema, SetSchema, ClearSchema]);
+// DATA-004 Phase 2 — non-destructive evidence / read model.
+// Read-only. Platform-admin only. Does NOT require AAL2 (parity with `list`).
+const HealthSchema = z.object({
+  action: z.literal("health"),
+  limit_orgs: z.number().int().min(1).max(500).default(200),
+});
+
+const BodySchema = z.discriminatedUnion(
+  "action",
+  [ListSchema, SetSchema, ClearSchema, HealthSchema],
+);
 
 function jsonResponse(req: Request, body: unknown, status = 200) {
   return withCors(
