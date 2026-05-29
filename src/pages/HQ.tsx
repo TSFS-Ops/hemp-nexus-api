@@ -637,6 +637,16 @@ function HQLayout() {
           <TabsContent value="spine" className="mt-0 animate-section-enter"><SpineTab /></TabsContent>
           <TabsContent value="users" className="mt-0 animate-section-enter"><UsersTab /></TabsContent>
           <TabsContent value="organisations" className="mt-0 animate-section-enter"><OrganisationsTab /></TabsContent>
+          <TabsContent value="identity" className="mt-0 animate-section-enter">
+            <section className="bg-card border border-border rounded-sm overflow-hidden">
+              <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
+                <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                  Enterprise Identity · org_sso_configs × org_scim_user_states · shell only · no custom SAML
+                </p>
+              </header>
+              <div className="p-3 sm:p-5"><AdminIdentityPanel /></div>
+            </section>
+          </TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
