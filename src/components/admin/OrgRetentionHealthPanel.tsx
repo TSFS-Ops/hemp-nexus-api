@@ -88,17 +88,37 @@ interface HealthResponse {
   phase: string;
   enforcement_status: string;
   /**
-   * Phase 3.2 readiness state. Always one of:
-   *   - "phase_3_1_verified_pg_cron_pending_approval" (current)
-   * Surfaced so HQ readers can never mistake "wired" for "scheduled".
+   * Phase 4 readiness state. One of:
+   *   - "phase_4_scheduled_dry_run_active_live_purge_pending_approval"
+   *   - "phase_4_dry_run_schedule_missing_check_cron"
+   *   - "phase_4_unexpected_live_schedule_present"
+   * Surfaced so HQ readers can never mistake the scheduled dry-run
+   * for a live (deleting) schedule.
    */
   scheduling_status?: string;
   scheduling_notes?: {
     pg_cron_scheduled: boolean;
+    pg_cron_mode?: "dry_run_only" | "LIVE_UNEXPECTED" | "none";
     invocation_mode: string;
     dry_run_default: boolean;
+    dry_run_schedules?: Array<{
+      jobid: number;
+      jobname: string;
+      schedule: string;
+      active: boolean;
+      is_dry_run: boolean;
+    }>;
+    live_schedules?: Array<{
+      jobid: number;
+      jobname: string;
+      schedule: string;
+      active: boolean;
+      is_dry_run: boolean;
+    }>;
+    rollback_sql?: string;
     next_step: string;
   };
+
   summary: {
     orgs_total: number;
     orgs_with_explicit_policies: number;
