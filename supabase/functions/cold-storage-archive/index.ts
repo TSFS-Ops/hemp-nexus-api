@@ -55,10 +55,11 @@
  *                                                          is set; otherwise
  *                                                          evidence_only)
  *
- * Wiring scope: this function does NOT consume `org_retention_policies`
- * or `get_effective_retention_days`. The per-org retention policy table
- * remains gated by `purge-email-send-log-daily` only (Phase 3 single-
- * consumer guard).
+ * Wiring scope: this function does NOT consume the per-org retention
+ * policy table or its effective-days reader. The per-org retention
+ * policy table remains gated by `purge-email-send-log-daily` only
+ * (Phase 3 single-consumer guard).
+
  */
 
 // deno-lint-ignore-file no-explicit-any
