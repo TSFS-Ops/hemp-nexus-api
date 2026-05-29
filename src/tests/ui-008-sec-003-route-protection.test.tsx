@@ -55,7 +55,7 @@ function renderApp(initialPath: string) {
         <Route
           path="/developer/*"
           element={
-            <RequireAuth>
+            <RequireAuth role={["platform_admin", "org_admin"]} fallbackRoute="/desk">
               <Protected id="developer-content" />
             </RequireAuth>
           }
