@@ -23,17 +23,21 @@ Deno.serve(async (req) => {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Check if request is authenticated
+  // Check if request is authenticated AND caller has platform_admin role.
+  // Platform-wide metrics (api_keys, signals, matches, webhook_endpoints,
+  // api_request_logs aggregates) are restricted to platform_admin — any
+  // other authenticated caller (regular user, org admin, API key) receives
+  // the same minimal { status, timestamp } response as unauthenticated
+  // callers to prevent platform-wide info leakage.
   const authHeader = req.headers.get("authorization") || req.headers.get("x-api-key");
-  let isAuthenticated = false;
+  let isPlatformAdmin = false;
 
   if (authHeader) {
     try {
-      await authenticateRequest(req, supabaseUrl, supabaseKey);
-      isAuthenticated = true;
+      const authCtx = await authenticateRequest(req, supabaseUrl, supabaseKey);
+      isPlatformAdmin = Array.isArray(authCtx.roles) && authCtx.roles.includes("platform_admin");
     } catch {
-      // Authentication failed - return minimal response
-      isAuthenticated = false;
+      isPlatformAdmin = false;
     }
   }
 
