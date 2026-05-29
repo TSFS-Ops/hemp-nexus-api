@@ -398,8 +398,19 @@ Deno.serve(async (req) => {
 
       return jsonResponse(req, {
         ok: true,
-        phase: "DATA-004 Phase 3",
+        phase: "DATA-004 Phase 3.2",
         enforcement_status: "partial_enforcement_email_send_log_only",
+        // Phase 3.2 — scheduling readiness only. pg_cron is NOT scheduled.
+        // Surfaces operator-readable readiness so HQ never implies that
+        // automated scheduling is active.
+        scheduling_status: "phase_3_1_verified_pg_cron_pending_approval",
+        scheduling_notes: {
+          pg_cron_scheduled: false,
+          invocation_mode: "manual_service_role_only",
+          dry_run_default: true,
+          next_step:
+            "scheduled_dry_run_requires_separate_approval_then_live_purge_requires_a_further_separate_approval",
+        },
         summary: {
           orgs_total: orgsTotal ?? 0,
           orgs_with_explicit_policies: orgsWithExplicit,
