@@ -143,6 +143,19 @@ interface HealthResponse {
   orgs_returned: number;
   orgs_truncated: boolean;
   last_run_email_send_log?: LastRunEvidence | null;
+  /**
+   * DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path.
+   * Read-only surfacing. Not scheduled. Not destructive.
+   */
+  cold_storage_archive?: {
+    mode: string;
+    scheduled: boolean;
+    dry_run_default: boolean;
+    deletes_source_records: boolean;
+    mutates_source_records: boolean;
+    consumes_org_retention_policies: boolean;
+    last_run: LastRunEvidence | null;
+  };
   request_id: string;
 }
 
