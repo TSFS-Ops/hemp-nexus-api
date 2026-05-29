@@ -480,6 +480,19 @@ Deno.serve(async (req) => {
         },
         enforced_classes: ["email_send_log"],
         last_run_email_send_log: lastRun,
+        // Batch 7: cold-storage-archive is wired as DRY-RUN-ONLY evidence
+        // path. It does not consume org_retention_policies and is never
+        // scheduled in this batch. Surface most recent run so HQ can prove
+        // the dry-run evidence is being written.
+        cold_storage_archive: {
+          mode: "manual_dry_run_only",
+          scheduled: false,
+          dry_run_default: true,
+          deletes_source_records: false,
+          mutates_source_records: false,
+          consumes_org_retention_policies: false,
+          last_run: lastRunCold,
+        },
         floors,
         record_classes: RECORD_CLASSES,
         class_breakdown: classBreakdown,
