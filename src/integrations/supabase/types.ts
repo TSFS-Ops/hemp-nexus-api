@@ -10519,6 +10519,16 @@ export type Database = {
         Args: { _org_id: string }
         Returns: Database["public"]["Enums"]["gate_position"]
       }
+      get_purge_email_send_log_cron_jobs: {
+        Args: never
+        Returns: {
+          active: boolean
+          is_dry_run: boolean
+          jobid: number
+          jobname: string
+          schedule: string
+        }[]
+      }
       get_retention_floor_days: {
         Args: {
           _record_class: Database["public"]["Enums"]["org_retention_record_class"]
