@@ -172,7 +172,11 @@ export function OrgRetentionHealthPanel() {
           and any other retention/archival paths still do NOT consume{" "}
           <code>org_retention_policies</code>. Missing, disabled, or invalid org
           policies fail closed: rows are retained, not deleted. Active legal holds
-          block purge.
+          block purge. <strong>pg_cron is NOT scheduled.</strong> Run-level
+          lifecycle events (<code>started</code>/<code>completed</code>/
+          <code>partial</code>/<code>failed</code>) are recorded in{" "}
+          <code>retention_run_evidence</code> as the canonical source of truth;
+          only per-org <code>skipped</code> rows persist to <code>audit_logs</code>.
         </AlertDescription>
       </Alert>
 
