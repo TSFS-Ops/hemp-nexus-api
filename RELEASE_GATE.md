@@ -271,62 +271,75 @@ region split, backup change, export restriction, deletion, or re-hosting
 occurs as a result of a residency request. Any technical change requires
 a separate engineering decision.
 
-## DATA-004 Phase 3.2 — scheduling readiness (pg_cron NOT scheduled)
+## DATA-004 Phase 3.2 — scheduling readiness (historical context)
 
-Phase 3.2 is **scheduling readiness only**. It does NOT schedule
-`purge-email-send-log-daily` under pg_cron, does NOT wire any new sweeper,
-does NOT change `email-log-anonymise`, does NOT broaden enforcement beyond
-`email_send_log`, and does NOT flip the default `dry_run=true`.
+Phase 3.2 was **scheduling readiness only** — no pg_cron schedule, manual
+invocation only. Phase 3.2 sign-off was the precondition for Phase 4.
 
-Enforcement scope is unchanged from Phase 3.1:
+## DATA-004 Phase 4 — scheduled dry-run ACTIVE · live purge is NOT scheduled
 
-- `purge-email-send-log-daily` is the **only** sweeper consuming
-  `org_retention_policies`.
-- Invocation is manual / service-role only.
-- `dry_run=true` is the default.
-- All other sweepers (`storage-retention-cleanup`,
-  `account-deletion-sweeper`, `cold-storage-archive`, retention sentinel
-  paths, `email-log-anonymise`) remain deferred and forbidden from
-  consuming per-org retention.
+Phase 4 (Batch 4) adds a single pg_cron schedule for
+`purge-email-send-log-daily` running in **dry-run mode only**. The
+schedule counts and evidences candidate rows but **cannot delete** —
+the function defaults `dry_run=true` and the schedule body pins it to
+`true`. **Live purge is NOT scheduled.** Moving to a live scheduled
+purge requires a separate, second approval after dry-run evidence
+review.
 
-### Scheduling readiness gate (must ALL be true before any pg_cron migration is even drafted)
+Phase 4 does NOT:
 
-A future scheduling batch may only be opened once **every** item below is
-ticked and recorded. Each item is operator-verifiable today.
+- wire any new sweeper (`storage-retention-cleanup`,
+  `account-deletion-sweeper`, `cold-storage-archive`, retention
+  sentinel paths, `email-log-anonymise` all remain deferred);
+- change `email-log-anonymise`;
+- broaden enforcement beyond `email_send_log`;
+- flip the default `dry_run=true`;
+- schedule any live (deleting) job.
 
-- [ ] Phase 3.1 operator evidence run has passed (dry-run + controlled live
-      fixture) and is recorded.
-- [ ] Latest **dry-run** `retention_run_evidence` row reviewed.
-- [ ] Latest **controlled live fixture** `retention_run_evidence` row
-      reviewed.
-- [ ] HQ → Retention & Holds → Retention Health shows the latest
-      `status='success'` or `status='partial'` run, with `dry_run=true`.
-- [ ] `rows_skipped_missing_policy` count for the latest run is
-      understood and explicitly accepted by the operator. Missing-policy
-      orgs MUST remain `rows_purged=0`.
-- [ ] `rows_skipped_legal_hold` count for the latest run is understood
-      and explicitly accepted by the operator.
-- [ ] `audit_write_failures[]` on the latest run is empty, OR the
-      non-empty contents are explicitly waived in writing by the
-      operator with a recorded reason.
-- [ ] `evidence_write_failures[]` on the latest run is empty, OR the
-      non-empty contents are explicitly waived in writing by the
-      operator with a recorded reason.
-- [ ] `npm run build` passes with `check-data-004-phase3-enforcement-scope.mjs`
-      green — confirming only `purge-email-send-log-daily` consumes
-      `org_retention_policies`.
-- [ ] `npm run build` passes with `check-data-004-phase2-no-enforcement.mjs`
-      green — confirming every other sweeper remains unwired.
-- [ ] `npm run build` passes with `check-data-004-phase3-2-no-schedule.mjs`
-      green — confirming no migration carries an active schedule and the
-      readiness gate is documented.
-- [ ] **Explicit human approval** is recorded before any pg_cron
-      migration is even authored. Recording the approval is a precondition,
-      not a post-hoc justification.
-- [ ] A **separate, second** explicit human approval is recorded before
-      moving from "scheduled dry-run" to "scheduled live purge".
+### Scheduled dry-run job
 
-Until every box above is ticked, **no pg_cron schedule may be added** —
-not active, not "temporarily disabled but live in the migration file",
-not via a guard-bypassing one-off RPC, and not via a manual SQL
-console run.
+- Job name: `purge-email-send-log-daily-dryrun`
+- Schedule: `20 3 * * *` (daily 03:20 UTC)
+- Body: `{"dry_run": true, "max_orgs": 50, "max_rows_per_org": 5000, "source": "cron:purge-email-send-log-daily-dryrun"}`
+- Auth: `x-internal-key` header pulled from vault (`INTERNAL_CRON_KEY`).
+
+### Monitoring expectations after each scheduled tick
+
+Each tick MUST:
+
+- Write a `retention_run_evidence` row with `job_name='purge-email-send-log-daily'`, `org_id IS NULL`, and `status IN ('success','partial','failed')`.
+- Have `rows_purged = 0` on every per-org row AND on the run summary.
+- Surface every missing-policy org as `decision='skipped_due_to_missing_policy'`.
+- Surface every legal-hold org as `decision='skipped_due_to_legal_hold'`.
+- Carry `details.audit_write_failures[]` and `details.evidence_write_failures[]` — empty arrays are the expected state.
+
+HQ → Retention & Holds → Retention Health now shows
+`scheduling_status=phase_4_scheduled_dry_run_active_live_purge_pending_approval`
+plus the `cron.job` row that proves the schedule is dry-run-only. Any
+appearance of `phase_4_unexpected_live_schedule_present` or
+`pg_cron_mode=LIVE_UNEXPECTED` MUST be treated as a Sev-1 incident and
+rolled back immediately.
+
+### Rollback (operator-verified)
+
+```sql
+SELECT cron.unschedule('purge-email-send-log-daily-dryrun');
+```
+
+After running rollback, `get_purge_email_send_log_cron_jobs()` returns
+zero rows and HQ Health surfaces
+`scheduling_status=phase_4_dry_run_schedule_missing_check_cron`.
+
+### Live-purge scheduling gate (must ALL be true before opening Phase 5)
+
+- [ ] Phase 4 operator has observed at least one scheduled tick that wrote a `retention_run_evidence` row with `rows_purged=0`.
+- [ ] `details.audit_write_failures[]` and `details.evidence_write_failures[]` are empty (or explicitly waived in writing).
+- [ ] `rows_skipped_missing_policy` and `rows_skipped_legal_hold` counts are understood and accepted.
+- [ ] HQ Health shows `pg_cron_mode=dry_run_only` and lists exactly one `dry_run_schedules` row.
+- [ ] No `phase_4_unexpected_live_schedule_present` has ever appeared.
+- [ ] `npm run build` passes with `check-data-004-phase3-2-no-schedule.mjs` green.
+- [ ] **Explicit human approval** is recorded — separate from any earlier Phase 3.x or Phase 4 approval — before a live (non-dry-run) schedule may be authored.
+
+Until every box above is ticked, **no live purge schedule may be added** —
+not as an "edit the existing dry-run body to dry_run=false" change,
+not as a second cron job, and not via a manual SQL console run.
