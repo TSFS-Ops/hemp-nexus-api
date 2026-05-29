@@ -47,10 +47,23 @@ function stripSql(s) {
     .join("\n");
 }
 
+function stripTs(s) {
+  let out = s.replace(/\/\*[\s\S]*?\*\//g, "");
+  return out
+    .split("\n")
+    .map((l) => {
+      const i = l.indexOf("//");
+      return i === -1 ? l : l.slice(0, i);
+    })
+    .join("\n");
+}
+
 if (!existsSync(FN)) {
   errors.push(`missing source: ${FN}`);
 } else {
-  const src = readFileSync(FN, "utf8");
+  const rawSrc = readFileSync(FN, "utf8");
+  const src = stripTs(rawSrc);
+
 
   // (1) dry_run default = TRUE
   if (!/body\.dry_run\s*!==\s*false/.test(src)) {
