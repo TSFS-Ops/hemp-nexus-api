@@ -309,17 +309,13 @@ Deno.serve(async (req) => {
   }
   if (!body.password || body.password.length < 12) {
     return json({ error: "password (≥12 chars) required" }, 400);
-    const cleanPurchaseId = await ensureCompletedPurchase(admin, orgId, orgAdminId, PURCHASE_CLEAN_REF);
-    await ensureCleanRefund(admin, cleanPurchaseId);
-
-    const pendingPurchaseId = await ensureCompletedPurchase(admin, orgId, orgAdminId, PURCHASE_PENDING_REF);
-    const pendingRefundId = await ensurePendingRefund(admin, orgId, orgAdminId, pendingPurchaseId);
-
-    // Credit org balance so the clean purchase is eligible (RPC compares
-    // balance vs token_amount). 100 comfortably exceeds the 20 seeded.
-    await ensureSeededTokenBalance(admin, orgId, 100);
+  }
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   try {
+
     const orgId = await ensureOrg(admin);
 
     const adminNoMfaId = await upsertUser(admin, ACCOUNTS.admin_no_mfa.email, body.password, ACCOUNTS.admin_no_mfa.full_name);
