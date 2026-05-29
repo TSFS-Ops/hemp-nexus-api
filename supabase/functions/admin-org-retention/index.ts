@@ -238,6 +238,183 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── ACTION: health (DATA-004 Phase 2 — read/evidence only) ───────
+    // Non-destructive aggregate read across orgs. NOT wired to any
+    // sweeper. Returns:
+    //  - summary tile counts
+    //  - per-class breakdown
+    //  - per-org effective posture (only orgs with explicit policies
+    //    or active org-scoped legal holds are enumerated; the count of
+    //    "orgs on platform floors only" is returned as a single number
+    //    so we don't ship every org row across the wire)
+    //  - last canonical policy-change audit event
+    if (parsed.data.action === "health") {
+      const limitOrgs = parsed.data.limit_orgs;
+      const floors = Object.fromEntries(
+        RECORD_CLASSES.map((c) => [c, c === "email_send_log" ? 90 : 2555]),
+      ) as Record<string, number>;
+
+      // 1. Total org count.
+      const { count: orgsTotal, error: orgsCountErr } = await admin
+        .from("organizations")
+        .select("id", { count: "exact", head: true });
+      if (orgsCountErr) {
+        return jsonResponse(req, { error: "Health query failed", detail: orgsCountErr.message }, 500);
+      }
+
+      // 2. All explicit policies (+ org join).
+      const { data: polRows, error: polErr } = await admin
+        .from("org_retention_policies")
+        .select("id, org_id, record_class, retention_days, floor_days, reason, set_by, set_at, updated_at, organizations!inner(id,name)")
+        .order("updated_at", { ascending: false })
+        .limit(5000);
+      if (polErr) {
+        return jsonResponse(req, { error: "Health query failed", detail: polErr.message }, 500);
+      }
+      const policies = (polRows ?? []) as Array<any>;
+
+      // 3. Active org-scoped legal holds.
+      const { data: holdRows, error: holdErr } = await admin
+        .from("legal_holds")
+        .select("id, scope_type, scope_id, reason, applied_at, status")
+        .eq("status", "active")
+        .eq("scope_type", "org")
+        .limit(1000);
+      if (holdErr) {
+        return jsonResponse(req, { error: "Health query failed", detail: holdErr.message }, 500);
+      }
+      const orgHolds = (holdRows ?? []) as Array<any>;
+      const orgHoldByOrg = new Map<string, any[]>();
+      for (const h of orgHolds) {
+        const k = h.scope_id as string;
+        if (!orgHoldByOrg.has(k)) orgHoldByOrg.set(k, []);
+        orgHoldByOrg.get(k)!.push(h);
+      }
+
+      // 4. Last canonical policy-change audit event.
+      const { data: lastAuditRows } = await admin
+        .from("audit_logs")
+        .select("id, action, entity_id, actor_user_id, org_id, metadata, created_at")
+        .in("action", [
+          ORG_RETENTION_AUDIT_NAMES.set,
+          ORG_RETENTION_AUDIT_NAMES.cleared,
+        ])
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const lastAudit = (lastAuditRows ?? [])[0] ?? null;
+
+      // 5. Build per-org effective posture for orgs that have either an
+      //    explicit policy or an active org-scoped hold.
+      const orgIds = new Set<string>();
+      const orgNameById = new Map<string, string | null>();
+      for (const p of policies) {
+        orgIds.add(p.org_id);
+        orgNameById.set(p.org_id, p.organizations?.name ?? null);
+      }
+      for (const h of orgHolds) {
+        orgIds.add(h.scope_id);
+      }
+      // Resolve org names that came only from holds.
+      const missingNames = [...orgIds].filter((id) => !orgNameById.has(id));
+      if (missingNames.length > 0) {
+        const { data: orgRows } = await admin
+          .from("organizations")
+          .select("id, name")
+          .in("id", missingNames);
+        for (const o of (orgRows ?? []) as Array<any>) {
+          orgNameById.set(o.id, o.name);
+        }
+      }
+
+      const orgList = [...orgIds].slice(0, limitOrgs).map((id) => {
+        const orgPolicies = policies.filter((p) => p.org_id === id);
+        const polByClass = new Map<string, any>();
+        for (const p of orgPolicies) polByClass.set(p.record_class, p);
+        const classes = RECORD_CLASSES.map((cls) => {
+          const p = polByClass.get(cls);
+          const floor = floors[cls];
+          let source: "explicit" | "missing" | "fallback";
+          let retention_days: number;
+          if (p) {
+            source = "explicit";
+            retention_days = p.retention_days;
+          } else {
+            source = "missing"; // no policy => effective value is platform floor (fallback)
+            retention_days = floor;
+          }
+          return {
+            record_class: cls,
+            retention_days,
+            platform_floor_days: floor,
+            source,
+            policy_id: p?.id ?? null,
+            last_updated_at: p?.updated_at ?? null,
+            last_updated_by: p?.set_by ?? null,
+            reason: p?.reason ?? null,
+            enforcement_wired: false, // Phase 2: no sweeper reads this yet
+          };
+        });
+        return {
+          org_id: id,
+          org_name: orgNameById.get(id) ?? null,
+          active_org_legal_holds: (orgHoldByOrg.get(id) ?? []).map((h) => ({
+            id: h.id, reason: h.reason, applied_at: h.applied_at,
+          })),
+          classes,
+        };
+      });
+
+      const explicitOrgIds = new Set(policies.map((p) => p.org_id));
+      const orgsWithExplicit = explicitOrgIds.size;
+      const orgsMissingAll = Math.max(0, (orgsTotal ?? 0) - orgsWithExplicit);
+
+      // Per-class counts.
+      const classBreakdown = RECORD_CLASSES.map((cls) => {
+        const explicit = policies.filter((p) => p.record_class === cls).length;
+        return {
+          record_class: cls,
+          platform_floor_days: floors[cls],
+          orgs_with_explicit_policy: explicit,
+          orgs_on_platform_floor: Math.max(0, (orgsTotal ?? 0) - explicit),
+          enforcement_wired: false,
+        };
+      });
+
+      return jsonResponse(req, {
+        ok: true,
+        phase: "DATA-004 Phase 2",
+        enforcement_status: "shell_only_no_sweeper_enforcement",
+        summary: {
+          orgs_total: orgsTotal ?? 0,
+          orgs_with_explicit_policies: orgsWithExplicit,
+          orgs_missing_policies: orgsMissingAll,
+          policies_below_or_at_floor_blocked_by_db: 0, // DB CHECK prevents below; equal-to-floor is valid
+          active_org_legal_holds: orgHolds.length,
+          record_classes_total: RECORD_CLASSES.length,
+          record_classes_enforced: 0,
+          last_policy_change: lastAudit
+            ? {
+                audit_id: lastAudit.id,
+                action: lastAudit.action,
+                policy_id: lastAudit.entity_id,
+                org_id: lastAudit.org_id,
+                actor_user_id: lastAudit.actor_user_id,
+                created_at: lastAudit.created_at,
+              }
+            : null,
+        },
+        floors,
+        record_classes: RECORD_CLASSES,
+        class_breakdown: classBreakdown,
+        orgs: orgList,
+        orgs_returned: orgList.length,
+        orgs_truncated: orgIds.size > orgList.length,
+        request_id: requestId,
+      });
+    }
+
+
+
     // ── ACTION: set ──────────────────────────────────────────────────
     if (parsed.data.action === "set") {
       const { org_id, record_class, retention_days, reason, metadata } = parsed.data;
