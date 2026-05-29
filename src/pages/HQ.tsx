@@ -66,6 +66,7 @@ import { AdminLifecycleRunPanel } from "@/components/admin/AdminLifecycleRunPane
 import { AdminLegacyRepairPanel } from "@/components/admin/AdminLegacyRepairPanel";
 import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
 import { OrgRetentionPanel } from "@/components/admin/OrgRetentionPanel";
+import { OrgRetentionHealthPanel } from "@/components/admin/OrgRetentionHealthPanel";
 import { AdminTradeRequestArchivePanel } from "@/components/admin/AdminTradeRequestArchivePanel";
 import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHoldPanel";
 import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspacesPanel";
