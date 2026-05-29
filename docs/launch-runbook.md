@@ -250,3 +250,4 @@ Status: BATCH_4_CODE_READY — staging operator verification required. Live SSO 
 
 Prebuild guards:
 - `scripts/check-identity-audit-names.mjs`
+- `scripts/check-tenant-boundary-audit-names.mjs`
