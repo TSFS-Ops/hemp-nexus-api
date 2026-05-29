@@ -1,25 +1,25 @@
 #!/usr/bin/env node
 /**
- * DATA-004 Phase 3.2 — scheduling readiness guard.
+ * DATA-004 Phase 3.2 / Phase 4 — scheduling guard.
  *
- * Phase 3.2 explicitly does NOT schedule `purge-email-send-log-daily`
- * under pg_cron. Scheduling remains a separate, future, approval-gated
- * batch.
+ * Phase 3.2 forbade ANY pg_cron schedule for the sweeper. Phase 4
+ * (Batch 4 — scheduled dry-run only) relaxes that to permit a single
+ * dry-run schedule, but ONLY when the schedule body pins `dry_run`
+ * to true. Live (non-dry-run) scheduling for the sweeper remains a
+ * separate, future, approval-gated batch.
  *
  * This guard fails the build if:
- *   1. Any SQL migration installs an ACTIVE cron schedule for
- *      `purge-email-send-log-daily`. We detect this by scanning
- *      `supabase/migrations/**.sql` for non-comment lines that
- *      reference BOTH `cron.schedule` AND `purge-email-send-log-daily`,
- *      OR `net.http_post(...purge-email-send-log-daily...)` invoked
- *      from inside a cron.schedule(...) body.
+ *   1. Any SQL migration installs a cron schedule for the sweeper
+ *      that is NOT dry-run-only (body does not contain `dry_run`
+ *      literal true, or pins `dry_run` to false).
  *   2. The function source flips its `dry_run` default away from `true`.
  *   3. The function source removes the lifecycle `evidence_only`
  *      persistence classification.
- *   4. RELEASE_GATE.md / docs/launch-runbook.md ever claim pg_cron is
- *      active for the sweeper. The signed phrasing is
- *      "pg_cron is NOT scheduled" / "scheduling readiness only".
- *   5. Docs are missing the Phase 3.2 scheduling-readiness gate.
+ *   4. RELEASE_GATE.md / docs/launch-runbook.md ever claim the live
+ *      purge is scheduled. Signed phrasing: "live purge is NOT
+ *      scheduled" + "scheduled dry-run".
+ *   5. Docs are missing the Phase 3.2 readiness section or the
+ *      Phase 4 scheduled-dry-run section.
  *
  * Comments inside SQL files (lines starting with `--` after trim, or
  * fenced inside a `/* ... *​/` block) are intentionally ignored so the
