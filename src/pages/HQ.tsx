@@ -127,9 +127,9 @@ const TABS: {
   blurb: "Matches with conflicting status / state / POI fields. Hidden from user views. Admin-only archive and bounded-repair actions are wired via admin-match-legacy-archive and admin-match-legacy-repair (see AdminLegacyRepairPanel)."
 }, {
   id: "legal-holds",
-  label: "Legal Holds",
+  label: "Retention & Holds",
   icon: Lock,
-  blurb: "Apply and release legal holds. Active holds block deletion, anonymisation, purge and export destruction for the scoped entity."
+  blurb: "Legal holds (DATA-003) and per-org retention windows (DATA-004 shell). Active holds block deletion/anonymisation; retention values are recorded + audited but not yet enforced by sweepers."
 }, {
   id: "governance-records",
   label: "Governance Records",
