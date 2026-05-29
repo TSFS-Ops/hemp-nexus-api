@@ -283,4 +283,167 @@ describe("DATA-004 Phase 3.2 / Phase 4 — scheduled dry-run only (live purge NO
   });
 });
 
+describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path", () => {
+  const COLD = "supabase/functions/cold-storage-archive/index.ts";
+  const GUARD = "scripts/check-data-004-batch7-cold-storage.mjs";
+  const stripComments = (s: string) =>
+    s
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map((l) => {
+        const i = l.indexOf("//");
+        return i === -1 ? l : l.slice(0, i);
+      })
+      .join("\n");
+
+  it("Batch 7 guard exists and passes (prebuild)", () => {
+    expect(existsSync(resolve(ROOT, GUARD))).toBe(true);
+    expect(() => run("check-data-004-batch7-cold-storage.mjs")).not.toThrow();
+  });
+
+  it("cold-storage-archive defaults dry_run to TRUE", () => {
+    expect(read(COLD)).toMatch(/body\.dry_run\s*!==\s*false/);
+  });
+
+  it("candidate discovery routes through discover_cold_storage_archive_candidates", () => {
+    expect(read(COLD)).toMatch(/discover_cold_storage_archive_candidates/);
+  });
+
+  it("writes retention_run_evidence on lifecycle events (evidence-only persistence)", () => {
+    const src = read(COLD);
+    expect(src).toMatch(/retention_run_evidence/);
+    expect(src).toMatch(/started:\s*"evidence_only"/);
+    expect(src).toMatch(/completed:\s*"evidence_only"/);
+    expect(src).toMatch(/partial:\s*"evidence_only"/);
+    expect(src).toMatch(/failed:\s*"evidence_only"/);
+  });
+
+  it("surfaces the five explicit skip categories", () => {
+    const src = read(COLD);
+    for (const tok of [
+      "skipped_due_to_legal_hold",
+      "skipped_due_to_duplicate",
+      "skipped_due_to_missing_source",
+      "skipped_due_to_bucket_write",
+      "skipped_due_to_lookup_error",
+    ]) {
+      expect(src).toContain(tok);
+    }
+  });
+
+  it("surfaces audit + evidence write failure arrays (never swallowed)", () => {
+    const src = read(COLD);
+    expect(src).toMatch(/audit_write_failures/);
+    expect(src).toMatch(/evidence_write_failures/);
+  });
+
+  it("never deletes source records", () => {
+    expect(stripComments(read(COLD))).not.toMatch(/\.delete\s*\(/);
+  });
+
+  it("does not consume per-org retention policy (Phase 3 single-consumer rule preserved)", () => {
+    const src = stripComments(read(COLD));
+    expect(src).not.toMatch(/org_retention_policies/);
+    expect(src).not.toMatch(/get_effective_retention_days/);
+  });
+
+  it("no migration schedules cold-storage-archive via pg_cron", () => {
+    const fs = require("node:fs") as typeof import("node:fs");
+    const path = require("node:path") as typeof import("node:path");
+    const migDir = resolve(ROOT, "supabase/migrations");
+    const walk = (dir: string): string[] => {
+      if (!fs.existsSync(dir)) return [];
+      return fs.readdirSync(dir).flatMap((n) => {
+        const p = path.join(dir, n);
+        return fs.statSync(p).isDirectory()
+          ? walk(p)
+          : p.endsWith(".sql") ? [p] : [];
+      });
+    };
+    const strip = (s: string) =>
+      s
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .split("\n")
+        .map((l) => {
+          const i = l.indexOf("--");
+          return i === -1 ? l : l.slice(0, i);
+        })
+        .join("\n");
+    for (const file of walk(migDir)) {
+      const code = strip(fs.readFileSync(file, "utf8"));
+      if (!code.includes("cold-storage-archive")) continue;
+      expect(
+        /cron\.schedule\s*\([^)]*cold-storage-archive/.test(code),
+        `${file} schedules cold-storage-archive via cron.schedule — forbidden in Batch 7`,
+      ).toBe(false);
+      expect(
+        /net\.http_post[\s\S]*cold-storage-archive/.test(code),
+        `${file} schedules cold-storage-archive via net.http_post — forbidden in Batch 7`,
+      ).toBe(false);
+    }
+  });
+
+  it("other deferred destructive sweepers remain unscheduled", () => {
+    const fs = require("node:fs") as typeof import("node:fs");
+    const path = require("node:path") as typeof import("node:path");
+    const migDir = resolve(ROOT, "supabase/migrations");
+    const walk = (dir: string): string[] => {
+      if (!fs.existsSync(dir)) return [];
+      return fs.readdirSync(dir).flatMap((n) => {
+        const p = path.join(dir, n);
+        return fs.statSync(p).isDirectory()
+          ? walk(p)
+          : p.endsWith(".sql") ? [p] : [];
+      });
+    };
+    const strip = (s: string) =>
+      s
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .split("\n")
+        .map((l) => {
+          const i = l.indexOf("--");
+          return i === -1 ? l : l.slice(0, i);
+        })
+        .join("\n");
+    for (const name of [
+      "storage-retention-cleanup",
+      "account-deletion-sweeper",
+      "email-log-anonymise",
+    ]) {
+      for (const file of walk(migDir)) {
+        const code = strip(fs.readFileSync(file, "utf8"));
+        if (!code.includes(name)) continue;
+        expect(
+          new RegExp(`cron\\.schedule\\s*\\([^)]*${name}`).test(code),
+          `${file} schedules deferred sweeper '${name}' — forbidden in Batch 7`,
+        ).toBe(false);
+        expect(
+          new RegExp(`net\\.http_post[\\s\\S]*${name}`).test(code),
+          `${file} schedules deferred sweeper '${name}' — forbidden in Batch 7`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("RELEASE_GATE.md carries the DATA-004 Batch 7 cold-storage section", () => {
+    const rg = read("RELEASE_GATE.md");
+    expect(rg).toMatch(/DATA-004 Batch 7/);
+    expect(rg).toMatch(/cold-storage-archive/);
+    expect(rg).toMatch(/dry-run-only/i);
+    expect(rg).toMatch(/cold-storage-archive[^.]*NOT scheduled/i);
+    expect(rg).toMatch(/separate,?\s+second\s+approval/i);
+  });
+
+  it("docs/launch-runbook.md carries the DATA-004 Batch 7 cold-storage section", () => {
+    const rb = read("docs/launch-runbook.md");
+    expect(rb).toMatch(/DATA-004 Batch 7/);
+    expect(rb).toMatch(/cold-storage-archive/);
+    expect(rb).toMatch(/dry-run-only/i);
+    expect(rb).toMatch(/cold-storage-archive[^.]*NOT scheduled/i);
+    expect(rb).toMatch(/manual_dry_run_only/);
+  });
+});
+
+
+
 
