@@ -217,10 +217,29 @@ describe("UI-008 / SEC-003 — route protection", () => {
       "utf-8"
     );
 
-    it("/developer/* is wrapped in RequireAuth", () => {
+    it("/developer/* is wrapped in RequireAuth with DEVELOPER_ROLES (platform_admin + org_admin)", () => {
+      expect(appSrc).toContain('DEVELOPER_ROLES = ["platform_admin", "org_admin"]');
       expect(appSrc).toMatch(
-        /path="\/developer\/\*"\s+element=\{<RequireAuth><DeveloperCenter \/><\/RequireAuth>\}/
+        /path="\/developer\/\*"\s+element=\{<RequireAuth role=\{\[\.\.\.DEVELOPER_ROLES\]\}[^}]*<DeveloperCenter \/>/
       );
+    });
+
+    it("legacy /admin/* redirects are wrapped in RequireAuth role=\"platform_admin\"", () => {
+      // Anonymous users must never execute the redirect logic — they should
+      // be sent through /auth?returnTo=... by RequireAuth instead.
+      const adminRoutes = [
+        '/admin', '/admin/users', '/admin/orgs', '/admin/entities',
+        '/admin/compliance', '/admin/deals', '/admin/settings',
+        '/admin/data-governance', '/admin/overrides', '/admin/engagements',
+        '/admin/*',
+      ];
+      for (const p of adminRoutes) {
+        const escaped = p.replace(/[/*]/g, (c) => '\\' + c);
+        const re = new RegExp(
+          `path="${escaped}"\\s+element=\\{<RequireAuth role="platform_admin"[^}]*<LegacyRedirect`
+        );
+        expect(appSrc).toMatch(re);
+      }
     });
 
     it("/hq is wrapped in RequireAuth role=\"platform_admin\"", () => {
