@@ -12,8 +12,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
-import {
 import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/cors.ts";
+import {
   grantGovernanceWaiver,
   renewGovernanceWaiver,
 } from "../_shared/governance-waivers.ts";
