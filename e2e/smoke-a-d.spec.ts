@@ -22,6 +22,8 @@ const TOAST_TTL_MS = 6_000;
 
 test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", () => {
   test("inline alert remains after toast TTL", async ({ page, ev }) => {
+test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", () => {
+  test("inline alert remains after toast TTL and Apply stays disabled", async ({ page, ev }) => {
     const email = requireEnv("SMOKE_ADMIN_EMAIL");
     const password = requireEnv("SMOKE_ADMIN_PASSWORD");
     const scopeId = requireEnv("SMOKE_LEGAL_HOLD_SCOPE_ID");
@@ -30,21 +32,35 @@ test.describe("Smoke A — Legal hold non-AAL2 surfaces persistent MFA alert", (
     await page.goto("/hq/legal-holds");
     await ev.snapshot("legal-holds-loaded");
 
+    // Batch 1 product behaviour: Apply/Release are intentionally disabled
+    // for non-AAL2 admins. The smoke proves the persistent inline MFA
+    // banner is shown and that Apply is disabled — it must NOT attempt
+    // to click Apply (that would either be a no-op or, if the gate
+    // regressed, a destructive success we don't want to validate here).
+    const banner = page.getByTestId("legal-holds-mfa-banner");
+    await expect(banner, "persistent inline MFA banner must be visible for non-AAL2").toBeVisible({ timeout: 15_000 });
+    await expect(banner).toContainText(/multi-factor|MFA/i);
+    await ev.snapshot("mfa-banner-shown");
+
+    // Fill the form so we can assert the button is still disabled despite
+    // valid input — proving the disablement is AAL2-driven, not validation.
     await page.locator("#lh-scope-id").fill(scopeId);
     await page.locator("#lh-reason").fill("Smoke A — non-AAL2 expected MFA block " + Date.now());
-    await page.getByRole("button", { name: /apply hold/i }).click();
 
-    const alert = page.getByRole("alert").filter({ hasText: /multi-factor|MFA|authentication/i });
-    await expect(alert).toBeVisible({ timeout: 15_000 });
-    await ev.snapshot("mfa-alert-shown");
+    const applyBtn = page.getByRole("button", { name: /apply hold/i });
+    await expect(applyBtn, "Apply must be disabled for non-AAL2 sessions").toBeDisabled();
+    await ev.snapshot("apply-disabled");
+
+    // Banner must survive past the toast TTL — proves it is persistent
+    // inline state, not a transient toast.
     await page.waitForTimeout(TOAST_TTL_MS + 500);
-    await expect(alert, "alert must survive toast TTL — no silent failure").toBeVisible();
-    await ev.snapshot("mfa-alert-after-toast-ttl");
+    await expect(banner, "MFA banner must survive toast TTL — no silent failure").toBeVisible();
+    await expect(applyBtn, "Apply must remain disabled after toast TTL").toBeDisabled();
+    await ev.snapshot("mfa-banner-after-toast-ttl");
   });
 
 });
 
-test.describe("Smoke B — Legal hold AAL2 apply succeeds and persists hard refresh", () => {
   test("active row survives hard refresh", async ({ page, ev }) => {
     const email = requireEnv("SMOKE_ADMIN_AAL2_EMAIL");
     const password = requireEnv("SMOKE_ADMIN_AAL2_PASSWORD");
