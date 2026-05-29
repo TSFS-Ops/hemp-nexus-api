@@ -147,14 +147,15 @@ export function OrgRetentionHealthPanel() {
     <div className="space-y-6">
       <Alert variant="default" className="border-amber-500/40">
         <ShieldAlert className="h-4 w-4" />
-        <AlertTitle>Enforcement status: SHELL ONLY — no sweeper reads this yet</AlertTitle>
+        <AlertTitle>Enforcement status: PARTIAL — only email_send_log is wired</AlertTitle>
         <AlertDescription>
-          DATA-004 Phase 2 is read/evidence only. None of{" "}
-          <code>storage-retention-cleanup</code>,{" "}
-          <code>account-deletion-sweeper</code>,{" "}
-          <code>purge-email-send-log-daily</code>, or{" "}
-          <code>cold-storage-archive</code> consume{" "}
-          <code>org_retention_policies</code>. Phase 3 will wire one sweeper at a time.
+          DATA-004 Phase 3 wires <code>purge-email-send-log-daily</code> as the
+          first and only enforced sweeper. <code>storage-retention-cleanup</code>,{" "}
+          <code>account-deletion-sweeper</code>, <code>cold-storage-archive</code>,
+          and any other retention/archival paths still do NOT consume{" "}
+          <code>org_retention_policies</code>. Missing, disabled, or invalid org
+          policies fail closed: rows are retained, not deleted. Active legal holds
+          block purge.
         </AlertDescription>
       </Alert>
 
@@ -222,7 +223,11 @@ export function OrgRetentionHealthPanel() {
                       <td className="px-4 py-2 text-right">{c.orgs_with_explicit_policy}</td>
                       <td className="px-4 py-2 text-right">{c.orgs_on_platform_floor}</td>
                       <td className="px-4 py-2 text-right">
-                        <Badge variant="secondary">not wired</Badge>
+                        {c.enforcement_wired ? (
+                          <Badge variant="default">enforced</Badge>
+                        ) : (
+                          <Badge variant="secondary">not wired</Badge>
+                        )}
                       </td>
                     </tr>
                   ))}

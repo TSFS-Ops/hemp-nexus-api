@@ -368,7 +368,7 @@ Deno.serve(async (req) => {
       const orgsWithExplicit = explicitOrgIds.size;
       const orgsMissingAll = Math.max(0, (orgsTotal ?? 0) - orgsWithExplicit);
 
-      // Per-class counts.
+      // Per-class counts. email_send_log is the first wired class (Phase 3).
       const classBreakdown = RECORD_CLASSES.map((cls) => {
         const explicit = policies.filter((p) => p.record_class === cls).length;
         return {
@@ -376,22 +376,38 @@ Deno.serve(async (req) => {
           platform_floor_days: floors[cls],
           orgs_with_explicit_policy: explicit,
           orgs_on_platform_floor: Math.max(0, (orgsTotal ?? 0) - explicit),
-          enforcement_wired: false,
+          enforcement_wired: cls === "email_send_log",
         };
       });
 
+      // DATA-004 Phase 3 — latest purge run evidence for email_send_log.
+      let lastRun: Record<string, unknown> | null = null;
+      try {
+        const { data: runRows } = await admin
+          .from("retention_run_evidence")
+          .select("*")
+          .eq("job_name", "purge-email-send-log-daily")
+          .is("org_id", null)
+          .in("status", ["success", "partial", "failed"])
+          .order("started_at", { ascending: false })
+          .limit(1);
+        lastRun = (runRows ?? [])[0] ?? null;
+      } catch (e) {
+        console.error("[admin-org-retention] last_run lookup failed:", e);
+      }
+
       return jsonResponse(req, {
         ok: true,
-        phase: "DATA-004 Phase 2",
-        enforcement_status: "shell_only_no_sweeper_enforcement",
+        phase: "DATA-004 Phase 3",
+        enforcement_status: "partial_enforcement_email_send_log_only",
         summary: {
           orgs_total: orgsTotal ?? 0,
           orgs_with_explicit_policies: orgsWithExplicit,
           orgs_missing_policies: orgsMissingAll,
-          policies_below_or_at_floor_blocked_by_db: 0, // DB CHECK prevents below; equal-to-floor is valid
+          policies_below_or_at_floor_blocked_by_db: 0,
           active_org_legal_holds: orgHolds.length,
           record_classes_total: RECORD_CLASSES.length,
-          record_classes_enforced: 0,
+          record_classes_enforced: 1,
           last_policy_change: lastAudit
             ? {
                 audit_id: lastAudit.id,
@@ -403,6 +419,8 @@ Deno.serve(async (req) => {
               }
             : null,
         },
+        enforced_classes: ["email_send_log"],
+        last_run_email_send_log: lastRun,
         floors,
         record_classes: RECORD_CLASSES,
         class_breakdown: classBreakdown,
