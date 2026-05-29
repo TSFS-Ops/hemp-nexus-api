@@ -27,12 +27,50 @@ function json(req: Request, body: unknown, status = 200) {
   }));
 }
 
+function isStagingTier(): boolean {
+  const tier = (Deno.env.get("ENVIRONMENT_TIER") ?? "").toLowerCase().trim();
+  return tier === "staging" || tier === "dev" || tier === "development" || tier === "test";
+}
+
+async function isPlatformAdminJwt(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
+  if (!authHeader?.toLowerCase().startsWith("bearer ")) return false;
+  const token = authHeader.slice(7);
+  try {
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const { data: { user }, error } = await admin.auth.getUser(token);
+    if (error || !user) return false;
+    const { data: hasRole } = await admin.rpc("has_role", {
+      _user_id: user.id,
+      _role: "platform_admin",
+    });
+    return hasRole === true;
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   const __pf = handleCorsPreflight(req);
   if (__pf) return __pf;
 
   try {
+    // Fail-closed auth: must be staging tier OR have INTERNAL_CRON_KEY OR be platform_admin
+    const internalKey = Deno.env.get("INTERNAL_CRON_KEY") ?? "";
+    const providedKey = req.headers.get("x-internal-key") ?? "";
+    const hasInternalKey = internalKey.length > 0 && providedKey === internalKey;
+    const stagingOk = isStagingTier();
+    const adminOk = !stagingOk && !hasInternalKey ? await isPlatformAdminJwt(req) : false;
+    if (!stagingOk && !hasInternalKey && !adminOk) {
+      return json(req, { error: "Unauthorised" }, 401);
+    }
+
     const { email, password, user_metadata } = await req.json();
+
 
     if (!email || typeof email !== "string") {
       return json(req, { error: "email required" }, 400);
