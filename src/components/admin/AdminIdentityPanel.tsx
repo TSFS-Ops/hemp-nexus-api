@@ -46,7 +46,6 @@ import {
   isValidScimTransition,
   type SsoStatus,
   type ScimState,
-  type SsoConfigClaimShape,
 } from "@/lib/identity/sso-claim";
 import { IDENTITY_AUDIT_NAME_LIST } from "@/lib/identity/identity-audit";
 import { parseEdgeError } from "@/lib/edge-error";
