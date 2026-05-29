@@ -33,7 +33,10 @@
     "check:d1.6-drift": "node scripts/check-d1.6-drift.mjs",
     "governance:rollback-proof": "bash scripts/governance-rollback-proof.sh",
     "smoke:daniel": "playwright test --config=playwright.config.ts",
-    "smoke:daniel:evidence": "playwright test --config=playwright.config.ts; status=$?; node scripts/pack-evidence.mjs; exit $status"
+    "smoke:daniel:evidence": "playwright test --config=playwright.config.ts; status=$?; node scripts/pack-evidence.mjs; exit $status",
+    "smoke:run": "node scripts/run-smoke-a-d.mjs",
+    "smoke:run:record": "node scripts/run-smoke-a-d.mjs --record",
+    "smoke:run:verify": "node scripts/run-smoke-a-d.mjs --verify-only"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",

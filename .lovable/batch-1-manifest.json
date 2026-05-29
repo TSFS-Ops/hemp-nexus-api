@@ -1,0 +1,7 @@
+{
+  "label": "batch-1",
+  "commit": "REPLACE_ME_RUN_npm_run_smoke:run:record",
+  "recorded_at": null,
+  "note": "Baseline commit for the Smoke A–D pack. Run `npm run smoke:run:record` once on the approved commit to populate this file. The wrapper refuses to launch tests until current HEAD matches `commit`.",
+  "allowed_dirty_paths": []
+}
