@@ -501,3 +501,85 @@ Vitest:
   remains `true`, the lifecycle persistence map remains `evidence_only`,
   HQ Retention Health renders the scheduling-readiness banner, and the
   readiness-gate language is present in both docs.
+
+## DATA-004 Phase 4 — scheduled dry-run · live purge is NOT scheduled
+
+Status: **DATA-004 Phase 4 LIVE — SCHEDULED DRY-RUN ONLY. `purge-email-send-log-daily` runs daily under pg_cron with `dry_run=true`. The scheduled job counts and evidences candidate rows but cannot delete. Live purge is NOT scheduled. Moving to a live (deleting) schedule requires a separate, second approval after dry-run evidence review. Enforcement scope is unchanged from Phase 3.1: only `email_send_log` is wired; `email-log-anonymise` is untouched / global-floor; all other sweepers remain deferred.**
+
+### What Phase 4 changes
+
+- A single pg_cron job, `purge-email-send-log-daily-dryrun`, runs daily at 03:20 UTC and POSTs `{"dry_run": true, "max_orgs": 50, "max_rows_per_org": 5000, "source": "cron:purge-email-send-log-daily-dryrun"}` to the sweeper edge function, authenticating with the `INTERNAL_CRON_KEY` vault secret.
+- The scheduling guard (`scripts/check-data-004-phase3-2-no-schedule.mjs`) is relaxed to PERMIT a dry-run-only schedule (body must pin `dry_run=true` and must not pin `dry_run=false`) and to require the verbatim phrase `live purge is NOT scheduled` in `RELEASE_GATE.md` and `docs/launch-runbook.md`.
+- HQ → Retention & Holds → Retention Health surfaces `scheduling_status=phase_4_scheduled_dry_run_active_live_purge_pending_approval`, the `cron.job` row (via service-role helper `public.get_purge_email_send_log_cron_jobs()`), `pg_cron_mode=dry_run_only`, and the verbatim rollback SQL.
+
+### What Phase 4 does NOT change
+
+- No new sweeper is wired (`storage-retention-cleanup`, `account-deletion-sweeper`, `cold-storage-archive`, retention sentinel paths, `email-log-anonymise` all remain deferred).
+- No change to `email-log-anonymise`.
+- No change to retention floors.
+- The `dry_run=true` default is preserved.
+- No live (deleting) schedule.
+
+### Monitoring expectations after each scheduled tick
+
+Each scheduled tick MUST:
+
+- Produce one `retention_run_evidence` row with `job_name='purge-email-send-log-daily'`, `org_id IS NULL`, and `status IN ('success','partial','failed')`.
+- Produce per-org `retention_run_evidence` rows with `rows_purged = 0` on every row (never non-zero while dry-run).
+- Surface missing-policy orgs as `decision='skipped_due_to_missing_policy'` with an explicit row count.
+- Surface legal-hold orgs as `decision='skipped_due_to_legal_hold'` with an explicit row count.
+- Carry `details.audit_write_failures[]` and `details.evidence_write_failures[]` arrays — empty is the expected state; any non-empty entry must be triaged before the next tick.
+
+### Operator verification — at least one scheduled tick
+
+```sql
+-- 1. Confirm the dry-run schedule is registered and active.
+SELECT jobid, jobname, schedule, active
+FROM cron.job
+WHERE jobname = 'purge-email-send-log-daily-dryrun';
+
+-- 2. After the next 03:20 UTC tick, confirm exactly one run-level
+--    evidence row was written and rows_purged is zero.
+SELECT id, started_at, finished_at, status,
+       rows_seen, rows_eligible, rows_purged,
+       rows_skipped_missing_policy, rows_skipped_legal_hold,
+       details -> 'lifecycle_event_name'    AS lifecycle_event_name,
+       details -> 'audit_write_failures'    AS audit_write_failures,
+       details -> 'evidence_write_failures' AS evidence_write_failures
+FROM public.retention_run_evidence
+WHERE job_name = 'purge-email-send-log-daily'
+  AND org_id IS NULL
+ORDER BY started_at DESC
+LIMIT 3;
+
+-- 3. Confirm HQ Retention Health reports the new state.
+--    Expected: scheduling_status=phase_4_scheduled_dry_run_active_live_purge_pending_approval
+--              pg_cron_mode=dry_run_only
+--              dry_run_schedules: exactly one row for purge-email-send-log-daily-dryrun
+```
+
+### Rollback / unschedule (tested)
+
+```sql
+-- Single-step rollback. Idempotent.
+SELECT cron.unschedule('purge-email-send-log-daily-dryrun');
+
+-- Verify nothing is scheduled for the sweeper edge function.
+SELECT jobid, jobname, schedule, active, command
+FROM cron.job
+WHERE command ILIKE '%/functions/v1/purge-email-send-log-daily%';
+```
+
+After rollback, HQ Health surfaces `scheduling_status=phase_4_dry_run_schedule_missing_check_cron` and the dry-run schedule disappears from `cron.job`. Re-applying the schedule is the inverse operation (see "Scheduled dry-run job" above for the exact body).
+
+### Live-purge approval gate (Phase 5, NOT in this batch)
+
+A live (non-dry-run) schedule remains gated behind the
+`RELEASE_GATE.md` → "DATA-004 Phase 4" live-purge checklist. The
+critical preconditions:
+
+- Multiple consecutive scheduled dry-run ticks with `rows_purged=0` and empty failure arrays.
+- Operator-reviewed missing-policy and legal-hold skip counts.
+- A second, separate explicit human approval (not the Phase 4 approval).
+
+Until that gate is ticked, **live purge is NOT scheduled** — not via "edit the existing dry-run body to `dry_run=false`", not via a second cron job, and not via a manual SQL console run. Any drift triggers the Phase 3.2/4 build guard.
