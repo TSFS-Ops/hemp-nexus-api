@@ -159,8 +159,9 @@ describe("DATA-004 Phase 3 — HQ Retention Health labels email_send_log as enfo
   it("panel exposes Phase 3.1 lifecycle-vs-audit distinction", () => {
     expect(panel).toMatch(/retention_run_evidence/);
     expect(panel).toMatch(/audit_logs/);
-    expect(panel).toMatch(/pg_cron is NOT scheduled/);
+    expect(panel).toMatch(/live purge is NOT scheduled/i);
   });
+
   it("panel surfaces missing-policy / legal-hold skip counters", () => {
     expect(panel).toMatch(/Missing-policy skips/);
     expect(panel).toMatch(/Legal-hold skips/);
