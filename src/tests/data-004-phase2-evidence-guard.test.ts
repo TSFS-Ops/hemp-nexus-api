@@ -54,23 +54,23 @@ describe("DATA-004 Phase 2 — AAL2 gating", () => {
 
   it("health action exists and is read-only", () => {
     expect(FN_SRC).toMatch(/action === "health"/);
-    expect(FN_SRC).toMatch(/enforcement_status:\s*"shell_only_no_sweeper_enforcement"/);
-    // The health response must explicitly stamp record_classes_enforced: 0.
-    expect(FN_SRC).toMatch(/record_classes_enforced:\s*0/);
+    // Phase 3: enforcement_status now reflects email_send_log wiring.
+    expect(FN_SRC).toMatch(/enforcement_status:\s*"partial_enforcement_email_send_log_only"/);
+    expect(FN_SRC).toMatch(/record_classes_enforced:\s*1/);
   });
 });
 
-describe("DATA-004 Phase 2 — no sweeper enforcement yet", () => {
-  it("check-data-004-phase2-no-enforcement.mjs passes (no sweeper consumes the table)", () => {
+describe("DATA-004 Phase 3 — single-sweeper enforcement guard", () => {
+  it("check-data-004-phase2-no-enforcement.mjs (now Phase 3 deferred-sweeper guard) passes", () => {
     expect(() => run("check-data-004-phase2-no-enforcement.mjs")).not.toThrow();
   });
 
-  it("Phase 2 evidence panel exists and labels itself as not-wired", () => {
+  it("Phase 3 panel labels email_send_log as enforced", () => {
     const panel = readFileSync(
       resolve(ROOT, "src/components/admin/OrgRetentionHealthPanel.tsx"),
       "utf8",
     );
-    expect(panel).toMatch(/SHELL ONLY — no sweeper reads this yet/);
+    expect(panel).toMatch(/PARTIAL — only email_send_log is wired/);
     expect(panel).toMatch(/enforcement_wired/);
   });
 });
