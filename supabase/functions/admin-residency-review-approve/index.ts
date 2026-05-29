@@ -6,22 +6,19 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { assertAal2 } from "../_shared/aal.ts";
 import { ApiException } from "../_shared/errors.ts";
 import { RESIDENCY_ADMIN_REASON_MIN_LENGTH } from "../_shared/data-009-audit.ts";
+import { corsHeaders as __buildCorsHeaders, handleCors as __handleCors } from "../_shared/corsHeaders.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-request-id",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 const Body = z.object({
   review_id: z.string().uuid(),
   reason: z.string().min(RESIDENCY_ADMIN_REASON_MIN_LENGTH).max(4000),
 }).strict();
-function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const corsHeaders = __buildCorsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "", req.headers.get("origin"));
+  function json(b: unknown, s = 200) {
+    return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  const __pf = __handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (__pf) return __pf;
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   const URL = Deno.env.get("SUPABASE_URL")!;
   const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
