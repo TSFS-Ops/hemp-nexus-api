@@ -188,3 +188,85 @@ describe("DATA-004 Phase 3 — admin-org-retention AAL2 contract unchanged", () 
     expect(src).toMatch(/data\.org_retention_policy\.cleared/);
   });
 });
+
+describe("DATA-004 Phase 3.2 — scheduling readiness only (pg_cron NOT scheduled)", () => {
+  it("scheduling-readiness guard exists and passes (prebuild)", () => {
+    expect(
+      existsSync(resolve(ROOT, "scripts/check-data-004-phase3-2-no-schedule.mjs")),
+    ).toBe(true);
+    expect(() => run("check-data-004-phase3-2-no-schedule.mjs")).not.toThrow();
+  });
+
+  it("no supabase migration carries an active cron.schedule for purge-email-send-log-daily", () => {
+    const fs = require("node:fs") as typeof import("node:fs");
+    const path = require("node:path") as typeof import("node:path");
+    const migDir = resolve(ROOT, "supabase/migrations");
+    const walk = (dir: string): string[] => {
+      if (!fs.existsSync(dir)) return [];
+      return fs.readdirSync(dir).flatMap((n) => {
+        const p = path.join(dir, n);
+        return fs.statSync(p).isDirectory()
+          ? walk(p)
+          : p.endsWith(".sql") ? [p] : [];
+      });
+    };
+    const strip = (s: string) =>
+      s
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .split("\n")
+        .map((l) => {
+          const i = l.indexOf("--");
+          return i === -1 ? l : l.slice(0, i);
+        })
+        .join("\n");
+    for (const file of walk(migDir)) {
+      const code = strip(fs.readFileSync(file, "utf8"));
+      if (!code.includes("purge-email-send-log-daily")) continue;
+      expect(
+        /cron\.schedule\s*\([^)]*purge-email-send-log-daily/.test(code),
+        `${file} schedules the sweeper — forbidden in Phase 3.2`,
+      ).toBe(false);
+      expect(
+        /net\.http_post[\s\S]*purge-email-send-log-daily/.test(code),
+        `${file} invokes the sweeper via net.http_post — forbidden in Phase 3.2`,
+      ).toBe(false);
+    }
+  });
+
+  it("admin-org-retention health response advertises scheduling readiness state", () => {
+    const src = read(ADMIN_FN);
+    expect(src).toMatch(/scheduling_status/);
+    expect(src).toMatch(/phase_3_1_verified_pg_cron_pending_approval/);
+    expect(src).toMatch(/pg_cron_scheduled:\s*false/);
+    expect(src).toMatch(/dry_run_default:\s*true/);
+  });
+
+  it("HQ Retention Health panel surfaces 'pg_cron NOT scheduled' readiness banner", () => {
+    const panel = read(PANEL);
+    expect(panel).toMatch(/Scheduling readiness/);
+    expect(panel).toMatch(/pg_cron NOT scheduled/);
+    expect(panel).toMatch(/scheduling_status/);
+    expect(panel).toMatch(/scheduled dry-run/);
+  });
+
+  it("RELEASE_GATE.md carries the Phase 3.2 scheduling readiness gate", () => {
+    const rg = read("RELEASE_GATE.md");
+    expect(rg).toMatch(/DATA-004 Phase 3\.2/);
+    expect(rg).toMatch(/scheduling readiness/i);
+    expect(rg).toMatch(/pg_cron is NOT scheduled/);
+    expect(rg).toMatch(/Explicit human approval/i);
+    expect(rg).toMatch(/separate.*approval/i);
+  });
+
+  it("docs/launch-runbook.md carries Phase 3.2 dry-run-first sequence + rollback", () => {
+    const rb = read("docs/launch-runbook.md");
+    expect(rb).toMatch(/DATA-004 Phase 3\.2/);
+    expect(rb).toMatch(/scheduling readiness/i);
+    expect(rb).toMatch(/pg_cron is NOT scheduled/);
+    expect(rb).toMatch(/scheduled dry-run/i);
+    expect(rb).toMatch(/separate approval/i);
+    expect(rb).toMatch(/rollback/i);
+    expect(rb).toMatch(/cron\.unschedule/);
+  });
+});
+

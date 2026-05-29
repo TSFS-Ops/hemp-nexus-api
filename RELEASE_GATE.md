@@ -67,6 +67,7 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-data-004-phase2-no-enforcement.mjs` — DATA-004 Phase 2 non-enforcement guard (still active for all deferred sweepers): scans `storage-retention-cleanup`, `account-deletion-sweeper`, `cold-storage-archive`, and `email-log-anonymise` for references to `org_retention_policies` or `get_effective_retention_days`. Phase 3 relaxed this guard for `purge-email-send-log-daily` ONLY — every other sweeper remains forbidden from consuming per-org retention until its own sign-off.
 - `check-data-004-phase3-enforcement-scope.mjs` — DATA-004 Phase 3 enforcement-scope guard: asserts ONLY `purge-email-send-log-daily` imports `_shared/retention-decision.ts` or references `org_retention_policies` / `get_effective_retention_days`. Any additional sweeper consuming per-org retention without a paired guard relaxation fails the build.
 - `check-data-004-phase3-audit-names.mjs` — DATA-004 Phase 3 / 3.1 audit-name SSOT: pins the 5 canonical names `data.retention_job.email_send_log.{started,completed,partial,failed,skipped}` to `purge-email-send-log-daily/index.ts` AND pins the per-name persistence map (`skipped`=`audit_logs_per_org`, `started`/`completed`/`partial`/`failed`=`evidence_only`). Phase 3.1 hardening: the lifecycle events are recorded on `retention_run_evidence.details.lifecycle_event_name` (canonical lifecycle source of truth); only per-org `skipped` rows persist to `public.audit_logs`. Any vocabulary OR persistence change must be paired here AND with a test that proves the new persistence.
+- `check-data-004-phase3-2-no-schedule.mjs` — DATA-004 Phase 3.2 scheduling-readiness guard: scans every `supabase/migrations/**.sql` (comment-stripped) and fails the build if any migration installs an ACTIVE `cron.schedule(...)` or `net.http_post(...)` referencing `purge-email-send-log-daily`; pins the sweeper's `dry_run=true` default + `RETENTION_JOB_AUDIT_PERSISTENCE` lifecycle=`evidence_only` / skipped=`audit_logs_per_org` map; requires `RELEASE_GATE.md` and `docs/launch-runbook.md` to carry a `DATA-004 Phase 3.2` section, the verbatim phrase "pg_cron is NOT scheduled", the words "scheduling readiness", "scheduled dry-run", "rollback", and "separate approval"; blocks drift phrasing that would imply pg_cron is active for the sweeper. Comments inside SQL (`-- …` lines and `/​* … *​/` blocks) are stripped before scanning so the disabled docs-only template in the runbook does not trip the guard.
 
 
 
@@ -269,3 +270,63 @@ Approval records the policy exception only. No automatic data migration,
 region split, backup change, export restriction, deletion, or re-hosting
 occurs as a result of a residency request. Any technical change requires
 a separate engineering decision.
+
+## DATA-004 Phase 3.2 — scheduling readiness (pg_cron NOT scheduled)
+
+Phase 3.2 is **scheduling readiness only**. It does NOT schedule
+`purge-email-send-log-daily` under pg_cron, does NOT wire any new sweeper,
+does NOT change `email-log-anonymise`, does NOT broaden enforcement beyond
+`email_send_log`, and does NOT flip the default `dry_run=true`.
+
+Enforcement scope is unchanged from Phase 3.1:
+
+- `purge-email-send-log-daily` is the **only** sweeper consuming
+  `org_retention_policies`.
+- Invocation is manual / service-role only.
+- `dry_run=true` is the default.
+- All other sweepers (`storage-retention-cleanup`,
+  `account-deletion-sweeper`, `cold-storage-archive`, retention sentinel
+  paths, `email-log-anonymise`) remain deferred and forbidden from
+  consuming per-org retention.
+
+### Scheduling readiness gate (must ALL be true before any pg_cron migration is even drafted)
+
+A future scheduling batch may only be opened once **every** item below is
+ticked and recorded. Each item is operator-verifiable today.
+
+- [ ] Phase 3.1 operator evidence run has passed (dry-run + controlled live
+      fixture) and is recorded.
+- [ ] Latest **dry-run** `retention_run_evidence` row reviewed.
+- [ ] Latest **controlled live fixture** `retention_run_evidence` row
+      reviewed.
+- [ ] HQ → Retention & Holds → Retention Health shows the latest
+      `status='success'` or `status='partial'` run, with `dry_run=true`.
+- [ ] `rows_skipped_missing_policy` count for the latest run is
+      understood and explicitly accepted by the operator. Missing-policy
+      orgs MUST remain `rows_purged=0`.
+- [ ] `rows_skipped_legal_hold` count for the latest run is understood
+      and explicitly accepted by the operator.
+- [ ] `audit_write_failures[]` on the latest run is empty, OR the
+      non-empty contents are explicitly waived in writing by the
+      operator with a recorded reason.
+- [ ] `evidence_write_failures[]` on the latest run is empty, OR the
+      non-empty contents are explicitly waived in writing by the
+      operator with a recorded reason.
+- [ ] `npm run build` passes with `check-data-004-phase3-enforcement-scope.mjs`
+      green — confirming only `purge-email-send-log-daily` consumes
+      `org_retention_policies`.
+- [ ] `npm run build` passes with `check-data-004-phase2-no-enforcement.mjs`
+      green — confirming every other sweeper remains unwired.
+- [ ] `npm run build` passes with `check-data-004-phase3-2-no-schedule.mjs`
+      green — confirming no migration carries an active schedule and the
+      readiness gate is documented.
+- [ ] **Explicit human approval** is recorded before any pg_cron
+      migration is even authored. Recording the approval is a precondition,
+      not a post-hoc justification.
+- [ ] A **separate, second** explicit human approval is recorded before
+      moving from "scheduled dry-run" to "scheduled live purge".
+
+Until every box above is ticked, **no pg_cron schedule may be added** —
+not active, not "temporarily disabled but live in the migration file",
+not via a guard-bypassing one-off RPC, and not via a manual SQL
+console run.
