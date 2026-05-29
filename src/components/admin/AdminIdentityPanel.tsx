@@ -57,7 +57,7 @@ interface OrgRow {
   legal_name: string | null;
 }
 
-interface SsoConfigRow extends SsoConfigClaimShape {
+interface SsoConfigRow {
   id: string;
   org_id: string;
   provider: string;
@@ -68,10 +68,12 @@ interface SsoConfigRow extends SsoConfigClaimShape {
   acs_url: string | null;
   certificate_status: string;
   failure_reason: string | null;
+  status: SsoStatus;
+  last_test_result: "pass" | "fail" | null;
+  last_tested_at: string | null;
+  supabase_sso_provider_id: string | null;
   created_at: string;
   updated_at: string;
-  supabase_sso_provider_id?: string | null;
-  last_tested_at?: string | null;
 }
 
 interface ScimRow {
