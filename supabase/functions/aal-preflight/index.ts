@@ -78,6 +78,13 @@ export const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   // DATA-009 Phase 2 — residency review approve/decline (platform_admin)
   "data_009.approve_residency_review": "aal2",
   "data_009.decline_residency_review": "aal2",
+  // Batch 4 — Enterprise Identity (SSO/SAML + SCIM lifecycle)
+  "identity.sso_config_put": "aal2",
+  "identity.sso_test_connection": "aal2",
+  "identity.scim_user_lifecycle": "aal2",
+  // Staging fixture password management (platform_admin only)
+  "staging.set_fixture_password": "aal2",
+  "staging.reveal_fixture_password": "aal2",
   // break-glass uses fresh password re-auth via GoTrue, not the JWT aal
   // claim, so it is intentionally NOT listed here as aal2-gated for
   // preflight purposes. See scripts/check-aal-registry-drift.mjs allowlist.
