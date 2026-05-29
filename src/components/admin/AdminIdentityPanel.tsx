@@ -385,7 +385,7 @@ function OrgIdentityDrawer({
       await load();
       void data;
     } catch (e) {
-      const parsed = parseEdgeError(e);
+      const parsed = await parseEdgeError(e);
       toast({ title: "Save failed", description: parsed.message, variant: "destructive" });
     } finally {
       setBusy(false);
@@ -412,7 +412,7 @@ function OrgIdentityDrawer({
       onChanged();
       await load();
     } catch (e) {
-      const parsed = parseEdgeError(e);
+      const parsed = await parseEdgeError(e);
       toast({ title: "Test failed", description: parsed.message, variant: "destructive" });
     } finally {
       setBusy(false);
@@ -577,7 +577,7 @@ function ScimLifecycleTable({
       setTargetById((m) => ({ ...m, [row.user_id]: "" }));
       onRefresh();
     } catch (e) {
-      const parsed = parseEdgeError(e);
+      const parsed = await parseEdgeError(e);
       toast({ title: "Lifecycle change failed", description: parsed.message, variant: "destructive" });
     } finally {
       setBusyId(null);
