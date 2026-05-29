@@ -1,0 +1,328 @@
+/**
+ * DATA-004 Phase 2 — Per-Org Retention Health / Evidence Panel.
+ *
+ * Platform-admin only, READ-ONLY. Surfaces the effective per-org
+ * retention posture before any sweeper is wired to consume
+ * `org_retention_policies`. The whole point of this panel is to
+ * prove — visibly — that HQ can see what *would* happen if
+ * enforcement were turned on, while explicitly stating that NO
+ * sweeper enforcement is wired yet.
+ *
+ * Sources:
+ *   - admin-org-retention { action: "health" }   (does NOT require AAL2)
+ *
+ * What it shows:
+ *   - Summary tiles (orgs total, explicit policies, missing, holds,
+ *     classes enforced [always 0 in Phase 2])
+ *   - Per-record-class breakdown with platform floors
+ *   - Per-org effective view with source classification:
+ *       explicit | missing (=> falls back to platform floor)
+ *     plus active org-scoped legal holds.
+ *   - Last canonical policy-change audit event reference.
+ *
+ * What it does NOT do:
+ *   - Mutate anything.
+ *   - Read or call any sweeper.
+ *   - Imply enforcement is on. The "Enforcement: NOT WIRED" banner is
+ *     non-dismissable for Phase 2.
+ */
+
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, ShieldAlert, Info, RefreshCw } from "lucide-react";
+import { parseEdgeError } from "@/lib/edge-error";
+
+type RecordClass =
+  | "matches" | "trade_requests" | "pois" | "wads"
+  | "evidence" | "audit_logs" | "email_send_log" | "governance_records";
+
+interface ClassEntry {
+  record_class: RecordClass;
+  retention_days: number;
+  platform_floor_days: number;
+  source: "explicit" | "missing" | "fallback";
+  policy_id: string | null;
+  last_updated_at: string | null;
+  last_updated_by: string | null;
+  reason: string | null;
+  enforcement_wired: boolean;
+}
+
+interface OrgEntry {
+  org_id: string;
+  org_name: string | null;
+  active_org_legal_holds: Array<{ id: string; reason: string; applied_at: string }>;
+  classes: ClassEntry[];
+}
+
+interface ClassBreakdown {
+  record_class: RecordClass;
+  platform_floor_days: number;
+  orgs_with_explicit_policy: number;
+  orgs_on_platform_floor: number;
+  enforcement_wired: boolean;
+}
+
+interface HealthResponse {
+  ok: true;
+  phase: string;
+  enforcement_status: string;
+  summary: {
+    orgs_total: number;
+    orgs_with_explicit_policies: number;
+    orgs_missing_policies: number;
+    policies_below_or_at_floor_blocked_by_db: number;
+    active_org_legal_holds: number;
+    record_classes_total: number;
+    record_classes_enforced: number;
+    last_policy_change: null | {
+      audit_id: string;
+      action: string;
+      policy_id: string | null;
+      org_id: string | null;
+      actor_user_id: string | null;
+      created_at: string;
+    };
+  };
+  floors: Record<RecordClass, number>;
+  record_classes: RecordClass[];
+  class_breakdown: ClassBreakdown[];
+  orgs: OrgEntry[];
+  orgs_returned: number;
+  orgs_truncated: boolean;
+  request_id: string;
+}
+
+function sourceBadge(source: ClassEntry["source"], hasHold: boolean) {
+  if (hasHold) {
+    return <Badge variant="destructive">legal hold (org)</Badge>;
+  }
+  if (source === "explicit") {
+    return <Badge variant="default">explicit</Badge>;
+  }
+  return <Badge variant="secondary">missing → platform floor</Badge>;
+}
+
+export function OrgRetentionHealthPanel() {
+  const { toast } = useToast();
+  const [data, setData] = useState<HealthResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke(
+        "admin-org-retention",
+        { body: { action: "health", limit_orgs: 200 } },
+      );
+      if (error) {
+        const parsed = await parseEdgeError(error);
+        toast({
+          title: "Could not load retention health",
+          description: parsed.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      setData(res as HealthResponse);
+    } catch (e) {
+      const parsed = await parseEdgeError(e);
+      toast({
+        title: "Could not load retention health",
+        description: parsed.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div className="space-y-6">
+      <Alert variant="default" className="border-amber-500/40">
+        <ShieldAlert className="h-4 w-4" />
+        <AlertTitle>Enforcement status: SHELL ONLY — no sweeper reads this yet</AlertTitle>
+        <AlertDescription>
+          DATA-004 Phase 2 is read/evidence only. None of{" "}
+          <code>storage-retention-cleanup</code>,{" "}
+          <code>account-deletion-sweeper</code>,{" "}
+          <code>purge-email-send-log-daily</code>, or{" "}
+          <code>cold-storage-archive</code> consume{" "}
+          <code>org_retention_policies</code>. Phase 3 will wire one sweeper at a time.
+        </AlertDescription>
+      </Alert>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          {data ? (
+            <>Last loaded {new Date().toLocaleString()} · request_id <code>{data.request_id}</code></>
+          ) : (
+            "Loading…"
+          )}
+        </div>
+        <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+          Refresh
+        </Button>
+      </div>
+
+      {data && (
+        <>
+          {/* Summary tiles */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Tile label="Orgs total" value={data.summary.orgs_total} />
+            <Tile label="Explicit policies" value={data.summary.orgs_with_explicit_policies} />
+            <Tile label="Missing policies" value={data.summary.orgs_missing_policies} tone="warn" />
+            <Tile label="Active org legal holds" value={data.summary.active_org_legal_holds} tone={data.summary.active_org_legal_holds > 0 ? "warn" : "ok"} />
+            <Tile label="Record classes" value={data.summary.record_classes_total} />
+            <Tile label="Classes enforced" value={data.summary.record_classes_enforced} tone="warn" />
+            <Tile
+              label="Below-floor (DB-blocked)"
+              value={data.summary.policies_below_or_at_floor_blocked_by_db}
+              tone="ok"
+            />
+            <Tile
+              label="Last policy change"
+              value={
+                data.summary.last_policy_change
+                  ? new Date(data.summary.last_policy_change.created_at).toLocaleDateString()
+                  : "—"
+              }
+              hint={data.summary.last_policy_change?.action ?? undefined}
+            />
+          </div>
+
+          {/* Per-class breakdown */}
+          <section className="rounded-sm border border-border bg-card">
+            <header className="px-4 py-2 border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
+              Per-class breakdown
+            </header>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-2">Record class</th>
+                    <th className="text-right px-4 py-2">Platform floor (days)</th>
+                    <th className="text-right px-4 py-2">Orgs w/ explicit policy</th>
+                    <th className="text-right px-4 py-2">Orgs on floor</th>
+                    <th className="text-right px-4 py-2">Enforcement</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.class_breakdown.map((c) => (
+                    <tr key={c.record_class} className="border-t border-border">
+                      <td className="px-4 py-2 font-mono text-xs">{c.record_class}</td>
+                      <td className="px-4 py-2 text-right">{c.platform_floor_days.toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right">{c.orgs_with_explicit_policy}</td>
+                      <td className="px-4 py-2 text-right">{c.orgs_on_platform_floor}</td>
+                      <td className="px-4 py-2 text-right">
+                        <Badge variant="secondary">not wired</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Per-org effective view */}
+          <section className="rounded-sm border border-border bg-card">
+            <header className="px-4 py-2 border-b border-border text-xs uppercase tracking-wider text-muted-foreground flex justify-between">
+              <span>Per-org effective posture (explicit policy or active org-hold)</span>
+              <span>
+                {data.orgs_returned} org(s){data.orgs_truncated ? " · truncated" : ""}
+              </span>
+            </header>
+            {data.orgs.length === 0 ? (
+              <div className="px-4 py-6 text-sm text-muted-foreground flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                No orgs have explicit retention policies or active org-scoped legal holds.
+                All orgs currently fall back to platform floors.
+              </div>
+            ) : (
+              <ul className="divide-y divide-border">
+                {data.orgs.map((o) => (
+                  <li key={o.org_id} className="px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">{o.org_name ?? "(unnamed org)"}</div>
+                        <div className="text-xs text-muted-foreground font-mono">{o.org_id}</div>
+                      </div>
+                      {o.active_org_legal_holds.length > 0 && (
+                        <Badge variant="destructive">
+                          {o.active_org_legal_holds.length} active org-hold
+                          {o.active_org_legal_holds.length === 1 ? "" : "s"}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="text-muted-foreground">
+                          <tr>
+                            <th className="text-left py-1 pr-3">Class</th>
+                            <th className="text-right py-1 pr-3">Effective (days)</th>
+                            <th className="text-right py-1 pr-3">Floor</th>
+                            <th className="text-left py-1 pr-3">Source</th>
+                            <th className="text-left py-1 pr-3">Last updated</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {o.classes.map((c) => (
+                            <tr key={c.record_class} className="border-t border-border/60">
+                              <td className="py-1 pr-3 font-mono">{c.record_class}</td>
+                              <td className="py-1 pr-3 text-right">{c.retention_days.toLocaleString()}</td>
+                              <td className="py-1 pr-3 text-right text-muted-foreground">
+                                {c.platform_floor_days.toLocaleString()}
+                              </td>
+                              <td className="py-1 pr-3">
+                                {sourceBadge(c.source, o.active_org_legal_holds.length > 0)}
+                              </td>
+                              <td className="py-1 pr-3 text-muted-foreground">
+                                {c.last_updated_at
+                                  ? new Date(c.last_updated_at).toLocaleDateString()
+                                  : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {data.summary.last_policy_change && (
+            <section className="rounded-sm border border-border bg-card px-4 py-3 text-xs text-muted-foreground">
+              <span className="uppercase tracking-wider mr-2">Last policy change:</span>
+              <code>{data.summary.last_policy_change.action}</code> ·{" "}
+              audit_id <code>{data.summary.last_policy_change.audit_id}</code> ·{" "}
+              {new Date(data.summary.last_policy_change.created_at).toLocaleString()}
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Tile({
+  label, value, tone, hint,
+}: { label: string; value: string | number; tone?: "ok" | "warn"; hint?: string }) {
+  const toneCls =
+    tone === "warn" ? "border-amber-500/40" : tone === "ok" ? "border-emerald-500/40" : "border-border";
+  return (
+    <div className={`rounded-sm border ${toneCls} bg-card px-4 py-3`}>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-2xl font-semibold mt-1 font-mono">{value}</div>
+      {hint && <div className="text-[10px] mt-1 text-muted-foreground font-mono">{hint}</div>}
+    </div>
+  );
+}
