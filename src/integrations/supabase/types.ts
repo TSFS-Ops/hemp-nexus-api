@@ -10450,6 +10450,20 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: Json
       }
+      discover_cold_storage_archive_candidates: {
+        Args: { p_limit?: number }
+        Returns: {
+          already_exported: boolean
+          flag_id: string
+          org_id: string
+          record_created_at: string
+          record_id: string
+          retention_action: string
+          retention_expires_at: string
+          retention_status: string
+          table_name: string
+        }[]
+      }
       discover_email_send_log_candidate_orgs: {
         Args: { p_limit?: number }
         Returns: {

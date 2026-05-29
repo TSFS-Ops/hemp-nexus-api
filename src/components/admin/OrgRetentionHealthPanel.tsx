@@ -143,6 +143,19 @@ interface HealthResponse {
   orgs_returned: number;
   orgs_truncated: boolean;
   last_run_email_send_log?: LastRunEvidence | null;
+  /**
+   * DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path.
+   * Read-only surfacing. Not scheduled. Not destructive.
+   */
+  cold_storage_archive?: {
+    mode: string;
+    scheduled: boolean;
+    dry_run_default: boolean;
+    deletes_source_records: boolean;
+    mutates_source_records: boolean;
+    consumes_org_retention_policies: boolean;
+    last_run: LastRunEvidence | null;
+  };
   request_id: string;
 }
 
@@ -378,6 +391,43 @@ export function OrgRetentionHealthPanel() {
               </div>
             </section>
           )}
+          {/* Batch 7 — cold-storage-archive dry-run-only evidence path */}
+          {data.cold_storage_archive && (
+            <section className="rounded-sm border border-border bg-card">
+              <header className="px-4 py-2 border-b border-border text-xs uppercase tracking-wider text-muted-foreground flex justify-between">
+                <span>Cold storage archive — manual / dry-run-only evidence path (Batch 7)</span>
+                <Badge variant="secondary">{data.cold_storage_archive.mode}</Badge>
+              </header>
+              <div className="px-4 py-3 text-xs text-muted-foreground space-y-1">
+                <div>
+                  Scheduled: <strong>{data.cold_storage_archive.scheduled ? "YES (unexpected)" : "no"}</strong> ·
+                  dry-run default: <strong>{String(data.cold_storage_archive.dry_run_default)}</strong> ·
+                  deletes source: <strong>{String(data.cold_storage_archive.deletes_source_records)}</strong> ·
+                  mutates source: <strong>{String(data.cold_storage_archive.mutates_source_records)}</strong> ·
+                  consumes org_retention_policies: <strong>{String(data.cold_storage_archive.consumes_org_retention_policies)}</strong>
+                </div>
+                <div>
+                  No pg_cron schedule is registered for <code>cold-storage-archive</code> in Batch 7.
+                  Manual / service-role invocation only. Bucket writes, legal-hold,
+                  duplicate, missing-source, and lookup-error skips are all written to
+                  <code>retention_run_evidence</code>.
+                </div>
+                {data.cold_storage_archive.last_run ? (
+                  <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Tile label="Status" value={data.cold_storage_archive.last_run.status} />
+                    <Tile label="Rows seen" value={data.cold_storage_archive.last_run.rows_seen} />
+                    <Tile label="Eligible (would export)" value={data.cold_storage_archive.last_run.rows_eligible} />
+                    <Tile label="Purged" value={data.cold_storage_archive.last_run.rows_purged} tone="ok" />
+                    <Tile label="Legal-hold skips" value={data.cold_storage_archive.last_run.rows_skipped_legal_hold} tone="warn" />
+                    <Tile label="Error skips" value={data.cold_storage_archive.last_run.rows_skipped_error} tone={data.cold_storage_archive.last_run.rows_skipped_error > 0 ? "warn" : "ok"} />
+                  </div>
+                ) : (
+                  <div className="italic">No cold-storage-archive run evidence yet.</div>
+                )}
+              </div>
+            </section>
+          )}
+
 
           {/* Per-org effective view */}
           <section className="rounded-sm border border-border bg-card">

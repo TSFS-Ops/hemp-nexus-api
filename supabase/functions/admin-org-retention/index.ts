@@ -396,6 +396,24 @@ Deno.serve(async (req) => {
         console.error("[admin-org-retention] last_run lookup failed:", e);
       }
 
+      // DATA-004 Batch 7 — latest dry-run evidence for cold-storage-archive.
+      // Read-only surfacing. Cold-storage-archive is dry-run-only and never
+      // scheduled in this batch.
+      let lastRunCold: Record<string, unknown> | null = null;
+      try {
+        const { data: coldRows } = await admin
+          .from("retention_run_evidence")
+          .select("*")
+          .eq("job_name", "cold-storage-archive")
+          .is("org_id", null)
+          .in("status", ["success", "partial", "failed"])
+          .order("started_at", { ascending: false })
+          .limit(1);
+        lastRunCold = (coldRows ?? [])[0] ?? null;
+      } catch (e) {
+        console.error("[admin-org-retention] cold-storage last_run lookup failed:", e);
+      }
+
       // DATA-004 Phase 4 — discover live pg_cron jobs for the sweeper
       // so HQ Health can prove (a) the dry-run schedule is registered
       // and (b) no live (non-dry-run) schedule exists.
@@ -462,6 +480,19 @@ Deno.serve(async (req) => {
         },
         enforced_classes: ["email_send_log"],
         last_run_email_send_log: lastRun,
+        // Batch 7: cold-storage-archive is wired as DRY-RUN-ONLY evidence
+        // path. It does not consume org_retention_policies and is never
+        // scheduled in this batch. Surface most recent run so HQ can prove
+        // the dry-run evidence is being written.
+        cold_storage_archive: {
+          mode: "manual_dry_run_only",
+          scheduled: false,
+          dry_run_default: true,
+          deletes_source_records: false,
+          mutates_source_records: false,
+          consumes_org_retention_policies: false,
+          last_run: lastRunCold,
+        },
         floors,
         record_classes: RECORD_CLASSES,
         class_breakdown: classBreakdown,
