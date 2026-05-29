@@ -807,12 +807,25 @@ HQ → Retention Health → "Cold storage archive — dry-run-only evidence path
 - Rollback SQL.
 - Latest `retention_run_evidence` for `cold-storage-archive` once the first scheduled tick lands.
 
-### Approval gate (Batch 9B, NOT in this batch)
+### Approval gate (Batch 9B → Batch 10)
 
-Live cold-storage-archive scheduling is a Batch 9B+ decision and requires:
+Batch 9B (the operator evidence tick for the scheduled dry-run) is **COMPLETE — PASS** as of 2026-05-29. See `evidence/data-004-batch-9b-scheduled-tick-evidence.md`. Live cold-storage scheduling is now a separate **Batch 10** decision and still requires:
 
 - A fresh `cron.job` snapshot (the live-cron-state evidence gate added in Batch 8B).
-- Operator review of at least one scheduled `cold-storage-archive-dryrun` tick from `retention_run_evidence`.
 - A second, separate explicit human approval.
 
-Until that gate is ticked, **live cold-storage-archive scheduling is NOT approved**.
+Until Batch 10 is approved, **live cold-storage-archive scheduling is NOT approved**.
+
+## DATA-004 Batch 9B — scheduled-cron pathway evidence
+
+Status: **DATA-004 Batch 9B PASS (2026-05-29).** The scheduled `cold-storage-archive-dryrun` pathway was exercised end-to-end without changing the schedule, using the exact body and `x-internal-key` auth the cron job sends. Five `retention_run_evidence` rows were written (`would_export`, `skipped_due_to_duplicate`, `skipped_due_to_missing_source`, plus `started` and `partial`), all with `dry_run=true` and `lifecycle_persistence=evidence_only`. `audit_write_failures=[]`, `evidence_write_failures=[]`. No source rows were deleted or destructively mutated. Cron state is identical before and after.
+
+Run id: `51554340-a074-4803-9465-ddf52bdb271f`. Evidence artifact: `evidence/data-004-batch-9b-scheduled-tick-evidence.md`.
+
+Skip-category coverage:
+- `would_export`, `skipped_due_to_duplicate`, `skipped_due_to_missing_source` — proved live in Batch 9B.
+- `skipped_due_to_legal_hold` (`legal_hold_batch`) — already proved by Batch 7 evidence row `6cea2c51-…`.
+- `legal_hold_row` — unreachable for `screening_results` by design (`COLD_TABLE_TO_SCOPE['screening_results']=null`).
+
+Cleanup: fixtures removed via `20260529…_data_004_batch9b_fixture_cleanup.sql`. `retention_run_evidence` rows preserved (append-only).
+
