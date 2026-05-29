@@ -218,9 +218,12 @@ async function ensureCompletedPurchase(
   const { data: existing } = await admin
     .from("token_purchases").select("id").eq("paystack_reference", reference).maybeSingle();
   if (existing?.id) {
-    await admin.from("token_purchases").update({ status: "completed" } as never).eq("id", existing.id);
+    await admin.from("token_purchases").update(
+      { status: "completed", created_at: new Date().toISOString() } as never,
+    ).eq("id", existing.id);
     return existing.id;
   }
+
   const { data, error } = await admin.from("token_purchases").insert({
     org_id: orgId,
     user_id: userId,
