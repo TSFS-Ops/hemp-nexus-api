@@ -176,21 +176,39 @@ export function OrgRetentionHealthPanel() {
     <div className="space-y-6">
       <Alert variant="default" className="border-amber-500/40">
         <ShieldAlert className="h-4 w-4" />
-        <AlertTitle>Enforcement status: PARTIAL — only email_send_log is wired</AlertTitle>
+        <AlertTitle>
+          Enforcement status: PARTIAL — only email_send_log is wired ·
+          Scheduling readiness: pg_cron NOT scheduled (pending approval)
+        </AlertTitle>
         <AlertDescription>
-          DATA-004 Phase 3 wires <code>purge-email-send-log-daily</code> as the
-          first and only enforced sweeper. <code>storage-retention-cleanup</code>,{" "}
+          DATA-004 Phase 3.2 is <strong>scheduling readiness only</strong>.{" "}
+          <code>purge-email-send-log-daily</code> is the first and only enforced
+          sweeper. <code>storage-retention-cleanup</code>,{" "}
           <code>account-deletion-sweeper</code>, <code>cold-storage-archive</code>,
-          and any other retention/archival paths still do NOT consume{" "}
+          and every other retention/archival path still do NOT consume{" "}
           <code>org_retention_policies</code>. Missing, disabled, or invalid org
-          policies fail closed: rows are retained, not deleted. Active legal holds
-          block purge. <strong>pg_cron is NOT scheduled.</strong> Run-level
-          lifecycle events (<code>started</code>/<code>completed</code>/
-          <code>partial</code>/<code>failed</code>) are recorded in{" "}
-          <code>retention_run_evidence</code> as the canonical source of truth;
-          only per-org <code>skipped</code> rows persist to <code>audit_logs</code>.
+          policies fail closed: rows are retained, not deleted. Active legal
+          holds block purge.{" "}
+          <strong>pg_cron is NOT scheduled.</strong> Invocation is manual /
+          service-role only; <code>dry_run=true</code> is the default. Future
+          scheduling must start with a <em>scheduled dry-run</em> behind a
+          separate approval; a live scheduled purge requires a further separate
+          approval after dry-run stability. Run-level lifecycle events
+          (<code>started</code>/<code>completed</code>/<code>partial</code>/
+          <code>failed</code>) are recorded in <code>retention_run_evidence</code>{" "}
+          as the canonical source of truth; only per-org <code>skipped</code>{" "}
+          rows persist to <code>audit_logs</code>.
+          {data?.scheduling_status && (
+            <>
+              {" "}
+              <span className="font-mono text-[11px]">
+                scheduling_status=<code>{data.scheduling_status}</code>
+              </span>
+            </>
+          )}
         </AlertDescription>
       </Alert>
+
 
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
