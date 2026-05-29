@@ -7676,6 +7676,81 @@ export type Database = {
           },
         ]
       }
+      tenant_boundary_allowlist: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          reason: string
+          table_name: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          reason: string
+          table_name: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          reason?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      tenant_boundary_evidence: {
+        Row: {
+          created_at: string
+          critical_count: number
+          high_count: number
+          id: string
+          manifest_sha256: string
+          results: Json
+          run_at: string
+          run_by: string | null
+          run_id: string
+          schema_hash: string
+          status: string
+          tables_allowlisted: number
+          tables_failed: number
+          tables_passed: number
+          tables_total: number
+        }
+        Insert: {
+          created_at?: string
+          critical_count?: number
+          high_count?: number
+          id?: string
+          manifest_sha256: string
+          results: Json
+          run_at?: string
+          run_by?: string | null
+          run_id: string
+          schema_hash: string
+          status: string
+          tables_allowlisted?: number
+          tables_failed?: number
+          tables_passed?: number
+          tables_total?: number
+        }
+        Update: {
+          created_at?: string
+          critical_count?: number
+          high_count?: number
+          id?: string
+          manifest_sha256?: string
+          results?: Json
+          run_at?: string
+          run_by?: string | null
+          run_id?: string
+          schema_hash?: string
+          status?: string
+          tables_allowlisted?: number
+          tables_failed?: number
+          tables_passed?: number
+          tables_total?: number
+        }
+        Relationships: []
+      }
       token_balances: {
         Row: {
           balance: number
@@ -10681,6 +10756,23 @@ export type Database = {
       }
       scrub_user_pii: { Args: { p_user_id: string }; Returns: Json }
       set_org_data_residency: { Args: { _region: string }; Returns: Json }
+      tenant_boundary_inventory: {
+        Args: never
+        Returns: {
+          all_policies: number
+          delete_policies: number
+          has_permissive_true: boolean
+          insert_policies: number
+          policy_count: number
+          references_auth_uid: boolean
+          references_has_role: boolean
+          references_org_id: boolean
+          rls_enabled: boolean
+          select_policies: number
+          table_name: string
+          update_policies: number
+        }[]
+      }
       touch_match_view: { Args: { _match_id: string }; Returns: string }
       transfer_org_admin: {
         Args: {
