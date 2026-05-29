@@ -37,6 +37,20 @@ await new Promise((res, rej) => {
     : rej(new Error(`Refusing to pack — evidence secret-leak scan failed (exit ${code}).`)));
 });
 
+// Block packaging if the bundle is structurally incomplete or any A–D row
+// is non-green / missing request IDs. Set PACK_SKIP_BUNDLE_CHECK=1 to bypass
+// (only intended for inspecting a known-bad run locally).
+if (process.env.PACK_SKIP_BUNDLE_CHECK !== "1") {
+  await new Promise((res, rej) => {
+    const p = spawn("node", ["scripts/check-smoke-evidence-bundle.mjs"], { stdio: "inherit", cwd: ROOT });
+    p.on("exit", (code) => code === 0
+      ? res(undefined)
+      : rej(new Error(`Refusing to pack — smoke evidence bundle check failed (exit ${code}).`)));
+  });
+}
+
+
+
 async function buildIndex() {
   const rows = [];
   for (const name of (await readdir(EVIDENCE_DIR)).sort()) {
