@@ -13,6 +13,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Hostname allowlist for verification links — prevents the platform's
+// verified sending domain being used as a phishing vector.
+const ALLOWED_HOSTS = [
+  "izenzo.co.za",
+  "www.izenzo.co.za",
+  "trade.izenzo.co.za",
+  "api.trade.izenzo.co.za",
+];
+
+function isAllowedHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return ALLOWED_HOSTS.some((allowed) => h === allowed || h.endsWith(`.${allowed}`));
+}
+
 // Input validation schema
 const verificationEmailSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
@@ -20,16 +34,16 @@ const verificationEmailSchema = z.object({
     (url) => {
       try {
         const parsed = new URL(url);
-        // Only allow HTTPS URLs and specific trusted domains
-        return parsed.protocol === "https:";
+        return parsed.protocol === "https:" && isAllowedHost(parsed.hostname);
       } catch {
         return false;
       }
     },
-    { message: "URL must be HTTPS" }
+    { message: "URL must be HTTPS and on an approved izenzo.co.za host" }
   ),
   userName: z.string().max(100, "Name too long").optional(),
 });
+
 
 type VerificationEmailRequest = z.infer<typeof verificationEmailSchema>;
 
