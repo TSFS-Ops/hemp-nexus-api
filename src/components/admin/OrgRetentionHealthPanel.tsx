@@ -67,6 +67,22 @@ interface ClassBreakdown {
   enforcement_wired: boolean;
 }
 
+interface LastRunEvidence {
+  run_id: string;
+  status: "started" | "success" | "partial" | "failed" | "skipped";
+  started_at: string;
+  finished_at: string | null;
+  rows_seen: number;
+  rows_eligible: number;
+  rows_purged: number;
+  rows_skipped_missing_policy: number;
+  rows_skipped_disabled_policy: number;
+  rows_skipped_invalid_policy: number;
+  rows_skipped_legal_hold: number;
+  rows_skipped_error: number;
+  details: Record<string, unknown> | null;
+}
+
 interface HealthResponse {
   ok: true;
   phase: string;
@@ -94,6 +110,7 @@ interface HealthResponse {
   orgs: OrgEntry[];
   orgs_returned: number;
   orgs_truncated: boolean;
+  last_run_email_send_log?: LastRunEvidence | null;
   request_id: string;
 }
 
