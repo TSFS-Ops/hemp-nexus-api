@@ -66,6 +66,7 @@ import { AdminLifecycleRunPanel } from "@/components/admin/AdminLifecycleRunPane
 import { AdminLegacyRepairPanel } from "@/components/admin/AdminLegacyRepairPanel";
 import { AdminLegalHoldsPanel } from "@/components/admin/AdminLegalHoldsPanel";
 import { OrgRetentionPanel } from "@/components/admin/OrgRetentionPanel";
+import { OrgRetentionHealthPanel } from "@/components/admin/OrgRetentionHealthPanel";
 import { AdminTradeRequestArchivePanel } from "@/components/admin/AdminTradeRequestArchivePanel";
 import { AdminComplianceHoldPanel } from "@/components/admin/AdminComplianceHoldPanel";
 import { AdminDemoWorkspacesPanel } from "@/components/admin/AdminDemoWorkspacesPanel";
@@ -330,14 +331,16 @@ function LegacyRepairTab() {
     </>;
 }
 function LegalHoldsTab() {
-  // Two sub-tabs: existing legal holds (DATA-003) + new per-org retention shell (DATA-004).
-  const [sub, setSub] = useUrlTab("sub", "holds", ["holds", "org-retention"]);
+  // Three sub-tabs: existing legal holds (DATA-003) · per-org retention shell
+  // (DATA-004 Phase 1) · per-org retention health/evidence (DATA-004 Phase 2).
+  const [sub, setSub] = useUrlTab("sub", "holds", ["holds", "org-retention", "retention-health"]);
   return <>
       <TabHeader id="legal-holds" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
         <TabsList className="bg-card border border-border rounded-sm">
           <TabsTrigger value="holds">Legal Holds</TabsTrigger>
           <TabsTrigger value="org-retention">Per-Org Retention</TabsTrigger>
+          <TabsTrigger value="retention-health">Retention Health</TabsTrigger>
         </TabsList>
         <TabsContent value="holds">
           <Surface label="DATA-003 · public.legal_holds · platform_admin + AAL2 · blocks deletion/anonymisation/purge/export-destruction">
@@ -347,6 +350,11 @@ function LegalHoldsTab() {
         <TabsContent value="org-retention">
           <Surface label="DATA-004 Phase 1 SHELL · public.org_retention_policies · platform_admin + AAL2 · floors enforced at DB · sweepers not yet wired">
             <OrgRetentionPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="retention-health">
+          <Surface label="DATA-004 Phase 2 · read/evidence only · platform_admin (no AAL2) · effective per-org posture · sweepers NOT wired">
+            <OrgRetentionHealthPanel />
           </Surface>
         </TabsContent>
       </Tabs>
