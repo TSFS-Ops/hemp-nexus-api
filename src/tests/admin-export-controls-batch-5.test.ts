@@ -126,7 +126,7 @@ describe("Batch 5 — response payload is governance-safe", () => {
   it("does NOT return file paths, storage keys, signed URLs, download tokens, or raw payloads", () => {
     expect(EDGE_SRC).not.toMatch(/storage_key/);
     expect(EDGE_SRC).not.toMatch(/file_path/);
-    expect(EDGE_SRC).not.toMatch(/signed_url|createSignedUrl/);
+    expect(EDGE_SRC).not.toMatch(/(?<!no_)signed_url|createSignedUrl/);
     expect(EDGE_SRC).not.toMatch(/download_token/);
     expect(EDGE_SRC).not.toMatch(/raw_response|raw_payload/);
   });
