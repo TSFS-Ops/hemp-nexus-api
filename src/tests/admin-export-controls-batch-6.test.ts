@@ -17,9 +17,18 @@ import { describe, it, expect } from "vitest";
 
 const REPO_ROOT = join(__dirname, "..", "..");
 
-const HELPER_SRC = readFileSync(
-  join(REPO_ROOT, "supabase/functions/_shared/legal-hold-detection.ts"),
-  "utf8",
+// Strip comments so source-pin predicates do not false-positive on
+// JSDoc / banner / inline doc text that legitimately mentions banned
+// tokens (e.g. "NOT selecting released_reason", "no signed URL").
+function readSrc(rel: string): string {
+  const raw = readFileSync(join(REPO_ROOT, rel), "utf8");
+  return raw
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(?<![:"'`\\])\/\/[^\n]*/g, "");
+}
+
+const HELPER_SRC = readSrc(
+  "supabase/functions/_shared/legal-hold-detection.ts",
 );
 const REQ_SRC = readFileSync(
   join(
