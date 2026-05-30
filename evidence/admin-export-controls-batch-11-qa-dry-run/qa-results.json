@@ -1,0 +1,31 @@
+{
+  "batch": 11,
+  "title": "QA Pack Dry-Run + Evidence Backfill",
+  "source_of_truth": "evidence/admin-export-controls-batch-10-manual-qa-pack.md",
+  "run_date": null,
+  "overall_status": "not_run",
+  "runtime_code_changed": false,
+  "screenshots_captured": false,
+  "scenarios": [
+    { "id": "A",  "tester_role": "platform_admin_aal2",       "expected": "All four sub-tabs render; safety badges visible", "actual": null, "status": "not_run", "screenshot": "screenshots/b10-safety-badges.png",      "blocker": false, "notes": "" },
+    { "id": "B",  "tester_role": "non_admin",                  "expected": "Access denied / surfaces not visible",            "actual": null, "status": "not_run", "screenshot": "screenshots/b10-non-admin-blocked.png",  "blocker": false, "notes": "" },
+    { "id": "C1", "tester_role": "platform_admin_no_aal2",     "expected": "MFA_REQUIRED on list refresh",                    "actual": null, "status": "not_run", "screenshot": "screenshots/b10-mfa-required.png",       "blocker": false, "notes": "" },
+    { "id": "C2", "tester_role": "platform_admin_no_aal2",     "expected": "MFA_REQUIRED on preview",                         "actual": null, "status": "not_run", "screenshot": null,                                     "blocker": false, "notes": "" },
+    { "id": "D",  "tester_role": "platform_admin_aal2",        "expected": "Status awaiting approval; default redaction=redacted_client_safe; no file", "actual": null, "status": "not_run", "screenshot": "screenshots/b10-req-success.png", "blocker": false, "notes": "Also capture b10-req-before.png" },
+    { "id": "E1", "tester_role": "platform_admin_aal2",        "expected": "Self-approval blocked",                           "actual": null, "status": "not_run", "screenshot": "screenshots/b10-approve-self-blocked.png","blocker": false, "notes": "" },
+    { "id": "E2", "tester_role": "second_platform_admin_aal2", "expected": "Approval succeeds; status=approved; no file",     "actual": null, "status": "not_run", "screenshot": "screenshots/b10-approve-success.png",    "blocker": false, "notes": "" },
+    { "id": "F",  "tester_role": "platform_admin_aal2",        "expected": "Row visible; safe-summary legal-hold indicator only; no raw reason; no file", "actual": null, "status": "not_run", "screenshot": "screenshots/b10-list-approved.png", "blocker": false, "notes": "" },
+    { "id": "G",  "tester_role": "platform_admin_aal2",        "expected": "Redacted preview + manifest; no raw payload; no file", "actual": null, "status": "not_run", "screenshot": "screenshots/b10-preview.png",      "blocker": false, "notes": "" },
+    { "id": "H",  "tester_role": "all",                         "expected": "None of the 13 forbidden surfaces visible",       "actual": null, "status": "not_run", "screenshot": null,                                     "blocker": false, "notes": "Refer to negative safety scan checklist in qa-results.md" }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 0,
+    "not_run": 10,
+    "blockers": 0,
+    "non_blocking_issues": 0,
+    "dangerous_export_behaviour_observed": false,
+    "data_004_touched": false,
+    "batch_7c_production_guard_intact": true
+  }
+}
