@@ -47,6 +47,7 @@ import {
   useGovernanceEvents,
 } from "@/lib/governance/use-governance-events";
 import { AdminGovernanceExportRequestPanel } from "./AdminGovernanceExportRequestPanel";
+import { AdminGovernanceExportApprovalPanel } from "./AdminGovernanceExportApprovalPanel";
 import {
   DEMO_EVENT_COPY,
   EventCategory,
@@ -901,6 +902,13 @@ export function GovernanceRecordDetail({ anchor }: Props) {
 
       {isPlatformAdmin && anchor.matchId && (
         <AdminGovernanceExportRequestPanel
+          governanceRecordId={anchor.matchId}
+          recordRef={recordRef}
+        />
+      )}
+
+      {isPlatformAdmin && anchor.matchId && (
+        <AdminGovernanceExportApprovalPanel
           governanceRecordId={anchor.matchId}
           recordRef={recordRef}
         />

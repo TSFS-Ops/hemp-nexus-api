@@ -9936,6 +9936,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      approve_admin_governance_export: {
+        Args: {
+          p_approval_note?: string
+          p_approver_user_id: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       approve_refund: {
         Args: {
           p_admin_user_id: string
