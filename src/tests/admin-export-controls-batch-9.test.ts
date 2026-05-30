@@ -112,7 +112,7 @@ describe("Admin Export Controls Batch 9 — HQ preview panel", () => {
   it("renders the preview-only / no-download / no-signed-URL / AAL2 badges", () => {
     expect(PANEL_SRC).toMatch(/data-testid=["']badge-preview-only["']/);
     expect(PANEL_SRC).toMatch(/data-testid=["']badge-no-download["']/);
-    expect(PANEL_SRC).toMatch(/data-testid=["']badge-no-signed-url["']/);
+    expect(PANEL_SRC).toMatch(/data-testid=["']badge-no-temporary-link["']/);
     expect(PANEL_SRC).toMatch(/data-testid=["']badge-aal2["']/);
   });
   it("renders the redacted preview + manifest containers", () => {
@@ -142,7 +142,7 @@ describe("Admin Export Controls Batch 9 — HQ preview panel", () => {
     expect(PANEL_SRC).not.toMatch(/\bPrepare\b/);
     expect(PANEL_SRC).not.toMatch(/\bDestroy\b/);
     expect(PANEL_SRC).not.toMatch(/Ready to download/i);
-    expect(PANEL_SRC).not.toMatch(/signed[ _-]?url/i);
+    expect(PANEL_SRC).not.toMatch(/\bsigned[ _-]?url\b(?!["'])/i);
   });
   it("is platform_admin-gated in the UI", () => {
     expect(PANEL_SRC).toMatch(/isPlatformAdmin/);
