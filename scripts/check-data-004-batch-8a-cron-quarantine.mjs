@@ -111,22 +111,29 @@ for (const f of walkSql(MIG_DIR)) {
   }
 
   // (5) cold-storage-archive: Batch 9A permits exactly one scheduled
-  // `cold-storage-archive-dryrun` with dry_run:true pinned. Any other
-  // scheduled jobname referencing the function (e.g. `cold-storage-archive`
-  // bare, `cold-storage-archive-live`, etc.) is forbidden — Batch 9A
-  // contract delegates the live-schedule decision to a separate batch.
+  // `cold-storage-archive-dryrun`. Batch 10 additionally permits exactly
+  // one `cold-storage-archive-live` with `dry_run:false` pinned. Any
+  // other jobname referencing the function (e.g. bare
+  // `cold-storage-archive`, `-weekly`, etc.) is forbidden.
   const coldSchedRe = /cron\.schedule\s*\(\s*['"`]([a-z0-9._-]+)['"`][\s\S]*?(?=cron\.schedule\s*\(|$)/gi;
   for (const m of code.matchAll(coldSchedRe)) {
     const block = m[0];
     const jobname = m[1];
     if (!/cold-storage-archive/i.test(block)) continue;
-    if (jobname !== "cold-storage-archive-dryrun") {
-      errors.push(`${f}: Batch 9A — cold-storage-archive may only be scheduled as 'cold-storage-archive-dryrun' (got '${jobname}').`);
+    if (jobname !== "cold-storage-archive-dryrun" && jobname !== "cold-storage-archive-live") {
+      errors.push(`${f}: cold-storage-archive may only be scheduled as 'cold-storage-archive-dryrun' (Batch 9A) or 'cold-storage-archive-live' (Batch 10); got '${jobname}'.`);
     }
-    if (!/['"]dry_run['"]\s*,\s*true\b/i.test(block) || /['"]dry_run['"]\s*,\s*false\b/i.test(block)) {
-      errors.push(`${f}: Batch 9A — 'cold-storage-archive-dryrun' must pin dry_run:true in body.`);
+    if (jobname === "cold-storage-archive-dryrun") {
+      if (!/['"]dry_run['"]\s*,\s*true\b/i.test(block) || /['"]dry_run['"]\s*,\s*false\b/i.test(block)) {
+        errors.push(`${f}: 'cold-storage-archive-dryrun' must pin dry_run:true in body.`);
+      }
+    } else if (jobname === "cold-storage-archive-live") {
+      if (!/['"]dry_run['"]\s*,\s*false\b/i.test(block) || /['"]dry_run['"]\s*,\s*true\b/i.test(block)) {
+        errors.push(`${f}: 'cold-storage-archive-live' must pin dry_run:false in body.`);
+      }
     }
   }
+
 
 }
 
