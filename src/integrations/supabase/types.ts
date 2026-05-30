@@ -10430,6 +10430,7 @@ export type Database = {
         Returns: number
       }
       cron_reconcile_heartbeats: { Args: never; Returns: undefined }
+      data_004_cron_drift_check: { Args: never; Returns: Json }
       decline_refund: {
         Args: {
           p_admin_user_id: string
