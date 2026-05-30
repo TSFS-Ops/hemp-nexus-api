@@ -8,7 +8,7 @@
  *   - prepare / generate / download / destroy controls
  *   - signed URLs, file paths, storage keys, download tokens
  *   - CSV / JSON / PDF export buttons
- *   - "ready to download" / "export ready" wording
+ *   - wording implying the export is available for retrieval
  *
  * The list view does not mutate any export_requests row. Approval and
  * request shells (Batch 2 / Batch 4) remain the only mutation surfaces.
