@@ -505,7 +505,7 @@ function LegalHoldsTab() {
 }
 function GovernanceRecordsTab() {
   // Sub-tabs: Records (existing merged audit view) · Basic Memory (v1 retained outcomes)
-  const [sub, setSub] = useUrlTab("sub", "records", ["records", "memory", "export-requests"]);
+  const [sub, setSub] = useUrlTab("sub", "records", ["records", "memory", "export-requests", "export-preview"]);
   return <>
       <TabHeader id="governance-records" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -513,6 +513,7 @@ function GovernanceRecordsTab() {
           <TabsTrigger value="records">Records</TabsTrigger>
           <TabsTrigger value="memory">Basic Memory</TabsTrigger>
           <TabsTrigger value="export-requests">Export Requests</TabsTrigger>
+          <TabsTrigger value="export-preview">Export Preview</TabsTrigger>
         </TabsList>
         <TabsContent value="records">
           <Surface label="Governance Records · HQ-only · merged audit_logs · admin_audit_logs · event_store · match_events · Phase 1 visibility only">
@@ -527,6 +528,11 @@ function GovernanceRecordsTab() {
         <TabsContent value="export-requests">
           <Surface label="Admin Export Controls · Batch 5 · HQ-only · public.export_requests (kind=admin_export, governance_record_id NOT NULL) · platform_admin + AAL2 · READ-ONLY · no prepare/generate/download/destroy">
             <AdminGovernanceExportRequestsListPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="export-preview">
+          <Surface label="Admin Export Controls · Batch 9 · HQ-only · platform_admin + AAL2 · READ-ONLY redaction preview · no file generated · no download link · no signed URL · no prepare/destroy">
+            <AdminGovernanceExportPreviewPanel />
           </Surface>
         </TabsContent>
       </Tabs>
