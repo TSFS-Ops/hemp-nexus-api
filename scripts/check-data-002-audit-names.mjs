@@ -67,7 +67,13 @@ function walk(dir) {
 const cronFiles = walk("supabase/migrations");
 for (const f of cronFiles) {
   const txt = readFileSync(f, "utf8");
-  if (txt.includes("account-deletion-sweeper") && /dry_run["']?\s*[:=]\s*false/i.test(txt)) {
+  // Only flag files that actually schedule cron jobs (cron.schedule calls).
+  // Read-only drift monitors that merely reference the jobname + dry_run
+  // tokens as detection patterns are not destructive schedules.
+  if (!/cron\.schedule\s*\(/i.test(txt)) continue;
+  // Require the destructive jobname (no -dryrun suffix) AND dry_run:false
+  // to appear, to avoid matching dryrun schedules or unrelated references.
+  if (/['"]account-deletion-sweeper-daily['"]/.test(txt) && /dry_run["']?\s*[:=]\s*false/i.test(txt)) {
     errors.push(`${f}: destructive account-deletion-sweeper cron is checked in (dry_run:false). Phase 1 requires destructive cron to remain disabled pending sign-off.`);
   }
 }
