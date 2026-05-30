@@ -151,7 +151,10 @@ describe("Batch 3 — audit emission (DATA-010 canonical)", () => {
     expect(EDGE_SRC).toMatch(/actor_user_id:\s*adminUser\.id/);
     expect(EDGE_SRC).toMatch(/governance_record_id:\s*b\.governance_record_id/);
     expect(EDGE_SRC).toMatch(/redaction_mode:\s*b\.redaction_mode/);
-    expect(EDGE_SRC).toMatch(/legal_hold_context:\s*b\.legal_hold_context/);
+    // Batch 6 renamed this to the detected + operator pair (no raw
+    // operator-supplied context ever overrides the detected summary).
+    expect(EDGE_SRC).toMatch(/legal_hold_context_detected:\s*detected/);
+    expect(EDGE_SRC).toMatch(/legal_hold_context_operator:\s*operatorSafe/);
     expect(EDGE_SRC).toMatch(/reason:\s*b\.reason/);
     expect(EDGE_SRC).toMatch(/purpose:\s*b\.purpose/);
   });
