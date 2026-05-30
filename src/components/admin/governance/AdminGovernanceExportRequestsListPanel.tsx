@@ -54,6 +54,13 @@ interface ListRow {
   approval_note_summary: string | null;
   legal_hold_context_present: boolean;
   legal_hold_context_scope: string | null;
+  // Batch 6 — safe auto-detected fields (no reason/notes/metadata).
+  legal_hold_auto_detected?: boolean;
+  legal_hold_hold_count?: number;
+  legal_hold_hold_sources?: string[];
+  legal_hold_primary_scope?: string | null;
+  legal_hold_detected_at?: string | null;
+  legal_hold_detection_source?: string | null;
   target_org_id: string | null;
   created_at: string;
   updated_at: string;
