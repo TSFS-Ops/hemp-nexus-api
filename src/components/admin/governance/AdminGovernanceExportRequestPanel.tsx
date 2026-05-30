@@ -194,17 +194,6 @@ export function AdminGovernanceExportRequestPanel({
       // Zero Swallowed Errors — state machine always advances.
     }
   };
-      toast.success("Export request recorded");
-      setReason("");
-      setScopeNote("");
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      setState({ kind: "failed", message });
-      toast.error(`Request failed: ${message}`);
-    } finally {
-      // Zero Swallowed Errors — state machine always advances.
-    }
-  };
 
   return (
     <section
