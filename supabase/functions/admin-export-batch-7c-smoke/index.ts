@@ -27,7 +27,7 @@
  *
  * Does NOT call: prepare / download / destroy / file generation /
  * signed-URL creation. Does NOT mutate: legal_holds, export_requests
- * directly, org_retention_policies, cron, retention, cold-storage,
+ * directly, per-org retention tables, cron, retention, cold-storage,
  * archive, or any DATA-004 surface.
  *
  * AUTH (one of):
