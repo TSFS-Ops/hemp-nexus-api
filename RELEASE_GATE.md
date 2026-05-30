@@ -555,3 +555,24 @@ What Batch 9B does NOT change:
 - Quarantined live jobnames remain absent.
 
 Live cold-storage scheduling still requires a **separate, explicit Batch 10** approval AND a fresh live-cron snapshot. Batch 9B does NOT approve it.
+
+## DATA-004 Batch 10 — live `cold-storage-archive` scheduling
+
+Status: **DATA-004 Batch 10 LIVE (2026-05-30).** `cold-storage-archive` is now scheduled as a LIVE weekly job (`cold-storage-archive-live`, jobid 41, Sundays 04:10 UTC, 30 minutes after the dry-run baseline). Body pins `dry_run:false`. Auth uses `x-internal-key` from `vault.INTERNAL_CRON_KEY` (never anon Bearer). Target is `/functions/v1/cold-storage-archive`. The existing `cold-storage-archive-dryrun` schedule (jobid 40, Sundays 03:40 UTC) is intentionally left in place so dry-run vs live comparison evidence keeps accumulating.
+
+First live tick (run_id `fc63bc96-5aff-4553-b0bc-a3313cdbcc0c`): HTTP 200, `status=success`, `dry_run=false`, `candidates=0`, `processed=0`, `failed=0`, `audit_write_failures=[]`, `evidence_write_failures=[]`, `lifecycle_persistence=evidence_only`. Two `retention_run_evidence` rows written (`started`, `success`). No storage exports written (no eligible records existed at dispatch). No source deletion. No destructive source mutation. Skip-category coverage (duplicate / missing-source / legal-hold-batch) remains evidenced by prior Batch 9B run `51554340-…` and Batch 7 manual run `6cea2c51-…` against the same edge function build. Evidence: `evidence/data-004-batch-10-live-cold-storage-evidence.md`.
+
+Rollback SQL:
+
+```sql
+SELECT cron.unschedule('cold-storage-archive-live');
+```
+
+Out of scope for Batch 10 (still gated, no live schedule introduced):
+- live `email_send_log` purge / `purge-email-send-log-daily` jobname
+- live `email-log-anonymise`
+- live `account-deletion-sweeper`
+- `storage-retention-cleanup-job` (jobid 7 still inactive)
+- per-org retention floors / policy rules
+- any broadening of `cold-storage-archive` source-record handling beyond non-destructive JSON export
+
