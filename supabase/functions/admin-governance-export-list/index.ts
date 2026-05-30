@@ -89,6 +89,13 @@ interface SafeRow {
   approval_note_summary: string | null;
   legal_hold_context_present: boolean;
   legal_hold_context_scope: string | null;
+  // Batch 6 — safe detected fields (no reason/notes/metadata).
+  legal_hold_auto_detected: boolean;
+  legal_hold_hold_count: number;
+  legal_hold_hold_sources: string[];
+  legal_hold_primary_scope: string | null;
+  legal_hold_detected_at: string | null;
+  legal_hold_detection_source: string | null;
   target_org_id: string | null;
   created_at: string;
   updated_at: string;
@@ -108,6 +115,31 @@ function toSafeRow(row: RawRow): SafeRow {
   const legalHold = (verification["legal_hold_context"] ?? null) as
     | Record<string, unknown>
     | null;
+  const detected = (legalHold?.["detected"] ?? null) as
+    | Record<string, unknown>
+    | null;
+  const operator = (legalHold?.["operator"] ?? null) as
+    | Record<string, unknown>
+    | null;
+  const detectedHas = Boolean(detected?.["has_legal_hold"]);
+  const operatorScope =
+    operator && typeof operator["scope"] === "string"
+      ? (operator["scope"] as string)
+      : null;
+  const topScope =
+    legalHold && typeof legalHold["scope"] === "string"
+      ? (legalHold["scope"] as string)
+      : null;
+  const primaryScope =
+    detected && typeof detected["primary_scope"] === "string"
+      ? (detected["primary_scope"] as string)
+      : null;
+  const sources =
+    detected && Array.isArray(detected["hold_sources"])
+      ? (detected["hold_sources"] as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [];
   return {
     export_request_id: row.id,
     governance_record_id: row.governance_record_id as string,
@@ -128,10 +160,22 @@ function toSafeRow(row: RawRow): SafeRow {
     approval_note_summary: summarise(
       typeof approval["note"] === "string" ? (approval["note"] as string) : null,
     ),
-    legal_hold_context_present: Boolean(legalHold),
-    legal_hold_context_scope:
-      legalHold && typeof legalHold["scope"] === "string"
-        ? (legalHold["scope"] as string)
+    legal_hold_context_present: Boolean(legalHold) || detectedHas,
+    legal_hold_context_scope: primaryScope ?? topScope ?? operatorScope,
+    legal_hold_auto_detected: detectedHas,
+    legal_hold_hold_count:
+      detected && typeof detected["hold_count"] === "number"
+        ? (detected["hold_count"] as number)
+        : 0,
+    legal_hold_hold_sources: sources,
+    legal_hold_primary_scope: primaryScope,
+    legal_hold_detected_at:
+      detected && typeof detected["detected_at"] === "string"
+        ? (detected["detected_at"] as string)
+        : null,
+    legal_hold_detection_source:
+      detected && typeof detected["detection_source"] === "string"
+        ? (detected["detection_source"] as string)
         : null,
     target_org_id: row.target_org_id,
     created_at: row.created_at,
