@@ -46,6 +46,7 @@ import {
   GovernanceAnchor,
   useGovernanceEvents,
 } from "@/lib/governance/use-governance-events";
+import { AdminGovernanceExportRequestPanel } from "./AdminGovernanceExportRequestPanel";
 import {
   DEMO_EVENT_COPY,
   EventCategory,
