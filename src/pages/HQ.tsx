@@ -76,6 +76,7 @@ import { AdminResidencyReviewsPanel } from "@/components/admin/AdminResidencyRev
 import { AdminBillingReviewPanel } from "@/components/admin/AdminBillingReviewPanel";
 import { GovernanceRecordsPanel } from "@/components/admin/governance/GovernanceRecordsPanel";
 import { AdminGovernanceExportRequestsListPanel } from "@/components/admin/governance/AdminGovernanceExportRequestsListPanel";
+import { AdminGovernanceExportPreviewPanel } from "@/components/admin/governance/AdminGovernanceExportPreviewPanel";
 import { AdminBasicMemoryPanel } from "@/components/admin/AdminBasicMemoryPanel";
 import { AdminIdentityPanel } from "@/components/admin/AdminIdentityPanel";
 import { TenantBoundaryPanel } from "@/components/admin/TenantBoundaryPanel";
