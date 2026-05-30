@@ -138,3 +138,8 @@ Format for every entry:
 
 None of the deferred items block platform operation. Items 5 and 12 are time-sensitive for go-live; the rest can be ratified in the first 30–60 days post-launch. Items 15–17 capture the three cron jobs quarantined under DATA-004 Batch 8A and the conditions under which they may be replaced.
 
+## DATA-004 Closeout Pack cross-reference
+
+`evidence/data-004-closeout-pack.md` (2026-05-30) consolidates the deferred/gated register for DATA-004 (live email purge, `email-log-anonymise`, live account-deletion sweeper, `storage-retention-cleanup`, sentinel paths, per-org enforcement beyond approved paths, org-admin mutation of retention policies) and pairs each with the required evidence before approval. Items 15–17 above remain authoritative; the closeout pack adds risk category, scheduled vs unscheduled mode, and likely safest next step per item without changing any deferral decision.
+
+

@@ -576,3 +576,10 @@ Out of scope for Batch 10 (still gated, no live schedule introduced):
 - per-org retention floors / policy rules
 - any broadening of `cold-storage-archive` source-record handling beyond non-destructive JSON export
 
+## DATA-004 Closeout Pack
+
+Status: **DATA-004 Closeout Pack COMPLETE (2026-05-30).** Documentation, evidence, guard, and cross-consistency consolidation. **No schedule changed, no cron added/removed, no edge function behaviour changed, no policy changed, no destructive path introduced.** Live `cron.job` re-audited 2026-05-30 and matches the documented contract (jobids 25, 39, 40, 41 active; jobid 7 inactive; quarantined jobnames 14/24/35 and `cold-storage-archive-weekly` absent). The closeout pack is the single authoritative cross-reference for DATA-004 state, evidence map, guard inventory, deferred/gated register, and rollback SQL. See `evidence/data-004-closeout-pack.md`.
+
+Next recommended (do NOT start without explicit approval): DATA-004 Next Controls Review (paper-only) or DATA-004 Live Email Purge Replacement Assessment (paper-only). Live email purge, live anonymisation, live account deletion, storage-retention-cleanup, and sentinel paths remain gated.
+
+

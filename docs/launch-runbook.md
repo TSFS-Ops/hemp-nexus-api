@@ -850,3 +850,8 @@ Out of scope for Batch 10 (still gated, no live schedule introduced):
 - `storage-retention-cleanup-job` (jobid 7 still inactive)
 - per-org retention floors / policy rules
 
+## DATA-004 Closeout Pack
+
+Status: **COMPLETE (2026-05-30).** Single authoritative cross-reference for the DATA-004 final state, cron posture table, evidence map, guard inventory (including the explicit static-only limitation), deferred/gated register, and consolidated rollback SQL. No schedule changed, no cron added/removed, no edge function behaviour changed, no policy changed, no destructive path introduced. Live `cron.job` re-audited 2026-05-30. See `evidence/data-004-closeout-pack.md`.
+
+
