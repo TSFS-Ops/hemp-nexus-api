@@ -30,6 +30,10 @@ import {
   DATA_010_AUDIT_ACTIONS,
   writeLifecycleAudit,
 } from "../_shared/export-lifecycle-audit.ts";
+import {
+  detectGovernanceRecordLegalHold,
+  sanitiseOperatorLegalHoldContext,
+} from "../_shared/legal-hold-detection.ts";
 
 export const ADMIN_GOVERNANCE_EXPORT_REDACTION_MODES = [
   "redacted_client_safe",
