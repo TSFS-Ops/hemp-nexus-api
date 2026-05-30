@@ -30,6 +30,10 @@ import {
   DATA_010_AUDIT_ACTIONS,
   writeLifecycleAudit,
 } from "../_shared/export-lifecycle-audit.ts";
+import {
+  detectGovernanceRecordLegalHold,
+  sanitiseOperatorLegalHoldContext,
+} from "../_shared/legal-hold-detection.ts";
 
 export const ADMIN_GOVERNANCE_EXPORT_REDACTION_MODES = [
   "redacted_client_safe",
@@ -174,6 +178,28 @@ Deno.serve(async (req) => {
   }
   const b = parsed.data;
 
+  // Batch 6 — auto-detect legal-hold context against the Governance
+  // Record (match-anchored). Operator-supplied context is sanitised
+  // and preserved separately; it never overrides detected results.
+  const detected = await detectGovernanceRecordLegalHold(
+    admin,
+    b.governance_record_id,
+    { targetOrgId: b.target_org_id ?? null },
+  );
+  const operatorSafe = sanitiseOperatorLegalHoldContext(b.legal_hold_context);
+  const safeContextForRpc = {
+    detected,
+    operator: operatorSafe,
+    // List-view back-compat: keep a top-level `scope` derived from the
+    // detected primary scope when present, else any operator-supplied
+    // scope. Never any free-text reason.
+    has_legal_hold: detected.has_legal_hold,
+    scope:
+      detected.primary_scope ??
+      (operatorSafe?.scope as string | undefined) ??
+      null,
+  };
+
   const { data: requestId, error: rpcErr } = await admin.rpc(
     "request_admin_governance_export",
     {
@@ -185,7 +211,7 @@ Deno.serve(async (req) => {
       p_target_org_id: b.target_org_id,
       p_redaction_mode: b.redaction_mode,
       p_date_range: b.date_range,
-      p_legal_hold_context: b.legal_hold_context,
+      p_legal_hold_context: safeContextForRpc,
     },
   );
   if (rpcErr || !requestId) {
@@ -219,7 +245,9 @@ Deno.serve(async (req) => {
       reason: b.reason,
       requested_categories: b.requested_categories,
       redaction_mode: b.redaction_mode,
-      legal_hold_context: b.legal_hold_context,
+      // Safe, detected legal-hold context (no reason/metadata/notes).
+      legal_hold_context_detected: detected,
+      legal_hold_context_operator: operatorSafe,
     },
     b.target_org_id,
     requestId,
@@ -230,6 +258,14 @@ Deno.serve(async (req) => {
     request_id: requestId,
     status: "awaiting_approval",
     redaction_mode: b.redaction_mode,
+    legal_hold_auto_detection: {
+      has_legal_hold: detected.has_legal_hold,
+      hold_count: detected.hold_count,
+      hold_sources: detected.hold_sources,
+      primary_scope: detected.primary_scope,
+      detected_at: detected.detected_at,
+      detection_source: detected.detection_source,
+    },
     next_step:
       "Recorded. A second platform admin must approve before any file is generated. No file has been generated and no download link exists.",
   });

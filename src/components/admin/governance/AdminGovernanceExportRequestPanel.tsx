@@ -63,7 +63,19 @@ const REDACTION_MODES = [
 type SubmitState =
   | { kind: "idle" }
   | { kind: "submitting" }
-  | { kind: "success"; requestId: string; redactionMode: string }
+  | {
+      kind: "success";
+      requestId: string;
+      redactionMode: string;
+      legalHoldAutoDetection?: {
+        has_legal_hold: boolean;
+        hold_count: number;
+        hold_sources: string[];
+        primary_scope: string | null;
+        detected_at: string;
+        detection_source: string;
+      } | null;
+    }
   | { kind: "denied"; code: string; message: string }
   | { kind: "failed"; message: string };
 
@@ -151,6 +163,14 @@ export function AdminGovernanceExportRequestPanel({
       const resp = data as {
         request_id?: string;
         redaction_mode?: string;
+        legal_hold_auto_detection?: {
+          has_legal_hold: boolean;
+          hold_count: number;
+          hold_sources: string[];
+          primary_scope: string | null;
+          detected_at: string;
+          detection_source: string;
+        } | null;
       };
       if (!resp?.request_id) {
         setState({ kind: "failed", message: "Unexpected server response." });
@@ -161,6 +181,7 @@ export function AdminGovernanceExportRequestPanel({
         kind: "success",
         requestId: resp.request_id,
         redactionMode: resp.redaction_mode ?? redactionMode,
+        legalHoldAutoDetection: resp.legal_hold_auto_detection ?? null,
       });
       toast.success("Export request recorded");
       setReason("");
@@ -303,6 +324,44 @@ export function AdminGovernanceExportRequestPanel({
               Redaction mode:{" "}
               <span className="font-mono">{state.redactionMode}</span>
             </p>
+            {state.legalHoldAutoDetection && (
+              <div
+                className="mt-1 rounded-sm border border-border bg-muted/30 p-2 space-y-0.5"
+                data-testid="legal-hold-auto-detection"
+                data-has-legal-hold={
+                  state.legalHoldAutoDetection.has_legal_hold ? "true" : "false"
+                }
+              >
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Legal-hold auto-detection
+                </p>
+                {state.legalHoldAutoDetection.has_legal_hold ? (
+                  <>
+                    <p>
+                      This Governance Record appears to involve legal-hold
+                      material ({state.legalHoldAutoDetection.hold_count}{" "}
+                      hold
+                      {state.legalHoldAutoDetection.hold_count === 1 ? "" : "s"}
+                      {state.legalHoldAutoDetection.primary_scope
+                        ? ` · scope: ${state.legalHoldAutoDetection.primary_scope}`
+                        : ""}
+                      ).
+                    </p>
+                    <p className="text-muted-foreground">
+                      Recording this request does not mutate held data, does
+                      not generate a file, and does not create a download
+                      link. A second platform admin must approve before any
+                      file is produced.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">
+                    No active legal hold detected on this Governance Record's
+                    confirmed scopes at request time.
+                  </p>
+                )}
+              </div>
+            )}
             <p>
               Awaiting approval. No file has been generated. No download
               link will appear until the approve + prepare batches are
