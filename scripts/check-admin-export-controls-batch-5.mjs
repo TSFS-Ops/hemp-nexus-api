@@ -117,7 +117,7 @@ check("src/pages/HQ.tsx", "mount:HQ", [
   ],
   [
     "adds 'export-requests' sub-tab id",
-    /\["records",\s*"memory",\s*"export-requests"\]/,
+    /\["records",\s*"memory",\s*"export-requests"(?:\s*,\s*"[^"]+")*\]/,
     true,
   ],
 ]);
