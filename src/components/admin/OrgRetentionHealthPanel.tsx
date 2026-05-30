@@ -162,8 +162,43 @@ interface HealthResponse {
     last_run: LastRunEvidence | null;
   };
 
+  /**
+   * DATA-004 Batch 12 — READ-ONLY live cron drift monitor.
+   * Result of public.data_004_cron_drift_check(). Reports only; never
+   * mutates cron.job. Any non-pass status requires operator review and
+   * explicit corrective approval — this panel never auto-remediates.
+   */
+  cron_drift?: {
+    status: "pass" | "warn" | "fail" | "unknown";
+    read_only: boolean;
+    last_checked?: string;
+    contract_version?: string;
+    expected_active?: string[];
+    expected_inactive?: string[];
+    forbidden_absent?: string[];
+    actual?: Array<{
+      jobid: number;
+      jobname: string;
+      schedule: string;
+      active: boolean;
+      has_dry_run_true?: boolean;
+      has_dry_run_false?: boolean;
+      has_internal_key_auth?: boolean;
+    }>;
+    findings?: Array<{
+      severity: "critical" | "high" | "medium" | "low";
+      code: string;
+      jobname: string;
+      detail: string;
+      recommended_action: string;
+    }>;
+    summary?: { critical: number; high: number; medium: number; low: number; total: number };
+    error?: string;
+  } | null;
+
   request_id: string;
 }
+
 
 function sourceBadge(source: ClassEntry["source"], hasHold: boolean) {
   if (hasHold) {
@@ -262,6 +297,89 @@ export function OrgRetentionHealthPanel() {
           )}
         </AlertDescription>
       </Alert>
+
+      {/* DATA-004 Batch 12 — Live Cron Drift Monitor (READ-ONLY). */}
+      {data?.cron_drift && (
+        <Alert
+          variant={data.cron_drift.status === "pass" ? "default" : "destructive"}
+          className={
+            data.cron_drift.status === "pass"
+              ? "border-emerald-500/40"
+              : data.cron_drift.status === "warn"
+                ? "border-amber-500/40"
+                : ""
+          }
+        >
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>
+            Live cron drift monitor: <strong>{data.cron_drift.status.toUpperCase()}</strong>
+            {" · "}READ-ONLY MONITOR — does not modify cron state, never auto-remediates.
+          </AlertTitle>
+          <AlertDescription>
+            <div className="text-xs space-y-2">
+              {data.cron_drift.last_checked && (
+                <div>
+                  Last checked: <code>{new Date(data.cron_drift.last_checked).toLocaleString()}</code>
+                  {data.cron_drift.contract_version && (
+                    <> · contract: <code>{data.cron_drift.contract_version}</code></>
+                  )}
+                  {data.cron_drift.summary && (
+                    <> · findings: critical={data.cron_drift.summary.critical}, high={data.cron_drift.summary.high}, medium={data.cron_drift.summary.medium}, low={data.cron_drift.summary.low}</>
+                  )}
+                </div>
+              )}
+              {data.cron_drift.error && (
+                <div className="text-destructive">Probe error: {data.cron_drift.error}</div>
+              )}
+              {(data.cron_drift.findings ?? []).length > 0 && (
+                <div className="rounded-sm border border-border bg-muted/30 p-2">
+                  <div className="font-semibold mb-1">Drift findings</div>
+                  <ul className="space-y-1">
+                    {data.cron_drift.findings!.map((f, idx) => (
+                      <li key={idx} className="font-mono text-[11px]">
+                        <Badge variant={f.severity === "critical" ? "destructive" : "secondary"}>{f.severity}</Badge>
+                        {" "}<code>{f.code}</code> · <code>{f.jobname}</code> — {f.detail}
+                        <div className="text-muted-foreground">↳ recommended: <code>{f.recommended_action}</code></div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <details>
+                <summary className="cursor-pointer text-muted-foreground">Expected vs actual cron contract</summary>
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div>
+                    <div className="font-semibold">Expected active</div>
+                    <ul className="list-disc pl-5">{(data.cron_drift.expected_active ?? []).map((j) => (<li key={j}><code>{j}</code></li>))}</ul>
+                    <div className="font-semibold mt-2">Expected inactive</div>
+                    <ul className="list-disc pl-5">{(data.cron_drift.expected_inactive ?? []).map((j) => (<li key={j}><code>{j}</code></li>))}</ul>
+                    <div className="font-semibold mt-2">Forbidden (must be absent)</div>
+                    <ul className="list-disc pl-5">{(data.cron_drift.forbidden_absent ?? []).map((j) => (<li key={j}><code>{j}</code></li>))}</ul>
+                  </div>
+                  <div>
+                    <div className="font-semibold">Actual (DATA-004-relevant rows)</div>
+                    <ul className="space-y-1">
+                      {(data.cron_drift.actual ?? []).map((r) => (
+                        <li key={r.jobid} className="font-mono text-[11px]">
+                          [{r.jobid}] <code>{r.jobname}</code> · <code>{r.schedule}</code> · active={String(r.active)}
+                          {r.has_dry_run_true !== undefined && <> · dry_run:true={String(r.has_dry_run_true)}</>}
+                          {r.has_dry_run_false !== undefined && <> · dry_run:false={String(r.has_dry_run_false)}</>}
+                          {r.has_internal_key_auth !== undefined && <> · x-internal-key={String(r.has_internal_key_auth)}</>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </details>
+              <div className="text-muted-foreground">
+                Operator action: any non-pass status requires manual review and explicit corrective approval. This monitor does NOT change cron state, does NOT approve live email purge, anonymisation, account deletion, or storage cleanup.
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+
 
 
 
