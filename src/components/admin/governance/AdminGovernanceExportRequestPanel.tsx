@@ -63,7 +63,19 @@ const REDACTION_MODES = [
 type SubmitState =
   | { kind: "idle" }
   | { kind: "submitting" }
-  | { kind: "success"; requestId: string; redactionMode: string }
+  | {
+      kind: "success";
+      requestId: string;
+      redactionMode: string;
+      legalHoldAutoDetection?: {
+        has_legal_hold: boolean;
+        hold_count: number;
+        hold_sources: string[];
+        primary_scope: string | null;
+        detected_at: string;
+        detection_source: string;
+      } | null;
+    }
   | { kind: "denied"; code: string; message: string }
   | { kind: "failed"; message: string };
 
