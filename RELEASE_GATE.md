@@ -583,3 +583,23 @@ Status: **DATA-004 Closeout Pack COMPLETE (2026-05-30).** Documentation, evidenc
 Next recommended (do NOT start without explicit approval): DATA-004 Next Controls Review (paper-only) or DATA-004 Live Email Purge Replacement Assessment (paper-only). Live email purge, live anonymisation, live account deletion, storage-retention-cleanup, and sentinel paths remain gated.
 
 
+
+## DATA-004 Batch 12 — Live Cron Drift Monitor
+
+Status: **DATA-004 Batch 12 LIVE (2026-05-30) — read-only.** A live cron drift monitor (`public.data_004_cron_drift_check()`, `SECURITY DEFINER`, `STABLE`, `service_role` EXECUTE only) is now wired into the `admin-org-retention` edge function `health` action and surfaced in HQ → Per-Org Retention. The monitor compares live `cron.job` state against the approved contract (active: `account-deletion-sweeper-daily-dryrun`, `purge-email-send-log-daily-dryrun`, `cold-storage-archive-dryrun`, `cold-storage-archive-live`; forbidden: `purge-email-send-log-daily`, `email-log-anonymise`, `account-deletion-sweeper`, `account-deletion-sweeper-live`, `storage-retention-cleanup`, `cold-storage-archive-weekly`; inactive expected: `storage-retention-cleanup-job`).
+
+The monitor is **read-only** and **does not modify cron state** — it issues no `cron.schedule`, no `cron.unschedule`, no `INSERT`/`UPDATE`/`DELETE` against `cron.*`, and no `net.http_post`. It only `SELECT`s from `cron.job`.
+
+First live drift result (2026-05-30, verified via `SELECT jobid, jobname, schedule, active FROM cron.job`): **PASS** — jobids 25, 39, 40, 41 active with approved schedules; jobid 7 (`storage-retention-cleanup-job`) inactive as expected; no forbidden jobnames present.
+
+Guard: `scripts/check-data-004-batch-12-cron-drift-readonly.mjs` (wired into `prebuild`) asserts the RPC is `SECURITY DEFINER`/`STABLE`/`service_role`-only, the migration body contains zero cron mutation verbs, the edge function exposes the surface via the existing `health` action without scheduling cron, and that this section plus the runbook section contain the verbatim phrases `read-only` and `does not modify cron state`.
+
+What Batch 12 does NOT change: no cron schedule is added, removed, or modified; no edge function enforcement broadens; no retention policy or floor changes; no new sweeper is wired; live email purge, live email anonymisation, live account deletion, and storage-retention-cleanup remain gated.
+
+Rollback (drift RPC only — leaves all schedules untouched):
+
+```sql
+DROP FUNCTION IF EXISTS public.data_004_cron_drift_check();
+```
+
+Evidence: `evidence/data-004-batch-12-cron-drift-monitor.md`.

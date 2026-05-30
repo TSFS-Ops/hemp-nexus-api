@@ -855,3 +855,33 @@ Out of scope for Batch 10 (still gated, no live schedule introduced):
 Status: **COMPLETE (2026-05-30).** Single authoritative cross-reference for the DATA-004 final state, cron posture table, evidence map, guard inventory (including the explicit static-only limitation), deferred/gated register, and consolidated rollback SQL. No schedule changed, no cron added/removed, no edge function behaviour changed, no policy changed, no destructive path introduced. Live `cron.job` re-audited 2026-05-30. See `evidence/data-004-closeout-pack.md`.
 
 
+
+## DATA-004 Batch 12 — Live Cron Drift Monitor
+
+Status: **DATA-004 Batch 12 LIVE (2026-05-30) — read-only.** The `public.data_004_cron_drift_check()` RPC compares the live `cron.job` table against the approved DATA-004 contract and returns a structured pass/warn/fail report. It is exposed via the existing `admin-org-retention` edge function `health` action (platform_admin only) and rendered in HQ → Per-Org Retention as the "Live cron drift monitor" panel.
+
+The monitor is **read-only** and **does not modify cron state**. It performs `SELECT`-only access on `cron.job`. It never calls `cron.schedule`, `cron.unschedule`, or `net.http_post`, and it issues no `INSERT`/`UPDATE`/`DELETE` against `cron.*` tables.
+
+Approved contract checked:
+- Active expected: `account-deletion-sweeper-daily-dryrun` (jobid 25), `purge-email-send-log-daily-dryrun` (jobid 39), `cold-storage-archive-dryrun` (jobid 40), `cold-storage-archive-live` (jobid 41)
+- Inactive expected: `storage-retention-cleanup-job` (jobid 7)
+- Forbidden jobnames: `purge-email-send-log-daily`, `email-log-anonymise`, `account-deletion-sweeper`, `account-deletion-sweeper-live`, `storage-retention-cleanup`, `cold-storage-archive-weekly`
+
+First live drift result (2026-05-30): **PASS** — live `cron.job` matches the contract exactly. No forbidden jobnames present. Jobid 7 remains inactive.
+
+Operator usage: open HQ → Per-Org Retention → "Live cron drift monitor". Investigate any `warn` or `fail` immediately; the monitor only reports — it will not self-heal. Restoration requires the documented Batch rollback SQL.
+
+Guard: `scripts/check-data-004-batch-12-cron-drift-readonly.mjs` runs in `npm run build` prebuild and fails CI if the drift RPC gains mutation verbs, if the edge function tries to schedule cron, or if this section / the RELEASE_GATE section loses the phrases `read-only` and `does not modify cron state`.
+
+Out of scope for Batch 12 (still gated, no behaviour change):
+- no cron schedule added, removed, or modified
+- no destructive path activated
+- live email purge, live email anonymisation, live account deletion, and `storage-retention-cleanup-job` remain gated
+
+Rollback (drift RPC only):
+
+```sql
+DROP FUNCTION IF EXISTS public.data_004_cron_drift_check();
+```
+
+Evidence: `evidence/data-004-batch-12-cron-drift-monitor.md`.
