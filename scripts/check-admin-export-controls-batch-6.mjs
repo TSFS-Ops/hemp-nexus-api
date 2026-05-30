@@ -20,12 +20,31 @@ import { readFileSync, existsSync } from "node:fs";
 
 const failures = [];
 
+/**
+ * Strip comments so guard predicates only scan executable code, not
+ * JSDoc / banner / inline doc text that legitimately mentions banned
+ * tokens (e.g. "NOT selecting released_reason", "no signed URL").
+ *
+ * Removes:
+ *   - block comments, including JSDoc and banner blocks
+ *   - // line comments
+ *
+ * Naive on string literals containing comment markers, which is
+ * acceptable for the surfaces under guard.
+ */
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(?<![:"'`\\])\/\/[^\n]*/g, "");
+}
+
 function check(path, label, predicates) {
   if (!existsSync(path)) {
     failures.push(`${label}: missing file ${path}`);
     return;
   }
-  const src = readFileSync(path, "utf8");
+  const raw = readFileSync(path, "utf8");
+  const src = stripComments(raw);
   for (const [name, re, expect] of predicates) {
     const found = re.test(src);
     if (found !== expect) {
@@ -54,7 +73,7 @@ check(HELPER, "shared:legal-hold-detection", [
   ["NO update of legal_holds", /from\(\s*["']legal_holds["']\s*\)[\s\S]{0,80}\.update\s*\(/, false],
   ["NO delete of legal_holds", /from\(\s*["']legal_holds["']\s*\)[\s\S]{0,80}\.delete\s*\(/, false],
   // No file generation / download / signed URL.
-  ["NO signed URL", /createSignedUrl|signed_url/, false],
+  ["NO signed URL", /createSignedUrl|(?<!no_)signed_url/, false],
   ["NO storage upload", /storage\.from\([^)]*\)\.upload\s*\(/, false],
   ["NO storage download", /storage\.from\([^)]*\)\.download\s*\(/, false],
   ["NO CSV/Blob output", /new\s+Blob\s*\(|text\/csv/i, false],
@@ -69,7 +88,7 @@ check(REQ, "edge:admin-governance-export-request", [
   ["audits detected legal-hold context", /legal_hold_context_detected/, true],
   ["preserves operator context separately", /legal_hold_context_operator/, true],
   // Never adds prepare/download/destroy.
-  ["NO signed URL", /createSignedUrl|signed_url/, false],
+  ["NO signed URL", /createSignedUrl|(?<!no_)signed_url/, false],
   ["NO storage upload", /storage\.from\([^)]*\)\.upload\s*\(/, false],
   ["NO CSV/Blob output", /new\s+Blob\s*\(|text\/csv/i, false],
   ["NO prepare/destroy/generate verbs", /admin_export_prepared|admin_export_downloaded|admin_export_destroyed|admin_export_generated/, false],
@@ -87,7 +106,7 @@ check(APR, "edge:admin-governance-export-approve", [
   ["audits detected-at-approval", /legal_hold_context_detected_at_approval/, true],
   ["audits change flag", /legal_hold_context_changed_since_request/, true],
   // Approval must NOT prepare / generate / download.
-  ["NO signed URL", /createSignedUrl|signed_url/, false],
+  ["NO signed URL", /createSignedUrl|(?<!no_)signed_url/, false],
   ["NO storage upload", /storage\.from\([^)]*\)\.upload\s*\(/, false],
   ["NO CSV/Blob output", /new\s+Blob\s*\(|text\/csv/i, false],
   ["NO prepare/destroy/generate verbs", /admin_export_prepared|admin_export_downloaded|admin_export_destroyed|admin_export_generated/, false],
@@ -111,7 +130,7 @@ check(LIST, "edge:admin-governance-export-list", [
   ["NO mutation of legal_holds", /from\(\s*["']legal_holds["']\s*\)[\s\S]{0,80}\.(insert|update|delete)\s*\(/, false],
   // List remains read-only across all surfaces.
   ["NO mutation of export_requests", /from\(\s*["']export_requests["']\s*\)[\s\S]{0,80}\.(insert|update|delete)\s*\(/, false],
-  ["NO signed URL", /createSignedUrl|signed_url/, false],
+  ["NO signed URL", /createSignedUrl|(?<!no_)signed_url/, false],
   ["NO storage upload", /storage\.from\([^)]*\)\.upload\s*\(/, false],
   ["NO CSV/Blob output", /new\s+Blob\s*\(|text\/csv/i, false],
 ]);
@@ -126,7 +145,7 @@ check(PANEL_LIST, "panel:list", [
   ["NO 'Reason:' label for holds", /hold[\s\S]{0,40}reason\s*[:=]/i, false],
   ["NO 'Notes:' label for holds", /hold[\s\S]{0,40}notes\s*[:=]/i, false],
   ["NO 'Metadata' label for holds", /hold[\s\S]{0,40}metadata/i, false],
-  ["NO signed URL surface", /signedUrl|createSignedUrl|signed_url/, false],
+  ["NO signed URL surface", /(?<!no)signedUrl|createSignedUrl|(?<!no_)signed_url/, false],
   ["NO download CSV button", /Download (CSV|JSON|PDF)/i, false],
 ]);
 
@@ -139,7 +158,7 @@ check(PANEL_REQ, "panel:request", [
   ["preserves no-file copy", /No file has been generated/, true],
   // Negative.
   ["NO download/prepare/destroy buttons", /Prepare export|Destroy export|Download export|Generate export/i, false],
-  ["NO signed URL surface", /signedUrl|createSignedUrl|signed_url/, false],
+  ["NO signed URL surface", /(?<!no)signedUrl|createSignedUrl|(?<!no_)signed_url/, false],
   ["NO raw hold reason rendering", /hold\.reason|legal_hold\.reason|legal_hold_reason/, false],
 ]);
 

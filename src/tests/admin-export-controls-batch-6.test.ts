@@ -17,45 +17,36 @@ import { describe, it, expect } from "vitest";
 
 const REPO_ROOT = join(__dirname, "..", "..");
 
-const HELPER_SRC = readFileSync(
-  join(REPO_ROOT, "supabase/functions/_shared/legal-hold-detection.ts"),
-  "utf8",
+// Strip comments so source-pin predicates do not false-positive on
+// JSDoc / banner / inline doc text that legitimately mentions banned
+// tokens (e.g. "NOT selecting released_reason", "no signed URL").
+function readSrc(rel: string): string {
+  const raw = readFileSync(join(REPO_ROOT, rel), "utf8");
+  return raw
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(?<![:"'`\\])\/\/[^\n]*/g, "");
+}
+
+const HELPER_SRC = readSrc(
+  "supabase/functions/_shared/legal-hold-detection.ts",
 );
-const REQ_SRC = readFileSync(
-  join(
-    REPO_ROOT,
-    "supabase/functions/admin-governance-export-request/index.ts",
-  ),
-  "utf8",
+const REQ_SRC = readSrc(
+  "supabase/functions/admin-governance-export-request/index.ts",
 );
-const APR_SRC = readFileSync(
-  join(
-    REPO_ROOT,
-    "supabase/functions/admin-governance-export-approve/index.ts",
-  ),
-  "utf8",
+const APR_SRC = readSrc(
+  "supabase/functions/admin-governance-export-approve/index.ts",
 );
-const LIST_SRC = readFileSync(
-  join(
-    REPO_ROOT,
-    "supabase/functions/admin-governance-export-list/index.ts",
-  ),
-  "utf8",
+const LIST_SRC = readSrc(
+  "supabase/functions/admin-governance-export-list/index.ts",
 );
-const REQ_PANEL = readFileSync(
-  join(
-    REPO_ROOT,
-    "src/components/admin/governance/AdminGovernanceExportRequestPanel.tsx",
-  ),
-  "utf8",
+const REQ_PANEL = readSrc(
+  "src/components/admin/governance/AdminGovernanceExportRequestPanel.tsx",
 );
-const LIST_PANEL = readFileSync(
-  join(
-    REPO_ROOT,
-    "src/components/admin/governance/AdminGovernanceExportRequestsListPanel.tsx",
-  ),
-  "utf8",
+const LIST_PANEL = readSrc(
+  "src/components/admin/governance/AdminGovernanceExportRequestsListPanel.tsx",
 );
+// Guard source is read raw (comments preserved) so the contract test
+// can pin the guard banner / contract description.
 const GUARD_SRC = readFileSync(
   join(REPO_ROOT, "scripts/check-admin-export-controls-batch-6.mjs"),
   "utf8",
