@@ -8,7 +8,7 @@
  * Hard contract — this panel NEVER renders:
  *   - download / signed URL / prepare / destroy controls
  *   - generated file links
- *   - "ready to download" or "export ready" wording
+ *   - wording that implies the export is available for retrieval
  *
  * "Approved means approved only — not prepared, not generated, not downloadable."
  */
