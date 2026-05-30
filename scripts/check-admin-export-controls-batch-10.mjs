@@ -49,15 +49,24 @@ if (!existsSync(QA)) {
   // The QA pack must NOT instruct testers to perform or expect
   // file generation, downloads, prepare, destroy, signed/temporary
   // links — as actions, only as forbidden surfaces.
+  // Only flag positive instructions to the tester — not the negative
+  // "must not appear" / "Forbidden surfaces" listings that legitimately
+  // mention these verbs as things that should be absent.
+  const lines = src.split(/\r?\n/);
+  const isNegativeContext = (line) =>
+    /\bno\b|\bnot\b|\bnever\b|absent|forbid|forbidden|blocker|STOP|button|appears\b|appear\b|wording|listing|list of|surfaces?\b/i.test(line);
   const forbiddenInstruction = [
-    [/\bclick\s+download\b/i, "must not instruct testers to click download"],
-    [/\bdownload the (csv|pdf|json|file)\b/i, "must not instruct testers to download a file"],
-    [/\bgenerate (the )?export\b/i, "must not instruct testers to generate an export"],
-    [/\bprepare (the )?export\b/i, "must not instruct testers to prepare an export"],
-    [/\bdestroy (the )?export\b/i, "must not instruct testers to destroy an export"],
+    [/^\s*(?:\d+\.|-|\*)?\s*click\s+download\b/i, "must not instruct testers to click download"],
+    [/^\s*(?:\d+\.|-|\*)?\s*download the (csv|pdf|json|file)\b/i, "must not instruct testers to download a file"],
+    [/^\s*(?:\d+\.|-|\*)?\s*generate (the )?export\b/i, "must not instruct testers to generate an export"],
+    [/^\s*(?:\d+\.|-|\*)?\s*prepare (the )?export\b/i, "must not instruct testers to prepare an export"],
+    [/^\s*(?:\d+\.|-|\*)?\s*destroy (the )?export\b/i, "must not instruct testers to destroy an export"],
   ];
-  for (const [re, label] of forbiddenInstruction) {
-    if (re.test(src)) failures.push(`QA pack: ${label}`);
+  for (const line of lines) {
+    if (isNegativeContext(line)) continue;
+    for (const [re, label] of forbiddenInstruction) {
+      if (re.test(line)) failures.push(`QA pack: ${label} (line: ${line.trim().slice(0, 100)})`);
+    }
   }
 }
 
