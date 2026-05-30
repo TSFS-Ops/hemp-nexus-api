@@ -31,6 +31,20 @@ function readFile(rel) {
   return fs.readFileSync(path.join(repoRoot, rel), "utf8");
 }
 
+// Strip SQL/TS string literals and comments so forbidden-pattern checks
+// only match real call sites, not remediation text inside quoted strings
+// (e.g. drift findings carry recommended_action strings that name
+// cron.unschedule by design — that is advisory text, not an executed call).
+function stripStringsAndComments(src) {
+  return src
+    .replace(/--[^\n]*/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/[^\n]*/g, "")
+    .replace(/'(?:''|[^'])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/`(?:\\.|[^`\\])*`/g, "``");
+}
+
 // 1. Locate the Batch 12 migration.
 const migrationsDir = path.join(repoRoot, "supabase/migrations");
 const migrations = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql"));
@@ -64,8 +78,9 @@ if (!batch12) {
     /\bdelete\s+from\s+cron\./i,
     /\binsert\s+into\s+cron\./i,
   ];
+  const bodyStripped = stripStringsAndComments(body);
   for (const re of forbidden) {
-    if (re.test(body)) errors.push(`Batch 12 migration contains forbidden cron-mutation clause: ${re}`);
+    if (re.test(bodyStripped)) errors.push(`Batch 12 migration contains forbidden cron-mutation clause: ${re}`);
   }
 }
 
@@ -76,7 +91,8 @@ const edge = readFile(edgePath);
 if (!/data_004_cron_drift_check/.test(edge)) {
   errors.push(`${edgePath} must call rpc("data_004_cron_drift_check") to surface drift in health.`);
 }
-if (/cron\.schedule\b|cron\.unschedule\b/.test(edge)) {
+const edgeStripped = stripStringsAndComments(edge);
+if (/cron\.schedule\b|cron\.unschedule\b/.test(edgeStripped)) {
   errors.push(`${edgePath} must not reference cron.schedule / cron.unschedule (Batch 12 is read-only).`);
 }
 
