@@ -897,6 +897,13 @@ export function GovernanceRecordDetail({ anchor }: Props) {
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
       />
+
+      {isPlatformAdmin && anchor.matchId && (
+        <AdminGovernanceExportRequestPanel
+          governanceRecordId={anchor.matchId}
+          recordRef={recordRef}
+        />
+      )}
     </div>
   );
 }
