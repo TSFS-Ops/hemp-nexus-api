@@ -607,3 +607,7 @@ Evidence: `evidence/data-004-batch-12-cron-drift-monitor.md`.
 ## Admin Export Controls — Batch 2 (HQ Governance Record Export Request Shell)
 
 Guard: `scripts/check-admin-export-controls-batch-2.mjs` (wired into `prebuild`) asserts that the `admin-governance-export-request` edge function enforces `assertAal2` + `is_admin`, emits both canonical DATA-010 audits, and that neither the edge function nor `AdminGovernanceExportRequestPanel.tsx` generates files, signed URLs, CSV, Blob output, or download anchors. Request shell only — no approve/prepare/download. Evidence: `evidence/admin-export-controls-batch-2.md`.
+
+## Admin Export Controls — Batch 3 (Redaction + Access Contract Tests)
+
+Guard: `scripts/check-admin-export-controls-batch-3.mjs` (wired into `prebuild`) plus contract tests `src/tests/admin-export-controls-batch-3.test.ts` (41 cases) pin: (a) platform_admin + AAL2 gates on `admin-governance-export-request`, (b) strict Zod body schema with 4-value redaction allow-list and `redacted_client_safe` default, (c) all DATA-010 canonical audit emissions on success + every denial path, (d) `request_admin_governance_export` remains `SECURITY DEFINER`, `service_role`-only EXECUTE, writes `awaiting_approval`, and (e) the HQ panel still renders no approve/prepare/download/destroy/signed-URL/Blob-CSV surfaces. Proof-only batch — no file generation, no download, no approval path added. Evidence: `evidence/admin-export-controls-batch-3-tests.md`.
