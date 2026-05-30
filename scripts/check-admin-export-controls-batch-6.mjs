@@ -35,7 +35,7 @@ const failures = [];
 function stripComments(src) {
   return src
     .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
+    .replace(/(?<![:"'`\\])\/\/[^\n]*/g, "");
 }
 
 function check(path, label, predicates) {
