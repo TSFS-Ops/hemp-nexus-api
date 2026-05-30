@@ -51,6 +51,7 @@ function stripSql(s) {
 }
 
 let dryRunMatches = 0;
+let liveMatches = 0;
 const SCHED_RE = /cron\.schedule\s*\(\s*['"`]([a-z0-9._-]+)['"`][\s\S]*?(?=cron\.schedule\s*\(|$)/gi;
 
 for (const f of walkSql(MIG_DIR)) {
@@ -67,34 +68,43 @@ for (const f of walkSql(MIG_DIR)) {
     const jobname = m[1];
     if (!/cold-storage-archive/i.test(block)) continue;
 
-    // (5) only `-dryrun` jobname permitted
-    if (jobname !== "cold-storage-archive-dryrun") {
-      errors.push(`${f}: only 'cold-storage-archive-dryrun' may be scheduled (got '${jobname}').`);
+    // (5) only `-dryrun` and (Batch 10) `-live` jobnames permitted
+    if (jobname !== "cold-storage-archive-dryrun" && jobname !== "cold-storage-archive-live") {
+      errors.push(`${f}: only 'cold-storage-archive-dryrun' or 'cold-storage-archive-live' may be scheduled (got '${jobname}').`);
       continue;
     }
 
-    dryRunMatches += 1;
+    if (jobname === "cold-storage-archive-dryrun") {
+      dryRunMatches += 1;
+      if (!/['"]dry_run['"]\s*,\s*true\b/i.test(block)) {
+        errors.push(`${f}: 'cold-storage-archive-dryrun' must pin 'dry_run', true.`);
+      }
+      if (/['"]dry_run['"]\s*,\s*false\b/i.test(block)) {
+        errors.push(`${f}: 'cold-storage-archive-dryrun' must NOT set dry_run=false.`);
+      }
+    } else {
+      liveMatches += 1;
+      if (!/['"]dry_run['"]\s*,\s*false\b/i.test(block)) {
+        errors.push(`${f}: 'cold-storage-archive-live' must pin 'dry_run', false.`);
+      }
+      if (/['"]dry_run['"]\s*,\s*true\b/i.test(block)) {
+        errors.push(`${f}: 'cold-storage-archive-live' must NOT set dry_run=true.`);
+      }
+    }
 
-    // (2) dry_run pin
-    if (!/['"]dry_run['"]\s*,\s*true\b/i.test(block)) {
-      errors.push(`${f}: 'cold-storage-archive-dryrun' must pin 'dry_run', true.`);
-    }
-    if (/['"]dry_run['"]\s*,\s*false\b/i.test(block)) {
-      errors.push(`${f}: 'cold-storage-archive-dryrun' must NOT set dry_run=false.`);
-    }
     // (3) auth = x-internal-key + INTERNAL_CRON_KEY (never anon Bearer)
     if (/Authorization['"]\s*,\s*['"]Bearer\s+ey/i.test(block)) {
-      errors.push(`${f}: 'cold-storage-archive-dryrun' must NOT use anon Bearer auth.`);
+      errors.push(`${f}: '${jobname}' must NOT use anon Bearer auth.`);
     }
     if (!/x-internal-key/i.test(block)) {
-      errors.push(`${f}: 'cold-storage-archive-dryrun' must send x-internal-key header.`);
+      errors.push(`${f}: '${jobname}' must send x-internal-key header.`);
     }
     if (!/INTERNAL_CRON_KEY/.test(block)) {
-      errors.push(`${f}: 'cold-storage-archive-dryrun' must read INTERNAL_CRON_KEY from vault.`);
+      errors.push(`${f}: '${jobname}' must read INTERNAL_CRON_KEY from vault.`);
     }
     // (4) target the Batch 7 edge function, not a legacy DB function
     if (!/\/functions\/v1\/cold-storage-archive/.test(block)) {
-      errors.push(`${f}: 'cold-storage-archive-dryrun' must POST to /functions/v1/cold-storage-archive.`);
+      errors.push(`${f}: '${jobname}' must POST to /functions/v1/cold-storage-archive.`);
     }
   }
 }
@@ -105,6 +115,11 @@ if (dryRunMatches === 0) {
 } else if (dryRunMatches > 1) {
   errors.push(`Batch 9A allows exactly one 'cold-storage-archive-dryrun' schedule (found ${dryRunMatches}).`);
 }
+// Batch 10: at most one live schedule
+if (liveMatches > 1) {
+  errors.push(`Batch 10 allows at most one 'cold-storage-archive-live' schedule (found ${liveMatches}).`);
+}
+
 
 // (7) Batch 7 source contract preserved
 if (!existsSync(FN)) {
