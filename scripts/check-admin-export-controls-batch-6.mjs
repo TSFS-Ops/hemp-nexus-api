@@ -20,12 +20,31 @@ import { readFileSync, existsSync } from "node:fs";
 
 const failures = [];
 
+/**
+ * Strip comments so guard predicates only scan executable code, not
+ * JSDoc / banner / inline doc text that legitimately mentions banned
+ * tokens (e.g. "NOT selecting released_reason", "no signed URL").
+ *
+ * Removes:
+ *   - block comments, including JSDoc and banner blocks
+ *   - // line comments
+ *
+ * Naive on string literals containing comment markers, which is
+ * acceptable for the surfaces under guard.
+ */
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
+}
+
 function check(path, label, predicates) {
   if (!existsSync(path)) {
     failures.push(`${label}: missing file ${path}`);
     return;
   }
-  const src = readFileSync(path, "utf8");
+  const raw = readFileSync(path, "utf8");
+  const src = stripComments(raw);
   for (const [name, re, expect] of predicates) {
     const found = re.test(src);
     if (found !== expect) {
