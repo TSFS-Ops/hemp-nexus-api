@@ -47,6 +47,7 @@ import {
   useGovernanceEvents,
 } from "@/lib/governance/use-governance-events";
 import { AdminGovernanceExportRequestPanel } from "./AdminGovernanceExportRequestPanel";
+import { AdminGovernanceExportApprovalPanel } from "./AdminGovernanceExportApprovalPanel";
 import {
   DEMO_EVENT_COPY,
   EventCategory,
