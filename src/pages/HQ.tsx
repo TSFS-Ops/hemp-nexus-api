@@ -153,6 +153,146 @@ const TABS: {
 const VALID_TAB_IDS = TABS.map(t => t.id) as readonly TabId[];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Responsive admin tabs nav. Measures available width and pushes overflowing
+// items into a deterministic "More" dropdown so admin headings never scroll
+// off-screen at common laptop widths (1280/1366/1440/1536).
+// ─────────────────────────────────────────────────────────────────────────────
+type AdminTab = typeof TABS[number];
+function AdminTabsNav({
+  tabs,
+  activeTab,
+  onSelect,
+}: {
+  tabs: readonly AdminTab[];
+  activeTab: TabId;
+  onSelect: (id: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(tabs.length);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const measure = measureRef.current;
+    if (!container || !measure) return;
+
+    const MORE_BUDGET = 96; // reserved px for the More button
+
+    const recompute = () => {
+      const available = container.clientWidth;
+      const items = Array.from(measure.querySelectorAll<HTMLElement>("[data-tab-item]"));
+      const gap = 20; // matches gap-5
+      let used = 0;
+      let count = 0;
+      for (let i = 0; i < items.length; i++) {
+        const w = items[i].offsetWidth + (i > 0 ? gap : 0);
+        // Reserve room for More button if more items remain
+        const needsMore = i < items.length - 1;
+        if (used + w + (needsMore ? MORE_BUDGET : 0) <= available) {
+          used += w;
+          count++;
+        } else {
+          break;
+        }
+      }
+      setVisibleCount(Math.max(1, count));
+    };
+
+    recompute();
+    const ro = new ResizeObserver(recompute);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [tabs]);
+
+  // Ensure active tab is always visible — if it's in overflow, swap it in
+  const activeIndex = tabs.findIndex(t => t.id === activeTab);
+  let visible = tabs.slice(0, visibleCount);
+  let overflow = tabs.slice(visibleCount);
+  if (activeIndex >= visibleCount && visibleCount > 0) {
+    const activeTabItem = tabs[activeIndex];
+    visible = [...tabs.slice(0, visibleCount - 1), activeTabItem];
+    overflow = tabs.filter((_, i) => i !== activeIndex && i >= visibleCount - 1);
+  }
+
+  const triggerClass = `
+    relative h-12 px-0 rounded-none bg-transparent shrink-0
+    text-sm text-muted-foreground hover:text-foreground
+    data-[state=active]:text-foreground
+    data-[state=active]:font-medium
+    data-[state=active]:shadow-none
+    data-[state=active]:bg-transparent
+    data-[state=active]:after:absolute
+    data-[state=active]:after:left-0
+    data-[state=active]:after:right-0
+    data-[state=active]:after:-bottom-px
+    data-[state=active]:after:h-0.5
+    data-[state=active]:after:bg-slate-900
+    transition-colors
+  `;
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      {/* Hidden measurement row, renders all items at natural width */}
+      <div
+        ref={measureRef}
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 invisible pointer-events-none flex gap-5 h-12"
+      >
+        {tabs.map(t => {
+          const Icon = t.icon;
+          return (
+            <span key={`m-${t.id}`} data-tab-item className="inline-flex items-center text-sm whitespace-nowrap">
+              <Icon className="h-3.5 w-3.5 mr-2" strokeWidth={1.5} />
+              {t.label}
+            </span>
+          );
+        })}
+      </div>
+
+      <TabsList className="h-12 bg-transparent p-0 gap-5 rounded-none flex w-full justify-start">
+        {visible.map(t => {
+          const Icon = t.icon;
+          return (
+            <TabsTrigger key={t.id} value={t.id} className={triggerClass}>
+              <Icon className="h-3.5 w-3.5 mr-2" strokeWidth={1.5} />
+              <span className="whitespace-nowrap">{t.label}</span>
+            </TabsTrigger>
+          );
+        })}
+
+        {overflow.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="relative h-12 px-0 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0 outline-none"
+              aria-label="More admin sections"
+            >
+              <MoreHorizontal className="h-3.5 w-3.5 mr-2" strokeWidth={1.5} />
+              <span className="whitespace-nowrap">More</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {overflow.map(t => {
+                const Icon = t.icon;
+                return (
+                  <DropdownMenuItem
+                    key={t.id}
+                    onSelect={() => onSelect(t.id)}
+                    className={t.id === activeTab ? "font-medium" : ""}
+                  >
+                    <Icon className="h-3.5 w-3.5 mr-2" strokeWidth={1.5} />
+                    {t.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </TabsList>
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Top admin bar, header for the platform administration workspace.
 // Midnight slate-950 to draw a hard boundary against the bright workspace below.
 // ─────────────────────────────────────────────────────────────────────────────
