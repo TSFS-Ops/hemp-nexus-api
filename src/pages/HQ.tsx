@@ -644,32 +644,11 @@ function HQLayout() {
           horizontal language; sticky so admins always have the four levers in view. */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <div className="bg-card border-b border-border sticky top-0 z-10">
-          <div className="px-4 sm:px-6 lg:px-10 overflow-x-auto no-scrollbar">
-            <TabsList className="h-12 bg-transparent p-0 gap-6 sm:gap-8 rounded-none">
-              {TABS.map(t => {
-              const Icon = t.icon;
-              return <TabsTrigger key={t.id} value={t.id} className="
-                      relative h-12 px-0 rounded-none bg-transparent shrink-0
-                      text-sm text-muted-foreground hover:text-foreground
-                      data-[state=active]:text-foreground
-                      data-[state=active]:font-medium
-                      data-[state=active]:shadow-none
-                      data-[state=active]:bg-transparent
-                      data-[state=active]:after:absolute
-                      data-[state=active]:after:left-0
-                      data-[state=active]:after:right-0
-                      data-[state=active]:after:-bottom-px
-                      data-[state=active]:after:h-0.5
-                      data-[state=active]:after:bg-slate-900
-                      transition-colors
-                    ">
-                    <Icon className="h-3.5 w-3.5 mr-2" strokeWidth={1.5} />
-                    {t.label}
-                  </TabsTrigger>;
-            })}
-            </TabsList>
+          <div className="px-4 sm:px-6 lg:px-10">
+            <AdminTabsNav tabs={TABS} activeTab={activeTab} onSelect={handleTabChange} />
           </div>
         </div>
+
 
         <main className="px-3 sm:px-6 lg:px-10 py-6 sm:py-8 max-w-[1600px] mx-auto space-y-4">
           <AdminRedirectOriginBanner />
