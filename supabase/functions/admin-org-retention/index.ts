@@ -452,6 +452,30 @@ Deno.serve(async (req) => {
       const dryRunSchedules = cronJobs.filter((j) => j.is_dry_run && j.active);
       const liveSchedules = cronJobs.filter((j) => !j.is_dry_run && j.active);
 
+      // DATA-004 Batch 12 — READ-ONLY live cron drift monitor.
+      // Calls public.data_004_cron_drift_check() (SECURITY DEFINER,
+      // service_role EXECUTE only). The RPC performs ZERO writes; it only
+      // compares cron.job against the approved DATA-004 contract and
+      // returns a pass/warn/fail report with findings, actuals, and
+      // recommended operator actions. Surfaced for HQ visibility ONLY —
+      // this endpoint never auto-remediates drift.
+      let cronDrift: Record<string, unknown> | null = null;
+      try {
+        const { data: drift, error: driftErr } = await admin.rpc(
+          "data_004_cron_drift_check",
+        );
+        if (driftErr) {
+          console.error("[admin-org-retention] cron_drift rpc failed:", driftErr);
+          cronDrift = { status: "unknown", read_only: true, error: driftErr.message };
+        } else {
+          cronDrift = (drift as Record<string, unknown>) ?? null;
+        }
+      } catch (e) {
+        console.error("[admin-org-retention] cron_drift rpc threw:", e);
+        cronDrift = { status: "unknown", read_only: true, error: String(e) };
+      }
+
+
       return jsonResponse(req, {
         ok: true,
         phase: "DATA-004 Phase 4",
@@ -530,7 +554,10 @@ Deno.serve(async (req) => {
         orgs: orgList,
         orgs_returned: orgList.length,
         orgs_truncated: orgIds.size > orgList.length,
+        // DATA-004 Batch 12 — read-only cron drift monitor surface.
+        cron_drift: cronDrift,
         request_id: requestId,
+
       });
     }
 
