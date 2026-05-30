@@ -320,17 +320,45 @@ export function AdminGovernanceExportRequestsListPanel() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {row.legal_hold_context_present ? (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px]"
-                        data-testid="legal-hold-indicator"
+                    {row.legal_hold_context_present ||
+                    row.legal_hold_auto_detected ? (
+                      <div
+                        className="flex flex-col gap-0.5"
+                        data-testid="legal-hold-cell"
                       >
-                        legal-hold context
-                        {row.legal_hold_context_scope
-                          ? ` · ${row.legal_hold_context_scope}`
-                          : ""}
-                      </Badge>
+                        <Badge
+                          variant="outline"
+                          className="text-[10px]"
+                          data-testid="legal-hold-indicator"
+                          data-auto-detected={
+                            row.legal_hold_auto_detected ? "true" : "false"
+                          }
+                        >
+                          {row.legal_hold_auto_detected
+                            ? "auto-detected"
+                            : "legal-hold context"}
+                          {row.legal_hold_primary_scope ||
+                          row.legal_hold_context_scope
+                            ? ` · ${
+                                row.legal_hold_primary_scope ??
+                                row.legal_hold_context_scope
+                              }`
+                            : ""}
+                        </Badge>
+                        {row.legal_hold_auto_detected && (
+                          <span
+                            className="text-[10px] text-muted-foreground font-mono"
+                            data-testid="legal-hold-count"
+                          >
+                            {row.legal_hold_hold_count ?? 0} hold
+                            {(row.legal_hold_hold_count ?? 0) === 1 ? "" : "s"}
+                            {row.legal_hold_hold_sources &&
+                            row.legal_hold_hold_sources.length > 0
+                              ? ` · ${row.legal_hold_hold_sources.join(", ")}`
+                              : ""}
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-[11px] text-muted-foreground">—</span>
                     )}
