@@ -29,6 +29,11 @@ import {
   DATA_010_AUDIT_ACTIONS,
   writeLifecycleAudit,
 } from "../_shared/export-lifecycle-audit.ts";
+import {
+  detectGovernanceRecordLegalHold,
+  diffDetectedLegalHoldContext,
+  type SafeDetectedLegalHoldContext,
+} from "../_shared/legal-hold-detection.ts";
 
 const BodySchema = z.object({
   request_id: z.string().uuid(),
