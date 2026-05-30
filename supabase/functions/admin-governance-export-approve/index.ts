@@ -197,21 +197,42 @@ Deno.serve(async (req) => {
     approved_at?: string;
   };
 
-  // Best-effort: fetch legal_hold_context for the audit (read-only, no mutation).
-  let legalHoldContext: unknown = null;
+  // Best-effort: fetch stored legal_hold_context (read-only) + re-detect.
+  let storedDetected: SafeDetectedLegalHoldContext | null = null;
+  let storedOperator: Record<string, unknown> | null = null;
+  let targetOrgId: string | null = null;
   try {
     const { data: row } = await admin
       .from("export_requests")
-      .select("verification, target_org_id")
+      .select("verification, target_org_id, governance_record_id")
       .eq("id", b.request_id)
       .maybeSingle();
-    legalHoldContext =
-      (row?.verification as Record<string, unknown> | null)?.[
-        "legal_hold_context"
-      ] ?? null;
-    var targetOrgId = (row?.target_org_id as string | null) ?? null;
+    const verification = (row?.verification ?? {}) as Record<string, unknown>;
+    const lhc = (verification["legal_hold_context"] ?? {}) as Record<string, unknown>;
+    storedDetected =
+      (lhc["detected"] as SafeDetectedLegalHoldContext | undefined) ?? null;
+    storedOperator =
+      (lhc["operator"] as Record<string, unknown> | undefined) ?? null;
+    targetOrgId = (row?.target_org_id as string | null) ?? null;
   } catch {
-    var targetOrgId: string | null = null;
+    targetOrgId = null;
+  }
+
+  // Re-detect read-only against the same Governance Record.
+  // approval must NEVER mutate held data — detection is pure reads.
+  let recheckDetected: SafeDetectedLegalHoldContext | null = null;
+  let recheckDiff: ReturnType<typeof diffDetectedLegalHoldContext> | null = null;
+  if (r.governance_record_id) {
+    try {
+      recheckDetected = await detectGovernanceRecordLegalHold(
+        admin,
+        r.governance_record_id,
+        { targetOrgId },
+      );
+      recheckDiff = diffDetectedLegalHoldContext(storedDetected, recheckDetected);
+    } catch (e) {
+      console.error("[admin-governance-export-approve] re-detect failed:", e);
+    }
   }
 
   await writeLifecycleAudit(
@@ -226,7 +247,12 @@ Deno.serve(async (req) => {
       requested_by: r.requested_by,
       redaction_mode: r.redaction_mode,
       approval_note: b.approval_note,
-      legal_hold_context: legalHoldContext,
+      // Safe, detected context (no reason/notes/metadata).
+      legal_hold_context_detected_at_request: storedDetected,
+      legal_hold_context_detected_at_approval: recheckDetected,
+      legal_hold_context_operator: storedOperator,
+      legal_hold_context_changed_since_request: recheckDiff?.changed ?? false,
+      legal_hold_context_diff: recheckDiff,
       previous_status: r.previous_status,
       new_status: r.new_status,
     },
@@ -243,6 +269,17 @@ Deno.serve(async (req) => {
     redaction_mode: r.redaction_mode,
     approver_user_id: adminUser.id,
     approved_at: r.approved_at,
+    legal_hold_auto_detection: recheckDetected
+      ? {
+          has_legal_hold: recheckDetected.has_legal_hold,
+          hold_count: recheckDetected.hold_count,
+          hold_sources: recheckDetected.hold_sources,
+          primary_scope: recheckDetected.primary_scope,
+          detected_at: recheckDetected.detected_at,
+          detection_source: recheckDetected.detection_source,
+          changed_since_request: recheckDiff?.changed ?? false,
+        }
+      : null,
     next_step:
       "Approved means approved only. No file has been generated, no signed URL has been minted, and no download link exists.",
   });
