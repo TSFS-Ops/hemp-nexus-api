@@ -603,3 +603,7 @@ DROP FUNCTION IF EXISTS public.data_004_cron_drift_check();
 ```
 
 Evidence: `evidence/data-004-batch-12-cron-drift-monitor.md`.
+
+## Admin Export Controls — Batch 2 (HQ Governance Record Export Request Shell)
+
+Guard: `scripts/check-admin-export-controls-batch-2.mjs` (wired into `prebuild`) asserts that the `admin-governance-export-request` edge function enforces `assertAal2` + `is_admin`, emits both canonical DATA-010 audits, and that neither the edge function nor `AdminGovernanceExportRequestPanel.tsx` generates files, signed URLs, CSV, Blob output, or download anchors. Request shell only — no approve/prepare/download. Evidence: `evidence/admin-export-controls-batch-2.md`.
