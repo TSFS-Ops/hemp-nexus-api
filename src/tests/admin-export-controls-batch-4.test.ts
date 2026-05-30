@@ -141,7 +141,12 @@ describe("Batch 4 — audit emission (DATA-010 canonical)", () => {
     expect(EDGE_SRC).toMatch(/governance_record_id:\s*r\.governance_record_id/);
     expect(EDGE_SRC).toMatch(/requested_by:\s*r\.requested_by/);
     expect(EDGE_SRC).toMatch(/redaction_mode:\s*r\.redaction_mode/);
-    expect(EDGE_SRC).toMatch(/legal_hold_context:\s*legalHoldContext/);
+    // Batch 6 replaced the single field with a detected-at-request +
+    // detected-at-approval + operator + changed-since-request shape.
+    expect(EDGE_SRC).toMatch(/legal_hold_context_detected_at_request:\s*storedDetected/);
+    expect(EDGE_SRC).toMatch(/legal_hold_context_detected_at_approval:\s*recheckDetected/);
+    expect(EDGE_SRC).toMatch(/legal_hold_context_operator:\s*storedOperator/);
+    expect(EDGE_SRC).toMatch(/legal_hold_context_changed_since_request:/);
     expect(EDGE_SRC).toMatch(/previous_status:\s*r\.previous_status/);
     expect(EDGE_SRC).toMatch(/new_status:\s*r\.new_status/);
   });
