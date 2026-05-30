@@ -163,6 +163,14 @@ export function AdminGovernanceExportRequestPanel({
       const resp = data as {
         request_id?: string;
         redaction_mode?: string;
+        legal_hold_auto_detection?: {
+          has_legal_hold: boolean;
+          hold_count: number;
+          hold_sources: string[];
+          primary_scope: string | null;
+          detected_at: string;
+          detection_source: string;
+        } | null;
       };
       if (!resp?.request_id) {
         setState({ kind: "failed", message: "Unexpected server response." });
@@ -173,7 +181,19 @@ export function AdminGovernanceExportRequestPanel({
         kind: "success",
         requestId: resp.request_id,
         redactionMode: resp.redaction_mode ?? redactionMode,
+        legalHoldAutoDetection: resp.legal_hold_auto_detection ?? null,
       });
+      toast.success("Export request recorded");
+      setReason("");
+      setScopeNote("");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setState({ kind: "failed", message });
+      toast.error(`Request failed: ${message}`);
+    } finally {
+      // Zero Swallowed Errors — state machine always advances.
+    }
+  };
       toast.success("Export request recorded");
       setReason("");
       setScopeNote("");
