@@ -2,17 +2,19 @@
 
 Drop captures into `./screenshots/` using the filenames below. Do **not** fabricate screenshots — if a scenario is not run, leave the file absent and mark the row `not run` in `qa-results.md`.
 
+Human walkthrough on 2026-05-30 reported all scenarios as passing. Screenshots are still pending upload — the rows below stay `no — pending upload` until the real PNGs are dropped in.
+
 | # | Filename | What to capture | Captured? |
 |---|---|---|---|
-| 1 | `b10-req-before.png` | Export Requests panel before submit | no — placeholder |
-| 2 | `b10-req-success.png` | Request success state (status awaiting approval) | no — placeholder |
-| 3 | `b10-approve-self-blocked.png` | Self-approval refusal message | no — placeholder |
-| 4 | `b10-approve-success.png` | Second-admin approval success state | no — placeholder |
-| 5 | `b10-list-approved.png` | List row showing approved request + safe-summary legal-hold indicator | no — placeholder |
-| 6 | `b10-preview.png` | Redaction preview panel with manifest visible | no — placeholder |
-| 7 | `b10-mfa-required.png` | `MFA_REQUIRED` state on a gated action | no — placeholder |
-| 8 | `b10-non-admin-blocked.png` | Non-admin denied at `/hq` | no — placeholder |
-| 9 | `b10-safety-badges.png` | Close-up of `Preview only — no file generated`, `No download link`, `No temporary link`, `AAL2 required` badges | no — placeholder |
+| 1 | `b10-req-before.png` | Export Requests panel before submit | no — pending upload |
+| 2 | `b10-req-success.png` | Request success state (status awaiting approval) | no — pending upload |
+| 3 | `b10-approve-self-blocked.png` | Self-approval refusal message | no — pending upload |
+| 4 | `b10-approve-success.png` | Second-admin approval success state | no — pending upload |
+| 5 | `b10-list-approved.png` | List row showing approved request + safe-summary legal-hold indicator | no — pending upload |
+| 6 | `b10-preview.png` | Redaction preview panel with manifest visible | no — pending upload |
+| 7 | `b10-mfa-required.png` | `MFA_REQUIRED` state on a gated action | no — pending upload |
+| 8 | `b10-non-admin-blocked.png` | Non-admin denied at `/hq` | no — pending upload |
+| 9 | `b10-safety-badges.png` | Close-up of `Preview only — no file generated`, `No download link`, `No temporary link`, `AAL2 required` badges | no — pending upload |
 
 ## Capture rules
 
