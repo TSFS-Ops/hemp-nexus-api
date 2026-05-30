@@ -3075,10 +3075,12 @@ export type Database = {
           created_at: string
           date_range: Json | null
           expires_at: string | null
+          governance_record_id: string | null
           id: string
           kind: string
           purpose: string | null
           reason: string | null
+          redaction_mode: string | null
           requested_at: string
           requested_categories: string[]
           requester_user_id: string
@@ -3095,10 +3097,12 @@ export type Database = {
           created_at?: string
           date_range?: Json | null
           expires_at?: string | null
+          governance_record_id?: string | null
           id?: string
           kind: string
           purpose?: string | null
           reason?: string | null
+          redaction_mode?: string | null
           requested_at?: string
           requested_categories?: string[]
           requester_user_id: string
@@ -3115,10 +3119,12 @@ export type Database = {
           created_at?: string
           date_range?: Json | null
           expires_at?: string | null
+          governance_record_id?: string | null
           id?: string
           kind?: string
           purpose?: string | null
           reason?: string | null
+          redaction_mode?: string | null
           requested_at?: string
           requested_categories?: string[]
           requester_user_id?: string
@@ -9907,10 +9913,12 @@ export type Database = {
           created_at: string
           date_range: Json | null
           expires_at: string | null
+          governance_record_id: string | null
           id: string
           kind: string
           purpose: string | null
           reason: string | null
+          redaction_mode: string | null
           requested_at: string
           requested_categories: string[]
           requester_user_id: string
@@ -10058,10 +10066,12 @@ export type Database = {
           created_at: string
           date_range: Json | null
           expires_at: string | null
+          governance_record_id: string | null
           id: string
           kind: string
           purpose: string | null
           reason: string | null
+          redaction_mode: string | null
           requested_at: string
           requested_categories: string[]
           requester_user_id: string
@@ -10839,6 +10849,20 @@ export type Database = {
           p_requester_user_id: string
           p_subject_user_id: string
           p_target_org_id: string
+        }
+        Returns: string
+      }
+      request_admin_governance_export: {
+        Args: {
+          p_date_range?: Json
+          p_governance_record_id: string
+          p_legal_hold_context?: Json
+          p_purpose: string
+          p_reason: string
+          p_redaction_mode?: string
+          p_requested_categories: string[]
+          p_requester_user_id: string
+          p_target_org_id?: string
         }
         Returns: string
       }
