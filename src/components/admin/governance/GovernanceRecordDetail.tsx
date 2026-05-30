@@ -906,6 +906,13 @@ export function GovernanceRecordDetail({ anchor }: Props) {
           recordRef={recordRef}
         />
       )}
+
+      {isPlatformAdmin && anchor.matchId && (
+        <AdminGovernanceExportApprovalPanel
+          governanceRecordId={anchor.matchId}
+          recordRef={recordRef}
+        />
+      )}
     </div>
   );
 }
