@@ -45,8 +45,11 @@ const REQ_PANEL = readSrc(
 const LIST_PANEL = readSrc(
   "src/components/admin/governance/AdminGovernanceExportRequestsListPanel.tsx",
 );
-const GUARD_SRC = readSrc(
-  "scripts/check-admin-export-controls-batch-6.mjs",
+// Guard source is read raw (comments preserved) so the contract test
+// can pin the guard banner / contract description.
+const GUARD_SRC = readFileSync(
+  join(REPO_ROOT, "scripts/check-admin-export-controls-batch-6.mjs"),
+  "utf8",
 );
 
 describe("Batch 6 — detection helper", () => {
