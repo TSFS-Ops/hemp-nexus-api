@@ -31,6 +31,20 @@ function readFile(rel) {
   return fs.readFileSync(path.join(repoRoot, rel), "utf8");
 }
 
+// Strip SQL/TS string literals and comments so forbidden-pattern checks
+// only match real call sites, not remediation text inside quoted strings
+// (e.g. drift findings carry recommended_action strings that name
+// cron.unschedule by design — that is advisory text, not an executed call).
+function stripStringsAndComments(src) {
+  return src
+    .replace(/--[^\n]*/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/[^\n]*/g, "")
+    .replace(/'(?:''|[^'])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/`(?:\\.|[^`\\])*`/g, "``");
+}
+
 // 1. Locate the Batch 12 migration.
 const migrationsDir = path.join(repoRoot, "supabase/migrations");
 const migrations = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql"));
