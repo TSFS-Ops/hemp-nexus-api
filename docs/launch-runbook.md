@@ -829,3 +829,24 @@ Skip-category coverage:
 
 Cleanup: fixtures removed via `20260529…_data_004_batch9b_fixture_cleanup.sql`. `retention_run_evidence` rows preserved (append-only).
 
+## DATA-004 Batch 10 — live `cold-storage-archive` scheduling
+
+Status: **DATA-004 Batch 10 LIVE (2026-05-30).** `cold-storage-archive` is now scheduled as a LIVE weekly job (`cold-storage-archive-live`, jobid 41, Sundays 04:10 UTC, 30 minutes after the dry-run baseline). Body pins `dry_run:false`. Auth uses `x-internal-key` from `vault.INTERNAL_CRON_KEY`. Target is `/functions/v1/cold-storage-archive`. The dry-run schedule (jobid 40, `cold-storage-archive-dryrun`, Sundays 03:40 UTC) is intentionally left in place.
+
+First live tick (run_id `fc63bc96-5aff-4553-b0bc-a3313cdbcc0c`): HTTP 200, `status=success`, `dry_run=false`, `candidates=0`, `processed=0`, `failed=0`, `audit_write_failures=[]`, `evidence_write_failures=[]`, `lifecycle_persistence=evidence_only`. Two `retention_run_evidence` rows (`started`, `success`). No storage exports written (no eligible records existed at dispatch). No source deletion. No destructive source mutation. Evidence artifact: `evidence/data-004-batch-10-live-cold-storage-evidence.md`.
+
+Rollback SQL:
+
+```sql
+SELECT cron.unschedule('cold-storage-archive-live');
+```
+
+Operator checklist before any future Batch 11+ live scheduling: re-capture `cron.job` directly (SQL guards cannot detect schedules added directly to the database) and confirm `cold-storage-archive-live` is the ONLY live retention/anonymisation/deletion schedule present.
+
+Out of scope for Batch 10 (still gated, no live schedule introduced):
+- live `email_send_log` purge / `purge-email-send-log-daily` jobname
+- live `email-log-anonymise`
+- live `account-deletion-sweeper`
+- `storage-retention-cleanup-job` (jobid 7 still inactive)
+- per-org retention floors / policy rules
+
