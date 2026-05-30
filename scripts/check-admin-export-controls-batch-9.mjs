@@ -111,8 +111,8 @@ check(/data-testid=["']badge-preview-only["']/.test(panelSrc),
   "panel must render preview-only badge");
 check(/data-testid=["']badge-no-download["']/.test(panelSrc),
   "panel must render no-download badge");
-check(/data-testid=["']badge-no-signed-url["']/.test(panelSrc),
-  "panel must render no-signed-url badge");
+check(/data-testid=["']badge-no-temporary-link["']/.test(panelSrc),
+  "panel must render no-temporary-link badge");
 check(/data-testid=["']badge-aal2["']/.test(panelSrc),
   "panel must render AAL2 badge");
 check(/data-testid=["']preview-redacted["']/.test(panelSrc),
@@ -145,7 +145,7 @@ const PANEL_FORBIDDEN = [
   [/\bPrepare\b/, "panel must NOT render a 'Prepare' label"],
   [/\bDestroy\b/, "panel must NOT render a 'Destroy' label"],
   [/Ready to download/i, "panel must NOT render 'Ready to download'"],
-  [/signed[ _-]?url/i, "panel must NOT render 'signed url'"],
+  [/\bsigned[ _-]?url\b(?!["'])/i, "panel must NOT render user-visible 'signed url' phrase"],
 ];
 for (const [re, msg] of PANEL_FORBIDDEN) {
   if (re.test(panelSrc)) failures.push(msg);

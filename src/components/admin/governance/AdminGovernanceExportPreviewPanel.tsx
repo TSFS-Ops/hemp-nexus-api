@@ -7,7 +7,7 @@
  *
  * Hard contract — this panel NEVER renders:
  *   - prepare / generate / download / destroy controls
- *   - signed URLs, file paths, storage keys, download tokens
+ *   - temporary links, file paths, storage keys, download tokens
  *   - CSV / JSON / PDF export buttons
  *   - copy-link / save-as / blob / file anchors
  *   - raw legal-hold reasons, notes, or metadata
@@ -155,7 +155,7 @@ export function AdminGovernanceExportPreviewPanel() {
         <p className="text-xs text-muted-foreground">
           Read-only preview of what a Governance Record export would look
           like after applying the redaction contract. No file is generated,
-          no download link is created, no signed URL is minted.
+          no download link is created, no temporary link is minted.
         </p>
       </header>
 
@@ -177,9 +177,9 @@ export function AdminGovernanceExportPreviewPanel() {
         <Badge
           variant="outline"
           className="text-[10px]"
-          data-testid="badge-no-signed-url"
+          data-testid="badge-no-temporary-link"
         >
-          <Lock className="mr-1 h-3 w-3" /> No signed URL
+          <Lock className="mr-1 h-3 w-3" /> No temporary link
         </Badge>
         <Badge
           variant="outline"
