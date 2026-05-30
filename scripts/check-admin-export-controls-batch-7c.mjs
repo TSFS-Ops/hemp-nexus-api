@@ -50,6 +50,10 @@ check(/data\.admin_export_requested/.test(code) &&
       /data\.admin_export_blocked_or_declined/.test(code),
   "must verify the three canonical audit actions");
 
+// Exclude the leak-detector's own regex table from banned-call scans —
+// it legitimately mentions every banned token as a detection pattern.
+const codeForBans = code.replace(/function\s+assertNoGenerationLeak[\s\S]*?\n\}\n/, "");
+
 // ABSENT requirements — runner must NEVER call generation surfaces
 const bannedCalls = [
   /admin-?export-?prepare|export-prepare/i,
@@ -62,7 +66,7 @@ const bannedCalls = [
   /storage\.from\(.+\)\.upload/i,
 ];
 for (const re of bannedCalls) {
-  check(!re.test(code), `runner must not invoke banned generation surface: ${re}`);
+  check(!re.test(codeForBans), `runner must not invoke banned generation surface: ${re}`);
 }
 
 // ABSENT — must not mutate legal_holds / retention / cron / cold-storage
