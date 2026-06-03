@@ -885,3 +885,18 @@ DROP FUNCTION IF EXISTS public.data_004_cron_drift_check();
 ```
 
 Evidence: `evidence/data-004-batch-12-cron-drift-monitor.md`.
+
+## DATA-004 Batch 13 — Cold-Storage Positive-Candidate Live Evidence
+
+Status: **DATA-004 Batch 13 PASS (2026-05-31).** The scheduled `cold-storage-archive-live` tick (jobid 41, Sundays 04:10 UTC) was exercised end-to-end against three staged fixtures without changing any schedule, body, auth, or edge function code. Run id `99a12b33-4bcf-43f4-a201-ef93a306062d`, `dry_run=false`, `lifecycle_persistence=evidence_only`, `audit_write_failures=[]`, `evidence_write_failures=[]`. Final lifecycle row `status='partial'` (candidates=3, processed=2, failed=0, skip_counts.duplicate=1, skip_counts.missing_source=1).
+
+Fixture A (positive eligible) exported with matching `archive_hash` and `archive_storage_path`; source `compliance_cases` row intact and unmutated. Fixture B (duplicate) skipped (`reason=archive_storage_path_already_set`); no duplicate object created; flag unchanged. Fixture D (missing source) exported with `source_record_present=false` (`decision='exported_with_null_source'`, `reason='source_record_null_at_flag_time'`) — failure surfaced explicitly, not swallowed. Fixture C (row-level legal hold) intentionally deferred to a recommended "DATA-004 Batch 14 — Cold-Storage Row-Level Legal Hold Live Evidence".
+
+Cron drift remained PASS across the tick (jobids 25/39/40/41 active with documented schedules; jobid 7 inactive; forbidden jobnames absent). HQ → Per-Org Retention "Live cron drift monitor" surfaces the latest live cold-storage run via Batch 12's read-only `data_004_cron_drift_check()` + Batch 9A's `get_cold_storage_archive_cron_jobs()` pathways. Panel copy does not imply email purge, anonymisation, account deletion, storage cleanup, or sentinel approval.
+
+Cleanup (2026-05-31): fixture `retention_flags` rows (`b13a2222-…`, `b13b3333-…`, `b13d4444-…`) and the fixture `compliance_cases` row (`b13a1111-…`) were removed via a cleanup migration; `retention_run_evidence` rows for run_id `99a12b33-…` preserved (5 rows); no audit rows deleted; no legal hold was created so none required release. The two live storage exports (`b13a1111-…json`, `b13d8888-…json`) were retained as preserved evidence of a real non-destructive cold-storage export; removal may occur later under a separate storage runbook with audit reason `data-004-batch13-cleanup`.
+
+Out of scope for Batch 13 (still gated, no behaviour change): no cron schedule added/removed/modified; no edge function code changed; no retention policy or floor changed; live email purge, live email anonymisation, live account deletion, `storage-retention-cleanup-job`, and sentinel paths remain gated.
+
+Evidence: `evidence/data-004-batch-13-cold-storage-positive-live-evidence.md`.
+
