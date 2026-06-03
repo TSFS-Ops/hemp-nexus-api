@@ -604,6 +604,23 @@ DROP FUNCTION IF EXISTS public.data_004_cron_drift_check();
 
 Evidence: `evidence/data-004-batch-12-cron-drift-monitor.md`.
 
+## DATA-004 Batch 13 — Cold-Storage Positive-Candidate Live Evidence
+
+Status: **DATA-004 Batch 13 PASS (2026-05-31).** Proof-only batch. The scheduled `cold-storage-archive-live` tick (jobid 41, Sundays 04:10 UTC) was exercised end-to-end against three staged fixtures without changing the schedule, body, auth, or edge function code. Run id `99a12b33-4bcf-43f4-a201-ef93a306062d`, `dry_run=false`, `lifecycle_persistence=evidence_only`, `audit_write_failures=[]`, `evidence_write_failures=[]`, final lifecycle row `status='partial'` (candidates=3, processed=2, failed=0, skip_counts.duplicate=1, skip_counts.missing_source=1).
+
+Fixture outcomes: **Fixture A** (positive eligible) `decision='exported'`, storage object written to `archived-records/compliance_cases/2018/8fc9ee52-…/b13a1111-…json`, source `compliance_cases` row remained intact and was not destructively mutated, `retention_flags.archive_storage_path` populated with matching `archive_hash`. **Fixture B** (duplicate) `decision='skipped_due_to_duplicate'`, reason `archive_storage_path_already_set`, no duplicate storage object created, flag unchanged. **Fixture D** (missing source) `decision='exported_with_null_source'`, `source_record_present=false`, evidence row carries reason `source_record_null_at_flag_time`, failure surfaced explicitly via `skip_counts.missing_source=1` — not swallowed. **Fixture C** (row-level legal hold) intentionally deferred to a separate "DATA-004 Batch 14 — Cold-Storage Row-Level Legal Hold Live Evidence" because `compliance_cases` maps to `scopeType=null` in `COLD_TABLE_TO_SCOPE` and synthesising a hold-mapped fixture exceeds the Batch 13 "do not change code/schedule" envelope.
+
+Cron drift remained PASS (jobids 25/39/40/41 active with documented schedules; jobid 7 inactive; forbidden jobnames `purge-email-send-log-daily`, `email-log-anonymise`, `account-deletion-sweeper`, `account-deletion-sweeper-live`, `storage-retention-cleanup`, `cold-storage-archive-weekly` all absent). HQ → Per-Org Retention "Live cron drift monitor" panel reflects the latest live cold-storage run via the Batch 12 read-only `data_004_cron_drift_check()` + Batch 9A `get_cold_storage_archive_cron_jobs()` pathways; panel copy does not imply email purge, anonymisation, account deletion, storage cleanup, or sentinel approval.
+
+Cleanup (2026-05-31): the three fixture `retention_flags` rows (`b13a2222-…`, `b13b3333-…`, `b13d4444-…`) and the single fixture `compliance_cases` row (`b13a1111-…`) were removed via a cleanup migration. **All five `retention_run_evidence` rows for run_id `99a12b33-…` were preserved.** No audit rows were deleted. No legal hold was created during Batch 13, so no release was required. The two live storage exports (`b13a1111-…json`, `b13d8888-…json`) were retained as preserved evidence of a real non-destructive cold-storage export; removal can be performed later under a separate storage runbook with audit reason `data-004-batch13-cleanup`.
+
+What Batch 13 does NOT change: no cron schedule added, removed, or modified; no edge function code changed; no retention policy or floor changed; no live email purge, live email anonymisation, live account deletion, storage-retention-cleanup, or sentinel scheduling enabled. The only database mutations were the Phase 1 fixture INSERTs (already recorded) and the Phase 2 fixture cleanup DELETEs above.
+
+Evidence: `evidence/data-004-batch-13-cold-storage-positive-live-evidence.md`.
+
+Next recommended (do NOT start without explicit approval): DATA-004 Batch 14 — Cold-Storage Row-Level Legal Hold Live Evidence (covering the deferred Fixture C). Live email purge, live anonymisation, live account deletion, storage-retention-cleanup, and sentinel paths remain gated.
+
+
 ## Admin Export Controls — Batch 2 (HQ Governance Record Export Request Shell)
 
 Guard: `scripts/check-admin-export-controls-batch-2.mjs` (wired into `prebuild`) asserts that the `admin-governance-export-request` edge function enforces `assertAal2` + `is_admin`, emits both canonical DATA-010 audits, and that neither the edge function nor `AdminGovernanceExportRequestPanel.tsx` generates files, signed URLs, CSV, Blob output, or download anchors. Request shell only — no approve/prepare/download. Evidence: `evidence/admin-export-controls-batch-2.md`.
