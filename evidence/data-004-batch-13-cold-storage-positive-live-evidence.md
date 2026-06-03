@@ -1,6 +1,51 @@
 # DATA-004 Batch 13 — Cold-Storage Positive-Candidate Live Evidence
 
-Status: **Phase 1 staged. Phase 2 (post-tick verification) pending next scheduled `cold-storage-archive-live` tick.**
+Status: **PASS — Phase 2 post-tick verification complete (2026-05-31). Scheduled `cold-storage-archive-live` tick fired at 2026-05-31 04:10:01 UTC, run_id `99a12b33-4bcf-43f4-a201-ef93a306062d`, `dry_run=false`, `lifecycle_persistence=evidence_only`. All three staged fixtures behaved as expected; failure arrays empty; source row intact; cron contract unchanged.**
+
+## Phase 2 result summary (2026-05-31)
+
+| Item | Expected | Observed | Pass |
+|---|---|---|---|
+| Live tick fired after 2026-05-31 04:10 UTC | yes | started_at = 2026-05-31 04:10:01.31+00 | ✅ |
+| run_id | new | `99a12b33-4bcf-43f4-a201-ef93a306062d` | ✅ |
+| dry_run | false | false (every row) | ✅ |
+| lifecycle_persistence | evidence_only | evidence_only | ✅ |
+| Final lifecycle row status | partial | partial (processed=2, candidates=3, failed=0) | ✅ |
+| audit_write_failures | [] | [] | ✅ |
+| evidence_write_failures | [] | [] | ✅ |
+| Fixture A — decision | exported | exported, storage_path `compliance_cases/2018/8fc9ee52-…/b13a1111-…json`, payload_hash `185bc288…975e`, source_record_present=true | ✅ |
+| Fixture A — storage object | present | present in bucket `archived-records` | ✅ |
+| Fixture A — source row intact | yes | `compliance_cases.b13a1111-…` still APPROVED, decision_notes unchanged | ✅ |
+| Fixture A — `retention_flags.archive_storage_path` populated | yes | set to live storage_path; archive_hash matches payload_hash | ✅ |
+| Fixture B — decision | skipped_due_to_duplicate | skipped_due_to_duplicate (reason `archive_storage_path_already_set`) | ✅ |
+| Fixture B — no duplicate object | no new object | no `b13b9999-…json` in `archived-records` | ✅ |
+| Fixture B — flag unchanged | yes | pre-set path + `deadbeef…` hash retained | ✅ |
+| Fixture D — decision | exported_with_null_source | exported_with_null_source, source_record_present=false, reason `source_record_null_at_flag_time` | ✅ |
+| Fixture D — storage object | present | `b13d8888-…json` present in `archived-records` | ✅ |
+| Fixture D — no swallowed failure | yes | run status = `partial` with explicit `skip_counts.missing_source=1`; failed=0 | ✅ |
+| Cron drift | PASS | jobids 25/39/40/41 active with documented schedules, jobid 7 inactive, forbidden jobnames absent | ✅ |
+| Cron schedules changed | no | identical to pre-tick snapshot in §1 | ✅ |
+| HQ Retention Health surfaces latest live cold-storage run | yes | `admin-org-retention` `health` action reads `get_cold_storage_archive_cron_jobs()` + `data_004_cron_drift_check()`; both pathways reproduce PASS for run_id `99a12b33-…`; HQ "Live cron drift monitor" panel copy does not imply email-purge / anonymisation / account-deletion / storage-cleanup / sentinel approval | ✅ |
+| Fixture cleanup | rows removed, evidence preserved | `retention_flags` (b13a/b/d) and `compliance_cases` (b13a1111) deleted via migration; `retention_run_evidence` rows for run_id `99a12b33-…` preserved (5 rows) | ✅ |
+
+### Residual storage objects (preserved, not deleted)
+
+Two storage objects written by the live tick were intentionally retained as preserved evidence of a real, non-destructive cold-storage export:
+
+- `archived-records/compliance_cases/2018/8fc9ee52-ce88-456f-8ef9-c6984fc6fae1/b13a1111-1111-4111-8111-111111111111.json`
+- `archived-records/compliance_cases/2018/8fc9ee52-ce88-456f-8ef9-c6984fc6fae1/b13d8888-8888-4888-8888-888888888888.json`
+
+Rationale: the live archive contract requires that the storage write be the authoritative non-destructive record of the export; removing it would erase the only physical artifact of the live tick. No source `compliance_cases` row remains that would re-discover or re-export them (the Fixture A source was removed in cleanup; Fixture D never had a source). Removal can be performed later under a separate storage runbook with audit reason `data-004-batch13-cleanup`.
+
+### Out of scope (unchanged)
+
+No code, schedule, edge function, policy, or retention floor changed during Phase 2. Live email purge, live email anonymisation, live account deletion, storage-retention-cleanup, and sentinel paths remain gated.
+
+---
+
+## Original Phase 1 staging record
+
+Status (pre-tick): **Phase 1 staged. Phase 2 (post-tick verification) pending next scheduled `cold-storage-archive-live` tick.**
 
 Purpose: prove that the live `cold-storage-archive-live` scheduled path
 processes at least one real eligible candidate end-to-end (export object
