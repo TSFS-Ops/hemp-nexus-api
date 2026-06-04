@@ -620,6 +620,19 @@ Evidence: `evidence/data-004-batch-13-cold-storage-positive-live-evidence.md`.
 
 Next recommended (do NOT start without explicit approval): DATA-004 Batch 14 — Cold-Storage Row-Level Legal Hold Live Evidence (covering the deferred Fixture C). Live email purge, live anonymisation, live account deletion, storage-retention-cleanup, and sentinel paths remain gated.
 
+## DATA-004 Batch 14 — Cold-Storage Row-Level Legal Hold Live Evidence
+
+Status: **DATA-004 Batch 14 PASS (2026-06-04).** Proof-only batch. One-shot manual live invocation of `cold-storage-archive` (`dry_run:false`, `limit:50`, `x-internal-key` from vault, `source:manual:data-004-batch14-row-hold-proof`) executed under explicit user approval. No cron schedule was created, modified, or removed; no edge function code changed; no retention policy or floor changed. Run id `903b44cc-50c4-4487-8838-a54c8884fb51`, `dry_run=false`, `lifecycle_persistence=evidence_only`, `audit_write_failures=[]`, `evidence_write_failures=[]`, final lifecycle row `status='partial'` (candidates=3, processed=1, failed=0, `skip_counts.legal_hold_row=1`, `skip_counts.duplicate=1`, `skip_counts.missing_source=0`).
+
+Chosen table: `matches` (scope `"match"` per `COLD_TABLE_TO_SCOPE` at `supabase/functions/cold-storage-archive/index.ts:91-99`). Fixture outcomes: **Fixture A** (synthetic `matches` row with active row-level `legal_holds` row scoped `match`/`b14a0001`) `decision='skipped_due_to_legal_hold'`, reason `row_hold_id=b14a9999-…`, `details.skip_category=legal_hold_row`, per-org audit `data.retention_job.cold_storage_archive.skipped` emitted, no storage object written, `retention_flags.archive_storage_path` remained NULL, source `matches` row intact. **Fixture B** (unheld positive control) `decision='exported'`, storage object written to `archived-records/matches/2018/8fc9ee52-…/b14b0002-…json` (size 2064, hash `20a245f9…408036fd`), source `matches` row intact (non-destructive), `retention_flags.archive_storage_path`/`archive_hash`/`archive_size_bytes` populated. **Fixture C** (duplicate control) `decision='skipped_due_to_duplicate'`, reason `archive_storage_path_already_set`, no duplicate storage object created.
+
+Cron drift remained PASS pre/post run (jobids 25/39/40/41 active with documented schedules; jobid 7 inactive; forbidden destructive jobnames absent). HQ → Per-Org Retention "Live cron drift monitor" panel now reflects `903b44cc-…` as the latest cold-storage run. Cleanup (2026-06-04): fixture legal hold released with audited reason; three fixture `retention_flags` and three fixture `matches` rows deleted; **all five `retention_run_evidence` rows for run_id `903b44cc-…` preserved**; the single live storage export (`b14b0002-…json`) retained as preserved evidence (Batch 13 precedent), residual path documented.
+
+What Batch 14 does NOT change: no cron schedule added/removed/modified; no edge function code changed; no retention policy or floor changed; no live email purge, live email anonymisation, live account deletion, storage-retention-cleanup, or sentinel scheduling enabled; no new sweeper wired; enforcement scope unchanged.
+
+Evidence: `evidence/data-004-batch-14-cold-storage-row-hold-live-evidence.md`.
+
+
 
 ## Admin Export Controls — Batch 2 (HQ Governance Record Export Request Shell)
 
