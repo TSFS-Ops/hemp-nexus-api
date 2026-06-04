@@ -900,3 +900,16 @@ Out of scope for Batch 13 (still gated, no behaviour change): no cron schedule a
 
 Evidence: `evidence/data-004-batch-13-cold-storage-positive-live-evidence.md`.
 
+## DATA-004 Batch 14 — Cold-Storage Row-Level Legal Hold Live Evidence
+
+Status: **DATA-004 Batch 14 PASS (2026-06-04).** Proof-only batch. One-shot manual live invocation of `cold-storage-archive` (`dry_run:false`, `limit:50`, `x-internal-key` from vault, `source:manual:data-004-batch14-row-hold-proof`) executed under explicit user approval. No cron schedule was created, modified, or removed; no edge function code changed; no retention policy or floor changed. Run id `903b44cc-50c4-4487-8838-a54c8884fb51`, `lifecycle_persistence=evidence_only`, `audit_write_failures=[]`, `evidence_write_failures=[]`, final lifecycle row `status='partial'` (candidates=3, processed=1, failed=0, `skip_counts.legal_hold_row=1`, `skip_counts.duplicate=1`).
+
+Chosen table: `matches` (scope `"match"` per `COLD_TABLE_TO_SCOPE`, `supabase/functions/cold-storage-archive/index.ts:91-99`). Fixture A (synthetic match + active row-level `legal_holds` row scoped `match`/`b14a0001`) `decision='skipped_due_to_legal_hold'`, reason `row_hold_id=b14a9999-…`, no storage object, retention flag NOT promoted, source row intact, per-org skip audit emitted. Fixture B (positive control) exported to `archived-records/matches/2018/8fc9…/b14b0002-…json` (size 2064, hash `20a245f9…`), source row intact (non-destructive). Fixture C (duplicate control) skipped (`reason=archive_storage_path_already_set`), no duplicate object created.
+
+Cron drift remained PASS pre/post run; HQ → Per-Org Retention surfaces `903b44cc-…` as latest cold-storage run. Cleanup (2026-06-04): fixture legal hold released with audited reason; three fixture `retention_flags` and three fixture `matches` rows deleted; **five `retention_run_evidence` rows for `903b44cc-…` preserved**; the single live storage export (`b14b0002-…json`) retained as preserved evidence (Batch 13 precedent).
+
+Out of scope for Batch 14 (still gated, no behaviour change): no cron schedule added/removed/modified; no edge function code changed; no retention policy or floor changed; live email purge, live email anonymisation, live account deletion, `storage-retention-cleanup-job`, and sentinel paths remain gated; no new sweeper wired.
+
+Evidence: `evidence/data-004-batch-14-cold-storage-row-hold-live-evidence.md`.
+
+
