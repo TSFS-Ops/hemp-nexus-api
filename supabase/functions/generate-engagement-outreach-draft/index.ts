@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
     }, 503);
   }
 
-  const subject = payload.subject.slice(0, 200).trim();
+  const subject = clampSubject(payload.subject).trim();
   const draftBody = payload.body.trim();
   const ctx = payload.context_summary.trim();
 
