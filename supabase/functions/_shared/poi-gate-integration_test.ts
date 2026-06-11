@@ -58,37 +58,8 @@ interface Fixture {
 // not implemented — keeps the harness honest.
 // deno-lint-ignore no-explicit-any
 function makeAdmin(fx: Fixture): any {
-  const queryBuilder = (table: string) => {
-    const state: {
-      table: string;
-      filters: { col: string; val: unknown }[];
-      isNull: string | null;
-    } = { table, filters: [], isNull: null };
-    const api: any = {
-      select: (_cols: string) => api,
-      eq: (col: string, val: unknown) => {
-        state.filters.push({ col, val });
-        return api;
-      },
-      is: (col: string, _val: unknown) => {
-        state.isNull = col;
-        return api;
-      },
-      order: (_col: string, _opts?: unknown) => api,
-      limit: (_n: number) => api,
-      insert: async (_row: unknown) => ({ data: null, error: null }),
-      maybeSingle: async () => resolve(state, false),
-      // user_roles is read without maybeSingle — it returns an array.
-      then: undefined,
-    };
-    // For user_roles we await the builder directly: support thenable.
-    api[Symbol.asyncIterator] = undefined;
-    (api as any).__await = async () => resolve(state, true);
-    return api;
-  };
-
   const resolve = async (
-    state: { table: string; filters: { col: string; val: unknown }[]; isNull: string | null },
+    state: { table: string; filters: { col: string; val: unknown }[] },
     asList: boolean,
   ) => {
     switch (state.table) {
@@ -124,23 +95,30 @@ function makeAdmin(fx: Fixture): any {
     }
   };
 
+  const queryBuilder = (table: string) => {
+    const state = { table, filters: [] as { col: string; val: unknown }[] };
+    const api: any = {
+      select: (_cols: string) => api,
+      eq: (col: string, val: unknown) => {
+        state.filters.push({ col, val });
+        return api;
+      },
+      is: (_col: string, _val: unknown) => api,
+      order: (_col: string, _opts?: unknown) => api,
+      limit: (_n: number) => api,
+      insert: async (_row: unknown) => ({ data: null, error: null }),
+      maybeSingle: async () => resolve(state, false),
+      // Make the builder itself thenable for the `await admin.from(...).eq(...)`
+      // pattern used by checkUserPoiAuthority when reading user_roles.
+      then: (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
+        resolve(state, true).then(onF, onR),
+    };
+    return api;
+  };
+
   return {
-    from: (table: string) => {
-      const qb = queryBuilder(table);
-      // user_roles path: real code does `await admin.from(...).select(...).eq(...)`
-      // i.e. awaits the builder. Make the builder thenable.
-      const handler = {
-        get(target: any, prop: string) {
-          if (prop === "then") {
-            return (resolveFn: any, rejectFn: any) => {
-              target.__await().then(resolveFn, rejectFn);
-            };
-          }
-          return target[prop];
-        },
-      };
-      return new Proxy(qb, handler);
-    },
+    from: (table: string) => queryBuilder(table),
+
     rpc: async (name: string, _params: unknown) => {
       if (name === "get_org_gate_position") {
         return { data: fx.gatePosition ?? "poi_mint", error: null };
