@@ -42,6 +42,7 @@ export type LegitimacyDecision =
         | "not_approved"
         | "revoked"
         | "expired"
+        | "frozen"
         | "lookup_failed";
       gatePosition: GatePosition;
       status: string | null;
