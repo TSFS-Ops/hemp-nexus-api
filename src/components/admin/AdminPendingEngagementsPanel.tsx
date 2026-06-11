@@ -2781,7 +2781,12 @@ export function AdminPendingEngagementsPanel() {
 
       {/* ── Outreach log dialog ────────────────────────────────────────── */}
       <Dialog open={!!logDialog} onOpenChange={(o) => !o && setLogDialog(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {logDialog && (
+            <div className="mb-4">
+              <EngagementOutreachDraftPanel engagementId={logDialog.id} />
+            </div>
+          )}
           <DialogHeader>
             <DialogTitle>Outreach log</DialogTitle>
             <DialogDescription>
