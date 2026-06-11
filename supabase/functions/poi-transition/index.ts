@@ -202,6 +202,40 @@ async function _serve(req: Request): Promise<Response> {
       ]);
       if (FORWARD_COUNTERPARTY_FACING.has(String(toState))) {
         const { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE } = await import("../_shared/legitimacy.ts");
+        const { checkUserPoiAuthority, USER_NOT_AUTHORISED_CODE, authorityAuditMetadata } = await import("../_shared/poi-authority.ts");
+
+        // (1) User-authority gate — verified org alone is not sufficient.
+        const authority = await checkUserPoiAuthority(adminClient, user.id, callerOrgId);
+        if (!authority.allowed) {
+          try {
+            await adminClient.from("admin_audit_logs").insert({
+              actor_user_id: user.id,
+              org_id: callerOrgId,
+              action: "legitimacy.gate_blocked",
+              entity_type: "match",
+              entity_id: matchId,
+              metadata: authorityAuditMetadata(authority, {
+                endpoint: "poi-transition",
+                from_state: fromState,
+                to_state: toState,
+                gate_position: "user_authority",
+              }),
+            });
+          } catch (auditErr) {
+            console.error("Failed to write authority denial audit row (poi-transition):", auditErr);
+          }
+          if (hasLock) await adminClient.rpc("release_lifecycle_lock");
+          return new Response(
+            JSON.stringify({
+              error: authority.message,
+              code: USER_NOT_AUTHORISED_CODE,
+              reason: authority.reason,
+            }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        // (2) Org-legitimacy gate (existing).
         const legitimacy = await checkOrgLegitimacy(adminClient, callerOrgId, "poi_mint");
         if (!legitimacy.allowed) {
           try {
