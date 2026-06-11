@@ -174,7 +174,27 @@ export function AdminAuditLogs() {
   };
 
 
+  // Ticket 2: POI Gate Admin Visibility — friendly labels + tone for the
+  // blocked POI events emitted by the legitimacy + authority gates. Raw
+  // event keys remain visible in the details dialog.
+  const POI_GATE_LABELS: Record<string, { label: string; tone: string }> = {
+    "poi.mint_denied": { label: "POI mint denied", tone: "bg-rose-700" },
+    "legitimacy.gate_blocked": {
+      label: "Organisation legitimacy gate blocked POI",
+      tone: "bg-rose-700",
+    },
+    "intent.denied": { label: "Blocked POI attempt", tone: "bg-rose-700" },
+  };
+
   const getActionBadge = (action: string) => {
+    const poiGate = POI_GATE_LABELS[action];
+    if (poiGate) {
+      return (
+        <Badge className={poiGate.tone} title={action}>
+          {poiGate.label}
+        </Badge>
+      );
+    }
     const colors: Record<string, string> = {
       "intent.confirmed": "bg-green-600",
       "match.created": "bg-blue-600",
