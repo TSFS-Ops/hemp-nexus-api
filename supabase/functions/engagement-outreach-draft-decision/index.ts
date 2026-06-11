@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
   const now = new Date().toISOString();
 
   if (body.action === "edit") {
-    const subject = (body.subject ?? draft.draft_subject).slice(0, 200).trim();
+    const subject = clampSubject(body.subject ?? draft.draft_subject).trim();
     const draftBody = (body.body ?? draft.draft_body).trim();
     if (!subject || !draftBody) return json(req, { error: "subject and body required" }, 400);
 
