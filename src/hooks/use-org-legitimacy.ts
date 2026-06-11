@@ -41,7 +41,7 @@ function buildBlockedMessage(
     case "expired":
       return `Your organisation's trading approval has expired. Counterparty-facing actions are paused until the profile is renewed. ${RECOVERY_CTA}`;
     case "frozen":
-      return "Your organisation is currently suspended. Counterparty-facing actions are blocked until a platform administrator lifts the suspension.";
+      return "Your organisation is currently restricted. Counterparty-facing actions are blocked until a platform administrator lifts the restriction.";
     case "not_approved":
     default:
       return `Your organisation's trading approval is currently '${status || "incomplete"}'. Counterparty-facing actions are blocked until a compliance reviewer marks the profile 'approved'. ${RECOVERY_CTA}`;

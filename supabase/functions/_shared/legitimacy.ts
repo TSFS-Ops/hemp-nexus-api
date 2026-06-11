@@ -119,7 +119,7 @@ export async function checkOrgLegitimacy(
         status: "frozen",
         validUntil: null,
         message:
-          `Your organisation is currently suspended${orgRow.frozen_reason ? ` (${orgRow.frozen_reason})` : ""}. Counterparty-facing actions are blocked until a platform administrator lifts the suspension.`,
+          `Your organisation is currently restricted${orgRow.frozen_reason ? ` (${orgRow.frozen_reason})` : ""}. Counterparty-facing actions are blocked until a platform administrator lifts the restriction.`,
       };
     }
   } catch {

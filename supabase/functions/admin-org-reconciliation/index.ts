@@ -346,7 +346,7 @@ Deno.serve(async (req) => {
         // Surface the operational state in plain English so the report
         // skims well for non-technical reviewers.
         operational_status: org.frozen
-          ? `frozen (${org.frozen_reason ?? "no reason recorded"})`
+          ? `blocked (${org.frozen_reason ?? "no reason recorded"})`
           : (org.status ?? "unknown"),
       },
       trade_approval: {
