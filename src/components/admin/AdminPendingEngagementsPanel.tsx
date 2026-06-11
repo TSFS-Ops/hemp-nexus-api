@@ -142,6 +142,8 @@ interface Engagement {
   counterparty_org?: { id: string; name: string } | null;
   /** Phase 1 demo isolation: true for staged Daniel-facing fixture rows. */
   is_demo?: boolean | null;
+  /** Batch 1: read-only queue intelligence (SLA, draft, outreach, next action). */
+  queue_derived?: import("@/lib/admin-facilitation-queue").QueueDerived | null;
 }
 
 // D2b — predicate: is this engagement awaiting an admin binding-review
