@@ -44,8 +44,10 @@ export function VerificationRequiredBanner({
   const { data, isLoading } = useOrgLegitimacy();
   if (isLoading || !data) return null;
   if (data.allowed) return null;
+  const blocked = data; // narrowed: allowed === false
 
-  const reason = data.reason as Reason;
+  const reason = blocked.reason as Reason;
+
   const headline = HEADLINES[reason] ?? "Verification required before issuing POI";
   const code = REASON_CODES[reason] ?? "ORG_NOT_VERIFIED";
 
