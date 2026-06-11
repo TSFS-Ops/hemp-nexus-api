@@ -107,8 +107,10 @@ describe("AI Outreach Drafter — admin UI manual-send contract", () => {
     expect(hook).toContain("generate-engagement-outreach-draft");
     expect(hook).toContain("engagement-outreach-draft-decision");
     // No other functions.invoke targets in the hook
-    const invokeMatches = hook.match(/functions\.invoke\(\s*["'`]([^"'`]+)["'`]/g) ?? [];
-    const targets = invokeMatches.map((m) => m.replace(/.*["'`]([^"'`]+)["'`].*/, "$1"));
+    const re = /functions\.invoke\(\s*["'`]([^"'`]+)["'`]/g;
+    const targets: string[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(hook)) !== null) targets.push(m[1]);
     expect(targets.sort()).toEqual(
       ["engagement-outreach-draft-decision", "generate-engagement-outreach-draft"].sort(),
     );
