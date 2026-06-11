@@ -53,13 +53,22 @@ export function AdminAuditLogs() {
       }
 
       // Batch S Fix 8: group filter — prefix match on action.
+      // Ticket 2 (POI Gate Admin Visibility): adds a `poi_gate` pseudo-group
+      // that surfaces blocked POI attempts (legitimacy + authority denials)
+      // through a single filter without inventing new event types.
       const ACTION_GROUPS: Record<string, string> = {
         admin_risk_item: "admin_risk_item.",
         admin_manual_override: "admin.manual_override.",
         programme: "programme.",
         due_diligence: "dd.",
       };
-      if (groupFilter !== "all" && ACTION_GROUPS[groupFilter]) {
+      if (groupFilter === "poi_gate") {
+        query = query.in("action", [
+          "poi.mint_denied",
+          "legitimacy.gate_blocked",
+          "intent.denied",
+        ]);
+      } else if (groupFilter !== "all" && ACTION_GROUPS[groupFilter]) {
         query = query.like("action", `${ACTION_GROUPS[groupFilter]}%`);
       }
 
