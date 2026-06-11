@@ -115,19 +115,27 @@ describe("POI Verification Gate — user authority contract", () => {
   };
 
   const ISSUER_ROLES = [
-    "platform_admin","org_admin","director","broker","seller","buyer","org_member",
+    "platform_admin","org_admin","director","broker","seller","buyer",
   ];
-  const READONLY_ONLY = ["auditor","legal_reviewer","compliance_analyst","api_admin","billing_admin"];
+  const NON_ISSUER_ROLES = [
+    "org_member", // mere membership — not authority to issue
+    "auditor","legal_reviewer","compliance_analyst","api_admin","billing_admin",
+  ];
 
   it("issuer-role allowlist is exhaustive and non-empty", () => {
     expect(ISSUER_ROLES.length).toBeGreaterThan(0);
     for (const r of ISSUER_ROLES) expect(typeof r).toBe("string");
   });
 
-  it("read-only-only users are blocked from issuance", () => {
-    // A user holding ONLY read-only roles must not satisfy the issuer allowlist.
-    const hasIssuer = READONLY_ONLY.some((r) => ISSUER_ROLES.includes(r));
-    expect(hasIssuer).toBe(false);
+  it("org_member alone does NOT confer POI issuance authority", () => {
+    // Client decision: membership ≠ authority. Only explicit admin,
+    // director, or trading roles may issue/progress formal POIs.
+    expect(ISSUER_ROLES).not.toContain("org_member");
+  });
+
+  it("read-only and membership-only users are blocked from issuance", () => {
+    const overlap = NON_ISSUER_ROLES.some((r) => ISSUER_ROLES.includes(r));
+    expect(overlap).toBe(false);
   });
 
   const samples: AuthorityBlocked[] = [
