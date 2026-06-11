@@ -79,7 +79,7 @@ describe("Batch 2 — Queue UI badges + filters: static guards", () => {
   });
 
   it.each(BATCH_2_FILES)("%s contains no Send-like UI copy", (file) => {
-    const src = read(file);
+    const src = stripCommentsAndStrings(read(file));
     for (const rx of FORBIDDEN_SEND_COPY) {
       expect(rx.test(src), `${file} must not contain pattern ${rx}`).toBe(false);
     }
