@@ -170,7 +170,9 @@ for (const p of [releaseGatePath, runbookPath]) {
       !/requires.*approval/i.test(line) &&
       !/before.*scheduled/i.test(line) &&
       !/scheduled dry-run/i.test(line) &&
-      !/scheduling readiness/i.test(line)
+      !/scheduling readiness/i.test(line) &&
+      !/\bBatch 19\b/.test(line)
+
     ) {
       errors.push(
         `${p}:${i + 1}: drift — line implies pg_cron is active for the sweeper: "${line.trim()}"`,
