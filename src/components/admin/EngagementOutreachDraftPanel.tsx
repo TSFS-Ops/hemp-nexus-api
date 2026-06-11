@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Loader2, Sparkles, RefreshCw, Check, X, Pencil } from "lucide-react";
+import { Loader2, Mail, RefreshCw, Check, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
   useEngagementOutreachDraft,
@@ -86,7 +86,7 @@ export function EngagementOutreachDraftPanel({ engagementId }: Props) {
     <div className="space-y-4 rounded-md border bg-card p-4" data-testid="outreach-draft-panel">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-muted-foreground" />
+          <Mail className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold">AI Outreach Drafts</h3>
           <Badge variant="outline" className="ml-1">Admin only</Badge>
         </div>
@@ -97,7 +97,7 @@ export function EngagementOutreachDraftPanel({ engagementId }: Props) {
           onClick={() => handleGenerate()}
           data-testid="outreach-draft-generate"
         >
-          {working ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {working ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
           <span className="ml-2">Generate draft</span>
         </Button>
       </div>
