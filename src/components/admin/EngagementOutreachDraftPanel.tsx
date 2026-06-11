@@ -10,8 +10,8 @@
  *     approval the admin must manually copy the text and send it outside
  *     the platform, then record that contact in the existing manual
  *     outreach log.
- *   • The panel never wires to notification-dispatch, send-transactional-
- *     email, Resend, SMTP, Mailgun, Slack, or any other dispatch surface.
+ *   • The panel never wires to any external email, dispatch, transport, or
+ *     messaging surface of any kind.
  */
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
