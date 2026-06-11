@@ -297,6 +297,44 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      // ── USER AUTHORITY + ORG LEGITIMACY GATES on forward, counterparty-facing transitions ──
+      const FORWARD_COUNTERPARTY_FACING = new Set([
+        "PENDING_APPROVAL",
+        "ELIGIBLE",
+        "COMPLETION_REQUESTED",
+        "COMPLETED",
+      ]);
+      if (FORWARD_COUNTERPARTY_FACING.has(toState) && !authCtx.isApiKey) {
+        const { checkUserPoiAuthority, USER_NOT_AUTHORISED_CODE, authorityAuditMetadata } = await import("../_shared/poi-authority.ts");
+        const authority = await checkUserPoiAuthority(admin, authCtx.userId, orgId);
+        if (!authority.allowed) {
+          try {
+            await admin.from("audit_logs").insert({
+              org_id: orgId,
+              actor_user_id: authCtx.userId,
+              action: "poi.transition_denied",
+              entity_type: "poi",
+              entity_id: parsed.poi_id,
+              metadata: authorityAuditMetadata(authority, {
+                correlation_id: correlationId,
+                endpoint: "pois",
+                from_state: fromState,
+                to_state: toState,
+                gate: "user_authority",
+              }),
+            });
+          } catch (auditErr) {
+            console.error(`[${correlationId}] Failed to write authority denial audit row (pois PATCH):`, auditErr);
+          }
+          throw new ApiException(USER_NOT_AUTHORISED_CODE, authority.message, 403);
+        }
+        const legitimacy = await checkOrgLegitimacy(admin, orgId, "poi_mint");
+        if (!legitimacy.allowed) {
+          throw new ApiException(ORG_NOT_VERIFIED_CODE, legitimacy.message, 403);
+        }
+      }
+
+
       // ── Unilateral cap guard (additive, does not affect bilateral) ──
       if (poi.poi_type === "unilateral" && PAST_CAP_STATES.includes(toState)) {
         throw new ApiException(
