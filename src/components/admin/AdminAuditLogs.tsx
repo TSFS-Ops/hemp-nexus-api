@@ -53,13 +53,22 @@ export function AdminAuditLogs() {
       }
 
       // Batch S Fix 8: group filter — prefix match on action.
+      // Ticket 2 (POI Gate Admin Visibility): adds a `poi_gate` pseudo-group
+      // that surfaces blocked POI attempts (legitimacy + authority denials)
+      // through a single filter without inventing new event types.
       const ACTION_GROUPS: Record<string, string> = {
         admin_risk_item: "admin_risk_item.",
         admin_manual_override: "admin.manual_override.",
         programme: "programme.",
         due_diligence: "dd.",
       };
-      if (groupFilter !== "all" && ACTION_GROUPS[groupFilter]) {
+      if (groupFilter === "poi_gate") {
+        query = query.in("action", [
+          "poi.mint_denied",
+          "legitimacy.gate_blocked",
+          "intent.denied",
+        ]);
+      } else if (groupFilter !== "all" && ACTION_GROUPS[groupFilter]) {
         query = query.like("action", `${ACTION_GROUPS[groupFilter]}%`);
       }
 
@@ -165,7 +174,27 @@ export function AdminAuditLogs() {
   };
 
 
+  // Ticket 2: POI Gate Admin Visibility — friendly labels + tone for the
+  // blocked POI events emitted by the legitimacy + authority gates. Raw
+  // event keys remain visible in the details dialog.
+  const POI_GATE_LABELS: Record<string, { label: string; tone: string }> = {
+    "poi.mint_denied": { label: "POI mint denied", tone: "bg-rose-700" },
+    "legitimacy.gate_blocked": {
+      label: "Organisation legitimacy gate blocked POI",
+      tone: "bg-rose-700",
+    },
+    "intent.denied": { label: "Blocked POI attempt", tone: "bg-rose-700" },
+  };
+
   const getActionBadge = (action: string) => {
+    const poiGate = POI_GATE_LABELS[action];
+    if (poiGate) {
+      return (
+        <Badge className={poiGate.tone} title={action}>
+          {poiGate.label}
+        </Badge>
+      );
+    }
     const colors: Record<string, string> = {
       "intent.confirmed": "bg-green-600",
       "match.created": "bg-blue-600",
@@ -275,6 +304,7 @@ export function AdminAuditLogs() {
                   <SelectItem value="admin_manual_override">admin.manual_override.*</SelectItem>
                   <SelectItem value="programme">programme.*</SelectItem>
                   <SelectItem value="due_diligence">due_diligence (dd.*)</SelectItem>
+                  <SelectItem value="poi_gate">POI gate (blocked / denied)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -484,6 +514,49 @@ export function AdminAuditLogs() {
                   <p className="font-mono text-sm">{selectedLog.org_id}</p>
                 </div>
               </div>
+
+
+
+              {/* Ticket 2: POI Gate Admin Visibility — promote the most useful
+                  gate fields to a labelled summary so HQ operators don't have
+                  to read raw JSON to understand a blocked POI attempt. The
+                  raw metadata block below remains visible for forensic use. */}
+              {selectedLog.action && POI_GATE_LABELS[selectedLog.action] && selectedLog.metadata && (
+                <div className="rounded-md border border-rose-200 bg-rose-50 p-3 space-y-2">
+                  <p className="text-sm font-semibold text-rose-900">
+                    Blocked POI attempt — {POI_GATE_LABELS[selectedLog.action].label}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {selectedLog.metadata.reason_code && (
+                      <div><span className="text-muted-foreground">Reason code: </span><span className="font-mono">{String(selectedLog.metadata.reason_code)}</span></div>
+                    )}
+                    {selectedLog.metadata.reason && (
+                      <div><span className="text-muted-foreground">Reason: </span><span className="font-mono">{String(selectedLog.metadata.reason)}</span></div>
+                    )}
+                    {selectedLog.metadata.legitimacy_reason && (
+                      <div><span className="text-muted-foreground">Legitimacy: </span><span className="font-mono">{String(selectedLog.metadata.legitimacy_reason)}</span></div>
+                    )}
+                    {selectedLog.metadata.authority_reason && (
+                      <div><span className="text-muted-foreground">Authority: </span><span className="font-mono">{String(selectedLog.metadata.authority_reason)}</span></div>
+                    )}
+                    {selectedLog.metadata.gate_position && (
+                      <div><span className="text-muted-foreground">Gate position: </span><span className="font-mono">{String(selectedLog.metadata.gate_position)}</span></div>
+                    )}
+                    {selectedLog.metadata.trade_approval_status && (
+                      <div><span className="text-muted-foreground">Trade approval: </span><span className="font-mono">{String(selectedLog.metadata.trade_approval_status)}</span></div>
+                    )}
+                    {selectedLog.metadata.endpoint && (
+                      <div><span className="text-muted-foreground">Source: </span><span className="font-mono">{String(selectedLog.metadata.endpoint)}</span></div>
+                    )}
+                    {Array.isArray(selectedLog.metadata.held_roles) && (
+                      <div className="sm:col-span-2"><span className="text-muted-foreground">Held roles: </span><span className="font-mono">{(selectedLog.metadata.held_roles as string[]).join(", ") || "(none)"}</span></div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-rose-900/70">
+                    Raw event key: <span className="font-mono">{selectedLog.action}</span>
+                  </p>
+                </div>
+              )}
               
               {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
                 <div>
