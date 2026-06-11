@@ -632,6 +632,34 @@ What Batch 14 does NOT change: no cron schedule added/removed/modified; no edge 
 
 Evidence: `evidence/data-004-batch-14-cold-storage-row-hold-live-evidence.md`.
 
+## DATA-004 Batch 19 — Live Email Purge Scheduling + First Live Tick Evidence
+
+Status: **DATA-004 Batch 19 PASS (2026-06-11).** Live `email_send_log` purge is now scheduled **only** through the DATA-004 edge function `purge-email-send-log-daily`. pg_cron jobid 42 `purge-email-send-log-daily-live` runs daily at `50 3 * * *` UTC, body pins `dry_run:false`, auth uses `x-internal-key` from `vault.INTERNAL_CRON_KEY` (never anon Bearer), target is `/functions/v1/purge-email-send-log-daily`. The legacy DB-side `public.purge_old_email_send_log()` cron path remains **absent / quarantined** (Batch 8A) and is NOT used. The dry-run schedule `purge-email-send-log-daily-dryrun` (jobid 39, `20 3 * * *`, `dry_run:true`) is preserved unchanged and continues to write daily `retention_run_evidence`.
+
+First live tick: run_id `65de39b3-e554-4fb2-9bf9-736b552d5995`, `dry_run=false`, `status=success`, `rows_seen=0`, `rows_eligible=0`, `rows_purged=0`, all skip counts `0`, `audit_write_failures=[]`, `evidence_write_failures=[]`, 2 `retention_run_evidence` rows written. Fail-closed no-op because production currently has 0 valid `email_send_log` `org_retention_policies` rows. Batch 18 positive-control dry-run (run_id `e8f067ee-1a9a-4d4b-9602-8c69c07a100a`) already proved positive eligibility, within-retention, missing-policy, legal-hold, and disabled-policy decision branches.
+
+Protected by design (no behaviour change in Batch 19):
+- Missing-policy orgs — skipped (`skipped_due_to_missing_policy`); cannot be purged.
+- Legal-hold orgs — skipped (`skipped_due_to_legal_hold`); cannot be purged.
+- Disabled / invalid policy orgs — skipped (`skipped_due_to_disabled_policy`); cannot be purged.
+- Within-retention rows — retained (`retained_not_expired`).
+
+Cron drift contract updated to `data-004-batch-19`: jobid 42 added to `expected_active`; jobid 39 retained; legacy bare-name `purge-email-send-log-daily` jobname remains in the forbidden set; `storage-retention-cleanup-job` (jobid 7) remains inactive. HQ → Per-Org Retention "Live cron drift monitor" PASS before and after schedule + first live tick.
+
+Rollback SQL (live schedule only — dry-run jobid 39 unaffected):
+
+```sql
+SELECT cron.unschedule('purge-email-send-log-daily-live');
+```
+
+What Batch 19 does NOT change: no edge function code changed; no migration changed the `purge-email-send-log-daily` function behaviour; no retention policy or floor changed; enforcement scope unchanged (still only `email_send_log` is wired); no anonymisation, account deletion, storage cleanup, or sentinel scheduling enabled; the legacy DB purge function remains quarantined and absent from cron.
+
+Remaining gated paths after Batch 19 (each still requires its own explicit approval + fresh live-cron snapshot): live email anonymisation (`email-log-anonymise`), live account-deletion sweeper (`account-deletion-sweeper`), `storage-retention-cleanup-job`, sentinel paths, per-org enforcement beyond `email_send_log`, org-admin mutation of retention policies.
+
+Evidence: `evidence/data-004-batch-19-live-email-purge-schedule.md`. First live tick run_id: `65de39b3-e554-4fb2-9bf9-736b552d5995`.
+
+
+
 
 
 ## Admin Export Controls — Batch 2 (HQ Governance Record Export Request Shell)
