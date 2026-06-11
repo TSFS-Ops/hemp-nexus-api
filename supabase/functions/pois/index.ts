@@ -168,6 +168,35 @@ Deno.serve(async (req: Request) => {
 
       const parsed = PoiCreateSchema.parse(body);
 
+      // ── USER AUTHORITY GATE ──
+      // Verified org alone is not sufficient — the issuing user must hold a
+      // POI-issuance role for this org. API-key actors are exempt: they are
+      // already scope-checked elsewhere and have no human role row.
+      if (!authCtx.isApiKey) {
+        const { checkUserPoiAuthority, USER_NOT_AUTHORISED_CODE, authorityAuditMetadata } = await import("../_shared/poi-authority.ts");
+        const authority = await checkUserPoiAuthority(admin, authCtx.userId, orgId);
+        if (!authority.allowed) {
+          try {
+            await admin.from("audit_logs").insert({
+              org_id: orgId,
+              actor_user_id: authCtx.userId,
+              action: "poi.mint_denied",
+              entity_type: "poi",
+              entity_id: null,
+              metadata: authorityAuditMetadata(authority, {
+                correlation_id: correlationId,
+                endpoint: "pois",
+                poi_type: body.poi_type,
+                gate: "user_authority",
+              }),
+            });
+          } catch (auditErr) {
+            console.error(`[${correlationId}] Failed to write authority denial audit row:`, auditErr);
+          }
+          throw new ApiException(USER_NOT_AUTHORISED_CODE, authority.message, 403);
+        }
+      }
+
       // ── LEGITIMACY GATE (mirror of match/index.ts) ──
       // Mint paths in this function bypass the `match` edge function and so
       // bypassed the legitimacy check until now. An unverified org could mint
