@@ -325,7 +325,115 @@ Deno.serve(async (req) => {
       const { data, error } = await query;
       if (error) throw error;
 
-      return new Response(JSON.stringify({ engagements: data }), {
+      // ── Batch 1: Read-only queue enrichment ────────────────────────────
+      // Attach derived admin-facilitation queue fields per row.
+      // Pure read-side: no writes, no dispatch. See
+      // supabase/functions/_shared/derive-admin-facilitation-queue-fields.ts.
+      let engagementsResponse: unknown = data;
+      try {
+        const rows = (data ?? []) as Array<Record<string, unknown>>;
+        if (rows.length > 0) {
+          const { deriveQueueFields, SLA_DEFAULT_THRESHOLD_HOURS } = await import(
+            "../_shared/derive-admin-facilitation-queue-fields.ts"
+          );
+
+          // Resolve SLA threshold (uses existing admin_settings key).
+          let thresholdHours = SLA_DEFAULT_THRESHOLD_HOURS;
+          try {
+            const { data: setting } = await supabase
+              .from("admin_settings")
+              .select("value")
+              .eq("key", "outreach_sla")
+              .maybeSingle();
+            const v = (setting?.value as { threshold_hours?: number } | null)
+              ?.threshold_hours;
+            if (typeof v === "number" && v > 0) thresholdHours = v;
+          } catch (_settingErr) {
+            // Fall back to default.
+          }
+
+          const engagementIds = rows
+            .map((r) => r.id as string)
+            .filter((id): id is string => typeof id === "string");
+
+          const [logsRes, draftsRes] = await Promise.all([
+            supabase
+              .from("engagement_outreach_logs")
+              .select("engagement_id, created_at, contact_method, new_status")
+              .in("engagement_id", engagementIds),
+            supabase
+              .from("engagement_outreach_drafts")
+              .select("engagement_id, status, created_at")
+              .in("engagement_id", engagementIds),
+          ]);
+
+          const logsByEng = new Map<string, Array<{
+            engagement_id: string;
+            created_at: string;
+            contact_method: string | null;
+            new_status: string | null;
+          }>>();
+          for (const l of (logsRes.data ?? []) as Array<{
+            engagement_id: string;
+            created_at: string;
+            contact_method: string | null;
+            new_status: string | null;
+          }>) {
+            const arr = logsByEng.get(l.engagement_id) ?? [];
+            arr.push(l);
+            logsByEng.set(l.engagement_id, arr);
+          }
+
+          const draftsByEng = new Map<string, Array<{
+            engagement_id: string;
+            status: string;
+            created_at: string;
+          }>>();
+          for (const d of (draftsRes.data ?? []) as Array<{
+            engagement_id: string;
+            status: string;
+            created_at: string;
+          }>) {
+            const arr = draftsByEng.get(d.engagement_id) ?? [];
+            arr.push(d);
+            draftsByEng.set(d.engagement_id, arr);
+          }
+
+          const nowMs = Date.now();
+          engagementsResponse = rows.map((row) => {
+            const id = row.id as string;
+            const derived = deriveQueueFields({
+              engagement: {
+                id,
+                engagement_status: (row.engagement_status as string | null) ?? null,
+                operational_state: (row.operational_state as string | null) ?? null,
+                created_at: (row.created_at as string) ?? new Date(0).toISOString(),
+                contacted_at: (row.contacted_at as string | null) ?? null,
+                notification_sent_at:
+                  (row as { notification_sent_at?: string | null }).notification_sent_at ?? null,
+                counterparty_org_id:
+                  (row.counterparty_org_id as string | null) ?? null,
+                counterparty_type: (row.counterparty_type as string | null) ?? null,
+              },
+              outreachLogs: logsByEng.get(id) ?? [],
+              drafts: draftsByEng.get(id) ?? [],
+              thresholdHours,
+              nowMs,
+              orgEligible: true,
+            });
+            return { ...row, queue_derived: derived };
+          });
+        }
+      } catch (enrichErr) {
+        // Zero-Swallowed-Errors: log but never block the queue response.
+        console.error(
+          "[poi-engagements] queue enrichment failed (non-fatal):",
+          enrichErr instanceof Error ? enrichErr.message : String(enrichErr),
+        );
+        engagementsResponse = data;
+      }
+
+      return new Response(JSON.stringify({ engagements: engagementsResponse }), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
       });
