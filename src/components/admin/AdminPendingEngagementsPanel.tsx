@@ -82,6 +82,14 @@ import {
   isOutreachBlocked,
   type ContactState,
 } from "@/lib/contact-completeness";
+// Batch 2 — Unknown-Counterparty Admin Facilitation: read-only badges + filters
+// driven entirely by the Batch 1 `queue_derived` payload. No send, no dispatch.
+import { AdminFacilitationQueueBadges } from "@/components/admin/AdminFacilitationQueueBadges";
+import {
+  isFacilitationFilter,
+  matchesFacilitationFilter,
+  type FacilitationFilterValue,
+} from "@/lib/admin-facilitation-queue";
 
 interface Engagement {
   id: string;
@@ -142,6 +150,8 @@ interface Engagement {
   counterparty_org?: { id: string; name: string } | null;
   /** Phase 1 demo isolation: true for staged Daniel-facing fixture rows. */
   is_demo?: boolean | null;
+  /** Batch 1: read-only queue intelligence (SLA, draft, outreach, next action). */
+  queue_derived?: import("@/lib/admin-facilitation-queue").QueueDerived | null;
 }
 
 // D2b — predicate: is this engagement awaiting an admin binding-review
@@ -266,6 +276,17 @@ const FILTER_TABS = [
   // D3 — surface engagements parked in dispute / cancelled-email-change.
   { value: "disputed_being_named", label: "Disputed — being named" },
   { value: "cancelled_email_change", label: "Cancelled for email change" },
+  // ── Batch 2: additive facilitation filters driven entirely by `queue_derived` ──
+  // These never mutate canonical state and never enable a send affordance.
+  { value: "needs_admin_action", label: "Needs admin action" },
+  { value: "no_outreach_logged", label: "No outreach logged" },
+  { value: "overdue", label: "Overdue" },
+  { value: "due_soon", label: "Due soon" },
+  { value: "draft_approved_manual_send", label: "Draft approved — manual send" },
+  { value: "draft_pending_review", label: "Draft pending review" },
+  { value: "waiting_on_counterparty", label: "Waiting on counterparty" },
+  { value: "waiting_on_initiator", label: "Waiting on requesting org" },
+  { value: "blocked_ineligible_facilitation", label: "Blocked / ineligible" },
 ] as const;
 
 export const DANIEL_FIXTURE_UI_COPY = {
@@ -1030,6 +1051,12 @@ export function AdminPendingEngagementsPanel() {
     } else if (filter === "binding_review_required") {
       // D2b — engagements awaiting an admin binding-review decision.
       base = engagements.filter(isBindingReviewPending);
+    } else if (isFacilitationFilter(filter)) {
+      // ── Batch 2: additive facilitation filters (queue_derived-only) ──
+      // Display-only: never mutates canonical state, never sends.
+      base = engagements.filter((e) =>
+        matchesFacilitationFilter(filter as FacilitationFilterValue, e.queue_derived),
+      );
     } else {
       base = engagements.filter((e) => e.engagement_status === filter);
     }
@@ -1916,6 +1943,13 @@ export function AdminPendingEngagementsPanel() {
                                 variant="inline"
                               />
                             </div>
+                            {/* Batch 2 — read-only queue intelligence badges
+                                (SLA, draft status, next action, last outreach).
+                                Display-only. No send affordance. */}
+                            <AdminFacilitationQueueBadges
+                              queueDerived={e.queue_derived ?? null}
+                              engagementId={e.id}
+                            />
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
