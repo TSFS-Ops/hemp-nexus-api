@@ -49,8 +49,6 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
       console.log(`[${signalId}] Prioritized sources based on historical performance`);
     }
 
-    const internalKey = Deno.env.get("INTERNAL_SEARCH_KEY");
-
     // Query each data source
     for (const dataSource of dataSources) {
       console.log(`[${signalId}] Querying ${dataSource.name} (${dataSource.type})`);
@@ -60,6 +58,18 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
 
       try {
         if (dataSource.type === "http" && dataSource.config?.base_url) {
+          // SSRF guard: only allow https:// to public hosts. Reject any
+          // localhost / loopback / link-local / RFC1918 / cloud-metadata target.
+          // We never forward INTERNAL_SEARCH_KEY (or any other platform secret)
+          // to org-controlled URLs — third-party providers must authenticate
+          // via their own per-source headers in `config.headers`.
+          if (!isPublicHttpsUrl(dataSource.config.base_url)) {
+            console.error(
+              `[${signalId}] Rejecting data source "${dataSource.name}" — base_url is not a public https URL`,
+            );
+            continue;
+          }
+
           // Call external HTTP endpoint
           const requestPayload = {
             signalId,
@@ -78,7 +88,8 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
             method: dataSource.config.method || "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-Internal-Key": internalKey || "",
+              // Per-source headers only. Platform-internal keys are intentionally
+              // NOT included — those would leak to attacker-controlled endpoints.
               ...(dataSource.config.headers || {}),
             },
             body: JSON.stringify(requestPayload),
