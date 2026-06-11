@@ -1943,6 +1943,13 @@ export function AdminPendingEngagementsPanel() {
                                 variant="inline"
                               />
                             </div>
+                            {/* Batch 2 — read-only queue intelligence badges
+                                (SLA, draft status, next action, last outreach).
+                                Display-only. No send affordance. */}
+                            <AdminFacilitationQueueBadges
+                              queueDerived={e.queue_derived ?? null}
+                              engagementId={e.id}
+                            />
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
