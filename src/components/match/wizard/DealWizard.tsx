@@ -38,6 +38,8 @@ import { FileText, FileSignature, MessageSquare, ShieldAlert, CheckCircle2, Arro
 import { Button } from "@/components/ui/button";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ActionRequiredBanner } from "@/components/match/ActionRequiredBanner";
+import { VerificationRequiredBanner } from "@/components/match/VerificationRequiredBanner";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Match } from "@/hooks/use-match-details";
 export type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
