@@ -15,12 +15,13 @@ import {
 } from "../_shared/discovery-engine.ts";
 import { errorResponse } from "../_shared/errors.ts";
 
-const headers = corsHeaders('*');
+const allowedOrigins = Deno.env.get('ALLOWED_ORIGINS') || '';
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers });
-  }
+  const preflight = handleCors(req, allowedOrigins);
+  if (preflight) return preflight;
+  const origin = req.headers.get('origin');
+  const headers = corsHeaders(allowedOrigins, origin);
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     if (tsQuery) {
       let cpQuery = supabase
         .from("counterparties")
-        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, contact_email, verified, org_id, created_at")
+        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, verified, org_id, created_at")
         .textSearch("fts", tsQuery, { type: "plain", config: "english" })
         .neq("org_id", authCtx.orgId)
         .limit(limit);
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
       ilikeFallbackUsed = true;
       let fallbackQuery = supabase
         .from("counterparties")
-        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, contact_email, verified, org_id, created_at")
+        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, verified, org_id, created_at")
         .neq("org_id", authCtx.orgId)
         .or(`company_name.ilike.%${product.replace(/[%_\\]/g, "")}%,description.ilike.%${product.replace(/[%_\\]/g, "")}%`)
         .limit(limit);
@@ -190,7 +190,6 @@ Deno.serve(async (req) => {
       },
       metadata: {
         org_id: cp.org_id,
-        contact_email: cp.contact_email,
         verified: cp.verified,
         registration_number: cp.registration_number,
       },

@@ -2,6 +2,50 @@
 import { scoreOptionSync } from "./scoring.ts";
 import { logPerformance, getSourceRankings } from "./performance.ts";
 
+/**
+ * SSRF guard for org-configured data-source URLs.
+ *
+ * Returns true only when `raw` parses as an https:// URL whose hostname is
+ * neither empty, "localhost", a loopback / link-local / RFC1918 IPv4 address,
+ * the IPv6 loopback / link-local / unique-local block, nor the well-known
+ * cloud-metadata host (169.254.169.254 / metadata.google.internal /
+ * metadata.aws.internal). All other inputs (http://, file://, raw IPs in
+ * private ranges, hostnames resolving to private space at the string level)
+ * are rejected.
+ *
+ * This is a string-level check — it does NOT resolve DNS. DNS-rebinding
+ * mitigation belongs in the outbound fetch layer (e.g. via a proxy or
+ * dedicated allow-list of provider hostnames). For now this stops the most
+ * direct SSRF vectors and ensures we never call http:// or loopback.
+ */
+export function isPublicHttpsUrl(raw: unknown): boolean {
+  if (typeof raw !== "string" || raw.length === 0 || raw.length > 2048) return false;
+  let u: URL;
+  try { u = new URL(raw); } catch { return false; }
+  if (u.protocol !== "https:") return false;
+  const host = u.hostname.toLowerCase();
+  if (!host) return false;
+  // Well-known metadata hosts
+  if (host === "metadata.google.internal" || host === "metadata.aws.internal") return false;
+  if (host === "localhost" || host.endsWith(".localhost")) return false;
+  // IPv6 brackets stripped by URL parser → hostname is bare
+  if (host === "::1" || host === "::" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80:")) return false;
+  // IPv4 private / loopback / link-local / cloud-metadata
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const [a, b] = [parseInt(ipv4[1], 10), parseInt(ipv4[2], 10)];
+    if (a === 10) return false;
+    if (a === 127) return false;
+    if (a === 0) return false;
+    if (a === 169 && b === 254) return false; // link-local + 169.254.169.254
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 192 && b === 168) return false;
+    if (a >= 224) return false; // multicast / reserved
+  }
+  return true;
+}
+
+
 export async function searchDataSources(signalId: string, orgId: string, supabase: any) {
   console.log(`[${signalId}] Starting background search for signal`);
 
@@ -49,8 +93,6 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
       console.log(`[${signalId}] Prioritized sources based on historical performance`);
     }
 
-    const internalKey = Deno.env.get("INTERNAL_SEARCH_KEY");
-
     // Query each data source
     for (const dataSource of dataSources) {
       console.log(`[${signalId}] Querying ${dataSource.name} (${dataSource.type})`);
@@ -60,6 +102,18 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
 
       try {
         if (dataSource.type === "http" && dataSource.config?.base_url) {
+          // SSRF guard: only allow https:// to public hosts. Reject any
+          // localhost / loopback / link-local / RFC1918 / cloud-metadata target.
+          // We never forward INTERNAL_SEARCH_KEY (or any other platform secret)
+          // to org-controlled URLs — third-party providers must authenticate
+          // via their own per-source headers in `config.headers`.
+          if (!isPublicHttpsUrl(dataSource.config.base_url)) {
+            console.error(
+              `[${signalId}] Rejecting data source "${dataSource.name}" — base_url is not a public https URL`,
+            );
+            continue;
+          }
+
           // Call external HTTP endpoint
           const requestPayload = {
             signalId,
@@ -78,7 +132,8 @@ export async function searchDataSources(signalId: string, orgId: string, supabas
             method: dataSource.config.method || "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-Internal-Key": internalKey || "",
+              // Per-source headers only. Platform-internal keys are intentionally
+              // NOT included — those would leak to attacker-controlled endpoints.
               ...(dataSource.config.headers || {}),
             },
             body: JSON.stringify(requestPayload),
