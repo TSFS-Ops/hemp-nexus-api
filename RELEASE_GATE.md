@@ -658,6 +658,33 @@ Remaining gated paths after Batch 19 (each still requires its own explicit appro
 
 Evidence: `evidence/data-004-batch-19-live-email-purge-schedule.md`. First live tick run_id: `65de39b3-e554-4fb2-9bf9-736b552d5995`.
 
+## DATA-004 Final Enterprise Status Pack
+
+Status: **CLOSEOUT (2026-06-11) — documentation/evidence only.** Final enterprise-grade status pack for DATA-004 after Batch 19. No code, cron, schedules, edge functions, retention policies, floors, sweepers, anonymisation, account deletion, storage cleanup, sentinel paths, or destructive behaviour changed by this pack.
+
+Final cron posture (contract `data-004-batch-19`): jobid 25 `account-deletion-sweeper-daily-dryrun` (dry-run), jobid 39 `purge-email-send-log-daily-dryrun` (dry-run), jobid 40 `cold-storage-archive-dryrun` (dry-run), jobid 41 `cold-storage-archive-live` (LIVE, non-destructive), jobid 42 `purge-email-send-log-daily-live` (LIVE, destructive scoped by policy + legal-hold), jobid 7 `storage-retention-cleanup-job` inactive. Forbidden jobnames absent: legacy DB email purge, `email-log-anonymise-daily`, legacy `account-deletion-sweeper-daily`, `cold-storage-archive-weekly`.
+
+Approved enterprise-grade DATA-004 paths: `email_send_log` retention (dry-run + live, fail-closed by policy + legal-hold), `cold-storage-archive` (dry-run + live, non-destructive, row-level legal-hold proven on `matches`), cron-drift visibility (read-only monitor), per-org retention policy shell (AAL2-gated `admin-org-retention`) + Retention Health.
+
+Remaining gated paths (each requires its own explicit approval + fresh live-cron snapshot): live email anonymisation (`email-log-anonymise`), live account-deletion sweeper, `storage-retention-cleanup-job`, sentinel paths, per-org enforcement beyond `email_send_log`, org-admin mutation of retention windows.
+
+Consolidated rollback SQL (apply selectively, then verify via live `cron.job`, HQ Retention Health, and `retention_run_evidence`; do NOT delete evidence rows during rollback):
+
+```sql
+SELECT cron.unschedule('purge-email-send-log-daily-live');
+SELECT cron.unschedule('purge-email-send-log-daily-dryrun');
+SELECT cron.unschedule('cold-storage-archive-live');
+SELECT cron.unschedule('cold-storage-archive-dryrun');
+SELECT cron.unschedule('account-deletion-sweeper-daily-dryrun');
+```
+
+Recommendation: stop DATA-004 implementation here unless an enterprise requirement opens one of the remaining gated paths. If reopened, next assessment options are email anonymisation readiness (parallel to Batch 15→17) or `storage-retention-cleanup-job` legal-hold upgrade assessment — assessment only, not live activation.
+
+Evidence: `evidence/data-004-final-enterprise-status-pack.md`.
+
+
+
+
 
 
 

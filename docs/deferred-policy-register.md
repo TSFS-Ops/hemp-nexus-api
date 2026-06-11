@@ -143,4 +143,9 @@ None of the deferred items block platform operation. Items 5 and 12 are time-sen
 
 `evidence/data-004-closeout-pack.md` (2026-05-30) consolidates the deferred/gated register for DATA-004 (live email purge, `email-log-anonymise`, live account-deletion sweeper, `storage-retention-cleanup`, sentinel paths, per-org enforcement beyond approved paths, org-admin mutation of retention policies) and pairs each with the required evidence before approval. Items 15–17 above remain authoritative; the closeout pack adds risk category, scheduled vs unscheduled mode, and likely safest next step per item without changing any deferral decision.
 
+## DATA-004 Final Enterprise Status Pack cross-reference
+
+`evidence/data-004-final-enterprise-status-pack.md` (2026-06-11) is the final enterprise-grade status pack after Batch 19. It supersedes the Closeout Pack for the `email_send_log` line (Item 15 now Quarantined and superseded by Batch 19 edge path; jobid 42 live with `dry_run:false`, `x-internal-key` vault auth). Items 16 and 17 remain authoritative — live account deletion and live email anonymisation continue to require their own explicit approval + fresh live-cron snapshot. The Final Status Pack adds the contract `data-004-batch-19` cron posture table, an evidence map across Batches 12/13/14/18/19, consolidated rollback SQL, and an enterprise-readiness statement.
+
+
 
