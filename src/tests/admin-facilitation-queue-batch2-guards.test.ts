@@ -46,12 +46,19 @@ const FORBIDDEN_DISPATCH_TOKENS = [
   "supabase.rpc(",
 ];
 
+// Patterns that indicate a SEND ACTION affordance (button label / handler).
+// Legitimate disclaimer copy like "manual send required" or "does not send
+// outreach" is explicitly permitted because it tells the operator that the
+// platform will NOT send anything.
 const FORBIDDEN_SEND_COPY = [
-  /\bSend(\s+email|\s+outreach|\s+message|\s+now)?\b/i,
+  /Send\s+outreach/i,
+  /Send\s+email/i,
+  /Send\s+now/i,
   /\bDispatch\b/i,
   /\bMessage counterparty\b/i,
   /\bNotify counterparty\b/i,
   /\bTrigger outreach\b/i,
+  /onClick=\{[^}]*\bsend[A-Z]/, // e.g. onClick={sendOutreach}
 ];
 
 function stripCommentsAndStrings(src: string): string {
