@@ -142,7 +142,6 @@ export function MatchHeroCard({ match, isSettled, engagementStatus }: MatchHeroC
         </div>
       </CardHeader>
       <CardContent>
-      <CardContent>
         {(match as any).poi_state === "DRAFT" && (
           <DraftPoiBadge className="mb-4" />
         )}
