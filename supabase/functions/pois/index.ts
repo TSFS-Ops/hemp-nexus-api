@@ -135,6 +135,11 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Issue POI ──
     if (req.method === "POST") {
+      // API-key actors must hold an explicit write scope and be bound to
+      // the org from the key — `requireScope` is a no-op for JWT callers.
+      // This ensures API-key exemption from the user-authority gate is not
+      // a bypass: a key without `pois:write` (or `pois:*`) is rejected 403.
+      requireScope(authCtx, "pois:write");
       // Rate limit BEFORE any DB work
       await checkRateLimit(admin, orgId, null, "pois", "pois:write");
 
