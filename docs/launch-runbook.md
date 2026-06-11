@@ -954,5 +954,32 @@ Out of scope for Batch 19 (still gated, no behaviour change):
 
 Evidence: `evidence/data-004-batch-19-live-email-purge-schedule.md`. First live tick run_id: `65de39b3-e554-4fb2-9bf9-736b552d5995`.
 
+## DATA-004 Final Enterprise Status Pack
+
+Status: **CLOSEOUT (2026-06-11) — documentation/evidence only.** Consolidated enterprise-grade status for DATA-004 after Batch 19. No code, cron, schedules, edge functions, retention policies, floors, sweepers, anonymisation, account deletion, storage cleanup, sentinel paths, or destructive behaviour changed.
+
+Approved enterprise-grade DATA-004 paths:
+- `email_send_log` retention path — dry-run (jobid 39) + live (jobid 42), fail-closed by per-org policy + legal-hold.
+- `cold-storage-archive` path — dry-run (jobid 40) + live (jobid 41), non-destructive of source rows, row-level legal-hold proven on `matches` (Batch 14).
+- Cron-drift visibility — read-only `data_004_cron_drift_check()` monitor, contract `data-004-batch-19`.
+- Per-org retention policy shell — `org_retention_policies` + AAL2-gated `admin-org-retention` (list/set/clear/health) + HQ Retention Health.
+
+DATA-004 is NOT full platform-wide retention enforcement. Remaining destructive paths require their own explicit approval + fresh live-cron snapshot: live email anonymisation (`email-log-anonymise`), live account-deletion sweeper, `storage-retention-cleanup-job` (jobid 7 inactive), sentinel paths, per-org enforcement beyond `email_send_log`, org-admin mutation of retention windows.
+
+Consolidated rollback SQL (apply selectively; verify via live `cron.job`, HQ Retention Health, and `retention_run_evidence`; do NOT delete evidence rows):
+
+```sql
+SELECT cron.unschedule('purge-email-send-log-daily-live');
+SELECT cron.unschedule('purge-email-send-log-daily-dryrun');
+SELECT cron.unschedule('cold-storage-archive-live');
+SELECT cron.unschedule('cold-storage-archive-dryrun');
+SELECT cron.unschedule('account-deletion-sweeper-daily-dryrun');
+```
+
+Final recommendation: stop DATA-004 implementation here unless a specific enterprise requirement opens one of the remaining gated paths. If reopened later, the recommended next assessments are email anonymisation readiness or `storage-retention-cleanup-job` legal-hold upgrade — assessment only, not live activation.
+
+Evidence: `evidence/data-004-final-enterprise-status-pack.md`.
+
+
 
 
