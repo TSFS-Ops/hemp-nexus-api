@@ -82,6 +82,14 @@ import {
   isOutreachBlocked,
   type ContactState,
 } from "@/lib/contact-completeness";
+// Batch 2 — Unknown-Counterparty Admin Facilitation: read-only badges + filters
+// driven entirely by the Batch 1 `queue_derived` payload. No send, no dispatch.
+import { AdminFacilitationQueueBadges } from "@/components/admin/AdminFacilitationQueueBadges";
+import {
+  isFacilitationFilter,
+  matchesFacilitationFilter,
+  type FacilitationFilterValue,
+} from "@/lib/admin-facilitation-queue";
 
 interface Engagement {
   id: string;
