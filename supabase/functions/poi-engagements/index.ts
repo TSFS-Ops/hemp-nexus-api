@@ -1290,6 +1290,31 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── USER AUTHORITY GATE (issuing/sending user must be authorised) ──
+      const initiatorOrgIdForGate = (eng as { org_id: string }).org_id;
+      if (authCtx.userId && !authCtx.isApiKey) {
+        const { checkUserPoiAuthority, USER_NOT_AUTHORISED_CODE, authorityAuditMetadata } = await import("../_shared/poi-authority.ts");
+        const authority = await checkUserPoiAuthority(supabase, authCtx.userId, initiatorOrgIdForGate);
+        if (!authority.allowed) {
+          try {
+            await supabase.from("admin_audit_logs").insert({
+              actor_user_id: authCtx.userId,
+              org_id: initiatorOrgIdForGate,
+              action: "legitimacy.gate_blocked",
+              entity_type: "poi_engagement",
+              entity_id: engagementId,
+              metadata: authorityAuditMetadata(authority, {
+                endpoint: "poi-engagements/send-outreach",
+                gate_position: "user_authority",
+              }),
+            });
+          } catch (auditErr) {
+            console.error("Failed to write authority denial audit row (poi-engagements):", auditErr);
+          }
+          throw new ApiException(USER_NOT_AUTHORISED_CODE, authority.message, 403);
+        }
+      }
+
       // ── LEGITIMACY GATE (David & Daniel: "easy entry, hard legitimacy") ──
       // The initiator org is about to project Izenzo's name to a counterparty
       // via email. Block the send if the initiator org is not formally
@@ -1297,7 +1322,6 @@ Deno.serve(async (req) => {
       // which case verification is deferred to WaD execution.
       // Admins acting on behalf of an unverified tenant are also blocked —
       // the gate is on the org, not on the actor's role.
-      const initiatorOrgIdForGate = (eng as { org_id: string }).org_id;
       const outreachGovernanceProfile = await getActiveGovernanceProfile(supabase, initiatorOrgIdForGate);
       const outreachLegitimacy = await checkOrgLegitimacy(supabase, initiatorOrgIdForGate, "outreach");
       if (!outreachLegitimacy.allowed) {

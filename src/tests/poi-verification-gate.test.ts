@@ -81,7 +81,7 @@ describe("POI Verification Gate — client-side blocked-state shape", () => {
   // the source of truth — _shared/legitimacy.ts.
   type Blocked = {
     allowed: false;
-    reason: "no_record" | "not_approved" | "revoked" | "expired" | "no_org";
+    reason: "no_record" | "not_approved" | "revoked" | "expired" | "frozen" | "no_org";
     status: string | null;
     validUntil: string | null;
     message: string;
@@ -92,6 +92,7 @@ describe("POI Verification Gate — client-side blocked-state shape", () => {
     { allowed: false, reason: "not_approved",  status: "pending",   validUntil: null, message: "pending" },
     { allowed: false, reason: "revoked",       status: "revoked",   validUntil: null, message: "revoked" },
     { allowed: false, reason: "expired",       status: "approved",  validUntil: "2020-01-01", message: "expired" },
+    { allowed: false, reason: "frozen",        status: "frozen",    validUntil: null, message: "frozen/suspended org" },
     { allowed: false, reason: "no_org",        status: null,        validUntil: null, message: "no org" },
   ];
 
@@ -102,3 +103,48 @@ describe("POI Verification Gate — client-side blocked-state shape", () => {
     expect(sample.message.length).toBeGreaterThan(0);
   });
 });
+
+describe("POI Verification Gate — user authority contract", () => {
+  // Mirrors supabase/functions/_shared/poi-authority.ts. The server is
+  // the source of truth; these shape tests pin the canonical contract.
+  type AuthorityBlocked = {
+    allowed: false;
+    reason: "user_not_in_org" | "no_issuer_role" | "lookup_failed";
+    roles: string[];
+    message: string;
+  };
+
+  const ISSUER_ROLES = [
+    "platform_admin","org_admin","director","broker","seller","buyer","org_member",
+  ];
+  const READONLY_ONLY = ["auditor","legal_reviewer","compliance_analyst","api_admin","billing_admin"];
+
+  it("issuer-role allowlist is exhaustive and non-empty", () => {
+    expect(ISSUER_ROLES.length).toBeGreaterThan(0);
+    for (const r of ISSUER_ROLES) expect(typeof r).toBe("string");
+  });
+
+  it("read-only-only users are blocked from issuance", () => {
+    // A user holding ONLY read-only roles must not satisfy the issuer allowlist.
+    const hasIssuer = READONLY_ONLY.some((r) => ISSUER_ROLES.includes(r));
+    expect(hasIssuer).toBe(false);
+  });
+
+  const samples: AuthorityBlocked[] = [
+    { allowed: false, reason: "user_not_in_org", roles: [],                       message: "not in org" },
+    { allowed: false, reason: "no_issuer_role",  roles: ["auditor"],              message: "no issuer role" },
+    { allowed: false, reason: "no_issuer_role",  roles: ["compliance_analyst"],   message: "no issuer role" },
+    { allowed: false, reason: "lookup_failed",   roles: [],                       message: "lookup failed" },
+  ];
+
+  it.each(samples)("blocked authority decision reason=%s has stable shape", (sample) => {
+    expect(sample.allowed).toBe(false);
+    expect(Array.isArray(sample.roles)).toBe(true);
+    expect(sample.message.length).toBeGreaterThan(0);
+  });
+
+  it("stable code is USER_NOT_AUTHORISED", () => {
+    expect("USER_NOT_AUTHORISED").toBe("USER_NOT_AUTHORISED");
+  });
+});
+

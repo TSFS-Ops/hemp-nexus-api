@@ -303,6 +303,30 @@ Deno.serve(async (req) => {
       // BEFORE the engagement guard, BEFORE evidence/waiver gates, and
       // BEFORE the credit burn, so an unverified org never loses tokens to
       // a blocked mint and the audit trail records the correct denial reason.
+      // ── USER AUTHORITY GATE ──
+      if (authCtx.userId && !authCtx.isApiKey) {
+        const { checkUserPoiAuthority, USER_NOT_AUTHORISED_CODE, authorityAuditMetadata } = await import("../_shared/poi-authority.ts");
+        const authority = await checkUserPoiAuthority(supabase, authCtx.userId, authCtx.orgId);
+        if (!authority.allowed) {
+          try {
+            await supabase.from("audit_logs").insert({
+              org_id: authCtx.orgId,
+              actor_user_id: authCtx.userId,
+              action: "poi.mint_denied",
+              entity_type: "match",
+              entity_id: null,
+              metadata: authorityAuditMetadata(authority, {
+                endpoint: "match",
+                gate: "user_authority",
+              }),
+            });
+          } catch (auditErr) {
+            console.error("Failed to write authority denial audit row (match):", auditErr);
+          }
+          throw new ApiException(USER_NOT_AUTHORISED_CODE, authority.message, 403);
+        }
+      }
+
       const governanceProfile = await getActiveGovernanceProfile(supabase, authCtx.orgId);
       const legitimacy = await checkOrgLegitimacy(supabase, authCtx.orgId, "poi_mint");
       if (!legitimacy.allowed) {

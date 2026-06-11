@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ProofDocumentsList } from "@/components/match/ProofDocumentsList";
+import { DraftPoiBadge } from "@/components/match/DraftPoiBadge";
 import { CounterpartyRatingBadge } from "@/components/ratings/CounterpartyRatingBadge";
 import { useUserOrg, getMatchRole } from "@/hooks/use-user-org";
 import { isPendingEngagementActive } from "@/lib/engagement-state";
@@ -141,6 +142,9 @@ export function MatchHeroCard({ match, isSettled, engagementStatus }: MatchHeroC
         </div>
       </CardHeader>
       <CardContent>
+        {(match as any).poi_state === "DRAFT" && (
+          <DraftPoiBadge className="mb-4" />
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h3 className="font-semibold mb-4">Buyer</h3>

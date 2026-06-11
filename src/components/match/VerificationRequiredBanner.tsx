@@ -16,7 +16,7 @@ import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { useOrgLegitimacy } from "@/hooks/use-org-legitimacy";
 import { cn } from "@/lib/utils";
 
-type Reason = "no_record" | "not_approved" | "revoked" | "expired" | "no_org";
+type Reason = "no_record" | "not_approved" | "revoked" | "expired" | "frozen" | "no_org";
 
 const HEADLINES: Record<Reason, string> = {
   no_org: "Organisation profile not linked",
@@ -24,6 +24,7 @@ const HEADLINES: Record<Reason, string> = {
   not_approved: "Your organisation verification is still pending",
   revoked: "POI issuance is currently blocked for this organisation",
   expired: "Your organisation's verification has expired",
+  frozen: "Your organisation is suspended",
 };
 
 const REASON_CODES: Record<Reason, string> = {
@@ -32,6 +33,7 @@ const REASON_CODES: Record<Reason, string> = {
   not_approved: "ORG_VERIFICATION_PENDING",
   revoked: "ORG_VERIFICATION_REVOKED",
   expired: "ORG_VERIFICATION_EXPIRED",
+  frozen: "ORG_SUSPENDED",
 };
 
 export function VerificationRequiredBanner({

@@ -17,7 +17,7 @@ export type LegitimacyState =
   | { allowed: true; status: "approved"; validUntil: string | null }
   | {
       allowed: false;
-      reason: "no_record" | "not_approved" | "revoked" | "expired" | "no_org";
+      reason: "no_record" | "not_approved" | "revoked" | "expired" | "frozen" | "no_org";
       status: string | null;
       validUntil: string | null;
       message: string;
@@ -25,7 +25,7 @@ export type LegitimacyState =
 
 const RECOVERY_CTA = "Open Settings → Company Identity to start your KYB review.";
 
-type BlockedReason = "no_record" | "not_approved" | "revoked" | "expired" | "no_org";
+type BlockedReason = "no_record" | "not_approved" | "revoked" | "expired" | "frozen" | "no_org";
 
 function buildBlockedMessage(
   reason: BlockedReason,
@@ -40,6 +40,8 @@ function buildBlockedMessage(
       return `Your organisation's trading approval has been revoked. Counterparty-facing actions are paused until a compliance reviewer reinstates approval. ${RECOVERY_CTA}`;
     case "expired":
       return `Your organisation's trading approval has expired. Counterparty-facing actions are paused until the profile is renewed. ${RECOVERY_CTA}`;
+    case "frozen":
+      return "Your organisation is currently suspended. Counterparty-facing actions are blocked until a platform administrator lifts the suspension.";
     case "not_approved":
     default:
       return `Your organisation's trading approval is currently '${status || "incomplete"}'. Counterparty-facing actions are blocked until a compliance reviewer marks the profile 'approved'. ${RECOVERY_CTA}`;

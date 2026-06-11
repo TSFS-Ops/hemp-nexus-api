@@ -42,6 +42,7 @@ export type LegitimacyDecision =
         | "not_approved"
         | "revoked"
         | "expired"
+        | "frozen"
         | "lookup_failed";
       gatePosition: GatePosition;
       status: string | null;
@@ -97,6 +98,32 @@ export async function checkOrgLegitimacy(
       approvalId: null,
       validUntil: null,
     };
+  }
+
+  // ── Organisation operational status (frozen == blocked/suspended) ──
+  // `organizations.frozen` is the existing primitive used by the collapse
+  // and break-glass paths to suspend an org. We fold it into the legitimacy
+  // gate so a frozen org also fails POI mint, outreach, and forward POI
+  // progression — without inventing a new vocabulary.
+  try {
+    const { data: orgRow } = await admin
+      .from("organizations")
+      .select("frozen, frozen_reason")
+      .eq("id", orgId)
+      .maybeSingle();
+    if (orgRow?.frozen) {
+      return {
+        allowed: false,
+        reason: "frozen",
+        gatePosition,
+        status: "frozen",
+        validUntil: null,
+        message:
+          `Your organisation is currently suspended${orgRow.frozen_reason ? ` (${orgRow.frozen_reason})` : ""}. Counterparty-facing actions are blocked until a platform administrator lifts the suspension.`,
+      };
+    }
+  } catch {
+    // Lookup failure here is non-fatal — fall through to trade_approvals.
   }
 
   // ── entry & poi_mint: enforce trade_approvals = 'approved' ──
