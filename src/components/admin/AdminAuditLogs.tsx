@@ -512,7 +512,10 @@ export function AdminAuditLogs() {
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Organisation</label>
                   <p className="font-mono text-sm">{selectedLog.org_id}</p>
+                </div>
               </div>
+
+
 
               {/* Ticket 2: POI Gate Admin Visibility — promote the most useful
                   gate fields to a labelled summary so HQ operators don't have
