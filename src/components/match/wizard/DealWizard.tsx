@@ -361,6 +361,10 @@ export function DealWizard({
       </Card>
 
       {/* ── FOCAL POINT: What do I do next? ── */}
+      {/* Verification gate banner — counterparty-facing actions are blocked
+          until the issuing org is verified. Server enforces the same rule. */}
+      <VerificationRequiredBanner />
+
       <ActionRequiredBanner
         tone={focal.tone}
         eyebrow={focal.eyebrow}
@@ -368,6 +372,7 @@ export function DealWizard({
         description={focal.description}
         helpText={focal.helpText}
       />
+
 
       {/* Step Content */}
       {activeStep === 0 && <StepSearch match={match} />}
