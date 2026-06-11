@@ -268,6 +268,17 @@ const FILTER_TABS = [
   // D3 — surface engagements parked in dispute / cancelled-email-change.
   { value: "disputed_being_named", label: "Disputed — being named" },
   { value: "cancelled_email_change", label: "Cancelled for email change" },
+  // ── Batch 2: additive facilitation filters driven entirely by `queue_derived` ──
+  // These never mutate canonical state and never enable a send affordance.
+  { value: "needs_admin_action", label: "Needs admin action" },
+  { value: "no_outreach_logged", label: "No outreach logged" },
+  { value: "overdue", label: "Overdue" },
+  { value: "due_soon", label: "Due soon" },
+  { value: "draft_approved_manual_send", label: "Draft approved — manual send" },
+  { value: "draft_pending_review", label: "Draft pending review" },
+  { value: "waiting_on_counterparty", label: "Waiting on counterparty" },
+  { value: "waiting_on_initiator", label: "Waiting on requesting org" },
+  { value: "blocked_ineligible_facilitation", label: "Blocked / ineligible" },
 ] as const;
 
 export const DANIEL_FIXTURE_UI_COPY = {
