@@ -304,6 +304,7 @@ export function AdminAuditLogs() {
                   <SelectItem value="admin_manual_override">admin.manual_override.*</SelectItem>
                   <SelectItem value="programme">programme.*</SelectItem>
                   <SelectItem value="due_diligence">due_diligence (dd.*)</SelectItem>
+                  <SelectItem value="poi_gate">POI gate (blocked / denied)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
