@@ -1051,6 +1051,12 @@ export function AdminPendingEngagementsPanel() {
     } else if (filter === "binding_review_required") {
       // D2b — engagements awaiting an admin binding-review decision.
       base = engagements.filter(isBindingReviewPending);
+    } else if (isFacilitationFilter(filter)) {
+      // ── Batch 2: additive facilitation filters (queue_derived-only) ──
+      // Display-only: never mutates canonical state, never sends.
+      base = engagements.filter((e) =>
+        matchesFacilitationFilter(filter as FacilitationFilterValue, e.queue_derived),
+      );
     } else {
       base = engagements.filter((e) => e.engagement_status === filter);
     }
