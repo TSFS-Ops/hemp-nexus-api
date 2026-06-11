@@ -112,11 +112,12 @@ Format for every entry:
 ---
 
 ## 15. DATA-004 legacy live email purge (`purge_old_email_send_log()`)
-- **Current safe default**: **Quarantined.** pg_cron jobid 14 (`purge-email-send-log-daily`) was unscheduled on 2026-05-29 (Batch 8A). The DB function `public.purge_old_email_send_log()` still exists but is no longer invoked by cron. The DATA-004 dry-run path (jobid 39) remains scheduled and writes `retention_run_evidence` daily.
-- **Why deferred**: Any replacement must consume `org_retention_policies`, enforce `assertNoLegalHold`, and write `retention_run_evidence` parity with `purge-email-send-log-daily` — the legacy function does none of these.
+- **Current safe default**: **Quarantined and superseded.** pg_cron jobid 14 (`purge-email-send-log-daily`) was unscheduled on 2026-05-29 (Batch 8A). The DB function `public.purge_old_email_send_log()` still exists but is no longer invoked by cron. As of 2026-06-11 (Batch 19), live `email_send_log` purge is scheduled **only** through the DATA-004 edge function `purge-email-send-log-daily` (pg_cron jobid 42 `purge-email-send-log-daily-live`, `50 3 * * *`, `dry_run:false`, `x-internal-key` vault auth). The legacy bare-name jobname remains in the cron-drift forbidden set and must never be re-introduced. The dry-run schedule (jobid 39) is preserved unchanged.
+- **Why deferred**: The legacy DB function does not consume `org_retention_policies`, does not enforce `assertNoLegalHold`, and does not write `retention_run_evidence`. Batch 19 satisfies all three via the edge-function path; the legacy function is intentionally left in place only as a dormant DB artifact and is not used.
 - **Owner**: Izenzo policy (DATA-004).
-- **Launch impact**: Not blocking — `email_send_log` simply grows; Phase 4 dry-run evidence accumulates pending operator review.
-- **Recommended decision date**: T-14 days. Resolution path: drop the legacy DB function or wrap a guarded edge function; either way, a second explicit approval is required before scheduling.
+- **Launch impact**: Not blocking. Batch 19 first live tick (`65de39b3-e554-4fb2-9bf9-736b552d5995`) was a fail-closed no-op (0 rows seen / eligible / purged) because production currently has 0 valid `email_send_log` `org_retention_policies` rows. Missing-policy, legal-hold, disabled-policy, and within-retention paths remain protected by the edge function (proven by Batch 18 positive-control dry-run).
+- **Recommended decision date**: Resolved 2026-06-11 by Batch 19. Any future change to the legacy DB function or its re-scheduling requires a new explicit approval.
+
 
 ## 16. DATA-004 live account deletion cron
 - **Current safe default**: **Quarantined.** pg_cron jobid 24 (`account-deletion-sweeper-daily`) was unscheduled on 2026-05-29 (Batch 8A). Its body was dry-run but its auth header referenced an unset GUC, so calls silently 401'd every day. The correctly authenticated dry-run job (jobid 25) is preserved.
