@@ -184,6 +184,62 @@ async function _serve(req: Request): Promise<Response> {
 
     const fromState = matchRow.poi_state;
 
+    // ── LEGITIMACY GATE on forward, counterparty-facing transitions ──
+    // Mint already enforces the gate (pois/, match/). This adds the same
+    // protection on state advancement so an already-created POI cannot
+    // progress into a formal/counterparty-facing state while the issuing
+    // org's verification has lapsed, been revoked, or never been granted.
+    //
+    // Cleanup/terminal exits (EXPIRED/REJECTED/ANNULLED) are intentionally
+    // NOT gated — those are admin/lifecycle paths that must remain reachable
+    // even when the org has lost legitimacy.
+    {
+      const FORWARD_COUNTERPARTY_FACING = new Set([
+        "PENDING_APPROVAL",
+        "ELIGIBLE",
+        "COMPLETION_REQUESTED",
+        "COMPLETED",
+      ]);
+      if (FORWARD_COUNTERPARTY_FACING.has(String(toState))) {
+        const { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE } = await import("../_shared/legitimacy.ts");
+        const legitimacy = await checkOrgLegitimacy(adminClient, callerOrgId, "poi_mint");
+        if (!legitimacy.allowed) {
+          try {
+            await adminClient.from("admin_audit_logs").insert({
+              actor_user_id: user.id,
+              org_id: callerOrgId,
+              action: "legitimacy.gate_blocked",
+              entity_type: "match",
+              entity_id: matchId,
+              metadata: {
+                endpoint: "poi-transition",
+                from_state: fromState,
+                to_state: toState,
+                legitimacy_reason: legitimacy.reason,
+                trade_approval_status: legitimacy.status,
+                valid_until: legitimacy.validUntil,
+                gate_position: legitimacy.gatePosition,
+                reason_code: ORG_NOT_VERIFIED_CODE,
+              },
+            });
+          } catch (auditErr) {
+            console.error("Failed to write legitimacy denial audit row (poi-transition):", auditErr);
+          }
+          if (hasLock) await adminClient.rpc("release_lifecycle_lock");
+          return new Response(
+            JSON.stringify({
+              error: legitimacy.message,
+              code: ORG_NOT_VERIFIED_CODE,
+              reason: legitimacy.reason,
+              gate_position: legitimacy.gatePosition,
+            }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+    }
+
+
     // ── MT-008 / MT-009 server-side progression guard ──
     // Block before ANY side effect (event insert, atomic_token_burn, etc.):
     //   MT-008 → inconsistent / legacy-admin-hold rows return 409

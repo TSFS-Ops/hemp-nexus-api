@@ -38,6 +38,8 @@ import { FileText, FileSignature, MessageSquare, ShieldAlert, CheckCircle2, Arro
 import { Button } from "@/components/ui/button";
 import { MatchStatusBadge } from "@/components/ui/match-status-badge";
 import { ActionRequiredBanner } from "@/components/match/ActionRequiredBanner";
+import { VerificationRequiredBanner } from "@/components/match/VerificationRequiredBanner";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Match } from "@/hooks/use-match-details";
 export type EngagementStatus = "notification_sent" | "contacted" | "accepted" | "declined" | "expired" | null;
@@ -359,6 +361,10 @@ export function DealWizard({
       </Card>
 
       {/* ── FOCAL POINT: What do I do next? ── */}
+      {/* Verification gate banner — counterparty-facing actions are blocked
+          until the issuing org is verified. Server enforces the same rule. */}
+      <VerificationRequiredBanner />
+
       <ActionRequiredBanner
         tone={focal.tone}
         eyebrow={focal.eyebrow}
@@ -366,6 +372,7 @@ export function DealWizard({
         description={focal.description}
         helpText={focal.helpText}
       />
+
 
       {/* Step Content */}
       {activeStep === 0 && <StepSearch match={match} />}
