@@ -71,6 +71,7 @@ import {
   ADMIN_ENGAGEMENT_BLOCKED_COPY,
   pickAdminEngagementBlockedReason,
 } from "@/lib/admin-engagement-blocked-reasons";
+import { EngagementOutreachDraftPanel } from "@/components/admin/EngagementOutreachDraftPanel";
 // Batch A — single source of truth for contact-completeness labels and the
 // outreach gate. Mirrors the edge-function helper so the UI badge, tooltip
 // and Send-outreach disabled state always match the backend's 422 response.
@@ -2781,7 +2782,12 @@ export function AdminPendingEngagementsPanel() {
 
       {/* ── Outreach log dialog ────────────────────────────────────────── */}
       <Dialog open={!!logDialog} onOpenChange={(o) => !o && setLogDialog(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {logDialog && (
+            <div className="mb-4">
+              <EngagementOutreachDraftPanel engagementId={logDialog.id} />
+            </div>
+          )}
           <DialogHeader>
             <DialogTitle>Outreach log</DialogTitle>
             <DialogDescription>

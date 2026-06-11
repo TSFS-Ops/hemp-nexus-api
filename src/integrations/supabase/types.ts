@@ -2781,6 +2781,91 @@ export type Database = {
         }
         Relationships: []
       }
+      engagement_outreach_drafts: {
+        Row: {
+          ai_confidence: string | null
+          approved_at: string | null
+          approved_by: string | null
+          context_summary: string | null
+          created_at: string
+          created_by: string | null
+          draft_body: string
+          draft_subject: string
+          engagement_id: string
+          id: string
+          model: string | null
+          org_id: string
+          regenerated_from: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          context_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft_body: string
+          draft_subject: string
+          engagement_id: string
+          id?: string
+          model?: string | null
+          org_id: string
+          regenerated_from?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          context_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft_body?: string
+          draft_subject?: string
+          engagement_id?: string
+          id?: string
+          model?: string | null
+          org_id?: string
+          regenerated_from?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_outreach_drafts_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "engagement_outreach_drafts_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "poi_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_outreach_drafts_regenerated_from_fkey"
+            columns: ["regenerated_from"]
+            isOneToOne: false
+            referencedRelation: "engagement_outreach_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       engagement_outreach_logs: {
         Row: {
           actor_type: string
