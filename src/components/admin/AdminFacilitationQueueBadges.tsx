@@ -82,8 +82,8 @@ export function AdminFacilitationQueueBadges({ queueDerived, engagementId }: Pro
           className="text-amber-900 leading-snug"
           data-testid="queue-manual-send-notice"
         >
-          Approved draft available — manual send required. The platform does not
-          send outreach.
+          Approved draft available — manual send required. The platform does
+          not transmit outreach automatically.
         </div>
       )}
 
