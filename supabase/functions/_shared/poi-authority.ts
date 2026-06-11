@@ -15,12 +15,22 @@
  *   - platform_admin   (HQ override)
  *   - org_admin        (canonical admin for the org)
  *   - director         (signing director)
- *   - broker / seller / buyer / org_member  (trading roles)
+ *   - broker / seller / buyer  (formal trading roles)
+ *
+ * `org_member` is DELIBERATELY EXCLUDED. In the project RBAC model
+ * `org_member` means "belongs to the organisation", not "authorised to
+ * issue formal POIs on behalf of the organisation". Plain members may
+ * prepare internal drafts and view content, but issuance, progression,
+ * and outreach must be performed by a user holding an admin, director,
+ * or explicit trading role. This implements the client's binding rule:
+ * verified org + authorised user, where authority is role-derived and
+ * never inferred from mere membership.
  *
  * Read-only review roles are NOT sufficient on their own:
  *   - auditor, legal_reviewer, compliance_analyst, api_admin, billing_admin
  *
- * If the user has ONLY read-only roles, the gate returns `USER_NOT_AUTHORISED`.
+ * If the user holds ONLY membership or read-only roles, the gate returns
+ * `USER_NOT_AUTHORISED`.
  *
  * Stable error code: USER_NOT_AUTHORISED.
  */
@@ -37,7 +47,6 @@ const ISSUER_ROLES = new Set([
   "broker",
   "seller",
   "buyer",
-  "org_member",
 ]);
 
 export type AuthorityDecision =

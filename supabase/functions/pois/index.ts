@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException } from "../_shared/errors.ts";
-import { authenticateRequest } from "../_shared/auth.ts";
+import { authenticateRequest, requireScope } from "../_shared/auth.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import {
   checkOrgLegitimacy,
@@ -135,6 +135,11 @@ Deno.serve(async (req: Request) => {
 
     // ── POST: Issue POI ──
     if (req.method === "POST") {
+      // API-key actors must hold an explicit write scope and be bound to
+      // the org from the key — `requireScope` is a no-op for JWT callers.
+      // This ensures API-key exemption from the user-authority gate is not
+      // a bypass: a key without `pois:write` (or `pois:*`) is rejected 403.
+      requireScope(authCtx, "pois:write");
       // Rate limit BEFORE any DB work
       await checkRateLimit(admin, orgId, null, "pois", "pois:write");
 
@@ -264,6 +269,8 @@ Deno.serve(async (req: Request) => {
 
     // ── PATCH: Transition POI State ──
     if (req.method === "PATCH") {
+      // See POST: API-key actors must hold `pois:transition` (or `pois:*`).
+      requireScope(authCtx, "pois:transition");
       await checkRateLimit(admin, orgId, null, "pois", "pois:transition");
 
       const body = await req.json();
