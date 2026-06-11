@@ -15,8 +15,8 @@
  *   • Admin-only (is_admin RPC).
  *   • Engagement must exist; org must be loaded.
  *   • Frozen / restricted orgs are blocked.
- *   • No call to notification-dispatch, send-transactional-email, Resend,
- *     SMTP, Mailgun, Slack, or any other dispatch surface.
+ *   • No call to any external email, dispatch, transport, or messaging
+ *     surface. Approval is purely an internal review outcome.
  *   • Writes audit_logs for every code path (generated / regenerated /
  *     access_denied).
  */
