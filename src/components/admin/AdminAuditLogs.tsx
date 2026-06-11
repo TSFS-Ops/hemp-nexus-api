@@ -512,8 +512,48 @@ export function AdminAuditLogs() {
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Organisation</label>
                   <p className="font-mono text-sm">{selectedLog.org_id}</p>
-                </div>
               </div>
+
+              {/* Ticket 2: POI Gate Admin Visibility — promote the most useful
+                  gate fields to a labelled summary so HQ operators don't have
+                  to read raw JSON to understand a blocked POI attempt. The
+                  raw metadata block below remains visible for forensic use. */}
+              {selectedLog.action && POI_GATE_LABELS[selectedLog.action] && selectedLog.metadata && (
+                <div className="rounded-md border border-rose-200 bg-rose-50 p-3 space-y-2">
+                  <p className="text-sm font-semibold text-rose-900">
+                    Blocked POI attempt — {POI_GATE_LABELS[selectedLog.action].label}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {selectedLog.metadata.reason_code && (
+                      <div><span className="text-muted-foreground">Reason code: </span><span className="font-mono">{String(selectedLog.metadata.reason_code)}</span></div>
+                    )}
+                    {selectedLog.metadata.reason && (
+                      <div><span className="text-muted-foreground">Reason: </span><span className="font-mono">{String(selectedLog.metadata.reason)}</span></div>
+                    )}
+                    {selectedLog.metadata.legitimacy_reason && (
+                      <div><span className="text-muted-foreground">Legitimacy: </span><span className="font-mono">{String(selectedLog.metadata.legitimacy_reason)}</span></div>
+                    )}
+                    {selectedLog.metadata.authority_reason && (
+                      <div><span className="text-muted-foreground">Authority: </span><span className="font-mono">{String(selectedLog.metadata.authority_reason)}</span></div>
+                    )}
+                    {selectedLog.metadata.gate_position && (
+                      <div><span className="text-muted-foreground">Gate position: </span><span className="font-mono">{String(selectedLog.metadata.gate_position)}</span></div>
+                    )}
+                    {selectedLog.metadata.trade_approval_status && (
+                      <div><span className="text-muted-foreground">Trade approval: </span><span className="font-mono">{String(selectedLog.metadata.trade_approval_status)}</span></div>
+                    )}
+                    {selectedLog.metadata.endpoint && (
+                      <div><span className="text-muted-foreground">Source: </span><span className="font-mono">{String(selectedLog.metadata.endpoint)}</span></div>
+                    )}
+                    {Array.isArray(selectedLog.metadata.held_roles) && (
+                      <div className="sm:col-span-2"><span className="text-muted-foreground">Held roles: </span><span className="font-mono">{(selectedLog.metadata.held_roles as string[]).join(", ") || "(none)"}</span></div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-rose-900/70">
+                    Raw event key: <span className="font-mono">{selectedLog.action}</span>
+                  </p>
+                </div>
+              )}
               
               {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
                 <div>
