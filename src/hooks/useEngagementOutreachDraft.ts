@@ -5,8 +5,8 @@
  *
  * IMPORTANT: This hook does NOT send anything. There is no dispatch path
  * wired. Approved drafts must be sent manually by the admin outside the
- * platform; the manual outreach log (engagement_outreach_logs) remains
- * the only place actual contact is recorded.
+ * platform; the existing manual outreach log remains the only place
+ * actual contact is recorded.
  */
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
