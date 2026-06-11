@@ -75,10 +75,11 @@ export function VerificationRequiredBanner({
         </div>
         {!compact && (
           <p className="text-amber-900/90">
-            {data.message} You can continue preparing this POI as an internal
+            {blocked.message} You can continue preparing this POI as an internal
             draft, but it cannot be issued, sent, exported, or progressed into a
             counterparty-facing state until verification is complete.
           </p>
+
         )}
         <div className="flex items-center gap-1.5 text-xs text-amber-800/80">
           <ShieldCheck className="h-3 w-3" aria-hidden />
