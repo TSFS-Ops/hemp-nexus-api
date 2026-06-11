@@ -269,6 +269,8 @@ Deno.serve(async (req: Request) => {
 
     // ── PATCH: Transition POI State ──
     if (req.method === "PATCH") {
+      // See POST: API-key actors must hold `pois:transition` (or `pois:*`).
+      requireScope(authCtx, "pois:transition");
       await checkRateLimit(admin, orgId, null, "pois", "pois:transition");
 
       const body = await req.json();
