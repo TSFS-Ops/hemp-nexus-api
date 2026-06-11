@@ -24,6 +24,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { guardedAiCall } from "../_shared/ai-guard.ts";
+import { clampSubject } from "../_shared/email-subject.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers":
