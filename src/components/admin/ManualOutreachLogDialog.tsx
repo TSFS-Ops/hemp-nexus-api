@@ -4,7 +4,7 @@
  * Batch 3 — Unknown-Counterparty Admin Facilitation: Manual Outreach Logging UX.
  *
  * RECORDS outreach that happened OUTSIDE the platform. It does NOT send
- * anything. There is no "Send" button, no dispatch path, no provider call.
+ * anything. There is no Send button, no provider call.
  *
  * Reuses the existing `poi-engagements` PATCH endpoint side-field path:
  *   - contact_method  (existing column)
