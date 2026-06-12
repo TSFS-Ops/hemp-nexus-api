@@ -42,7 +42,10 @@ const FORBIDDEN_TOKENS = [
 ];
 
 const FORBIDDEN_COPY = [
-  /\bSend email\b/i,
+  // NB: "Send email" / "SMS" / "WhatsApp" appear *only* inside the mandatory
+  // outside-platform notice text (which is the source of truth saying the
+  // platform does NOT do these things). We therefore guard against the
+  // affirmative, action-oriented variants instead.
   /\bDispatch\b/i,
   /\bNotify counterparty\b/i,
   /\bContact counterparty\b/i,
