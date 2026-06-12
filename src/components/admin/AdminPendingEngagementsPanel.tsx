@@ -90,6 +90,9 @@ import {
   matchesFacilitationFilter,
   type FacilitationFilterValue,
 } from "@/lib/admin-facilitation-queue";
+// Batch 3 — Manual outreach logging UX. RECORDS outreach performed outside
+// the platform. No send, no dispatch.
+import { ManualOutreachLogDialog } from "@/components/admin/ManualOutreachLogDialog";
 
 interface Engagement {
   id: string;
@@ -364,6 +367,9 @@ export function AdminPendingEngagementsPanel() {
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<string>("");
   const [notesSaving, setNotesSaving] = useState(false);
+
+  // ── Batch 3 — Manual outreach logging dialog state ──
+  const [manualOutreachFor, setManualOutreachFor] = useState<string | null>(null);
 
   // ── Add-contact dialog (capture discovered email/phone for unregistered counterparties) ──
   // Distinct from "Mark contacted" — this is the *discovery* step that
@@ -1950,6 +1956,18 @@ export function AdminPendingEngagementsPanel() {
                               queueDerived={e.queue_derived ?? null}
                               engagementId={e.id}
                             />
+                            {/* Batch 3 — Manual outreach logging. RECORDS
+                                outreach performed outside the platform.
+                                No send, no dispatch. */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-[11px] rounded-md w-fit"
+                              onClick={() => setManualOutreachFor(e.id)}
+                              data-testid={`log-manual-outreach-${e.id}`}
+                            >
+                              Log manual outreach
+                            </Button>
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
@@ -2957,6 +2975,20 @@ export function AdminPendingEngagementsPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Batch 3 — Manual outreach logging dialog. Records outreach
+          performed outside the platform. No send path. */}
+      <ManualOutreachLogDialog
+        open={!!manualOutreachFor}
+        onOpenChange={(open) => {
+          if (!open) setManualOutreachFor(null);
+        }}
+        engagementId={manualOutreachFor ?? ""}
+        onRecorded={() => {
+          setManualOutreachFor(null);
+          fetchEngagements();
+        }}
+      />
     </div>
   );
 }
