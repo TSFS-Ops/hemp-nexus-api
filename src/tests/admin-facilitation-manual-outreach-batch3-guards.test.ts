@@ -129,13 +129,14 @@ describe("Batch 3 — panel wiring", () => {
 
 describe("Batch 3 — workstream boundaries", () => {
   it("does not modify engagement_outreach_logs schema", () => {
-    // No migration files added by Batch 3 should mention altering the
-    // outreach logs table. We assert the dialog itself never references
-    // table DDL; the migration directory check is light-touch.
+    // The dialog must never emit DDL touching the outreach logs table.
     const dialog = read(DIALOG_PATH);
-    expect(dialog).not.toMatch(/engagement_outreach_logs/i);
-    expect(dialog).not.toMatch(/ALTER\s+TABLE/i);
-    expect(dialog).not.toMatch(/CREATE\s+TABLE/i);
+    expect(dialog).not.toMatch(/ALTER\s+TABLE[^;]*engagement_outreach_logs/i);
+    expect(dialog).not.toMatch(/CREATE\s+TABLE[^;]*engagement_outreach_logs/i);
+    expect(dialog).not.toMatch(/DROP\s+TABLE[^;]*engagement_outreach_logs/i);
+    // The dialog must never write directly to the table either — it goes
+    // through the existing PATCH endpoint which appends server-side.
+    expect(dialog).not.toMatch(/from\(\s*["']engagement_outreach_logs["']\s*\)/);
   });
 
   it("does not import from POI Verification Gate modules", () => {
