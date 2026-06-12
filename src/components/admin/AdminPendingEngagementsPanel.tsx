@@ -1956,6 +1956,18 @@ export function AdminPendingEngagementsPanel() {
                               queueDerived={e.queue_derived ?? null}
                               engagementId={e.id}
                             />
+                            {/* Batch 3 — Manual outreach logging. RECORDS
+                                outreach performed outside the platform.
+                                No send, no dispatch. */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-[11px] rounded-md w-fit"
+                              onClick={() => setManualOutreachFor(e.id)}
+                              data-testid={`log-manual-outreach-${e.id}`}
+                            >
+                              Log manual outreach
+                            </Button>
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
