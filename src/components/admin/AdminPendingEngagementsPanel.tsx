@@ -2975,6 +2975,20 @@ export function AdminPendingEngagementsPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Batch 3 — Manual outreach logging dialog. Records outreach
+          performed outside the platform. No send path. */}
+      <ManualOutreachLogDialog
+        open={!!manualOutreachFor}
+        onOpenChange={(open) => {
+          if (!open) setManualOutreachFor(null);
+        }}
+        engagementId={manualOutreachFor ?? ""}
+        onRecorded={() => {
+          setManualOutreachFor(null);
+          fetchEngagements();
+        }}
+      />
     </div>
   );
 }
