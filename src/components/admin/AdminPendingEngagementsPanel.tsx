@@ -90,6 +90,9 @@ import {
   matchesFacilitationFilter,
   type FacilitationFilterValue,
 } from "@/lib/admin-facilitation-queue";
+// Batch 3 — Manual outreach logging UX. RECORDS outreach performed outside
+// the platform. No send, no dispatch.
+import { ManualOutreachLogDialog } from "@/components/admin/ManualOutreachLogDialog";
 
 interface Engagement {
   id: string;
