@@ -337,6 +337,336 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_do_not_contact_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          deactivated_at: string | null
+          deactivated_by: string | null
+          id: string
+          reason: string | null
+          rule_type: string
+          rule_value: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          id?: string
+          reason?: string | null
+          rule_type: string
+          rule_value: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          id?: string
+          reason?: string | null
+          rule_type?: string
+          rule_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_outreach_drafts_v2: {
+        Row: {
+          approved_at: string | null
+          approved_for_send_by: string | null
+          created_at: string
+          created_by_ai: boolean
+          created_by_user_id: string | null
+          draft_body: string
+          draft_status: string
+          draft_subject: string
+          id: string
+          model: string | null
+          proposed_match_id: string
+          recipient_email_if_known: string | null
+          recipient_name: string | null
+          recipient_organisation: string | null
+          review_note: string | null
+          reviewed_by: string | null
+          sent_at: string | null
+          sent_by_user_id: string | null
+          trade_request_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_for_send_by?: string | null
+          created_at?: string
+          created_by_ai?: boolean
+          created_by_user_id?: string | null
+          draft_body: string
+          draft_status?: string
+          draft_subject: string
+          id?: string
+          model?: string | null
+          proposed_match_id: string
+          recipient_email_if_known?: string | null
+          recipient_name?: string | null
+          recipient_organisation?: string | null
+          review_note?: string | null
+          reviewed_by?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          trade_request_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_for_send_by?: string | null
+          created_at?: string
+          created_by_ai?: boolean
+          created_by_user_id?: string | null
+          draft_body?: string
+          draft_status?: string
+          draft_subject?: string
+          id?: string
+          model?: string | null
+          proposed_match_id?: string
+          recipient_email_if_known?: string | null
+          recipient_name?: string | null
+          recipient_organisation?: string | null
+          review_note?: string | null
+          reviewed_by?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          trade_request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_outreach_drafts_v2_proposed_match_id_fkey"
+            columns: ["proposed_match_id"]
+            isOneToOne: false
+            referencedRelation: "ai_proposed_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_poi_intelligence_notes: {
+        Row: {
+          adverse_media_refs: Json
+          company_announcement_refs: Json
+          counterparty_name: string | null
+          counterparty_org_id: string | null
+          created_at: string
+          created_by: string | null
+          director_management_refs: Json
+          escalation_reason: string | null
+          escalation_required: boolean
+          fraud_warning_refs: Json
+          id: string
+          litigation_refs: Json
+          model: string | null
+          poi_id: string | null
+          proposed_match_id: string | null
+          public_news_refs: Json
+          public_web_refs: Json
+          risk_flags: Json
+          social_media_refs: Json
+          source_classification: string | null
+          source_links: Json
+          source_summaries: Json
+          supports_or_weakens: string | null
+          trade_activity_refs: Json
+          trade_request_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          adverse_media_refs?: Json
+          company_announcement_refs?: Json
+          counterparty_name?: string | null
+          counterparty_org_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          director_management_refs?: Json
+          escalation_reason?: string | null
+          escalation_required?: boolean
+          fraud_warning_refs?: Json
+          id?: string
+          litigation_refs?: Json
+          model?: string | null
+          poi_id?: string | null
+          proposed_match_id?: string | null
+          public_news_refs?: Json
+          public_web_refs?: Json
+          risk_flags?: Json
+          social_media_refs?: Json
+          source_classification?: string | null
+          source_links?: Json
+          source_summaries?: Json
+          supports_or_weakens?: string | null
+          trade_activity_refs?: Json
+          trade_request_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adverse_media_refs?: Json
+          company_announcement_refs?: Json
+          counterparty_name?: string | null
+          counterparty_org_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          director_management_refs?: Json
+          escalation_reason?: string | null
+          escalation_required?: boolean
+          fraud_warning_refs?: Json
+          id?: string
+          litigation_refs?: Json
+          model?: string | null
+          poi_id?: string | null
+          proposed_match_id?: string | null
+          public_news_refs?: Json
+          public_web_refs?: Json
+          risk_flags?: Json
+          social_media_refs?: Json
+          source_classification?: string | null
+          source_links?: Json
+          source_summaries?: Json
+          supports_or_weakens?: string | null
+          trade_activity_refs?: Json
+          trade_request_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_poi_intelligence_notes_proposed_match_id_fkey"
+            columns: ["proposed_match_id"]
+            isOneToOne: false
+            referencedRelation: "ai_proposed_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_proposed_matches: {
+        Row: {
+          approved_at: string | null
+          archived_at: string | null
+          assigned_reviewer_id: string | null
+          capacity_indicator: string | null
+          confidence_level: string
+          confidence_override: string | null
+          confidence_override_reason: string | null
+          counterparty_role: string | null
+          created_at: string
+          created_by: string | null
+          escalation_reason: string | null
+          escalation_required: boolean
+          fit_label: string
+          id: string
+          interpretation_id: string | null
+          jurisdiction: string | null
+          match_id: string | null
+          match_rationale: string | null
+          prior_activity_summary: string | null
+          rank_position: number | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_note: string | null
+          risk_flags: Json
+          sector_or_product_fit: string | null
+          source_references: Json
+          source_summary: string | null
+          status: string
+          suggested_counterparty_name: string
+          suggested_counterparty_org_id: string | null
+          trade_request_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          archived_at?: string | null
+          assigned_reviewer_id?: string | null
+          capacity_indicator?: string | null
+          confidence_level?: string
+          confidence_override?: string | null
+          confidence_override_reason?: string | null
+          counterparty_role?: string | null
+          created_at?: string
+          created_by?: string | null
+          escalation_reason?: string | null
+          escalation_required?: boolean
+          fit_label?: string
+          id?: string
+          interpretation_id?: string | null
+          jurisdiction?: string | null
+          match_id?: string | null
+          match_rationale?: string | null
+          prior_activity_summary?: string | null
+          rank_position?: number | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          risk_flags?: Json
+          sector_or_product_fit?: string | null
+          source_references?: Json
+          source_summary?: string | null
+          status?: string
+          suggested_counterparty_name: string
+          suggested_counterparty_org_id?: string | null
+          trade_request_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          archived_at?: string | null
+          assigned_reviewer_id?: string | null
+          capacity_indicator?: string | null
+          confidence_level?: string
+          confidence_override?: string | null
+          confidence_override_reason?: string | null
+          counterparty_role?: string | null
+          created_at?: string
+          created_by?: string | null
+          escalation_reason?: string | null
+          escalation_required?: boolean
+          fit_label?: string
+          id?: string
+          interpretation_id?: string | null
+          jurisdiction?: string | null
+          match_id?: string | null
+          match_rationale?: string | null
+          prior_activity_summary?: string | null
+          rank_position?: number | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          risk_flags?: Json
+          sector_or_product_fit?: string | null
+          source_references?: Json
+          source_summary?: string | null
+          status?: string
+          suggested_counterparty_name?: string
+          suggested_counterparty_org_id?: string | null
+          trade_request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_proposed_matches_interpretation_id_fkey"
+            columns: ["interpretation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_trade_request_interpretations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_provider_state: {
         Row: {
           cooldown_until: string | null
@@ -369,6 +699,69 @@ export type Database = {
           org_id?: string
           provider?: string
           retry_after_seconds?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_trade_request_interpretations: {
+        Row: {
+          ai_confidence: string | null
+          commercial_intent: string | null
+          commodity_or_service: string | null
+          created_at: string
+          created_by: string | null
+          documentation_requirements: Json
+          geography: string | null
+          id: string
+          jurisdiction_requirements: Json
+          model: string | null
+          preferred_counterparty_type: string | null
+          quantity: string | null
+          raw_extraction: Json
+          risk_indicators: Json
+          side: string | null
+          timing: string | null
+          trade_request_id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence?: string | null
+          commercial_intent?: string | null
+          commodity_or_service?: string | null
+          created_at?: string
+          created_by?: string | null
+          documentation_requirements?: Json
+          geography?: string | null
+          id?: string
+          jurisdiction_requirements?: Json
+          model?: string | null
+          preferred_counterparty_type?: string | null
+          quantity?: string | null
+          raw_extraction?: Json
+          risk_indicators?: Json
+          side?: string | null
+          timing?: string | null
+          trade_request_id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence?: string | null
+          commercial_intent?: string | null
+          commodity_or_service?: string | null
+          created_at?: string
+          created_by?: string | null
+          documentation_requirements?: Json
+          geography?: string | null
+          id?: string
+          jurisdiction_requirements?: Json
+          model?: string | null
+          preferred_counterparty_type?: string | null
+          quantity?: string | null
+          raw_extraction?: Json
+          risk_indicators?: Json
+          side?: string | null
+          timing?: string | null
+          trade_request_id?: string
           updated_at?: string
         }
         Relationships: []
