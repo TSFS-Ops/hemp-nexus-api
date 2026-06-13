@@ -627,7 +627,7 @@ function DecisionDialog({
   });
 
   const reasonRequired = !!spec.needsReason || !!spec.needsOverride;
-  const canSubmit = !mut.isPending && (!reasonRequired || reason.trim().length > 0) && (!spec.needsOverride || CONFIDENCE_LEVELS.includes(override));
+  const canSubmit = !mut.isPending && (!reasonRequired || reason.trim().length > 0) && (!spec.needsOverride || (CONFIDENCE_LEVELS as readonly string[]).includes(override));
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
