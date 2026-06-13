@@ -474,22 +474,40 @@ function DetailDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void 
       <AiOutreachDraftV2Panel proposedMatchId={row.id} parentStatus={row.status} />
 
       <Section title="Audit history">
+        <p className="text-[11px] text-muted-foreground mb-2">
+          Reads <span className="font-mono">admin_audit_logs</span> where
+          <span className="font-mono"> target_id = proposed_match.id</span> and
+          <span className="font-mono"> action LIKE 'ai_review.%'</span>. Drafts and POI
+          intelligence audits target their own rows and appear in their respective panels above.
+        </p>
         {auditQuery.isLoading ? (
           <p className="text-[12.5px] text-muted-foreground">Loading…</p>
         ) : auditQuery.error ? (
           <p className="text-[12.5px] text-rose-700">Failed to load audit history.</p>
         ) : (auditQuery.data ?? []).length === 0 ? (
-          <p className="text-[12.5px] text-muted-foreground">No audit entries recorded for this suggestion yet.</p>
+          <p className="text-[12.5px] text-muted-foreground">No proposed-match audit entries recorded for this suggestion yet.</p>
         ) : (
-          <ul className="space-y-1.5">
-            {(auditQuery.data ?? []).map((a) => (
-              <li key={a.id} className="text-[12px] flex items-baseline gap-3 border-b border-border/60 pb-1.5">
-                <span className="font-mono text-[10.5px] text-muted-foreground shrink-0">
-                  {new Date(a.created_at).toISOString().replace("T", " ").slice(0, 19)}Z
-                </span>
-                <span className="font-mono text-[11px] text-foreground">{a.action}</span>
-              </li>
-            ))}
+          <ul className="space-y-2">
+            {(auditQuery.data ?? []).map((a) => {
+              const details = a.details && typeof a.details === "object" ? (a.details as Record<string, unknown>) : null;
+              const status = details?.status as string | undefined;
+              const reason = details?.reason as string | undefined;
+              return (
+                <li key={a.id} className="text-[12px] border-b border-border/60 pb-1.5">
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="font-mono text-[10.5px] text-muted-foreground shrink-0">
+                      {new Date(a.created_at).toISOString().replace("T", " ").slice(0, 19)}Z
+                    </span>
+                    <span className="font-mono text-[11px] text-foreground">{a.action}</span>
+                    {status ? <Badge variant="outline" className="text-[10px]">{status}</Badge> : null}
+                  </div>
+                  <div className="flex items-baseline gap-3 mt-0.5 font-mono text-[10.5px] text-muted-foreground">
+                    <span>actor · {a.admin_user_id ?? "system"}</span>
+                    {reason ? <span className="text-foreground/80 break-words">reason · {reason}</span> : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Section>
