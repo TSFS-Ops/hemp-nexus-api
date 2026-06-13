@@ -348,6 +348,7 @@ export function AiSuggestionsQueuePanel() {
         <DoNotContactPanel />
       </div>
     </section>
+    </div>
   );
 }
 
