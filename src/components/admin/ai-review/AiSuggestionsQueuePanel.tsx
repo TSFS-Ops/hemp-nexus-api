@@ -25,7 +25,17 @@ import { AlertTriangle, Info, Clock, Filter as FilterIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const ROW_LIMIT = 200;
-const STALE_AFTER_DAYS = 7;
+const STALE_AFTER_DAYS = 30;
+// Active statuses eligible for the stale badge. Stale = active + age > 30 days.
+// UI-derived only — nothing here persists, auto-archives, or auto-deletes.
+const STALE_ACTIVE_STATUSES = new Set<string>([
+  "new",
+  "pending",
+  "under_review",
+  "needs_more_research",
+  "approved",
+  "escalated",
+]);
 
 type ProposedRow = {
   id: string;
@@ -94,12 +104,12 @@ const RISK_OPTIONS = [
 
 const STALE_OPTIONS = [
   { id: "all", label: "All ages" },
-  { id: "stale", label: "Stale only (pending > 7d)" },
+  { id: "stale", label: "Stale only (active > 30d)" },
   { id: "fresh", label: "Fresh only" },
 ] as const;
 
 function isStale(row: ProposedRow): boolean {
-  if (row.status !== "pending") return false;
+  if (!STALE_ACTIVE_STATUSES.has(row.status)) return false;
   const ageMs = Date.now() - new Date(row.created_at).getTime();
   return ageMs > STALE_AFTER_DAYS * 24 * 60 * 60 * 1000;
 }
