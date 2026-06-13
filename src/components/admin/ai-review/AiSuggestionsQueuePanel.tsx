@@ -104,7 +104,7 @@ const RISK_OPTIONS = [
 
 const STALE_OPTIONS = [
   { id: "all", label: "All ages" },
-  { id: "stale", label: "Stale only (pending > 7d)" },
+  { id: "stale", label: "Stale only (active > 30d)" },
   { id: "fresh", label: "Fresh only" },
 ] as const;
 
