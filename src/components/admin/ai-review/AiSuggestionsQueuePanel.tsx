@@ -368,7 +368,7 @@ function Td({ children, className = "" }: { children?: React.ReactNode; classNam
   return <td className={`px-3 py-2 align-top ${className}`}>{children}</td>;
 }
 
-function DetailDrawer({ row }: { row: ProposedRow }) {
+function DetailDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void }) {
   const refs = Array.isArray(row.source_references) ? (row.source_references as unknown[]) : [];
   const flags = Array.isArray(row.risk_flags) ? (row.risk_flags as unknown[]) : [];
   const stale = isStale(row);
