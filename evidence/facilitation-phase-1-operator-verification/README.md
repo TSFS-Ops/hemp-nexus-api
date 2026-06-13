@@ -1,104 +1,100 @@
 # Facilitation Phase 1 — Org A / Org B Headless Verification Pack
 
-Run timestamp: 2026-06-13T17:49:08Z
-Harness: `supabase/functions/uat-facilitation-phase-1/index.ts` (gated on platform_admin JWT or INTERNAL_CRON_KEY; uses INTERNAL_CRON_KEY internally to call provision-test-user; no schema or role changes for verification).
+- First run: 2026-06-13T17:49:08Z (14/15)
+- Re-run after corrective fix: 2026-06-13T18:01:18Z (14/15)
+- Harness: `supabase/functions/uat-facilitation-phase-1/index.ts`
 
 ## Verdict
 
 **PHASE_1_PARTIAL — NOT CLIENT_UAT_READY**
 
-14 / 15 checks pass. One blocking defect was found and fixed during the pass (missing GRANTs). One residual storage-policy compile defect remains and is documented below with the smallest safe fix. The platform_admin leg has not yet been completed in preview.
+14 / 15 checks pass. The corrective storage-policy helper migration is in place and verified, but `orgA.storage_upload` still fails — root cause has been re-identified as a **pre-existing RLS recursion defect outside the facilitation surface**, documented below. Verdict remains PARTIAL until that defect is fixed (with explicit authorisation) and the platform_admin manual leg is attached.
 
-## Checks (Org A positive)
+## Corrective fix applied
 
-| ID | Result | Detail |
-|---|---|---|
-| provision.org_a | PASS | user `86571568…bd25`, org `06f34183…6bd6` |
-| provision.org_b | PASS | user `b7aee33b…4898`, org `d3301c2f…483e` |
-| provision.distinct_orgs | PASS | distinct org_ids |
-| seed.trade_request | PASS | `4c26e6ed-6a0e-4d87-86ff-0a5f37128f5a` |
-| orgA.create_case | PASS | status 201, case `1c2ca2f0…0c5b`, FAC-2026-000003 |
-| orgA.created_event_present | PASS | action=`facilitation_case.created`, from_status=`null`, to_status=`new`, actor=Org A user |
-| orgA.get_case | PASS | status 200 |
-
-## Checks (Org B denial)
-
-| ID | Result | Detail |
-|---|---|---|
-| orgB.get_case_denied | PASS | status 404 (clean RLS denial, not 500) |
-| orgB.list_excludes_a | PASS | status 200, total 0, no leak |
-| orgB.rls_cases_empty | PASS | 0 rows via JWT-bound client |
-| orgB.rls_events_empty | PASS | 0 rows |
-| orgB.rls_evidence_empty | PASS | 0 rows |
-
-## Negative-control (no side-effects in run window 17:49:08–17:49:12Z)
-
-| Table | New rows scoped to test orgs/users |
-|---|---|
-| pois | 0 |
-| wads | 0 |
-| matches | 0 |
-| token_ledger | 0 |
-| token_purchases | 0 |
-| poi_engagements | 0 |
-| notification_dispatches | 0 |
-| email_send_log | 0 |
-| audit_logs (actor in test users) | 0 |
-
-## Defect found and fixed during the pass
-
-`facilitation_cases`, `facilitation_case_events`, `facilitation_case_evidence` had **zero `GRANT`s** to `authenticated` / `service_role` — confirmed via `information_schema.role_table_grants` returning 0 rows. This violates the project's "every public-schema table must have GRANTs in the same migration" rule and was preventing the storage RLS policies (which subquery `facilitation_cases`) from compiling.
-
-Migration applied:
+Migration `20260613180059_facilitation_case_visible_helper`:
 
 ```sql
-GRANT SELECT, INSERT, UPDATE ON public.facilitation_cases TO authenticated;
-GRANT ALL ON public.facilitation_cases TO service_role;
-GRANT SELECT, INSERT ON public.facilitation_case_events TO authenticated;
-GRANT ALL ON public.facilitation_case_events TO service_role;
-GRANT SELECT, INSERT ON public.facilitation_case_evidence TO authenticated;
-GRANT ALL ON public.facilitation_case_evidence TO service_role;
+CREATE OR REPLACE FUNCTION public.facilitation_case_visible(_user uuid, _case uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.facilitation_cases fc
+    WHERE fc.id = _case
+      AND ( fc.requesting_org_id IN (SELECT p.org_id FROM public.profiles p WHERE p.id = _user)
+         OR fc.case_owner_id = _user
+         OR public.is_admin(_user)
+         OR public.has_role(_user, 'compliance_analyst'::public.app_role) )
+  );
+$$;
+REVOKE ALL ON FUNCTION public.facilitation_case_visible(uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.facilitation_case_visible(uuid, uuid) TO authenticated, service_role;
+
+DROP POLICY IF EXISTS fevd_select ON storage.objects;
+DROP POLICY IF EXISTS fevd_insert ON storage.objects;
+CREATE POLICY fevd_select ON storage.objects FOR SELECT
+  USING ( bucket_id = 'facilitation-evidence'
+          AND public.facilitation_case_visible(auth.uid(), NULLIF(split_part(name,'/',1),'')::uuid) );
+CREATE POLICY fevd_insert ON storage.objects FOR INSERT
+  WITH CHECK ( bucket_id = 'facilitation-evidence'
+          AND public.facilitation_case_visible(auth.uid(), NULLIF(split_part(name,'/',1),'')::uuid) );
 ```
 
-Privileges verified post-migration via `has_table_privilege('authenticated', …)` and `has_function_privilege('authenticated', 'public.has_role(uuid, public.app_role)', 'EXECUTE')` — all `true`.
+Verified post-migration:
+- Helper returns `t` for Org A user + their case_id.
+- `fevd_select` (polcmd `r`) and `fevd_insert` (polcmd `a`) registered on `storage.objects`.
+- Same access boundary — no widening, no narrowing.
 
-## Remaining failure (1 / 15)
+## Re-run results (15 checks)
 
-**`orgA.storage_upload`** — Supabase Storage returns:
+All 14 prior PASSes remain PASS (provision A/B, distinct orgs, trade-request seed, create case, created-event row, get case, Org B 404 / list excludes A / RLS zero-rows on cases+events+evidence, negative controls all zero, cleanup).
 
+| ID | Before fix | After fix |
+|---|---|---|
+| orgA.storage_upload | FAIL (400 / 503 DatabaseInvalidObjectDefinition) | FAIL (400 / 503 DatabaseInvalidObjectDefinition) |
+
+Negative controls remain clean: 0 new rows across pois, wads, matches, token_ledger, token_purchases, poi_engagements, notification_dispatches, email_send_log, audit_logs (for the test users) in the run window 2026-06-13T18:01:18Z → 18:01:27Z.
+
+## Root cause re-identified (revised)
+
+The previous summary attributed the storage failure to the `fevd_*` policies' chained EXISTS. The helper fix resolved that shape, but the failure persists with an identical 503 body. Postgres logs (`postgres_logs`, timestamp 2026-06-13T18:01:26Z, mid-run):
+
+> `infinite recursion detected in policy for relation "document_access"`
+
+Confirmed cycle (`pg_get_expr` extracts):
+
+1. `storage.objects` SELECT policy **"View match documents based on visibility"** subqueries `public.match_documents`.
+2. `public.match_documents` SELECT policy **"Document visibility based on ownership and sharing"** subqueries `public.document_access`.
+3. `public.document_access` SELECT policy **"Users can view access grants for their documents"** subqueries `public.match_documents` → **loop**.
+
+Because Supabase Storage evaluates the full `storage.objects` policy set on any upload (planner side), this recursion breaks every authenticated INSERT into the bucket — including ours. **This defect is pre-existing and unrelated to the facilitation feature**: the same 503 was present before the helper migration with the same body.
+
+## Smallest safe fix proposal (NOT YET APPLIED — awaiting authorisation)
+
+Add one SECURITY DEFINER helper and rewrite both recursive policies to call it:
+
+```sql
+CREATE OR REPLACE FUNCTION public.match_document_visible(_user uuid, _document_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.match_documents md
+    WHERE md.id = _document_id
+      AND ( md.uploader_org_id IN (SELECT p.org_id FROM public.profiles p WHERE p.id = _user)
+         OR md.id IN (
+              SELECT da.document_id FROM public.document_access da
+              WHERE da.revoked_at IS NULL
+                AND ( da.granted_to_org_id IN (SELECT p.org_id FROM public.profiles p WHERE p.id = _user)
+                   OR da.granted_to_user_id = _user )
+            )
+         OR public.is_admin(_user) )
+  );
+$$;
 ```
-status 400
-{ "statusCode": "503", "error": "DatabaseInvalidObjectDefinition",
-  "message": "The database schema is invalid or incompatible." }
-```
 
-Even with table grants in place, the storage planner is rejecting the `fevd_insert` / `fevd_select` policy bodies. Most likely the chained `EXISTS … is_admin(...) OR has_role(…, 'compliance_analyst'::app_role)` subquery is being rejected at compile time when invoked from `storage.objects` RLS evaluation.
+This is corrective only — same access boundary as today, removes the cycle by terminating the policy chain inside SECURITY DEFINER. **It is outside the originally authorised facilitation-helper scope and therefore not applied.**
 
-Smallest safe fix (Phase 1 scope, no feature change, no send path):
+## Outstanding
 
-1. Add a single SECURITY DEFINER helper:
-   ```sql
-   CREATE OR REPLACE FUNCTION public.facilitation_case_visible(_user uuid, _case uuid)
-   RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-     SELECT EXISTS (
-       SELECT 1 FROM public.facilitation_cases fc
-       WHERE fc.id = _case
-         AND ( fc.requesting_org_id IN (SELECT org_id FROM public.profiles WHERE id = _user)
-            OR fc.case_owner_id = _user
-            OR public.is_admin(_user)
-            OR public.has_role(_user, 'compliance_analyst'::app_role) )
-     );
-   $$;
-   GRANT EXECUTE ON FUNCTION public.facilitation_case_visible(uuid, uuid) TO authenticated;
-   ```
-2. Replace `fevd_select` / `fevd_insert` policies with a single call to `public.facilitation_case_visible(auth.uid(), split_part(objects.name, '/', 1)::uuid)`.
+- Authorisation decision on the `match_documents` ↔ `document_access` corrective helper.
+- platform_admin manual leg (see `platform-admin-manual-checklist.md`).
 
-This is a one-migration fix and stays inside Phase 1 scope. No code, no UI, no send path, no POI/WaD/token/credit/payment behaviour changes.
-
-## Cleanup quirk (non-blocking)
-
-The harness's own cleanup attempted `final_outcome = 'out_of_scope'`, which failed the `facilitation_cases_final_outcome_check` constraint. This is a harness-only issue — it does **not** affect the production code paths and the case was still set to `internal_status='closed_admin'`. Will be tightened on the next run.
-
-## Outstanding (platform_admin leg)
-
-The platform_admin steps still need to be executed manually in the preview by an authorised platform_admin operator — see `platform-admin-manual-checklist.md`. Verdict stays at PHASE_1_PARTIAL until that evidence is attached.
+Verdict remains **PHASE_1_PARTIAL — NOT CLIENT_UAT_READY**.

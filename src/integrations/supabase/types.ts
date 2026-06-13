@@ -11215,6 +11215,10 @@ export type Database = {
         Args: { p_email: string; p_user_id: string }
         Returns: Json
       }
+      facilitation_case_visible: {
+        Args: { _case: string; _user: string }
+        Returns: boolean
+      }
       generate_event_hash: {
         Args: { event_data: Json; event_type: string; previous_hash: string }
         Returns: string
