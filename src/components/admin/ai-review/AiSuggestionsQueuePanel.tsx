@@ -352,7 +352,7 @@ function DetailDrawer({ row }: { row: ProposedRow }) {
     queryFn: async (): Promise<AuditRow[]> => {
       const { data, error } = await supabase
         .from("audit_logs")
-        .select("id, action, created_at, metadata, user_id")
+        .select("id, action, created_at, metadata, actor_user_id")
         .eq("entity_id", row.id)
         .like("action", "ai_review.%")
         .order("created_at", { ascending: false })
