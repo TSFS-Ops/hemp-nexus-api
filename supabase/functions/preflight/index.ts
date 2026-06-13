@@ -56,6 +56,32 @@ Deno.serve(async (req: Request) => {
       throw new ApiException("VALIDATION_ERROR", "Buyer and seller cannot be the same organisation", 400);
     }
 
+    // ── Security: cross-org isolation ──
+    // Fixes finding `preflight_crossorg_leak`. Without this guard, any
+    // authenticated user could probe arbitrary org pairs and read their
+    // KYC completeness, missing-doc list, risk band, risk score, and
+    // pending-approval state via the service-role client below.
+    // A caller must either be a party to the proposed trade (their org_id
+    // matches buyer or seller) or be a platform_admin. API-key callers are
+    // already scope-gated above; we still enforce party-membership unless
+    // the org is platform-admin elevated.
+    if (authCtx.orgId !== buyerOrgId && authCtx.orgId !== sellerOrgId) {
+      let isAdmin = false;
+      if (authCtx.userId) {
+        const { data: adminFlag } = await adminClient.rpc("is_admin", {
+          _user_id: authCtx.userId,
+        });
+        isAdmin = adminFlag === true;
+      }
+      if (!isAdmin) {
+        throw new ApiException(
+          "FORBIDDEN",
+          "You must be a party to this trade to run preflight",
+          403,
+        );
+      }
+    }
+
     const deltas: RiskDelta[] = [];
 
     // ── 1. Trade approval status for both parties ──
