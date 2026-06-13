@@ -3615,6 +3615,235 @@ export type Database = {
         }
         Relationships: []
       }
+      facilitation_case_events: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          case_id: string
+          created_at: string
+          from_status: string | null
+          id: string
+          payload: Json
+          to_status: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          case_id: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          payload?: Json
+          to_status?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          case_id?: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          payload?: Json
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_case_events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilitation_case_evidence: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          mime_type: string | null
+          original_filename: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          original_filename: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          original_filename?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_case_evidence_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilitation_cases: {
+        Row: {
+          case_number: string
+          case_owner_id: string | null
+          closed_at: string | null
+          closing_reason: string | null
+          counterparty_city: string | null
+          counterparty_contact_name: string | null
+          counterparty_country: string
+          counterparty_email: string | null
+          counterparty_legal_name: string
+          counterparty_phone: string | null
+          counterparty_trading_name: string | null
+          counterparty_website: string | null
+          created_at: string
+          estimated_value_amount: number
+          estimated_value_currency: string
+          final_outcome: string | null
+          how_user_knows_counterparty: string
+          how_user_knows_notes: string | null
+          id: string
+          internal_status: string
+          linked_organization_id: string | null
+          permission_to_contact: boolean
+          poi_engagement_id: string | null
+          product_or_commodity: string
+          reason: string
+          requesting_org_id: string
+          requesting_user_id: string
+          role: string
+          trade_request_id: string
+          updated_at: string
+          urgency: string
+          user_declaration_accepted: boolean
+          user_declaration_accepted_at: string
+          user_facing_status: string
+        }
+        Insert: {
+          case_number: string
+          case_owner_id?: string | null
+          closed_at?: string | null
+          closing_reason?: string | null
+          counterparty_city?: string | null
+          counterparty_contact_name?: string | null
+          counterparty_country: string
+          counterparty_email?: string | null
+          counterparty_legal_name: string
+          counterparty_phone?: string | null
+          counterparty_trading_name?: string | null
+          counterparty_website?: string | null
+          created_at?: string
+          estimated_value_amount: number
+          estimated_value_currency: string
+          final_outcome?: string | null
+          how_user_knows_counterparty: string
+          how_user_knows_notes?: string | null
+          id?: string
+          internal_status?: string
+          linked_organization_id?: string | null
+          permission_to_contact: boolean
+          poi_engagement_id?: string | null
+          product_or_commodity: string
+          reason: string
+          requesting_org_id: string
+          requesting_user_id: string
+          role: string
+          trade_request_id: string
+          updated_at?: string
+          urgency: string
+          user_declaration_accepted: boolean
+          user_declaration_accepted_at?: string
+          user_facing_status?: string
+        }
+        Update: {
+          case_number?: string
+          case_owner_id?: string | null
+          closed_at?: string | null
+          closing_reason?: string | null
+          counterparty_city?: string | null
+          counterparty_contact_name?: string | null
+          counterparty_country?: string
+          counterparty_email?: string | null
+          counterparty_legal_name?: string
+          counterparty_phone?: string | null
+          counterparty_trading_name?: string | null
+          counterparty_website?: string | null
+          created_at?: string
+          estimated_value_amount?: number
+          estimated_value_currency?: string
+          final_outcome?: string | null
+          how_user_knows_counterparty?: string
+          how_user_knows_notes?: string | null
+          id?: string
+          internal_status?: string
+          linked_organization_id?: string | null
+          permission_to_contact?: boolean
+          poi_engagement_id?: string | null
+          product_or_commodity?: string
+          reason?: string
+          requesting_org_id?: string
+          requesting_user_id?: string
+          role?: string
+          trade_request_id?: string
+          updated_at?: string
+          urgency?: string
+          user_declaration_accepted?: boolean
+          user_declaration_accepted_at?: string
+          user_facing_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_cases_linked_organization_id_fkey"
+            columns: ["linked_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilitation_cases_poi_engagement_id_fkey"
+            columns: ["poi_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagement_email_sent_but_status_stuck"
+            referencedColumns: ["engagement_id"]
+          },
+          {
+            foreignKeyName: "facilitation_cases_poi_engagement_id_fkey"
+            columns: ["poi_engagement_id"]
+            isOneToOne: false
+            referencedRelation: "poi_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilitation_cases_requesting_org_id_fkey"
+            columns: ["requesting_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilitation_cases_trade_request_id_fkey"
+            columns: ["trade_request_id"]
+            isOneToOne: false
+            referencedRelation: "trade_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fund_flows: {
         Row: {
           amount: number
