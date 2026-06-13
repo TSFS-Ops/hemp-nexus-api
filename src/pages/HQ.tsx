@@ -16,7 +16,7 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound, MoreHorizontal } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound, MoreHorizontal, Sparkles } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,11 +80,12 @@ import { AdminGovernanceExportPreviewPanel } from "@/components/admin/governance
 import { AdminBasicMemoryPanel } from "@/components/admin/AdminBasicMemoryPanel";
 import { AdminIdentityPanel } from "@/components/admin/AdminIdentityPanel";
 import { TenantBoundaryPanel } from "@/components/admin/TenantBoundaryPanel";
+import { AiSuggestionsQueuePanel } from "@/components/admin/ai-review/AiSuggestionsQueuePanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "ai-suggestions" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -115,6 +116,11 @@ const TABS: {
   label: "Engagements",
   icon: Inbox,
   blurb: "POI hold-point queue · counterparty outreach and activation."
+}, {
+  id: "ai-suggestions",
+  label: "AI Suggestions",
+  icon: Sparkles,
+  blurb: "Advisory AI counterparty suggestions. Read-only review queue. No outreach, POI, WaD, or formal-match creation."
 }, {
   id: "disputes",
   label: "Dispute Resolution",
@@ -813,6 +819,16 @@ function HQLayout() {
             </section>
           </TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
+          <TabsContent value="ai-suggestions" className="mt-0 animate-section-enter">
+            <section className="bg-card border border-border rounded-sm overflow-hidden">
+              <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
+                <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                  AI Suggestions · advisory only · platform_admin · no outreach · no POI/WaD/formal-match
+                </p>
+              </header>
+              <div className="p-3 sm:p-5"><AiSuggestionsQueuePanel /></div>
+            </section>
+          </TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
           <TabsContent value="legacy-repair" className="mt-0 animate-section-enter"><LegacyRepairTab /></TabsContent>
