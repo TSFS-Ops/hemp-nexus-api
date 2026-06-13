@@ -111,6 +111,45 @@ async function _serve(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const action = body.action || url.searchParams.get("action");
 
+    // ── Security: cross-org isolation + auditor read-only enforcement ──
+    // Fixes finding `due_diligence_crossorg`. The service-role client below
+    // bypasses RLS, so we MUST gate on action + caller role + target org
+    // here. Only platform_admin may operate across organisations. Auditor
+    // is read-only. org_admin (and any other role) is scoped to its own org.
+    const isPlatformAdminDD = ddRoleNames.includes("platform_admin");
+    const isAuditorDD = !isPlatformAdminDD && ddRoleNames.includes("auditor");
+
+    const DD_WRITE_ACTIONS = new Set([
+      "register_directors",
+      "upload_kyc",
+      "run_screening",
+      "compute_score",
+    ]);
+    const DD_ORG_SCOPED_ACTIONS = new Set([
+      ...DD_WRITE_ACTIONS,
+      "get_dossier",
+      "get_trade_status",
+    ]);
+
+    if (isAuditorDD && DD_WRITE_ACTIONS.has(action)) {
+      return json(
+        { error: "FORBIDDEN: auditor role is read-only for due-diligence write actions" },
+        403,
+      );
+    }
+
+    if (!isPlatformAdminDD && DD_ORG_SCOPED_ACTIONS.has(action)) {
+      const requestedOrg =
+        (body && typeof body.org_id === "string" ? body.org_id : null) ||
+        url.searchParams.get("org_id");
+      if (requestedOrg && requestedOrg !== profile.org_id) {
+        return json(
+          { error: "FORBIDDEN: caller may only act on their own organisation" },
+          403,
+        );
+      }
+    }
+
     // ════════════════════════════════════════════
     // ACTION: register_directors
     // ════════════════════════════════════════════
