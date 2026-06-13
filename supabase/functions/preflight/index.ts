@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
       let isAdmin = false;
       if (authCtx.userId) {
         const { data: adminFlag } = await adminClient.rpc("is_admin", {
-          _user_id: authCtx.userId,
+          user_id: authCtx.userId,
         });
         isAdmin = adminFlag === true;
       }
