@@ -117,6 +117,11 @@ const TABS: {
   icon: Inbox,
   blurb: "POI hold-point queue · counterparty outreach and activation."
 }, {
+  id: "ai-suggestions",
+  label: "AI Suggestions",
+  icon: Sparkles,
+  blurb: "Advisory AI counterparty suggestions. Read-only review queue. No outreach, POI, WaD, or formal-match creation."
+}, {
   id: "disputes",
   label: "Dispute Resolution",
   icon: AlertTriangle,
