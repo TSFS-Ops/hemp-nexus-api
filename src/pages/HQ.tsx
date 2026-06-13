@@ -85,7 +85,7 @@ import { AiSuggestionsQueuePanel } from "@/components/admin/ai-review/AiSuggesti
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "ai-suggestions" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
