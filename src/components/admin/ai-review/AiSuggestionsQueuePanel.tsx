@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { AlertTriangle, Info, Clock, Filter as FilterIcon, Ban, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { AiOutreachDraftV2Panel } from "./AiOutreachDraftV2Panel";
 
 const ROW_LIMIT = 200;
 const STALE_AFTER_DAYS = 30;
@@ -462,6 +463,8 @@ function DetailDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void 
       ) : null}
 
       <ActionsBar row={row} onDone={onClose} />
+
+      <AiOutreachDraftV2Panel proposedMatchId={row.id} parentStatus={row.status} />
 
       <Section title="Audit history">
         {auditQuery.isLoading ? (
