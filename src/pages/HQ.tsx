@@ -118,6 +118,11 @@ const TABS: {
   icon: Inbox,
   blurb: "POI hold-point queue · counterparty outreach and activation."
 }, {
+  id: "facilitation",
+  label: "Facilitation Queue",
+  icon: LifeBuoy,
+  blurb: "Unknown-counterparty facilitation cases · Phase 1 intake and admin triage. No outreach, no notifications, no POI/WaD/match/token mutations."
+}, {
   id: "ai-suggestions",
   label: "AI Suggestions",
   icon: Sparkles,
