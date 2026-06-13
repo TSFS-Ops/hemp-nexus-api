@@ -35,6 +35,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { AiOutreachDraftV2Panel } from "./AiOutreachDraftV2Panel";
 import { AiPoiIntelligencePanel } from "./AiPoiIntelligencePanel";
+import { AiSuggestionLauncher } from "./AiSuggestionLauncher";
 
 const ROW_LIMIT = 200;
 const STALE_AFTER_DAYS = 30;
@@ -80,8 +81,8 @@ type AuditRow = {
   id: string;
   action: string;
   created_at: string;
-  metadata: unknown;
-  actor_user_id: string | null;
+  details: unknown;
+  admin_user_id: string | null;
 };
 
 const STATUS_OPTIONS = [
@@ -204,8 +205,18 @@ export function AiSuggestionsQueuePanel() {
     [openId, rows, listQuery.data],
   );
 
+  const totalLoaded = listQuery.data?.length ?? 0;
+  const filtersActive =
+    statusFilter !== "pending" ||
+    confidenceFilter !== "all" ||
+    fitFilter !== "all" ||
+    riskFilter !== "all" ||
+    staleFilter !== "all";
+
   return (
-    <section className="bg-card border border-border rounded-sm overflow-hidden">
+    <div className="space-y-4">
+      <AiSuggestionLauncher />
+      <section className="bg-card border border-border rounded-sm overflow-hidden">
       <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
         <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
           AI Suggestions · ai_proposed_matches · platform_admin only · read-only review queue
@@ -262,7 +273,21 @@ export function AiSuggestionsQueuePanel() {
             </thead>
             <tbody>
               {!listQuery.isLoading && rows.length === 0 ? (
-                <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground text-sm">No proposed matches match the current filters.</td></tr>
+                <tr>
+                  <td colSpan={9} className="px-3 py-8 text-center text-muted-foreground text-sm">
+                    {filtersActive && totalLoaded > 0 ? (
+                      "No proposed matches match the current filters."
+                    ) : (
+                      <span>
+                        No AI proposed matches yet. Select a trade request above, run
+                        {" "}<span className="font-medium text-foreground">Interpret with AI</span>, then
+                        {" "}<span className="font-medium text-foreground">Source counterparties</span>.
+                        {" "}AI output is advisory only and does not contact anyone, create a POI,
+                        create a WaD, create a formal match, or mark any party verified.
+                      </span>
+                    )}
+                  </td>
+                </tr>
               ) : null}
               {rows.map((r) => {
                 const flags = Array.isArray(r.risk_flags) ? (r.risk_flags as unknown[]) : [];
@@ -337,6 +362,7 @@ export function AiSuggestionsQueuePanel() {
         <DoNotContactPanel />
       </div>
     </section>
+    </div>
   );
 }
 
@@ -378,15 +404,18 @@ function DetailDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void 
   const auditQuery = useQuery({
     queryKey: ["ai-proposed-match-audit", row.id],
     queryFn: async (): Promise<AuditRow[]> => {
+      // Audit drawer reads from admin_audit_logs (canonical sink for
+      // ai_review.* events). target_id is the proposed_match id; details
+      // holds the structured envelope; admin_user_id is the actor.
       const { data, error } = await supabase
-        .from("audit_logs")
-        .select("id, action, created_at, metadata, actor_user_id")
-        .eq("entity_id", row.id)
+        .from("admin_audit_logs")
+        .select("id, action, created_at, details, admin_user_id")
+        .eq("target_id", row.id)
         .like("action", "ai_review.%")
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
-      return (data ?? []) as AuditRow[];
+      return (data ?? []) as unknown as AuditRow[];
     },
   });
 
@@ -470,22 +499,40 @@ function DetailDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void 
       <AiOutreachDraftV2Panel proposedMatchId={row.id} parentStatus={row.status} />
 
       <Section title="Audit history">
+        <p className="text-[11px] text-muted-foreground mb-2">
+          Reads <span className="font-mono">admin_audit_logs</span> where
+          <span className="font-mono"> target_id = proposed_match.id</span> and
+          <span className="font-mono"> action LIKE 'ai_review.%'</span>. Drafts and POI
+          intelligence audits target their own rows and appear in their respective panels above.
+        </p>
         {auditQuery.isLoading ? (
           <p className="text-[12.5px] text-muted-foreground">Loading…</p>
         ) : auditQuery.error ? (
           <p className="text-[12.5px] text-rose-700">Failed to load audit history.</p>
         ) : (auditQuery.data ?? []).length === 0 ? (
-          <p className="text-[12.5px] text-muted-foreground">No audit entries recorded for this suggestion yet.</p>
+          <p className="text-[12.5px] text-muted-foreground">No proposed-match audit entries recorded for this suggestion yet.</p>
         ) : (
-          <ul className="space-y-1.5">
-            {(auditQuery.data ?? []).map((a) => (
-              <li key={a.id} className="text-[12px] flex items-baseline gap-3 border-b border-border/60 pb-1.5">
-                <span className="font-mono text-[10.5px] text-muted-foreground shrink-0">
-                  {new Date(a.created_at).toISOString().replace("T", " ").slice(0, 19)}Z
-                </span>
-                <span className="font-mono text-[11px] text-foreground">{a.action}</span>
-              </li>
-            ))}
+          <ul className="space-y-2">
+            {(auditQuery.data ?? []).map((a) => {
+              const details = a.details && typeof a.details === "object" ? (a.details as Record<string, unknown>) : null;
+              const status = details?.status as string | undefined;
+              const reason = details?.reason as string | undefined;
+              return (
+                <li key={a.id} className="text-[12px] border-b border-border/60 pb-1.5">
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="font-mono text-[10.5px] text-muted-foreground shrink-0">
+                      {new Date(a.created_at).toISOString().replace("T", " ").slice(0, 19)}Z
+                    </span>
+                    <span className="font-mono text-[11px] text-foreground">{a.action}</span>
+                    {status ? <Badge variant="outline" className="text-[10px]">{status}</Badge> : null}
+                  </div>
+                  <div className="flex items-baseline gap-3 mt-0.5 font-mono text-[10.5px] text-muted-foreground">
+                    <span>actor · {a.admin_user_id ?? "system"}</span>
+                    {reason ? <span className="text-foreground/80 break-words">reason · {reason}</span> : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Section>
