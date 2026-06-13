@@ -1,254 +1,116 @@
-# 30 May Enterprise Readiness — Batch sequence
+# AI Counterparty Intelligence & Match Review
 
-Your direction was **batched, smallest first**, **extend canonical where possible**, **SSO/SAML shell now + native Supabase SAML wired only when you hand me IdP metadata**, and **audit-and-surface the existing IDV** (no new provider work this round).
+This is a large feature. I'll deliver it in **5 sequential batches**, each independently testable, behind `platform_admin` and `/hq/ai-suggestions`. No autonomous outreach in any batch. Phase 1 AI Outreach Drafter (already CLOSED) and the existing `engagement_outreach_drafts` table are left untouched; this feature uses its own tables to avoid semantic drift.
 
-I am therefore splitting the 9 controls into 5 small batches. Only **Batch 4** is in scope for this turn. The remaining batches are listed so the sequencing is explicit and reviewable, but I will not start them until Batch 4 is accepted.
+## Hard guarantees (every batch)
 
-```text
-Batch 4 (this turn)  → Enterprise Identity (SSO/SAML shell + SCIM lifecycle)
-Batch 5              → Encryption/BYOK settings + Data Residency hardening
-Batch 6              → SIEM/Audit Export MVP + Admin Export Controls
-Batch 7              → Retention + Legal Hold gap-fill + DSAR export
-Batch 8              → Tenant Boundary Evidence + IDV/KYB surface +
-                       Enterprise Readiness Evidence page (claims gate)
-```
+- `platform_admin` only at route, RLS, and edge-function layers.
+- No send/dispatch path. No automatic POI/WaD/verification/match creation.
+- Banner + wording rules enforced; "verified" never used by AI surfaces.
+- Every action audited to `admin_audit_logs` with canonical `ai_review.*` action codes.
+- Do-not-contact rules checked before any draft creation (warn/block).
+- 30-day stale badge derived, never auto-archived.
 
-Everything outside Batch 4 is **out of scope** for this turn. Do not raise it as a defect against Batch 4. The 24 May path is not touched.
+## Batch 1 — Data layer + interpretations + sourcing
 
----
+**New tables (all `org_id`-less, HQ-scoped, RLS = `is_admin()` only, service_role full):**
 
-# Batch 4 — Enterprise Identity (in scope)
+- `ai_trade_request_interpretations` — structured AI read of a trade request.
+- `ai_proposed_matches` — ranked proposed counterparties (status enum, fit_label, confidence_level, risk_flags jsonb, source_references jsonb).
+- `ai_outreach_drafts_v2` — draft messages (separate from Phase 1 `engagement_outreach_drafts` to avoid coupling).
+- `ai_poi_intelligence_notes` — public-source intel attached to a POI/trade request.
+- `ai_do_not_contact_rules` — pre-built block list.
+- `ai_review_audit` view over `admin_audit_logs` filtered to `ai_review.*` actions.
 
-Build the **organisation-level SSO/SAML configuration shell** and the **SCIM-style user lifecycle structure**, with full audit, status surface, and claims-control. No custom SAML implementation. Live SSO is only ever flipped on per-org after `supabase--configure_saml_sso` succeeds and a connection test is recorded.
+All with GRANTs (`authenticated` SELECT only via RLS `is_admin()`, `service_role` ALL), RLS enabled, policies routed through `is_admin()`.
 
-## What gets built
+**Edge functions:**
 
-### 1. Database — two new tables, both org-scoped, both `is_admin()`/`org_admin`-gated RLS
+- `ai-interpret-trade-request` — Lovable AI Gateway, tool-call extraction; writes interpretation row + audit.
+- `ai-source-counterparties` — reads only approved internal sources (organisations, matches, pois, counterparty_intel, intel-crawl outputs); writes ranked `ai_proposed_matches` rows + audit. **No external scraping, no LinkedIn/Hunter/ZoomInfo.**
 
-`public.org_sso_configs` (one row per organisation)
+Prebuild guard `scripts/check-ai-review-audit-names.mjs` to pin canonical action codes.
 
-- `org_id`
-- `provider` (`saml` | `oidc-placeholder` — only `saml` writeable in Batch 4)
-- `metadata_url` (nullable)
-- `metadata_xml_ref` (storage path, nullable)
-- `verified_domains` (text[])
-- `entity_id`, `acs_url` (populated from Supabase native SAML values when wired)
-- `certificate_status` (`none` | `present` | `expiring` | `expired`)
-- `supabase_sso_provider_id` (nullable — set only after `configure_saml_sso` succeeds)
-- `status` (`not_configured` | `pending_metadata` | `configured_not_connected` | `live` | `failed` | `disabled`) — DB CHECK constraint
-- `last_tested_at`, `last_test_result`, `failure_reason`
-- `requested_by`, `reviewed_by`
+## Batch 2 — Review UI (read-only first)
 
-`public.org_scim_user_states` (one row per (org, user))
+- Route `/hq/ai-suggestions` (label "AI Counterparty Intelligence") behind `RequireAuth role="platform_admin"`.
+- Queue table with filters: status, confidence, fit, role, jurisdiction, risk-flagged, escalated, assigned reviewer, stale (>30d).
+- Detail drawer: interpretation, rationale, source summary, references, risk flags, audit history.
+- Mandatory advisory banner at top.
+- Stale badge derived client-side; "Source reference not available." fallback.
 
-- `org_id`, `user_id`
-- `state` (`invited` | `active` | `suspended` | `deprovisioned`) — DB CHECK
-- `source` (`manual` | `scim` | `sso_jit`)
-- `external_id` (nullable — IdP user id when SCIM is live)
-- `last_state_change_at`, `last_state_change_reason`
+## Batch 3 — Admin actions + override + do-not-contact
 
-Plus: `org_id` indexes, `updated_at` triggers, GRANTs + RLS (org_admin/platform_admin read+write on own org; platform_admin full).
+- Edge function `ai-proposed-match-decision` — under_review / approve / reject / archive / needs_more_research / escalate / assign_reviewer / add_note / override_confidence. Writes status transitions + audit. Never sends.
+- Edge function `ai-do-not-contact-rules` — CRUD for rules; idempotent.
+- UI action bar + reviewer-note dialog + DNC rule manager.
 
-### 2. Canonical audit names (single SSOT module, prebuild parity guard)
+## Batch 4 — Outreach drafting (approved matches only, manual send)
 
-New file `supabase/functions/_shared/identity-audit.ts` and mirror `src/lib/identity/identity-audit.ts`:
+- Edge function `ai-generate-outreach-draft-v2` — preconditions: proposed match `status='approved'`, DNC check (block + audit if hit). Generates draft via Lovable AI Gateway; writes `ai_outreach_drafts_v2` row with `draft_status='draft_created'`. **No send path.**
+- Edge function `ai-outreach-draft-decision-v2` — edit / approve_for_send / reject / archive / mark_sent_by_human (manual marker only, no provider call).
+- UI: draft editor, approval workflow, "Send manually" button = marks `sent_by_human` and audits; copy-to-clipboard helper for the admin to paste into their own email client.
 
-- `identity.sso_config_created`
-- `identity.sso_metadata_updated`
-- `identity.sso_domains_updated`
-- `identity.sso_connection_tested`
-- `identity.sso_enabled`
-- `identity.sso_disabled`
-- `identity.sso_failed`
-- `identity.scim_user_provisioned`
-- `identity.scim_user_suspended`
-- `identity.scim_user_deprovisioned`
+## Batch 5 — POI intelligence notes + escalation surfaces
 
-Prebuild guard `scripts/check-identity-audit-names.mjs` (same pattern as the existing `check-legal-hold-audit-names.mjs` / `check-ops-010-audit-names.mjs`) fails CI on drift.
+- Edge function `ai-generate-poi-intelligence` — reads approved public sources only via existing intel-crawl/counterparty-intel pipelines; writes `ai_poi_intelligence_notes`.
+- UI section with strict separation: Verified data / Paid-provider / Public-source / Social-media / AI interpretation, each labelled; mandatory caveat banner.
+- Escalation badges + escalated-only filter; escalation never triggers external contact.
 
-### 3. Edge functions (platform_admin + org_admin only, AAL2-gated for sensitive ops)
+## Technical notes
 
-- `org-sso-config` — `GET` / `PUT` org SSO config. Validates with Zod. Emits the relevant audit. Cannot set `status='live'` directly — only `org-sso-test-connection` can.
-- `org-sso-test-connection` — invokes Supabase native SAML status check for the recorded `supabase_sso_provider_id`. Writes `last_tested_at` + `last_test_result`. On success may promote `status` to `live`. Emits `identity.sso_connection_tested` and either `identity.sso_enabled` or `identity.sso_failed`.
-- `org-scim-user-lifecycle` — admin endpoint to set a user's state (`invited`/`active`/`suspended`/`deprovisioned`). Emits the matching `scim_user_*` audit. **This is the structure; no IdP SCIM webhook is wired in Batch 4.**
+- All AI calls go through Lovable AI Gateway (`google/gemini-3-flash-preview` default) via existing `ai-guard` envelope; per-org meter not applicable (HQ-scoped) — use a fixed `org_id = SYSTEM_ORG_ID` for the guard meter.
+- `ai_outreach_drafts_v2` is intentionally separate from Phase 1 `engagement_outreach_drafts` (which is tied to `poi_engagements`). The Phase 1 drafter and admin facilitation queue are not modified.
+- New canonical audit codes: `ai_review.trade_request_interpreted`, `ai_review.counterparty_sourced`, `ai_review.proposed_match_created|reviewed|approved|rejected|archived|escalated|needs_more_research`, `ai_review.confidence_overridden`, `ai_review.outreach_draft_created|edited|approved|sent_by_human|rejected`, `ai_review.poi_intelligence_created`, `ai_review.risk_flag_added`, `ai_review.escalation_created`, `ai_review.admin_override_applied`, `ai_review.do_not_contact_rule_created|deactivated`.
+- Memory rule honoured: NEVER use "Civilisation OS"; UI label is "AI Counterparty Intelligence".
+- No `.md` files created; all closeouts delivered inline in chat.
 
-No custom SAML auth logic. No new `/auth/*` routes. AuthContext / RequireAuth / MFA / RBAC untouched.
+## What I'm asking before I start
 
-### 4. Admin UI (HQ only — extends existing `src/pages/Hq*` surfaces)
+1. **Confirm batch sequencing** — proceed Batch 1 first (schema + 2 edge fns, no UI), wait for your closeout, then Batch 2.
+2. **Confirm separate tables** — `ai_outreach_drafts_v2` and `ai_proposed_matches` as new tables, not extensions of Phase 1 `engagement_outreach_drafts`. (Recommended — keeps Phase 1 untouched and avoids semantic drift.)
+3. **Confirm AI model** — default `google/gemini-3-flash-preview` via Lovable AI Gateway for all five edge functions.
 
-- **HQ → Identity → Organisations** table: org name, SSO status badge, SCIM status, verified domains, last tested, claim allowed Y/N.
-- **Org detail drawer**: form for metadata URL / XML upload, verified domains, "Test connection" button, status pill, audit-trail tail (last 20 identity events for that org).
-- **User lifecycle panel** per org: list members with state badge, change-state action (gated, audited).
-- Status pill rules (claims-control, enforced in one shared helper `src/lib/identity/sso-claim.ts`):
-  - `not_configured` → grey "Not configured"
-  - `pending_metadata` → amber "Pending metadata"
-  - `configured_not_connected` → amber "Configured — not connected"
-  - `live` → green "SSO live" (only after a successful test recorded)
-  - `failed` → red "Failed"
-  - `disabled` → grey "Disabled"
-- **No marketing copy.** No "enterprise-ready", "bank-ready", "DFI-grade" language anywhere in the new UI.
-
-### 5. Claims-control gate
-
-Single helper `ssoClaimAllowed(config)` returns boolean. Anywhere the UI would otherwise say "SSO live" it must call this helper. Unit test asserts the helper only returns true when `status === 'live'` AND `last_test_result === 'pass'` AND `supabase_sso_provider_id IS NOT NULL`.
-
-### 6. Tests
-
-- Vitest: `src/tests/batch4-sso-claim-gate.test.ts` — claim helper truth table.
-- Vitest: `src/tests/batch4-scim-state-transitions.test.ts` — valid/invalid state transition matrix.
-- Deno: `supabase/functions/org-sso-config/index.test.ts` — Zod validation, RBAC denial for non-admin, audit emission, refusal to self-promote to `live`.
-- Deno: `supabase/functions/org-scim-user-lifecycle/index.test.ts` — audit emission per transition.
-- Prebuild: `scripts/check-identity-audit-names.mjs` runs in the existing `npm run build` chain.
-
-### 7. Memory entries (added after migration + code land)
-
-- `mem://features/enterprise-identity-sso-shell` — table shape, status vocabulary, claim helper, audit SSOT location.
-- Update `mem://index.md` Memories section (Core untouched).
-
-## What is explicitly NOT in Batch 4
-
-- No custom SAML auth code.
-- No SCIM HTTP endpoint exposed to IdPs (only the internal lifecycle structure + admin actions).
-- No changes to login, MFA, AAL2, RequireAuth, RBAC, platform_admin, or the 24 May path.
-- No encryption / residency / SIEM / retention / DSAR / IDV / evidence-page work — those are Batches 5–8.
-- No `configure_saml_sso` call until you hand me real IdP metadata + verified domains for a specific org.
-
-## Acceptance for Batch 4
-
-1. Migration applied; new tables visible; RLS denies cross-org reads; GRANTs present.
-2. Both edge functions deployed; Deno tests green.
-3. Vitest green for claim helper + SCIM transitions.
-4. Prebuild guard `check-identity-audit-names.mjs` green.
-5. HQ → Identity page renders org list; status pills correct for seed data (all orgs start `not_configured`, claim not allowed).
-6. No string `SSO live` or `SCIM live` anywhere in UI when `ssoClaimAllowed()` returns false (grep test).
-7. Memory updated.
-
-On all pass → `BATCH_4_CODE_READY` (live-SSO acceptance still requires you to provide IdP metadata for a pilot org and approve the `configure_saml_sso` call).
-
----
-
-Reply **approve** to proceed with the migration, or tell me what to change.  
+On approval I'll start Batch 1 (migration + two edge functions + audit-name guard script) and return a closeout in the same format as previous batches.  
   
-Approved to proceed with Batch 4 only.
+Yes — I would approve this. The structure is sensible, controlled, and matches exactly what we discussed: **build the agentic intelligence layer, but not autonomous external outreach yet.**
 
-The sequencing is accepted:
+I would send back this:
 
-Batch 4 — Enterprise Identity: SSO/SAML shell + SCIM lifecycle
+Confirmed — please proceed with Batch 1 first.
 
-Batch 5 — Encryption/BYOK settings + Data Residency hardening
+Answers to your three questions:
 
-Batch 6 — SIEM/Audit Export MVP + Admin Export Controls
+1. **Batch sequencing confirmed**  
+Proceed with Batch 1 first: schema, the two edge functions, and the audit-name guard script. Please return the Batch 1 closeout before starting Batch 2.
+2. **Separate tables confirmed**  
+Yes, use new dedicated tables, including `ai_outreach_drafts_v2` and `ai_proposed_matches`. Do not extend or modify the existing Phase 1 `engagement_outreach_drafts` table. Keeping this feature separate is the right approach and avoids semantic drift.
+3. **AI model confirmed**  
+Confirmed: use `google/gemini-3-flash-preview` via the Lovable AI Gateway for the AI edge functions.
 
-Batch 7 — Retention + Legal Hold gap-fill + DSAR export
+A few important guardrails to preserve throughout:
 
-Batch 8 — Tenant Boundary Evidence + IDV/KYB surface + Enterprise Readiness Evidence page
+- No autonomous external outreach in any batch.
+- No send/dispatch provider call.
+- No automatic POI creation.
+- No automatic WaD creation.
+- No automatic verification claim.
+- No automatic formal match creation.
+- AI may interpret, source, assess, rank, explain, draft and escalate.
+- A human must trigger any external contact.
+- Do-not-contact rules must be checked before draft creation.
+- All AI actions must be audited under canonical `ai_review.*` action codes.
+- The UI must continue using “AI Counterparty Intelligence”, not “autonomous agent”.
+- The product must never describe AI-sourced counterparties as “verified” unless the actual verification workflow has confirmed them.
 
-Batch 4 is the only authorised scope for this turn.
+Please start Batch 1 and return the closeout in the same format as the previous batches.
 
-Please proceed on the basis of the following rules:
+One small note: I would keep the phrase **“manual send”** very carefully controlled. Ideally the platform should **not actually send** in this phase. The safest wording is:
 
-1. No custom SAML implementation.
+“mark as sent by human”
 
-Use only the Supabase-native SAML path when real IdP metadata is later provided. For now, build the org-level configuration shell, lifecycle structure, audit, status surface and claim gate.
+or:
 
-2. Do not touch the 24 May path.
+“copy draft for manual sending outside the platform”
 
-No changes to AuthContext, RequireAuth, MFA/AAL2, RBAC, platform_admin logic, POI, WaD, Memory, refund, legal hold, DSAR, IDV/KYB, residency, SIEM, admin export or tenant-boundary systems in this batch.
-
-3. Treat Batch 4 as a control shell, not a live SSO claim.
-
-The system may say:
-
-- “SSO/SAML configuration path present”
-
-- “Pending metadata”
-
-- “Configured — not connected”
-
-It may not say:
-
-- “SSO live”
-
-- “SCIM live”
-
-- “Enterprise ready”
-
-- “Bank ready”
-
-- “DFI ready”
-
-unless the exact control is actually wired, tested and evidenced.
-
-4. Status promotion must be locked down.
-
-`status = live` must not be writable through the normal config update path.
-
-Only the connection-test path may promote to live, and only where:
-
-- `supabase_sso_provider_id` is present;
-
-- connection test passes;
-
-- `last_test_result = pass`;
-
-- `last_tested_at` is recorded.
-
-5. RLS and role boundaries must be proven.
-
-For the new tables, include evidence that:
-
-- platform_admin can see all;
-
-- org_admin can see only their own org;
-
-- non-admin users are denied;
-
-- cross-org reads/writes are denied.
-
-6. SCIM wording must stay honest.
-
-Because no external SCIM webhook is being exposed in Batch 4, label this as:
-
-“SCIM lifecycle structure”
-
-or
-
-“SCIM-ready lifecycle states”
-
-Do not call it “SCIM live”.
-
-7. Canonical audit names must be protected.
-
-The proposed SSOT audit modules and `check-identity-audit-names.mjs` guard are approved. Do not introduce identity audit event names outside the SSOT.
-
-8. Acceptance evidence required before Batch 4 can be considered code-ready:
-
-- migration file names;
-
-- tables added;
-
-- RLS policies added;
-
-- edge functions added;
-
-- UI routes/components added;
-
-- audit event names added;
-
-- tests added;
-
-- prebuild guard result;
-
-- staging verification steps;
-
-- known limitations;
-
-- confirmation that no 24 May path files were touched unless explicitly justified.
-
-9. Final status wording:
-
-When complete, report as:
-
-`BATCH_4_CODE_READY — STAGING OPERATOR VERIFICATION REQUIRED`
-
-Do not report Batch 4 as accepted until staging verification has passed.
+That avoids accidentally creating a send path too early.
