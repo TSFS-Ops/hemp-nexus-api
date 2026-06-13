@@ -26,6 +26,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { writeAdminAudit, extractIp, extractUserAgent } from "../_shared/admin-audit.ts";
+import { clampSubject } from "../_shared/email-subject.ts";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -87,7 +88,7 @@ async function _handle(req: Request): Promise<Response> {
     const extra: Record<string, unknown> = {};
 
     if (action === "edit") {
-      const subject = typeof body?.subject === "string" ? body.subject.slice(0, 300) : null;
+      const subject = typeof body?.subject === "string" ? clampSubject(body.subject) : null;
       const bodyText = typeof body?.body === "string" ? body.body.slice(0, 6000) : null;
       if (!subject && !bodyText) {
         return json(400, { error: "edit requires at least one of subject or body" });
