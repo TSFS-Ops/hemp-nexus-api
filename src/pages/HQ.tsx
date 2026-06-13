@@ -819,6 +819,16 @@ function HQLayout() {
             </section>
           </TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
+          <TabsContent value="ai-suggestions" className="mt-0 animate-section-enter">
+            <section className="bg-card border border-border rounded-sm overflow-hidden">
+              <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
+                <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                  AI Suggestions · advisory only · platform_admin · no outreach · no POI/WaD/formal-match
+                </p>
+              </header>
+              <div className="p-3 sm:p-5"><AiSuggestionsQueuePanel /></div>
+            </section>
+          </TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
           <TabsContent value="revenue" className="mt-0 animate-section-enter"><RevenueTab /></TabsContent>
           <TabsContent value="legacy-repair" className="mt-0 animate-section-enter"><LegacyRepairTab /></TabsContent>
