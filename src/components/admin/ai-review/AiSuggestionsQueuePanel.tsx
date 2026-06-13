@@ -273,7 +273,21 @@ export function AiSuggestionsQueuePanel() {
             </thead>
             <tbody>
               {!listQuery.isLoading && rows.length === 0 ? (
-                <tr><td colSpan={9} className="px-3 py-8 text-center text-muted-foreground text-sm">No proposed matches match the current filters.</td></tr>
+                <tr>
+                  <td colSpan={9} className="px-3 py-8 text-center text-muted-foreground text-sm">
+                    {filtersActive && totalLoaded > 0 ? (
+                      "No proposed matches match the current filters."
+                    ) : (
+                      <span>
+                        No AI proposed matches yet. Select a trade request above, run
+                        {" "}<span className="font-medium text-foreground">Interpret with AI</span>, then
+                        {" "}<span className="font-medium text-foreground">Source counterparties</span>.
+                        {" "}AI output is advisory only and does not contact anyone, create a POI,
+                        create a WaD, create a formal match, or mark any party verified.
+                      </span>
+                    )}
+                  </td>
+                </tr>
               ) : null}
               {rows.map((r) => {
                 const flags = Array.isArray(r.risk_flags) ? (r.risk_flags as unknown[]) : [];
