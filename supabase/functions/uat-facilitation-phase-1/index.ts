@@ -180,24 +180,36 @@ Deno.serve(async (req) => {
     const { data: bEvd, error: bEvdErr } = await bClient.from("facilitation_case_evidence").select("id").eq("case_id", caseId);
     push("orgB.rls_evidence_empty", !bEvdErr && (bEvd ?? []).length === 0, { rows: bEvd?.length ?? null, err: bEvdErr?.message });
 
-    // 9. Storage probe — Org A uploads a probe file, registers it, Org B attempts download
-    const aClient = createClient(URL_, ANON, { global: { headers: { Authorization: `Bearer ${A.access_token}` } } });
+    // 9. Storage probe via direct REST (avoids supabase-js storage SDK schema quirk in Deno).
     const probePath = `${caseId}/probe.txt`;
-    const probeBlob = new Blob([`uat probe ${t_start}`], { type: "text/plain" });
-    const upRes = await aClient.storage.from("facilitation-evidence").upload(probePath, probeBlob, { upsert: true });
-    push("orgA.storage_upload", !upRes.error, { error: upRes.error?.message });
+    const probeBody = `uat probe ${t_start}`;
+    const upResp = await fetch(`${URL_}/storage/v1/object/facilitation-evidence/${probePath}`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${A.access_token}`,
+        "apikey": ANON,
+        "Content-Type": "text/plain",
+        "x-upsert": "true",
+      },
+      body: probeBody,
+    });
+    const upOk = upResp.ok;
+    push("orgA.storage_upload", upOk, { status: upResp.status, body: upOk ? null : (await upResp.text()).slice(0, 200) });
 
-    if (!upRes.error) {
+    if (upOk) {
       const reg = await fnPost("register-facilitation-case-evidence", A.access_token, {
         case_id: caseId, storage_path: probePath, original_filename: "probe.txt",
-        mime_type: "text/plain", size_bytes: probeBlob.size,
+        mime_type: "text/plain", size_bytes: probeBody.length,
       });
       push("orgA.register_evidence", reg.status === 201, { status: reg.status });
 
-      const bDl = await bClient.storage.from("facilitation-evidence").download(probePath);
-      const bDenied = !!bDl.error || (bDl.data && bDl.data.size === 0);
-      push("orgB.storage_download_denied", bDenied, { error: bDl.error?.message, size: bDl.data?.size });
+      const bDl = await fetch(`${URL_}/storage/v1/object/facilitation-evidence/${probePath}`, {
+        headers: { "Authorization": `Bearer ${B.access_token}`, "apikey": ANON },
+      });
+      const bDenied = bDl.status === 400 || bDl.status === 403 || bDl.status === 404;
+      push("orgB.storage_download_denied", bDenied, { status: bDl.status, body: (await bDl.text()).slice(0, 200) });
     }
+
 
     // 10. Negative-control: no POI/WaD/match/token/notification rows for either org since t_start
     const nc: Record<string, any> = {};
