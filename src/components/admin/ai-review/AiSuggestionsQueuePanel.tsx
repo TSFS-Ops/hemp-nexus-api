@@ -25,7 +25,17 @@ import { AlertTriangle, Info, Clock, Filter as FilterIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const ROW_LIMIT = 200;
-const STALE_AFTER_DAYS = 7;
+const STALE_AFTER_DAYS = 30;
+// Active statuses eligible for the stale badge. Stale = active + age > 30 days.
+// UI-derived only — nothing here persists, auto-archives, or auto-deletes.
+const STALE_ACTIVE_STATUSES = new Set<string>([
+  "new",
+  "pending",
+  "under_review",
+  "needs_more_research",
+  "approved",
+  "escalated",
+]);
 
 type ProposedRow = {
   id: string;
