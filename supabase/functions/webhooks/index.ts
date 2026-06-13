@@ -191,11 +191,15 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Webhook not found", 404);
       }
 
+      // Security fix: explicit column allowlist. Never return secret_hash or
+      // previous_secret_hash to API callers (encrypted ciphertext is still
+      // sensitive; compromise of WEBHOOK_ENCRYPTION_KEY would retroactively
+      // decrypt captured responses). Mirrors the GET endpoint column list.
       const { data: webhook, error } = await supabase
         .from("webhook_endpoints")
         .update(body)
         .eq("id", webhookId)
-        .select()
+        .select("id, url, events, status, last_delivery_at, created_at, updated_at")
         .single();
 
       if (error) handleDatabaseError(error, requestId);
