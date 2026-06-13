@@ -81,8 +81,8 @@ type AuditRow = {
   id: string;
   action: string;
   created_at: string;
-  metadata: unknown;
-  actor_user_id: string | null;
+  details: unknown;
+  admin_user_id: string | null;
 };
 
 const STATUS_OPTIONS = [
