@@ -318,16 +318,22 @@ export function AiSuggestionsQueuePanel() {
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          Decision actions (approve, reject, archive, escalate, override, assign) are not enabled in
-          this surface yet. They arrive in the next batch.
+          Admin actions (approve, reject, archive, escalate, needs more research, under review,
+          assign, reviewer note, confidence override) are recorded as audit events under
+          <span className="font-mono"> ai_review.* </span>
+          codes and never trigger outreach, POI, WaD, or formal-match creation.
         </p>
       </div>
 
       <Sheet open={!!openId} onOpenChange={(o) => { if (!o) setOpenId(null); }}>
         <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-          {openRow ? <DetailDrawer row={openRow} /> : null}
+          {openRow ? <DetailDrawer row={openRow} onClose={() => setOpenId(null)} /> : null}
         </SheetContent>
       </Sheet>
+
+      <div className="border-t border-border">
+        <DoNotContactPanel />
+      </div>
     </section>
   );
 }
