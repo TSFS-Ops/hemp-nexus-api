@@ -1,28 +1,38 @@
 /**
- * HQ → AI Suggestions queue (Batch 2, read-only).
+ * HQ → AI Suggestions queue (Batch 3).
  *
  * Scope:
- *   - platform_admin only (route + RLS already gate this; panel adds no privilege).
+ *   - platform_admin only (route + RLS already gate this; UI adds no privilege).
  *   - Lists `ai_proposed_matches` with filters (status / confidence / fit / risk / stale).
- *   - Detail drawer shows the full proposal, source references (with fallback copy),
- *     risk flags, audit history from `audit_logs` filtered to `ai_review.*` actions.
+ *   - Detail drawer: full proposal, source references (with fallback copy), risk
+ *     flags, audit history from `audit_logs` filtered to `ai_review.*` actions.
  *   - Mandatory advisory banner: AI does not contact counterparties; nothing here
  *     creates a POI, WaD, formal match, or outreach. No "verified" wording.
- *   - All actions are read-only in Batch 2. Decision actions wait for Batch 3.
  *
- * Stale derivation: pending status + created_at older than 7 days. UI badge only;
- * not persisted, not used for any back-end gating.
+ * Batch 3 mutations (all routed through edge functions, never direct table writes):
+ *   - approve / reject (with reason) / archive / escalate (with reason)
+ *     / needs_more_research / under_review / assign / reviewer_note
+ *     / confidence_override → `ai-proposed-match-decision`
+ *   - Do-not-contact rule create / deactivate → `ai-do-not-contact-rules`
+ *
+ * Stale = active status + age > 30 days. UI-derived only — nothing persists,
+ * auto-archives, or auto-deletes.
  */
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Info, Clock, Filter as FilterIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertTriangle, Info, Clock, Filter as FilterIcon, Ban, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 const ROW_LIMIT = 200;
 const STALE_AFTER_DAYS = 30;
