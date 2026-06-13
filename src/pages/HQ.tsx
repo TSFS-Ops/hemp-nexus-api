@@ -80,6 +80,7 @@ import { AdminGovernanceExportPreviewPanel } from "@/components/admin/governance
 import { AdminBasicMemoryPanel } from "@/components/admin/AdminBasicMemoryPanel";
 import { AdminIdentityPanel } from "@/components/admin/AdminIdentityPanel";
 import { TenantBoundaryPanel } from "@/components/admin/TenantBoundaryPanel";
+import { AiSuggestionsQueuePanel } from "@/components/admin/ai-review/AiSuggestionsQueuePanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
