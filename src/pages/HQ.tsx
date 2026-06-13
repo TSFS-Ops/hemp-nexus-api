@@ -16,7 +16,8 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound, MoreHorizontal, Sparkles } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound, MoreHorizontal, Sparkles, LifeBuoy } from "lucide-react";
+import { FacilitationQueuePanel } from "@/components/facilitation/FacilitationQueuePanel";
 import { useLayoutEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
@@ -85,7 +86,7 @@ import { AiSuggestionsQueuePanel } from "@/components/admin/ai-review/AiSuggesti
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "ai-suggestions" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "facilitation" | "ai-suggestions" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -116,6 +117,11 @@ const TABS: {
   label: "Engagements",
   icon: Inbox,
   blurb: "POI hold-point queue · counterparty outreach and activation."
+}, {
+  id: "facilitation",
+  label: "Facilitation Queue",
+  icon: LifeBuoy,
+  blurb: "Unknown-counterparty facilitation cases · Phase 1 intake and admin triage. No outreach, no notifications, no POI/WaD/match/token mutations."
 }, {
   id: "ai-suggestions",
   label: "AI Suggestions",
@@ -819,6 +825,16 @@ function HQLayout() {
             </section>
           </TabsContent>
           <TabsContent value="engagements" className="mt-0 animate-section-enter"><EngagementsTab /></TabsContent>
+          <TabsContent value="facilitation" className="mt-0 animate-section-enter">
+            <section className="bg-card border border-border rounded-sm overflow-hidden">
+              <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
+                <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                  Facilitation Queue · Phase 1 · platform_admin / admin / compliance_analyst · no outreach · no notifications
+                </p>
+              </header>
+              <div className="p-3 sm:p-5"><FacilitationQueuePanel /></div>
+            </section>
+          </TabsContent>
           <TabsContent value="ai-suggestions" className="mt-0 animate-section-enter">
             <section className="bg-card border border-border rounded-sm overflow-hidden">
               <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">

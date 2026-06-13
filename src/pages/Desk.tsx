@@ -23,6 +23,8 @@ import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
 import { ComplianceProfile } from "@/components/desk/compliance/ComplianceProfile";
 import { BillingOverview } from "@/components/desk/billing/BillingOverview";
 import { NewTradeInitiation } from "@/components/desk/NewTradeInitiation";
+import { FacilitationCaseIntakeForm } from "@/components/facilitation/FacilitationCaseIntakeForm";
+import { FacilitationCaseMilestoneView } from "@/components/facilitation/FacilitationCaseMilestoneView";
 // Migrated from the retired /dashboard shell. Data hooks (useQuery, Supabase) are unchanged.
 import MatchDetails from "@/pages/MatchDetails";
 import TradeDealWizard from "@/pages/TradeDealWizard";
@@ -236,6 +238,8 @@ export default function Desk() {
                   <Route path="data-residency" element={<DataResidencyTab />} />
                 </Route>
                 <Route path="new-trade" element={<NewTradeInitiation />} />
+                <Route path="facilitation/new" element={<FacilitationCaseIntakeForm />} />
+                <Route path="facilitation/:id" element={<FacilitationCaseMilestoneView />} />
               </Routes>
             </DeskLayout>
           }
