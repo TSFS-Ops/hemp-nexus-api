@@ -456,10 +456,12 @@ function DetailDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void 
       </Section>
 
       {row.reviewer_note ? (
-        <Section title="Reviewer note (read-only)">
+        <Section title="Reviewer note">
           <Prose value={row.reviewer_note} />
         </Section>
       ) : null}
+
+      <ActionsBar row={row} onDone={onClose} />
 
       <Section title="Audit history">
         {auditQuery.isLoading ? (
