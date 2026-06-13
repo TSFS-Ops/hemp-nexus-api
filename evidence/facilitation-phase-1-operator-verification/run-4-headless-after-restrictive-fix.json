@@ -1,0 +1,169 @@
+{
+  "t_start": "2026-06-13T18:45:01.970Z",
+  "checks": [
+    {
+      "id": "provision.org_a",
+      "pass": true,
+      "detail": {
+        "user_id": "86571568-7433-4ff9-813b-c8c2b966bd25",
+        "org_id": "06f34183-1807-49a0-910e-a13e6fef6bd6"
+      }
+    },
+    {
+      "id": "provision.org_b",
+      "pass": true,
+      "detail": {
+        "user_id": "b7aee33b-3d26-454e-80b2-3ce5609d4898",
+        "org_id": "d3301c2f-58d9-4efd-90e9-26e28778483e"
+      }
+    },
+    {
+      "id": "provision.distinct_orgs",
+      "pass": true,
+      "detail": {
+        "org_a": "06f34183-1807-49a0-910e-a13e6fef6bd6",
+        "org_b": "d3301c2f-58d9-4efd-90e9-26e28778483e"
+      }
+    },
+    {
+      "id": "seed.trade_request",
+      "pass": true,
+      "detail": {
+        "trade_request_id": "b8e8baaf-4d4b-4b78-9160-217755b18415"
+      }
+    },
+    {
+      "id": "orgA.create_case",
+      "pass": true,
+      "detail": {
+        "status": 201,
+        "case_id": "174eef8c-6c81-417b-9517-929ced10376a",
+        "case_number": "FAC-2026-000006"
+      }
+    },
+    {
+      "id": "orgA.created_event_present",
+      "pass": true,
+      "detail": {
+        "row": {
+          "action": "facilitation_case.created",
+          "from_status": null,
+          "to_status": "new",
+          "actor_user_id": "86571568-7433-4ff9-813b-c8c2b966bd25"
+        }
+      }
+    },
+    {
+      "id": "orgA.get_case",
+      "pass": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "id": "orgB.get_case_denied",
+      "pass": true,
+      "detail": {
+        "status": 404,
+        "body": {
+          "error": "Not found"
+        }
+      }
+    },
+    {
+      "id": "orgB.list_excludes_a",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "total": 0,
+        "leaked": false
+      }
+    },
+    {
+      "id": "orgB.rls_cases_empty",
+      "pass": true,
+      "detail": {
+        "rows": 0
+      }
+    },
+    {
+      "id": "orgB.rls_events_empty",
+      "pass": true,
+      "detail": {
+        "rows": 0
+      }
+    },
+    {
+      "id": "orgB.rls_evidence_empty",
+      "pass": true,
+      "detail": {
+        "rows": 0
+      }
+    },
+    {
+      "id": "orgA.storage_upload",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "body": null
+      }
+    },
+    {
+      "id": "orgA.register_evidence",
+      "pass": true,
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "id": "orgB.storage_download_denied",
+      "pass": true,
+      "detail": {
+        "status": 400,
+        "body": "{\"statusCode\":\"404\",\"error\":\"not_found\",\"message\":\"Object not found\"}"
+      }
+    },
+    {
+      "id": "negative_control.no_side_effect_writes",
+      "pass": true,
+      "detail": {
+        "pois": 0,
+        "wads": 0,
+        "matches": 0,
+        "token_ledger": 0,
+        "token_purchases": 0,
+        "notification_dispatches": 0,
+        "email_send_log": 0,
+        "poi_engagements": 0,
+        "audit_logs.actor_in_test_users": 0
+      }
+    },
+    {
+      "id": "cleanup.case_closed",
+      "pass": true,
+      "detail": {
+        "case_id": "174eef8c-6c81-417b-9517-929ced10376a"
+      }
+    }
+  ],
+  "t_end": "2026-06-13T18:45:16.234Z",
+  "summary": {
+    "total": 17,
+    "passed": 17,
+    "failed": 0
+  },
+  "context": {
+    "case_id": "174eef8c-6c81-417b-9517-929ced10376a",
+    "trade_request_id": "b8e8baaf-4d4b-4b78-9160-217755b18415",
+    "org_a": {
+      "user_id": "86571568-7433-4ff9-813b-c8c2b966bd25",
+      "org_id": "06f34183-1807-49a0-910e-a13e6fef6bd6",
+      "email": "facilitation-org-a@test.izenzo.co.za"
+    },
+    "org_b": {
+      "user_id": "b7aee33b-3d26-454e-80b2-3ce5609d4898",
+      "org_id": "d3301c2f-58d9-4efd-90e9-26e28778483e",
+      "email": "facilitation-org-b@test.izenzo.co.za"
+    }
+  }
+}
