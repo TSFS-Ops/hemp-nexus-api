@@ -1,64 +1,81 @@
 {
   "verdict": "PHASE_1_PARTIAL — NOT CLIENT_UAT_READY",
   "harness": "supabase/functions/uat-facilitation-phase-1/index.ts",
-  "run_at": "2026-06-13T18:01:18Z",
-  "previous_run_at": "2026-06-13T17:49:08Z",
-  "totals": { "total": 15, "passed": 14, "failed": 1 },
-  "corrective_fix_applied": {
-    "id": "storage_policy_helper",
-    "migration": "20260613180059_facilitation_case_visible_helper",
-    "summary": "Added SECURITY DEFINER helper public.facilitation_case_visible(_user uuid, _case uuid) with REVOKE FROM PUBLIC + GRANT EXECUTE to authenticated/service_role; replaced fevd_select / fevd_insert storage policies to call the helper instead of an inline chained EXISTS … OR is_admin … OR has_role(...) expression. Same access boundary, simpler planner shape.",
-    "verification": "Helper returns true for Org A user + their case; new fevd_* policies registered on storage.objects (polcmd 'r' and 'a')."
-  },
+  "run_at": "2026-06-13T18:31:32Z",
+  "previous_runs": ["2026-06-13T17:49:08Z", "2026-06-13T18:01:18Z"],
+  "totals": { "total": 16, "passed": 15, "failed": 1 },
+  "corrective_fixes_applied": [
+    {
+      "id": "storage_policy_helper_facilitation",
+      "migration": "20260613180059_facilitation_case_visible_helper",
+      "summary": "SECURITY DEFINER helper public.facilitation_case_visible(...) terminates the inline EXISTS chain in fevd_select/fevd_insert.",
+      "scope": "facilitation-evidence storage policies only"
+    },
+    {
+      "id": "storage_policy_helper_match_document_recursion",
+      "migration": "20260613183111_match_document_visible_helper",
+      "summary": "Two SECURITY DEFINER helpers (public.match_document_visible, public.document_access_visible) break the recursive chain between match_documents and document_access SELECT policies. Same access boundary as the prior inline subqueries.",
+      "scope": "Pre-existing platform RLS recursion blocker, OUTSIDE the facilitation feature surface. Narrow corrective fix.",
+      "verification": {
+        "before": "postgres_logs 2026-06-13T18:01:26Z: 'infinite recursion detected in policy for relation \"document_access\"' on any authenticated storage INSERT",
+        "after": "orgA.storage_upload now returns 200 (previously 503 DatabaseInvalidObjectDefinition); orgA.register_evidence returns 201."
+      }
+    }
+  ],
   "checks_passed": [
     "provision.org_a",
     "provision.org_b",
     "provision.distinct_orgs",
     "seed.trade_request",
-    "orgA.create_case (status 201)",
-    "orgA.created_event_present (action=facilitation_case.created, from_status=null, to_status='new', actor_user_id=Org A user)",
-    "orgA.get_case (status 200)",
-    "orgB.get_case_denied (status 404)",
-    "orgB.list_excludes_a (status 200, total 0, leaked=false)",
+    "orgA.create_case (201)",
+    "orgA.created_event_present (facilitation_case.created, from_status=null, to_status='new')",
+    "orgA.get_case (200)",
+    "orgB.get_case_denied (404)",
+    "orgB.list_excludes_a (total=0, leaked=false)",
     "orgB.rls_cases_empty (0 rows)",
     "orgB.rls_events_empty (0 rows)",
     "orgB.rls_evidence_empty (0 rows)",
-    "negative_control.no_side_effect_writes (pois=0, wads=0, matches=0, token_ledger=0, token_purchases=0, notification_dispatches=0, email_send_log=0, poi_engagements=0, audit_logs.actor_in_test_users=0)",
-    "cleanup.case_closed"
+    "orgA.storage_upload (200) — RESOLVED by recursion fix",
+    "orgA.register_evidence (201)",
+    "negative_control.no_side_effect_writes (pois=0, wads=0, matches=0, token_ledger=0, token_purchases=0, notification_dispatches=0, email_send_log=0, poi_engagements=0, audit_logs.actor_in_test_users=0)"
   ],
-  "checks_failed": ["orgA.storage_upload"],
+  "checks_failed": ["orgB.storage_download_denied"],
   "remaining_failure": {
-    "id": "orgA.storage_upload",
-    "status_before_fix": 400,
-    "status_after_fix": 400,
-    "body": "{\"statusCode\":\"503\",\"error\":\"DatabaseInvalidObjectDefinition\",\"message\":\"The database schema is invalid or incompatible.\"}",
-    "root_cause_revised": "NOT the fevd_* policies. The helper fix is correctly in place and the new fevd_* policies compile cleanly. The actual root cause is a pre-existing infinite-recursion defect between two RLS policies that storage.objects must evaluate when ANY upload occurs:",
-    "recursion_chain": [
-      "storage.objects policy 'View match documents based on visibility' (SELECT) → subquery on public.match_documents",
-      "public.match_documents policy 'Document visibility based on ownership and sharing' (SELECT) → subquery on public.document_access",
-      "public.document_access policy 'Users can view access grants for their documents' (SELECT) → subquery on public.match_documents",
-      "→ infinite recursion"
+    "id": "orgB.storage_download_denied",
+    "observed": "Org B GET /storage/v1/object/facilitation-evidence/<orgA-case-id>/probe.txt returned HTTP 200 with the file body. Expected 400/403/404.",
+    "root_cause_revised": "NOT the fevd_select policy. fevd_select correctly evaluates facilitation_case_visible() and returns false for Org B. The leak comes from TWO PERMISSIVE storage.objects policies that were authored as 'deny on bucket X' but, because they are PERMISSIVE rather than RESTRICTIVE, act as broad allow-rules for every other bucket:",
+    "offending_policies": [
+      {
+        "policy": "Deny anon/auth on evidence-waiver-packets",
+        "polpermissive": true,
+        "roles": ["anon", "authenticated"],
+        "using_expr": "bucket_id <> 'evidence-waiver-packets'",
+        "effect": "Grants authenticated SELECT/INSERT/UPDATE/DELETE on every bucket EXCEPT evidence-waiver-packets — including facilitation-evidence, match-documents (visibility unrelated), kyc-documents folder paths, etc."
+      },
+      {
+        "policy": "No authenticated access to archived records",
+        "polpermissive": true,
+        "roles": ["authenticated"],
+        "using_expr": "bucket_id <> 'archived-records'",
+        "effect": "Same shape — broadly permissive on every non-archived bucket."
+      }
     ],
-    "log_evidence": "postgres_logs at 2026-06-13T18:01:26Z (mid-run): 'infinite recursion detected in policy for relation \"document_access\"'",
-    "scope_assessment": "This defect is OUTSIDE the facilitation feature surface. It pre-dates Phase 1 and affects any authenticated INSERT into storage.objects whose policy set includes the match-documents SELECT policy. Confirmed by the fact that the same orgA.storage_upload failure (with identical 503 DatabaseInvalidObjectDefinition body) was present BEFORE the helper migration — the helper fix did not regress anything; it correctly addressed the suspected planner shape, but the residual is a separate, pre-existing RLS recursion bug on match_documents ↔ document_access.",
-    "smallest_safe_fix_proposal": "Break the match_documents ↔ document_access cycle by extracting visibility into a single SECURITY DEFINER helper, e.g. public.match_document_visible(_user uuid, _document_id uuid) RETURNS boolean, and rewriting both 'Document visibility based on ownership and sharing' (on match_documents) and 'Users can view access grants for their documents' (on document_access) to call the helper. This is a corrective fix to a pre-existing defect and changes no behaviour beyond removing the recursion.",
-    "authorization_required": "User explicitly authorised ONLY the facilitation-evidence storage helper fix. This second fix touches match_documents/document_access policies, which are outside the facilitation scope grant. Awaiting explicit approval before applying."
-  },
-  "negative_controls_window": { "t_start": "2026-06-13T18:01:18.204Z", "t_end": "2026-06-13T18:01:27.401Z" },
-  "context": {
-    "case_id": "4b22aa5b-991b-4c19-8621-5c809396f4ce",
-    "case_number": "FAC-2026-000004",
-    "trade_request_id": "3df97303-a846-43f3-8782-86dd86f6d341",
-    "org_a": {
-      "user_id": "86571568-7433-4ff9-813b-c8c2b966bd25",
-      "org_id": "06f34183-1807-49a0-910e-a13e6fef6bd6",
-      "email": "facilitation-org-a@test.izenzo.co.za"
+    "scope_assessment": "Platform-wide storage RLS misconfiguration. Predates Phase 1. The intent was clearly RESTRICTIVE (deny on those buckets only), but the polpermissive=true authoring inverts that intent into a global allow-rule. Confirmed by pg_policy: polpermissive=true on both. This affects every private bucket whose SELECT is not separately gated by stricter RESTRICTIVE policies.",
+    "evidence": {
+      "harness_response": "orgB.storage_download_denied pass=false, status=200, body='uat probe 2026-06-13T18:31:32.334Z'",
+      "pg_policy_snapshot": "Captured in evidence/facilitation-phase-1-operator-verification/storage-policy-snapshot.json"
     },
-    "org_b": {
-      "user_id": "b7aee33b-3d26-454e-80b2-3ce5609d4898",
-      "org_id": "d3301c2f-58d9-4efd-90e9-26e28778483e",
-      "email": "facilitation-org-b@test.izenzo.co.za"
-    }
+    "smallest_safe_fix_proposal": "Convert the two policies to RESTRICTIVE so they constrain rather than permit. Example: DROP POLICY 'Deny anon/auth on evidence-waiver-packets' ON storage.objects; CREATE POLICY ... AS RESTRICTIVE FOR ALL TO anon, authenticated USING (bucket_id <> 'evidence-waiver-packets') WITH CHECK (bucket_id <> 'evidence-waiver-packets'); same for archived-records. NO change to per-bucket permissive allow policies. After conversion, only buckets with an explicit permissive allow (kyc-documents, match-documents via 'View match documents...', match-challenge-evidence, user-exports, admin-exports, facilitation-evidence via fevd_select) remain reachable — which is the documented intent.",
+    "authorization_required": "Out of facilitation scope. Touches platform-wide storage.objects policies, would tighten access for every private bucket. Must be approved as a separate corrective platform fix. NOT applied during this verification pass."
+  },
+  "negative_controls_window": { "t_start": "2026-06-13T18:31:32Z", "t_end": "2026-06-13T18:31:38Z" },
+  "negative_control_remained_clean": true,
+  "context": {
+    "case_id": "f35d0054-0341-43d4-bf47-042d69e18ab4",
+    "case_number": "FAC-2026-000005",
+    "trade_request_id": "ea8a6aed-44c5-4891-b73a-8be6f86957fb",
+    "org_a": { "user_id": "86571568-7433-4ff9-813b-c8c2b966bd25", "org_id": "06f34183-1807-49a0-910e-a13e6fef6bd6", "email": "facilitation-org-a@test.izenzo.co.za" },
+    "org_b": { "user_id": "b7aee33b-3d26-454e-80b2-3ce5609d4898", "org_id": "d3301c2f-58d9-4efd-90e9-26e28778483e", "email": "facilitation-org-b@test.izenzo.co.za" }
   },
   "platform_admin_manual_checklist": "evidence/facilitation-phase-1-operator-verification/platform-admin-manual-checklist.md"
 }
