@@ -35,6 +35,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { AiOutreachDraftV2Panel } from "./AiOutreachDraftV2Panel";
 import { AiPoiIntelligencePanel } from "./AiPoiIntelligencePanel";
+import { AiSuggestionLauncher } from "./AiSuggestionLauncher";
 
 const ROW_LIMIT = 200;
 const STALE_AFTER_DAYS = 30;
