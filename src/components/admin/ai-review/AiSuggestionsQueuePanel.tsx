@@ -379,15 +379,18 @@ function DetailDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void 
   const auditQuery = useQuery({
     queryKey: ["ai-proposed-match-audit", row.id],
     queryFn: async (): Promise<AuditRow[]> => {
+      // Audit drawer reads from admin_audit_logs (canonical sink for
+      // ai_review.* events). target_id is the proposed_match id; details
+      // holds the structured envelope; admin_user_id is the actor.
       const { data, error } = await supabase
-        .from("audit_logs")
-        .select("id, action, created_at, metadata, actor_user_id")
-        .eq("entity_id", row.id)
+        .from("admin_audit_logs")
+        .select("id, action, created_at, details, admin_user_id")
+        .eq("target_id", row.id)
         .like("action", "ai_review.%")
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
-      return (data ?? []) as AuditRow[];
+      return (data ?? []) as unknown as AuditRow[];
     },
   });
 
