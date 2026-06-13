@@ -59,7 +59,7 @@ type AuditRow = {
   action: string;
   created_at: string;
   metadata: unknown;
-  user_id: string | null;
+  actor_user_id: string | null;
 };
 
 const STATUS_OPTIONS = [
