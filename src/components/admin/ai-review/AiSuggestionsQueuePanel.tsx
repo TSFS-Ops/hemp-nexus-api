@@ -109,7 +109,7 @@ const STALE_OPTIONS = [
 ] as const;
 
 function isStale(row: ProposedRow): boolean {
-  if (row.status !== "pending") return false;
+  if (!STALE_ACTIVE_STATUSES.has(row.status)) return false;
   const ageMs = Date.now() - new Date(row.created_at).getTime();
   return ageMs > STALE_AFTER_DAYS * 24 * 60 * 60 * 1000;
 }
