@@ -65,6 +65,10 @@ const ALLOWLIST_ROUNDED_XL = new Set([
 const ALLOWLIST_SPARKLES = new Set([
   "src/components/admin/VerificationWalkthroughCard.tsx",
   "src/components/admin/TestModeBypassPanel.tsx",
+  // AI Counterparty Intelligence — platform_admin-only operator tools
+  "src/components/admin/ai-review/AiSuggestionLauncher.tsx",
+  "src/components/admin/ai-review/AiPoiIntelligencePanel.tsx",
+  "src/pages/HQ.tsx",
 ]);
 
 const FORBIDDEN_PATTERNS = [
