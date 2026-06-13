@@ -1,28 +1,24 @@
 {
   "verdict": "PHASE_1_PARTIAL — NOT CLIENT_UAT_READY",
   "harness": "supabase/functions/uat-facilitation-phase-1/index.ts",
-  "run_at": "2026-06-13T17:49:08Z",
+  "run_at": "2026-06-13T18:01:18Z",
+  "previous_run_at": "2026-06-13T17:49:08Z",
   "totals": { "total": 15, "passed": 14, "failed": 1 },
-  "blocking_defect_fixed_during_pass": {
-    "id": "missing_grants_facilitation_tables",
-    "evidence": "information_schema.role_table_grants returned 0 rows for facilitation_cases / facilitation_case_events / facilitation_case_evidence",
-    "fix": "Applied migration granting SELECT/INSERT/UPDATE to authenticated and ALL to service_role on the three facilitation tables. Without this the storage RLS policy fevd_select/fevd_insert (which subqueries facilitation_cases) could not be evaluated by the authenticated role.",
-    "status": "applied"
-  },
-  "remaining_failure": {
-    "id": "orgA.storage_upload",
-    "status": 400,
-    "body": "{\"statusCode\":\"503\",\"error\":\"DatabaseInvalidObjectDefinition\",\"message\":\"The database schema is invalid or incompatible.\"}",
-    "likely_cause": "Storage service's policy planner is failing to compile the EXISTS subquery against public.facilitation_cases for the authenticated role even after grants. has_role/is_admin function privileges and table grants are now in place (verified via has_table_privilege/has_function_privilege), so the residual is most likely a planner-side issue with the SECURITY DEFINER subquery being invoked from the storage schema. Needs further root-cause: either (a) simplify the storage policy to call a single SECURITY DEFINER helper (e.g. has_facilitation_case_access(case_id)) that returns boolean, OR (b) check storage role search_path / type visibility for public.app_role.",
-    "smallest_safe_fix": "Add a SECURITY DEFINER helper public.facilitation_case_visible(_user uuid, _case uuid) returns boolean and rewrite the two fevd_* storage policies to call it. Confined to a single migration; does not change feature scope, does not introduce any send path."
+  "corrective_fix_applied": {
+    "id": "storage_policy_helper",
+    "migration": "20260613180059_facilitation_case_visible_helper",
+    "summary": "Added SECURITY DEFINER helper public.facilitation_case_visible(_user uuid, _case uuid) with REVOKE FROM PUBLIC + GRANT EXECUTE to authenticated/service_role; replaced fevd_select / fevd_insert storage policies to call the helper instead of an inline chained EXISTS … OR is_admin … OR has_role(...) expression. Same access boundary, simpler planner shape.",
+    "verification": "Helper returns true for Org A user + their case; new fevd_* policies registered on storage.objects (polcmd 'r' and 'a')."
   },
   "checks_passed": [
-    "provision.org_a", "provision.org_b", "provision.distinct_orgs",
+    "provision.org_a",
+    "provision.org_b",
+    "provision.distinct_orgs",
     "seed.trade_request",
     "orgA.create_case (status 201)",
     "orgA.created_event_present (action=facilitation_case.created, from_status=null, to_status='new', actor_user_id=Org A user)",
     "orgA.get_case (status 200)",
-    "orgB.get_case_denied (status 404, not 500)",
+    "orgB.get_case_denied (status 404)",
     "orgB.list_excludes_a (status 200, total 0, leaked=false)",
     "orgB.rls_cases_empty (0 rows)",
     "orgB.rls_events_empty (0 rows)",
@@ -31,10 +27,28 @@
     "cleanup.case_closed"
   ],
   "checks_failed": ["orgA.storage_upload"],
+  "remaining_failure": {
+    "id": "orgA.storage_upload",
+    "status_before_fix": 400,
+    "status_after_fix": 400,
+    "body": "{\"statusCode\":\"503\",\"error\":\"DatabaseInvalidObjectDefinition\",\"message\":\"The database schema is invalid or incompatible.\"}",
+    "root_cause_revised": "NOT the fevd_* policies. The helper fix is correctly in place and the new fevd_* policies compile cleanly. The actual root cause is a pre-existing infinite-recursion defect between two RLS policies that storage.objects must evaluate when ANY upload occurs:",
+    "recursion_chain": [
+      "storage.objects policy 'View match documents based on visibility' (SELECT) → subquery on public.match_documents",
+      "public.match_documents policy 'Document visibility based on ownership and sharing' (SELECT) → subquery on public.document_access",
+      "public.document_access policy 'Users can view access grants for their documents' (SELECT) → subquery on public.match_documents",
+      "→ infinite recursion"
+    ],
+    "log_evidence": "postgres_logs at 2026-06-13T18:01:26Z (mid-run): 'infinite recursion detected in policy for relation \"document_access\"'",
+    "scope_assessment": "This defect is OUTSIDE the facilitation feature surface. It pre-dates Phase 1 and affects any authenticated INSERT into storage.objects whose policy set includes the match-documents SELECT policy. Confirmed by the fact that the same orgA.storage_upload failure (with identical 503 DatabaseInvalidObjectDefinition body) was present BEFORE the helper migration — the helper fix did not regress anything; it correctly addressed the suspected planner shape, but the residual is a separate, pre-existing RLS recursion bug on match_documents ↔ document_access.",
+    "smallest_safe_fix_proposal": "Break the match_documents ↔ document_access cycle by extracting visibility into a single SECURITY DEFINER helper, e.g. public.match_document_visible(_user uuid, _document_id uuid) RETURNS boolean, and rewriting both 'Document visibility based on ownership and sharing' (on match_documents) and 'Users can view access grants for their documents' (on document_access) to call the helper. This is a corrective fix to a pre-existing defect and changes no behaviour beyond removing the recursion.",
+    "authorization_required": "User explicitly authorised ONLY the facilitation-evidence storage helper fix. This second fix touches match_documents/document_access policies, which are outside the facilitation scope grant. Awaiting explicit approval before applying."
+  },
+  "negative_controls_window": { "t_start": "2026-06-13T18:01:18.204Z", "t_end": "2026-06-13T18:01:27.401Z" },
   "context": {
-    "case_id": "1c2ca2f0-88ca-46a4-b0b7-7df6e7690c5b",
-    "case_number": "FAC-2026-000003",
-    "trade_request_id": "4c26e6ed-6a0e-4d87-86ff-0a5f37128f5a",
+    "case_id": "4b22aa5b-991b-4c19-8621-5c809396f4ce",
+    "case_number": "FAC-2026-000004",
+    "trade_request_id": "3df97303-a846-43f3-8782-86dd86f6d341",
     "org_a": {
       "user_id": "86571568-7433-4ff9-813b-c8c2b966bd25",
       "org_id": "06f34183-1807-49a0-910e-a13e6fef6bd6",
@@ -46,6 +60,5 @@
       "email": "facilitation-org-b@test.izenzo.co.za"
     }
   },
-  "negative_controls_window": { "t_start": "2026-06-13T17:49:08.478Z", "t_end": "2026-06-13T17:49:12.529Z" },
   "platform_admin_manual_checklist": "evidence/facilitation-phase-1-operator-verification/platform-admin-manual-checklist.md"
 }
