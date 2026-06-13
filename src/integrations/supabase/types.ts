@@ -11198,6 +11198,10 @@ export type Database = {
           row_count: number
         }[]
       }
+      document_access_visible: {
+        Args: { _document_id: string; _user: string }
+        Returns: boolean
+      }
       dry_run_legacy_reconciliation: { Args: never; Returns: Json }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
@@ -11365,6 +11369,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      match_document_visible: {
+        Args: { _document_id: string; _user: string }
+        Returns: boolean
       }
       move_to_dlq: {
         Args: {
