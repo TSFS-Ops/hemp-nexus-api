@@ -1,0 +1,234 @@
+/**
+ * ai-proposed-match-decision
+ * ──────────────────────────────────────────────────────────────────────
+ * AI Counterparty Intelligence & Match Review — Batch 3.
+ *
+ * Single gated edge function for all admin decisions on `ai_proposed_matches`.
+ * platform_admin only. Every action writes an `ai_review.*` audit.
+ *
+ * Supported actions:
+ *   - approve                  → status='approved'
+ *   - reject                   → status='rejected' (rejection_reason required)
+ *   - archive                  → status='archived'
+ *   - escalate                 → status='escalated' (escalation_reason required)
+ *   - needs_more_research      → status='needs_more_research'
+ *   - under_review             → status='under_review'
+ *   - assign                   → set assigned_reviewer_id
+ *   - reviewer_note            → set reviewer_note
+ *   - confidence_override      → set confidence_override + reason
+ *
+ * Hard guarantees:
+ *   - No outreach. No send/dispatch. No POI / WaD / formal-match write.
+ *   - No "verified" claim is created or implied by any action.
+ *   - Status transitions only into the existing CHECK enum on the table.
+ */
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { authenticateRequest, requireRole } from "../_shared/auth.ts";
+import { writeAdminAudit, extractIp, extractUserAgent } from "../_shared/admin-audit.ts";
+import { AI_REVIEW_AUDIT_NAMES } from "../_shared/ai-review-audit.ts";
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+
+const ACTIONS = [
+  "approve",
+  "reject",
+  "archive",
+  "escalate",
+  "needs_more_research",
+  "under_review",
+  "assign",
+  "reviewer_note",
+  "confidence_override",
+] as const;
+type Action = (typeof ACTIONS)[number];
+
+const TERMINAL = new Set(["approved", "rejected", "archived"]);
+const CONFIDENCE = new Set(["low", "medium", "high"]);
+
+serve(async (req) => {
+  const pre = handleCorsPreflight(req);
+  if (pre) return pre;
+  return withCors(req, await _handle(req));
+});
+
+async function _handle(req: Request): Promise<Response> {
+  const requestId = crypto.randomUUID();
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const admin = createClient(supabaseUrl, serviceKey);
+
+  let userId: string | null = null;
+  let action: Action | null = null;
+  let proposedId: string | null = null;
+
+  try {
+    const ctx = await authenticateRequest(req, supabaseUrl, serviceKey);
+    requireRole(ctx, "platform_admin");
+    userId = ctx.userId;
+
+    const body = await req.json().catch(() => ({}));
+    proposedId = typeof body?.proposed_match_id === "string" ? body.proposed_match_id : null;
+    action = ACTIONS.includes(body?.action) ? (body.action as Action) : null;
+
+    if (!proposedId) return json(400, { error: "proposed_match_id is required" });
+    if (!action) return json(400, { error: `action must be one of: ${ACTIONS.join(", ")}` });
+
+    const reason: string | null = typeof body?.reason === "string" ? body.reason.trim() : null;
+    const note: string | null = typeof body?.note === "string" ? body.note : null;
+    const assigneeId: string | null = typeof body?.assignee_id === "string" ? body.assignee_id : null;
+    const overrideLevel: string | null = typeof body?.confidence_override === "string" ? body.confidence_override : null;
+
+    // Load current row.
+    const { data: row, error: loadErr } = await admin
+      .from("ai_proposed_matches")
+      .select("*")
+      .eq("id", proposedId)
+      .maybeSingle();
+    if (loadErr) throw loadErr;
+    if (!row) return json(404, { error: "proposed_match not found" });
+
+    // Reject transitions out of terminal states (except archive of a non-archived row,
+    // which we still permit). Once a match is approved/rejected/archived, only archive
+    // remains as a follow-up admin action.
+    if (TERMINAL.has(row.status) && action !== "archive" && action !== "reviewer_note") {
+      return json(409, {
+        error: `proposed_match is in terminal status '${row.status}'; no further decisions allowed`,
+      });
+    }
+
+    const now = new Date().toISOString();
+    const patch: Record<string, unknown> = { updated_at: now };
+    let auditAction: string;
+    const auditExtra: Record<string, unknown> = { prior_status: row.status };
+
+    switch (action) {
+      case "approve":
+        patch.status = "approved";
+        patch.approved_at = now;
+        patch.reviewed_by = userId;
+        patch.reviewed_at = now;
+        if (note) patch.reviewer_note = note;
+        auditAction = "ai_review.proposed_match_approved";
+        break;
+      case "reject":
+        if (!reason) return json(400, { error: "reason is required for reject" });
+        patch.status = "rejected";
+        patch.rejected_at = now;
+        patch.reviewed_by = userId;
+        patch.reviewed_at = now;
+        patch.rejection_reason = reason;
+        if (note) patch.reviewer_note = note;
+        auditAction = "ai_review.proposed_match_rejected";
+        auditExtra.reason = reason;
+        break;
+      case "archive":
+        patch.status = "archived";
+        patch.archived_at = now;
+        if (reason) auditExtra.reason = reason;
+        auditAction = "ai_review.proposed_match_archived";
+        break;
+      case "escalate":
+        if (!reason) return json(400, { error: "reason is required for escalate" });
+        patch.status = "escalated";
+        patch.escalation_required = true;
+        patch.escalation_reason = reason;
+        auditAction = "ai_review.proposed_match_escalated";
+        auditExtra.reason = reason;
+        break;
+      case "needs_more_research":
+        patch.status = "needs_more_research";
+        if (note) patch.reviewer_note = note;
+        auditAction = "ai_review.proposed_match_needs_more_research";
+        break;
+      case "under_review":
+        patch.status = "under_review";
+        patch.reviewed_by = userId;
+        patch.reviewed_at = now;
+        auditAction = "ai_review.proposed_match_reviewed";
+        break;
+      case "assign":
+        if (!assigneeId) return json(400, { error: "assignee_id is required for assign" });
+        patch.assigned_reviewer_id = assigneeId;
+        auditAction = "ai_review.proposed_match_reviewed";
+        auditExtra.assignee_id = assigneeId;
+        break;
+      case "reviewer_note":
+        if (!note || !note.trim()) return json(400, { error: "note is required for reviewer_note" });
+        patch.reviewer_note = note;
+        auditAction = "ai_review.proposed_match_reviewed";
+        auditExtra.note_set = true;
+        break;
+      case "confidence_override":
+        if (!overrideLevel || !CONFIDENCE.has(overrideLevel)) {
+          return json(400, { error: "confidence_override must be one of low|medium|high" });
+        }
+        if (!reason) return json(400, { error: "reason is required for confidence_override" });
+        patch.confidence_override = overrideLevel;
+        patch.confidence_override_reason = reason;
+        auditAction = "ai_review.confidence_overridden";
+        auditExtra.prior_confidence = row.confidence_override ?? row.confidence_level;
+        auditExtra.new_confidence = overrideLevel;
+        auditExtra.reason = reason;
+        break;
+      default:
+        return json(400, { error: "unsupported action" });
+    }
+
+    if (!AI_REVIEW_AUDIT_NAMES.includes(auditAction as never)) {
+      return json(500, { error: `audit name not canonical: ${auditAction}` });
+    }
+
+    const { data: updated, error: upErr } = await admin
+      .from("ai_proposed_matches")
+      .update(patch)
+      .eq("id", proposedId)
+      .select()
+      .maybeSingle();
+    if (upErr) throw upErr;
+
+    await writeAdminAudit({
+      admin,
+      action: auditAction,
+      status: "success",
+      actorUserId: userId,
+      targetType: "ai_proposed_match",
+      targetId: proposedId,
+      requestId,
+      endpoint: "ai-proposed-match-decision",
+      ipAddress: extractIp(req),
+      userAgent: extractUserAgent(req),
+      extra: auditExtra,
+    });
+
+    return json(200, { proposed_match: updated });
+  } catch (e: unknown) {
+    const err = e as { statusCode?: number; message?: string };
+    console.error("[ai-proposed-match-decision] error:", err);
+    const status = err?.statusCode ?? 500;
+    try {
+      await writeAdminAudit({
+        admin,
+        action: "ai_review.admin_override_applied",
+        status: "error",
+        actorUserId: userId,
+        targetType: "ai_proposed_match",
+        targetId: proposedId ?? undefined,
+        requestId,
+        endpoint: "ai-proposed-match-decision",
+        reason: err?.message ?? "unknown",
+        ipAddress: extractIp(req),
+        userAgent: extractUserAgent(req),
+        extra: { action },
+      });
+    } catch (_) {
+      // never let audit failure mask the real error
+    }
+    return json(status, { error: err?.message ?? "internal error" });
+  }
+}
