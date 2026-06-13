@@ -1,0 +1,51 @@
+{
+  "verdict": "PHASE_1_PARTIAL — NOT CLIENT_UAT_READY",
+  "harness": "supabase/functions/uat-facilitation-phase-1/index.ts",
+  "run_at": "2026-06-13T17:49:08Z",
+  "totals": { "total": 15, "passed": 14, "failed": 1 },
+  "blocking_defect_fixed_during_pass": {
+    "id": "missing_grants_facilitation_tables",
+    "evidence": "information_schema.role_table_grants returned 0 rows for facilitation_cases / facilitation_case_events / facilitation_case_evidence",
+    "fix": "Applied migration granting SELECT/INSERT/UPDATE to authenticated and ALL to service_role on the three facilitation tables. Without this the storage RLS policy fevd_select/fevd_insert (which subqueries facilitation_cases) could not be evaluated by the authenticated role.",
+    "status": "applied"
+  },
+  "remaining_failure": {
+    "id": "orgA.storage_upload",
+    "status": 400,
+    "body": "{\"statusCode\":\"503\",\"error\":\"DatabaseInvalidObjectDefinition\",\"message\":\"The database schema is invalid or incompatible.\"}",
+    "likely_cause": "Storage service's policy planner is failing to compile the EXISTS subquery against public.facilitation_cases for the authenticated role even after grants. has_role/is_admin function privileges and table grants are now in place (verified via has_table_privilege/has_function_privilege), so the residual is most likely a planner-side issue with the SECURITY DEFINER subquery being invoked from the storage schema. Needs further root-cause: either (a) simplify the storage policy to call a single SECURITY DEFINER helper (e.g. has_facilitation_case_access(case_id)) that returns boolean, OR (b) check storage role search_path / type visibility for public.app_role.",
+    "smallest_safe_fix": "Add a SECURITY DEFINER helper public.facilitation_case_visible(_user uuid, _case uuid) returns boolean and rewrite the two fevd_* storage policies to call it. Confined to a single migration; does not change feature scope, does not introduce any send path."
+  },
+  "checks_passed": [
+    "provision.org_a", "provision.org_b", "provision.distinct_orgs",
+    "seed.trade_request",
+    "orgA.create_case (status 201)",
+    "orgA.created_event_present (action=facilitation_case.created, from_status=null, to_status='new', actor_user_id=Org A user)",
+    "orgA.get_case (status 200)",
+    "orgB.get_case_denied (status 404, not 500)",
+    "orgB.list_excludes_a (status 200, total 0, leaked=false)",
+    "orgB.rls_cases_empty (0 rows)",
+    "orgB.rls_events_empty (0 rows)",
+    "orgB.rls_evidence_empty (0 rows)",
+    "negative_control.no_side_effect_writes (pois=0, wads=0, matches=0, token_ledger=0, token_purchases=0, notification_dispatches=0, email_send_log=0, poi_engagements=0, audit_logs.actor_in_test_users=0)",
+    "cleanup.case_closed"
+  ],
+  "checks_failed": ["orgA.storage_upload"],
+  "context": {
+    "case_id": "1c2ca2f0-88ca-46a4-b0b7-7df6e7690c5b",
+    "case_number": "FAC-2026-000003",
+    "trade_request_id": "4c26e6ed-6a0e-4d87-86ff-0a5f37128f5a",
+    "org_a": {
+      "user_id": "86571568-7433-4ff9-813b-c8c2b966bd25",
+      "org_id": "06f34183-1807-49a0-910e-a13e6fef6bd6",
+      "email": "facilitation-org-a@test.izenzo.co.za"
+    },
+    "org_b": {
+      "user_id": "b7aee33b-3d26-454e-80b2-3ce5609d4898",
+      "org_id": "d3301c2f-58d9-4efd-90e9-26e28778483e",
+      "email": "facilitation-org-b@test.izenzo.co.za"
+    }
+  },
+  "negative_controls_window": { "t_start": "2026-06-13T17:49:08.478Z", "t_end": "2026-06-13T17:49:12.529Z" },
+  "platform_admin_manual_checklist": "evidence/facilitation-phase-1-operator-verification/platform-admin-manual-checklist.md"
+}
