@@ -205,8 +205,18 @@ export function AiSuggestionsQueuePanel() {
     [openId, rows, listQuery.data],
   );
 
+  const totalLoaded = listQuery.data?.length ?? 0;
+  const filtersActive =
+    statusFilter !== "pending" ||
+    confidenceFilter !== "all" ||
+    fitFilter !== "all" ||
+    riskFilter !== "all" ||
+    staleFilter !== "all";
+
   return (
-    <section className="bg-card border border-border rounded-sm overflow-hidden">
+    <div className="space-y-4">
+      <AiSuggestionLauncher />
+      <section className="bg-card border border-border rounded-sm overflow-hidden">
       <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
         <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
           AI Suggestions · ai_proposed_matches · platform_admin only · read-only review queue
