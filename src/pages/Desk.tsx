@@ -238,6 +238,8 @@ export default function Desk() {
                   <Route path="data-residency" element={<DataResidencyTab />} />
                 </Route>
                 <Route path="new-trade" element={<NewTradeInitiation />} />
+                <Route path="facilitation/new" element={<FacilitationCaseIntakeForm />} />
+                <Route path="facilitation/:id" element={<FacilitationCaseMilestoneView />} />
               </Routes>
             </DeskLayout>
           }
