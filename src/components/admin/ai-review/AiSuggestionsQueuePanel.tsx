@@ -463,6 +463,8 @@ function DetailDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void 
 
       <ActionsBar row={row} onDone={onClose} />
 
+      <AiOutreachDraftV2Panel proposedMatchId={row.id} parentStatus={row.status} />
+
       <Section title="Audit history">
         {auditQuery.isLoading ? (
           <p className="text-[12.5px] text-muted-foreground">Loading…</p>
