@@ -28,6 +28,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { clampSubject } from "../_shared/email-subject.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { writeAdminAudit, extractIp, extractUserAgent } from "../_shared/admin-audit.ts";
 
@@ -202,7 +203,7 @@ async function _handle(req: Request): Promise<Response> {
     let bodyText = "";
     try {
       const parsed = JSON.parse(args);
-      subject = String(parsed?.subject ?? "").slice(0, 300);
+      subject = clampSubject(String(parsed?.subject ?? ""));
       bodyText = String(parsed?.body ?? "").slice(0, 6000);
     } catch {
       return json(502, { error: "AI returned malformed draft payload" });
