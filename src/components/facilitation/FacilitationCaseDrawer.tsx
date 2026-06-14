@@ -98,6 +98,15 @@ export const FacilitationCaseDrawer: React.FC<{
         {loading && <p className="mt-4 text-sm text-slate-500">Loading…</p>}
 
         {data && (
+          <Tabs defaultValue="triage" className="mt-4">
+            <TabsList>
+              <TabsTrigger value="triage">Triage</TabsTrigger>
+              <TabsTrigger value="outreach">Outreach</TabsTrigger>
+            </TabsList>
+            <TabsContent value="outreach" className="mt-4">
+              {caseId && <FacilitationOutreachTab caseId={caseId} />}
+            </TabsContent>
+            <TabsContent value="triage" className="mt-4">
           <div className="mt-4 space-y-6 text-sm">
             <section>
               <h3 className="font-medium mb-2">Status</h3>
