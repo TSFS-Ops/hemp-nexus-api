@@ -831,10 +831,16 @@ function HQLayout() {
             <section className="bg-card border border-border rounded-sm overflow-hidden">
               <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
                 <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
-                  Facilitation Queue · Phase 1 · platform_admin / admin / compliance_analyst · no outreach · no notifications
+                  Facilitation · Phase 1 queue + Phase 2 outreach (templates · DNC · escalations) · HQ only
                 </p>
               </header>
-              <div className="p-3 sm:p-5"><FacilitationQueuePanel /></div>
+              <div className="p-3 sm:p-5 space-y-6">
+                <FacilitationQueuePanel />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="border border-border rounded-sm p-3"><FacilitationOutreachTemplatePanel /></div>
+                  <div className="border border-border rounded-sm p-3"><FacilitationDncRulePanel /></div>
+                </div>
+              </div>
             </section>
           </TabsContent>
           <TabsContent value="ai-suggestions" className="mt-0 animate-section-enter">
