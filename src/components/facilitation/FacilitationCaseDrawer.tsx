@@ -22,6 +22,43 @@ import { FacilitationOutreachTab } from "@/components/facilitation-outreach/Faci
 
 type CaseRow = Record<string, unknown> & { id: string; case_number: string; internal_status: string; case_owner_id: string | null };
 
+type Owner = { id: string; full_name: string | null; email: string | null; roles: string[] };
+
+const OwnerPicker: React.FC<{ value: string; onChange: (v: string) => void; onSave: () => void }> = ({ value, onChange, onSave }) => {
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("facilitation-case-eligible-owners", { body: {} });
+        if (error) throw error;
+        if (!cancelled) setOwners(((data as { owners?: Owner[] })?.owners ?? []));
+      } catch (err: unknown) {
+        if (!cancelled) toast.error(err instanceof Error ? err.message : "Failed to load owners");
+      } finally { if (!cancelled) setLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  const label = (o: Owner) => o.full_name || o.email || o.id;
+  return (
+    <div className="flex gap-2">
+      <Select value={value || "__none__"} onValueChange={(v) => onChange(v === "__none__" ? "" : v)}>
+        <SelectTrigger><SelectValue placeholder={loading ? "Loading…" : "Pick an eligible owner"} /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">— Unassigned —</SelectItem>
+          {owners.map((o) => (
+            <SelectItem key={o.id} value={o.id}>{label(o)} <span className="text-slate-400">· {o.roles.join(", ")}</span></SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button onClick={onSave} variant="outline">Save</Button>
+    </div>
+  );
+};
+
+
 export const FacilitationCaseDrawer: React.FC<{
   caseId: string | null;
   onClose: () => void;
@@ -135,10 +172,7 @@ export const FacilitationCaseDrawer: React.FC<{
 
             <section className="space-y-2">
               <h3 className="font-medium">Assign owner</h3>
-              <div className="flex gap-2">
-                <Input placeholder="Owner user_id (UUID) or leave empty to clear" value={ownerInput} onChange={(e) => setOwnerInput(e.target.value)} />
-                <Button onClick={doAssign} variant="outline">Save</Button>
-              </div>
+              <OwnerPicker value={ownerInput} onChange={setOwnerInput} onSave={doAssign} />
             </section>
 
             <section className="space-y-2">

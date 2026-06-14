@@ -36,6 +36,7 @@ export const FacilitationCaseMilestoneView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [kase, setKase] = useState<FacilitationCase | null>(null);
   const [events, setEvents] = useState<Array<{ id: string; action: string; created_at: string; payload: Record<string, unknown> | null }>>([]);
+  const [coarseOutreach, setCoarseOutreach] = useState<"not_started" | "in_progress" | "sent" | "blocked">("not_started");
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
 
@@ -45,9 +46,10 @@ export const FacilitationCaseMilestoneView: React.FC = () => {
     try {
       const { data, error } = await supabase.functions.invoke("get-facilitation-case", { body: { case_id: id } });
       if (error) throw error;
-      const payload = data as { case: FacilitationCase; events: typeof events };
+      const payload = data as { case: FacilitationCase; events: typeof events; coarse_outreach_state?: typeof coarseOutreach };
       setKase(payload.case);
       setEvents(payload.events ?? []);
+      setCoarseOutreach(payload.coarse_outreach_state ?? "not_started");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load case";
       toast.error(msg);
@@ -96,6 +98,7 @@ export const FacilitationCaseMilestoneView: React.FC = () => {
           <Badge variant="secondary">{USER_FACING_LABELS[kase.user_facing_status] ?? kase.user_facing_status}</Badge>
           <Badge variant="outline">Urgency: {kase.urgency}</Badge>
           <Badge variant="outline">{kase.role === "buyer" ? "You are the buyer" : "You are the seller"}</Badge>
+          <Badge variant={coarseOutreach === "blocked" ? "destructive" : coarseOutreach === "sent" ? "default" : "outline"}>Outreach: {coarseOutreach.replace("_", " ")}</Badge>
         </div>
       </header>
 
