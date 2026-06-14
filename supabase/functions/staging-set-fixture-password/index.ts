@@ -149,7 +149,8 @@ Deno.serve(async (req) => {
       .insert({
         email,
         user_id: userId,
-        password_plaintext: password,
+        // password_plaintext column removed for security — password is
+        // returned to the caller exactly once below and not persisted.
         reveal_token_hash: tokenHash,
         expires_at: expiresAt,
         created_by: caller.id,
@@ -171,10 +172,14 @@ Deno.serve(async (req) => {
       },
     }).then(() => {}, () => {}); // best-effort; never block on audit
 
+    // SECURITY: password is delivered out-of-band ONCE at generation time and
+    // is never persisted. The reveal endpoint can no longer return it; the
+    // caller must capture and forward this value immediately.
     return json(req, {
       reveal_token: revealToken,
       token_id: tokenRow.id,
       email,
+      password,
       expires_at: expiresAt,
       ttl_seconds: PASSWORD_TTL_SECONDS,
     });

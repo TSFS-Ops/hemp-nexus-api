@@ -8666,7 +8666,6 @@ export type Database = {
           email: string
           expires_at: string
           id: string
-          password_plaintext: string | null
           reveal_token_hash: string
           user_id: string
         }
@@ -8677,7 +8676,6 @@ export type Database = {
           email: string
           expires_at: string
           id?: string
-          password_plaintext?: string | null
           reveal_token_hash: string
           user_id: string
         }
@@ -8688,7 +8686,6 @@ export type Database = {
           email?: string
           expires_at?: string
           id?: string
-          password_plaintext?: string | null
           reveal_token_hash?: string
           user_id?: string
         }

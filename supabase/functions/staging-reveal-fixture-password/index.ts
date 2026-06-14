@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
 
     const { data: row, error: selErr } = await admin
       .from("staging_password_tokens")
-      .select("id, email, password_plaintext, expires_at, consumed_at")
+      .select("id, email, expires_at, consumed_at")
       .eq("reveal_token_hash", tokenHash)
       .maybeSingle();
     if (selErr) return json(req, { error: selErr.message }, 500);
@@ -92,12 +92,14 @@ Deno.serve(async (req) => {
       return json(req, { error: "TOKEN_EXPIRED" }, 410);
     }
 
-    // Mark consumed and clear plaintext atomically (single UPDATE).
+    // Mark consumed. The plaintext column was removed for security — the
+    // password is now delivered out-of-band at set-time and cannot be
+    // retrieved via this endpoint. This endpoint is retained as an audit
+    // anchor and reveal-token consumer.
     const { error: updErr } = await admin
       .from("staging_password_tokens")
       .update({
         consumed_at: new Date().toISOString(),
-        password_plaintext: null,
       })
       .eq("id", row.id)
       .is("consumed_at", null);
@@ -106,13 +108,15 @@ Deno.serve(async (req) => {
     await admin.from("audit_logs").insert({
       action: "staging.fixture_password_revealed",
       actor_user_id: caller.id,
-      metadata: { email: row.email, token_id: row.id },
+      metadata: { email: row.email, token_id: row.id, note: "password not stored; delivered at set-time" },
     }).then(() => {}, () => {});
 
     return json(req, {
       email: row.email,
-      password: row.password_plaintext,
-    });
+      password: null,
+      code: "PASSWORD_NOT_STORED",
+      message: "Passwords are delivered at generation time and no longer stored at rest. Re-run staging-set-fixture-password to obtain a new credential.",
+    }, 410);
   } catch (err) {
     console.error("staging-reveal-fixture-password error:", err);
     return json(req, { error: "Internal server error" }, 500);
