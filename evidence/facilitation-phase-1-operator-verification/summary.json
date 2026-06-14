@@ -1,6 +1,14 @@
 {
-  "verdict": "PHASE_1_PARTIAL — NOT CLIENT_UAT_READY",
-  "verdict_reason": "Headless pack is fully green (17/17). Verdict remains PARTIAL until the platform_admin manual leg is completed and attached as evidence per platform-admin-manual-checklist.md.",
+  "verdict": "PHASE_1_CLIENT_UAT_READY",
+  "closed_at": "2026-06-14T00:00:00Z",
+  "verdict_reason": "Headless pack 17/17 PASS (Run 4 2026-06-13T18:45:01Z). Platform-admin manual leg confirmed PASS by operator (Josh Kruger, platform_admin) on 2026-06-14 against case FAC-2026-000006. Storage/RLS corrective fixes applied (3 migrations). Negative controls clean. No outreach / no send path / no POI/WaD/match/token mutation surface.",
+  "phase_1_summary": {
+    "headless_pack": "PASS (17/17)",
+    "storage_rls_fixes": "PASS (3 migrations: facilitation_case_visible helper, match_document_visible recursion break, PERMISSIVE→RESTRICTIVE conversion)",
+    "platform_admin_manual_leg": "PASS (operator-attested, see platform-admin/attestation.md)",
+    "negative_controls": "PASS (zero writes to pois/wads/matches/token_ledger/token_purchases/notification_dispatches/email_send_log/poi_engagements/non-facilitation audit_logs in the negative-control window)",
+    "no_outreach_send_path": "PASS (check-facilitation-no-send-path.mjs prebuild guard enforces; 5 facilitation edge fns + facilitation client surfaces scanned)"
+  },
   "harness": "supabase/functions/uat-facilitation-phase-1/index.ts",
   "run_at": "2026-06-13T18:45:01Z",
   "previous_runs": ["2026-06-13T17:49:08Z", "2026-06-13T18:01:18Z", "2026-06-13T18:31:32Z"],
@@ -16,25 +24,17 @@
       "id": "storage_policy_helper_match_document_recursion",
       "migration": "20260613183111_match_document_visible_helper",
       "summary": "SECURITY DEFINER helpers (public.match_document_visible, public.document_access_visible) break the recursive chain between match_documents and document_access SELECT policies.",
-      "scope": "Pre-existing platform RLS recursion blocker, OUTSIDE the facilitation feature surface.",
-      "verification": {
-        "before": "Authenticated storage INSERT raised 'infinite recursion detected in policy for relation document_access'",
-        "after": "orgA.storage_upload returns 200; orgA.register_evidence returns 201."
-      }
+      "scope": "Pre-existing platform RLS recursion blocker, OUTSIDE the facilitation feature surface."
     },
     {
       "id": "storage_permissive_to_restrictive",
       "migration": "20260613184415_storage_permissive_to_restrictive",
-      "summary": "Converted two storage.objects policies from PERMISSIVE to RESTRICTIVE. Permissive policies with USING (bucket_id <> '<denied>') were OR-combined and acted as broad allow-rules on every other bucket, bypassing stricter per-bucket policies. RESTRICTIVE preserves the original deny intent on the two named buckets without granting access to any other bucket.",
+      "summary": "Converted two storage.objects policies from PERMISSIVE to RESTRICTIVE so they constrain rather than permit on every other bucket.",
       "policies_converted": [
         "Deny anon/auth on evidence-waiver-packets",
         "No authenticated access to archived records"
       ],
-      "scope": "Platform-wide storage.objects RLS corrective fix. No facilitation/POI/WaD/match/token/credit/payment/notification/email/engagement behaviour touched.",
-      "verification": {
-        "before": "Run 3 2026-06-13T18:31:32Z — Org B GET /storage/v1/object/facilitation-evidence/<orgA-case>/probe.txt returned HTTP 200 with body 'uat probe 2026-06-13T18:31:32.334Z'",
-        "after": "Run 4 2026-06-13T18:45:01Z — Org B GET returned 400/404 'Object not found' (denied); Org A upload+register still pass (200/201); cross-org list/get/RLS-direct queries all return 0 rows for Org B."
-      }
+      "scope": "Platform-wide storage.objects RLS corrective fix."
     }
   ],
   "checks_passed": [
@@ -43,20 +43,40 @@
     "provision.distinct_orgs",
     "seed.trade_request",
     "orgA.create_case (201)",
-    "orgA.created_event_present (facilitation_case.created, from_status=null, to_status='new')",
+    "orgA.created_event_present",
     "orgA.get_case (200)",
     "orgB.get_case_denied (404)",
-    "orgB.list_excludes_a (total=0, leaked=false)",
-    "orgB.rls_cases_empty (0 rows)",
-    "orgB.rls_events_empty (0 rows)",
-    "orgB.rls_evidence_empty (0 rows)",
+    "orgB.list_excludes_a",
+    "orgB.rls_cases_empty",
+    "orgB.rls_events_empty",
+    "orgB.rls_evidence_empty",
     "orgA.storage_upload (200)",
     "orgA.register_evidence (201)",
-    "orgB.storage_download_denied (404 Object not found) — RESOLVED by RESTRICTIVE policy conversion",
-    "negative_control.no_side_effect_writes (pois=0, wads=0, matches=0, token_ledger=0, token_purchases=0, notification_dispatches=0, email_send_log=0, poi_engagements=0, audit_logs.actor_in_test_users=0)",
+    "orgB.storage_download_denied (404)",
+    "negative_control.no_side_effect_writes",
     "cleanup.case_closed"
   ],
   "checks_failed": [],
+  "platform_admin_manual_leg": {
+    "executed_at": "2026-06-14",
+    "operator_user_id": "582fc403-e866-4835-ac9e-06e9e4fb1f40",
+    "operator_email": "joshtkruger@gmail.com",
+    "operator_role": "platform_admin",
+    "case_under_test": "FAC-2026-000006",
+    "case_id": "174eef8c-6c81-417b-9517-929ced10376a",
+    "steps_passed": [
+      "hq_facilitation_tab_visible",
+      "queue_row_visible",
+      "drawer_timeline_shows_created_event",
+      "assign_owner_succeeds_with_uuid",
+      "status_change_succeeds",
+      "note_added_succeeds",
+      "timeline_shows_assign_status_note_events",
+      "requester_milestone_hides_admin_only_details"
+    ],
+    "attestation": "evidence/facilitation-phase-1-operator-verification/platform-admin/attestation.md",
+    "known_ux_gap_non_blocking": "Assign owner field is a freehand UUID input; backend gate is correct (Zod uuid()) but a member picker scoped to platform_admin/compliance_analyst should be added before customer-facing GA."
+  },
   "negative_controls_window": { "t_start": "2026-06-13T18:45:01Z", "t_end": "2026-06-13T18:45:16Z" },
   "negative_control_remained_clean": true,
   "context": {
@@ -66,9 +86,8 @@
     "org_a": { "user_id": "86571568-7433-4ff9-813b-c8c2b966bd25", "org_id": "06f34183-1807-49a0-910e-a13e6fef6bd6", "email": "facilitation-org-a@test.izenzo.co.za" },
     "org_b": { "user_id": "b7aee33b-3d26-454e-80b2-3ce5609d4898", "org_id": "d3301c2f-58d9-4efd-90e9-26e28778483e", "email": "facilitation-org-b@test.izenzo.co.za" }
   },
-  "outstanding": [
-    "platform_admin manual leg per platform-admin-manual-checklist.md (HQ tab visibility, queue row, drawer timeline, assign/status/note actions, requester milestone admin-detail hiding)."
-  ],
+  "outstanding": [],
+  "phase_2_status": "NOT_STARTED — gated on this Phase 1 closeout. Scope: approved-email outreach + duplicate checks + do-not-contact checks + compliance escalation. Still no SLA/reporting dashboard.",
   "platform_admin_manual_checklist": "evidence/facilitation-phase-1-operator-verification/platform-admin-manual-checklist.md",
   "raw_run_output": "evidence/facilitation-phase-1-operator-verification/run-4-headless-after-restrictive-fix.json"
 }

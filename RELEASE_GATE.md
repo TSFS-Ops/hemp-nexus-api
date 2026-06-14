@@ -748,3 +748,26 @@ Guard: `scripts/check-admin-export-controls-batch-10.mjs` (wired into `prebuild`
 Status: **evidence shell complete; live QA execution pending human testers**. Batch 11 turns the Batch 10 manual QA pack into a structured evidence folder at `evidence/admin-export-controls-batch-11-qa-dry-run/` (containing `README.md`, `qa-results.md`, `qa-results.json`, and `screenshot-index.md`). Scenarios A, B, C1, C2, D, E1, E2, F, G, H are scaffolded as `not run` with placeholder screenshot filenames under `screenshots/` — no screenshots are claimed as captured, and no scenario is marked `pass` without a real PNG on disk. No runtime source code changed in this batch. No file generation, download link, signed/temporary link, storage upload, Blob, Content-Disposition, CSV/PDF/JSON output, or prepare/destroy surface was introduced. DATA-004 (cron / cold-storage / archive / retention) was not touched. The Batch 7C production-refusal guard remains intact.
 
 Guard: `scripts/check-admin-export-controls-batch-11.mjs` (wired into `prebuild` after `check-admin-export-controls-batch-10.mjs` and before `check-evidence-secret-leaks.mjs`) pins: (a) the Batch 11 evidence folder and the four required files (`README.md`, `qa-results.md`, `screenshot-index.md`, `qa-results.json`) exist; (b) no Batch 11 markdown file contains positive tester instructions to "click download", "download the CSV/PDF/JSON/file", "generate (the) export", "prepare (the) export", or "destroy (the) export" — those phrases are allowed only in negative-context lines (no/not/never/absent/forbidden/blocker/STOP/etc.); (c) any screenshot referenced as `yes`/`captured`/`✅` in `screenshot-index.md`, or any scenario marked `passed` in `qa-results.json`, must have its PNG actually present in `screenshots/` (no fake screenshot claims; `qa-results.json.screenshots_captured=true` requires real PNGs on disk); (d) the existing runtime targets `supabase/functions/admin-governance-export-list/index.ts`, `supabase/functions/admin-governance-export-preview/index.ts`, `src/components/admin/governance/AdminGovernanceExportRequestsListPanel.tsx`, and `src/components/admin/governance/AdminGovernanceExportPreviewPanel.tsx` still contain none of `createSignedUrl(`, `signed_url`, `storage.upload(`, `new Blob(`, `URL.createObjectURL(`, `Content-Disposition`, `text/csv`, `application/pdf`, anchor `download` attribute, or any invocation of `admin-governance-export-prepare/download/destroy`; (e) `supabase/functions/admin-export-batch-7c-smoke/index.ts` still exists and still references the production refusal path (`is_production_environment` / `production_refused`); (f) no sibling Batch 11 artefacts have been created under `evidence/` outside the canonical folder. Evidence: `evidence/admin-export-controls-batch-11-qa-dry-run/`.
+
+---
+
+## Facilitation Phase 1 — CLOSED (2026-06-14)
+
+**Verdict: `PHASE_1_CLIENT_UAT_READY`**
+
+Unknown-Counterparty Facilitation Queue, Phase 1 (intake + admin triage; no outreach / no send path / no POI/WaD/match/token effects).
+
+- Headless pack: **PASS** 17/17 — `supabase/functions/uat-facilitation-phase-1/index.ts`, Run 4 2026-06-13T18:45:01Z, raw output `evidence/facilitation-phase-1-operator-verification/run-4-headless-after-restrictive-fix.json`
+- Storage / RLS corrective fixes: **PASS** (3 migrations)
+  - `20260613180059_facilitation_case_visible_helper` — SECURITY DEFINER helper terminates `fevd_select` / `fevd_insert` EXISTS chain
+  - `20260613183111_match_document_visible_helper` — SECURITY DEFINER helpers break `match_documents` ↔ `document_access` recursive policy chain (pre-existing platform RLS recursion, outside facilitation surface)
+  - `20260613184415_storage_permissive_to_restrictive` — converts two broad PERMISSIVE `storage.objects` policies on `evidence-waiver-packets` and `archived-records` to RESTRICTIVE so they constrain rather than permit on every other bucket
+- `platform_admin` manual leg: **PASS** — operator-attested by Josh Kruger 2026-06-14 against `FAC-2026-000006`; see `evidence/facilitation-phase-1-operator-verification/platform-admin/attestation.md`
+- Negative controls: **PASS** — zero writes to `pois`/`wads`/`matches`/`token_ledger`/`token_purchases`/`notification_dispatches`/`email_send_log`/`poi_engagements`/non-facilitation `audit_logs` in the negative-control window
+- No outreach / no send path: **PASS** — enforced by `scripts/check-facilitation-no-send-path.mjs` (already wired into prebuild)
+
+Known Phase 1 UX gap (non-blocking): **Assign owner** field is freehand UUID input. Backend Zod `uuid()` gate is correct; replace with a `platform_admin` / `compliance_analyst` member picker before customer-facing GA.
+
+Phase 2 (approved-email outreach + duplicate checks + do-not-contact checks + compliance escalation; still no SLA / reporting dashboard) is **NOT STARTED** and is gated on this closeout.
+
+Evidence: `evidence/facilitation-phase-1-operator-verification/` (README.md, summary.json, platform-admin-manual-checklist.md, platform-admin/attestation.md, run-4-headless-after-restrictive-fix.json).

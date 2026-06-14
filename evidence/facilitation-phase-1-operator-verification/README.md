@@ -9,9 +9,32 @@
 
 ## Verdict
 
-**PHASE_1_PARTIAL — NOT CLIENT_UAT_READY**
+**PHASE_1_CLIENT_UAT_READY** — closed 2026-06-14.
 
-The full 17-check headless pack is now green. Verdict remains PARTIAL until the `platform_admin` manual leg in `platform-admin-manual-checklist.md` is executed in the preview and screenshots attached.
+- Headless pack: **PASS** (17/17, Run 4 2026-06-13T18:45:01Z)
+- Storage / RLS corrective fixes: **PASS** (3 migrations; see Corrective fixes below)
+- `platform_admin` manual leg: **PASS** (operator-attested by Josh Kruger 2026-06-14; see `platform-admin/attestation.md`)
+- Negative controls: **PASS** (no writes to pois/wads/matches/token_ledger/token_purchases/notification_dispatches/email_send_log/poi_engagements/non-facilitation audit_logs in the negative-control window)
+- No outreach / no send path: **PASS** (`check-facilitation-no-send-path.mjs` prebuild guard)
+
+Known Phase 1 UX gap (non-blocking): the **Assign owner** field is a freehand UUID input. Backend gate is correct (Zod `uuid()` validation); a member picker scoped to `platform_admin` / `compliance_analyst` should be added before customer-facing GA.
+
+Phase 2 (approved-email outreach + duplicate checks + do-not-contact checks + compliance escalation, still no SLA/reporting dashboard) is **NOT STARTED** and is gated on this closeout.
+
+## Client UAT Note (Phase 1)
+
+Please verify the following end-to-end as a non-admin trader signed in as a normal organisation user, and then re-verify the admin steps as a `platform_admin`:
+
+1. **As a trader:** create a facilitation request from a trade request (counterparty cannot be found on platform).
+2. **As a `platform_admin`:** confirm the request appears in **HQ → Facilitation Queue**.
+3. **As a `platform_admin`:** open the case drawer and **assign an owner** (UUID input in Phase 1; expect success toast + `facilitation_case.assigned` event in timeline).
+4. **As a `platform_admin`:** **change status** via an allowed transition; expect `facilitation_case.status_changed` event.
+5. **As a `platform_admin`:** **add an internal note**; expect `facilitation_case.note_added` event.
+6. **As the requesting trader:** confirm the requester milestone view **updates** to reflect the new status.
+7. **As the requesting trader:** confirm the requester **cannot see** internal admin notes or the internal event log (only milestone-level state, no admin payload fields).
+
+Do NOT expect any of the following in Phase 1 (deliberately deferred to Phase 2): outbound email, notification dispatch, SLA timers, reporting dashboards, POI / WaD / match / token / credit / payment effects.
+
 
 ## Corrective fixes applied (cumulative)
 
