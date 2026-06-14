@@ -1,282 +1,201 @@
-# Facilitation Phase 2 — Plan (no code yet)
+# Facilitation Phase 2 — Revised Plan (no code yet)
 
-Acknowledged. Phase 1 is formally closed as `PHASE_1_CLIENT_UAT_READY`. This document is the Phase 2 plan only. No implementation will start until you approve it.
+Revisions in response to feedback:
 
-Phase 2 extends the Phase 1 facilitation queue with **operator-driven, approved-email outreach** to candidate counterparties, plus duplicate-org and do-not-contact safety, and a compliance escalation path. Phase 2 remains **manual-send-only**. There is no SLA engine, no reporting dashboard, no CSV/PDF export, and no automated mutation of payments, POIs, WaDs, or tokens.
+1. DNC source of truth is now a dedicated, enterprise-grade table — `ai_do_not_contact_rules` is **not** reused.
+2. Compliance escalation authority is now explicitly split: `platform_admin` escalates and observes; `compliance_admin` resolves. `platform_admin` does **not** resolve compliance escalations.
 
----
-
-## 1. What WILL be built
-
-### 1.1 Approved-email outreach (manual send only)
-
-- New "Outreach" tab inside the existing Phase 1 facilitation case drawer (`/hq/facilitation` → case).
-- Per case, a `platform_admin` can:
-  - add one or more candidate counterparties (free-text name + email + optional registry id + optional note);
-  - pick a pre-approved template;
-  - preview the rendered email;
-  - **click Send** to actually dispatch (one recipient per send, idempotent).
-- No bulk send. No "send to all". No background job that auto-sends.
-
-### 1.2 Email template approval
-
-- A small **template registry** owned by `platform_admin`:
-  - `status ∈ {draft, approved, archived}`;
-  - only `approved` templates appear in the Send picker;
-  - templates are React Email components in `supabase/functions/_shared/transactional-email-templates/` and registered in `registry.ts` (reusing the existing app-email infrastructure);
-  - HQ UI lists templates, shows status, and lets an admin mark `draft → approved` or `approved → archived` (no inline rich-text editor in Phase 2 — template bodies are code-reviewed like Phase 1).
-
-### 1.3 Manual-send-only flow
-
-- Single edge function (e.g. `facilitation-outreach-send`) callable only by `platform_admin` JWT.
-- Each invocation sends to exactly one recipient, with an `Idempotency-Key` header.
-- Hard server-side guard: function rejects if `template.status != 'approved'`, if recipient is suppressed, if recipient is on the DNC list, or if a duplicate-org hard-block is active without an explicit override reason.
-
-### 1.4 Duplicate organisation checks
-
-- Before "Add candidate" is accepted, run a server-side duplicate probe against:
-  - existing `organizations` (by normalised name + registry id + domain of email);
-  - existing onboarded counterparties already linked to this requester.
-- Result is surfaced as:
-  - **green** = no match;
-  - **amber warning** = soft match (admin can proceed, reason captured);
-  - **red hard-block** = exact registry id / verified domain match → cannot send without compliance escalation.
-
-### 1.5 Do-not-contact checks
-
-- New `ai_do_not_contact_rules` usage (table already exists) becomes authoritative for outreach:
-  - email address match → hard-block;
-  - domain match → hard-block;
-  - org name match (normalised) → amber warning.
-- Hard-block is enforced **server-side** in the send edge function, not only in UI.
-
-### 1.6 Compliance escalation
-
-- "Escalate to compliance" action on a candidate or on the whole case.
-- Creates a row in existing `compliance_cases` (link back to `facilitation_cases.id`), sets the candidate to `escalated`, and prevents further Send actions on that candidate until a `platform_admin` (or compliance role) records a resolution note.
-- No new compliance dashboard — escalations are visible in the existing case drawer and in the existing compliance case list.
-
-### 1.7 Hard-block / warning rules (single source of truth)
-
-- One server-side resolver (e.g. `resolveOutreachGate(candidate)`) returns:
-  - `{ status: 'allow' | 'warn' | 'block', reasons: string[] }`.
-- UI mirrors the resolver output but **never** decides the gate itself.
-
-### 1.8 Audit events for every Phase 2 action
-
-Canonical, append-only events (added to existing `audit_logs` / `event_store` with a prebuild name-guard):
-
-- `facilitation.outreach.template_approved`
-- `facilitation.outreach.template_archived`
-- `facilitation.outreach.candidate_added`
-- `facilitation.outreach.candidate_updated`
-- `facilitation.outreach.duplicate_check_run`
-- `facilitation.outreach.dnc_check_run`
-- `facilitation.outreach.gate_evaluated`
-- `facilitation.outreach.email_sent`
-- `facilitation.outreach.email_failed`
-- `facilitation.outreach.escalated_to_compliance`
-- `facilitation.outreach.escalation_resolved`
-
-Every send writes both `gate_evaluated` and `email_sent` (or `email_failed`) with the same correlation id.
-
-### 1.9 User visibility rules
-
-- Requesting trader (case owner) sees: that outreach is "in progress" and a coarse status (`contacting`, `awaiting_response`, `no_response`, `escalated`, `closed`).
-- Requesting trader does **not** see: candidate email addresses, template bodies, internal notes, gate reasons, duplicate-check details, DNC reasons, or the audit/event log.
-- `platform_admin` sees everything in the case drawer.
-- Enforced by RLS on the new tables plus a thin server view for the trader-facing milestone.
+Everything else from the prior plan stands; deltas only are called out below.
 
 ---
 
-## 2. What will NOT be built in Phase 2 (negative controls)
+## 1. Do-not-contact source of truth (revised)
 
-These are explicit non-goals and will be asserted by tests + prebuild guards:
+**Decision:** `ai_do_not_contact_rules` is AI-outreach-experimental and will **not** govern real counterparty outreach. Phase 2 introduces a dedicated, enterprise-grade DNC register scoped to facilitation:
 
-1. **No SLA cron.** No new pg_cron job, no new scheduled edge function, no timer-driven status changes. Prebuild guard greps cron snapshots and fails if a `facilitation-*` schedule appears.
-2. **No reporting dashboard.** No new `/hq/reports/*` or analytics page. Prebuild guard fails on any new route under `src/pages/hq/reports/`.
-3. **No CSV export.** No new endpoint or button that emits CSV. Prebuild guard greps for `text/csv` and `Content-Disposition: attachment` in any new `facilitation-*` function.
-4. **No audit-pack PDF.** No PDF generation, no `application/pdf` response, no new pdf library import.
-5. **No payment mutation.** Phase 2 code must not import `atomic_token_burn`, must not touch `token_ledger`, `token_balances`, `token_purchases`, `payment_disputes`, `refund_requests`, `clip_on_*`.
-6. **No POI mutation.** Must not call `atomic_generate_poi_v2`, must not write to `pois`, `poi_engagements`, `poi_events`.
-7. **No WaD mutation.** Must not write to `wads`, `wad_attestations`, `attestations`, `p3_wads`, `p3_attestations`, `collapse_ledger`.
-8. **No token mutation.** Covered by (5) but called out separately for the audit pack.
-9. **No auto-onboarding of the contacted counterparty.** Replies are handled out-of-band in Phase 2; no inbound webhook, no auto-link to `organizations`.
-10. **No bulk send / mail-merge.** One recipient per send call, enforced server-side.
+### 1.1 New table: `facilitation_do_not_contact_rules`
 
----
+Columns:
 
-## 3. Tables / functions / UI surfaces touched
+- `id uuid pk`
+- `rule_type text` — enum check: `email` | `domain` | `org_name`
+- `value_raw text` — original input
+- `value_norm text` — lowercased / trimmed / punycode-normalised; UNIQUE on (`rule_type`, `value_norm`) WHERE `status='active'`
+- `match_severity text` — enum check: `block` (email, domain) | `warn` (org_name). Resolver derives default but column is the SSOT.
+- `reason text NOT NULL`
+- `source text` — `compliance` | `legal` | `requester` | `sanctions_feed` | `manual_admin`
+- `status text` — `active` | `revoked`
+- `created_by uuid` references `auth.users(id)` ON DELETE SET NULL
+- `created_at timestamptz default now()`
+- `revoked_by uuid`, `revoked_at timestamptz`, `revoked_reason text`
+- `expires_at timestamptz null` (optional)
 
-### 3.1 New tables (with RLS + GRANTs)
+### 1.2 Access model
 
-- `facilitation_outreach_templates` (id, name, subject, body_ref, status, created_by, approved_by, approved_at, archived_at, …) — `platform_admin` read/write; nobody else.
-- `facilitation_outreach_candidates` (id, case_id → `facilitation_cases.id`, org_name_norm, registry_id, email, domain, status, gate_status, gate_reasons jsonb, escalated_compliance_case_id, …) — `platform_admin` read/write; case owner gets a redacted view via server function only.
-- `facilitation_outreach_sends` (id, candidate_id, template_id, idempotency_key UNIQUE, message_id, status, error, sent_by, sent_at, …) — `platform_admin` read; insert via edge function (service_role) only.
+- `GRANT SELECT, INSERT, UPDATE ON public.facilitation_do_not_contact_rules TO authenticated;` then RLS:
+  - `SELECT`: `platform_admin` OR `compliance_admin`.
+  - `INSERT`: `platform_admin` OR `compliance_admin`.
+  - `UPDATE` (revoke only — triggers enforce immutability of all other columns): `compliance_admin` only. `platform_admin` cannot revoke.
+  - `DELETE`: nobody. Register is append-only; revocation is a status flip.
+- `GRANT ALL ... TO service_role` for the send edge function.
 
-All three follow the standard `CREATE TABLE → GRANT → ENABLE RLS → POLICY` order.
+### 1.3 Audit trail
 
-### 3.2 Reused / extended tables
+Every insert and every revoke writes an `event_store` row:
 
-- `facilitation_cases` — add `outreach_state` enum column (`none`, `contacting`, `awaiting_response`, `no_response`, `escalated`, `closed`). No other schema changes.
-- `facilitation_case_events` — reused for case-level outreach events.
-- `audit_logs` / `event_store` — reused for the 11 canonical event names.
-- `ai_do_not_contact_rules` — read-only consumer.
-- `compliance_cases` — escalation target.
-- `suppressed_emails` — read-only consumer in the send path.
-- `email_send_log` — written by the existing app-email pipeline; no schema change.
+- `facilitation.dnc.rule_added`
+- `facilitation.dnc.rule_revoked`
 
-### 3.3 New edge functions
+Append-only, included in the Phase 2 audit-name prebuild guard.
 
-- `facilitation-outreach-candidate-add` — runs duplicate + DNC checks, writes candidate row, returns gate result.
-- `facilitation-outreach-send` — re-runs the gate, then invokes existing `send-transactional-email` with `purpose: "transactional"` and an idempotency key.
-- `facilitation-outreach-escalate` — opens/links a `compliance_cases` row.
-- `facilitation-outreach-template-status` — approve/archive a template.
+### 1.4 Resolver behaviour
 
-All four require `platform_admin` and write audit events. No new cron schedules.
+`resolveOutreachGate(candidate)` consults this table only (not `ai_do_not_contact_rules`):
 
-### 3.4 Reused Phase 1 surfaces
+- exact `value_norm` match on `email` → `block`
+- exact `value_norm` match on `domain` (of candidate email) → `block`
+- normalised match on `org_name` → `warn`
+- expired (`expires_at < now()`) or `status='revoked'` rows are ignored
 
-- `/hq/facilitation` list (no change).
-- Case drawer (Phase 1) — adds an "Outreach" tab and a "Templates" sub-panel.
-- Existing requester milestone view — adds the coarse `outreach_state` only.
-- Existing `send-transactional-email`, `process-email-queue`, `handle-email-suppression`, `handle-email-unsubscribe`.
-- Existing `BackButton`, modal close/X standard, edge-invoke error handling.
+Server-enforced in `facilitation-outreach-send`. UI is advisory only.
 
-### 3.5 New UI surfaces (HQ only)
+### 1.5 Management UI
 
-- "Outreach" tab in the case drawer.
-- "Templates" panel under HQ → Facilitation → Templates (list + approve/archive only).
+- HQ → Facilitation → **"Do Not Contact"** sub-panel.
+- `platform_admin` and `compliance_admin` can add rules.
+- Only `compliance_admin` sees the **Revoke** action.
+- No bulk import / CSV — single-rule entry only in Phase 2.
 
-No new trader-facing page is added.
+### 1.6 Negative confirmation
 
----
-
-## 4. New prebuild guards
-
-Added to `package.json` `prebuild`:
-
-1. `check-facilitation-phase2-audit-names.mjs` — fails if any `facilitation.outreach.*` event name in code is not in the canonical list, or vice-versa.
-2. `check-facilitation-phase2-no-cron.mjs` — fails if `supabase/snapshots/cron.json` contains any job whose name matches `facilitation`.
-3. `check-facilitation-phase2-no-mutation-paths.mjs` — fails if any file under `supabase/functions/facilitation-*` imports or references: `atomic_token_burn`, `atomic_generate_poi_v2`, `atomic_accept_bind`, `token_ledger`, `token_balances`, `pois`, `poi_engagements`, `wads`, `wad_attestations`, `collapse_ledger`.
-4. `check-facilitation-phase2-no-export.mjs` — fails on `text/csv`, `application/pdf`, or `Content-Disposition: attachment` inside `supabase/functions/facilitation-*` and `src/pages/hq/facilitation/**`.
-5. Reused: existing `check-facilitation-no-send-path.mjs` is updated to **allow** `facilitation-outreach-send` (the one authorised send path) and continue blocking every other send path under `facilitation-*`.
+`ai_do_not_contact_rules` remains untouched by Phase 2. A new prebuild guard `check-facilitation-phase2-no-ai-dnc-coupling.mjs` fails the build if any file under `supabase/functions/facilitation-*` or `src/pages/hq/facilitation/**` references `ai_do_not_contact_rules`.
 
 ---
 
-## 5. How it will be tested
+## 2. Compliance escalation authority (revised)
 
-### 5.1 Headless pack (extends Phase 1 Run-4 pack)
+### 2.1 Roles and powers
 
-- Template lifecycle: draft → approved → send works; archived → send blocked.
-- Duplicate hard-block: exact registry-id match → send 409.
-- Duplicate soft-warn: name-only match → send allowed with `gate_status='warn'` and reason captured.
-- DNC email match → send 409 `DNC_BLOCKED`.
-- DNC domain match → send 409 `DNC_BLOCKED`.
-- Suppressed recipient → send 409 `SUPPRESSED`.
-- Idempotency: same `Idempotency-Key` replays return the original result, no second email.
-- Escalation: candidate → `compliance_cases` row created, `escalated_to_compliance` audit present, further sends blocked.
-- Audit completeness: every state transition produces exactly the expected canonical event names; prebuild guard passes.
-- Negative controls: assert no cron job created, no CSV/PDF endpoint reachable, no calls to POI/WaD/token atomic functions.
-- RLS: non-`platform_admin` JWT cannot read `facilitation_outreach_*` tables; case-owner trader sees only the coarse `outreach_state`.
 
-### 5.2 Manual operator verification (mirrors Phase 1 attestation)
+| Action                                    | `platform_admin` | `compliance_admin` |
+| ----------------------------------------- | ---------------- | ------------------ |
+| Escalate a candidate / case to compliance | ✅                | ✅                  |
+| View escalation state and notes           | ✅                | ✅                  |
+| Add an internal escalation note           | ✅                | ✅                  |
+| **Resolve** the compliance escalation     | ❌                | ✅                  |
+| Re-open a resolved escalation             | ❌                | ✅                  |
+| Send outreach while escalation is open    | ❌                | ❌                  |
 
-- Walkthrough by `platform_admin` on the preview environment, evidence captured under `evidence/facilitation-phase-2-operator-verification/`.
 
-### 5.3 Negative-control evidence
+`platform_admin` cannot resolve. This is enforced server-side in `facilitation-outreach-escalate` and in the new `facilitation-outreach-escalation-resolve` edge function via role check on the JWT, not just UI hiding.
 
-- Snapshot of `cron.json` showing no new `facilitation` job.
-- `rg` output proving no banned imports under `supabase/functions/facilitation-*`.
-- HTTP probe showing `/hq/facilitation` exposes no CSV/PDF endpoint.
+### 2.2 Override carve-out
 
----
+The platform governance model does **not** currently grant `platform_admin` authority to override compliance decisions (no such override exists for `compliance_cases` today). Therefore Phase 2 introduces **no** override path. If the user later wants a break-glass override, it is a separate, audited governance change — not Phase 2 scope.
 
-## 6. CLIENT_UAT_READY criteria for Phase 2
+### 2.3 Audit trail
 
-Phase 2 verdict flips to `PHASE_2_CLIENT_UAT_READY` only when **all** of these hold:
+- `facilitation.outreach.escalated_to_compliance` — actor must be `platform_admin` or `compliance_admin`
+- `facilitation.outreach.escalation_resolved` — actor MUST be `compliance_admin`; any other actor recorded against this event is a server bug and rejected by a DB CHECK on `event_store.metadata->>actor_role`
+- `facilitation.outreach.escalation_reopened` — `compliance_admin` only
 
-1. All headless tests in §5.1 pass on a clean run.
-2. All four new prebuild guards pass; the updated `check-facilitation-no-send-path.mjs` passes.
-3. Manual operator attestation recorded for: template approve, candidate add (green/amber/red), DNC block, duplicate block, send success, send idempotency, escalation, escalation resolution.
-4. Trader milestone view confirmed to show only coarse `outreach_state` and no internal data.
-5. Negative-control evidence committed under `evidence/facilitation-phase-2-operator-verification/negative-controls/`.
-6. `RELEASE_GATE.md` updated with the Phase 2 closeout block; `evidence/.../summary.json` flipped.
-7. No mutations observed on `pois`, `wads`, `token_ledger`, `token_balances`, `payment_disputes`, `refund_requests` during the full UAT window (verified by a read-only diff snapshot before/after).
+All three are added to the Phase 2 audit-name prebuild guard.
+
+### 2.4 Compliance case linkage
+
+- Escalation creates a `compliance_cases` row with `source='facilitation_outreach'` and `facilitation_case_id` reference.
+- The `compliance_cases` row's resolver policies are reused as-is — no new compliance RLS surface introduced.
+- Closing the underlying `compliance_cases` row is what unblocks further outreach on the candidate. The send edge function checks this before every send.
 
 ---
 
-## 7. Out of scope (deferred beyond Phase 2)
+## 3. Everything else (carried forward from prior plan, unchanged)
 
-- SLA timers, escalation cron, reminder emails.
-- Reporting dashboard, charts, CSV export, audit-pack PDF.
-- Inbound reply ingestion / auto-onboarding of contacted counterparties.
-- Bulk outreach, mail-merge, campaign tooling.
-- Any payment / POI / WaD / token state changes triggered by outreach.
+The following items were directionally approved and are retained verbatim:
+
+- Approved-email outreach, one recipient per send, manual-send-only.
+- Template registry with `draft / approved / archived` lifecycle; only `approved` templates sendable.
+- Idempotency via `Idempotency-Key`, single-recipient enforced server-side.
+- Suppression checks via existing `suppressed_emails`.
+- Duplicate organisation checks (green / amber / red) with server-side resolver.
+- Hard-block / warning resolver as the single source of truth.
+- 11 canonical audit events (plus the 3 added in §2.3 and 2 added in §1.3 — total **16** canonical events, all guarded by `check-facilitation-phase2-audit-names.mjs`).
+- Trader milestone redaction — coarse `outreach_state` only.
+- New tables: `facilitation_outreach_templates`, `facilitation_outreach_candidates`, `facilitation_outreach_sends`, **plus** `facilitation_do_not_contact_rules` (this revision).
+- New edge functions: `facilitation-outreach-candidate-add`, `facilitation-outreach-send`, `facilitation-outreach-escalate`, `facilitation-outreach-template-status`, **plus** `facilitation-outreach-escalation-resolve` (this revision, `compliance_admin` only).
+- Negative controls and prebuild guards as listed previously, **plus** `check-facilitation-phase2-no-ai-dnc-coupling.mjs` (this revision).
+- No SLA cron, no reporting dashboard, no CSV, no PDF, no POI / WaD / token / payment mutation.
 
 ---
 
-**Next step:** review and either approve this plan as-is, or send edits. No Phase 2 code will be written until you explicitly approve.  
+## 4. Updated CLIENT_UAT_READY criteria
+
+Adds to the prior list:
+
+8. DNC register lives in `facilitation_do_not_contact_rules`; no production code path reads `ai_do_not_contact_rules`; coupling prebuild guard passes.
+9. Manual attestation recorded that a `platform_admin` JWT receives 403 from `facilitation-outreach-escalation-resolve`, and that a `compliance_admin` JWT can successfully resolve.
+10. Manual attestation that send is blocked while the linked `compliance_cases` row is open, and unblocked once `compliance_admin` resolves it.
+
+---
+
+## 5. Confirmed out of scope
+
+- Any `platform_admin` ability to resolve compliance escalations.
+- Any reuse of `ai_do_not_contact_rules` for real outreach.
+- Bulk DNC import, CSV, scheduled DNC sync from external sanctions feeds.
+- Break-glass override of compliance decisions.
+
+---
+
+**Next step:** review and approve this revised plan, or send further edits. No Phase 2 code will be written until you explicitly approve.  
   
-Phase 2 plan reviewed.
+Approved.
 
-I approve the direction, but please revise the plan before code starts.
+Proceed with Facilitation Phase 2 exactly as revised.
 
-Two items must be clarified and tightened first:
+Key approved decisions:
 
-1. Do-not-contact source of truth
+1. Use a dedicated `facilitation_do_not_contact_rules` table.
+2. Do not reuse `ai_do_not_contact_rules` for real counterparty outreach.
+3. `platform_admin` may escalate and observe compliance escalations, but must not resolve them.
+4. Only `compliance_admin` may resolve or reopen compliance escalations.
+5. Keep outreach manual-send-only.
+6. Use approved templates only.
+7. Enforce one recipient per send.
+8. Enforce idempotency.
+9. Enforce duplicate checks, DNC checks, suppression checks, and compliance escalation checks server-side.
+10. Keep the UI advisory only; the edge function must be the final gatekeeper.
+11. Trader/requester visibility remains coarse only.
+12. Add all Phase 2 audit events and prebuild guards.
+13. Keep all Phase 2 negative controls in place.
 
-Please confirm whether `ai_do_not_contact_rules` is genuinely the correct canonical table for facilitation outreach do-not-contact rules.
+Phase 2 remains explicitly out of scope for:
 
-If it is AI-specific, experimental, or not intended to govern real counterparty outreach, do not reuse it.
+- SLA cron
+- reporting dashboard
+- CSV export
+- audit-pack PDF
+- bulk outreach
+- inbound reply ingestion
+- auto-onboarding
+- payment mutation
+- POI mutation
+- WaD mutation
+- token or credit mutation
+- platform_admin compliance override
+- any production dependency on `ai_do_not_contact_rules`
 
-Preferred enterprise-grade option:
+Please implement in this order:
 
-- create a dedicated `facilitation_do_not_contact_rules` table, or
-- create a generic `do_not_contact_rules` table if the platform needs one shared DNC register.
+1. migrations and RLS
+2. SSOT resolver and shared validation
+3. edge functions
+4. email template registry
+5. prebuild guards
+6. HQ UI surfaces
+7. trader milestone redaction update
+8. headless verification pack
+9. platform_admin + compliance_admin manual operator verification
+10. Phase 2 closeout evidence
 
-The DNC table must support:
-
-- email-level block
-- domain-level block
-- organisation-name warning
-- reason
-- created_by
-- created_at
-- status / active flag
-- audit trail
-- platform_admin/compliance-only write access
-
-2. Compliance escalation authority
-
-Please clarify who can resolve a compliance escalation.
-
-Preferred enterprise-grade rule:
-
-- platform_admin can escalate
-- platform_admin can view escalation state
-- compliance_admin / compliance role should resolve the compliance escalation
-- platform_admin should only resolve if the existing platform governance model already allows platform_admin to override compliance decisions
-
-Do not allow ordinary admin convenience to weaken the compliance control.
-
-Everything else in the plan is directionally approved:
-
-- approved-email outreach
-- one recipient per send
-- approved templates only
-- idempotency
-- suppression checks
-- duplicate checks
-- DNC checks
-- hard-block / warning resolver
-- audit events
-- trader milestone redaction
-- no SLA cron
-- no reporting dashboard
-- no CSV/PDF export
-- no POI/WaD/token/payment mutation
-
-Please return a revised Phase 2 plan with those two points resolved.
-
-No Phase 2 code until the revised plan is approved.
+Do not declare `PHASE_2_CLIENT_UAT_READY` until all headless tests, manual operator checks, negative controls, RLS checks, and release-gate evidence pass.
