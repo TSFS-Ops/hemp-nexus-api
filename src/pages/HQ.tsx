@@ -18,6 +18,8 @@
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound, MoreHorizontal, Sparkles, LifeBuoy } from "lucide-react";
 import { FacilitationQueuePanel } from "@/components/facilitation/FacilitationQueuePanel";
+import { FacilitationOutreachTemplatePanel } from "@/components/facilitation-outreach/FacilitationOutreachTemplatePanel";
+import { FacilitationDncRulePanel } from "@/components/facilitation-outreach/FacilitationDncRulePanel";
 import { useLayoutEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/contexts/AuthContext";
