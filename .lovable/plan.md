@@ -3,7 +3,7 @@
 Revisions in response to feedback:
 
 1. DNC source of truth is now a dedicated, enterprise-grade table — `ai_do_not_contact_rules` is **not** reused.
-2. Compliance escalation authority is now explicitly split: `platform_admin` escalates and observes; `compliance_admin` resolves. `platform_admin` does **not** resolve compliance escalations.
+2. Compliance escalation authority is now explicitly split: `platform_admin` escalates and observes; `compliance_analyst` resolves. `platform_admin` does **not** resolve compliance escalations.
 
 Everything else from the prior plan stands; deltas only are called out below.
 
@@ -33,9 +33,9 @@ Columns:
 ### 1.2 Access model
 
 - `GRANT SELECT, INSERT, UPDATE ON public.facilitation_do_not_contact_rules TO authenticated;` then RLS:
-  - `SELECT`: `platform_admin` OR `compliance_admin`.
-  - `INSERT`: `platform_admin` OR `compliance_admin`.
-  - `UPDATE` (revoke only — triggers enforce immutability of all other columns): `compliance_admin` only. `platform_admin` cannot revoke.
+  - `SELECT`: `platform_admin` OR `compliance_analyst`.
+  - `INSERT`: `platform_admin` OR `compliance_analyst`.
+  - `UPDATE` (revoke only — triggers enforce immutability of all other columns): `compliance_analyst` only. `platform_admin` cannot revoke.
   - `DELETE`: nobody. Register is append-only; revocation is a status flip.
 - `GRANT ALL ... TO service_role` for the send edge function.
 
@@ -62,8 +62,8 @@ Server-enforced in `facilitation-outreach-send`. UI is advisory only.
 ### 1.5 Management UI
 
 - HQ → Facilitation → **"Do Not Contact"** sub-panel.
-- `platform_admin` and `compliance_admin` can add rules.
-- Only `compliance_admin` sees the **Revoke** action.
+- `platform_admin` and `compliance_analyst` can add rules.
+- Only `compliance_analyst` sees the **Revoke** action.
 - No bulk import / CSV — single-rule entry only in Phase 2.
 
 ### 1.6 Negative confirmation
@@ -77,7 +77,7 @@ Server-enforced in `facilitation-outreach-send`. UI is advisory only.
 ### 2.1 Roles and powers
 
 
-| Action                                    | `platform_admin` | `compliance_admin` |
+| Action                                    | `platform_admin` | `compliance_analyst` |
 | ----------------------------------------- | ---------------- | ------------------ |
 | Escalate a candidate / case to compliance | ✅                | ✅                  |
 | View escalation state and notes           | ✅                | ✅                  |
@@ -95,9 +95,9 @@ The platform governance model does **not** currently grant `platform_admin` auth
 
 ### 2.3 Audit trail
 
-- `facilitation.outreach.escalated_to_compliance` — actor must be `platform_admin` or `compliance_admin`
-- `facilitation.outreach.escalation_resolved` — actor MUST be `compliance_admin`; any other actor recorded against this event is a server bug and rejected by a DB CHECK on `event_store.metadata->>actor_role`
-- `facilitation.outreach.escalation_reopened` — `compliance_admin` only
+- `facilitation.outreach.escalated_to_compliance` — actor must be `platform_admin` or `compliance_analyst`
+- `facilitation.outreach.escalation_resolved` — actor MUST be `compliance_analyst`; any other actor recorded against this event is a server bug and rejected by a DB CHECK on `event_store.metadata->>actor_role`
+- `facilitation.outreach.escalation_reopened` — `compliance_analyst` only
 
 All three are added to the Phase 2 audit-name prebuild guard.
 
@@ -122,7 +122,7 @@ The following items were directionally approved and are retained verbatim:
 - 11 canonical audit events (plus the 3 added in §2.3 and 2 added in §1.3 — total **16** canonical events, all guarded by `check-facilitation-phase2-audit-names.mjs`).
 - Trader milestone redaction — coarse `outreach_state` only.
 - New tables: `facilitation_outreach_templates`, `facilitation_outreach_candidates`, `facilitation_outreach_sends`, **plus** `facilitation_do_not_contact_rules` (this revision).
-- New edge functions: `facilitation-outreach-candidate-add`, `facilitation-outreach-send`, `facilitation-outreach-escalate`, `facilitation-outreach-template-status`, **plus** `facilitation-outreach-escalation-resolve` (this revision, `compliance_admin` only).
+- New edge functions: `facilitation-outreach-candidate-add`, `facilitation-outreach-send`, `facilitation-outreach-escalate`, `facilitation-outreach-template-status`, **plus** `facilitation-outreach-escalation-resolve` (this revision, `compliance_analyst` only).
 - Negative controls and prebuild guards as listed previously, **plus** `check-facilitation-phase2-no-ai-dnc-coupling.mjs` (this revision).
 - No SLA cron, no reporting dashboard, no CSV, no PDF, no POI / WaD / token / payment mutation.
 
@@ -133,8 +133,8 @@ The following items were directionally approved and are retained verbatim:
 Adds to the prior list:
 
 8. DNC register lives in `facilitation_do_not_contact_rules`; no production code path reads `ai_do_not_contact_rules`; coupling prebuild guard passes.
-9. Manual attestation recorded that a `platform_admin` JWT receives 403 from `facilitation-outreach-escalation-resolve`, and that a `compliance_admin` JWT can successfully resolve.
-10. Manual attestation that send is blocked while the linked `compliance_cases` row is open, and unblocked once `compliance_admin` resolves it.
+9. Manual attestation recorded that a `platform_admin` JWT receives 403 from `facilitation-outreach-escalation-resolve`, and that a `compliance_analyst` JWT can successfully resolve.
+10. Manual attestation that send is blocked while the linked `compliance_cases` row is open, and unblocked once `compliance_analyst` resolves it.
 
 ---
 
@@ -158,7 +158,7 @@ Key approved decisions:
 1. Use a dedicated `facilitation_do_not_contact_rules` table.
 2. Do not reuse `ai_do_not_contact_rules` for real counterparty outreach.
 3. `platform_admin` may escalate and observe compliance escalations, but must not resolve them.
-4. Only `compliance_admin` may resolve or reopen compliance escalations.
+4. Only `compliance_analyst` may resolve or reopen compliance escalations.
 5. Keep outreach manual-send-only.
 6. Use approved templates only.
 7. Enforce one recipient per send.
@@ -195,7 +195,7 @@ Please implement in this order:
 6. HQ UI surfaces
 7. trader milestone redaction update
 8. headless verification pack
-9. platform_admin + compliance_admin manual operator verification
+9. platform_admin + compliance_analyst manual operator verification
 10. Phase 2 closeout evidence
 
 Do not declare `PHASE_2_CLIENT_UAT_READY` until all headless tests, manual operator checks, negative controls, RLS checks, and release-gate evidence pass.
