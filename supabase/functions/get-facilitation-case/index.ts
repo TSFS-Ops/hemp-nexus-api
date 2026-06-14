@@ -47,5 +47,33 @@ Deno.serve(async (req) => {
   const { data: evidence } = await userClient.from("facilitation_case_evidence")
     .select("*").eq("case_id", parsed.data.case_id).order("created_at", { ascending: true });
 
-  return json(req, { case: kase, events: events ?? [], evidence: evidence ?? [] });
+  // Phase 2 Step 5 — coarse outreach state for trader milestone view.
+  // Computed via service role so traders can see a high-level summary
+  // WITHOUT any candidate emails, template bodies, gate reasons, audit
+  // payloads, or DNC details. Returns one of:
+  //   "not_started" | "in_progress" | "sent" | "blocked"
+  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const svc = createClient(url, service, { auth: { persistSession: false } });
+  let coarse_outreach_state: "not_started" | "in_progress" | "sent" | "blocked" = "not_started";
+  try {
+    const { data: cands } = await svc
+      .from("facilitation_outreach_candidates")
+      .select("id,outreach_state")
+      .eq("facilitation_case_id", parsed.data.case_id);
+    const list = cands ?? [];
+    if (list.length === 0) {
+      coarse_outreach_state = "not_started";
+    } else {
+      const { count: sentCount } = await svc
+        .from("facilitation_outreach_sends")
+        .select("id", { count: "exact", head: true })
+        .in("candidate_id", list.map((c) => c.id))
+        .eq("status", "sent");
+      if ((sentCount ?? 0) > 0) coarse_outreach_state = "sent";
+      else if (list.some((c) => c.outreach_state === "blocked" || c.outreach_state === "escalated")) coarse_outreach_state = "blocked";
+      else coarse_outreach_state = "in_progress";
+    }
+  } catch { /* fall through to default */ }
+
+  return json(req, { case: kase, events: events ?? [], evidence: evidence ?? [], coarse_outreach_state });
 });
