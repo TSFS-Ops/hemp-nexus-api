@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   INTERNAL_STATUSES,
@@ -17,6 +18,7 @@ import {
   INTERNAL_STATUS_LABELS,
   type FacilitationInternalStatus,
 } from "@/lib/facilitation-case-state";
+import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
 
 type CaseRow = Record<string, unknown> & { id: string; case_number: string; internal_status: string; case_owner_id: string | null };
 
@@ -90,12 +92,21 @@ export const FacilitationCaseDrawer: React.FC<{
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{data?.case.case_number ?? "Facilitation case"}</SheetTitle>
-          <SheetDescription>Admin triage · no outreach in Phase 1</SheetDescription>
+          <SheetDescription>Admin triage · Phase 2 outreach surface (platform_admin / compliance_analyst)</SheetDescription>
         </SheetHeader>
 
         {loading && <p className="mt-4 text-sm text-slate-500">Loading…</p>}
 
         {data && (
+          <Tabs defaultValue="triage" className="mt-4">
+            <TabsList>
+              <TabsTrigger value="triage">Triage</TabsTrigger>
+              <TabsTrigger value="outreach">Outreach</TabsTrigger>
+            </TabsList>
+            <TabsContent value="outreach" className="mt-4">
+              {caseId && <FacilitationOutreachTab caseId={caseId} />}
+            </TabsContent>
+            <TabsContent value="triage" className="mt-4">
           <div className="mt-4 space-y-6 text-sm">
             <section>
               <h3 className="font-medium mb-2">Status</h3>
@@ -183,6 +194,8 @@ export const FacilitationCaseDrawer: React.FC<{
               )}
             </section>
           </div>
+            </TabsContent>
+          </Tabs>
         )}
       </SheetContent>
     </Sheet>

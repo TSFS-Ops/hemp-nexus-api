@@ -152,30 +152,10 @@ for (const dir of FORBIDDEN_FN_DIRS) {
   }
 }
 
-// 5. Forbidden: no Phase 2 UI surfaces yet.
-function walk(dir) {
-  if (!existsSync(dir)) return [];
-  const out = [];
-  for (const e of readdirSync(dir)) {
-    const full = join(dir, e);
-    if (statSync(full).isDirectory()) out.push(...walk(full));
-    else out.push(full);
-  }
-  return out;
-}
-const UI_FORBIDDEN_PATTERNS = [
-  /facilitation[-_]?outreach/i,
-  /facilitation[-_]?dnc/i,
-  /facilitation[-_]?(compliance[-_]?)?escalation/i,
-];
-for (const root of ["src/components", "src/pages"]) {
-  for (const file of walk(resolve(ROOT, root))) {
-    const base = file.slice(ROOT.length + 1);
-    if (UI_FORBIDDEN_PATTERNS.some((re) => re.test(base))) {
-      errors.push(`Phase 2 UI forbidden in Step 2: ${base}`);
-    }
-  }
-}
+// 5. Step 4 landed: Phase 2 outreach UI surfaces are now permitted under
+// `src/components/facilitation-outreach/`. The Step-2 forbidden-UI check
+// is retired here. UI gate logic is forbidden by convention; the UI must
+// only display gate results returned by the server edge functions.
 
 if (errors.length) {
   console.error("[check-facilitation-outreach-drift] FAILED:");
