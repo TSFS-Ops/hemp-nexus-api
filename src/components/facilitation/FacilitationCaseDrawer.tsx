@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   INTERNAL_STATUSES,
@@ -17,6 +18,7 @@ import {
   INTERNAL_STATUS_LABELS,
   type FacilitationInternalStatus,
 } from "@/lib/facilitation-case-state";
+import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
 
 type CaseRow = Record<string, unknown> & { id: string; case_number: string; internal_status: string; case_owner_id: string | null };
 
