@@ -1,0 +1,128 @@
+{
+  "status": "PHASE_2_HEADLESS_VERIFICATION_PASS — MANUAL_OPERATOR_CHECKS_PENDING",
+  "phase": "Facilitation Phase 2 — Outreach + DNC + Escalations",
+  "generated_at": "2026-06-14T17:00:00Z",
+  "scope": "Headless verification pack. No new features were added during verification.",
+  "headless_checks": {
+    "prebuild_full": {
+      "command": "npm run prebuild",
+      "result": "PASS",
+      "guards_added_to_release_gate": [
+        "check-facilitation-outreach-drift.mjs",
+        "check-facilitation-outreach-audit-names.mjs",
+        "check-facilitation-dnc-audit-names.mjs"
+      ],
+      "facilitation_specific_guards": {
+        "check-facilitation-case-audit-names": "OK (7 pinned)",
+        "check-facilitation-no-send-path": "OK",
+        "check-facilitation-status-drift": "OK",
+        "check-facilitation-outreach-drift": "OK",
+        "check-facilitation-outreach-audit-names": "OK",
+        "check-facilitation-dnc-audit-names": "OK"
+      }
+    },
+    "typecheck": {
+      "command": "npx tsc --noEmit",
+      "result": "PASS",
+      "errors": 0
+    },
+    "gate_unit_tests": {
+      "command": "npx vitest run src/tests/facilitation-outreach-gate.test.ts",
+      "result": "PASS",
+      "tests_passed": 11,
+      "tests_failed": 0,
+      "covers": [
+        "candidate_add green gate",
+        "candidate_add warning gate (DNC org-name)",
+        "candidate_add hard-block gate (DNC email)",
+        "candidate_add hard-block gate (DNC domain)",
+        "suppressed email blocked",
+        "open compliance escalation dominates (blocks send)",
+        "warning acknowledgement required before send",
+        "approved template required before send",
+        "duplicate-detection result composition",
+        "DNC revoke separation-of-duties"
+      ]
+    },
+    "rls_inspection": {
+      "method": "pg_policies + pg_class.relrowsecurity via supabase--read_query",
+      "tables_checked": [
+        "facilitation_outreach_templates",
+        "facilitation_outreach_candidates",
+        "facilitation_outreach_sends",
+        "facilitation_do_not_contact_rules",
+        "facilitation_compliance_escalations"
+      ],
+      "rls_enabled_on_all": true,
+      "ordinary_requester_or_trader_select": "DENIED — no policy grants SELECT to non-(platform_admin|compliance_analyst) on any of the 5 tables",
+      "platform_admin_capabilities": {
+        "templates": "SELECT, INSERT, UPDATE",
+        "candidates": "SELECT, INSERT, UPDATE",
+        "sends": "SELECT, INSERT",
+        "dnc_rules": "SELECT, INSERT (NO UPDATE — revoke denied)",
+        "escalations": "SELECT, INSERT (NO UPDATE — resolve/reopen denied)"
+      },
+      "compliance_analyst_capabilities": {
+        "templates": "SELECT only",
+        "candidates": "SELECT only",
+        "sends": "SELECT only",
+        "dnc_rules": "SELECT, INSERT, UPDATE (revoke allowed)",
+        "escalations": "SELECT, INSERT, UPDATE (resolve/reopen allowed)"
+      },
+      "platform_admin_cannot_resolve_or_reopen_escalation": "ENFORCED — UPDATE policy fcesc_update_compliance_analyst requires compliance_analyst role; platform_admin lacks UPDATE grant. Edge function facilitation-outreach-escalation-resolve also requires compliance_analyst role at the application layer (double gate)."
+    },
+    "negative_controls": {
+      "method": "scripts/check-facilitation-outreach-audit-names.mjs + scripts/check-facilitation-dnc-audit-names.mjs + scripts/check-facilitation-outreach-drift.mjs + scripts/check-facilitation-no-send-path.mjs (all wired in prebuild)",
+      "no_sla_cron": "PASS — no pg_cron schedule registered for facilitation outreach",
+      "no_reporting_dashboard": "PASS — no reporting/export surface added in src/",
+      "no_csv_export": "PASS — enforced by check-csv-export-audit and no new CSV exporters introduced",
+      "no_audit_pack_pdf": "PASS — no PDF generator added",
+      "no_bulk_send": "PASS — facilitation-outreach-send accepts single candidate_id per call",
+      "no_auto_send": "PASS — send requires explicit operator request with Idempotency-Key + ack",
+      "no_inbound_reply_handling": "PASS — no inbound webhook added",
+      "no_auto_onboarding": "PASS — no onboarding mutation added",
+      "no_poi_mutation": "PASS — banned-mutations guard scans Phase 2 functions",
+      "no_wad_mutation": "PASS — banned-mutations guard",
+      "no_match_lifecycle_mutation": "PASS — banned-mutations guard",
+      "no_token_credit_payment_mutation": "PASS — banned-mutations guard",
+      "no_poi_engagements_mutation": "PASS — banned-mutations guard",
+      "no_compliance_cases_mutation": "PASS — banned-mutations guard (compliance_cases is read-only from Phase 2 surface)",
+      "no_platform_admin_compliance_override": "PASS — separation-of-duties enforced at both DB policy and edge-function role check"
+    },
+    "send_path_uniqueness": {
+      "method": "scripts/check-facilitation-outreach-audit-names.mjs",
+      "result": "PASS — Resend / send-transactional-email / notification-dispatch references found only in supabase/functions/facilitation-outreach-send/index.ts; absent from template-status, candidate-add, escalate, escalation-resolve, dnc-add, dnc-revoke"
+    },
+    "audit_name_ssot": {
+      "method": "scripts/check-facilitation-outreach-audit-names.mjs + scripts/check-facilitation-dnc-audit-names.mjs",
+      "canonical_outreach_actions": [
+        "facilitation_outreach.template_status_changed",
+        "facilitation_outreach.candidate_added",
+        "facilitation_outreach.candidate_gate_evaluated",
+        "facilitation_outreach.send_attempted",
+        "facilitation_outreach.send_succeeded",
+        "facilitation_outreach.send_blocked",
+        "facilitation_outreach.send_idempotent_replay",
+        "facilitation_outreach.escalation_opened",
+        "facilitation_outreach.escalation_resolved",
+        "facilitation_outreach.escalation_reopened"
+      ],
+      "canonical_dnc_actions": [
+        "facilitation.dnc.rule_added",
+        "facilitation.dnc.rule_revoked"
+      ],
+      "result": "PASS — all canonical names pinned, no drift"
+    }
+  },
+  "items_deferred_to_manual_operator_checks": [
+    "Live template approve→archive transition observed by platform_admin",
+    "Live candidate add with green/warning/hard-block gate observed end-to-end",
+    "Live DNC email block / domain block / org-name warning observed",
+    "Live DNC revoke by compliance_analyst observed (and denial for platform_admin)",
+    "Live open-escalation blocks send observed",
+    "Live resolved-escalation allows send observed",
+    "Live idempotency replay observed (single send_log row per Idempotency-Key)",
+    "Live trader milestone view showing only coarse_outreach_state"
+  ],
+  "next_step": "Complete the platform_admin and compliance_analyst manual operator checklists, attach screenshots to ./screenshots/, then re-run prebuild and update this summary to PHASE_2_CLIENT_UAT_READY."
+}
