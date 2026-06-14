@@ -135,10 +135,7 @@ export const FacilitationCaseDrawer: React.FC<{
 
             <section className="space-y-2">
               <h3 className="font-medium">Assign owner</h3>
-              <div className="flex gap-2">
-                <Input placeholder="Owner user_id (UUID) or leave empty to clear" value={ownerInput} onChange={(e) => setOwnerInput(e.target.value)} />
-                <Button onClick={doAssign} variant="outline">Save</Button>
-              </div>
+              <OwnerPicker value={ownerInput} onChange={setOwnerInput} onSave={doAssign} />
             </section>
 
             <section className="space-y-2">
