@@ -101,11 +101,14 @@ The platform governance model does **not** currently grant `platform_admin` auth
 
 All three are added to the Phase 2 audit-name prebuild guard.
 
-### 2.4 Compliance case linkage
+### 2.4 Compliance case linkage (Option 2 — dedicated table)
 
-- Escalation creates a `compliance_cases` row with `source='facilitation_outreach'` and `facilitation_case_id` reference.
-- The `compliance_cases` row's resolver policies are reused as-is — no new compliance RLS surface introduced.
-- Closing the underlying `compliance_cases` row is what unblocks further outreach on the candidate. The send edge function checks this before every send.
+- Escalation creates a row in a NEW dedicated table `facilitation_compliance_escalations` (NOT `compliance_cases`).
+- `compliance_cases` is left untouched — no new columns, no relaxed constraints, no policy changes. Phase 2 facilitation operates on unknown counterparties (no `entity_id`), so reusing `compliance_cases` is not viable in this batch.
+- Columns: `id`, `candidate_id` (FK → `facilitation_outreach_candidates`), `facilitation_case_id` (FK → `facilitation_cases`), `status` (`open` | `resolved`), `reason`, `created_by`, `created_at`, `resolved_by`, `resolved_at`, `resolution_notes`, `reopened_by`, `reopened_at`, `reopened_reason`.
+- RLS: `SELECT` for `platform_admin` and `compliance_analyst`; `INSERT` for both; `UPDATE` (resolve / reopen) for `compliance_analyst` ONLY (enforced via `WITH CHECK` + edge function role check + DB trigger). No `DELETE`.
+- The send edge function checks for any `open` escalation on the candidate before every send; if found, returns 409 `ESCALATION_OPEN`.
+- A small "Facilitation escalations" list will be added under the existing compliance dashboard surface (smallest possible footprint, not a new dashboard).
 
 ---
 

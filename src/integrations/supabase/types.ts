@@ -3844,6 +3844,296 @@ export type Database = {
           },
         ]
       }
+      facilitation_compliance_escalations: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          created_by: string | null
+          facilitation_case_id: string
+          id: string
+          reason: string
+          reopened_at: string | null
+          reopened_by: string | null
+          reopened_reason: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          created_by?: string | null
+          facilitation_case_id: string
+          id?: string
+          reason: string
+          reopened_at?: string | null
+          reopened_by?: string | null
+          reopened_reason?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          created_by?: string | null
+          facilitation_case_id?: string
+          id?: string
+          reason?: string
+          reopened_at?: string | null
+          reopened_by?: string | null
+          reopened_reason?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_compliance_escalations_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_outreach_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilitation_compliance_escalations_facilitation_case_id_fkey"
+            columns: ["facilitation_case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilitation_do_not_contact_rules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          match_severity: string
+          reason: string
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          rule_type: string
+          source: string
+          status: string
+          value_norm: string
+          value_raw: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          match_severity: string
+          reason: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          rule_type: string
+          source: string
+          status?: string
+          value_norm: string
+          value_raw: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          match_severity?: string
+          reason?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          rule_type?: string
+          source?: string
+          status?: string
+          value_norm?: string
+          value_raw?: string
+        }
+        Relationships: []
+      }
+      facilitation_outreach_candidates: {
+        Row: {
+          contact_email: string
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          dnc_check_result: string | null
+          duplicate_check_result: string | null
+          facilitation_case_id: string
+          id: string
+          last_gate_evaluated_at: string | null
+          org_name: string | null
+          org_website: string | null
+          outreach_state: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          dnc_check_result?: string | null
+          duplicate_check_result?: string | null
+          facilitation_case_id: string
+          id?: string
+          last_gate_evaluated_at?: string | null
+          org_name?: string | null
+          org_website?: string | null
+          outreach_state?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          dnc_check_result?: string | null
+          duplicate_check_result?: string | null
+          facilitation_case_id?: string
+          id?: string
+          last_gate_evaluated_at?: string | null
+          org_name?: string | null
+          org_website?: string | null
+          outreach_state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_outreach_candidates_facilitation_case_id_fkey"
+            columns: ["facilitation_case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilitation_outreach_sends: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          email_send_log_id: string | null
+          id: string
+          idempotency_key: string
+          recipient_email: string
+          send_error: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          subject: string
+          template_id: string
+          template_version: number
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          email_send_log_id?: string | null
+          id?: string
+          idempotency_key: string
+          recipient_email: string
+          send_error?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          subject: string
+          template_id: string
+          template_version: number
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          email_send_log_id?: string | null
+          id?: string
+          idempotency_key?: string
+          recipient_email?: string
+          send_error?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          subject?: string
+          template_id?: string
+          template_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_outreach_sends_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_outreach_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilitation_outreach_sends_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_outreach_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilitation_outreach_templates: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          archived_at: string | null
+          archived_by: string | null
+          body_html: string | null
+          body_text: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          slug: string
+          status: string
+          subject: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          body_html?: string | null
+          body_text: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          slug: string
+          status?: string
+          subject: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          body_html?: string | null
+          body_text?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       fund_flows: {
         Row: {
           amount: number
