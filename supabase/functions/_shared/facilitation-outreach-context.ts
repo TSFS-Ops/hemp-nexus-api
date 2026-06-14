@@ -206,7 +206,7 @@ export async function writeOutreachAudit(
       action: args.action,
       entity_type: args.entity_type,
       entity_id: args.entity_id,
-      user_id: args.actor_user_id,
+      actor_user_id: args.actor_user_id,
       metadata: args.metadata ?? {},
     });
   } catch (e) {
