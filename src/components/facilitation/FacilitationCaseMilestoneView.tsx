@@ -98,6 +98,7 @@ export const FacilitationCaseMilestoneView: React.FC = () => {
           <Badge variant="secondary">{USER_FACING_LABELS[kase.user_facing_status] ?? kase.user_facing_status}</Badge>
           <Badge variant="outline">Urgency: {kase.urgency}</Badge>
           <Badge variant="outline">{kase.role === "buyer" ? "You are the buyer" : "You are the seller"}</Badge>
+          <Badge variant={coarseOutreach === "blocked" ? "destructive" : coarseOutreach === "sent" ? "default" : "outline"}>Outreach: {coarseOutreach.replace("_", " ")}</Badge>
         </div>
       </header>
 
