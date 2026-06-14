@@ -194,6 +194,8 @@ export const FacilitationCaseDrawer: React.FC<{
               )}
             </section>
           </div>
+            </TabsContent>
+          </Tabs>
         )}
       </SheetContent>
     </Sheet>
