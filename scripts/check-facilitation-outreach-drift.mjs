@@ -62,13 +62,11 @@ const CONST_LISTS = [
 
 const SCHEMA_NAMES_LIST = "FACILITATION_OUTREACH_SCHEMA_NAMES";
 
-const FORBIDDEN_FN_DIRS = [
-  "supabase/functions/facilitation-outreach-template-update",
-  "supabase/functions/facilitation-outreach-candidate-add",
-  "supabase/functions/facilitation-outreach-send",
-  "supabase/functions/facilitation-compliance-escalate",
-  "supabase/functions/facilitation-compliance-escalation-resolve",
-];
+// Step 3 landed: the Phase 2 outreach edge functions now exist as
+// canonical functions. The forbidden-dirs check is intentionally empty
+// (the no-send-path guard scopes Phase 1 functions; Phase 2 functions
+// have their own audit-name and contract guards).
+const FORBIDDEN_FN_DIRS = [];
 
 function extractList(src, marker) {
   const start = src.indexOf(`export const ${marker} = [`);
