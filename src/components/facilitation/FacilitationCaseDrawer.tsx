@@ -163,22 +163,63 @@ export const FacilitationCaseDrawer: React.FC<{
 
             <section>
               <h3 className="font-medium mb-2">Intake</h3>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                {[
-                  ["Counterparty", data.case.counterparty_legal_name as string],
-                  ["Country", data.case.counterparty_country as string],
-                  ["Product", data.case.product_or_commodity as string],
-                  ["Role", data.case.role as string],
-                  ["Urgency", data.case.urgency as string],
-                  ["Value", `${data.case.estimated_value_amount} ${data.case.estimated_value_currency}`],
-                  ["Email", (data.case.counterparty_email as string) || "-"],
-                  ["Permission to contact", data.case.permission_to_contact ? "Yes" : "No"],
-                ].map(([k, v]) => (
-                  <React.Fragment key={k}><dt className="text-slate-500">{k}</dt><dd className="text-slate-800">{v}</dd></React.Fragment>
-                ))}
-              </dl>
-              <p className="mt-3 text-xs text-slate-600 whitespace-pre-wrap"><span className="text-slate-500">Reason: </span>{data.case.reason as string}</p>
-              <p className="mt-1 text-xs text-slate-600 whitespace-pre-wrap"><span className="text-slate-500">How user knows: </span>{data.case.how_user_knows_counterparty as string}</p>
+              {(() => {
+                const c = data.case as Record<string, unknown>;
+                const get = (k: string) => {
+                  const v = c[k];
+                  if (v === null || v === undefined) return null;
+                  if (typeof v === "string" && v.trim() === "") return null;
+                  return v;
+                };
+                const roleRaw = get("role") as string | null;
+                const relRaw = get("relationship_status") as string | null;
+                const valAmt = get("estimated_value_amount");
+                const valCcy = get("estimated_value_currency") as string | null;
+                const rows: Array<[string, React.ReactNode]> = [
+                  ["Counterparty", get("counterparty_legal_name") as React.ReactNode],
+                  ["Trading name", get("counterparty_trading_name") as React.ReactNode],
+                  ["Country", get("counterparty_country") as React.ReactNode],
+                  ["City", get("counterparty_city") as React.ReactNode],
+                  ["Physical address", get("counterparty_physical_address") as React.ReactNode],
+                  ["Registration number", get("counterparty_registration_number") as React.ReactNode],
+                  ["Tax / VAT number", get("counterparty_tax_vat_number") as React.ReactNode],
+                  ["Sector", get("counterparty_sector") as React.ReactNode],
+                  ["Product", get("product_or_commodity") as React.ReactNode],
+                  ["Role", roleRaw ? (ROLE_LABELS[roleRaw as FacilitationRole] ?? roleRaw) : null],
+                  ["Relationship", relRaw ? (RELATIONSHIP_STATUS_LABELS[relRaw as FacilitationRelationshipStatus] ?? relRaw) : null],
+                  ["Urgency", get("urgency") as React.ReactNode],
+                  ["Target response date", get("target_response_date") as React.ReactNode],
+                  ["Value", valAmt ? `${valAmt} ${valCcy ?? ""}`.trim() : null],
+                  ["Email", get("counterparty_email") as React.ReactNode],
+                  ["Phone", get("counterparty_phone") as React.ReactNode],
+                  ["Website", get("counterparty_website") as React.ReactNode],
+                  ["Contact person", get("contact_person_name") as React.ReactNode],
+                  ["Contact title", get("contact_person_title") as React.ReactNode],
+                  ["Contact phone", get("contact_person_phone") as React.ReactNode],
+                  ["Contact email", get("contact_person_email") as React.ReactNode],
+                  ["Preferred language", get("preferred_contact_language") as React.ReactNode],
+                  ["Permission to contact", get("permission_to_contact") === undefined || get("permission_to_contact") === null ? null : (c.permission_to_contact ? "Yes" : "No")],
+                ].filter(([, v]) => v !== null && v !== undefined && v !== "");
+                return (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                    {rows.map(([k, v]) => (
+                      <React.Fragment key={k}>
+                        <dt className="text-slate-500">{k}</dt>
+                        <dd className="text-slate-800">{v}</dd>
+                      </React.Fragment>
+                    ))}
+                  </dl>
+                );
+              })()}
+              {data.case.reason ? (
+                <p className="mt-3 text-xs text-slate-600 whitespace-pre-wrap"><span className="text-slate-500">Reason: </span>{data.case.reason as string}</p>
+              ) : null}
+              {data.case.how_user_knows_counterparty ? (
+                <p className="mt-1 text-xs text-slate-600 whitespace-pre-wrap"><span className="text-slate-500">How user knows: </span>{data.case.how_user_knows_counterparty as string}</p>
+              ) : null}
+              {data.case.source_evidence_summary ? (
+                <p className="mt-1 text-xs text-slate-600 whitespace-pre-wrap"><span className="text-slate-500">Source / evidence: </span>{data.case.source_evidence_summary as string}</p>
+              ) : null}
             </section>
 
             <section className="space-y-2">
