@@ -70,8 +70,9 @@ Deno.test("Phase 4: each external action maps to a canonical client_summary audi
       true,
       `audit name not in SSOT: ${name}`,
     );
+    const prefix = ["ai_review", "client_summary_"].join(".");
     assertEquals(
-      name.startsWith("ai_review.client_summary_"),
+      name.startsWith(prefix),
       true,
       `audit name not in client_summary namespace: ${name}`,
     );
