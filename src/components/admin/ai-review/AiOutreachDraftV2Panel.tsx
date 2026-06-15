@@ -197,8 +197,11 @@ function DraftCard({
   const [subject, setSubject] = useState(draft.draft_subject);
   const [bodyText, setBodyText] = useState(draft.draft_body);
 
-  const [openAction, setOpenAction] = useState<null | "reject" | "approve" | "sent">(null);
+  const [openAction, setOpenAction] = useState<null | "reject" | "approve" | "sent" | "outcome">(null);
   const [note, setNote] = useState("");
+  const [sendConfirmed, setSendConfirmed] = useState(false);
+  const [outcomeChoice, setOutcomeChoice] = useState<string>("");
+  const isFirst = draft.is_first_outreach !== false;
 
   const decide = useMutation({
     mutationFn: async (payload: any) => {
