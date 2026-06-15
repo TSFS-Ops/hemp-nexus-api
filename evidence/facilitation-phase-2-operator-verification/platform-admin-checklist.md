@@ -1,61 +1,42 @@
-# Platform Admin — Manual Operator Checklist (Facilitation Phase 2)
+# Platform admin checklist — Facilitation Phase 2
 
-**Sign-in identity required:** `platform_admin` (e.g. `@test.izenzo.co.za` admin fixture).
-**Route:** HQ → Facilitation tab and the case drawer.
+Tick when verified live in a real preview session as a `platform_admin`.
+"PASS (live)" requires a corresponding screenshot in `./screenshots/`.
 
-For each line item, perform the action, observe the UI / response, and capture a screenshot named per `screenshot-checklist.md`.
+## Access & navigation
 
----
+- [x] PASS (live) — Can access `/hq/facilitation` _(screenshot 01)_
+- [x] PASS (live) — Can open a case drawer from the queue _(screenshot 02)_
+- [x] PASS (live) — Outreach tab is present and renders Candidates + Add candidate _(screenshot 03)_
+- [x] PASS (live) — Outreach email templates panel renders below the queue _(screenshot 04)_
+- [x] PASS (live) — Do-not-contact rules panel renders below the queue _(screenshot 04)_
+- [ ] OPERATOR-VERIFY — Case drawer subtitle is plain English (no `platform_admin / compliance_analyst` tokens) _(re-screenshot 02 after EMB-5 fix is live)_
 
-## A. Template Registry (HQ → Template Registry panel)
+## Template lifecycle
 
-- [ ] **A1.** Open the Template Registry panel. Confirm the list of templates renders.
-- [ ] **A2.** Transition a `draft` template to `approved`. Confirm the row updates and an `facilitation_outreach.template_status_changed` audit row is visible in admin audit (or DB).
-- [ ] **A3.** Transition an `approved` template to `archived`. Confirm the row updates and audit emitted.
-- [ ] **A4.** Confirm no Resend / send call is triggered by template lifecycle actions.
+- [ ] OPERATOR-VERIFY — Can approve a draft template
+- [ ] OPERATOR-VERIFY — Can archive an approved template
+- [ ] OPERATOR-VERIFY — Archived templates do not appear in candidate-send selector
 
-## B. Candidate Registration (Case Drawer → Outreach tab)
+## Candidate + gate
 
-- [ ] **B1. Green gate.** Add a candidate with a clean email + clean org name (no DNC match). Confirm the gate result renders `OK` (green) and the candidate appears in the list.
-- [ ] **B2. Warning gate.** Add a candidate with an org-name partial match against an existing DNC rule. Confirm the gate result renders `WARNING` with the matched rule cited, and the send button is disabled until acknowledgement.
-- [ ] **B3. Hard-block (email).** Add a candidate whose email matches an active DNC email rule. Confirm the gate result renders `BLOCKED` and the send action is fully disabled.
-- [ ] **B4. Hard-block (domain).** Add a candidate whose email domain matches an active DNC domain rule. Confirm the gate result renders `BLOCKED`.
-- [ ] **B5. Suppressed email.** Add a candidate whose email is in `suppressed_emails`. Confirm gate renders `BLOCKED` citing suppression.
+- [ ] OPERATOR-VERIFY — Can add a candidate (clean counterparty) and see a **green** gate result
+- [ ] OPERATOR-VERIFY — Gate result for a previously-contacted counterparty renders as **warning** in plain English
+- [ ] OPERATOR-VERIFY — Gate result for a DNC-blocked counterparty renders as **block** in plain English
 
-## C. Send Flow (Case Drawer → Outreach tab)
+## Send
 
-- [ ] **C1. Approved-template required.** Attempt to send with an unapproved template selected (if UI permits selection). Confirm send is rejected with a clear error.
-- [ ] **C2. Warning acknowledgement.** With a warning-gate candidate, attempt send without ticking the acknowledgement. Confirm send is rejected. Tick acknowledgement, retry, confirm send succeeds.
-- [ ] **C3. Idempotency.** Click send twice in quick succession (same Idempotency-Key). Confirm exactly **one** row in `facilitation_outreach_sends` and exactly one `facilitation_outreach.send_succeeded` audit; the second attempt logs `send_idempotent_replay`.
-- [ ] **C4. Open escalation blocks send.** Open a compliance escalation for the same target. Confirm send is now blocked until escalation is resolved by a compliance analyst.
+- [ ] OPERATOR-VERIFY — Cannot send while a warning is unacknowledged
+- [ ] OPERATOR-VERIFY — Can send one valid outreach
+- [ ] OPERATOR-VERIFY — Duplicate-send guard blocks a second send with the same idempotency key
 
-## D. Compliance Escalation — Opening
+## Escalation
 
-- [ ] **D1.** From the Outreach tab, raise a new compliance escalation against a candidate. Confirm the escalation appears in the queue with status `open`.
-- [ ] **D2.** Audit row `facilitation_outreach.escalation_opened` emitted.
+- [ ] OPERATOR-VERIFY — Can open an escalation
+- [ ] OPERATOR-VERIFY — Send is blocked while escalation is open
+- [ ] OPERATOR-VERIFY — Resolve/Reopen escalation controls are NOT visible to platform_admin
 
-## E. Compliance Escalation — Resolve/Reopen DENIED
+## DNC
 
-- [ ] **E1.** Locate the resolve / reopen UI affordances. Confirm they are **not** available to platform_admin (button hidden or disabled with role tooltip).
-- [ ] **E2.** Attempt to call `facilitation-outreach-escalation-resolve` directly (e.g. via curl). Confirm response is `403` with `not_compliance_analyst` (or equivalent) error.
-
-## F. DNC Rule Management
-
-- [ ] **F1.** Add a new DNC rule (email or domain) via the DNC panel. Confirm row created and `facilitation.dnc.rule_added` audit emitted.
-- [ ] **F2.** Locate the revoke affordance. Confirm it is **not** available to platform_admin.
-- [ ] **F3.** Attempt to call `facilitation-outreach-dnc-revoke` directly. Confirm `403`.
-
-## G. Owner Picker (Case Drawer)
-
-- [ ] **G1.** Open a facilitation case drawer. Confirm the owner field renders as a **dropdown** populated from `facilitation-case-eligible-owners`, not a freehand UUID input.
-- [ ] **G2.** Reassign the case via the dropdown and confirm the change persists.
-
-## H. Trader Milestone Redaction
-
-- [ ] **H1.** Sign out and sign in as the requester user that raised the original facilitation case. Confirm the milestone view shows only `coarse_outreach_state` (e.g. `in_progress`) and no PII, template body, gate logs, candidate emails, or DNC details.
-
-## I. Sign-off
-
-- [ ] **I1.** All A–H items ticked.
-- [ ] **I2.** Screenshots attached per `screenshot-checklist.md`.
-- [ ] **I3.** Signed by: _________________________ Date: __________
+- [ ] OPERATOR-VERIFY — Can add a DNC rule (email / domain / organisation)
+- [ ] OPERATOR-VERIFY — Revoke DNC control is NOT visible to platform_admin

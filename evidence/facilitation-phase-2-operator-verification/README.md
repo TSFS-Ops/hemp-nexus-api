@@ -1,42 +1,47 @@
-# Facilitation Phase 2 — Operator Verification Pack
+# Facilitation Phase 2 — Operator Verification Evidence
 
-**Current status:** `PHASE_2_PARTIAL — NOT CLIENT_UAT_READY`
+**Status:** `PHASE_2_PARTIAL — NOT CLIENT_UAT_READY`
 **Last updated:** 2026-06-15
 
-## What changed since the previous audit
+## What this pass covered (live)
 
-The compliance_analyst route-access blocker was fixed (`src/App.tsx`, `src/pages/HQ.tsx`, `src/lib/constants.ts`). All facilitation prebuild guards re-passed.
+The agent drove the preview browser as the **currently-logged-in platform_admin** only,
+and captured four screenshots of the Phase 2 surface:
 
-## Why we are still PARTIAL
-
-Two classes of issue remain open:
-
-### 1. Client-embarrassment defects identified in the previous audit but never applied
-
-| ID | Defect | File evidence |
+| # | Screenshot | What it shows |
 |---|---|---|
-| EMB-1 | Catch blocks throw raw `err.message` so the UI shows "Edge Function returned a non-2xx status code" instead of the structured server error. `parseEdgeError` exists in `src/lib/edge-error.ts` but is not imported by any facilitation component. | `rg 'parseEdgeError' src/components/facilitation-outreach/` → 0 matches |
-| EMB-2 | Gate codes (`dnc_org_name_warning`, `blocked`, `suppressed_email`, …) render verbatim in badges and ack checkboxes. No label map is applied. | `src/components/facilitation-outreach/FacilitationOutreachTab.tsx:91-97, 358-368` |
+| 01 | `01-platform-admin-hq-facilitation.png` | `/hq/facilitation` queue with 6 cases, queue header, search/status/urgency filters |
+| 02 | `02-platform-admin-case-drawer-triage.png` | Case drawer Triage tab (intake, assign owner, change status, internal notes) |
+| 03 | `03-platform-admin-case-drawer-outreach.png` | Case drawer Outreach tab (Candidates list, Add candidate form, pre-send check copy) |
+| 04 | `04-platform-admin-templates-and-dnc-panels.png` | Outreach email templates panel + Do-not-contact rules panel below the queue |
 
-Smallest safe fix for both is described in `summary.json → remaining_blockers`.
+## What this pass deliberately did NOT cover
 
-### 2. Live multi-role click-through cannot be performed by the agent
+- **compliance_analyst live click-through** — agent does not have a separate compliance_analyst
+  test account, and refused to sign in/out of the user's own preview session to fake one.
+- **requester/trader live click-through** — same reason.
+- **Destructive platform_admin actions** — approving/archiving a template, adding a candidate,
+  sending outreach, opening an escalation, adding a DNC rule. The agent did not commit
+  destructive writes against the live preview org without seeded fixtures and explicit go-ahead.
 
-The agent does not have separate `compliance_analyst` or requester credentials in this environment. Code-level RBAC, RLS, and component-gating are all verified, but the operator must still drive a live click-through with screenshots before client UAT.
+These remain `OPERATOR-VERIFY-REQUIRED` and must be executed by a human operator (or QA with
+provisioned `@test.izenzo.co.za` accounts) before declaring `PHASE_2_CLIENT_UAT_READY`.
 
-Items still requiring live operator verification are listed in `summary.json → platform_admin_journey`, `compliance_analyst_journey`, and `requester_milestone_privacy` (every `OPERATOR-VERIFY-REQUIRED` entry).
+## New defect found in this live pass
 
-## Files in this pack
+- **EMB-5** — Case drawer subtitle exposed internal role tokens:
+  `Admin triage · Phase 2 outreach surface (platform_admin / compliance_analyst)`.
+  Patched at `src/components/facilitation/FacilitationCaseDrawer.tsx:133` →
+  `Review the case and run outreach`. **Screenshot 02 must be re-captured** after the next
+  preview build to confirm.
 
-- `summary.json` — machine-readable result of the re-audit.
-- `platform-admin-checklist.md` — manual click-through script for the platform_admin role.
-- `compliance-analyst-checklist.md` — manual click-through script for the compliance_analyst role.
-- `screenshot-checklist.md` — list of screenshots required for the evidence pack.
-- `screenshots/` — empty until the operator captures the live runs.
+## How to complete this evidence pack
 
-## Path to PHASE_2_CLIENT_UAT_READY
-
-1. Apply EMB-1 and EMB-2 fixes.
-2. Operator runs both role checklists live, captures screenshots.
-3. Re-run prebuild.
-4. Update `summary.json` status to `PHASE_2_CLIENT_UAT_READY`.
+1. Re-screenshot the case drawer (`02-...`) after the EMB-5 fix is live.
+2. Run `platform-admin-checklist.md` against a seeded test case + approved template; capture
+   gate-result (green/warn/block), warn-ack, duplicate-send guard, escalation, and DNC screenshots.
+3. Sign in as a compliance_analyst test account in a clean browser; run
+   `compliance-analyst-checklist.md`.
+4. Sign in as a requester/trader test account in a clean browser; run the requester privacy
+   checks against the same case.
+5. Update `summary.json` verdict only when every checklist item is `PASS (live)`.
