@@ -140,6 +140,11 @@ async function _handle(req: Request): Promise<Response> {
       });
     }
 
+    const now = new Date().toISOString();
+    const patch: Record<string, unknown> = { updated_at: now };
+    let auditAction: string;
+    const auditExtra: Record<string, unknown> = { prior_status: row.status };
+
 
     switch (action) {
       case "approve":
