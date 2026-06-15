@@ -216,7 +216,13 @@ export const FacilitationCaseDrawer: React.FC<{
                 {data.events.map((ev) => (
                   <li key={ev.id} className="border-l-2 border-slate-200 pl-3">
                     <div className="text-slate-400 font-mono">{new Date(ev.created_at).toLocaleString()}</div>
-                    <div className="text-slate-800">{ev.action} {ev.to_status ? `→ ${ev.to_status}` : ""}</div>
+                    <div className="text-slate-800">
+                      {timelineActionLabel(ev.action)}
+                      {ev.to_status ? <> → {INTERNAL_STATUS_LABELS[ev.to_status as FacilitationInternalStatus] ?? ev.to_status}</> : null}
+                      {ev.payload && typeof (ev.payload as Record<string, unknown>).final_outcome === "string"
+                        ? <> · {outcomeLabel((ev.payload as Record<string, unknown>).final_outcome as string)}</>
+                        : null}
+                    </div>
                     {ev.payload?.body ? <div className="text-slate-600 whitespace-pre-wrap mt-1">{String(ev.payload.body)}</div> : null}
                   </li>
                 ))}
