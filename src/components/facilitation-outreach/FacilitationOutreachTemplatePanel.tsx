@@ -111,7 +111,7 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
             )}
           </li>
         ))}
-        {!loading && rows.length === 0 && <li className="text-xs text-slate-500">No templates registered.</li>}
+        {!loading && rows.length === 0 && <li className="text-xs text-slate-500">No templates available.</li>}
       </ul>
     </div>
   );
