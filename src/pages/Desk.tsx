@@ -211,12 +211,9 @@ export default function Desk() {
                   element={
                     <>
                       <header className="mb-8">
-                        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
-                          Commercial Trading
-                        </p>
-                        <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">My Deals</h1>
-                        <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
-                          The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent.
+                        <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight">My Trades</h1>
+                        <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-xl">
+                          Every trade you have started, from early drafts to sealed agreements.
                         </p>
                       </header>
                       <MatchesList />
