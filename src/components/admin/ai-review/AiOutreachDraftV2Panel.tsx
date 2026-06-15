@@ -425,26 +425,90 @@ function DraftCard({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={openAction === "sent"} onOpenChange={(o) => !o && setOpenAction(null)}>
-        <DialogContent>
+      <Dialog open={openAction === "sent"} onOpenChange={(o) => { if (!o) { setOpenAction(null); setSendConfirmed(false); } }}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Mark sent by me (manual)</DialogTitle>
+            <DialogTitle>Final review · manual send</DialogTitle>
             <DialogDescription>
-              This only records that you sent this draft yourself outside the platform. The platform
-              does not transmit anything.
+              The platform never sends. This is the final preview of what you intend to paste into
+              your own email client. Sending must be a separate action — confirm below only after
+              you have actually sent it.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-auto border border-border rounded-sm bg-muted/30 p-3">
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Subject</p>
+              <p className="text-[13px] font-medium">{draft.draft_subject}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Body</p>
+              <pre className="whitespace-pre-wrap text-[12.5px] font-sans">{draft.draft_body}</pre>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">First outreach</p>
+              <p className="text-[12px]">{isFirst ? "Yes — first-outreach content rules apply." : "No — follow-up message."}</p>
+            </div>
+          </div>
+          <label className="flex gap-2 items-start text-[12.5px] cursor-pointer pt-2">
+            <Checkbox
+              checked={sendConfirmed}
+              onCheckedChange={(v) => setSendConfirmed(v === true)}
+              data-testid="ai-outreach-v2-send-confirm"
+            />
+            <span>{SEND_CONFIRMATION_TEXT}</span>
+          </label>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setOpenAction(null); setSendConfirmed(false); }}>Cancel</Button>
+            <Button
+              disabled={decide.isPending || !sendConfirmed}
+              onClick={async () => {
+                const r = await decide.mutateAsync({
+                  action: "mark_sent_by_human",
+                  confirmation_acknowledged: true,
+                });
+                if (r) {
+                  toast.success("Recorded as manually sent.");
+                  setOpenAction(null);
+                  setSendConfirmed(false);
+                }
+              }}
+            >
+              I have sent it · record manual send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openAction === "outcome"} onOpenChange={(o) => !o && setOpenAction(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record outreach outcome</DialogTitle>
+            <DialogDescription>
+              Only the approved V1 outcomes are accepted. This does not change match, POI, WaD, KYB
+              or compliance state.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={outcomeChoice} onValueChange={setOutcomeChoice}>
+            <SelectTrigger><SelectValue placeholder="Select outcome" /></SelectTrigger>
+            <SelectContent>
+              {APPROVED_OUTCOMES.map((o) => (
+                <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpenAction(null)}>Cancel</Button>
             <Button
-              disabled={decide.isPending}
+              disabled={decide.isPending || !outcomeChoice}
               onClick={async () => {
-                await decide.mutateAsync({ action: "mark_sent_by_human" });
-                toast.success("Recorded as manually sent.");
-                setOpenAction(null);
+                const r = await decide.mutateAsync({ action: "set_outcome", outcome: outcomeChoice });
+                if (r) {
+                  toast.success("Outcome recorded.");
+                  setOpenAction(null);
+                }
               }}
             >
-              Confirm manual send
+              Save outcome
             </Button>
           </DialogFooter>
         </DialogContent>
