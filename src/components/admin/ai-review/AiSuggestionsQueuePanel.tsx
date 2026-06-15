@@ -160,7 +160,7 @@ function statusTone(status: string): string {
 }
 
 export function AiSuggestionsQueuePanel() {
-  const [statusFilter, setStatusFilter] = useState<string>("pending");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [confidenceFilter, setConfidenceFilter] = useState<string>("all");
   const [fitFilter, setFitFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
