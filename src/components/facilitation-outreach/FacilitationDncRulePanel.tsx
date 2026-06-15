@@ -68,7 +68,7 @@ export const FacilitationDncRulePanel: React.FC = () => {
       if (error) throw error;
       setRows((data ?? []) as DncRow[]);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load DNC rules");
+      toast.error(await friendlyFacilitationError(err, "Could not load do-not-contact rules. Please try again."));
     } finally { setLoading(false); }
   }, []);
 
@@ -76,36 +76,36 @@ export const FacilitationDncRulePanel: React.FC = () => {
 
   const handleAdd = async () => {
     if (!canAdd) return;
-    if (!ruleValue.trim() || !ruleReason.trim()) { toast.error("Value and reason required."); return; }
+    if (!ruleValue.trim() || !ruleReason.trim()) { toast.error("Please fill in both the value and a reason."); return; }
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("facilitation-outreach-dnc-add", {
         body: { rule_type: ruleType, value: ruleValue.trim(), reason: ruleReason.trim() },
       });
       if (error) throw error;
-      toast.success("DNC rule added.");
+      toast.success("Do-not-contact rule added.");
       setRuleValue(""); setRuleReason("");
       await load();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Add failed");
+      toast.error(await friendlyFacilitationError(err, "Could not add the rule. Please try again."));
     } finally { setBusy(false); }
   };
 
   const handleRevoke = async (id: string) => {
     if (!isComplianceAnalyst) return;
     const reason = (revokeReason[id] ?? "").trim();
-    if (!reason) { toast.error("Revoke reason required."); return; }
+    if (!reason) { toast.error("Please add a reason before revoking."); return; }
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("facilitation-outreach-dnc-revoke", {
         body: { rule_id: id, reason },
       });
       if (error) throw error;
-      toast.success("DNC rule revoked.");
+      toast.success("Do-not-contact rule revoked.");
       setRevokeReason((r) => ({ ...r, [id]: "" }));
       await load();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Revoke failed");
+      toast.error(await friendlyFacilitationError(err, "Could not revoke the rule. Please try again."));
     } finally { setBusy(false); }
   };
 
