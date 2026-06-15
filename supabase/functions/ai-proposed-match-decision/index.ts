@@ -100,6 +100,13 @@ async function _handle(req: Request): Promise<Response> {
     const note: string | null = typeof body?.note === "string" ? body.note : null;
     const assigneeId: string | null = typeof body?.assignee_id === "string" ? body.assignee_id : null;
     const overrideLevel: string | null = typeof body?.confidence_override === "string" ? body.confidence_override : null;
+    // Phase 3 inputs
+    const dueAt: string | null = typeof body?.due_at === "string" ? body.due_at : null;
+    const feedbackReason: string | null = typeof body?.feedback_reason === "string" ? body.feedback_reason : null;
+    const escalationTarget: string | null = typeof body?.escalation_target === "string" ? body.escalation_target : null;
+    const editedPayload: Record<string, unknown> | null =
+      body?.edited_payload && typeof body.edited_payload === "object" ? body.edited_payload as Record<string, unknown> : null;
+
 
     // Load current row.
     const { data: row, error: loadErr } = await admin
