@@ -686,10 +686,10 @@ export function DealPipeline() {
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", accent.dot)} />
-                  <h3 className="text-xs font-bold tracking-wider uppercase text-muted-foreground whitespace-nowrap">
+                  <h3 className="text-sm font-semibold tracking-tight text-foreground whitespace-nowrap">
                     {lane.title}
                   </h3>
-                  <span className="hidden xl:inline text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground/70 truncate">
+                  <span className="hidden xl:inline text-xs text-muted-foreground truncate">
                     · {lane.subtitle}
                   </span>
                 </div>
