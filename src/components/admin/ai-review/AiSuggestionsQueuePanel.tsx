@@ -204,7 +204,7 @@ export function AiSuggestionsQueuePanel(props: AiSuggestionsQueuePanelProps = {}
   const [openId, setOpenId] = useState<string | null>(null);
 
   const listQuery = useQuery({
-    queryKey: ["ai-proposed-matches", statusFilter, confidenceFilter, fitFilter],
+    queryKey: ["ai-proposed-matches", initialStatusGroup, statusFilter, confidenceFilter, fitFilter],
     queryFn: async (): Promise<ProposedRow[]> => {
       let q = supabase
         .from("ai_proposed_matches")
@@ -214,7 +214,11 @@ export function AiSuggestionsQueuePanel(props: AiSuggestionsQueuePanelProps = {}
         .order("created_at", { ascending: false })
         .limit(ROW_LIMIT);
 
-      if (statusFilter !== "all") q = q.eq("status", statusFilter);
+      if (statusFilter !== "all") {
+        q = q.eq("status", statusFilter);
+      } else if (groupStatuses) {
+        q = q.in("status", groupStatuses as unknown as string[]);
+      }
       if (confidenceFilter !== "all") q = q.eq("confidence_level", confidenceFilter);
       if (fitFilter !== "all") q = q.eq("fit_label", fitFilter);
 
