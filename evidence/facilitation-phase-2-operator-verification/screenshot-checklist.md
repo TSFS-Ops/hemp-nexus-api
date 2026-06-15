@@ -3,7 +3,7 @@
 Captured in this pass (platform_admin only):
 
 - [x] `01-platform-admin-hq-facilitation.png` — Queue at /hq/facilitation
-- [x] `02-platform-admin-case-drawer-triage.png` — Case drawer · Triage tab _(re-capture after EMB-5 fix)_
+- [x] `02-platform-admin-case-drawer-triage.png` — Case drawer · Triage tab (post EMB-5/EMB-6 re-capture, plain-English Timeline + OwnerPicker + outcomes)
 - [x] `03-platform-admin-case-drawer-outreach.png` — Case drawer · Outreach tab
 - [x] `04-platform-admin-templates-and-dnc-panels.png` — Templates + DNC panels
 
