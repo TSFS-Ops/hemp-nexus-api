@@ -316,8 +316,8 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
             <div><Label className="text-xs">Contact name</Label><Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Optional" /></div>
             <div><Label className="text-xs">Source note</Label><Input value={addNote} onChange={(e) => setAddNote(e.target.value)} placeholder="Optional internal source" /></div>
           </div>
-          <Button onClick={handleAddCandidate} disabled={busy || !addOrg.trim() || !addEmail.trim()} variant="outline">Register candidate</Button>
-          <p className="text-[11px] text-slate-500">Gate (DNC + duplicate + suppression + escalation) is evaluated server-side on insert. UI never computes gate locally.</p>
+          <Button onClick={handleAddCandidate} disabled={busy || !addOrg.trim() || !addEmail.trim()} variant="outline">Add candidate</Button>
+          <p className="text-[11px] text-slate-500">The system checks contact restrictions, duplicates, suppression and open escalations before this candidate can be contacted.</p>
         </section>
       )}
 
