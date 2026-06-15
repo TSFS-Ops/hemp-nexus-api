@@ -215,8 +215,121 @@ async function _handle(req: Request): Promise<Response> {
         auditExtra.new_confidence = overrideLevel;
         auditExtra.reason = reason;
         break;
+      case "set_due_date":
+        if (!dueAt) return json(400, { error: "due_at (ISO timestamp) is required" });
+        if (Number.isNaN(Date.parse(dueAt))) return json(400, { error: "due_at must be a valid ISO timestamp" });
+        patch.due_at = dueAt;
+        auditAction = "ai_review.proposed_match_reviewed";
+        auditExtra.due_at = dueAt;
+        auditExtra.field = "due_at";
+        break;
+      case "mark_duplicate":
+        patch.status = "archived";
+        patch.archived_at = now;
+        patch.feedback_reason = "duplicate";
+        auditAction = "ai_review.proposed_match_archived";
+        auditExtra.feedback_reason = "duplicate";
+        auditExtra.reason = reason ?? "marked_duplicate";
+        break;
+      case "mark_not_relevant":
+        patch.status = "archived";
+        patch.archived_at = now;
+        patch.feedback_reason = "not_commercially_relevant";
+        auditAction = "ai_review.proposed_match_archived";
+        auditExtra.feedback_reason = "not_commercially_relevant";
+        auditExtra.reason = reason ?? "marked_not_relevant";
+        break;
+      case "set_feedback_reason":
+        if (!feedbackReason || !FEEDBACK_REASONS.has(feedbackReason)) {
+          return json(400, { error: `feedback_reason must be one of: ${Array.from(FEEDBACK_REASONS).join(", ")}` });
+        }
+        patch.feedback_reason = feedbackReason;
+        auditAction = "ai_review.proposed_match_reviewed";
+        auditExtra.feedback_reason = feedbackReason;
+        auditExtra.field = "feedback_reason";
+        break;
+      case "request_rerun":
+        if (!reason) return json(400, { error: "reason is required for request_rerun" });
+        // Audit-only: this does NOT directly call the AI source function.
+        // An admin separately clicks "Source counterparties" to actually rerun.
+        auditAction = "ai_review.rerun_requested";
+        auditExtra.reason = reason;
+        break;
+      case "approve_for_client_view": {
+        // Require prior approve. Snapshot approved_payload + flip client_visible.
+        const priorOk =
+          row.status === "approved" ||
+          row.status === "approved_internal" ||
+          row.status === "approved_client_view";
+        if (!priorOk) {
+          return json(409, {
+            error: "approve_for_client_view requires the proposal to be approved (internal) first",
+          });
+        }
+        patch.status = "approved_client_view";
+        patch.client_visible = true;
+        // Snapshot the approved payload from the current advisory fields.
+        patch.approved_payload = {
+          suggested_counterparty_name: row.suggested_counterparty_name,
+          counterparty_role: row.counterparty_role,
+          jurisdiction: row.jurisdiction,
+          sector_or_product_fit: row.sector_or_product_fit,
+          capacity_indicator: row.capacity_indicator,
+          prior_activity_summary: row.prior_activity_summary,
+          source_summary: row.source_summary,
+          match_rationale: row.match_rationale,
+          fit_label: row.fit_label,
+          confidence_level: row.confidence_override ?? row.confidence_level,
+          approved_at: now,
+          approved_by: userId,
+        };
+        patch.approved_at = patch.approved_at ?? now;
+        if (reason) auditExtra.reason = reason;
+        auditAction = "ai_review.proposed_match_approved_for_client_view";
+        break;
+      }
+      case "approve_for_outreach": {
+        const priorOk =
+          row.status === "approved" ||
+          row.status === "approved_internal" ||
+          row.status === "approved_client_view";
+        if (!priorOk) {
+          return json(409, {
+            error: "approve_for_outreach requires the proposal to be approved (internal) first",
+          });
+        }
+        // Audit-only state marker. Phase 5 owns the outreach draft state machine.
+        auditAction = "ai_review.proposed_match_approved_for_outreach";
+        if (reason) auditExtra.reason = reason;
+        break;
+      }
+      case "edit_payload": {
+        if (!editedPayload) return json(400, { error: "edited_payload (object) is required" });
+        // Snapshot original_payload on first edit.
+        if (!row.original_payload) {
+          patch.original_payload = {
+            suggested_counterparty_name: row.suggested_counterparty_name,
+            counterparty_role: row.counterparty_role,
+            jurisdiction: row.jurisdiction,
+            sector_or_product_fit: row.sector_or_product_fit,
+            capacity_indicator: row.capacity_indicator,
+            prior_activity_summary: row.prior_activity_summary,
+            source_summary: row.source_summary,
+            match_rationale: row.match_rationale,
+            fit_label: row.fit_label,
+            confidence_level: row.confidence_level,
+            snapshot_at: now,
+          };
+        }
+        patch.edited_payload = { ...editedPayload, edited_at: now, edited_by: userId };
+        auditAction = "ai_review.proposed_match_edited";
+        auditExtra.had_prior_edit = !!row.edited_payload;
+        if (reason) auditExtra.reason = reason;
+        break;
+      }
       default:
         return json(400, { error: "unsupported action" });
+
     }
 
     if (!AI_REVIEW_AUDIT_NAMES.includes(auditAction as never)) {
