@@ -193,7 +193,7 @@ function FailedSearchesTab() {
     queryFn: async (): Promise<TaskRow[]> => {
       const { data, error } = await supabase
         .from("ai_intel_tasks")
-        .select("id, kind, status, title, description, proposed_match_id, match_id, trade_request_id, due_at, created_at")
+        .select("id, kind, status, description, proposed_match_id, match_id, trade_request_id, due_at, created_at")
         .eq("kind", "provider_failure_review")
         .order("created_at", { ascending: false })
         .limit(200);
