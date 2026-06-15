@@ -376,6 +376,145 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_intel_sources: {
+        Row: {
+          checked_at: string
+          confidence: string | null
+          created_at: string
+          created_by: string | null
+          field_name: string
+          id: string
+          proposed_match_id: string
+          provider: string | null
+          snippet: string | null
+          source_title: string | null
+          source_type: string
+          source_url: string | null
+        }
+        Insert: {
+          checked_at?: string
+          confidence?: string | null
+          created_at?: string
+          created_by?: string | null
+          field_name: string
+          id?: string
+          proposed_match_id: string
+          provider?: string | null
+          snippet?: string | null
+          source_title?: string | null
+          source_type: string
+          source_url?: string | null
+        }
+        Update: {
+          checked_at?: string
+          confidence?: string | null
+          created_at?: string
+          created_by?: string | null
+          field_name?: string
+          id?: string
+          proposed_match_id?: string
+          provider?: string | null
+          snippet?: string | null
+          source_title?: string | null
+          source_type?: string
+          source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_intel_sources_proposed_match_id_fkey"
+            columns: ["proposed_match_id"]
+            isOneToOne: false
+            referencedRelation: "ai_proposed_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_intel_tasks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          kind: string
+          match_id: string | null
+          metadata: Json
+          owner: string | null
+          proposed_match_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          trade_request_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          kind: string
+          match_id?: string | null
+          metadata?: Json
+          owner?: string | null
+          proposed_match_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          trade_request_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          kind?: string
+          match_id?: string | null
+          metadata?: Json
+          owner?: string | null
+          proposed_match_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          trade_request_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_intel_tasks_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "ai_intel_tasks_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_intel_tasks_proposed_match_id_fkey"
+            columns: ["proposed_match_id"]
+            isOneToOne: false
+            referencedRelation: "ai_proposed_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_intel_tasks_trade_request_id_fkey"
+            columns: ["trade_request_id"]
+            isOneToOne: false
+            referencedRelation: "trade_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_outreach_drafts_v2: {
         Row: {
           approved_at: string | null
@@ -551,23 +690,30 @@ export type Database = {
       ai_proposed_matches: {
         Row: {
           approved_at: string | null
+          approved_payload: Json | null
           archived_at: string | null
           assigned_reviewer_id: string | null
           capacity_indicator: string | null
+          client_visible: boolean
           confidence_level: string
           confidence_override: string | null
           confidence_override_reason: string | null
           counterparty_role: string | null
           created_at: string
           created_by: string | null
+          due_at: string | null
+          edited_payload: Json | null
           escalation_reason: string | null
           escalation_required: boolean
+          expires_at: string | null
+          feedback_reason: string | null
           fit_label: string
           id: string
           interpretation_id: string | null
           jurisdiction: string | null
           match_id: string | null
           match_rationale: string | null
+          original_payload: Json | null
           prior_activity_summary: string | null
           rank_position: number | null
           rejected_at: string | null
@@ -579,6 +725,7 @@ export type Database = {
           sector_or_product_fit: string | null
           source_references: Json
           source_summary: string | null
+          stale_at: string | null
           status: string
           suggested_counterparty_name: string
           suggested_counterparty_org_id: string | null
@@ -587,23 +734,30 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
+          approved_payload?: Json | null
           archived_at?: string | null
           assigned_reviewer_id?: string | null
           capacity_indicator?: string | null
+          client_visible?: boolean
           confidence_level?: string
           confidence_override?: string | null
           confidence_override_reason?: string | null
           counterparty_role?: string | null
           created_at?: string
           created_by?: string | null
+          due_at?: string | null
+          edited_payload?: Json | null
           escalation_reason?: string | null
           escalation_required?: boolean
+          expires_at?: string | null
+          feedback_reason?: string | null
           fit_label?: string
           id?: string
           interpretation_id?: string | null
           jurisdiction?: string | null
           match_id?: string | null
           match_rationale?: string | null
+          original_payload?: Json | null
           prior_activity_summary?: string | null
           rank_position?: number | null
           rejected_at?: string | null
@@ -615,6 +769,7 @@ export type Database = {
           sector_or_product_fit?: string | null
           source_references?: Json
           source_summary?: string | null
+          stale_at?: string | null
           status?: string
           suggested_counterparty_name: string
           suggested_counterparty_org_id?: string | null
@@ -623,23 +778,30 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
+          approved_payload?: Json | null
           archived_at?: string | null
           assigned_reviewer_id?: string | null
           capacity_indicator?: string | null
+          client_visible?: boolean
           confidence_level?: string
           confidence_override?: string | null
           confidence_override_reason?: string | null
           counterparty_role?: string | null
           created_at?: string
           created_by?: string | null
+          due_at?: string | null
+          edited_payload?: Json | null
           escalation_reason?: string | null
           escalation_required?: boolean
+          expires_at?: string | null
+          feedback_reason?: string | null
           fit_label?: string
           id?: string
           interpretation_id?: string | null
           jurisdiction?: string | null
           match_id?: string | null
           match_rationale?: string | null
+          original_payload?: Json | null
           prior_activity_summary?: string | null
           rank_position?: number | null
           rejected_at?: string | null
@@ -651,6 +813,7 @@ export type Database = {
           sector_or_product_fit?: string | null
           source_references?: Json
           source_summary?: string | null
+          stale_at?: string | null
           status?: string
           suggested_counterparty_name?: string
           suggested_counterparty_org_id?: string | null
