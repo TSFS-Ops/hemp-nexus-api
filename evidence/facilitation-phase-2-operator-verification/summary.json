@@ -1,7 +1,7 @@
 {
   "status": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
   "phase": "Facilitation Phase 2 — Outreach + DNC + Escalations",
-  "generated_at": "2026-06-15T08:52:00Z",
+  "generated_at": "2026-06-15T09:10:00Z",
   "scope": "Live single-role click-through performed by agent as the currently-logged-in platform_admin in the preview session. compliance_analyst and requester/trader roles remain OPERATOR-VERIFY-REQUIRED — agent cannot sign in/out of preview session as other identities without hijacking the user's session.",
 
   "method_disclosure": {
