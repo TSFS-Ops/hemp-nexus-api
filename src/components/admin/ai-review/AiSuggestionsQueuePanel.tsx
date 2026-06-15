@@ -87,7 +87,9 @@ type AuditRow = {
 
 const STATUS_OPTIONS = [
   { id: "all", label: "All statuses" },
+  { id: "new", label: "New" },
   { id: "pending", label: "Pending" },
+  { id: "under_review", label: "Under review" },
   { id: "approved", label: "Approved" },
   { id: "rejected", label: "Rejected" },
   { id: "archived", label: "Archived" },
