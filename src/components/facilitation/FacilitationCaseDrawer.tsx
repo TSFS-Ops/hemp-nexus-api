@@ -141,6 +141,25 @@ export const FacilitationCaseDrawer: React.FC<{
     } catch (err: unknown) { toast.error(await friendlyFacilitationError(err, "Could not save the note. Please try again.")); }
   };
 
+  const doRequestMoreInfo = async () => {
+    const items = moreInfoItemsText.split("\n").map((s) => s.trim()).filter(Boolean);
+    if (moreInfoMessage.trim().length < 5) { toast.error("Please write a short message for the requester (at least 5 characters)."); return; }
+    if (items.length === 0) { toast.error("Please list at least one item you need from the requester."); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(moreInfoDueDate)) { toast.error("Please pick a due date."); return; }
+    setMoreInfoSubmitting(true);
+    try {
+      await call({ action: "request_more_information", case_id: caseId, message: moreInfoMessage.trim(), items, due_date: moreInfoDueDate });
+      toast.success("Requester has been asked for more information.");
+      setMoreInfoOpen(false);
+      setMoreInfoMessage(""); setMoreInfoItemsText(""); setMoreInfoDueDate("");
+    } catch (err: unknown) {
+      toast.error(await friendlyFacilitationError(err, "Could not send the information request. Please try again."));
+    } finally {
+      setMoreInfoSubmitting(false);
+    }
+  };
+
+
   const open = !!caseId;
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
