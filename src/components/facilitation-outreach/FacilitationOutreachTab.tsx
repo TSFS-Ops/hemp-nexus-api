@@ -229,7 +229,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       });
       if (error) throw error;
       const replay = (data as { replay?: boolean } | null)?.replay;
-      toast.success(replay ? "Idempotent replay (no new send)." : "Send dispatched.");
+      toast.success(replay ? "Already sent — no duplicate message was delivered." : "Message sent.");
       setIdemKey(genIdempotencyKey());
       setAckedWarns([]);
       await loadCandidateDetail(selectedCand.id);
