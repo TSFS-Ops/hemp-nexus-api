@@ -391,7 +391,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
             <h4 className="text-xs uppercase tracking-wider text-slate-500">Compliance escalation</h4>
             {openEscalation ? (
               <div className="border rounded-sm p-2 bg-amber-50 text-xs space-y-1">
-                <div><Badge variant="destructive">OPEN</Badge> <span className="text-slate-500">{new Date(openEscalation.created_at).toLocaleString()}</span></div>
+                <div><Badge variant="destructive">{ESCALATION_STATUS_LABEL.open}</Badge> <span className="text-slate-500">{new Date(openEscalation.created_at).toLocaleString()}</span></div>
                 <div className="whitespace-pre-wrap">{openEscalation.reason}</div>
                 {isComplianceAnalyst && (
                   <div className="mt-2 space-y-2">
@@ -400,13 +400,13 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
                   </div>
                 )}
                 {isPlatformAdmin && !isComplianceAnalyst && (
-                  <p className="text-[11px] text-slate-500">platform_admin cannot resolve. Awaiting compliance_analyst.</p>
+                  <p className="text-[11px] text-slate-500">A compliance analyst must resolve this escalation before contact can resume.</p>
                 )}
               </div>
             ) : isPlatformAdmin ? (
               <div className="space-y-2">
                 <Textarea value={escReason} onChange={(e) => setEscReason(e.target.value)} placeholder="Reason for escalation" rows={2} />
-                <Button variant="outline" disabled={busy || !escReason.trim()} onClick={handleEscalate}>Open compliance escalation</Button>
+                <Button variant="outline" disabled={busy || !escReason.trim()} onClick={handleEscalate}>Raise compliance escalation</Button>
               </div>
             ) : (
               <p className="text-[11px] text-slate-500">No open escalation.</p>
