@@ -1,8 +1,41 @@
 {
-  "status": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
+  "status": "TRANSPORT_BLOCKER_CLEARED — LIVE_PLATFORM_ADMIN_RETEST_REQUIRED",
   "phase": "Facilitation Phase 2 — Outreach + DNC + Escalations",
-  "generated_at": "2026-06-15T10:05:00Z",
-  "scope": "Cosmetic UI surface is live-verified clean (EMB-1..EMB-6 resolved). No further UI-label fixes are required based on the latest live re-audit. Three operator-verification blockers remain: compliance_analyst live click-through, requester/trader live click-through, and platform_admin destructive flow against seeded UAT fixtures only.",
+  "generated_at": "2026-06-15T11:30:00Z",
+  "scope": "Cosmetic UI surface is live-verified clean (EMB-1..EMB-6 resolved). AI-review edge-function transport blocker for /hq/ai-suggestions Interpret with AI is now CLEARED at the transport layer (all seven AI-review functions deployed; OPTIONS 204; unauthenticated POST returns structured 401, proving the deployed function is reachable; platform_admin guard intact). Status not yet CLIENT_UAT_READY — awaiting live platform_admin retest of Interpret with AI + Source counterparties producing structured UI output, ai_trade_request_interpretations row, and ai_review.* audit rows with no downstream mutation. Three operator-verification blockers also remain: compliance_analyst live click-through, requester/trader live click-through, and platform_admin destructive flow against seeded UAT fixtures only.",
+
+  "ai_review_transport_resolution": {
+    "incident": "Daniel selected DEMO Commodity (MT-012 Archive Override) on /hq/ai-suggestions and clicked Interpret with AI; UI returned 'Interpret failed: Failed to send a request to the Edge Function'.",
+    "root_cause": "The seven AI-review edge functions existed in code but had not been deployed to the production project. Production gateway returned 404 NOT_FOUND, which supabase-js surfaces as 'Failed to send a request to the Edge Function'. Function name, UI invoke name, CORS/auth pattern, and environment wiring were NOT the issue.",
+    "actions_taken": [
+      "Deployed ai-interpret-trade-request",
+      "Deployed ai-source-counterparties",
+      "Deployed ai-proposed-match-decision",
+      "Deployed ai-do-not-contact-rules",
+      "Deployed ai-poi-intelligence-note",
+      "Deployed ai-outreach-draft-v2",
+      "Deployed ai-outreach-draft-v2-decision"
+    ],
+    "post_deploy_evidence": {
+      "options_preflight": "204 (was 404)",
+      "unauthenticated_post": "401 Missing authentication — structured JSON from the deployed function, proving it is reached",
+      "platform_admin_guard": "Active (requireRole('platform_admin') enforced)"
+    },
+    "status": "TRANSPORT_BLOCKER_CLEARED — LIVE_PLATFORM_ADMIN_RETEST_REQUIRED",
+    "required_live_retest": [
+      "Sign in as a real platform_admin account",
+      "Open /hq/ai-suggestions",
+      "Select DEMO Commodity (MT-012 Archive Override)",
+      "Click Interpret with AI; confirm structured interpretation renders in UI",
+      "Confirm ai_trade_request_interpretations row is written",
+      "Confirm audit row ai_review.trade_request_interpreted is written",
+      "Click Source counterparties; confirm proposed matches appear in queue",
+      "Confirm ai_review.counterparty_sourced and ai_review.proposed_match_created audit rows are written",
+      "Confirm NO outreach, send, POI, WaD, formal-match, or verification mutation occurs"
+    ],
+    "promotion_rule": "Only after the live retest above passes may status be promoted to CLIENT_UAT_READY."
+  },
+
   "ui_label_audit": "CLEAN (live-verified) — no raw enum codes, internal role tokens, edge-function slugs, or generic non-2xx error strings visible on any rendered Facilitation Phase 2 surface as of 2026-06-15T09:32Z.",
 
   "method_disclosure": {
@@ -123,6 +156,6 @@
     }
   ],
 
-  "verdict": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
-  "verdict_reason": "All cosmetic UI-label blockers (EMB-1..EMB-6) are resolved and live-verified clean. No further UI-label fixes are required. The three remaining blockers are operator-verification only: (1) compliance_analyst live click-through, (2) requester/trader live click-through, (3) platform_admin destructive end-to-end flow against seeded UAT fixtures only — destructive checks must NOT be run against live client or production-like data."
+  "verdict": "TRANSPORT_BLOCKER_CLEARED — LIVE_PLATFORM_ADMIN_RETEST_REQUIRED",
+  "verdict_reason": "All cosmetic UI-label blockers (EMB-1..EMB-6) are resolved and live-verified clean. The Interpret with AI transport blocker is cleared: all seven AI-review edge functions are deployed; OPTIONS returns 204; unauthenticated POST returns structured 401 from the function itself; platform_admin guard intact. Status not yet CLIENT_UAT_READY — a real platform_admin must live-retest Interpret with AI and Source counterparties on /hq/ai-suggestions, confirm structured UI output, ai_trade_request_interpretations row, and ai_review.trade_request_interpreted / ai_review.counterparty_sourced / ai_review.proposed_match_created audit rows, with no downstream outreach/send/POI/WaD/formal-match/verification mutation. The three operator-verification blockers (compliance_analyst, requester/trader, platform_admin destructive flow against seeded fixtures) also remain."
 }
