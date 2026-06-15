@@ -48,7 +48,7 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
       if (error) throw error;
       setRows((data ?? []) as Template[]);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load templates");
+      toast.error(await friendlyFacilitationError(err, "Could not load the templates. Please try again."));
     } finally { setLoading(false); }
   }, []);
 
