@@ -1,7 +1,7 @@
 {
   "status": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
   "phase": "Facilitation Phase 2 — Outreach + DNC + Escalations",
-  "generated_at": "2026-06-15T08:50:00Z",
+  "generated_at": "2026-06-15T08:52:00Z",
   "scope": "Live single-role click-through performed by agent as the currently-logged-in platform_admin in the preview session. compliance_analyst and requester/trader roles remain OPERATOR-VERIFY-REQUIRED — agent cannot sign in/out of preview session as other identities without hijacking the user's session.",
 
   "method_disclosure": {
@@ -12,7 +12,7 @@
 
   "platform_admin_live_observations": {
     "access_hq_facilitation": "PASS (live) — /hq/facilitation rendered with FACILITATION · PHASE 1 QUEUE + PHASE 2 OUTREACH header and 6 cases visible (FAC-2026-000001..000006). Screenshot: 01-platform-admin-hq-facilitation.png.",
-    "queue_row_opens_drawer": "PASS (live) — clicking a row opens the case drawer with Triage + Outreach tabs. Screenshot: 02-platform-admin-case-drawer-triage.png.",
+    "queue_row_opens_drawer": "PASS (live) — clicking a row opens the case drawer with Triage + Outreach tabs. Screenshot: 02-platform-admin-case-drawer-triage.png (re-captured 2026-06-15T08:52Z after EMB-5 fix; subtitle now reads 'Review the case and run outreach', no internal role tokens).",
     "outreach_tab_renders": "PASS (live) — Candidates (0), Add candidate form (Counterparty org / Contact email / Contact name / Source note), and pre-send check explanation are present. Screenshot: 03-platform-admin-case-drawer-outreach.png.",
     "templates_panel_renders": "PASS (live) — 'Outreach email templates' card with empty state 'No templates available.' rendered below queue. Plain-English helper copy present. Screenshot: 04-platform-admin-templates-and-dnc-panels.png.",
     "dnc_panel_renders": "PASS (live) — 'Do-not-contact rules' card with Add rule form (What to block / Value / Reason / Add rule) and 'No do-not-contact rules.' empty state. Helper copy is plain English. Screenshot: 04-platform-admin-templates-and-dnc-panels.png.",
