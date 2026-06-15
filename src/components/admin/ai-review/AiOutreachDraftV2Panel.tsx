@@ -58,6 +58,9 @@ export interface DraftRow {
   sent_at: string | null;
   created_at: string;
   updated_at: string;
+  is_first_outreach?: boolean;
+  outcome?: string | null;
+  outcome_set_at?: string | null;
 }
 
 function statusTone(s: DraftRow["draft_status"]) {
