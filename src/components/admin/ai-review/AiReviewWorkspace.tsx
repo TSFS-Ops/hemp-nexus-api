@@ -26,6 +26,7 @@ import {
   AiSuggestionsQueuePanel,
   DoNotContactPanel,
 } from "./AiSuggestionsQueuePanel";
+import { AiAnalyticsTab } from "./AiAnalyticsTab";
 
 const STALE_AFTER_DAYS = 30;
 
