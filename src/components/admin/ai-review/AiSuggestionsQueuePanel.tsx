@@ -162,21 +162,45 @@ function fitTone(label: string): string {
 function statusTone(status: string): string {
   switch (status) {
     case "pending": return "bg-slate-100 text-slate-700 border-slate-200";
-    case "approved": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "approved":
+    case "approved_internal": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "approved_client_view": return "bg-emerald-100 text-emerald-800 border-emerald-300";
     case "rejected": return "bg-rose-50 text-rose-700 border-rose-200";
-    case "archived": return "bg-slate-50 text-slate-500 border-slate-200";
+    case "archived":
+    case "closed": return "bg-slate-50 text-slate-500 border-slate-200";
+    case "expired":
+    case "stale": return "bg-amber-50 text-amber-800 border-amber-200";
     case "escalated": return "bg-amber-50 text-amber-800 border-amber-200";
     case "needs_more_research": return "bg-sky-50 text-sky-700 border-sky-200";
     default: return "bg-slate-100 text-slate-700 border-slate-200";
   }
 }
 
-export function AiSuggestionsQueuePanel() {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+export type AiSuggestionsQueuePanelProps = {
+  /** Pre-filters the queue by a status group ("pending", "approved", "stale"). */
+  initialStatusGroup?: AiReviewStatusGroup;
+  /** Hide the embedded Do-Not-Contact panel (the workspace renders it once). */
+  hideDoNotContact?: boolean;
+  /** Hide the launcher (workspace shows it only on the Pending tab). */
+  hideLauncher?: boolean;
+};
+
+export function AiSuggestionsQueuePanel(props: AiSuggestionsQueuePanelProps = {}) {
+  const { initialStatusGroup = "all", hideDoNotContact = false, hideLauncher = false } = props;
+  const groupStatuses = initialStatusGroup in STATUS_GROUPS
+    ? STATUS_GROUPS[initialStatusGroup as keyof typeof STATUS_GROUPS]
+    : null;
+  const initialStatusFilter =
+    initialStatusGroup === "all" || initialStatusGroup === "stale"
+      ? "all"
+      : (groupStatuses?.[0] ?? "all");
+  const initialStaleFilter = initialStatusGroup === "stale" ? "stale" : "all";
+
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
   const [confidenceFilter, setConfidenceFilter] = useState<string>("all");
   const [fitFilter, setFitFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
-  const [staleFilter, setStaleFilter] = useState<string>("all");
+  const [staleFilter, setStaleFilter] = useState<string>(initialStaleFilter);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const listQuery = useQuery({
