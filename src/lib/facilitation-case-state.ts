@@ -1,10 +1,9 @@
 /**
  * Facilitation Case State Machine - Single Source of Truth (browser mirror).
  *
- * Phase 1 only: unknown-counterparty facilitation queue. No outreach, no SLA,
- * no reporting, no email/notification send paths. UI MUST use these constants
- * to render and validate transitions; never inline string comparisons against
- * `internal_status` literals.
+ * Batch 3: aligned with client questionnaire (intake, statuses, outcomes,
+ * user-facing labels). No SLA, no notifications, no outreach/POI
+ * conversion logic introduced here.
  *
  * Mirror of supabase/functions/_shared/facilitation-case-state.ts - both
  * files are pinned by scripts/check-facilitation-status-drift.mjs.
@@ -22,6 +21,7 @@ export const INTERNAL_STATUSES = [
   "contact_attempted",
   "awaiting_counterparty_response",
   "counterparty_responded",
+  "profile_verification_in_progress",
   "counterparty_declined",
   "ready_for_known_counterparty_poi",
   "converted_to_known_counterparty_poi",
@@ -61,8 +61,20 @@ export const OUTCOMES = [
   "cancelled_by_requester",
   "outside_supported_scope",
   "closed_by_admin_decision",
+  "no_authority_confirmed",
 ] as const;
 export type FacilitationOutcome = (typeof OUTCOMES)[number];
+
+export const ROLES = ["buyer", "seller", "service_provider", "funder", "other"] as const;
+export type FacilitationRole = (typeof ROLES)[number];
+
+export const RELATIONSHIP_STATUSES = [
+  "no_prior_contact",
+  "prior_contact",
+  "referral",
+  "known_but_not_verified",
+] as const;
+export type FacilitationRelationshipStatus = (typeof RELATIONSHIP_STATUSES)[number];
 
 export const TERMINAL_STATUSES: ReadonlySet<FacilitationInternalStatus> = new Set([
   "converted_to_known_counterparty_poi",
@@ -82,7 +94,8 @@ const ADMIN_TRANSITIONS: Record<FacilitationInternalStatus, readonly Facilitatio
   ready_for_contact: ["contact_attempted", "unable_to_proceed", "closed"],
   contact_attempted: ["awaiting_counterparty_response", "unable_to_proceed", "closed"],
   awaiting_counterparty_response: ["counterparty_responded", "counterparty_declined", "unable_to_proceed", "closed"],
-  counterparty_responded: ["ready_for_known_counterparty_poi", "more_information_needed", "unable_to_proceed", "closed"],
+  counterparty_responded: ["profile_verification_in_progress", "ready_for_known_counterparty_poi", "more_information_needed", "unable_to_proceed", "closed"],
+  profile_verification_in_progress: ["ready_for_known_counterparty_poi", "more_information_needed", "compliance_review_required", "unable_to_proceed", "closed"],
   counterparty_declined: ["unable_to_proceed", "closed"],
   ready_for_known_counterparty_poi: ["converted_to_known_counterparty_poi", "closed"],
   converted_to_known_counterparty_poi: [],
@@ -103,6 +116,7 @@ const REQUESTER_TRANSITIONS: Record<FacilitationInternalStatus, readonly Facilit
   contact_attempted: ["cancelled_by_requester"],
   awaiting_counterparty_response: ["cancelled_by_requester"],
   counterparty_responded: ["cancelled_by_requester"],
+  profile_verification_in_progress: ["cancelled_by_requester"],
   counterparty_declined: [],
   ready_for_known_counterparty_poi: ["cancelled_by_requester"],
   converted_to_known_counterparty_poi: [],
@@ -131,41 +145,87 @@ export function isTerminal(status: FacilitationInternalStatus): boolean {
   return TERMINAL_STATUSES.has(status);
 }
 
+/**
+ * User-facing milestone wording approved by client questionnaire.
+ * The requester only ever sees these labels - never internal status,
+ * compliance reasoning, duplicate detail, or do-not-contact data.
+ */
 export const USER_FACING_LABELS: Record<FacilitationUserFacingStatus, string> = {
-  request_received: "Request received",
-  reviewing: "Reviewing",
-  more_information_needed: "More information needed",
-  under_internal_review: "Under internal review",
-  preparing_contact: "Preparing to contact counterparty",
-  contact_attempted: "Contact attempted",
-  waiting_for_response: "Waiting for counterparty response",
-  counterparty_responded: "Counterparty responded",
-  counterparty_declined: "Counterparty declined",
-  ready_to_proceed: "Ready to proceed",
-  poi_started: "Proof of Intent started",
-  unable_to_proceed: "Unable to proceed",
-  cancelled: "Cancelled",
-  closed: "Closed",
+  request_received: "Izenzo has received your request and is reviewing it.",
+  reviewing: "Izenzo has received your request and is reviewing it.",
+  more_information_needed: "More information is required before Izenzo can continue.",
+  under_internal_review: "Your request is undergoing verification checks.",
+  preparing_contact: "Izenzo is attempting to verify and contact the counterparty.",
+  contact_attempted: "Izenzo is attempting to verify and contact the counterparty.",
+  waiting_for_response: "Izenzo is attempting to verify and contact the counterparty.",
+  counterparty_responded: "The counterparty response and profile information are being assessed.",
+  counterparty_declined: "Izenzo was unable to proceed with this counterparty.",
+  ready_to_proceed: "The counterparty is ready for POI.",
+  poi_started: "This opportunity has been converted into a known-counterparty POI.",
+  unable_to_proceed: "Izenzo was unable to proceed with this request.",
+  cancelled: "This request was cancelled.",
+  closed: "This request has been closed.",
+};
+
+/**
+ * Mapping from the internal admin status to the requester-visible milestone.
+ * Use this in every requester-facing surface to avoid leaking internal state.
+ */
+export const INTERNAL_TO_USER_FACING: Record<FacilitationInternalStatus, FacilitationUserFacingStatus> = {
+  new: "request_received",
+  awaiting_assignment: "request_received",
+  admin_reviewing: "reviewing",
+  more_information_needed: "more_information_needed",
+  compliance_review_required: "under_internal_review",
+  blocked_by_compliance: "unable_to_proceed",
+  duplicate_review: "under_internal_review",
+  ready_for_contact: "preparing_contact",
+  contact_attempted: "contact_attempted",
+  awaiting_counterparty_response: "waiting_for_response",
+  counterparty_responded: "counterparty_responded",
+  profile_verification_in_progress: "under_internal_review",
+  counterparty_declined: "counterparty_declined",
+  ready_for_known_counterparty_poi: "ready_to_proceed",
+  converted_to_known_counterparty_poi: "poi_started",
+  unable_to_proceed: "unable_to_proceed",
+  cancelled_by_requester: "cancelled",
+  closed: "closed",
 };
 
 export const INTERNAL_STATUS_LABELS: Record<FacilitationInternalStatus, string> = {
-  new: "New",
-  awaiting_assignment: "Awaiting assignment",
-  admin_reviewing: "Admin reviewing",
+  new: "New - Unassigned",
+  awaiting_assignment: "New - Unassigned",
+  admin_reviewing: "Triage in progress",
   more_information_needed: "More information needed",
   compliance_review_required: "Compliance review required",
   blocked_by_compliance: "Blocked by compliance",
   duplicate_review: "Duplicate review",
-  ready_for_contact: "Ready for contact",
+  ready_for_contact: "Outreach approved",
   contact_attempted: "Contact attempted",
   awaiting_counterparty_response: "Awaiting counterparty response",
   counterparty_responded: "Counterparty responded",
+  profile_verification_in_progress: "Profile verification in progress",
   counterparty_declined: "Counterparty declined",
-  ready_for_known_counterparty_poi: "Ready for known-counterparty POI",
+  ready_for_known_counterparty_poi: "Ready for POI",
   converted_to_known_counterparty_poi: "Converted to known-counterparty POI",
-  unable_to_proceed: "Unable to proceed",
-  cancelled_by_requester: "Cancelled by requester",
+  unable_to_proceed: "Closed - Unable to proceed",
+  cancelled_by_requester: "Closed - Cancelled by requester",
   closed: "Closed",
+};
+
+export const ROLE_LABELS: Record<FacilitationRole, string> = {
+  buyer: "Buyer",
+  seller: "Seller",
+  service_provider: "Service provider",
+  funder: "Funder",
+  other: "Other",
+};
+
+export const RELATIONSHIP_STATUS_LABELS: Record<FacilitationRelationshipStatus, string> = {
+  no_prior_contact: "No prior contact",
+  prior_contact: "Prior contact",
+  referral: "Referral",
+  known_but_not_verified: "Known but not verified",
 };
 
 // ─── Canonical audit names (mirror of Deno SSOT) ─────────────────────────
@@ -173,8 +233,12 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.created",
   "facilitation_case.assigned",
   "facilitation_case.status_changed",
+  "facilitation_case.intake_updated",
   "facilitation_case.note_added",
   "facilitation_case.evidence_uploaded",
+  "facilitation_case.source_added",
+  "facilitation_case.milestone_changed",
+  "facilitation_case.outcome_set",
   "facilitation_case.closed",
   "facilitation_case.cancelled_by_requester",
 ] as const;
