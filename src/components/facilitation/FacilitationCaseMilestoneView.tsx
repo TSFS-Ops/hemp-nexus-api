@@ -15,7 +15,9 @@ import { toast } from "sonner";
 import { friendlyFacilitationError } from "@/lib/facilitation-labels";
 import {
   USER_FACING_LABELS,
+  ROLE_LABELS,
   type FacilitationUserFacingStatus,
+  type FacilitationRole,
 } from "@/lib/facilitation-case-state";
 
 type FacilitationCase = {
@@ -26,7 +28,7 @@ type FacilitationCase = {
   counterparty_legal_name: string;
   counterparty_country: string;
   product_or_commodity: string;
-  role: "buyer" | "seller";
+  role: FacilitationRole;
   urgency: string;
   created_at: string;
   closed_at: string | null;
@@ -89,17 +91,16 @@ export const FacilitationCaseMilestoneView: React.FC = () => {
     <div className="max-w-3xl space-y-6">
       <BackButton />
       <header>
-        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
-          Facilitation case · {kase.case_number}
+        <p className="text-xs text-slate-500 mb-2">
+          Facilitation request · {kase.case_number}
         </p>
         <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">
           {kase.counterparty_legal_name}
         </h1>
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{USER_FACING_LABELS[kase.user_facing_status] ?? kase.user_facing_status}</Badge>
           <Badge variant="outline">Urgency: {kase.urgency}</Badge>
-          <Badge variant="outline">{kase.role === "buyer" ? "You are the buyer" : "You are the seller"}</Badge>
-          <Badge variant={coarseOutreach === "blocked" ? "destructive" : coarseOutreach === "sent" ? "default" : "outline"}>Outreach: {coarseOutreach.replace("_", " ")}</Badge>
+          <Badge variant="outline">Your role: {ROLE_LABELS[kase.role] ?? kase.role}</Badge>
         </div>
       </header>
 
@@ -114,23 +115,33 @@ export const FacilitationCaseMilestoneView: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Timeline</CardTitle></CardHeader>
-        <CardContent>
-          {events.length === 0 ? (
-            <p className="text-sm text-slate-500">No events yet.</p>
-          ) : (
-            <ol className="space-y-3 text-sm">
-              {events.map((ev) => (
-                <li key={ev.id} className="flex items-start gap-3">
-                  <span className="font-mono text-[11px] text-slate-400 w-40 shrink-0">{new Date(ev.created_at).toLocaleString()}</span>
-                  <span className="text-slate-700">{ev.action.replace("facilitation_case.", "")}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </CardContent>
-      </Card>
+      {(() => {
+        const milestoneEvents = events.filter((ev) => ev.action === "facilitation_case.milestone_changed");
+        if (milestoneEvents.length === 0) return null;
+        return (
+          <Card>
+            <CardHeader><CardTitle className="text-base">Progress</CardTitle></CardHeader>
+            <CardContent>
+              <ol className="space-y-3 text-sm">
+                {milestoneEvents.map((ev) => {
+                  const to = (ev.payload && typeof (ev.payload as Record<string, unknown>).to_user_facing === "string")
+                    ? (ev.payload as Record<string, unknown>).to_user_facing as string
+                    : null;
+                  const label = to && USER_FACING_LABELS[to as FacilitationUserFacingStatus]
+                    ? USER_FACING_LABELS[to as FacilitationUserFacingStatus]
+                    : "Status updated";
+                  return (
+                    <li key={ev.id} className="flex items-start gap-3">
+                      <span className="text-xs text-slate-500 w-40 shrink-0">{new Date(ev.created_at).toLocaleString()}</span>
+                      <span className="text-slate-700">{label}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {canCancel && (
         <div className="flex justify-end">
