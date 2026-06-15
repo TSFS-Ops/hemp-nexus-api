@@ -28,6 +28,19 @@ import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { writeAdminAudit, extractIp, extractUserAgent } from "../_shared/admin-audit.ts";
 import { AI_REVIEW_AUDIT_NAMES } from "../_shared/ai-review-audit.ts";
+import {
+  ACTIONS,
+  type Action,
+  TERMINAL,
+  CONFIDENCE,
+  ESCALATION_TARGETS,
+  FEEDBACK_REASONS,
+  canApproveForClientView,
+  canApproveForOutreach,
+  buildApprovedPayload,
+  buildOriginalPayloadSnapshot,
+  shouldSnapshotOriginal,
+} from "./validation.ts";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -35,37 +48,6 @@ const json = (status: number, body: unknown) =>
     headers: { "Content-Type": "application/json" },
   });
 
-const ACTIONS = [
-  "approve",
-  "reject",
-  "archive",
-  "escalate",
-  "needs_more_research",
-  "under_review",
-  "assign",
-  "reviewer_note",
-  "confidence_override",
-  // ── Phase 3 additions ──────────────────────────────────────────────
-  "set_due_date",
-  "mark_duplicate",
-  "mark_not_relevant",
-  "set_feedback_reason",
-  "request_rerun",
-  "approve_for_client_view",
-  "approve_for_outreach",
-  "edit_payload",
-] as const;
-type Action = (typeof ACTIONS)[number];
-
-const TERMINAL = new Set(["approved", "approved_internal", "approved_client_view", "rejected", "archived", "expired", "closed"]);
-const CONFIDENCE = new Set(["low", "medium", "high"]);
-const ESCALATION_TARGETS = new Set(["verification", "wad", "kyb", "compliance"]);
-const FEEDBACK_REASONS = new Set([
-  "wrong_company", "wrong_country", "wrong_product", "wrong_counterparty_role",
-  "weak_source", "bad_contact", "dead_email", "duplicate",
-  "possible_compliance_concern", "poor_outreach_draft",
-  "not_commercially_relevant", "insufficient_evidence", "other",
-]);
 
 
 serve(async (req) => {
@@ -262,43 +244,21 @@ async function _handle(req: Request): Promise<Response> {
         break;
       case "approve_for_client_view": {
         // Require prior approve. Snapshot approved_payload + flip client_visible.
-        const priorOk =
-          row.status === "approved" ||
-          row.status === "approved_internal" ||
-          row.status === "approved_client_view";
-        if (!priorOk) {
+        if (!canApproveForClientView(row.status)) {
           return json(409, {
             error: "approve_for_client_view requires the proposal to be approved (internal) first",
           });
         }
         patch.status = "approved_client_view";
         patch.client_visible = true;
-        // Snapshot the approved payload from the current advisory fields.
-        patch.approved_payload = {
-          suggested_counterparty_name: row.suggested_counterparty_name,
-          counterparty_role: row.counterparty_role,
-          jurisdiction: row.jurisdiction,
-          sector_or_product_fit: row.sector_or_product_fit,
-          capacity_indicator: row.capacity_indicator,
-          prior_activity_summary: row.prior_activity_summary,
-          source_summary: row.source_summary,
-          match_rationale: row.match_rationale,
-          fit_label: row.fit_label,
-          confidence_level: row.confidence_override ?? row.confidence_level,
-          approved_at: now,
-          approved_by: userId,
-        };
+        patch.approved_payload = buildApprovedPayload(row, now, userId);
         patch.approved_at = patch.approved_at ?? now;
         if (reason) auditExtra.reason = reason;
         auditAction = "ai_review.proposed_match_approved_for_client_view";
         break;
       }
       case "approve_for_outreach": {
-        const priorOk =
-          row.status === "approved" ||
-          row.status === "approved_internal" ||
-          row.status === "approved_client_view";
-        if (!priorOk) {
+        if (!canApproveForOutreach(row.status)) {
           return json(409, {
             error: "approve_for_outreach requires the proposal to be approved (internal) first",
           });
@@ -310,21 +270,9 @@ async function _handle(req: Request): Promise<Response> {
       }
       case "edit_payload": {
         if (!editedPayload) return json(400, { error: "edited_payload (object) is required" });
-        // Snapshot original_payload on first edit.
-        if (!row.original_payload) {
-          patch.original_payload = {
-            suggested_counterparty_name: row.suggested_counterparty_name,
-            counterparty_role: row.counterparty_role,
-            jurisdiction: row.jurisdiction,
-            sector_or_product_fit: row.sector_or_product_fit,
-            capacity_indicator: row.capacity_indicator,
-            prior_activity_summary: row.prior_activity_summary,
-            source_summary: row.source_summary,
-            match_rationale: row.match_rationale,
-            fit_label: row.fit_label,
-            confidence_level: row.confidence_level,
-            snapshot_at: now,
-          };
+        // Snapshot original_payload on first edit only.
+        if (shouldSnapshotOriginal(row)) {
+          patch.original_payload = buildOriginalPayloadSnapshot(row, now);
         }
         patch.edited_payload = { ...editedPayload, edited_at: now, edited_by: userId };
         auditAction = "ai_review.proposed_match_edited";
@@ -332,6 +280,7 @@ async function _handle(req: Request): Promise<Response> {
         if (reason) auditExtra.reason = reason;
         break;
       }
+
       default:
         return json(400, { error: "unsupported action" });
 
