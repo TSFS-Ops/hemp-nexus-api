@@ -938,17 +938,17 @@ function PipelineHeader({
   return (
     <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
       <div className="min-w-0">
-        <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-muted-foreground/70 mb-1.5">
-          9-Step WaD Workflow
-        </p>
-        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-          Active Deal Pipeline
+        <h2 className="text-xl font-semibold text-foreground tracking-tight">
+          Your trades in flight
         </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Every trade you are working on, grouped by stage.
+        </p>
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4">
-        <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-muted-foreground tabular-nums">
-          {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {totalDeals} {totalDeals === 1 ? "trade" : "trades"} in flight
         </p>
 
         {/* Sort selector - applied client-side across all three lanes so the
