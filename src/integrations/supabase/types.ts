@@ -3887,6 +3887,9 @@ export type Database = {
           case_owner_id: string | null
           closed_at: string | null
           closing_reason: string | null
+          contact_person_email: string | null
+          contact_person_phone: string | null
+          contact_person_title: string | null
           counterparty_city: string | null
           counterparty_contact_name: string | null
           counterparty_country: string
@@ -3905,12 +3908,20 @@ export type Database = {
           internal_status: string
           linked_organization_id: string | null
           permission_to_contact: boolean
+          physical_address: string | null
           poi_engagement_id: string | null
+          preferred_contact_language: string | null
           product_or_commodity: string
           reason: string
+          registration_number: string | null
+          relationship_status: string | null
           requesting_org_id: string
           requesting_user_id: string
           role: string
+          sector: string | null
+          source_evidence_summary: string | null
+          target_response_date: string | null
+          tax_vat_number: string | null
           trade_request_id: string
           updated_at: string
           urgency: string
@@ -3923,6 +3934,9 @@ export type Database = {
           case_owner_id?: string | null
           closed_at?: string | null
           closing_reason?: string | null
+          contact_person_email?: string | null
+          contact_person_phone?: string | null
+          contact_person_title?: string | null
           counterparty_city?: string | null
           counterparty_contact_name?: string | null
           counterparty_country: string
@@ -3941,12 +3955,20 @@ export type Database = {
           internal_status?: string
           linked_organization_id?: string | null
           permission_to_contact: boolean
+          physical_address?: string | null
           poi_engagement_id?: string | null
+          preferred_contact_language?: string | null
           product_or_commodity: string
           reason: string
+          registration_number?: string | null
+          relationship_status?: string | null
           requesting_org_id: string
           requesting_user_id: string
           role: string
+          sector?: string | null
+          source_evidence_summary?: string | null
+          target_response_date?: string | null
+          tax_vat_number?: string | null
           trade_request_id: string
           updated_at?: string
           urgency: string
@@ -3959,6 +3981,9 @@ export type Database = {
           case_owner_id?: string | null
           closed_at?: string | null
           closing_reason?: string | null
+          contact_person_email?: string | null
+          contact_person_phone?: string | null
+          contact_person_title?: string | null
           counterparty_city?: string | null
           counterparty_contact_name?: string | null
           counterparty_country?: string
@@ -3977,12 +4002,20 @@ export type Database = {
           internal_status?: string
           linked_organization_id?: string | null
           permission_to_contact?: boolean
+          physical_address?: string | null
           poi_engagement_id?: string | null
+          preferred_contact_language?: string | null
           product_or_commodity?: string
           reason?: string
+          registration_number?: string | null
+          relationship_status?: string | null
           requesting_org_id?: string
           requesting_user_id?: string
           role?: string
+          sector?: string | null
+          source_evidence_summary?: string | null
+          target_response_date?: string | null
+          tax_vat_number?: string | null
           trade_request_id?: string
           updated_at?: string
           urgency?: string
