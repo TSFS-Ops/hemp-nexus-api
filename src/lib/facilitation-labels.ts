@@ -86,8 +86,12 @@ export const TIMELINE_ACTION_LABEL: Record<string, string> = {
   "facilitation_case.created": "Case created",
   "facilitation_case.assigned": "Owner assigned",
   "facilitation_case.status_changed": "Status changed",
+  "facilitation_case.intake_updated": "Intake updated",
   "facilitation_case.note_added": "Internal note added",
   "facilitation_case.evidence_uploaded": "Evidence uploaded",
+  "facilitation_case.source_added": "Source / evidence item added",
+  "facilitation_case.milestone_changed": "Requester milestone changed",
+  "facilitation_case.outcome_set": "Final outcome set",
   "facilitation_case.closed": "Case closed",
   "facilitation_case.cancelled_by_requester": "Cancelled by requester",
 };
@@ -107,17 +111,18 @@ export function timelineActionLabel(action: string): string {
  * Final-outcome enum values surfaced in the case drawer dropdown and timeline.
  */
 export const OUTCOME_LABEL: Record<string, string> = {
-  converted_to_known_counterparty_poi: "Converted to known counterparty (POI)",
+  converted_to_known_counterparty_poi: "Converted to known-counterparty POI",
   linked_to_existing_organisation: "Linked to existing organisation",
-  new_counterparty_profile_created: "New counterparty profile created",
-  more_information_not_provided: "More information not provided",
+  new_counterparty_profile_created: "Counterparty profile created",
+  more_information_not_provided: "More information not received",
   counterparty_declined: "Counterparty declined",
   unable_to_contact: "Unable to contact",
   blocked_by_compliance: "Blocked by compliance",
-  duplicate_case: "Duplicate case",
+  duplicate_case: "Duplicate",
   cancelled_by_requester: "Cancelled by requester",
-  outside_supported_scope: "Outside supported scope",
+  outside_supported_scope: "Out of scope / unsupported",
   closed_by_admin_decision: "Closed by admin decision",
+  no_authority_confirmed: "No authority confirmed",
   closed_admin: "Closed by admin",
 };
 
