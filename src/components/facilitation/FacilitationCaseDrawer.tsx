@@ -199,7 +199,7 @@ export const FacilitationCaseDrawer: React.FC<{
                   ["Contact email", get("contact_person_email") as React.ReactNode],
                   ["Preferred language", get("preferred_contact_language") as React.ReactNode],
                   ["Permission to contact", get("permission_to_contact") === undefined || get("permission_to_contact") === null ? null : (c.permission_to_contact ? "Yes" : "No")],
-                ].filter(([, v]) => v !== null && v !== undefined && v !== "");
+                ].filter(([, v]) => v !== null && v !== undefined && v !== "") as Array<[string, React.ReactNode]>;
                 return (
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                     {rows.map(([k, v]) => (
