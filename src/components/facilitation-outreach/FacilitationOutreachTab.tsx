@@ -282,7 +282,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
 
   if (rolesLoading) return <p className="text-sm text-slate-500">Loading…</p>;
   if (!isPlatformAdmin && !isComplianceAnalyst) {
-    return <p className="text-xs text-slate-500">Outreach surface restricted to platform_admin / compliance_analyst.</p>;
+    return <p className="text-xs text-slate-500">You do not have permission to use the outreach tools.</p>;
   }
 
   return (
