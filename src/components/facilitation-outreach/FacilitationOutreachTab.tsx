@@ -140,7 +140,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       setCandidates((cands.data ?? []) as Candidate[]);
       setTemplates((tpls.data ?? []) as Template[]);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load outreach data");
+      toast.error(await friendlyFacilitationError(err, "Could not load outreach data. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -155,7 +155,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       setSends((s.data ?? []) as SendRow[]);
       setEscalations((e.data ?? []) as Escalation[]);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load candidate detail");
+      toast.error(await friendlyFacilitationError(err, "Could not load candidate details. Please try again."));
     }
   }, []);
 
@@ -211,7 +211,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       setAddEmail(""); setAddName(""); setAddOrg(""); setAddNote("");
       await loadAll();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Add candidate failed");
+      toast.error(await friendlyFacilitationError(err, "Could not register the candidate. Please check the details and try again."));
     } finally { setBusy(false); }
   };
 
@@ -235,7 +235,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       await loadCandidateDetail(selectedCand.id);
       await loadAll();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Send failed");
+      toast.error(await friendlyFacilitationError(err, "The message could not be sent. Please try again."));
     } finally { setBusy(false); }
   };
 
@@ -256,7 +256,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       await loadCandidateDetail(selectedCand.id);
       await loadAll();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Escalate failed");
+      toast.error(await friendlyFacilitationError(err, "Could not open the compliance escalation. Please try again."));
     } finally { setBusy(false); }
   };
 
@@ -276,7 +276,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       if (selectedCandidate) await loadCandidateDetail(selectedCandidate);
       await loadAll();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Escalation update failed");
+      toast.error(await friendlyFacilitationError(err, "Could not update the escalation. Please try again."));
     } finally { setBusy(false); }
   };
 
