@@ -416,7 +416,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
             <ul className="text-xs space-y-1 mt-2">
               {escalations.filter((e) => e.status !== "open").map((e) => (
                 <li key={e.id} className="border rounded-sm p-2">
-                  <div className="flex items-center gap-2"><Badge variant="outline">{e.status}</Badge><span className="text-slate-400">{new Date(e.created_at).toLocaleString()}</span></div>
+                  <div className="flex items-center gap-2"><Badge variant="outline">{ESCALATION_STATUS_LABEL[e.status] ?? e.status}</Badge><span className="text-slate-400">{new Date(e.created_at).toLocaleString()}</span></div>
                   <div className="text-slate-600 whitespace-pre-wrap mt-1">{e.reason}</div>
                   {e.resolution_notes && <div className="text-slate-500 mt-1">Notes: {e.resolution_notes}</div>}
                   {isComplianceAnalyst && e.status === "resolved" && (
