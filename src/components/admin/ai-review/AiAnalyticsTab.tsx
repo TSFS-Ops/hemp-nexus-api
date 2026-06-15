@@ -36,7 +36,6 @@ type ProposedRow = {
   client_visible: boolean | null;
   created_at: string;
   trade_request_id: string | null;
-  suggested_country: string | null;
 };
 
 type DraftRow = {
