@@ -74,6 +74,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.match]
     verify_jwt = false
+  [functions.match-ai-summary-action]
+    verify_jwt = false
   [functions.orgs]
     verify_jwt = false
   [functions.paystack-webhook]

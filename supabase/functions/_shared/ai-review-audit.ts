@@ -41,6 +41,10 @@ export const AI_REVIEW_AUDIT_NAMES = [
   "ai_review.proposed_match_approved_for_outreach",
   "ai_review.proposed_match_edited",
   "ai_review.rerun_requested",
+  // ── Phase 4 originator-visible summary actions ─────────────────────
+  "ai_review.client_summary_flagged_incorrect",
+  "ai_review.client_summary_requested_more_intel",
+  "ai_review.client_summary_asked_to_proceed",
 ] as const;
 
 

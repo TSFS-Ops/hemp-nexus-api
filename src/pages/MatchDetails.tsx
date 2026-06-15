@@ -33,6 +33,7 @@ import type { PendingEngagementRow } from "@/components/match/PendingEngagementS
 import { OrgAdminContactCompletionCard } from "@/components/match/OrgAdminContactCompletionCard";
 import { ReconfirmLateAcceptanceCard } from "@/components/match/ReconfirmLateAcceptanceCard";
 import { CounterpartyIntelPanel } from "@/components/match/CounterpartyIntelPanel";
+import { MatchApprovedAiSummary } from "@/components/match/MatchApprovedAiSummary";
 import { ExecutionSection } from "@/components/match/execution/ExecutionSection";
 import { SpineTimeline } from "@/components/match/SpineTimeline";
 import { MatchChallengePanel } from "@/components/match/MatchChallengePanel";
@@ -324,6 +325,7 @@ function MatchDetailsContent() {
 
       {matchId && <EngagementTracker matchId={matchId} match={match} />}
 
+      {matchId && <MatchApprovedAiSummary matchId={matchId} />}
       {showPrePoiVerification && <CounterpartyIntelPanel match={match} />}
       {/*
         Per Daniel Davies (2026-04-29): the user-facing "Request Enhanced
