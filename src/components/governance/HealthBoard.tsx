@@ -1,5 +1,5 @@
 /**
- * HealthBoard — Batch A Stage 1 (operational truthfulness).
+ * HealthBoard - Batch A Stage 1 (operational truthfulness).
  *
  * Previously rendered a hardcoded list of 9 "operational" gates and a
  * hardcoded composite SLA. That implementation could (and did) show green
@@ -28,7 +28,7 @@ interface RiskItem {
 }
 
 /**
- * Batch U SEC-012 — demo/test risk items must not inflate production
+ * Batch U SEC-012 - demo/test risk items must not inflate production
  * incident counts. `admin_risk_items` has no dedicated is_demo column,
  * so we infer from `metadata` flags written by fixture seeders /
  * test-mode tooling. Items flagged demo/test are still listed in the
@@ -121,7 +121,7 @@ const MONITORED_JOBS: Array<{ id: string; name: string }> = [
   { id: "C9", name: "transaction-reconciliation-job" },
 ];
 
-// OPS-001 Stage 2 — Sentry receiving-events status derived from the
+// OPS-001 Stage 2 - Sentry receiving-events status derived from the
 // singleton `sentry_heartbeats` row. The tile is GREEN only when:
 //   - the DSN is configured,
 //   - the most recent ingest succeeded (HTTP 2xx),
@@ -140,7 +140,7 @@ interface SentryHeartbeatRow {
 
 type SentryDerived = "operational" | "dsn_missing" | "failed" | "stale" | "never_run" | "not_monitored";
 
-// Cron runs every 15 minutes — freshness window is 2× interval = 30 min.
+// Cron runs every 15 minutes - freshness window is 2× interval = 30 min.
 const SENTRY_FRESHNESS_MS = 30 * 60 * 1000;
 
 export function deriveSentryStatus(
@@ -161,7 +161,7 @@ function sentryToneFor(s: SentryDerived) {
   if (s === "operational") return { dot: "bg-[hsl(var(--emerald))]", text: "text-[hsl(var(--emerald))]" };
   if (s === "stale") return { dot: "bg-amber-500", text: "text-amber-800" };
   if (s === "failed") return { dot: "bg-rose-600", text: "text-rose-800" };
-  // dsn_missing / never_run / not_monitored — never green.
+  // dsn_missing / never_run / not_monitored - never green.
   return { dot: "bg-slate-300", text: "text-slate-500" };
 }
 
@@ -209,7 +209,7 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
-  // Batch T — UI-014: surface query errors rather than silently swallowing
+  // Batch T - UI-014: surface query errors rather than silently swallowing
   // them to 0. A failed audit_logs query previously produced a misleading
   // green "no manual backlog" tile.
   const {
@@ -248,7 +248,7 @@ export function HealthBoard() {
     refetchOnWindowFocus: false,
   });
 
-  // Batch V — closeout drift summary (RPC). Never renders green on error.
+  // Batch V - closeout drift summary (RPC). Never renders green on error.
   const {
     data: closeout,
     isError: closeoutError,
@@ -265,7 +265,7 @@ export function HealthBoard() {
 
   const incidents = incidentResult?.items ?? [];
   const incidentTotal = incidentResult?.totalCount ?? 0;
-  // Batch T — UI-014: explicit allow-list of "open" statuses rather than
+  // Batch T - UI-014: explicit allow-list of "open" statuses rather than
   // `!== "resolved"`. Any new terminal status (e.g. dismissed/withdrawn)
   // must be added here on purpose; otherwise it stays open.
   const OPEN_RISK_STATUSES = new Set<string>([
@@ -276,7 +276,7 @@ export function HealthBoard() {
     "monitoring",
     "escalated",
   ]);
-  // Batch U SEC-012 — exclude demo/test rows from the open-incident counter.
+  // Batch U SEC-012 - exclude demo/test rows from the open-incident counter.
   const openIncidentList = incidents.filter(
     (i) => OPEN_RISK_STATUSES.has(i.status) && !isDemoRiskItem(i),
   );
@@ -303,7 +303,7 @@ export function HealthBoard() {
 
   return (
     <>
-      {/* Summary strip — every tile is derived from real rows. */}
+      {/* Summary strip - every tile is derived from real rows. */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-px bg-muted border border-border mb-10">
         <div className="bg-card p-5" data-testid="healthboard-closeout-tile" data-closeout-error={closeoutError ? "true" : "false"}>
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Closeout Drift</p>
@@ -314,7 +314,7 @@ export function HealthBoard() {
             </>
           ) : !closeout ? (
             <>
-              <p className="mt-1 text-2xl font-semibold text-slate-500 tracking-tight">—</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-500 tracking-tight">-</p>
               <p className="font-mono text-[10px] mt-0.5 text-slate-500">unknown · degraded</p>
             </>
           ) : (
@@ -339,7 +339,7 @@ export function HealthBoard() {
         </div>
         <div className="bg-card p-5" data-testid="healthboard-composite-tile">
           <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground/70">Composite SLA</p>
-          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">—</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground tracking-tight">-</p>
           <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
             uptime monitor not configured
           </p>
@@ -420,7 +420,7 @@ export function HealthBoard() {
                   </span>
                 </div>
                 <p className="font-mono text-[11px] text-foreground">
-                  {httpStatus != null ? `HTTP ${httpStatus}` : "—"}
+                  {httpStatus != null ? `HTTP ${httpStatus}` : "-"}
                 </p>
                 <p className="font-mono text-[11px] text-muted-foreground">
                   {formatTs(r.hb?.last_run_at ?? null)}

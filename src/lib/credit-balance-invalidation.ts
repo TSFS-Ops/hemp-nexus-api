@@ -1,5 +1,5 @@
 /**
- * UI-004 — Single source of truth for credit/balance query invalidation.
+ * UI-004 - Single source of truth for credit/balance query invalidation.
  *
  * Multiple components display the user's (or admin view of) credit balance
  * under different React Query keys. Invalidating only `["token-balance"]`

@@ -101,7 +101,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   } = consequenceState;
 
   // If the user has already attested (e.g. via another tab/device), the error
-  // is no longer actionable — clear it from state and storage.
+  // is no longer actionable - clear it from state and storage.
   useEffect(() => {
     if (hasAttested && attestError) {
       setAttestErrorRaw(null);
@@ -222,7 +222,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         payload: { surface, outcome: "success", hasRef: true, context: "wad_attest_error" },
       });
     } catch (err) {
-      toast.error("Could not copy — please copy the Ref manually");
+      toast.error("Could not copy - please copy the Ref manually");
       trackClientEvent({
         name: CLIENT_ANALYTICS_EVENT_NAMES.COPY_REF,
         payload: {
@@ -272,7 +272,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
         },
       });
     } catch (err) {
-      toast.error("Could not generate report — please copy the details manually");
+      toast.error("Could not generate report - please copy the details manually");
       trackClientEvent({
         name: CLIENT_ANALYTICS_EVENT_NAMES.DOWNLOAD_ERROR_REPORT,
         payload: {
@@ -595,7 +595,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                       break;
                     case "server_error":
                       hint =
-                        "This looks like a temporary problem on our side. Please retry in a moment — if it keeps failing, contact support" +
+                        "This looks like a temporary problem on our side. Please retry in a moment - if it keeps failing, contact support" +
                         refSuffix +
                         ".";
                       break;
@@ -617,7 +617,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
                   );
                 })()}
                 {/* Download a plain-text incident report. Always rendered
-                    when the alert is up — even without a Reference ID it
+                    when the alert is up - even without a Reference ID it
                     captures the message, timestamp, form fields and
                     environment for support triage. */}
                 <div className="flex justify-end pt-1">
@@ -645,7 +645,7 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               //      firing on the same keystroke.
               //   2. Because the listener is on the button itself, it ONLY
               //      runs when the Attest/Retry button is the focused
-              //      element — pressing Enter while focus is on the
+              //      element - pressing Enter while focus is on the
               //      stepper, the name input, or the consent checkbox
               //      does not trigger an attestation.
               // We also gate on the same disabled conditions the click

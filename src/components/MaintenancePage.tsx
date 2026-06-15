@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 /**
  * MAINTENANCE GATE
  * ----------------
- * When MAINTENANCE_MODE is true, every visitor — regardless of route or auth state —
+ * When MAINTENANCE_MODE is true, every visitor - regardless of route or auth state -
  * sees only the reboot/migration page with a live countdown. Login is blocked because
  * the gate sits ABOVE the Router, so /auth, /desk, /hq, etc. never mount.
  *

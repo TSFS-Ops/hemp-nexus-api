@@ -1,5 +1,5 @@
 /**
- * AdminLifecycleRunPanel — TEMPORARY platform-admin-only manual trigger for
+ * AdminLifecycleRunPanel - TEMPORARY platform-admin-only manual trigger for
  * the `lifecycle-scheduler` edge function. Invoked via the protected
  * `admin-run-lifecycle` edge function which requires a signed-in
  * `platform_admin` JWT (server-side role check).
@@ -62,7 +62,7 @@ export function AdminLifecycleRunPanel() {
         <AlertTriangle className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" strokeWidth={1.75} />
         <div className="text-[12px] leading-relaxed text-amber-900">
           <div className="font-semibold mb-0.5">
-            Run lifecycle scheduler now — maintenance must remain ON
+            Run lifecycle scheduler now - maintenance must remain ON
           </div>
           <div className="text-amber-800">
             Temporary platform-admin trigger. Invokes <code className="font-mono text-[11px]">lifecycle-scheduler</code> once

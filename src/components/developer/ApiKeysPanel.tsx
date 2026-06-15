@@ -414,11 +414,11 @@ export function ApiKeysPanel() {
             Secret key handling
           </p>
           <ul className="text-[12px] text-slate-300 leading-relaxed space-y-0.5 list-disc pl-4 marker:text-amber-400/60">
-            <li>Secrets are shown <strong className="text-slate-100">once</strong> at creation or rotation. We store only a hash — we cannot recover or re-display them.</li>
+            <li>Secrets are shown <strong className="text-slate-100">once</strong> at creation or rotation. We store only a hash - we cannot recover or re-display them.</li>
             <li>Treat each key like a password: paste it straight into your secrets manager, never commit to git, never paste into chat or tickets.</li>
-            <li>Use the <span className="font-mono text-amber-200">sk_live_</span> / <span className="font-mono text-amber-200">sk_test_</span> prefix for support — it is not sensitive.</li>
+            <li>Use the <span className="font-mono text-amber-200">sk_live_</span> / <span className="font-mono text-amber-200">sk_test_</span> prefix for support - it is not sensitive.</li>
             <li>If a key is exposed, <strong className="text-slate-100">rotate</strong> immediately (issues a new key, disables the old one) or <strong className="text-slate-100">revoke</strong> if the integration is gone.</li>
-            <li>Default to least privilege — only tick the scopes the integration actually needs.</li>
+            <li>Default to least privilege - only tick the scopes the integration actually needs.</li>
           </ul>
         </div>
       </div>

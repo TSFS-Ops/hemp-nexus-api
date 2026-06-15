@@ -1,5 +1,5 @@
 /**
- * GovernanceRecordDetail — HQ-only top summary + merged timeline for one
+ * GovernanceRecordDetail - HQ-only top summary + merged timeline for one
  * transaction. Anchor: match_id (primary). Falls back to poi_id or
  * engagement_id where given.
  *
@@ -15,7 +15,7 @@
  *    POI ID, engagement ID, WaD ID, payment reference, allowed/blocked,
  *    posture, risk flag, demo/live (document filters intentionally excluded).
  *  - Identical repeated events within 5 min collapse into one row with
- *    "repeated [x] times" — underlying events accessible via the drawer.
+ *    "repeated [x] times" - underlying events accessible via the drawer.
  */
 
 import { useMemo, useState } from "react";
@@ -172,7 +172,7 @@ const ACTOR_TYPES = [
   "Scheduled Job",
   "Payment Provider",
   "Notification Service",
-  "Unknown actor — needs review",
+  "Unknown actor - needs review",
 ] as const;
 
 const POSTURE_OPTIONS = [
@@ -466,7 +466,7 @@ export function GovernanceRecordDetail({ anchor }: Props) {
         </CardContent>
       </Card>
 
-      {/* Batch B — HQ Notes panel */}
+      {/* Batch B - HQ Notes panel */}
       <HqNotesPanel
         anchor={anchor}
         orgId={m?.buyer_org_id ?? m?.seller_org_id ?? null}
@@ -474,7 +474,7 @@ export function GovernanceRecordDetail({ anchor }: Props) {
         onCorrectingHandled={() => setCorrectingEventId(null)}
       />
 
-      {/* Batch D — Governance waivers / bypasses panel */}
+      {/* Batch D - Governance waivers / bypasses panel */}
       <GovernanceWaiversPanel
         anchor={anchor}
         orgId={m?.buyer_org_id ?? m?.seller_org_id ?? null}

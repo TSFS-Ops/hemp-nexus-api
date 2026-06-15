@@ -151,7 +151,7 @@ export function MobileBottomNav() {
               </div>
               </div>
 
-              {/* Account footer — pinned, always visible so sign out is always reachable */}
+              {/* Account footer - pinned, always visible so sign out is always reachable */}
               <div className="shrink-0 border-t border-border pt-4 mt-2 space-y-3">
                 {user?.email && (
                   <p className="text-xs text-muted-foreground/70 font-mono tracking-wide truncate px-1">

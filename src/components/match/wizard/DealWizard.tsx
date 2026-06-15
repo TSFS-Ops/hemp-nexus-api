@@ -82,7 +82,7 @@ export function DealWizard({
     return hasCommodity && hasBuyer && hasSeller && hasQuantity && hasPrice;
   }, [match]);
 
-  // Supporting evidence presence (advisory, not gating — drives "fully complete" badge)
+  // Supporting evidence presence (advisory, not gating - drives "fully complete" badge)
   const { data: evidenceCounts } = useQuery({
     queryKey: ["match-evidence-counts", match.id],
     queryFn: () => getMatchEvidenceCounts(match.id),
@@ -233,14 +233,14 @@ export function DealWizard({
     if (softRoutePending) {
       const statusText =
         engagementStatus === "notification_sent" ? "queued for outreach"
-        : engagementStatus === "contacted" ? "outreach sent — awaiting reply"
+        : engagementStatus === "contacted" ? "outreach sent - awaiting reply"
         : engagementStatus === "declined" ? "counterparty declined"
         : engagementStatus === "expired" ? "engagement window elapsed"
         : "in progress";
       return {
         tone: "locked",
         eyebrow: "Waiting on counterparty",
-        title: "Pending Engagement — counterparty invited, awaiting confirmation.",
+        title: "Pending Engagement - counterparty invited, awaiting confirmation.",
         description: `Counterparty invitation sent (${statusText}). This trade remains pending until the counterparty confirms participation. No credits have been burned. See the Pending Engagement card above for full status.`,
         helpText: "While a Pending Engagement is active the Generate POI action is held by the server (409 ENGAGEMENT_PENDING). You'll be notified by email when the counterparty responds.",
       };
@@ -254,7 +254,7 @@ export function DealWizard({
       return {
         tone: "locked",
         eyebrow: "Waiting on counterparty",
-        title: `Trading partner engagement — ${statusText}`,
+        title: `Trading partner engagement - ${statusText}`,
         description: "Proof of Intent is sealed. The Signed Deal step unlocks once the trading partner accepts the engagement. No action required from you right now.",
         helpText: "Locked steps are gated by external events (counterparty acceptance, scheduled jobs). You'll be notified by email when this step unlocks.",
       };
@@ -272,7 +272,7 @@ export function DealWizard({
         tone: commercialTermsComplete ? "complete" : "action",
         eyebrow: commercialTermsComplete ? "Ready to advance" : "Your turn",
         title: commercialTermsComplete
-          ? "Commercial terms complete — proceed to Proof of Intent"
+          ? "Commercial terms complete - proceed to Proof of Intent"
           : "Complete the commercial terms",
         description: commercialTermsComplete
           ? "Buyer, seller, commodity, quantity and price are all set. Before generating Proof of Intent (1 credit, $1.00 USD) you must also attach at least 1 supporting document from each side on the Documents tab."
@@ -307,7 +307,7 @@ export function DealWizard({
         eyebrow: "Your turn",
         title: "Build the Signed Deal evidence bundle",
         description: "Submit governance documents and run the 9-gate compliance validation. Once sealed, the Evidence Pack step unlocks for final regulatory archive.",
-        helpText: "The Signed Deal (WaD — Without a Doubt) bundle is the platform's compliance certificate. It must be sealed before the trade is regulatorily complete.",
+        helpText: "The Signed Deal (WaD - Without a Doubt) bundle is the platform's compliance certificate. It must be sealed before the trade is regulatorily complete.",
       };
     }
     if (activeId === "evidence") {
@@ -361,7 +361,7 @@ export function DealWizard({
       </Card>
 
       {/* ── FOCAL POINT: What do I do next? ── */}
-      {/* Verification gate banner — counterparty-facing actions are blocked
+      {/* Verification gate banner - counterparty-facing actions are blocked
           until the issuing org is verified. Server enforces the same rule. */}
       <VerificationRequiredBanner />
 
@@ -392,7 +392,7 @@ export function DealWizard({
           <Card className="border-dashed border-border bg-muted/30 shadow-none">
             <CardContent className="py-8 text-center space-y-3">
               <Lock className="h-7 w-7 text-muted-foreground/60 mx-auto" />
-              <h3 className="font-semibold text-sm text-muted-foreground">Step locked — see status above</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground">Step locked - see status above</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 The Signed Deal step opens once the trading partner accepts. The full status is tracked in the focal banner above and the engagement tracker beneath the page heading.
               </p>

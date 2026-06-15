@@ -57,7 +57,7 @@ export default function DocsMatches() {
         <ParamTable
           rows={[
             { name: "discovery",            type: "initial", desc: "Both party slots identified. Terms may still be amended." },
-            { name: "intent_declared",      type: "next",    desc: "Initiating party has recorded intent. The opposite-slot org has been notified — single-side acknowledgement, not bilateral acceptance." },
+            { name: "intent_declared",      type: "next",    desc: "Initiating party has recorded intent. The opposite-slot org has been notified - single-side acknowledgement, not bilateral acceptance." },
             { name: "counterparty_sighted", type: "next",    desc: "The opposite-slot org has acknowledged the match. Engagement hold-point cleared. Still single-side; not yet committed." },
             { name: "committed",            type: "next",    desc: "At least one party's POI has been recorded. Terms are locked from further client mutation pending counterparty action. The POI is only described as mutual once BOTH parties have signed Proof of Intent." },
             { name: "completed",            type: "final",   desc: "Without a Doubt (WaD) certificate sealed. Evidence pack downloadable." },
@@ -109,7 +109,7 @@ export default function DocsMatches() {
         <DocP>
           Returns the canonical match record including current state, hash, and embedded
           references to the orgs in each slot (<InlineCode>buyer_org_id</InlineCode> and{" "}
-          <InlineCode>seller_org_id</InlineCode>). Both slots are absolute — what counts as
+          <InlineCode>seller_org_id</InlineCode>). Both slots are absolute - what counts as
           "the counterparty" is always derived relative to the viewer's own slot.
         </DocP>
 
@@ -121,7 +121,7 @@ export default function DocsMatches() {
         <DocP>
           Advances a match to <InlineCode>committed</InlineCode> and, once both sides have
           minted, on to <InlineCode>completed</InlineCode>. Internally this is a single
-          operation referred to in three places by three names — they are the same call:
+          operation referred to in three places by three names - they are the same call:
           <strong className="text-foreground font-medium"> POI mint</strong> (engine layer),
           <strong className="text-foreground font-medium"> /settle</strong> (REST verb), and
           <strong className="text-foreground font-medium"> Confirm Intent</strong> (UI label).
@@ -133,7 +133,7 @@ export default function DocsMatches() {
         <Callout>
           POI mint is a hold-point: the call returns <InlineCode>409 ENGAGEMENT_PENDING</InlineCode>{" "}
           until the org in the opposite slot has accepted the engagement. Acceptance is
-          single-side and is <em>not</em> the same as bilateral acceptance — both parties
+          single-side and is <em>not</em> the same as bilateral acceptance - both parties
           must mint POI for the match to reach <InlineCode>committed</InlineCode>. See{" "}
           <a href="/docs/counterparties" className="text-[hsl(var(--emerald))] hover:text-[hsl(var(--emerald))] font-medium">Counterparties</a>{" "}
           for the engagement flow.

@@ -1,5 +1,5 @@
 /**
- * Batch O Phase 1 — Canonical Match Lifecycle Predicates (CLIENT MIRROR)
+ * Batch O Phase 1 - Canonical Match Lifecycle Predicates (CLIENT MIRROR)
  *
  * Pure deterministic predicates. NO database mutation, NO audit writes,
  * NO notification sends, NO UI behaviour, NO schema reads.
@@ -8,7 +8,7 @@
  * MIRROR-END markers) with `supabase/functions/_shared/match-lifecycle.ts`.
  * Drift is enforced by `scripts/check-match-lifecycle-mirror.mjs`.
  *
- * Source of truth: signed Client Workflow Decision Form — MT-008, MT-009, MT-012.
+ * Source of truth: signed Client Workflow Decision Form - MT-008, MT-009, MT-012.
  */
 
 // MIRROR-START
@@ -172,7 +172,7 @@ export function isInconsistentMatch(m: LifecycleMatch | LifecycleChild): boolean
  * authorised contact. Returns which side is missing.
  *
  * A side is satisfied when ANY of:
- *   1. `{side}_authorised_user_id` (registered Izenzo user — strongest);
+ *   1. `{side}_authorised_user_id` (registered Izenzo user - strongest);
  *   2. legacy optional `{side}_contact_user_id`;
  *   3. an active controlled named contact for that side in
  *      `activeNamedContacts` (status === 'active').
@@ -180,7 +180,7 @@ export function isInconsistentMatch(m: LifecycleMatch | LifecycleChild): boolean
  * Pure: caller supplies pre-fetched active named contacts. The predicate
  * does NOT read the DB.
  *
- * Returns null when no organisation is attached on either side — there is
+ * Returns null when no organisation is attached on either side - there is
  * no named-contact requirement for fully unattached rows.
  */
 export function requiresNamedContact(

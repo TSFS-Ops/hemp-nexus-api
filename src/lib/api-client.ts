@@ -160,12 +160,12 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    // Global 401 handler — but ONLY treat the session as truly dead after a
+    // Global 401 handler - but ONLY treat the session as truly dead after a
     // server-side `auth.getUser()` round-trip confirms the JWT is invalid.
     // Some edge functions return 401 for resource-specific reasons (e.g. an
     // RLS path that hasn't been authorised yet) while the browser session is
     // still perfectly valid; previously this signed the user out mid-flow
-    // — the "paperclip" forced-sign-out pattern. See edge-invoke.ts for the
+    // - the "paperclip" forced-sign-out pattern. See edge-invoke.ts for the
     // sibling guard that protects `supabase.functions.invoke()` callers.
     if (res.status === 401) {
       let sessionConfirmedDead = false;
@@ -173,7 +173,7 @@ export async function apiFetch<T = unknown>(
         const { data, error } = await supabase.auth.getUser();
         sessionConfirmedDead = !!error || !data?.user;
       } catch {
-        // Network error verifying — be conservative and assume dead so the
+        // Network error verifying - be conservative and assume dead so the
         // user can re-auth rather than loop on 401s.
         sessionConfirmedDead = true;
       }
@@ -198,7 +198,7 @@ export async function apiFetch<T = unknown>(
         // Throw so calling code stops execution immediately
         throw new AuthRequiredError();
       }
-      // Session is still valid — surface the 401 as a normal API error so the
+      // Session is still valid - surface the 401 as a normal API error so the
       // caller can show a contextual message (e.g. "you don't have access to
       // this match"), instead of force-bouncing to /auth.
     }

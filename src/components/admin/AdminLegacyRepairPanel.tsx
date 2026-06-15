@@ -1,5 +1,5 @@
 /**
- * Batch O Phase 2b Step 5 — Legacy Repair queue with admin actions.
+ * Batch O Phase 2b Step 5 - Legacy Repair queue with admin actions.
  *
  * Wires the existing read-only queue to the two MT-008 admin edge functions:
  *   • `admin-match-legacy-archive`  → marks an inconsistent match as archived/held
@@ -101,7 +101,7 @@ const REPAIR_OPERATIONS: ReadonlyArray<{
     value: "force_terminal_for_orphan_settled",
     label: "Force terminal for orphan settled (deferred)",
     deferred: true,
-    hint: "Deferred — requires business decision before this operation can run.",
+    hint: "Deferred - requires business decision before this operation can run.",
   },
 ];
 
@@ -121,7 +121,7 @@ const ERROR_COPY: Record<string, string> = {
 };
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString();
   } catch {
@@ -304,16 +304,16 @@ export function AdminLegacyRepairPanel() {
               return (
                 <tr key={r.id} className="border-t border-border align-top">
                   <td className="px-3 py-2 font-mono text-xs">{r.id.slice(0, 8)}</td>
-                  <td className="px-3 py-2">{r.commodity ?? "—"}</td>
+                  <td className="px-3 py-2">{r.commodity ?? "-"}</td>
                   <td className="px-3 py-2 font-mono text-xs">
-                    {r.buyer_org_id ? r.buyer_org_id.slice(0, 8) : "—"}
+                    {r.buyer_org_id ? r.buyer_org_id.slice(0, 8) : "-"}
                   </td>
                   <td className="px-3 py-2 font-mono text-xs">
-                    {r.seller_org_id ? r.seller_org_id.slice(0, 8) : "—"}
+                    {r.seller_org_id ? r.seller_org_id.slice(0, 8) : "-"}
                   </td>
-                  <td className="px-3 py-2">{r.status ?? "—"}</td>
-                  <td className="px-3 py-2">{r.state ?? "—"}</td>
-                  <td className="px-3 py-2">{r.poi_state ?? "—"}</td>
+                  <td className="px-3 py-2">{r.status ?? "-"}</td>
+                  <td className="px-3 py-2">{r.state ?? "-"}</td>
+                  <td className="px-3 py-2">{r.poi_state ?? "-"}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-1">
                       {reasonCodes.map((reason) => (

@@ -1,5 +1,5 @@
 /**
- * ChallengeCommentComposer — Phase 3D
+ * ChallengeCommentComposer - Phase 3D
  *
  * Posts a new comment to the existing `match-challenges/comment` edge route.
  * The composer is only mounted when `useChallengePermissions` reports

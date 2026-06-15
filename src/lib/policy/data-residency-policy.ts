@@ -1,5 +1,5 @@
 /**
- * DATA-009 Phase 1 — Data residency policy SSOT.
+ * DATA-009 Phase 1 - Data residency policy SSOT.
  *
  * Source of truth: signed Client-Only Decision Form, DATA-009.
  *
@@ -14,7 +14,7 @@
  *     drift-protected constants even before any emit point is wired.
  *   - Provide cautious, pre-approved copy strings the UI/docs can reuse.
  *
- * PHASE 2 (NOT IMPLEMENTED HERE — DO NOT FAKE):
+ * PHASE 2 (NOT IMPLEMENTED HERE - DO NOT FAKE):
  *   - A `residency_review_required` state on organisations/onboarding.
  *   - An `onboarding_hold_residency_review` onboarding stage.
  *   - Approval / decline workflow surfaces (UI, RPC, edge function).
@@ -31,7 +31,7 @@
  * for residency policy strings.
  */
 
-// DATA_009_ALLOW — sanctioned policy SSOT
+// DATA_009_ALLOW - sanctioned policy SSOT
 export const DATA_RESIDENCY_POLICY = {
   /** Single approved production-region storage policy currently in effect. */
   default:
@@ -87,7 +87,7 @@ export type DataResidencyAuditAction =
   (typeof DATA_RESIDENCY_AUDIT_ACTIONS)[number];
 
 /**
- * Phase indicator — Phase 2 wires runtime emission via SECDEF RPCs
+ * Phase indicator - Phase 2 wires runtime emission via SECDEF RPCs
  * `request_residency_review`, `approve_residency_review`,
  * `decline_residency_review` and the edge functions
  * `residency-review-request`, `admin-residency-review-approve`,
@@ -100,7 +100,7 @@ export const DATA_RESIDENCY_POLICY_PHASE = 2 as const;
 /** Minimum admin reason length for approve / decline of a residency review. */
 export const RESIDENCY_ADMIN_REASON_MIN_LENGTH = 20 as const;
 
-/** Approve/decline UI warning copy — exact wording mandated by DATA-009 Phase 2. */
+/** Approve/decline UI warning copy - exact wording mandated by DATA-009 Phase 2. */
 export const RESIDENCY_DECISION_WARNING_COPY =
   "Approval records the policy exception only. It does NOT create any technical hosting control, region migration, backup restriction, export restriction, or deletion behaviour. Any technical change requires a separate engineering decision.";
 

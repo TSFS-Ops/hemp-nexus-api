@@ -1,5 +1,5 @@
 /**
- * humaniseEngagementError — translate opaque server error strings from the
+ * humaniseEngagementError - translate opaque server error strings from the
  * `poi-engagements` PATCH endpoint (and the `atomic_engagement_transition`
  * RPC underneath it) into a plain-English admin-friendly explanation.
  *
@@ -33,7 +33,7 @@ export interface HumanisedEngagementError {
 const FALLBACK_HEADLINE = "Could not save contact details.";
 
 /**
- * Order matters — we test for the most specific patterns first, then fall
+ * Order matters - we test for the most specific patterns first, then fall
  * back to broader server codes, then to the raw message, then to a neutral
  * default.
  */
@@ -76,7 +76,7 @@ export function humaniseEngagementError(input: unknown): HumanisedEngagementErro
       headline:
         "That status change isn't allowed from where the engagement is right now.",
       hint:
-        "Refresh the row to see the current status. If you only meant to update the email or notes, reopen Add contact and save again — no status change is needed.",
+        "Refresh the row to see the current status. If you only meant to update the email or notes, reopen Add contact and save again - no status change is needed.",
       technical: raw,
     });
   }
@@ -180,7 +180,7 @@ function extractRequestId(err: unknown): string | undefined {
 
 /**
  * Best-effort extraction of a usable string from the various error shapes the
- * supabase-js v2 functions client throws. Never throws — falls back to "".
+ * supabase-js v2 functions client throws. Never throws - falls back to "".
  */
 function extractRawMessage(err: unknown): string {
   if (!err) return "";

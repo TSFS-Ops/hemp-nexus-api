@@ -152,7 +152,7 @@ function App() {
                       bookmarks, audit logs, and outbound links keep working.
                       Each redirect is wrapped in RequireAuth role="platform_admin"
                       so anonymous and non-admin users never execute the redirect
-                      logic — they hit /auth?returnTo=... or /desk?denied=1 first. */}
+                      logic - they hit /auth?returnTo=... or /desk?denied=1 first. */}
                   <Route path="/admin" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/users" label="Admin Console" /></RequireAuth>} />
                   <Route path="/admin/users" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/users" label="Admin Users" /></RequireAuth>} />
                   <Route path="/admin/orgs" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/organisations" label="Admin Organisations" /></RequireAuth>} />
@@ -206,7 +206,7 @@ function App() {
                   <Route path="/developers/docs" element={<LegacyRedirect to="/developer/docs" label="Developer docs" />} />
                   <Route path="/developers/*" element={<Developers />} />
                   {/* Authenticated developer surface. Restricted to platform_admin
-                      and org_admin — the Developer Center exposes API keys,
+                      and org_admin - the Developer Center exposes API keys,
                       webhooks, and a schema explorer, which buyers, suppliers,
                       brokers, org_members, and demo users must not see.
                       Anonymous visitors are redirected to /auth?returnTo=/developer/...;

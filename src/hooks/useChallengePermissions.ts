@@ -1,7 +1,7 @@
 /**
- * useChallengePermissions — Phase 3B
+ * useChallengePermissions - Phase 3B
  *
- * Pure derivation of UI-visibility booleans. **Not** a security boundary —
+ * Pure derivation of UI-visibility booleans. **Not** a security boundary -
  * the server (RLS + match-challenges edge function) is authoritative.
  *
  * | Role on match                         | canViewCard     | canRaise | canSeeBanner |

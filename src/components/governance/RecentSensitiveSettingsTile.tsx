@@ -1,5 +1,5 @@
 /**
- * RecentSensitiveSettingsTile — Batch G Fix 5.
+ * RecentSensitiveSettingsTile - Batch G Fix 5.
  *
  * Read-only operator surface for recent platform-setting flips. Sources:
  *
@@ -9,7 +9,7 @@
  *
  * Renders the last 10 rows so operators can see at a glance whether
  * billing was just disabled, test-mode bypass was just flipped, or
- * maintenance mode was just toggled — without dropping to raw SQL.
+ * maintenance mode was just toggled - without dropping to raw SQL.
  *
  * RLS on admin_audit_logs already restricts reads to admins, so this
  * component shows an empty state for everyone else.

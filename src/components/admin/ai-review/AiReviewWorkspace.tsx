@@ -1,5 +1,5 @@
 /**
- * AI Review Workspace — Phase 3B.
+ * AI Review Workspace - Phase 3B.
  *
  * Wraps the existing `AiSuggestionsQueuePanel` with the full V1 tab navigation
  * required by the AI Light-Intel completion path:
@@ -13,7 +13,7 @@
  *     `ai_intel_tasks`. No new schema.
  *   - Tabs filter by status group only; the queue panel itself is unchanged.
  *   - The Analytics tab is a placeholder. Full analytics arrives in Phase 6.
- *   - Confidence is labelled "Discovery Confidence" / "AI Intel Confidence" —
+ *   - Confidence is labelled "Discovery Confidence" / "AI Intel Confidence" -
  *     never "Verified".
  */
 import { useQuery } from "@tanstack/react-query";
@@ -175,7 +175,7 @@ function OutreachDraftsTab({
           rows={(q.data ?? []).map((d) => [
             <span className="font-medium">{d.draft_subject}</span>,
             <span className="text-muted-foreground">
-              {d.recipient_name || d.recipient_organisation || d.recipient_email_if_known || "—"}
+              {d.recipient_name || d.recipient_organisation || d.recipient_email_if_known || "-"}
             </span>,
             <Badge variant="outline">{d.draft_status}</Badge>,
             <span className="text-muted-foreground">
@@ -230,7 +230,7 @@ function FailedSearchesTab() {
             </div>,
             <Badge variant="outline">{t.status}</Badge>,
             <span className="font-mono text-[11px] text-muted-foreground break-all">
-              {t.trade_request_id ?? "—"}
+              {t.trade_request_id ?? "-"}
             </span>,
             <span className="text-muted-foreground">
               {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}

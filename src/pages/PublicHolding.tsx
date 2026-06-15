@@ -3,7 +3,7 @@
  *
  * Per client direction (2026-05-05): the public Mother Ship website is not
  * yet ready. Until it is, this domain must show a neutral
- * under-construction page only — no buttons, no hyperlinks, no product or
+ * under-construction page only - no buttons, no hyperlinks, no product or
  * platform references.
  */
 export function PublicHolding() {

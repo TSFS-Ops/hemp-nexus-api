@@ -15,7 +15,7 @@
 // backend transitions into after the WaD is created (before any signatory
 // has attested). Omitting it here previously caused
 // `canDo("awaiting_attestations", "attest")` to return `false`, which made
-// the WadStepper show "Attestation not available — Only buyer and seller
+// the WadStepper show "Attestation not available - Only buyer and seller
 // signatories can attest" to legitimate counterparties (incident
 // 2026-04-24: dovedavies14 could not attest as the seller).
 export const WAD_STATUSES = [
@@ -48,7 +48,7 @@ const ALLOWED_ACTIONS: Record<WadStatusValue, readonly WadAction[]> = {
     "seal",
     "view_evidence",
   ],
-  // Same affordances as `draft` — both signatories may still attest, and
+  // Same affordances as `draft` - both signatories may still attest, and
   // sealing is permitted once both attestations are in place.
   awaiting_attestations: [
     "attest",
@@ -127,7 +127,7 @@ export function isSealed(status: string): boolean {
 /**
  * Human-readable label for a WaD status.
  *
- * Batch B Fix 6 — unknown / future enum values must not render as the
+ * Batch B Fix 6 - unknown / future enum values must not render as the
  * raw literal. We surface them as an explicit "Unrecognised" badge so
  * the UI cannot accidentally imply progression for a status the client
  * does not know how to interpret.

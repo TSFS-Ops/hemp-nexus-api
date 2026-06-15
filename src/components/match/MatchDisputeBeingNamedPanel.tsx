@@ -4,7 +4,7 @@
  * CP-012 user-facing surface rendered on `/desk/match/:matchId` whenever
  * the Pending Engagement is in `disputed_being_named`.
  *
- * Daniel-spec acceptance text (do NOT rephrase — these strings are pinned
+ * Daniel-spec acceptance text (do NOT rephrase - these strings are pinned
  * by `src/tests/cp-012-deal-desk-dispute-panel.test.tsx`):
  *
  *   • Initiator copy

@@ -1,7 +1,7 @@
 /**
  * AiOutreachDraftV2Panel
  * ──────────────────────────────────────────────────────────────────────
- * Batch 4 — AI Outreach Drafts for an APPROVED ai_proposed_matches row.
+ * Batch 4 - AI Outreach Drafts for an APPROVED ai_proposed_matches row.
  *
  * UI guarantees:
  *   - Visible only when the parent proposed match is in status='approved'.
@@ -131,7 +131,7 @@ export function AiOutreachDraftV2Panel({
         </p>
         <p className="text-[12.5px] text-muted-foreground">
           Outreach drafting is available only after this proposal is approved. No outreach is sent
-          automatically by the platform — drafts are reviewed and copied manually.
+          automatically by the platform - drafts are reviewed and copied manually.
         </p>
       </div>
     );
@@ -431,7 +431,7 @@ function DraftCard({
             <DialogTitle>Final review · manual send</DialogTitle>
             <DialogDescription>
               The platform never sends. This is the final preview of what you intend to paste into
-              your own email client. Sending must be a separate action — confirm below only after
+              your own email client. Sending must be a separate action - confirm below only after
               you have actually sent it.
             </DialogDescription>
           </DialogHeader>
@@ -446,7 +446,7 @@ function DraftCard({
             </div>
             <div>
               <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">First outreach</p>
-              <p className="text-[12px]">{isFirst ? "Yes — first-outreach content rules apply." : "No — follow-up message."}</p>
+              <p className="text-[12px]">{isFirst ? "Yes - first-outreach content rules apply." : "No - follow-up message."}</p>
             </div>
           </div>
           <label className="flex gap-2 items-start text-[12.5px] cursor-pointer pt-2">

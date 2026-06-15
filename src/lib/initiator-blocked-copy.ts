@@ -1,5 +1,5 @@
 /**
- * Batch E — Initiator-facing neutral copy for paused / outreach-blocked
+ * Batch E - Initiator-facing neutral copy for paused / outreach-blocked
  * Pending Engagement states.
  *
  * Mirror of the admin chip copy in `admin-engagement-blocked-reasons.ts`,
@@ -13,7 +13,7 @@
  *   - No accusatory or fault-implying language. Wording is checked
  *     against `BATCH_D_FORBIDDEN_WORDS` by the Batch E test.
  *
- * Pure helper. No UI wiring in Phase 1 — this exists so future
+ * Pure helper. No UI wiring in Phase 1 - this exists so future
  * initiator-side surfaces (MatchDetails engagement card, disabled
  * "Send outreach" tooltip, etc.) consume one SSOT.
  */
@@ -55,19 +55,19 @@ export const INITIATOR_BLOCKED_COPY: Record<
     next: "We will notify you when the review concludes.",
   },
   BINDING_REVIEW_PENDING: {
-    headline: "Engagement paused — confirming counterparty record",
+    headline: "Engagement paused - confirming counterparty record",
     body:
       "Outreach is paused while the platform confirms which registered organisation the contact belongs to. No outreach has been sent on your behalf.",
     next: "We will resume outreach once the platform completes its review.",
   },
   CANCELLED_EMAIL_CHANGE: {
-    headline: "Engagement cancelled — replacement required",
+    headline: "Engagement cancelled - replacement required",
     body:
       "The previous Pending Engagement was cancelled because the contact email needed to change. You can create a replacement engagement with the corrected address.",
     next: "Open the match and create a new engagement to continue.",
   },
   LATE_ACCEPTANCE_PENDING_INITIATOR_RECONFIRMATION: {
-    headline: "Late acceptance — your reconfirmation required",
+    headline: "Late acceptance - your reconfirmation required",
     body:
       "The Pending Engagement expired and the counterparty's late acceptance has been recorded. Reconfirm to proceed, or decline if you no longer wish to continue. No Proof of Intent has been issued and no credit has been used.",
     next: "Reconfirm or decline from the engagement panel.",
@@ -93,13 +93,13 @@ export const INITIATOR_OUTREACH_BLOCK_COPY: Record<
   InitiatorBlockedCopy
 > = {
   CONTACT_EMAIL_MISSING: {
-    headline: "Outreach paused — email missing",
+    headline: "Outreach paused - email missing",
     body:
       "Outreach cannot proceed because the counterparty record has a name but no usable email address. Add a usable email to continue.",
     next: "Edit the engagement to add the missing email.",
   },
   CONTACT_INCOMPLETE: {
-    headline: "Outreach paused — contact incomplete",
+    headline: "Outreach paused - contact incomplete",
     body:
       "Outreach cannot proceed because the counterparty record is incomplete. A usable email and either an organisation name or a named individual are required.",
     next: "Edit the engagement to complete the contact details.",

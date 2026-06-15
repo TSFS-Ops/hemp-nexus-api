@@ -58,7 +58,7 @@ const TERMINAL_OVERRIDES: Record<string, {
   // progress) but with explicit late-acceptance wording so the trader
   // never sees a bare "Accepted" pip implying mutual acceptance.
   late_acceptance_pending_initiator_reconfirmation: {
-    label: "Late acceptance — awaiting reconfirmation",
+    label: "Late acceptance - awaiting reconfirmation",
     icon: AlertTriangle
   }
 };
@@ -148,7 +148,7 @@ export function EngagementTracker({
     const meta = match?.metadata as Record<string, unknown> | undefined;
     // `tradeSide` / `bidOfferSide` (legacy) on a match's metadata represent the
     // INITIATOR's own side at the time the match was created (creator-owned, not
-    // counterparty-owned). We only forward it when explicitly present — never
+    // counterparty-owned). We only forward it when explicitly present - never
     // silently default to "buyer", or a seller's reuse would pre-fill as buyer.
     // If absent, omit the param so the trade form requires explicit user selection.
     const rawSide = (meta?.tradeSide ?? meta?.bidOfferSide) as unknown;
@@ -182,7 +182,7 @@ export function EngagementTracker({
         )}
       </div>
 
-      {/* Compact horizontal micro-stepper — visually distinct from the macro WizardStepper */}
+      {/* Compact horizontal micro-stepper - visually distinct from the macro WizardStepper */}
       <div className="flex items-center gap-1.5">
         {STEPS.map((step, index) => {
           const state = getStepState(step.key, status, index);

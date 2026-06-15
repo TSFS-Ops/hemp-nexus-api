@@ -1,5 +1,5 @@
 /**
- * EvidenceDebugPanel — Operator-facing debug surface for the POI evidence gate.
+ * EvidenceDebugPanel - Operator-facing debug surface for the POI evidence gate.
  *
  * Renders the *exact* values returned by the `match-evidence-counts` edge
  * function (the same authoritative source the StateProgressionCard uses to
@@ -32,7 +32,7 @@ type Props = {
 };
 
 function formatTimestamp(iso: string | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
     const ageMs = Date.now() - d.getTime();
@@ -152,18 +152,18 @@ export function EvidenceDebugPanel({
           </div>
           <Row label="Fetched at" value={formatTimestamp(data?.fetchedAt)} />
           <div className="my-1 h-px bg-border/60" />
-          <Row label="match_documents" value={data ? data.matchDocumentCount : "—"} mono />
-          <Row label="governance_documents" value={data ? data.governanceDocumentCount : "—"} mono />
-          <Row label="document_count (sum)" value={data ? data.documentCount : "—"} mono />
-          <Row label="notes_count" value={data ? data.notesCount : "—"} mono />
+          <Row label="match_documents" value={data ? data.matchDocumentCount : "-"} mono />
+          <Row label="governance_documents" value={data ? data.governanceDocumentCount : "-"} mono />
+          <Row label="document_count (sum)" value={data ? data.documentCount : "-"} mono />
+          <Row label="notes_count" value={data ? data.notesCount : "-"} mono />
           <Row
             label="has_supporting_evidence"
-            value={data ? String(data.hasSupportingEvidence) : "—"}
+            value={data ? String(data.hasSupportingEvidence) : "-"}
             mono
           />
           <Row
             label="server waiverRequired"
-            value={data ? String(data.waiverRequired) : "—"}
+            value={data ? String(data.waiverRequired) : "-"}
             mono
           />
           {typeof effectiveWaiverRequired === "boolean" && (

@@ -1,5 +1,5 @@
 /**
- * DATA-005 / DATA-010 Phase 2A — Export state machine SSOT (client +
+ * DATA-005 / DATA-010 Phase 2A - Export state machine SSOT (client +
  * Deno mirror). Drift guard pins both files.
  */
 

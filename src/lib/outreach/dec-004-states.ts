@@ -1,5 +1,5 @@
 /**
- * DEC-004 Phase 1 — Manual outreach ownership & state SSOT.
+ * DEC-004 Phase 1 - Manual outreach ownership & state SSOT.
  *
  * Source of truth: signed Client-Only Decision Form, DEC-004.
  *
@@ -11,12 +11,12 @@
  *      signed form and map each onto the implementation surface that
  *      currently expresses it (`engagement_status` enum + operational
  *      flags + SLA counters + suppressed/test markers). The mapping is
- *      descriptive — Phase 1 does NOT introduce new DB enum values.
+ *      descriptive - Phase 1 does NOT introduce new DB enum values.
  *   3. Declare the canonical DEC-004 audit action names.
  *
  * PHASE 1 EXPLICITLY DOES NOT:
  *   - introduce new engagement_status DB enum values
- *   - introduce a manual-owner reassignment surface (there is none —
+ *   - introduce a manual-owner reassignment surface (there is none -
  *     Izenzo admin is the sole owner; `OUTREACH_MANUAL_OWNER_REASSIGNED`
  *     is exported so the constant exists and is testable, but it is
  *     guaranteed NOT to be emitted at runtime, and the test suite pins
@@ -70,7 +70,7 @@ export interface Dec004StateMapping {
    */
   readonly engagementStatus: ReadonlyArray<string> | null;
   /**
-   * Set of `operational_state` values (or null) — these are the
+   * Set of `operational_state` values (or null) - these are the
    * Batch-J operational hold states layered over `engagement_status`.
    */
   readonly operationalState: ReadonlyArray<string> | null;

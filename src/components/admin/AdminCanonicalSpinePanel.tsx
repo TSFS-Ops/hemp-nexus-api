@@ -1,5 +1,5 @@
 /**
- * AdminCanonicalSpinePanel — Unified Spine view (Item 12).
+ * AdminCanonicalSpinePanel - Unified Spine view (Item 12).
  *
  * One row per match, with status pills for every spine stage:
  *   Search/Discovery → Match → POI → WaD → Execution (PoD)
@@ -115,19 +115,19 @@ function derivePoiStage(row: SpineRow): { status: StageStatus; label: string } {
   const s = row.poi_state ?? "none";
   if (s === "COMPLETED" || s === "ELIGIBLE") return { status: "complete", label: s };
   if (s === "REJECTED" || s === "EXPIRED") return { status: "issue", label: s };
-  if (s === "none") return { status: "none", label: "—" };
+  if (s === "none") return { status: "none", label: "-" };
   return { status: "pending", label: s };
 }
 
 function deriveWadStage(row: SpineRow): { status: StageStatus; label: string } {
-  if (!row.wad_state) return { status: "none", label: "—" };
+  if (!row.wad_state) return { status: "none", label: "-" };
   if (row.wad_state === "ISSUED") return { status: "complete", label: "ISSUED" };
   if (row.wad_state === "DENIED") return { status: "issue", label: "DENIED" };
   return { status: "pending", label: row.wad_state };
 }
 
 function deriveExecutionStage(row: SpineRow): { status: StageStatus; label: string } {
-  if (!row.pod_state) return { status: "none", label: "—" };
+  if (!row.pod_state) return { status: "none", label: "-" };
   if (row.open_breaches > 0) return { status: "issue", label: "BREACH" };
   if (row.pod_state === "FINALISED") return { status: "complete", label: "FINALISED" };
   if (row.pod_state === "BREACHED") return { status: "issue", label: "BREACHED" };
@@ -171,7 +171,7 @@ export function AdminCanonicalSpinePanel() {
 
       // 3. Pull active PoDs for those WaDs.
       const wadIds = (wads ?? []).map((w) => (w as any).id).filter(Boolean);
-      // p3_wads rows we already fetched lack id in the projection — refetch ids.
+      // p3_wads rows we already fetched lack id in the projection - refetch ids.
       const { data: wadsWithIds } = await supabase
         .from("p3_wads")
         .select("id, poi_id")
@@ -382,9 +382,9 @@ export function AdminCanonicalSpinePanel() {
                     </TableCell>
                     <TableCell>
                       <div className="text-xs">
-                        <div className="truncate max-w-[200px]">{row.buyer_org ?? "—"}</div>
+                        <div className="truncate max-w-[200px]">{row.buyer_org ?? "-"}</div>
                         <div className="text-muted-foreground truncate max-w-[200px]">
-                          ↔ {row.seller_org ?? "—"}
+                          ↔ {row.seller_org ?? "-"}
                         </div>
                       </div>
                     </TableCell>

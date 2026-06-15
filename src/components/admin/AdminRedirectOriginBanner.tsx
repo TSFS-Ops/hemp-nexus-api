@@ -5,7 +5,7 @@
  * admin was redirected here from a deep link they originally clicked
  * (e.g. a Resend notification opened in a logged-in admin session).
  *
- * Why: the previous explanation was a 10-second toast in the corner — easy
+ * Why: the previous explanation was a 10-second toast in the corner - easy
  * to miss while pasting / context-switching. This banner stays visible
  * until the admin either opens the original link or dismisses it, closing
  * the "I clicked X but landed at Y with no explanation" failure mode the
@@ -33,14 +33,14 @@ export function AdminRedirectOriginBanner() {
       const raw = sessionStorage.getItem(KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as Origin;
-      // Clear records older than 24h — stale state should not haunt the UI.
+      // Clear records older than 24h - stale state should not haunt the UI.
       if (!parsed.link || Date.now() - parsed.at > 24 * 60 * 60 * 1000) {
         sessionStorage.removeItem(KEY);
         return;
       }
       setOrigin(parsed);
     } catch {
-      /* malformed entry — ignore */
+      /* malformed entry - ignore */
     }
   }, []);
 

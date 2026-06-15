@@ -2,7 +2,7 @@
  * Holding page served on trade.izenzo.co.za.
  *
  * Per client direction (2026-05-05): this domain is reserved. The page must
- * be commercially neutral — no buttons, no hyperlinks, no commodity vertical
+ * be commercially neutral - no buttons, no hyperlinks, no commodity vertical
  * list, no API references, no live console references, no footer links.
  */
 export function MarketplaceHolding() {

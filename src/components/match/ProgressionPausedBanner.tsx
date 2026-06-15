@@ -1,11 +1,11 @@
 /**
- * ProgressionPausedBanner — Phase 3B
+ * ProgressionPausedBanner - Phase 3B
  *
  * Neutral, institutional banner shown above progression CTA clusters when
  * the match has an active (`open` / `under_review`) challenge.
  *
  * This banner is a **UX hint only**. The server (Phase 3A canonical
- * `409 CHALLENGE_OPEN` gate) is the authoritative blocker — UI never gates.
+ * `409 CHALLENGE_OPEN` gate) is the authoritative blocker - UI never gates.
  */
 import { Pause } from "lucide-react";
 import type { ChallengeRow } from "@/hooks/useMatchChallenge";

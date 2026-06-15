@@ -1,5 +1,5 @@
 /**
- * MT-009 Phase 2 — Assign Named Contact dialog.
+ * MT-009 Phase 2 - Assign Named Contact dialog.
  *
  * Records a controlled named contact on a side. Calls the
  * `match-named-contacts-assign` edge function. Display-text guarantee:

@@ -1,10 +1,10 @@
 /**
- * DATA-004 Phase 2 — Per-Org Retention Health / Evidence Panel.
+ * DATA-004 Phase 2 - Per-Org Retention Health / Evidence Panel.
  *
  * Platform-admin only, READ-ONLY. Surfaces the effective per-org
  * retention posture before any sweeper is wired to consume
  * `org_retention_policies`. The whole point of this panel is to
- * prove — visibly — that HQ can see what *would* happen if
+ * prove - visibly - that HQ can see what *would* happen if
  * enforcement were turned on, while explicitly stating that NO
  * sweeper enforcement is wired yet.
  *
@@ -144,7 +144,7 @@ interface HealthResponse {
   orgs_truncated: boolean;
   last_run_email_send_log?: LastRunEvidence | null;
   /**
-   * DATA-004 Batch 7/9A — cold-storage-archive dry-run-only evidence path.
+   * DATA-004 Batch 7/9A - cold-storage-archive dry-run-only evidence path.
    * Batch 9A: scheduled dry-run is now expected; live archive scheduling
    * remains gated behind a separate approval.
    */
@@ -163,10 +163,10 @@ interface HealthResponse {
   };
 
   /**
-   * DATA-004 Batch 12 — READ-ONLY live cron drift monitor.
+   * DATA-004 Batch 12 - READ-ONLY live cron drift monitor.
    * Result of public.data_004_cron_drift_check(). Reports only; never
    * mutates cron.job. Any non-pass status requires operator review and
-   * explicit corrective approval — this panel never auto-remediates.
+   * explicit corrective approval - this panel never auto-remediates.
    */
   cron_drift?: {
     status: "pass" | "warn" | "fail" | "unknown";
@@ -251,11 +251,11 @@ export function OrgRetentionHealthPanel() {
       <Alert variant="default" className="border-amber-500/40">
         <ShieldAlert className="h-4 w-4" />
         <AlertTitle>
-          Enforcement status: PARTIAL — only email_send_log is wired ·
+          Enforcement status: PARTIAL - only email_send_log is wired ·
           Scheduling: scheduled dry-run ACTIVE · live purge is NOT scheduled
         </AlertTitle>
         <AlertDescription>
-          DATA-004 Phase 4 — <strong>scheduled dry-run only</strong>.{" "}
+          DATA-004 Phase 4 - <strong>scheduled dry-run only</strong>.{" "}
           <code>purge-email-send-log-daily</code> runs daily under pg_cron in{" "}
           <code>dry_run=true</code> mode; it counts and evidences but{" "}
           <strong>cannot delete</strong>. <code>storage-retention-cleanup</code>,{" "}
@@ -263,7 +263,7 @@ export function OrgRetentionHealthPanel() {
           and every other retention/archival path still do NOT consume{" "}
           <code>org_retention_policies</code>. Missing, disabled, or invalid org
           policies fail closed: rows are retained. Active legal holds block
-          purge. <strong>Live purge is NOT scheduled</strong> — moving to a
+          purge. <strong>Live purge is NOT scheduled</strong> - moving to a
           live scheduled purge requires a separate approval after dry-run
           evidence review. Rollback at any time:{" "}
           <code>SELECT cron.unschedule('purge-email-send-log-daily-dryrun');</code>
@@ -271,7 +271,7 @@ export function OrgRetentionHealthPanel() {
             <>
               {" "}
               <strong className="text-destructive">
-                ALERT: unexpected LIVE schedule detected — investigate
+                ALERT: unexpected LIVE schedule detected - investigate
                 immediately and unschedule.
               </strong>
             </>
@@ -298,7 +298,7 @@ export function OrgRetentionHealthPanel() {
         </AlertDescription>
       </Alert>
 
-      {/* DATA-004 Batch 12 — Live Cron Drift Monitor (READ-ONLY). */}
+      {/* DATA-004 Batch 12 - Live Cron Drift Monitor (READ-ONLY). */}
       {data?.cron_drift && (
         <Alert
           variant={data.cron_drift.status === "pass" ? "default" : "destructive"}
@@ -313,7 +313,7 @@ export function OrgRetentionHealthPanel() {
           <ShieldAlert className="h-4 w-4" />
           <AlertTitle>
             Live cron drift monitor: <strong>{data.cron_drift.status.toUpperCase()}</strong>
-            {" · "}READ-ONLY MONITOR — does not modify cron state, never auto-remediates.
+            {" · "}READ-ONLY MONITOR - does not modify cron state, never auto-remediates.
           </AlertTitle>
           <AlertDescription>
             <div className="text-xs space-y-2">
@@ -338,7 +338,7 @@ export function OrgRetentionHealthPanel() {
                     {data.cron_drift.findings!.map((f, idx) => (
                       <li key={idx} className="font-mono text-[11px]">
                         <Badge variant={f.severity === "critical" ? "destructive" : "secondary"}>{f.severity}</Badge>
-                        {" "}<code>{f.code}</code> · <code>{f.jobname}</code> — {f.detail}
+                        {" "}<code>{f.code}</code> · <code>{f.jobname}</code> - {f.detail}
                         <div className="text-muted-foreground">↳ recommended: <code>{f.recommended_action}</code></div>
                       </li>
                     ))}
@@ -417,7 +417,7 @@ export function OrgRetentionHealthPanel() {
               value={
                 data.summary.last_policy_change
                   ? new Date(data.summary.last_policy_change.created_at).toLocaleDateString()
-                  : "—"
+                  : "-"
               }
               hint={data.summary.last_policy_change?.action ?? undefined}
             />
@@ -460,7 +460,7 @@ export function OrgRetentionHealthPanel() {
             </div>
           </section>
 
-          {/* Phase 3.1 — Latest email_send_log purge run evidence */}
+          {/* Phase 3.1 - Latest email_send_log purge run evidence */}
           {data.last_run_email_send_log && (
             <section className="rounded-sm border border-border bg-card">
               <header className="px-4 py-2 border-b border-border text-xs uppercase tracking-wider text-muted-foreground flex justify-between">
@@ -515,11 +515,11 @@ export function OrgRetentionHealthPanel() {
               </div>
             </section>
           )}
-          {/* Batch 7/9A — cold-storage-archive dry-run-only evidence path */}
+          {/* Batch 7/9A - cold-storage-archive dry-run-only evidence path */}
           {data.cold_storage_archive && (
             <section className="rounded-sm border border-border bg-card">
               <header className="px-4 py-2 border-b border-border text-xs uppercase tracking-wider text-muted-foreground flex justify-between">
-                <span>Cold storage archive — dry-run-only evidence path (Batch 7 / 9A)</span>
+                <span>Cold storage archive - dry-run-only evidence path (Batch 7 / 9A)</span>
                 <Badge variant={data.cold_storage_archive.live_schedules && data.cold_storage_archive.live_schedules.length > 0 ? "destructive" : "secondary"}>
                   {data.cold_storage_archive.mode}
                 </Badge>
@@ -633,7 +633,7 @@ export function OrgRetentionHealthPanel() {
                               <td className="py-1 pr-3 text-muted-foreground">
                                 {c.last_updated_at
                                   ? new Date(c.last_updated_at).toLocaleDateString()
-                                  : "—"}
+                                  : "-"}
                               </td>
                             </tr>
                           ))}

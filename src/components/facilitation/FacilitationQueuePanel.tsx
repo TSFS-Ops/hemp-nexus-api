@@ -1,5 +1,5 @@
 /**
- * FacilitationQueuePanel — HQ admin queue listing for facilitation cases.
+ * FacilitationQueuePanel - HQ admin queue listing for facilitation cases.
  */
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";

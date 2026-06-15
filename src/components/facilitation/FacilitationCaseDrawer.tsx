@@ -1,5 +1,5 @@
 /**
- * FacilitationCaseDrawer — admin-side drawer with full case intake fields,
+ * FacilitationCaseDrawer - admin-side drawer with full case intake fields,
  * timeline, evidence list, assign/status/note controls.
  */
 import React, { useEffect, useState, useCallback } from "react";
@@ -54,7 +54,7 @@ const OwnerPicker: React.FC<{ value: string; onChange: (v: string) => void; onSa
       <Select value={value || "__none__"} onValueChange={(v) => onChange(v === "__none__" ? "" : v)}>
         <SelectTrigger><SelectValue placeholder={loading ? "Loading…" : "Pick an eligible owner"} /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="__none__">— Unassigned —</SelectItem>
+          <SelectItem value="__none__">- Unassigned -</SelectItem>
           {owners.map((o) => (
             <SelectItem key={o.id} value={o.id}>{label(o)}{o.roles.length ? <span className="text-slate-400"> · {rolesLabel(o.roles)}</span> : null}</SelectItem>
           ))}
@@ -167,7 +167,7 @@ export const FacilitationCaseDrawer: React.FC<{
                   ["Role", data.case.role as string],
                   ["Urgency", data.case.urgency as string],
                   ["Value", `${data.case.estimated_value_amount} ${data.case.estimated_value_currency}`],
-                  ["Email", (data.case.counterparty_email as string) || "—"],
+                  ["Email", (data.case.counterparty_email as string) || "-"],
                   ["Permission to contact", data.case.permission_to_contact ? "Yes" : "No"],
                 ].map(([k, v]) => (
                   <React.Fragment key={k}><dt className="text-slate-500">{k}</dt><dd className="text-slate-800">{v}</dd></React.Fragment>

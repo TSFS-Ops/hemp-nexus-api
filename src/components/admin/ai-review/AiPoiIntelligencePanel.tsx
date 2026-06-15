@@ -1,5 +1,5 @@
 /**
- * AiPoiIntelligencePanel — Batch 5
+ * AiPoiIntelligencePanel - Batch 5
  * Read-only display + advisory generation surface for AI POI intelligence
  * notes attached to a proposed match. Strictly advisory:
  *   - Never calls a source "verified".
@@ -131,7 +131,7 @@ export function AiPoiIntelligencePanel({
           </h4>
           <p className="text-[11.5px] text-slate-500">
             Advisory only. Not a verification. Sources are classified as public,
-            social, or AI interpretation — never "verified".
+            social, or AI interpretation - never "verified".
           </p>
         </div>
         <Button
@@ -308,7 +308,7 @@ function NoteCard({ note, onEscalate }: { note: Note; onEscalate: (id: string) =
                       ) : (
                         <span className="italic text-slate-500">Source reference not available.</span>
                       )}
-                      {r?.note ? <span className="text-slate-600"> — {r.note}</span> : null}
+                      {r?.note ? <span className="text-slate-600"> - {r.note}</span> : null}
                     </li>
                   ))}
                 </ul>

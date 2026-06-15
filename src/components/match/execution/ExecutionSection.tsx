@@ -1,5 +1,5 @@
 /**
- * ExecutionSection — post-WaD execution pathway (Item 10 of canonical spine).
+ * ExecutionSection - post-WaD execution pathway (Item 10 of canonical spine).
  *
  * Renders below MatchHeroCard when a WaD has been ISSUED for this match.
  * Resolves the chain: match.id → p3_wads.poi_id → pods.wad_id, then
@@ -34,7 +34,7 @@ export function ExecutionSection({ matchId }: Props) {
     enabled: !!matchId,
   });
 
-  // Hide entirely until a WaD record exists at all — keeps the page
+  // Hide entirely until a WaD record exists at all - keeps the page
   // uncluttered for matches that haven't progressed through compliance.
   if (isLoading || !wad) return null;
 
@@ -49,7 +49,7 @@ export function ExecutionSection({ matchId }: Props) {
             Execution
           </CardTitle>
           <Badge variant={isIssued ? "default" : "outline"} className="text-xs">
-            {isIssued ? "WaD issued — ready" : `WaD ${wad.state.toLowerCase()}`}
+            {isIssued ? "WaD issued - ready" : `WaD ${wad.state.toLowerCase()}`}
           </Badge>
         </div>
       </CardHeader>

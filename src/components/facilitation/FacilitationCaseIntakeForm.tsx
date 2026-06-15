@@ -1,5 +1,5 @@
 /**
- * FacilitationCaseIntakeForm — Phase 1 client intake.
+ * FacilitationCaseIntakeForm - Phase 1 client intake.
  * Requires ?trade_request_id=... in the URL.
  * Submits to create-facilitation-case. No outreach.
  */
@@ -49,7 +49,7 @@ export const FacilitationCaseIntakeForm: React.FC = () => {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!tradeRequestId) {
-      toast.error("Missing trade_request_id — cannot create a facilitation case.");
+      toast.error("Missing trade_request_id - cannot create a facilitation case.");
       return;
     }
     if (!form.user_declaration_accepted) {

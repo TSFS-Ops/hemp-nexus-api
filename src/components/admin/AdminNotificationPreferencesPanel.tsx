@@ -129,7 +129,7 @@ export function AdminNotificationPreferencesPanel() {
       `notification preferences export (${rows.length} rows)`,
     );
     if (!reason) {
-      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      toast.error("Export cancelled - a reason of at least 10 characters is required.");
       return;
     }
     setExporting(true);
@@ -295,11 +295,11 @@ export function AdminNotificationPreferencesPanel() {
                   return (
                     <TableRow key={r.user_id}>
                       <TableCell>
-                        <div className="font-medium text-sm">{r.full_name ?? "—"}</div>
-                        <div className="font-mono text-xs text-muted-foreground">{r.email ?? "—"}</div>
+                        <div className="font-medium text-sm">{r.full_name ?? "-"}</div>
+                        <div className="font-mono text-xs text-muted-foreground">{r.email ?? "-"}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">{r.org_name ?? "—"}</div>
+                        <div className="text-sm">{r.org_name ?? "-"}</div>
                         <div className="font-mono text-[10px] text-muted-foreground">{r.org_id ?? ""}</div>
                       </TableCell>
                       <TableCell>{suppressionBadge(r.suppression_reason)}</TableCell>
@@ -320,7 +320,7 @@ export function AdminNotificationPreferencesPanel() {
                       <TableCell className="font-mono text-xs">
                         {r.preferences_updated_at
                           ? format(new Date(r.preferences_updated_at), "yyyy-MM-dd HH:mm")
-                          : "—"}
+                          : "-"}
                       </TableCell>
                     </TableRow>
                   );

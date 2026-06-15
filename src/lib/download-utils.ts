@@ -4,7 +4,7 @@
  * Centralised helpers for generating and downloading files.
  * Replaces duplicated blob/anchor logic across the codebase.
  *
- * Batch O — DATA-005 / AUD-012: also provides `redactExportMetadata`,
+ * Batch O - DATA-005 / AUD-012: also provides `redactExportMetadata`,
  * the single allowlist/redaction helper every CSV/JSON export must use
  * before serialising audit/match/outreach metadata. Anything that looks
  * like a token, secret, api key, payment reference, IP or user-agent is
@@ -12,7 +12,7 @@
  * webhooks, admin actions or other raw metadata blobs.
  */
 
-// Keys we never export — case-insensitive exact match.
+// Keys we never export - case-insensitive exact match.
 const REDACTED_EXACT_KEYS = new Set<string>([
   "actor_ip",
   "ip_address",
@@ -80,7 +80,7 @@ export function redactExportMetadata<T = unknown>(value: T, depth = 0): T {
     return out as unknown as T;
   }
   // Primitives flow through unchanged. We deliberately do not scan
-  // string values for opaque tokens — the keying convention is the
+  // string values for opaque tokens - the keying convention is the
   // contract. Add per-call scrubbing if a specific export needs it.
   return value;
 }
@@ -166,7 +166,7 @@ export function buildExportPreamble(opts: {
 }
 
 /**
- * Batch T — AUD-017: audited CSV download.
+ * Batch T - AUD-017: audited CSV download.
  *
  * Single entry point every sensitive CSV export in the app must use.
  *  1. Calls `recordExportAudit` BEFORE any bytes leave the browser, so the

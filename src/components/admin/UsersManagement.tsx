@@ -210,7 +210,7 @@ export default function UsersManagement() {
       `admin users export (${usersToExport.length} users)`,
     );
     if (!reason) {
-      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      toast.error("Export cancelled - a reason of at least 10 characters is required.");
       return;
     }
 
@@ -229,7 +229,7 @@ export default function UsersManagement() {
       user.deletion_reason || "",
     ]);
 
-    // Batch T — AUD-017: users CSV is sensitive (PII + roles).
+    // Batch T - AUD-017: users CSV is sensitive (PII + roles).
     // Route through audited helper so the row count, filters and
     // sensitivity are captured BEFORE bytes leave the browser, and
     // AAL2 can block the download for non-MFA admins.

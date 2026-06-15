@@ -1,5 +1,5 @@
 /**
- * DATA-005 Phase 1 — client mirror of
+ * DATA-005 Phase 1 - client mirror of
  * supabase/functions/_shared/user-export-categories.ts
  *
  * Both files MUST stay in sync. Enforced by

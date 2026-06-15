@@ -6,7 +6,7 @@ import { ArrowLeft, Copy, Check, AlertTriangle } from "lucide-react";
 /**
  * Suggest the closest sensible destination based on the URL the user
  * actually hit. The previous 404 dumped everyone at /dashboard regardless
- * of intent, which made it useless for the most common failure mode —
+ * of intent, which made it useless for the most common failure mode -
  * a broken in-app CTA pointing into a sub-shell that nearly exists
  * (e.g. /desk/initiate, /desk/setings/company, /hq/users-typo).
  *
@@ -67,7 +67,7 @@ function suggestDestination(pathname: string): {
 }
 
 /**
- * 404 page — shown by the catch-all `<Route path="*">` in App.tsx and by
+ * 404 page - shown by the catch-all `<Route path="*">` in App.tsx and by
  * RouteErrorBoundary when a lazy-loaded chunk fails to load.
  *
  * Goals (in order):
@@ -90,7 +90,7 @@ export default function NotFound() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* clipboard unavailable — ignore silently */
+      /* clipboard unavailable - ignore silently */
     }
   };
 
@@ -151,7 +151,7 @@ export default function NotFound() {
 
         <p className="mt-6 text-xs text-muted-foreground">
           If you reached this page from a button or link inside Izenzo, please
-          report it — that's a defect on our side, not yours.
+          report it - that's a defect on our side, not yours.
         </p>
       </div>
     </main>

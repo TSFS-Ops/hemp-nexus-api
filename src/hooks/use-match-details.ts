@@ -43,12 +43,12 @@ function formatEligibilityMessage(details: Record<string, unknown> | null): stri
 
   if (denialReasons.length > 0) {
     const list = denialReasons.slice(0, 3).join("; ");
-    return `Cannot generate POI: ${list}. Fix in the Terms tab — no credits were deducted.`;
+    return `Cannot generate POI: ${list}. Fix in the Terms tab - no credits were deducted.`;
   }
   if (failedFields.length > 0) {
-    return `Cannot generate POI. Invalid or missing: ${failedFields.join(", ")}. Fix in the Terms tab — no credits were deducted.`;
+    return `Cannot generate POI. Invalid or missing: ${failedFields.join(", ")}. Fix in the Terms tab - no credits were deducted.`;
   }
-  return "Cannot generate POI: required deal fields are missing or invalid. Complete them in the Terms tab — no credits were deducted.";
+  return "Cannot generate POI: required deal fields are missing or invalid. Complete them in the Terms tab - no credits were deducted.";
 }
 
 /**
@@ -286,7 +286,7 @@ export function useMatchDetails(matchId: string | undefined) {
       }
 
       // UI-005: handle the 202 ENGAGEMENT_PENDING soft-route the same way
-      // `handleStateAction` does — no `setMatch`, no token-balance
+      // `handleStateAction` does - no `setMatch`, no token-balance
       // invalidation, truthful "no credits were used" toast. Without this,
       // the legacy settle path threw the scary "Server returned an invalid
       // response. Contact support@izenzo.co.za if credits were deducted"
@@ -311,7 +311,7 @@ export function useMatchDetails(matchId: string | undefined) {
           };
           const who = payload.counterparty_name || `the ${payload.missing_party ?? "counterparty"}`;
           toast.info(
-            `Pending engagement created. ${who} is not yet registered on the platform — no credits were used. POI minting will resume once they accept.`,
+            `Pending engagement created. ${who} is not yet registered on the platform - no credits were used. POI minting will resume once they accept.`,
             { duration: 8000 },
           );
         }
@@ -331,7 +331,7 @@ export function useMatchDetails(matchId: string | undefined) {
         // UI-007: tell other tabs to refresh their balance + match views.
         publishCrossTab({ kind: "credit-balance" });
         publishCrossTab({ kind: "match", matchId: match.id });
-        toast.success("Draft POI recorded — initiator-generated intent record, awaiting counterparty confirmation. 1 credit deducted. WaD, execution, and finality remain subject to the next required workflow steps.");
+        toast.success("Draft POI recorded - initiator-generated intent record, awaiting counterparty confirmation. 1 credit deducted. WaD, execution, and finality remain subject to the next required workflow steps.");
       }
     },
     {
@@ -402,7 +402,7 @@ export function useMatchDetails(matchId: string | undefined) {
       }
 
       // ── ENGAGEMENT_PENDING (202 soft-route from match edge function) ──
-      // The server returns a typed payload — NOT a full Match — when the
+      // The server returns a typed payload - NOT a full Match - when the
       // counterparty is named but not registered/attached. No credits were
       // burned; refresh the match so the UI reflects the new pending
       // engagement and toast info (not "POI sealed").
@@ -426,7 +426,7 @@ export function useMatchDetails(matchId: string | undefined) {
           };
           const who = payload.counterparty_name || `the ${payload.missing_party ?? "counterparty"}`;
           toast.info(
-            `Pending engagement created. ${who} is not yet registered on the platform — no credits were used. POI minting will resume once they accept.`,
+            `Pending engagement created. ${who} is not yet registered on the platform - no credits were used. POI minting will resume once they accept.`,
             { duration: 8000 },
           );
         }
@@ -452,7 +452,7 @@ export function useMatchDetails(matchId: string | undefined) {
         publishCrossTab({ kind: "match", matchId: match.id });
 
         const labels: Record<string, string> = {
-          "generate-poi": "Draft POI recorded — initiator-generated intent record, awaiting counterparty confirmation. 1 credit deducted. WaD, execution, and finality remain subject to the next required workflow steps.",
+          "generate-poi": "Draft POI recorded - initiator-generated intent record, awaiting counterparty confirmation. 1 credit deducted. WaD, execution, and finality remain subject to the next required workflow steps.",
           "reveal-counterparty": "Counterparty revealed.",
           "commit": "Deal committed.",
           "complete": "Transaction recorded. Evidence record sealed.",

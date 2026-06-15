@@ -1,5 +1,5 @@
 /**
- * D3 — Plain-English "Why this is blocked / what to do next" copy for
+ * D3 - Plain-English "Why this is blocked / what to do next" copy for
  * pending engagements that have been parked by the D2a/D2b server controls.
  *
  * The admin panel surfaces these strings beside the row so an operator can
@@ -29,7 +29,7 @@ export const ADMIN_ENGAGEMENT_BLOCKED_COPY: Record<
     next: "Resolve binding review before outreach.",
   },
   disputed_being_named: {
-    label: "Disputed — being named",
+    label: "Disputed - being named",
     next: "Dispute must be resolved before progression.",
   },
   cancelled_email_change: {

@@ -24,7 +24,7 @@ export function EnvProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      /* localStorage unavailable — non-fatal */
+      /* localStorage unavailable - non-fatal */
     }
   };
 
@@ -34,7 +34,7 @@ export function EnvProvider({ children }: { children: ReactNode }) {
 export const useEnv = () => useContext(Ctx);
 
 /**
- * EnvSwitcher — compact toggle for the page header.
+ * EnvSwitcher - compact toggle for the page header.
  * The full-width banner + comparison panel live in <EnvModeBanner />
  * and <EnvModeComparison /> below, so the toggle stays small here.
  */
@@ -82,7 +82,7 @@ export function EnvSwitcher() {
 }
 
 /**
- * EnvModeBanner — a persistent, full-width strip that sits at the very top
+ * EnvModeBanner - a persistent, full-width strip that sits at the very top
  * of every Developer Centre view. Its job is to make the current mode
  * impossible to miss before any destructive action (creating a key,
  * firing a Try-it request, replaying a webhook, etc.).
@@ -163,7 +163,7 @@ export function EnvModeBanner() {
 }
 
 /**
- * EnvModeComparison — collapsible side-by-side that spells out exactly
+ * EnvModeComparison - collapsible side-by-side that spells out exactly
  * what is different between sandbox and live, row by row. Sits below the
  * walkthrough panel on the Keys view (where the env switcher lives), so
  * a new operator can decide which mode they actually want before doing
@@ -181,7 +181,7 @@ const COMPARISON: Array<{
   },
   {
     area: "Counterparties",
-    sandbox: "Synthetic / seed only — no real organisations are contacted.",
+    sandbox: "Synthetic / seed only - no real organisations are contacted.",
     live: "Real organisations on the platform. They will see your trade requests and engagements.",
   },
   {

@@ -4,7 +4,7 @@
  * Uses jsPDF directly (no edge function). The output is a clean, brandable,
  * text-based PDF a client team can circulate internally without needing
  * Lovable login. Page format: A4, 1-inch margins, deep slate text on white,
- * institutional emerald accent — to match the Civilisation OS brand.
+ * institutional emerald accent - to match the Civilisation OS brand.
  */
 
 import { jsPDF } from "jspdf";
@@ -64,7 +64,7 @@ const BLOCKS: Block[] = [
   { kind: "p", text: "Default limit: 1,000 requests per minute per organisation. A 429 response carries a Retry-After header with seconds to wait. Always send an Idempotency-Key on writes so retries cannot create duplicates." },
 
   { kind: "h2", text: "7. Errors" },
-  { kind: "p", text: "Errors return JSON: { code, message, request_id }. Always log the request_id — it is the fastest path to a useful support response. Common codes: VALIDATION_ERROR (400), UNAUTHORIZED (401), FORBIDDEN_SCOPE (403), NOT_FOUND (404), DISPUTE_ACTIVE (409), ENGAGEMENT_PENDING (409), WEBHOOK_REPLAY (409), RATE_LIMITED (429)." },
+  { kind: "p", text: "Errors return JSON: { code, message, request_id }. Always log the request_id - it is the fastest path to a useful support response. Common codes: VALIDATION_ERROR (400), UNAUTHORIZED (401), FORBIDDEN_SCOPE (403), NOT_FOUND (404), DISPUTE_ACTIVE (409), ENGAGEMENT_PENDING (409), WEBHOOK_REPLAY (409), RATE_LIMITED (429)." },
 
   { kind: "h2", text: "8. Billing" },
   { kind: "p", text: "Calls made with this key burn credits at the same rate as a manual operator. One credit costs one US dollar. Tiers: pack_10 ($10), pack_50 ($45, ten percent off), pack_200 ($160, twenty percent off). Top up via the billing page. Sandbox calls never burn credits." },
@@ -73,7 +73,7 @@ const BLOCKS: Block[] = [
   { kind: "p", text: "Engineering support: api@izenzo.co.za. Service level: four business hours, twenty-four hours over weekends. Always include the request_id from any failing response and the timestamp in UTC." },
 
   { kind: "rule" },
-  { kind: "p", text: "© Izenzo. Internal distribution only. The Developer Centre at api.trade.izenzo.co.za/developer is the authoritative source — this PDF is a snapshot." },
+  { kind: "p", text: "© Izenzo. Internal distribution only. The Developer Centre at api.trade.izenzo.co.za/developer is the authoritative source - this PDF is a snapshot." },
 ];
 
 export function generateIntegrationGuidePdf(): jsPDF {

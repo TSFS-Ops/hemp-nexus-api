@@ -11,7 +11,7 @@ interface State {
 }
 
 /**
- * Catches runtime errors thrown by lazy-loaded route components — most
+ * Catches runtime errors thrown by lazy-loaded route components - most
  * commonly a `ChunkLoadError` triggered when the user navigates to a
  * route whose JS bundle is no longer available (stale tab open across a
  * deploy, transient network failure mid-fetch). Without this boundary
@@ -21,7 +21,7 @@ interface State {
  * For chunk-load errors we offer a one-click reload (which pulls the new
  * bundle manifest) in addition to the standard NotFound recovery UI. For
  * any other render error we just render NotFound, so the user always has
- * a way out — same affordances as a 404.
+ * a way out - same affordances as a 404.
  *
  * We intentionally do NOT wrap this around the entire app: errors inside
  * deeply nested feature components are better surfaced where the user can
@@ -44,13 +44,13 @@ export class RouteErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error) {
     // Log to the console so the error is visible in our session-replay
-    // and in Sentry's autoinstrumentation. Do not swallow — the project
+    // and in Sentry's autoinstrumentation. Do not swallow - the project
     // policy is "zero swallowed errors".
     console.error("[RouteErrorBoundary] route render failed:", error);
   }
 
   reload = () => {
-    // Hard reload — we want a fresh index.html so the bundle manifest is
+    // Hard reload - we want a fresh index.html so the bundle manifest is
     // re-read and the missing chunk's new hash gets resolved.
     window.location.reload();
   };
@@ -74,7 +74,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-muted-foreground mb-6">
               A newer version of Izenzo has been released since you opened
               this tab, and part of the page failed to load. Reload to pick
-              up the latest version — your work in this session is not
+              up the latest version - your work in this session is not
               affected.
             </p>
             <button

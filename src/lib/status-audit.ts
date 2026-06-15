@@ -1,5 +1,5 @@
 /**
- * UI-010 — canonical audit action names for public-status / admin-health.
+ * UI-010 - canonical audit action names for public-status / admin-health.
  *
  * Source of truth: signed Client-Only Decision Form, UI-010.
  *
@@ -10,7 +10,7 @@
  *       Emitted by the admin/governance health-check helper when a code
  *       path attempts (or is configured) to publish a public status
  *       update. There is intentionally NO public publishing workflow on
- *       this platform — the public `/status` route renders only the
+ *       this platform - the public `/status` route renders only the
  *       signed UI-010 holding message. Any attempt to wire one MUST go
  *       through `recordPublicStatusPublishBlocked` so the refusal is
  *       captured as a first-class audit event rather than a silent drop.

@@ -1,5 +1,5 @@
 /**
- * CounterpartyRatingBadge — institutional-premium trust signal.
+ * CounterpartyRatingBadge - institutional-premium trust signal.
  *
  * Bands (deterministic, derived):
  *   platinum / gold / silver / bronze / new / insufficient_history
@@ -58,7 +58,7 @@ function PillarBar({ label, value }: { label: string; value: number | null }) {
       <div className="space-y-1">
         <div className="flex justify-between text-xs">
           <span className="text-muted-foreground">{label}</span>
-          <span className="font-mono text-muted-foreground">—</span>
+          <span className="font-mono text-muted-foreground">-</span>
         </div>
         <div className="h-1.5 rounded-sm bg-muted" />
       </div>

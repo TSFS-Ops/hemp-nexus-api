@@ -439,7 +439,7 @@ export default function CounterpartySearch() {
                 "Idempotency-Key": idempotencyKey,
               },
               body: JSON.stringify({
-                // R1: never send `id` for the counterparty side — search-result IDs are
+                // R1: never send `id` for the counterparty side - search-result IDs are
                 // NOT org UUIDs and would either resolve to null (best case) or, if the
                 // string happens to collide with a real org UUID, write the WRONG org
                 // into the buyer/seller slot. Only send a verified org_id for the
@@ -513,7 +513,7 @@ export default function CounterpartySearch() {
         setSelectedResults(failedIds);
       } else {
         setSelectedResults(new Set());
-        // All selected partners were created/deduped successfully — clear the
+        // All selected partners were created/deduped successfully - clear the
         // session-expiry draft so the user isn't prompted to "resume" stale work.
         draftSelection.clearDraft();
       }
@@ -822,7 +822,7 @@ export default function CounterpartySearch() {
               <AlertDialogDescription className="space-y-2">
                 <p>
                   This trade appears to place your organisation as{" "}
-                  <strong>{inferredUserSide ?? "—"}</strong>.
+                  <strong>{inferredUserSide ?? "-"}</strong>.
                   You currently have <strong>{selectedSide ?? "no side"}</strong> selected.
                 </p>
                 <p>Please confirm or correct your side before continuing.</p>

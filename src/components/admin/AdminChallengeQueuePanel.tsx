@@ -1,5 +1,5 @@
 /**
- * AdminChallengeQueuePanel — Phase 3C
+ * AdminChallengeQueuePanel - Phase 3C
  *
  * HQ → Disputes → "Challenges" sub-tab content. Lists all match
  * challenges for platform admins (RLS-trusted), with a status filter
@@ -26,7 +26,7 @@ const STATUS_LABEL: Record<string, string> = {
   under_review: "Under review",
   outcome_recorded: "Outcome recorded",
   withdrawn: "Withdrawn",
-  closed_no_action: "Closed — no action",
+  closed_no_action: "Closed - no action",
 };
 
 const SUBJECT_LABEL: Record<string, string> = {
@@ -114,7 +114,7 @@ export function AdminChallengeQueuePanel() {
                     </Link>
                   </td>
                   <td className="px-3 py-2">{SUBJECT_LABEL[c.subject_code] ?? c.subject_code}</td>
-                  <td className="px-3 py-2 text-xs">{c.raised_by_role ?? "—"}</td>
+                  <td className="px-3 py-2 text-xs">{c.raised_by_role ?? "-"}</td>
                   <td className="px-3 py-2">
                     <Badge variant="outline" className="text-xs border-border bg-muted text-foreground">
                       {STATUS_LABEL[c.status] ?? c.status}

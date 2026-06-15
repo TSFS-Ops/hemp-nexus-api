@@ -229,7 +229,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       });
       if (error) throw error;
       const replay = (data as { replay?: boolean } | null)?.replay;
-      toast.success(replay ? "Already sent — no duplicate message was delivered." : "Message sent.");
+      toast.success(replay ? "Already sent - no duplicate message was delivered." : "Message sent.");
       setIdemKey(genIdempotencyKey());
       setAckedWarns([]);
       await loadCandidateDetail(selectedCand.id);
@@ -295,7 +295,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
             <li key={c.id} className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer ${selectedCandidate === c.id ? "bg-slate-50" : ""}`} onClick={() => setSelectedCandidate(c.id)}>
               <div className="min-w-0">
                 <div className="font-mono text-xs truncate">{c.contact_email}</div>
-                <div className="text-[11px] text-slate-500 truncate">{c.org_name ?? "—"}</div>
+                <div className="text-[11px] text-slate-500 truncate">{c.org_name ?? "-"}</div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {gateResultBadge(c.dnc_check_result, c.duplicate_check_result)}
@@ -364,9 +364,9 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
 
               <Button onClick={handleSend} disabled={sendDisabled}>
                 {isBlocked
-                  ? "Cannot send — this candidate cannot be contacted"
+                  ? "Cannot send - this candidate cannot be contacted"
                   : openEscalation
-                    ? "Cannot send — resolve the open escalation first"
+                    ? "Cannot send - resolve the open escalation first"
                     : "Send message"}
               </Button>
               <p className="text-[11px] text-slate-500">The system re-checks contact restrictions immediately before sending. If anything has changed, the send will be refused.</p>

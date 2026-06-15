@@ -1,16 +1,16 @@
 /**
- * Admin Export Controls Batch 4 — Pending Governance Record Export Approvals.
+ * Admin Export Controls Batch 4 - Pending Governance Record Export Approvals.
  *
  * Platform-admin only. AAL2-required (server enforced). Lists
  * `awaiting_approval` admin export requests anchored to the current
  * Governance Record (matchId) and lets a second platform admin approve.
  *
- * Hard contract — this panel NEVER renders:
+ * Hard contract - this panel NEVER renders:
  *   - download / signed URL / prepare / destroy controls
  *   - generated file links
  *   - wording that implies the export is available for retrieval
  *
- * "Approved means approved only — not prepared, not generated, not downloadable."
+ * "Approved means approved only - not prepared, not generated, not downloadable."
  */
 
 import { useEffect, useState, useCallback } from "react";
@@ -146,7 +146,7 @@ export function AdminGovernanceExportApprovalPanel({
       setPerRow((p) => ({ ...p, [row.id]: { kind: "failed", message } }));
       toast.error(`Approval failed: ${message}`);
     } finally {
-      // Zero Swallowed Errors — state always advances.
+      // Zero Swallowed Errors - state always advances.
     }
   };
 
@@ -172,7 +172,7 @@ export function AdminGovernanceExportApprovalPanel({
         <AlertTitle className="text-xs">AAL2 required</AlertTitle>
         <AlertDescription className="text-xs">
           Approving an export request requires multi-factor authentication.
-          Approval records a governance decision only — no file is
+          Approval records a governance decision only - no file is
           generated, no signed URL is minted, and no download link is
           created. A requester may not approve their own request.
         </AlertDescription>
@@ -261,7 +261,7 @@ export function AdminGovernanceExportApprovalPanel({
                 </Button>
                 {isSelf && (
                   <Badge variant="outline" className="text-[10px]">
-                    Self-approval blocked — another platform admin must approve.
+                    Self-approval blocked - another platform admin must approve.
                   </Badge>
                 )}
                 <Badge variant="outline" className="text-[10px]">
@@ -277,7 +277,7 @@ export function AdminGovernanceExportApprovalPanel({
                   <AlertDescription className="text-xs">
                     Status: <span className="font-mono">{state.previousStatus}</span>{" "}
                     → <span className="font-mono">{state.newStatus}</span>.
-                    Approved means approved only — no file has been generated,
+                    Approved means approved only - no file has been generated,
                     no signed URL has been minted, and no download link exists.
                   </AlertDescription>
                 </Alert>

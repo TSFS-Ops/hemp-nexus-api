@@ -1,5 +1,5 @@
 /**
- * SpineTimeline — per-match canonical spine view.
+ * SpineTimeline - per-match canonical spine view.
  *
  * Mirrors AdminCanonicalSpinePanel's row logic, but rendered vertically
  * for traders inside MatchDetails. One stage per row:
@@ -89,7 +89,7 @@ function deriveStages(d: SpineData) {
   const m = d.match;
   const search: { status: StageStatus; label: string; detail: string } = m?.trade_request_id
     ? { status: "complete", label: "Searched", detail: "Originated from a trade request." }
-    : { status: "complete", label: "Direct", detail: "Direct/manual match — no prior search." };
+    : { status: "complete", label: "Direct", detail: "Direct/manual match - no prior search." };
 
   const matchStage: { status: StageStatus; label: string; detail: string } = (() => {
     if (!m?.state) return { status: "pending", label: "draft", detail: "Match draft pending." };
@@ -102,7 +102,7 @@ function deriveStages(d: SpineData) {
 
   const poi: { status: StageStatus; label: string; detail: string } = (() => {
     const s = m?.poi_state ?? "none";
-    if (s === "none") return { status: "none", label: "—", detail: "No Proof of Intent yet." };
+    if (s === "none") return { status: "none", label: "-", detail: "No Proof of Intent yet." };
     if (s === "COMPLETED" || s === "ELIGIBLE")
       return { status: "complete", label: s, detail: "Proof of Intent issued." };
     if (s === "REJECTED" || s === "EXPIRED")
@@ -111,7 +111,7 @@ function deriveStages(d: SpineData) {
   })();
 
   const wad: { status: StageStatus; label: string; detail: string } = (() => {
-    if (!d.wad?.state) return { status: "none", label: "—", detail: "WaD not started." };
+    if (!d.wad?.state) return { status: "none", label: "-", detail: "WaD not started." };
     if (d.wad.state === "ISSUED")
       return { status: "complete", label: "ISSUED", detail: "WaD sealed and issued." };
     if (d.wad.state === "DENIED")
@@ -121,7 +121,7 @@ function deriveStages(d: SpineData) {
 
   const exec: { status: StageStatus; label: string; detail: string } = (() => {
     const p = d.pod;
-    if (!p?.state) return { status: "none", label: "—", detail: "Execution not started." };
+    if (!p?.state) return { status: "none", label: "-", detail: "Execution not started." };
     if (p.openBreaches > 0)
       return {
         status: "issue",

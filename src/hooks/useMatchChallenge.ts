@@ -1,5 +1,5 @@
 /**
- * useMatchChallenge — Phase 3B
+ * useMatchChallenge - Phase 3B
  *
  * Reads `match_challenges` for a single match directly via the Supabase
  * client. RLS already governs who can see which rows:
@@ -48,7 +48,7 @@ const TERMINAL = new Set<ChallengeStatus>([
 ]);
 
 export interface UseMatchChallengeResult {
-  /** Latest active challenge (open/under_review) — at most one by DB invariant. */
+  /** Latest active challenge (open/under_review) - at most one by DB invariant. */
   open: ChallengeRow | null;
   /** Latest terminal challenge, if any. */
   terminal: ChallengeRow | null;

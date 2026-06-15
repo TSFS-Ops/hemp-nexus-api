@@ -131,7 +131,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
     const { slug, shortHash, version } = buildArtifactSlug(pack);
     const filename = `evidence-pack-${slug}.json`;
     // Annotate the canonical pack with traceability fields without mutating the canonical block
-    // (which is the SHA-256 source of truth — must NOT be modified).
+    // (which is the SHA-256 source of truth - must NOT be modified).
     const annotated = {
       ...pack,
       traceability: {
@@ -190,7 +190,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
   }, [pack, fetchHtmlReport, previewHtml, matchId, buildArtifactSlug]);
 
   /**
-   * Standalone Audit Trail export — separate file (CSV by default, JSON optional)
+   * Standalone Audit Trail export - separate file (CSV by default, JSON optional)
    * containing only the audit_logs entries for this match. Includes its own
    * SHA-256 trail hash + the parent pack hash for cross-traceability so a
    * compliance reviewer can ingest it independently of the full evidence pack.
@@ -210,7 +210,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
         const stamp = new Date().toISOString().replace(/[:.]/g, "-").replace(/Z$/, "Z");
         const filename = `audit-trail-${matchId}-${stamp}.${ext}`;
 
-        // Batch T — AUD-017: standalone audit-trail export is sensitive
+        // Batch T - AUD-017: standalone audit-trail export is sensitive
         // (it leaks the per-match chronological action log). Audit BEFORE
         // any bytes leave the browser, and block on AAL2 if required.
         const auditResult = await recordExportAudit({
@@ -238,7 +238,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
           : body;
         downloadFile(finalBody, filename, mime);
         toast.success("Audit trail exported", {
-          description: `Saved as ${filename} — standalone audit log for compliance review.`,
+          description: `Saved as ${filename} - standalone audit log for compliance review.`,
           duration: 7000,
         });
       } catch (error) {
@@ -492,7 +492,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
 
             {/* Download buttons */}
             <div className="space-y-2">
-              {/* Artifact fingerprint — surfaces version + full SHA-256 + generated UTC
+              {/* Artifact fingerprint - surfaces version + full SHA-256 + generated UTC
                   on the download surface itself so what you see matches what hits disk. */}
               <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[11px] font-mono text-muted-foreground space-y-1">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -544,7 +544,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                 )}
               </Button>
 
-              {/* Standalone audit-trail export — separate file for compliance review */}
+              {/* Standalone audit-trail export - separate file for compliance review */}
               <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                   <ScrollText className="h-3.5 w-3.5" />
@@ -552,7 +552,7 @@ export function EvidencePackPanel({ matchId, matchStatus, matchState }: Evidence
                 </div>
                 <p className="text-[11px] text-muted-foreground">
                   Download just the audit log entries for this trade as a separate file
-                  — for compliance reviewers who only need the chronological action log.
+                  - for compliance reviewers who only need the chronological action log.
                   Includes a SHA-256 trail hash plus the parent pack hash for cross-traceability.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">

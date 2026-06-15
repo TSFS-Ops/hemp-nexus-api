@@ -1,5 +1,5 @@
 /**
- * RaiseChallengeDialog — Phase 3B
+ * RaiseChallengeDialog - Phase 3B
  *
  * Minimal modal that submits to the existing `match-challenges/raise`
  * endpoint. No new server endpoint, no new schema.

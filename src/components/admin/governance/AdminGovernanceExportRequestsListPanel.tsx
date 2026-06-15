@@ -1,10 +1,10 @@
 /**
- * Admin Export Controls Batch 5 — HQ Governance Export Request List View.
+ * Admin Export Controls Batch 5 - HQ Governance Export Request List View.
  *
  * Platform-admin only (UI guard) + AAL2-required (server enforced).
  * Read-only cross-record listing of Governance Record export requests.
  *
- * Hard contract — this panel NEVER renders:
+ * Hard contract - this panel NEVER renders:
  *   - prepare / generate / download / destroy controls
  *   - signed URLs, file paths, storage keys, download tokens
  *   - CSV / JSON / PDF export buttons
@@ -54,7 +54,7 @@ interface ListRow {
   approval_note_summary: string | null;
   legal_hold_context_present: boolean;
   legal_hold_context_scope: string | null;
-  // Batch 6 — safe auto-detected fields (no reason/notes/metadata).
+  // Batch 6 - safe auto-detected fields (no reason/notes/metadata).
   legal_hold_auto_detected?: boolean;
   legal_hold_hold_count?: number;
   legal_hold_hold_sources?: string[];
@@ -121,7 +121,7 @@ export function AdminGovernanceExportRequestsListPanel() {
       const message = e instanceof Error ? e.message : String(e);
       setState({ kind: "error", message });
     } finally {
-      // Zero Swallowed Errors — state always advances.
+      // Zero Swallowed Errors - state always advances.
     }
   }, [isPlatformAdmin, recordFilter, statuses]);
 
@@ -190,7 +190,7 @@ export function AdminGovernanceExportRequestsListPanel() {
         <AlertTitle className="text-xs">AAL2 required</AlertTitle>
         <AlertDescription className="text-xs">
           Listing Governance Record export requests requires multi-factor
-          authentication. This view exposes governance metadata only —
+          authentication. This view exposes governance metadata only -
           requesters, approvers, status, redaction mode, and legal-hold
           context presence. It exposes no raw sanctions / PEP data, no raw
           API payloads, no storage keys, and no download tokens.
@@ -307,12 +307,12 @@ export function AdminGovernanceExportRequestsListPanel() {
                     {new Date(row.requested_at).toISOString()}
                   </TableCell>
                   <TableCell className="font-mono text-[11px]">
-                    {row.approved_by ?? "—"}
+                    {row.approved_by ?? "-"}
                   </TableCell>
                   <TableCell className="text-[11px]">
                     {row.approved_at
                       ? new Date(row.approved_at).toISOString()
-                      : "—"}
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px]">
@@ -360,20 +360,20 @@ export function AdminGovernanceExportRequestsListPanel() {
                         )}
                       </div>
                     ) : (
-                      <span className="text-[11px] text-muted-foreground">—</span>
+                      <span className="text-[11px] text-muted-foreground">-</span>
                     )}
                   </TableCell>
                   <TableCell
                     className="text-[11px] max-w-[260px] whitespace-pre-wrap"
                     title={row.reason_summary ?? ""}
                   >
-                    {row.reason_summary ?? "—"}
+                    {row.reason_summary ?? "-"}
                   </TableCell>
                   <TableCell
                     className="text-[11px] max-w-[260px] whitespace-pre-wrap"
                     title={row.approval_note_summary ?? ""}
                   >
-                    {row.approval_note_summary ?? "—"}
+                    {row.approval_note_summary ?? "-"}
                   </TableCell>
                 </TableRow>
               ))}

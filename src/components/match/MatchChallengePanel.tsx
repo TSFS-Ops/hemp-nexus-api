@@ -1,11 +1,11 @@
 /**
- * MatchChallengePanel — Phase 3B host wrapper.
+ * MatchChallengePanel - Phase 3B host wrapper.
  *
  * Single mount point that combines the three Phase 3B surfaces:
  *   • ChallengeStatusCard (when a challenge exists with a visible status)
  *   • Raise Challenge button (when canRaise=true and no active challenge)
  *
- * The ProgressionPausedBanner is intentionally NOT rendered here — it is
+ * The ProgressionPausedBanner is intentionally NOT rendered here - it is
  * mounted directly above the progression CTA cluster (Deal Wizard) so that
  * the visual hint sits next to the actions it pauses.
  */

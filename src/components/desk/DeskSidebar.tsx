@@ -30,7 +30,7 @@ export function DeskSidebar() {
         </p>
       </div>
 
-      {/* Workspace switcher (Command Bridge) — interactive surface */}
+      {/* Workspace switcher (Command Bridge) - interactive surface */}
       <div className="px-4 pt-4 pb-2">
         <p className="px-1 mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/60">
           Workspace
@@ -38,7 +38,7 @@ export function DeskSidebar() {
         <ContextSwitcher tone="light" />
       </div>
 
-      {/* Active org indicator — passive identity badge */}
+      {/* Active org indicator - passive identity badge */}
       <div className="px-4 pt-3 pb-4">
         <p className="px-1 mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/60">
           Acting as

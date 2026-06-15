@@ -1,5 +1,5 @@
 /**
- * Phase 2 Step 5 — Facilitation Do-Not-Contact (DNC) rule panel.
+ * Phase 2 Step 5 - Facilitation Do-Not-Contact (DNC) rule panel.
  *
  * Wired to live Step 5 edge functions:
  *   - facilitation-outreach-dnc-add     (platform_admin OR compliance_analyst)

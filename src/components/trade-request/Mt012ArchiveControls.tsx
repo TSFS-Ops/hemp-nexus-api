@@ -1,5 +1,5 @@
 /**
- * MT-012 — Minimal owner-org + admin controls for trade-request archive.
+ * MT-012 - Minimal owner-org + admin controls for trade-request archive.
  *
  * Pure presentational component. Renders three actions backed by the
  * three MT-012 edge functions. Owner-org sees the archive button; admin
@@ -162,7 +162,7 @@ export function Mt012ArchiveControls({
       <Dialog open={overrideOpen} onOpenChange={(o) => { setOverrideOpen(o); if (!o) setReason(""); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Admin override — archive with active child matches</DialogTitle>
+            <DialogTitle>Admin override - archive with active child matches</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-foreground">{MT012_ADMIN_OVERRIDE_WARNING}</p>
           <Textarea

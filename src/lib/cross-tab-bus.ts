@@ -1,5 +1,5 @@
 /**
- * UI-007 — Cross-tab cache bridge.
+ * UI-007 - Cross-tab cache bridge.
  *
  * When the user has multiple tabs open, mutations in one tab must invalidate
  * relevant React Query caches in the others. We use BroadcastChannel where
@@ -9,7 +9,7 @@
  * Channel name: `izenzo-cache` (also used as the localStorage key prefix).
  *
  * Mount the consumer hook ONCE near the app root (see App.tsx). Publishers
- * call `publish(event)` from mutation success branches — never from passive
+ * call `publish(event)` from mutation success branches - never from passive
  * reads.
  */
 
@@ -59,7 +59,7 @@ function getChannel(): BroadcastChannel | null {
 export function publish(event: CrossTabEvent): void {
   const envelope = makeEnvelope(event);
 
-  // 1. BroadcastChannel — modern path.
+  // 1. BroadcastChannel - modern path.
   const ch = getChannel();
   if (ch) {
     try {
@@ -71,7 +71,7 @@ export function publish(event: CrossTabEvent): void {
     }
   }
 
-  // 2. localStorage fallback — fires `storage` events in OTHER tabs only.
+  // 2. localStorage fallback - fires `storage` events in OTHER tabs only.
   if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));

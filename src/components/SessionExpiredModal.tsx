@@ -1,5 +1,5 @@
 /**
- * SessionExpiredModal — global, blocking re-auth prompt.
+ * SessionExpiredModal - global, blocking re-auth prompt.
  *
  * Mounted once in App.tsx. Listens to the `izenzo:session-force-reauth`
  * event (see src/lib/session-expiry-bus.ts) and opens an unmissable modal
@@ -70,7 +70,7 @@ export function SessionExpiredModal() {
     try {
       await supabase.auth.signOut();
     } catch {
-      /* ignore — session was already invalid */
+      /* ignore - session was already invalid */
     }
     const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
     window.location.href = `/auth?returnTo=${returnTo}&expired=1`;
@@ -89,7 +89,7 @@ export function SessionExpiredModal() {
 
   return (
     <AlertDialog open={open}>
-      {/* No onOpenChange — this modal is intentionally non-dismissable.
+      {/* No onOpenChange - this modal is intentionally non-dismissable.
           The only way out is to re-authenticate. */}
       {/* AlertDialog (vs Dialog) does not close on outside click by design.
           We additionally block ESC so the only exit is the CTA below. */}
@@ -104,8 +104,8 @@ export function SessionExpiredModal() {
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
           <p className="font-medium mb-1">Your work is being preserved.</p>
           <p>
-            Trade form fields that support draft recovery — new-trade search,
-            deal terms, deal notes, and document title/notes/visibility — are
+            Trade form fields that support draft recovery - new-trade search,
+            deal terms, deal notes, and document title/notes/visibility - are
             saved in this browser tab and will reappear after you sign in again.
           </p>
           <p className="mt-1">

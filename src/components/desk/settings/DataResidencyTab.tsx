@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResidencyRequestForm } from "@/components/data-residency/ResidencyRequestForm";
 
 /**
- * DATA-009 — Desk → Settings → Data Residency.
+ * DATA-009 - Desk → Settings → Data Residency.
  * Lets a Desk user submit a residency requirement for Izenzo review and see
  * any previously submitted reviews. No technical residency change is made
  * automatically; approval is policy-only and gated on Platform Admin + AAL2.
@@ -72,7 +72,7 @@ export function DataResidencyTab() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{r.requirement_source}</p>
                     <p className="text-xs text-muted-foreground">
-                      {[r.requested_region, r.requested_country].filter(Boolean).join(" · ") || "—"}
+                      {[r.requested_region, r.requested_country].filter(Boolean).join(" · ") || "-"}
                       {" · "}
                       {new Date(r.created_at).toLocaleDateString()}
                     </p>

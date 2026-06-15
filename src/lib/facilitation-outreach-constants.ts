@@ -1,10 +1,10 @@
 /**
- * Phase 2 — Facilitation Outreach SSOT (browser mirror).
+ * Phase 2 - Facilitation Outreach SSOT (browser mirror).
  *
  * Shared status / type / gate-result vocabularies for the Phase 2
  * approved-email-outreach + DNC + compliance-escalation surfaces.
  *
- * Mirror of supabase/functions/_shared/facilitation-outreach-constants.ts —
+ * Mirror of supabase/functions/_shared/facilitation-outreach-constants.ts -
  * both files are pinned by scripts/check-facilitation-outreach-drift.mjs.
  *
  * NO send-path, NO UI, NO POI/WaD/match/token/credit/payment mutation

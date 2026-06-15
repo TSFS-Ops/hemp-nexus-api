@@ -47,10 +47,10 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
   // Batch B Phase 5: only respondable while pre-acceptance. Once a late
   // acceptance has been recorded, the trading partner has already
   // responded and the next action sits with the initiator (reconfirm /
-  // decline) — surfacing Accept here again would imply progression that
+  // decline) - surfacing Accept here again would imply progression that
   // the workflow does not allow.
   // Batch D Test 7: 'expired' is also respondable from the counterparty
-  // surface — the server routes accept-after-expiry into
+  // surface - the server routes accept-after-expiry into
   // atomic_record_late_acceptance and hands the next step (reconfirm /
   // decline) back to the initiator. We surface a clearly-labelled
   // "Accept (late)" affordance so the counterparty isn't left looking at
@@ -101,7 +101,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
       const raw = error instanceof Error ? error.message : "Failed to respond. Try again.";
       // Translate the raw state-machine error so the counterparty understands
       // *why* their accept was refused. Stuck-at-notification_sent means the
-      // initiator has not yet sent their outreach email — the engagement
+      // initiator has not yet sent their outreach email - the engagement
       // can only progress to 'accepted' after the initiator transitions it
       // to 'contacted'. Translate any illegal-transition error from the
       // poi-engagements state machine into plain English so the counterparty
@@ -119,7 +119,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
       let friendly = raw;
       if (isInvalidTransition && (isFromNotificationSent || isFromPending)) {
         friendly =
-          "We can't accept this trade yet — the initiating party hasn't sent their outreach email. Once they reach out (or an admin marks the engagement as contacted), Accept will work.";
+          "We can't accept this trade yet - the initiating party hasn't sent their outreach email. Once they reach out (or an admin marks the engagement as contacted), Accept will work.";
       } else if (isInvalidTransition) {
         friendly =
           "This trade can't be accepted in its current state. Please refresh the page; if the problem persists, ask the initiator or an admin to advance the engagement to 'contacted'.";
@@ -197,7 +197,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
               "notification_sent" the backend will refuse Accept with an
               illegal-transition error, because the initiator has not yet
               advanced the engagement to "contacted". The amber banner above
-              already says "Accept will become active as soon as…" — so the
+              already says "Accept will become active as soon as…" - so the
               Accept button MUST visually agree with the banner and be
               disabled until status becomes "contacted". Decline stays
               available at all engagement states. */}
@@ -206,7 +206,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
             const acceptReason = acceptBlocked
               ? "Accept becomes available once the initiator sends their outreach (or an admin marks the engagement as contacted)."
               : isExpired
-                ? "Accept after expiry — your acceptance will be sent to the initiator for reconfirmation."
+                ? "Accept after expiry - your acceptance will be sent to the initiator for reconfirmation."
                 : "Accept this trade engagement";
             const acceptLabel = acceptBlocked
               ? "Accept (waiting for initiator)"
@@ -214,7 +214,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
                 ? "Accept (late)"
                 : "Accept Trade";
             // Server rejects decline on expired rows as an invalid
-            // transition — hide the decline button in that case so the
+            // transition - hide the decline button in that case so the
             // counterparty isn't offered an action that will fail.
             const showDecline = !isExpired;
             return (

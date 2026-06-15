@@ -1,5 +1,5 @@
 /**
- * Batch 4 — Enterprise Identity canonical audit name SSOT (browser mirror
+ * Batch 4 - Enterprise Identity canonical audit name SSOT (browser mirror
  * of supabase/functions/_shared/identity-audit.ts). Drift guard:
  *   scripts/check-identity-audit-names.mjs
  */

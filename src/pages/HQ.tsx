@@ -219,7 +219,7 @@ function AdminTabsNav({
     return () => ro.disconnect();
   }, [tabs]);
 
-  // Ensure active tab is always visible — if it's in overflow, swap it in
+  // Ensure active tab is always visible - if it's in overflow, swap it in
   const activeIndex = tabs.findIndex(t => t.id === activeTab);
   let visible = tabs.slice(0, visibleCount);
   let overflow = tabs.slice(visibleCount);
@@ -338,7 +338,7 @@ function CommandBar() {
             <ContextSwitcher tone="dark" />
           </div>
 
-          {/* System status badge — reads live maintenance flag from admin_settings */}
+          {/* System status badge - reads live maintenance flag from admin_settings */}
           <SystemStatusBadge />
         </div>
 

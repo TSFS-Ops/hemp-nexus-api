@@ -1,7 +1,7 @@
 /**
  * MatchApprovedAiSummary
  * ──────────────────────────────────────────────────────────────────────
- * Phase 4 — Originator-visible approved AI summary.
+ * Phase 4 - Originator-visible approved AI summary.
  *
  * This component is the ONLY place where an external/originator user can
  * see anything sourced from the AI Light-Intel pipeline. It is rendered
@@ -28,7 +28,7 @@
  *     "Request more intel", "Ask Izenzo to proceed") only create an
  *     internal admin task via `match-ai-summary-action`. They MUST NOT
  *     change AI approval state, POI state, match state, outreach
- *     state, or anything verification-related — that contract is
+ *     state, or anything verification-related - that contract is
  *     enforced by the edge function, not by this component.
  */
 
@@ -80,11 +80,11 @@ const DIALOG_COPY: Record<
   flag_incorrect: {
     title: "Flag incorrect information",
     description:
-      "Tell Izenzo what looks wrong in the summary above. This goes to our review team — nothing is sent to the counterparty.",
-    placeholder: "e.g. The country is wrong — they operate from Kenya, not Ghana.",
+      "Tell Izenzo what looks wrong in the summary above. This goes to our review team - nothing is sent to the counterparty.",
+    placeholder: "e.g. The country is wrong - they operate from Kenya, not Ghana.",
     noteRequired: true,
     submitLabel: "Flag for review",
-    successToast: "Thanks — Izenzo's review team will take a look.",
+    successToast: "Thanks - Izenzo's review team will take a look.",
   },
   request_more_intel: {
     title: "Request more intel",
@@ -93,16 +93,16 @@ const DIALOG_COPY: Record<
     placeholder: "Optional: anything specific you want us to dig into.",
     noteRequired: false,
     submitLabel: "Request more intel",
-    successToast: "Thanks — we will keep researching and follow up internally.",
+    successToast: "Thanks - we will keep researching and follow up internally.",
   },
   ask_izenzo_to_proceed: {
     title: "Ask Izenzo to proceed",
     description:
-      "Let Izenzo know you would like us to consider next steps. We do not contact the counterparty automatically — our team reviews first.",
+      "Let Izenzo know you would like us to consider next steps. We do not contact the counterparty automatically - our team reviews first.",
     placeholder: "Optional: any context you'd like us to know.",
     noteRequired: false,
     submitLabel: "Ask Izenzo to proceed",
-    successToast: "Thanks — Izenzo is reviewing next steps.",
+    successToast: "Thanks - Izenzo is reviewing next steps.",
   },
 };
 
@@ -194,7 +194,7 @@ export function MatchApprovedAiSummary({ matchId }: MatchApprovedAiSummaryProps)
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Izenzo is reviewing next steps. This summary is information only —
+            Izenzo is reviewing next steps. This summary is information only -
             it is not a compliance, KYB, or bank-detail confirmation.
           </p>
         </CardHeader>
@@ -294,7 +294,7 @@ function SummaryField({ label, value }: { label: string; value: string | null | 
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">{label}</div>
-      <div className="text-sm">{value && value.trim().length > 0 ? value : <span className="text-muted-foreground">—</span>}</div>
+      <div className="text-sm">{value && value.trim().length > 0 ? value : <span className="text-muted-foreground">-</span>}</div>
     </div>
   );
 }

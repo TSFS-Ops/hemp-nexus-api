@@ -1,5 +1,5 @@
 /**
- * UnknownCounterpartyStatus — Timeline panel surfacing the lifecycle of a POI
+ * UnknownCounterpartyStatus - Timeline panel surfacing the lifecycle of a POI
  * issued against an off-platform counterparty.
  *
  * Renders only when the engagement exists and the counterparty is not yet on
@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, Mail, UserPlus, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-// Batch A — surface the canonical contact-state label here too so the
+// Batch A - surface the canonical contact-state label here too so the
 // timeline panel uses the same wording as the admin queue and the
 // pending-engagement card.
 import {
@@ -32,7 +32,7 @@ export interface UnknownCounterpartyEngagement {
   counterparty_email: string | null;
   counterparty_org_id: string | null;
   counterparty_name?: string | null;
-  /** Batch A — counterparty contact labelling fields. */
+  /** Batch A - counterparty contact labelling fields. */
   contact_type?: "organisation" | "named_individual" | null;
   contact_name?: string | null;
   contacted_at?: string | null;
@@ -78,12 +78,12 @@ export function UnknownCounterpartyStatus({ engagement, isInitiator }: Props) {
   // Only show this panel when the counterparty is/was off-platform.
   // Once linked (counterparty_org_id set AND counterparty_type === 'known' AND
   // status moved to accepted/declined), the AcceptEngagementCard / wizard
-  // takes over the visible workflow — but we still show the "linked" success
+  // takes over the visible workflow - but we still show the "linked" success
   // beat for one terminal status to confirm the link happened.
   const isOffPlatform =
     engagement.counterparty_type === "unknown" || !engagement.counterparty_org_id;
 
-  // Hide entirely once the partner has accepted/declined AND linking is done —
+  // Hide entirely once the partner has accepted/declined AND linking is done -
   // the rest of the UI communicates state from there.
   const terminal =
     engagement.engagement_status === "accepted" ||
@@ -137,10 +137,10 @@ export function UnknownCounterpartyStatus({ engagement, isInitiator }: Props) {
 
   const currentBadge = (() => {
     if (linkedDone)
-      return { label: "Linked — awaiting response", tone: "complete" as const };
+      return { label: "Linked - awaiting response", tone: "complete" as const };
     if (outreachDone)
-      return { label: "Outreach queued — awaiting signup", tone: "active" as const };
-    return { label: "Support notified — outreach pending", tone: "pending" as const };
+      return { label: "Outreach queued - awaiting signup", tone: "active" as const };
+    return { label: "Support notified - outreach pending", tone: "pending" as const };
   })();
 
   return (
@@ -266,7 +266,7 @@ export function UnknownCounterpartyStatus({ engagement, isInitiator }: Props) {
           <p className="mt-5 pt-4 border-t border-border text-xs text-muted-foreground">
             <strong className="text-foreground">What you can do:</strong>{" "}
             {!outreachDone
-              ? "Nudge your counterparty directly if you have their contact details — once they sign up with the invited email, this match will link automatically."
+              ? "Nudge your counterparty directly if you have their contact details - once they sign up with the invited email, this match will link automatically."
               : "Your counterparty has been emailed. If they haven't responded within 48 hours, contact support@izenzo.co.za and we'll follow up."}
           </p>
         )}

@@ -1,5 +1,5 @@
 /**
- * ExecutionPanel — Proof-of-Delivery (PoD) lifecycle UI.
+ * ExecutionPanel - Proof-of-Delivery (PoD) lifecycle UI.
  *
  * Wraps the existing `pods` edge function:
  *   POST   ?action=create            create PoD with milestones
@@ -253,7 +253,7 @@ function CreatePodForm({
                   })
                 }
               >
-                <option value="">— none —</option>
+                <option value="">- none -</option>
                 {milestones.slice(0, idx).map((_, i) => (
                   <option key={i} value={i}>
                     #{i + 1}

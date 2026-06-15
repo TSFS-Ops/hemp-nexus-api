@@ -1,5 +1,5 @@
 /**
- * Batch 4 — SSO claim-control helper.
+ * Batch 4 - SSO claim-control helper.
  *
  * Single gate that decides whether the UI may say "SSO live" for an
  * organisation. The rule is intentionally strict: we never make a live
@@ -45,7 +45,7 @@ export function ssoStatusLabel(status: SsoStatus): string {
     case "pending_metadata":
       return "Pending metadata";
     case "configured_not_connected":
-      return "Configured — not connected";
+      return "Configured - not connected";
     case "live":
       return "SSO live";
     case "failed":

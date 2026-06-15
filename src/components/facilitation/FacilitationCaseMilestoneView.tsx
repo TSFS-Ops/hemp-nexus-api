@@ -1,5 +1,5 @@
 /**
- * FacilitationCaseMilestoneView — requester-facing case view.
+ * FacilitationCaseMilestoneView - requester-facing case view.
  *
  * Shows the milestone (user_facing_status), case number, summary, and the
  * cancellable action. No outreach, no contact, no notification dispatch.

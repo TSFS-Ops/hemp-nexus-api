@@ -1,5 +1,5 @@
 /**
- * CounterpartyIntelPanel — system-assisted public-source intel
+ * CounterpartyIntelPanel - system-assisted public-source intel
  * ───────────────────────────────────────────────────────────
  * Daniel Davies, 2026-04-27 clarification (binding directive):
  *
@@ -15,7 +15,7 @@
  *     edge function (Lovable AI Gateway → conservative tool-call).
  *   • The user sees: a 1–3 sentence summary, best-guess website,
  *     best-guess LinkedIn, and any other public source links the
- *     model surfaced — together with a confidence badge and the
+ *     model surfaced - together with a confidence badge and the
  *     timestamp of the last run.
  *   • A single "Refresh" button re-runs the sketch.
  *   • There are NO input fields. Nothing is user-assembled.
@@ -174,12 +174,12 @@ function SidePanel({
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">
-            {side === "buyer" ? "Buyer" : "Seller"}: {counterpartyName || "—"}
+            {side === "buyer" ? "Buyer" : "Seller"}: {counterpartyName || "-"}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {isRegistered
-              ? "Registered on platform — auto-intel is informational."
-              : "Not yet registered — system has run a light public-source sketch."}
+              ? "Registered on platform - auto-intel is informational."
+              : "Not yet registered - system has run a light public-source sketch."}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -216,7 +216,7 @@ function SidePanel({
       {status === "unavailable" && (
         <p className="text-xs text-muted-foreground">
           Automatic public-source check is not configured on this environment.
-          Intel is informational only — you can still proceed to POI.
+          Intel is informational only - you can still proceed to POI.
         </p>
       )}
 
@@ -224,7 +224,7 @@ function SidePanel({
       {status === "failed" && (
         <p className="text-xs text-muted-foreground">
           The automatic check could not complete this time. Use Refresh to retry.
-          Intel is informational — not a block on POI.
+          Intel is informational - not a block on POI.
         </p>
       )}
 
@@ -284,7 +284,7 @@ function SidePanel({
           {!summary && !website && !linkedin && sources.length === 0 && (
             <p className="text-xs text-muted-foreground">
               No public footprint located. The counterparty may simply have a
-              limited online presence — this is informational only.
+              limited online presence - this is informational only.
             </p>
           )}
 
@@ -337,7 +337,7 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <ShieldQuestion className="h-4 w-4 text-muted-foreground" />
-          Counterparty intel — system-assisted public-source check
+          Counterparty intel - system-assisted public-source check
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1.5">
           The platform automatically runs a light public-source sketch of each
@@ -378,7 +378,7 @@ export function CounterpartyIntelPanel({ match }: { match: Match }) {
         )}
         {isUnilateral && (
           <p className="text-sm text-muted-foreground">
-            Unilateral intent — only the declaring party is on record. The
+            Unilateral intent - only the declaring party is on record. The
             system will run a public-source sketch once a counterparty is named.
           </p>
         )}

@@ -1,5 +1,5 @@
 /**
- * AdminChallengeReviewDrawer — Phase 3C
+ * AdminChallengeReviewDrawer - Phase 3C
  *
  * Right-side Sheet showing read-only challenge context plus admin actions
  * gated by the current status. Server is the authoritative gate; the
@@ -42,7 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
   under_review: "Under review",
   outcome_recorded: "Outcome recorded",
   withdrawn: "Withdrawn",
-  closed_no_action: "Closed — no action",
+  closed_no_action: "Closed - no action",
 };
 
 const SUBJECT_LABEL: Record<string, string> = {
@@ -55,7 +55,7 @@ const SUBJECT_LABEL: Record<string, string> = {
 };
 
 function fmt(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString();
   } catch {
@@ -134,7 +134,7 @@ export function AdminChallengeReviewDrawer({ open, onOpenChange, challenge }: Ad
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-muted-foreground">Raised by</dt>
-                <dd>{challenge.raised_by_role ?? "—"}</dd>
+                <dd>{challenge.raised_by_role ?? "-"}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-muted-foreground">Raised at</dt>
@@ -207,7 +207,7 @@ export function AdminChallengeReviewDrawer({ open, onOpenChange, challenge }: Ad
                     const regulatorRef =
                       meta?.regulator_reference ?? REGULATOR_REFERENCE_NOT_APPLICABLE;
                     const writtenReason =
-                      meta?.written_reason ?? challenge.outcome_summary ?? "—";
+                      meta?.written_reason ?? challenge.outcome_summary ?? "-";
                     return (
                       <dl className="grid grid-cols-1 gap-y-2 text-sm">
                         <div>
@@ -238,7 +238,7 @@ export function AdminChallengeReviewDrawer({ open, onOpenChange, challenge }: Ad
                           <div>
                             <dt className="text-[11px] text-muted-foreground">Closed by (admin)</dt>
                             <dd className="font-mono text-[11px]">
-                              {overrideAuditQ.data?.actor_user_id ?? challenge.closed_by_user_id ?? "—"}
+                              {overrideAuditQ.data?.actor_user_id ?? challenge.closed_by_user_id ?? "-"}
                             </dd>
                           </div>
                           <div>
@@ -319,7 +319,7 @@ export function AdminChallengeReviewDrawer({ open, onOpenChange, challenge }: Ad
                 onClick={() => setOutcomeMode("closed_no_action")}
                 data-testid="action-close-no-action"
               >
-                Close — no action
+                Close - no action
               </Button>
               <Button
                 type="button"

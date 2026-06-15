@@ -1,5 +1,5 @@
 /**
- * Batch B Phase 5 — Engagement Wording Engine (SSOT).
+ * Batch B Phase 5 - Engagement Wording Engine (SSOT).
  *
  * Single source of truth for the user-facing language used to describe a
  * `poi_engagements` row across UI badges, descriptions, toasts, emails and
@@ -24,10 +24,10 @@
  *     accepts the renewed engagement.
  *
  *   • WaD / settlement / execution / finality wording remains reserved for
- *     the actual WaD or completion stage — never for engagement copy.
+ *     the actual WaD or completion stage - never for engagement copy.
  *
  * Scope: this module produces text. It does NOT change state-machine,
- * RPC, or progression-guard behaviour — those live in
+ * RPC, or progression-guard behaviour - those live in
  * `engagement-progression-guard.ts`, the `atomic_*_late_acceptance` RPCs,
  * and the `poi-engagements` edge function.
  */
@@ -75,7 +75,7 @@ export interface EngagementWording {
   /**
    * True when the engagement state allows the POI/WaD/completion workflow
    * to progress. Mirrors `engagement-progression-guard.decideEngagementProgression`
-   * — wording must agree with the guard.
+   * - wording must agree with the guard.
    */
   progressionAllowed: boolean;
   /**
@@ -89,7 +89,7 @@ const DEFAULT_WINDOW_DAYS = 7;
 
 /**
  * Get user-facing wording for an engagement row.
- * Always returns a populated object — unknown statuses fall through to a
+ * Always returns a populated object - unknown statuses fall through to a
  * neutral, non-committal label.
  */
 export function getEngagementWording(ctx: EngagementWordingContext): EngagementWording {
@@ -106,7 +106,7 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
         : "engagement.notification_sent";
       return {
         key,
-        badgeLabel: renewed ? "Renewed engagement — awaiting trading partner" : "Awaiting outreach",
+        badgeLabel: renewed ? "Renewed engagement - awaiting trading partner" : "Awaiting outreach",
         tone: "pending",
         headline: renewed
           ? "Renewed engagement pending trading partner acceptance"
@@ -124,7 +124,7 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
         : "engagement.contacted";
       return {
         key,
-        badgeLabel: renewed ? "Renewed engagement — awaiting trading partner" : "Outreach queued",
+        badgeLabel: renewed ? "Renewed engagement - awaiting trading partner" : "Outreach queued",
         tone: "active",
         headline: renewed
           ? "Renewed engagement pending trading partner acceptance"
@@ -174,7 +174,7 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
           key: "engagement.expired.superseded_by_renewal",
           badgeLabel: "Original engagement expired",
           tone: "neutral",
-          headline: "Original engagement expired — renewed engagement created",
+          headline: "Original engagement expired - renewed engagement created",
           description: "The original engagement remains expired. A renewed engagement has been created and the trading partner must accept it before the workflow can proceed.",
           progressionAllowed: false,
         };
@@ -184,7 +184,7 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
           key: "engagement.expired.accepted_after_expiry",
           badgeLabel: "Late acceptance recorded",
           tone: "warn",
-          headline: "Late acceptance recorded — original engagement expired",
+          headline: "Late acceptance recorded - original engagement expired",
           description: `The trading partner accepted after the engagement window elapsed. The late acceptance is recorded. The original engagement remains expired and cannot proceed unless the initiator reconfirms within ${windowDays} calendar days.`,
           progressionAllowed: false,
         };
@@ -202,9 +202,9 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
     case "late_acceptance_pending_initiator_reconfirmation":
       return {
         key: "engagement.late_acceptance_pending_initiator_reconfirmation",
-        badgeLabel: "Late acceptance — awaiting initiator reconfirmation",
+        badgeLabel: "Late acceptance - awaiting initiator reconfirmation",
         tone: "warn",
-        headline: "Late acceptance recorded — awaiting initiator reconfirmation",
+        headline: "Late acceptance recorded - awaiting initiator reconfirmation",
         description: `The trading partner accepted after the engagement window elapsed. The late acceptance is recorded and we are awaiting initiator reconfirmation. The original engagement remains expired. This does not progress the POI or WaD workflow. The initiator has ${windowDays} calendar days to reconfirm; if no reconfirmation arrives, the late acceptance remains recorded and the original engagement remains expired.`,
         progressionAllowed: false,
       };
@@ -223,7 +223,7 @@ export function getEngagementWording(ctx: EngagementWordingContext): EngagementW
 
 /**
  * Wording for the "no reconfirmation within window" outcome. This MUST
- * NOT be described as the system declining on the initiator's behalf —
+ * NOT be described as the system declining on the initiator's behalf -
  * the late acceptance remains recorded and the original engagement
  * remains expired.
  */
@@ -247,7 +247,7 @@ export function getReconfirmationWindowElapsedWording(
 export function getRenewedEngagementCreatedWording(): EngagementWording {
   return {
     key: "engagement.late_acceptance.renewed_engagement_created",
-    badgeLabel: "Renewed engagement — awaiting trading partner",
+    badgeLabel: "Renewed engagement - awaiting trading partner",
     tone: "active",
     headline: "Renewed engagement created",
     description: "A renewed engagement has been created. The original engagement remains expired. The trading partner must accept the renewed engagement before the workflow can proceed.",

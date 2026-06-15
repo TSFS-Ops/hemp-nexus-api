@@ -1,5 +1,5 @@
 /**
- * BillingUnavailableNotice — small, reversible inline notice rendered
+ * BillingUnavailableNotice - small, reversible inline notice rendered
  * in place of (or beside) any credit-purchase CTA when the platform
  * `billing_availability` flag is `enabled: false`.
  *

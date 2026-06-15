@@ -1,6 +1,6 @@
 /**
  * Client helper to record a structured server-side log row for every
- * `match-documents` storage upload attempt — both successes and failures.
+ * `match-documents` storage upload attempt - both successes and failures.
  *
  * The server endpoint (`match-document-upload-log`) evaluates the caller's
  * participant role(s) against the match's three org slots and writes a single
@@ -9,7 +9,7 @@
  * match org slots, the resolved participant roles, the storage path, the
  * storage status/body, the db error (if any), and a correlation id.
  *
- * Calls here are best-effort — they MUST NOT block or throw the upload UX.
+ * Calls here are best-effort - they MUST NOT block or throw the upload UX.
  */
 import { fetchEdgeFunction } from "@/lib/edge-invoke";
 

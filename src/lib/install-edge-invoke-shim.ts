@@ -7,7 +7,7 @@
  *   The platform has dozens of legacy callers using `supabase.functions.invoke()`
  *   directly. Migrating each to `invokeEdgeFunction` was incremental and left
  *   gaps. This shim wraps the singleton's `invoke` method ONCE at boot so that
- *   every existing caller — without code changes — gets:
+ *   every existing caller - without code changes - gets:
  *
  *     1. Pre-flight access-token freshness check (auto-refresh if <30s left).
  *     2. Friendly translation of 401/403/429/503 server statuses into the
@@ -45,7 +45,7 @@ export function installEdgeInvokeShim(): void {
 
   const ensureFresh = async (): Promise<void> => {
     const { data, error } = await supabase.auth.getSession();
-    if (error || !data.session) return; // unauth or transient — let server respond
+    if (error || !data.session) return; // unauth or transient - let server respond
     const exp = data.session.expires_at;
     if (!exp) return;
     if (exp * 1000 - Date.now() < REFRESH_SKEW_MS) {
@@ -91,7 +91,7 @@ export function installEdgeInvokeShim(): void {
       );
     }
     return new EdgeInvokeError(
-      serverMsg ? `Could not complete request (${name}) — ${serverMsg}` : `Edge function ${name} failed`,
+      serverMsg ? `Could not complete request (${name}) - ${serverMsg}` : `Edge function ${name} failed`,
       { status, code: serverCode, serverBody: body },
     );
   };

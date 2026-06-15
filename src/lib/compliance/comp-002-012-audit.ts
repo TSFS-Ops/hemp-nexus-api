@@ -1,11 +1,11 @@
 /**
- * COMP-002 / COMP-012 — canonical audit names (SSOT, client mirror).
+ * COMP-002 / COMP-012 - canonical audit names (SSOT, client mirror).
  *
  * Every emission goes through these constants. Pinned by
  * `scripts/check-comp-002-012-audit-names.mjs`.
  */
 
-// COMP-002 — sanctions freshness lifecycle
+// COMP-002 - sanctions freshness lifecycle
 export const COMP_002_SANCTIONS_RESCREEN_REQUIRED =
   "compliance.sanctions_rescreen_required" as const;
 export const COMP_002_SANCTIONS_RESCREEN_PASSED =
@@ -17,7 +17,7 @@ export const COMP_002_SANCTIONS_HOLD_RELEASED =
 export const COMP_002_SANCTIONS_HOLD_CLOSED =
   "compliance.sanctions_hold_closed" as const;
 
-// COMP-012 — verification freshness lifecycle
+// COMP-012 - verification freshness lifecycle
 export const COMP_012_VERIFICATION_REFRESH_REQUIRED =
   "compliance.verification_refresh_required" as const;
 export const COMP_012_VERIFICATION_REFRESH_PASSED =

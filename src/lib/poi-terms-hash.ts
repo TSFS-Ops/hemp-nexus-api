@@ -5,7 +5,7 @@
  * terms on a match. Client and server MUST produce the identical hash for
  * the same row, or the server will reject mint with TERMS_DRIFT.
  *
- * Algorithm — MUST mirror public.compute_match_terms_hash() in PG:
+ * Algorithm - MUST mirror public.compute_match_terms_hash() in PG:
  *   1. Read 15 canonical fields from the match (alphabetical key order).
  *   2. For each field render `key=value`. Empty/null = '' after the '='.
  *      String values are trimmed; numbers go through Number→String which
@@ -38,7 +38,7 @@ export interface CanonicalTermsInput {
   terms?: string | null;
 }
 
-/** Order matters — alphabetical, matches the SQL helper. */
+/** Order matters - alphabetical, matches the SQL helper. */
 const CANONICAL_KEYS: ReadonlyArray<keyof CanonicalTermsInput> = [
   "buyer_id",
   "buyer_name",

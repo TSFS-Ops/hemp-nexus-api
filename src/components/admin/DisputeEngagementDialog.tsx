@@ -1,16 +1,16 @@
 /**
- * D3 — Admin "Record dispute" dialog (Option C / D2a wiring).
+ * D3 - Admin "Record dispute" dialog (Option C / D2a wiring).
  *
  * Wraps POST /poi-engagements/:id/dispute. Two truthful sources are
- * supported by the server (see Batch D — D1.6 / D2a):
+ * supported by the server (see Batch D - D1.6 / D2a):
  *
- *   • dispute_source = "admin_report"        — token_hash MAY be omitted
- *   • dispute_source = "counterparty_token"  — token_hash REQUIRED
+ *   • dispute_source = "admin_report"        - token_hash MAY be omitted
+ *   • dispute_source = "counterparty_token"  - token_hash REQUIRED
  *
  * The dialog mirrors that contract on the client. Validation is purely
  * frontend UX guard; the edge function is the source of truth.
  *
- * No public/counterparty self-dispute UI lives here — that is intentionally
+ * No public/counterparty self-dispute UI lives here - that is intentionally
  * out of D3 scope.
  */
 
@@ -148,7 +148,7 @@ export function DisputeEngagementDialog({
         } catch { /* ignore */ }
         throw new Error(message);
       }
-      toast.success("Dispute recorded — engagement is now blocked.");
+      toast.success("Dispute recorded - engagement is now blocked.");
       reset();
       onResolved();
       onClose();
@@ -173,7 +173,7 @@ export function DisputeEngagementDialog({
             Engagement{" "}
             <span className="font-mono">{engagement.id.substring(0, 8)}…</span>
             {engagement.counterparty_org_name
-              ? <> — counterparty <strong>{engagement.counterparty_org_name}</strong></>
+              ? <> - counterparty <strong>{engagement.counterparty_org_name}</strong></>
               : null}
             . Use this when the named counterparty has told us they are not
             involved. Outreach is blocked once recorded.

@@ -1,5 +1,5 @@
 /**
- * AdminBasicMemoryPanel — Basic Memory Record v1 · HQ-only viewer.
+ * AdminBasicMemoryPanel - Basic Memory Record v1 · HQ-only viewer.
  *
  * Read-only list + filter + detail dialog over public.basic_memory_records.
  *
@@ -349,7 +349,7 @@ function Field({
         {label}
       </div>
       <div className={mono ? "font-mono break-all" : "break-words"}>
-        {value ?? <span className="text-muted-foreground italic">—</span>}
+        {value ?? <span className="text-muted-foreground italic">-</span>}
       </div>
     </div>
   );

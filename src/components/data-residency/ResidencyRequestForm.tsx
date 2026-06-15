@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 /**
- * DATA-009 Phase 2 — submit a residency requirement for Izenzo review.
+ * DATA-009 Phase 2 - submit a residency requirement for Izenzo review.
  * Approval records a policy exception only and does NOT trigger any
  * technical hosting, region migration, backup, export or deletion control.
  */
@@ -38,7 +38,7 @@ export function ResidencyRequestForm() {
       if (error) throw error;
       toast({
         title: "Residency requirement recorded",
-        description: `Review ID ${(data as { review_id?: string })?.review_id ?? "—"}. Izenzo will review separately.`,
+        description: `Review ID ${(data as { review_id?: string })?.review_id ?? "-"}. Izenzo will review separately.`,
       });
       setSource(""); setRegion(""); setCountry(""); setBasis("");
     } catch (e) {

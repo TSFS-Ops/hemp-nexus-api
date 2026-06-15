@@ -1,5 +1,5 @@
 /**
- * AiQuotaHealth — Batch F admin tile.
+ * AiQuotaHealth - Batch F admin tile.
  * Surfaces per-org AI provider cooldown state and daily call meter so
  * platform admins can see when AI is rate-limited / quota-exhausted.
  * Renders empty data as "no signal" rather than green.

@@ -1,12 +1,12 @@
 /**
- * ActionRequiredBanner — focal "what do I do next?" banner.
+ * ActionRequiredBanner - focal "what do I do next?" banner.
  *
  * Sits directly under the macro WizardStepper. Three visual modes:
  *
- *   • action   — high-contrast amber surface; you must do something now.
- *   • locked   — quiet slate surface with dashed border; waiting on a
+ *   • action   - high-contrast amber surface; you must do something now.
+ *   • locked   - quiet slate surface with dashed border; waiting on a
  *                counterparty / external event, no action available.
- *   • complete — primary tinted surface; nothing to do, all done.
+ *   • complete - primary tinted surface; nothing to do, all done.
  *
  * Designed to be the single most prominent "next action" cue on the page so
  * the user's eye is drawn straight to it after the macro stepper.
@@ -28,11 +28,11 @@ interface ActionRequiredBannerProps {
   tone: ActionTone;
   /** Short eyebrow label, e.g. "Your turn" / "Waiting on counterparty" */
   eyebrow: string;
-  /** Main headline — be direct, e.g. "Generate Proof of Intent" */
+  /** Main headline - be direct, e.g. "Generate Proof of Intent" */
   title: string;
   /** Single sentence elaborating what / why */
   description?: string;
-  /** Optional CTA — only meaningful when tone === "action" or "complete" */
+  /** Optional CTA - only meaningful when tone === "action" or "complete" */
   cta?: ReactNode;
   /** Optional secondary content below description (status pill, sub-meta) */
   meta?: ReactNode;

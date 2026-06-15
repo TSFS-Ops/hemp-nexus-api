@@ -172,9 +172,9 @@ export default function Pricing() {
               </div>
               <p className="mt-2 text-sm text-muted-foreground">per credit · 1 credit = 1 Trade Request</p>
               <ul className="mt-4 space-y-1 text-xs text-muted-foreground font-mono">
-                <li>10 credits — $10 (standard)</li>
-                <li>50 credits — $45 <span className="text-[hsl(var(--emerald))]">(10% saving)</span></li>
-                <li>200 credits — $160 <span className="text-[hsl(var(--emerald))]">(20% saving)</span></li>
+                <li>10 credits - $10 (standard)</li>
+                <li>50 credits - $45 <span className="text-[hsl(var(--emerald))]">(10% saving)</span></li>
+                <li>200 credits - $160 <span className="text-[hsl(var(--emerald))]">(20% saving)</span></li>
               </ul>
 
               <Link

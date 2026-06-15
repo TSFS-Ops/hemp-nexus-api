@@ -1,5 +1,5 @@
 /**
- * MT-012 — Trade Request Archive (canonical audit-action SSOT, client mirror).
+ * MT-012 - Trade Request Archive (canonical audit-action SSOT, client mirror).
  *
  * MUST stay byte-identical to supabase/functions/_shared/mt-012-audit.ts
  * (enforced by scripts/check-mt012-audit-names.mjs).

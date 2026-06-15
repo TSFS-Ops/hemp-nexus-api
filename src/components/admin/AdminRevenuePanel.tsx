@@ -189,7 +189,7 @@ function str(x: unknown): string | null {
 }
 
 function resolveOrgName(id: string | null, orgNameById: Map<string, string>): string {
-  if (!id) return "—";
+  if (!id) return "-";
   return orgNameById.get(id) ?? id.slice(0, 8) + "…";
 }
 
@@ -200,7 +200,7 @@ function resolveOrgName(id: string | null, orgNameById: Map<string, string>): st
  * Pre-cutover rows that only carry `price_zar` / `zar_amount_charged`
  * are surfaced with `settlement_currency: "ZAR"` so historical totals
  * remain reconcilable. We never invent a USD figure for legacy ZAR
- * rows — `amount_usd` is left at 0 in that case to avoid double-counting
+ * rows - `amount_usd` is left at 0 in that case to avoid double-counting
  * against the new native-USD totals.
  */
 function purchaseFromAuditLog(
@@ -292,7 +292,7 @@ export function AdminRevenuePanel() {
   const { data, isLoading, isFetching, refetch, isError, error, dataUpdatedAt } = useQuery({
     queryKey: ["admin-revenue", timeWindow],
     queryFn: async () => {
-      // Batch U SEC-012 — exclude demo orgs from revenue totals. Fixture
+      // Batch U SEC-012 - exclude demo orgs from revenue totals. Fixture
       // seeders flag organizations.is_demo=true; production financial
       // counters must never include them.
       const { data: demoOrgRows, error: demoErr } = await supabase
@@ -515,7 +515,7 @@ export function AdminRevenuePanel() {
 
   // ─── CSV export ───────────────────────────────────────────────────────────
 
-  // Batch T — AUD-017: audited CSV export. Goes through the central
+  // Batch T - AUD-017: audited CSV export. Goes through the central
   // audited helper which writes an `export.csv` row to `audit_logs`
   // BEFORE any bytes leave the browser and blocks the download if AAL2
   // is required for sensitive exports.
@@ -558,7 +558,7 @@ export function AdminRevenuePanel() {
     }
     const { promptExportReason } = await import("@/lib/export-purpose");
     const reason = promptExportReason("billing or payment reconciliation", `revenue export (${rows.length} rows)`);
-    if (!reason) { toast.error("Export cancelled — a reason of at least 10 characters is required."); return; }
+    if (!reason) { toast.error("Export cancelled - a reason of at least 10 characters is required."); return; }
     const result = await auditedDownloadCSVRaw(lines.join("\n"), {
       reportName: "admin-revenue",
       filename: `revenue-${timeWindow}-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -656,7 +656,7 @@ export function AdminRevenuePanel() {
             </div>
           </div>
 
-          {/* Batch T — UI-012: visible freshness chip so a stale tab is
+          {/* Batch T - UI-012: visible freshness chip so a stale tab is
               obviously stale, not silently presented as live. */}
           <p
             className="font-mono text-[10px] tracking-wider uppercase text-muted-foreground"
@@ -665,10 +665,10 @@ export function AdminRevenuePanel() {
             Last updated{" "}
             {dataUpdatedAt
               ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })
-              : "—"}
+              : "-"}
           </p>
 
-          {/* Truncation disclosure — three source queries each cap at 2000 rows.
+          {/* Truncation disclosure - three source queries each cap at 2000 rows.
               If any returned exactly 2000 rows the totals shown above understate
               true revenue and an admin must narrow the time window. */}
           {(data?.auditCount === 2000 || data?.ledgerCount === 2000 || data?.initCount === 2000) && (
@@ -857,13 +857,13 @@ export function AdminRevenuePanel() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs">
-                        {r.package_id ?? "—"}
+                        {r.package_id ?? "-"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {NUM.format(r.credits)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {r.amount_usd > 0 ? USD.format(r.amount_usd) : "—"}
+                        {r.amount_usd > 0 ? USD.format(r.amount_usd) : "-"}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -874,13 +874,13 @@ export function AdminRevenuePanel() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono text-[11px] text-muted-foreground">
-                        {r.legacy_amount_zar != null ? ZAR.format(r.legacy_amount_zar) : "—"}
+                        {r.legacy_amount_zar != null ? ZAR.format(r.legacy_amount_zar) : "-"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-[11px] text-muted-foreground">
-                        {r.legacy_fx_rate != null ? r.legacy_fx_rate.toFixed(4) : "—"}
+                        {r.legacy_fx_rate != null ? r.legacy_fx_rate.toFixed(4) : "-"}
                       </TableCell>
                       <TableCell className="font-mono text-[11px] max-w-[180px] truncate">
-                        {r.payment_reference ?? "—"}
+                        {r.payment_reference ?? "-"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -937,12 +937,12 @@ export function AdminRevenuePanel() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">{p.org_name}</TableCell>
-                      <TableCell className="font-mono text-xs">{p.package_id ?? "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{p.package_id ?? "-"}</TableCell>
                       <TableCell className="text-right font-mono">
-                        {p.credits > 0 ? NUM.format(p.credits) : "—"}
+                        {p.credits > 0 ? NUM.format(p.credits) : "-"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {p.amount_usd > 0 ? USD.format(p.amount_usd) : "—"}
+                        {p.amount_usd > 0 ? USD.format(p.amount_usd) : "-"}
                       </TableCell>
                       <TableCell className="font-mono text-[11px]">
                         {p.reference}
@@ -1008,7 +1008,7 @@ function RevenueChart({
   const { entries, max } = series;
   if (entries.length === 0) return null;
 
-  // Simple grid bar chart — no chart library, fully themed.
+  // Simple grid bar chart - no chart library, fully themed.
   return (
     <div className="border border-border rounded-sm p-4 bg-card">
       <div className="flex items-baseline justify-between mb-3">

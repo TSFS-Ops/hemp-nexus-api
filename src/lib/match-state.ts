@@ -228,7 +228,7 @@ export function isPrePoi(stateOrStatus: string | null | undefined): boolean {
  * Canonical set of legacy status labels recognised by this renderer. Kept
  * alongside STATE_LABELS so `statusLabel` can detect a truly unknown /
  * future value rather than silently echoing the raw enum literal.
- * See Batch B Fix 6 — unknown enum display contract.
+ * See Batch B Fix 6 - unknown enum display contract.
  */
 const LEGACY_STATUS_LABELS: Record<string, string> = {
   matched: "Awaiting Confirmation",
@@ -242,7 +242,7 @@ const LEGACY_STATUS_LABELS: Record<string, string> = {
 export function statusLabel(statusOrState: string): string {
   if (STATE_LABELS[statusOrState]) return STATE_LABELS[statusOrState];
   if (LEGACY_STATUS_LABELS[statusOrState]) return LEGACY_STATUS_LABELS[statusOrState];
-  // Batch B Fix 6 — unknown / future enum values must not render as the
+  // Batch B Fix 6 - unknown / future enum values must not render as the
   // raw literal. Surface them as an explicit "Unrecognised" badge so
   // operators and customers see "this is unknown" rather than a confusing
   // backend identifier masquerading as a friendly label.

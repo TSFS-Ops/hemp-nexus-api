@@ -5,7 +5,7 @@
  * localStorage per browser so it stays out of the way once complete.
  *
  * Steps are intentionally tied to surfaces that already exist in the
- * Developer Centre — no fictional "click here to verify" automation.
+ * Developer Centre - no fictional "click here to verify" automation.
  */
 
 import { useEffect, useState } from "react";

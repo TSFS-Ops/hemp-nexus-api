@@ -33,7 +33,7 @@ const PACKS: Array<{
   highlight?: boolean;
 }> = [
   // Prices in USD ($1 / credit canonical). Paystack settles natively
-  // in USD as of cutover 2026-05-01 — no FX conversion at checkout.
+  // in USD as of cutover 2026-05-01 - no FX conversion at checkout.
   {
     id: "single",
     name: "Pay-as-you-go",
@@ -71,7 +71,7 @@ export function TokenBalanceTab() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
-  // Per-pack initiation error — surfaced inline beside the failing
+  // Per-pack initiation error - surfaced inline beside the failing
   // Purchase button (with Retry) instead of a transient toast.
   const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
   const { availability: billingAvailability } = useBillingAvailability();
@@ -132,7 +132,7 @@ export function TokenBalanceTab() {
             toast.success(
               result.alreadyCredited
                 ? "Credits already applied to your wallet."
-                : `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "—"}.`
+                : `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "-"}.`
             );
             await refresh();
           } else {
@@ -211,7 +211,7 @@ export function TokenBalanceTab() {
             <BillingUnavailableNotice message={billingAvailability.message} />
           </div>
         )}
-        {/* Batch C — Fix 4: two-tab pending purchase notice */}
+        {/* Batch C - Fix 4: two-tab pending purchase notice */}
         <PendingPurchaseNotice orgId={orgId} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {PACKS.map((pack) => {

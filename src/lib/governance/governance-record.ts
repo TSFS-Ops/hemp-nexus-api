@@ -1,5 +1,5 @@
 /**
- * Governance Record (Phase 1) — shared types, merging, categorisation,
+ * Governance Record (Phase 1) - shared types, merging, categorisation,
  * actor inference, posture labels, and redaction.
  *
  * Phase 1 contract: HQ-only. Reads existing audit sources (audit_logs,
@@ -25,7 +25,7 @@ export type ActorType =
   | "Scheduled Job"
   | "Payment Provider"
   | "Notification Service"
-  | "Unknown actor — needs review";
+  | "Unknown actor - needs review";
 
 export type PostureLabel =
   | "Standard"
@@ -110,7 +110,7 @@ export interface GovernanceEvent {
   prevState?: string | null;
   newState?: string | null;
   /**
-   * Batch B — populated by `annotateCorrections` when a later
+   * Batch B - populated by `annotateCorrections` when a later
    * `hq.event_corrected` event references this row. Original event is
    * never edited; this is purely a derived UI hint.
    */
@@ -126,7 +126,7 @@ export interface CorrectionRef {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Redaction — never let secrets leak into the HQ timeline.
+// Redaction - never let secrets leak into the HQ timeline.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const REDACTED_KEYS = new Set([
@@ -181,7 +181,7 @@ export function redactMetadata(input: unknown, depth = 0): Record<string, unknow
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Category inference — string-prefix based, conservative.
+// Category inference - string-prefix based, conservative.
 // Unknown actions fall to "other"; UI shows raw action name.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -190,7 +190,7 @@ const CATEGORY_RULES: Array<{ test: RegExp; cat: EventCategory }> = [
   // rule so they get their own controlled label and never fold into hq_decision.
   { test: /^hq\.note_added$/i, cat: "hq_note" },
   { test: /^hq\.event_corrected$/i, cat: "hq_correction" },
-  // Batch D — waiver/bypass lifecycle events get their own categories so the
+  // Batch D - waiver/bypass lifecycle events get their own categories so the
   // timeline labels each lifecycle moment cleanly without folding into HQ
   // decisions or sensitive_admin.
   { test: /^governance\.(waiver|bypass)_(granted|renewed)$/i, cat: "waiver_grant" },
@@ -228,7 +228,7 @@ export function categoriseAction(action: string): EventCategory {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Status inference — allowed / blocked / manual_review / neutral.
+// Status inference - allowed / blocked / manual_review / neutral.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function inferStatus(action: string, metadata: Record<string, unknown>): AllowedStatus {
@@ -278,11 +278,11 @@ export function inferActorType(opts: {
   if (/email|resend|notification/.test(action)) return "Notification Service";
   if (actorId) return "User";
   if (/system|atomic_/.test(action)) return "System";
-  return "Unknown actor — needs review";
+  return "Unknown actor - needs review";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Posture inference — only return labelled values, otherwise "Not recorded".
+// Posture inference - only return labelled values, otherwise "Not recorded".
 // ─────────────────────────────────────────────────────────────────────────────
 
 const POSTURE_MAP: Record<string, PostureLabel> = {
@@ -351,7 +351,7 @@ export function extractLinks(opts: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Normalisers — convert each source row into a GovernanceEvent.
+// Normalisers - convert each source row into a GovernanceEvent.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function normaliseAuditLog(row: any): GovernanceEvent {
@@ -490,7 +490,7 @@ export function normaliseMatchEvent(row: any): GovernanceEvent {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Merging — chronological sort, dedupe on (action, occurredAt±2s, matchId).
+// Merging - chronological sort, dedupe on (action, occurredAt±2s, matchId).
 // Dedupe preserves the higher-trust source: event_store > match_events >
 // audit_logs > admin_audit_logs. When uncertain we KEEP both and let the UI
 // show source labels so HQ can audit origin.
@@ -521,7 +521,7 @@ export function mergeAndSort(events: GovernanceEvent[]): GovernanceEvent[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Display copy — controlled wording per spec sections 7–11.
+// Display copy - controlled wording per spec sections 7–11.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function statusCopy(e: GovernanceEvent): string {
@@ -544,7 +544,7 @@ export const NO_EVENT_COPY =
   "No recorded event found for this step. This may mean the step has not happened yet, or that this workflow has not written to the Governance Record.";
 
 export const DEMO_EVENT_COPY =
-  "Demo/test event — this did not trigger live outreach, billing, credit burn or production progression.";
+  "Demo/test event - this did not trigger live outreach, billing, credit burn or production progression.";
 
 export const HQ_DECISION_COPY =
   "HQ decision recorded. An authorised HQ user allowed this step after manual review. The reason and supporting note are recorded in the event details.";
@@ -553,7 +553,7 @@ export const MEMORY_NOT_WIRED_COPY =
   "Memory status is not wired into the Governance Record in this build. The Memory record subsystem will be connected in a later phase.";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Controlled reason codes — mirror of the backend WARN-only allow-list.
+// Controlled reason codes - mirror of the backend WARN-only allow-list.
 // Document-specific codes are intentionally excluded (separate AI/doc scope).
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -587,7 +587,7 @@ export const APPROVED_REASON_CODES: ReadonlySet<string> = new Set([
   "other",
 ]);
 
-// Batch C — Approved namespace prefixes (mirror of the backend WARN-only
+// Batch C - Approved namespace prefixes (mirror of the backend WARN-only
 // allow-list). A reason code carrying one of these prefixes is treated as
 // KNOWN even if the suffix is dynamic (e.g. `api:my-endpoint`,
 // `payment:charge_success`, `scope:org`).
@@ -617,7 +617,7 @@ export function isApprovedReasonCode(code: string | null | undefined): boolean {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Repeated-event grouping — UI-side only (does not change event_store writes).
+// Repeated-event grouping - UI-side only (does not change event_store writes).
 // Same actor + same record/anchor + same event type + same reason code +
 // same allowed/blocked status within 5 minutes → collapsed into one visible
 // row with `repeatedCount` and the original events preserved under `members`.
@@ -715,7 +715,7 @@ export function buildFullStorySummary(i: FullStoryInputs): string {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Batch B — Manual HQ notes + correction events.
+// Batch B - Manual HQ notes + correction events.
 //
 // Append-only. We never mutate the original event. `annotateCorrections`
 // produces a NEW list of events where each event referenced by a later
@@ -730,7 +730,7 @@ export function buildFullStorySummary(i: FullStoryInputs): string {
 export const HQ_NOTE_LABEL = "Manual HQ note";
 export const HQ_CORRECTED_BADGE_COPY = "Corrected by later HQ note";
 export const HQ_NOTE_INTRO_COPY =
-  "HQ may add manual notes or correction notes here. Notes never edit, hide or delete the original event — they are recorded as separate, append-only governance events.";
+  "HQ may add manual notes or correction notes here. Notes never edit, hide or delete the original event - they are recorded as separate, append-only governance events.";
 
 /**
  * Allowed reason codes the UI offers for HQ notes / corrections. Mirrors
@@ -776,7 +776,7 @@ export function annotateCorrections(
     const existing = out[idx].correctedBy ?? null;
     // Prefer the EARLIEST correction (highest in chronological order). The
     // input is newest-first so the LAST matching correction iterated is the
-    // earliest one — keep overwriting so we end up with that one.
+    // earliest one - keep overwriting so we end up with that one.
     const ref: CorrectionRef = {
       eventId: String(corr.sourceRowId),
       occurredAt: corr.occurredAt,

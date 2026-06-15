@@ -1,13 +1,13 @@
 /**
- * AdminGovernancePosturePanel — per-org gate-position configuration.
+ * AdminGovernancePosturePanel - per-org gate-position configuration.
  *
  * Implements David & Daniel's "configurable governed progression":
  * lets a platform admin choose, per organisation, where the legitimacy
  * verification gate sits in the workflow:
  *
- *   • entry     — verification required from registration
- *   • poi_mint  — verification required before issuing POI / outreach (default)
- *   • wad_only  — defer verification entirely until WaD 9-gate execution
+ *   • entry     - verification required from registration
+ *   • poi_mint  - verification required before issuing POI / outreach (default)
+ *   • wad_only  - defer verification entirely until WaD 9-gate execution
  *
  * Changes are NOT in-place updates: a new row is inserted with
  * `effective_from = now()` and the previous active row is closed out
@@ -63,7 +63,7 @@ const POSITION_META: Record<
     label: "Entry",
     tone: "destructive",
     description:
-      "Verification required from registration. The strictest posture — most clients will not want this.",
+      "Verification required from registration. The strictest posture - most clients will not want this.",
   },
   poi_mint: {
     label: "POI Mint (default)",
@@ -75,7 +75,7 @@ const POSITION_META: Record<
     label: "WaD Only",
     tone: "secondary",
     description:
-      "Verification deferred entirely to WaD 9-gate execution. POIs and outreach permitted unverified — final binding still gated by WaD.",
+      "Verification deferred entirely to WaD 9-gate execution. POIs and outreach permitted unverified - final binding still gated by WaD.",
   },
 };
 
@@ -213,13 +213,13 @@ export function AdminGovernancePosturePanel() {
         <AlertTitle>Per-tenant verification gate posture</AlertTitle>
         <AlertDescription>
           Choose, per organisation, where the legitimacy verification gate sits in their workflow.
-          The default is <strong>POI Mint</strong> — unverified orgs can search and draft, but cannot
+          The default is <strong>POI Mint</strong> - unverified orgs can search and draft, but cannot
           issue a Proof of Intent or send outreach under Izenzo's name. Changes are versioned: the
           previous posture is retained for forensic audit memory and never overwritten.
         </AlertDescription>
       </Alert>
 
-      {/* Truncation disclosure — orgs list caps at 500. Without this banner an
+      {/* Truncation disclosure - orgs list caps at 500. Without this banner an
           admin filtering on a name that sorts late alphabetically may believe
           the org does not exist when it is simply beyond the cap. */}
       <TruncationBanner data={orgs} limit={500} />
@@ -303,7 +303,7 @@ export function AdminGovernancePosturePanel() {
                   </p>
                   {!activeProfile && (
                     <p className="text-xs text-muted-foreground italic">
-                      No explicit profile row exists — the platform default ('POI Mint') is in
+                      No explicit profile row exists - the platform default ('POI Mint') is in
                       force. Saving any posture below will create the first historical record.
                     </p>
                   )}

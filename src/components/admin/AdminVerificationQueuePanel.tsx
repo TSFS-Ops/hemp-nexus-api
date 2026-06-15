@@ -1,5 +1,5 @@
 /**
- * AdminVerificationQueuePanel — central queue for the optional verification clip-on.
+ * AdminVerificationQueuePanel - central queue for the optional verification clip-on.
  *
  * Closes the gap flagged in the strict-verification pass:
  *   • No central list of operator_verification_requests across matches
@@ -140,7 +140,7 @@ export function AdminVerificationQueuePanel() {
   // admin doesn't think there are no more open requests.
   const truncated = rows.length === 500;
 
-  // Distinct counterparty orgs across the open queue — we only fetch
+  // Distinct counterparty orgs across the open queue - we only fetch
   // balances for orgs that have an unbilled, actionable request, so the
   // pickup decision is informed by the live wallet position.
   const openOrgIds = useMemo(() => {
@@ -244,7 +244,7 @@ export function AdminVerificationQueuePanel() {
         // and PostgREST surfaces the message verbatim. Capture the
         // failure durably via the service-role edge function so the
         // attempt is auditable, then show the operator a precise toast
-        // and abort — the request stays in its prior status (atomic
+        // and abort - the request stays in its prior status (atomic
         // rollback already handled by Postgres).
         const msg = String(error.message || "");
         const code = (error as any).code as string | undefined;
@@ -255,7 +255,7 @@ export function AdminVerificationQueuePanel() {
 
         if (isInsufficient || isRevertBlocked) {
           // Best-effort durable capture. We do not throw on failure of
-          // the recorder — the primary signal (rolled-back update) is
+          // the recorder - the primary signal (rolled-back update) is
           // already correct; the recorder is for the audit ledger.
           try {
             const { error: recErr } = await supabase.functions.invoke(
@@ -291,8 +291,8 @@ export function AdminVerificationQueuePanel() {
 
           toast.error(
             isInsufficient
-              ? "Cannot pick up — counterparty has insufficient credits. The attempt has been logged for billing follow-up."
-              : "Cannot revert — request is already billed. Issue a refund first.",
+              ? "Cannot pick up - counterparty has insufficient credits. The attempt has been logged for billing follow-up."
+              : "Cannot revert - request is already billed. Issue a refund first.",
           );
           // Refresh so the status reverts to its true (rolled-back) value
           // in the UI and counters re-derive.
@@ -306,7 +306,7 @@ export function AdminVerificationQueuePanel() {
 
       // Audit trail entry so a closed verification is visible in the
       // immutable audit log surface that compliance reviewers already use.
-      // org_id is non-null on audit_logs — fall back to the acting admin's
+      // org_id is non-null on audit_logs - fall back to the acting admin's
       // own org if the request was not bound to one (admin-raised cross-org).
       const auditOrg =
         acting.org_id
@@ -333,7 +333,7 @@ export function AdminVerificationQueuePanel() {
         }]);
         if (auditErr) console.warn("[verification-queue] audit insert failed", auditErr);
       } else {
-        console.warn("[verification-queue] no org context — skipping audit insert");
+        console.warn("[verification-queue] no org context - skipping audit insert");
       }
 
       toast.success(`Request marked ${actionStatus.replace("_", " ")}`);
@@ -367,7 +367,7 @@ export function AdminVerificationQueuePanel() {
           <Badge variant="default" className="text-[10px]">Completed (loaded): {counts.completed ?? 0}</Badge>
         </div>
         <div className="flex items-end gap-3">
-          {/* Batch T — UI-012: visible last-updated chip + manual refresh
+          {/* Batch T - UI-012: visible last-updated chip + manual refresh
               so a stale tab cannot read as live. */}
           <div className="flex items-center gap-2">
             <p
@@ -377,7 +377,7 @@ export function AdminVerificationQueuePanel() {
               Last updated{" "}
               {dataUpdatedAt
                 ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })
-                : "—"}
+                : "-"}
             </p>
             <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
@@ -461,7 +461,7 @@ export function AdminVerificationQueuePanel() {
                     {r.outcome ? (
                       <Badge variant="outline" className="text-[10px] capitalize">{r.outcome}</Badge>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground">-</span>
                     )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-xs text-muted-foreground">
@@ -482,7 +482,7 @@ export function AdminVerificationQueuePanel() {
                         />
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground">-</span>
                     )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-right">
@@ -498,7 +498,7 @@ export function AdminVerificationQueuePanel() {
                           className="inline-flex items-center gap-1 rounded-sm border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive"
                         >
                           <ShieldAlert className="h-3 w-3" />
-                          Blocked — top-up required
+                          Blocked - top-up required
                         </span>
                         {r.org_id && (
                           <Link
@@ -578,7 +578,7 @@ export function AdminVerificationQueuePanel() {
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Closing this request writes an immutable entry to the audit log.
-                A “rejected” outcome does not currently auto-block POI mint —
+                A “rejected” outcome does not currently auto-block POI mint -
                 the WaD 9-gate engine remains the enforcement boundary.
               </p>
             </div>

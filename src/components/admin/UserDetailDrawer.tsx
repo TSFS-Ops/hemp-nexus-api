@@ -40,10 +40,10 @@ interface Props {
 }
 
 const fmt = (d: string | null | undefined) =>
-  d ? new Date(d).toLocaleString() : "—";
+  d ? new Date(d).toLocaleString() : "-";
 
 const fmtMoney = (amount: number | null | undefined, ccy: string | null | undefined) => {
-  if (amount == null) return "—";
+  if (amount == null) return "-";
   const n = Number(amount);
   if (Number.isNaN(n)) return String(amount);
   return `${ccy ?? ""} ${n.toLocaleString()}`.trim();
@@ -121,7 +121,7 @@ export default function UserDetailDrawer({ userId, open, onOpenChange }: Props) 
                   <div><span className="text-muted-foreground">Registered:</span> {fmt(data.profile?.created_at)}</div>
                   <div><span className="text-muted-foreground">Last sign-in:</span> {fmt(data.profile?.last_sign_in_at)}</div>
                   <div><span className="text-muted-foreground">Email verified:</span> {data.profile?.email_confirmed_at ? "Yes" : "No"}</div>
-                  <div><span className="text-muted-foreground">Roles:</span> {data.roles?.length ? data.roles.join(", ") : "—"}</div>
+                  <div><span className="text-muted-foreground">Roles:</span> {data.roles?.length ? data.roles.join(", ") : "-"}</div>
                 </div>
                 {data.organisation && (
                   <div className="pt-2 mt-2 border-t flex items-center gap-2 text-xs text-muted-foreground">
@@ -133,7 +133,7 @@ export default function UserDetailDrawer({ userId, open, onOpenChange }: Props) 
               </CardContent>
             </Card>
 
-            {/* Deletion reason — front and centre */}
+            {/* Deletion reason - front and centre */}
             {data.profile?.status === "pending_deletion" && (
               <Card className="border-destructive/40 bg-destructive/5">
                 <CardHeader className="pb-2">
@@ -144,7 +144,7 @@ export default function UserDetailDrawer({ userId, open, onOpenChange }: Props) 
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div><span className="text-muted-foreground">Requested:</span> {fmt(data.profile.deletion_requested_at)}</div>
-                  <div><span className="text-muted-foreground">Category:</span> {data.profile.deletion_category ? (DELETION_CATEGORY_LABELS[data.profile.deletion_category] || data.profile.deletion_category) : "—"}</div>
+                  <div><span className="text-muted-foreground">Category:</span> {data.profile.deletion_category ? (DELETION_CATEGORY_LABELS[data.profile.deletion_category] || data.profile.deletion_category) : "-"}</div>
                   {data.profile.deletion_reason && (
                     <div className="rounded border border-destructive/30 bg-background/60 p-3 whitespace-pre-wrap break-words text-sm">
                       {data.profile.deletion_reason}
@@ -170,7 +170,7 @@ export default function UserDetailDrawer({ userId, open, onOpenChange }: Props) 
                   {data.trade_requests?.map((tr) => (
                     <Row key={tr.id}
                       left={<>
-                        <span className="font-medium">{tr.commodity || "—"}</span>
+                        <span className="font-medium">{tr.commodity || "-"}</span>
                         <span className="text-xs text-muted-foreground ml-2">{tr.side} · {tr.match_type}</span>
                       </>}
                       right={<>
@@ -193,7 +193,7 @@ export default function UserDetailDrawer({ userId, open, onOpenChange }: Props) 
                 <Section title="Matches (org is party)" empty={!data.matches?.length}>
                   {data.matches?.map((m) => (
                     <Row key={m.id}
-                      left={<><span className="font-medium">{m.commodity || "—"}</span><span className="ml-2 text-xs text-muted-foreground">{m.buyer_name} ↔ {m.seller_name}</span></>}
+                      left={<><span className="font-medium">{m.commodity || "-"}</span><span className="ml-2 text-xs text-muted-foreground">{m.buyer_name} ↔ {m.seller_name}</span></>}
                       right={<Badge variant="outline" className="text-[10px]">{m.state || m.status}</Badge>}
                       sub={`${fmtMoney(m.price_amount, m.price_currency)} · ${fmt(m.created_at)}`}
                     />
@@ -240,7 +240,7 @@ export default function UserDetailDrawer({ userId, open, onOpenChange }: Props) 
                 <Section title="POI engagements" empty={!data.poi_engagements?.length}>
                   {data.poi_engagements?.map((e) => (
                     <Row key={e.id}
-                      left={<><span className="font-mono text-xs">{e.id.slice(0,8)}</span><span className="ml-2 text-xs">{e.contact_email || e.invited_email || "—"}</span></>}
+                      left={<><span className="font-mono text-xs">{e.id.slice(0,8)}</span><span className="ml-2 text-xs">{e.contact_email || e.invited_email || "-"}</span></>}
                       right={<Badge variant="outline" className="text-[10px]">{e.status || e.state}</Badge>}
                       sub={fmt(e.created_at)}
                     />

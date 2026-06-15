@@ -1,5 +1,5 @@
 /**
- * useChallengeOverrideAudit — Phase 3E governance display.
+ * useChallengeOverrideAudit - Phase 3E governance display.
  *
  * Read-only fetch of the most recent `challenge.break_glass_override`
  * audit row for a given challenge. Exposes the structured governance

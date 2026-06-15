@@ -34,7 +34,7 @@ export function useDraftPersistence<T>(key: string, getCurrentData?: () => T | n
 
   // Synchronous best-effort owner read. supabase.auth.getSession() can be
   // async in cold-start, but the cached session is available synchronously
-  // via getSession() in practice — fall back to "anon" if absent.
+  // via getSession() in practice - fall back to "anon" if absent.
   const ownerIdRef = useRef<string>(ANON_OWNER);
   useEffect(() => {
     let cancelled = false;

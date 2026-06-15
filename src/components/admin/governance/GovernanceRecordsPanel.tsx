@@ -1,5 +1,5 @@
 /**
- * GovernanceRecordsPanel — HQ-only entry surface.
+ * GovernanceRecordsPanel - HQ-only entry surface.
  *
  * Two modes:
  *   - List mode: filterable list of recent matches (the primary anchor).
@@ -194,14 +194,14 @@ function GovernanceRecordsList({ onOpen }: { onOpen: (matchId: string) => void }
                         <Badge variant="outline" className="text-[10px]">Demo</Badge>
                       )}
                       <Badge variant="outline" className="text-[10px]">
-                        {m.status ?? "—"}
+                        {m.status ?? "-"}
                       </Badge>
                       <Badge variant="outline" className="text-[10px]">
-                        {m.poi_state ?? "—"}
+                        {m.poi_state ?? "-"}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {m.commodity ?? "—"} · {m.buyer_name ?? "—"} ↔ {m.seller_name ?? "—"}
+                      {m.commodity ?? "-"} · {m.buyer_name ?? "-"} ↔ {m.seller_name ?? "-"}
                     </p>
                   </div>
                   <span className="font-mono text-[10px] text-muted-foreground shrink-0">

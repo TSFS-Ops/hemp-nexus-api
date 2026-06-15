@@ -239,7 +239,7 @@ function useActiveLanes(orgId: string | null, page: number) {
         .select(MATCH_COLUMNS, { count: "exact" })
         .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId},org_id.eq.${orgId}`)
         .in("state", activeStates)
-        // Batch T — UI-010: never inflate the desk pipeline with demo seeds.
+        // Batch T - UI-010: never inflate the desk pipeline with demo seeds.
         .eq("is_demo", false)
         .order("created_at", { ascending: false })
         .range(0, to);
@@ -327,7 +327,7 @@ function useSealedPage(orgId: string | null, page: number) {
         .select(MATCH_COLUMNS, { count: "exact" })
         .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId},org_id.eq.${orgId}`)
         .in("state", POI_STATES)
-        // Batch T — UI-010: sealed lane must reflect production matches only.
+        // Batch T - UI-010: sealed lane must reflect production matches only.
         .eq("is_demo", false)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -339,7 +339,7 @@ function useSealedPage(orgId: string | null, page: number) {
       const ids = list.map((m) => m.id);
       const engagementByMatch = new Map<string, string>();
       if (ids.length > 0) {
-        // Phase 1.5: read-model resolver — see the active-lanes block above
+        // Phase 1.5: read-model resolver - see the active-lanes block above
         // for the full rationale. Same shape, same Phase 2 forward-compat.
         const { data: engagements } = await supabase
           .from("poi_engagements")

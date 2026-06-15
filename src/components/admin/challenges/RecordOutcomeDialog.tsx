@@ -1,5 +1,5 @@
 /**
- * RecordOutcomeDialog — Phase 3C
+ * RecordOutcomeDialog - Phase 3C
  *
  * Outcome recording for an active challenge. Two modes:
  *   - mode="outcome_recorded": requires outcome_code + summary >=40
@@ -40,8 +40,8 @@ export const SUMMARY_MIN = 40;
 export const SUMMARY_MAX = 8000;
 
 // Outcomes selectable by an admin recording an outcome (excludes
-// "withdrawn_by_raiser" — that is a party action, not an admin outcome —
-// and "admin_override_recorded" — that is set by the override route).
+// "withdrawn_by_raiser" - that is a party action, not an admin outcome -
+// and "admin_override_recorded" - that is set by the override route).
 const SELECTABLE_OUTCOMES: ChallengeOutcomeCode[] = CHALLENGE_OUTCOME_CODES.filter(
   (c) => c !== "withdrawn_by_raiser" && c !== "admin_override_recorded",
 );
@@ -123,7 +123,7 @@ export function RecordOutcomeDialog({
       <DialogContent className="sm:max-w-lg" data-testid="record-outcome-dialog">
         <DialogHeader>
           <DialogTitle>
-            {isOutcome ? "Record outcome" : "Close — no action"}
+            {isOutcome ? "Record outcome" : "Close - no action"}
           </DialogTitle>
           <DialogDescription>
             {isOutcome
@@ -203,7 +203,7 @@ export function RecordOutcomeDialog({
             loadingText="Saving…"
             data-testid="outcome-submit-button"
           >
-            {isOutcome ? "Record outcome" : "Close — no action"}
+            {isOutcome ? "Record outcome" : "Close - no action"}
           </LoadingButton>
         </DialogFooter>
       </DialogContent>

@@ -1,9 +1,9 @@
 /**
- * DATA-004 Phase 1 — Per-Org Retention Policy admin panel (SHELL).
+ * DATA-004 Phase 1 - Per-Org Retention Policy admin panel (SHELL).
  *
  * Platform-admin only. Records per-org retention windows for each record
  * class. Phase 1 = shell: values are recorded + audited, but no sweeper
- * reads this yet — existing global defaults remain in force. The panel
+ * reads this yet - existing global defaults remain in force. The panel
  * surfaces that fact prominently so an operator cannot mistake the
  * recorded value for an enforced value.
  *
@@ -208,7 +208,7 @@ export function OrgRetentionPanel() {
       }
       toast({
         title: `Policy ${data?.action ?? "saved"}`,
-        description: `${cls}: ${days} days recorded. (Phase 1 shell — sweepers do not yet enforce.)`,
+        description: `${cls}: ${days} days recorded. (Phase 1 shell - sweepers do not yet enforce.)`,
       });
       setEdits((s) => ({ ...s, [cls]: { days: "", reason: "" } }));
       refresh(orgId);
@@ -257,7 +257,7 @@ export function OrgRetentionPanel() {
     <div className="space-y-6">
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>Phase 1 shell — values recorded, not yet enforced</AlertTitle>
+        <AlertTitle>Phase 1 shell - values recorded, not yet enforced</AlertTitle>
         <AlertDescription>
           Per-org retention windows are persisted and audited (
           <code>data.org_retention_policy.set</code> /{" "}
@@ -360,12 +360,12 @@ export function OrgRetentionPanel() {
                     <div className="md:col-span-3">
                       <div className="font-mono text-xs">{cls}</div>
                       <div className="text-[11px] text-muted-foreground mt-1">
-                        Floor: {floor ?? "—"} d
+                        Floor: {floor ?? "-"} d
                       </div>
                       <div className="text-[11px] text-muted-foreground">
                         Effective:{" "}
                         <span className="font-medium text-foreground">
-                          {current?.retention_days ?? floor ?? "—"} d
+                          {current?.retention_days ?? floor ?? "-"} d
                         </span>
                         {current && (
                           <Badge variant="outline" className="ml-2 text-[10px]">override</Badge>

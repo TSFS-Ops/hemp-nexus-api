@@ -43,7 +43,7 @@ function deriveNextAction(
     return canDownloadCertificate
       ? {
           label: "Download certificate",
-          description: "Sealed — PDF certificate is available.",
+          description: "Sealed - PDF certificate is available.",
           icon: ShieldCheck,
           tone: "success",
         }
@@ -76,7 +76,7 @@ function deriveNextAction(
   if (canSeal) {
     return {
       label: "Seal Signed Deal",
-      description: "Both signatories have attested — ready to seal.",
+      description: "Both signatories have attested - ready to seal.",
       icon: Lock,
       tone: "primary",
     };
@@ -94,7 +94,7 @@ function deriveNextAction(
   if (hasAttested) {
     return {
       label: "Awaiting other party",
-      description: "You've attested — waiting for the counterparty to attest.",
+      description: "You've attested - waiting for the counterparty to attest.",
       icon: Clock,
       tone: "muted",
     };
@@ -209,7 +209,7 @@ export function AttestationProgressStepper({
         className
       )}
     >
-      {/* Header — single source of truth for the textual progress summary.
+      {/* Header - single source of truth for the textual progress summary.
           The progress bar below carries the same value as a non-text
           announcement, so we keep it but hide its redundant aria-label. */}
       <div className="flex items-center justify-between gap-3">
@@ -234,7 +234,7 @@ export function AttestationProgressStepper({
         </Badge>
       </div>
 
-      {/* Progress bar — aria-hidden because the heading paragraph above already
+      {/* Progress bar - aria-hidden because the heading paragraph above already
           announces "{attestedCount} of {total} signatories attested" verbatim.
           Re-announcing the same fact via role=progressbar produces a
           double-announcement on most screen readers. The bar remains visible
@@ -252,7 +252,7 @@ export function AttestationProgressStepper({
         />
       </div>
 
-      {/* Signatory nodes — explicit ordered list semantics. Each step gets a
+      {/* Signatory nodes - explicit ordered list semantics. Each step gets a
           single consolidated aria-label so screen readers announce
           "Step 1 of 2: Buyer signatory (you), attested by Jane Doe at …"
           instead of reading every nested badge/paragraph separately. */}
@@ -282,7 +282,7 @@ export function AttestationProgressStepper({
             node.label,
             node.isYou ? "(you)" : null,
             `for ${node.party}`,
-            `— ${stateText}`,
+            `- ${stateText}`,
           ]
             .filter(Boolean)
             .join(" ");
@@ -356,7 +356,7 @@ export function AttestationProgressStepper({
         })}
       </ol>
 
-      {/* Next action — distinct landmark so SRs read it separately from the
+      {/* Next action - distinct landmark so SRs read it separately from the
           step list. */}
       <div
         role="status"

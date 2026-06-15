@@ -1,5 +1,5 @@
 /**
- * attest-error-report — assembles a plain-text incident report users can
+ * attest-error-report - assembles a plain-text incident report users can
  * download from the inline attestation error alert and email/attach to
  * support. Kept text-only (no JSON, no PDF) so it opens in any client
  * and is trivially redactable before sending.
@@ -23,7 +23,7 @@ export interface AttestErrorReportInput {
 }
 
 function line(label: string, value: unknown): string {
-  if (value === undefined || value === null || value === "") return `${label}: —`;
+  if (value === undefined || value === null || value === "") return `${label}: -`;
   return `${label}: ${String(value)}`;
 }
 
@@ -34,12 +34,12 @@ export function buildAttestErrorReport(
   const ua =
     typeof navigator !== "undefined" && typeof navigator.userAgent === "string"
       ? navigator.userAgent
-      : "—";
+      : "-";
   const url =
-    typeof window !== "undefined" && window.location ? window.location.href : "—";
+    typeof window !== "undefined" && window.location ? window.location.href : "-";
 
   return [
-    "Izenzo — Attestation error report",
+    "Izenzo - Attestation error report",
     "==================================",
     "",
     line("Generated at", now.toISOString()),

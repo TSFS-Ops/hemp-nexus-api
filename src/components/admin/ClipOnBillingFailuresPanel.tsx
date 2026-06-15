@@ -1,5 +1,5 @@
 /**
- * ClipOnBillingFailuresPanel — surface durable clip-on billing failures.
+ * ClipOnBillingFailuresPanel - surface durable clip-on billing failures.
  *
  * Reads from `clip_on_billing_failures` (append-only ledger written by
  * `record_clip_on_billing_failure` after the reviewer-pickup status update
@@ -61,7 +61,7 @@ export function ClipOnBillingFailuresPanel() {
   });
 
   // Group by request_id so a request that failed multiple times shows once
-  // with an attempt count — this is the operator-friendly view. The raw
+  // with an attempt count - this is the operator-friendly view. The raw
   // ledger is still queryable via the database for forensics.
   const grouped = useMemo(() => {
     const map = new Map<string, { latest: FailureRow; attempts: number }>();
@@ -72,7 +72,7 @@ export function ClipOnBillingFailuresPanel() {
       } else {
         cur.attempts += 1;
         // rows are ordered desc by created_at, so cur.latest is already
-        // the most recent — just count.
+        // the most recent - just count.
       }
     }
     return Array.from(map.values());
@@ -164,7 +164,7 @@ export function ClipOnBillingFailuresPanel() {
               return (
                 <tr key={latest.id} className="border-t">
                   <td className="px-3 py-2">
-                    <div className="font-medium">{req?.subject_name ?? "—"}</div>
+                    <div className="font-medium">{req?.subject_name ?? "-"}</div>
                     <div className="text-[10px] text-muted-foreground">
                       Request status: {req?.status ?? "unknown"}
                     </div>
@@ -175,10 +175,10 @@ export function ClipOnBillingFailuresPanel() {
                     </Badge>
                   </td>
                   <td className="px-3 py-2 text-right font-mono">
-                    {latest.credits_required ?? "—"}
+                    {latest.credits_required ?? "-"}
                   </td>
                   <td className="px-3 py-2 text-right font-mono">
-                    {latest.current_balance ?? "—"}
+                    {latest.current_balance ?? "-"}
                   </td>
                   <td className="px-3 py-2 text-right font-mono">{attempts}</td>
                   <td className="px-3 py-2 text-muted-foreground">
@@ -193,7 +193,7 @@ export function ClipOnBillingFailuresPanel() {
                         Match <ExternalLink className="h-3 w-3" />
                       </Link>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">-</span>
                     )}
                   </td>
                 </tr>

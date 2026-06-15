@@ -1,5 +1,5 @@
 /**
- * DEC-001 Phase 1 — Off-platform counterparty contact audit SSOT.
+ * DEC-001 Phase 1 - Off-platform counterparty contact audit SSOT.
  *
  * Source of truth: signed Client-Only Decision Form, DEC-001.
  *
@@ -7,21 +7,21 @@
  * the lifecycle of an off-platform outreach decision. The signed form
  * names three events:
  *
- *   1. `pending_engagement.off_platform_outreach_evaluated` — emitted
+ *   1. `pending_engagement.off_platform_outreach_evaluated` - emitted
  *      whenever an admin requests preview or send and the platform has
  *      walked the full gate-set (identity completeness, supersession,
  *      binding review, dispute, MT-008/MT-009 progression, compliance /
  *      legal hold). It records THAT the decision was made, regardless
  *      of outcome.
  *
- *   2. `pending_engagement.off_platform_outreach_sent` — emitted only
+ *   2. `pending_engagement.off_platform_outreach_sent` - emitted only
  *      after the approved cautious-wording email has been atomically
  *      queued and the engagement state has advanced to `contacted`
  *      (i.e. `engagement.outreach_email_queued` has just succeeded).
  *      It pairs with the operational queue audit and is intentionally
- *      additive — it does NOT replace any existing audit.
+ *      additive - it does NOT replace any existing audit.
  *
- *   3. `pending_engagement.off_platform_outreach_blocked` — emitted
+ *   3. `pending_engagement.off_platform_outreach_blocked` - emitted
  *      alongside every concrete block branch (missing email, missing
  *      name, binding review required, disputed-being-named, expired,
  *      cancelled, superseded, compliance / legal hold, unsafe wording,
@@ -31,7 +31,7 @@
  * The canonical names exist so HQ → Audit can answer "show me every
  * off-platform outreach decision" with a single action filter. They are
  * dual-written alongside the existing per-reason audit rows (which are
- * never removed — Batch H / CP-006 / CP-003 / DEC-005 / DEC-006 rows
+ * never removed - Batch H / CP-006 / CP-003 / DEC-005 / DEC-006 rows
  * remain as the operational source of truth for their respective
  * dashboards).
  *
@@ -87,7 +87,7 @@ export type Dec001BlockedReason = (typeof DEC_001_BLOCKED_REASONS)[number];
 
 /**
  * Side-effect contract. Outreach (preview, send, block) on its own
- * never triggers any of the following — these are intentionally
+ * never triggers any of the following - these are intentionally
  * enforced by absence in the edge function and pinned by tests, not
  * by runtime code in this module.
  */

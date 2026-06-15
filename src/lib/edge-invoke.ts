@@ -1,5 +1,5 @@
 /**
- * edge-invoke — single entry point for calling Supabase Edge Functions from the
+ * edge-invoke - single entry point for calling Supabase Edge Functions from the
  * browser with hardened auth + friendly error translation.
  *
  * Why this exists
@@ -87,7 +87,7 @@ export class EdgeInvokeError extends Error {
       );
     }
     // Increment client-side counter for the two tracked edge-side codes.
-    // NO_SESSION is intentionally excluded — it fires before any network
+    // NO_SESSION is intentionally excluded - it fires before any network
     // call (no session at all) and would inflate the "session died mid-
     // download" signal we actually care about.
     if (opts.code === "UNAUTHORIZED" || opts.code === "REFRESH_FAILED") {
@@ -104,8 +104,8 @@ export class EdgeInvokeError extends Error {
  * SessionExpiredModal. Avoids spurious bounces when an edge function
  * returns 401 for non-auth reasons.
  *
- *   • NO_SESSION / REFRESH_FAILED — already verified locally; trust them.
- *   • UNAUTHORIZED — call auth.getUser(); fire only if server says invalid.
+ *   • NO_SESSION / REFRESH_FAILED - already verified locally; trust them.
+ *   • UNAUTHORIZED - call auth.getUser(); fire only if server says invalid.
  */
 async function verifyAndNotifySessionExpired(
   reason: "UNAUTHORIZED" | "NO_SESSION" | "REFRESH_FAILED",
@@ -126,7 +126,7 @@ async function verifyAndNotifySessionExpired(
     await supabase.auth.signOut({ scope: "local" }).catch(() => { /* noop */ });
     notifySessionExpired(reason, message, requestId);
   } catch {
-    // Network error during verification — be conservative and fire the
+    // Network error during verification - be conservative and fire the
     // modal so the user can re-auth rather than being trapped in a 401 loop.
     notifySessionExpired(reason, message, requestId);
   }
@@ -306,7 +306,7 @@ function translateError(
   }
 
   return new EdgeInvokeError(
-    serverMsg ? `${fallbackMsg} — ${serverMsg}` : fallbackMsg,
+    serverMsg ? `${fallbackMsg} - ${serverMsg}` : fallbackMsg,
     { status, code: serverCode, serverBody: body, requestId: rid, context }
   );
 }
@@ -316,7 +316,7 @@ function translateError(
 // Supabase Edge Runtime occasionally returns a 503 SUPABASE_EDGE_RUNTIME_ERROR
 // or kills the TCP connection (surfacing in the browser as
 // `TypeError: Failed to fetch`) when an isolate cold-boots under load. The
-// failure is genuinely transient — the immediately-retried request succeeds
+// failure is genuinely transient - the immediately-retried request succeeds
 // (see network trace 2026-04-25T15:01:39Z poi-engagements 503 → 15:01:42Z 200).
 //
 // To prevent these blips from blanking out the UI, we retry idempotent calls
@@ -349,7 +349,7 @@ function isTransientFetchError(err: unknown): boolean {
 
 function isTransientServerResponse(status: number | undefined, body: string): boolean {
   if (status && TRANSIENT_STATUSES.has(status)) {
-    // Maintenance mode is an explicit 503 we do NOT want to retry — surface it.
+    // Maintenance mode is an explicit 503 we do NOT want to retry - surface it.
     if (/maintenance/i.test(body)) return false;
     return true;
   }
@@ -496,7 +496,7 @@ export async function fetchEdgeFunction<T = unknown>(
     finalHeaders.Authorization = `Bearer ${accessToken}`;
   }
   // Always send the Supabase publishable/anon key as `apikey`. The Supabase
-  // gateway requires this header on every /functions/v1/* request — without
+  // gateway requires this header on every /functions/v1/* request - without
   // it, a function with verify_jwt=true (the default) returns 401 at the
   // gateway, which the client surfaces as a misleading "session expired"
   // error. Sending it unconditionally is safe and matches what the JS SDK's

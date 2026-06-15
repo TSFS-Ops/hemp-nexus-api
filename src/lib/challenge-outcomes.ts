@@ -1,5 +1,5 @@
 /**
- * Batch C — Match Challenges
+ * Batch C - Match Challenges
  * Static, neutral outcome label catalogue.
  *
  * Single source of truth for user-facing labels of the closed
@@ -28,7 +28,7 @@ export type ChallengeOutcomeCode = (typeof CHALLENGE_OUTCOME_CODES)[number];
 
 export const CHALLENGE_OUTCOME_LABELS: Record<ChallengeOutcomeCode, string> = {
   no_action_required: "No action required",
-  corrected_and_proceed: "Corrected — trade may proceed",
+  corrected_and_proceed: "Corrected - trade may proceed",
   withdrawn_by_raiser: "Challenge withdrawn",
   superseded_by_updated_terms: "Superseded by updated terms",
   evidence_required: "Further evidence required",

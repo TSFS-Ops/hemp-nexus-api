@@ -83,7 +83,7 @@ function MatchDetailsContent() {
   // UI-007: per-tab focus refetch. When this tab becomes visible after
   // being hidden for >5s, re-pull the match and the engagement-status gate
   // so a stale cache from another tab's mutation is corrected immediately.
-  // We deliberately do NOT enable global `refetchOnWindowFocus` — this is
+  // We deliberately do NOT enable global `refetchOnWindowFocus` - this is
   // scoped to the open match page only.
   const queryClient = useQueryClient();
   const hiddenSinceRef = useRef<number | null>(null);
@@ -135,7 +135,7 @@ function MatchDetailsContent() {
 
   // Batch B Phase 9 F-B4 fix:
   //   • `engagementData` (current) drives action/progression cards (Reconfirm,
-  //     Accept, POI/WaD gates) — strictly null when the row was swept back
+  //     Accept, POI/WaD gates) - strictly null when the row was swept back
   //     to expired so no stale buttons appear.
   //   • `displayEngagement` (current ?? latest_historical) drives read-only
   //     status/wording (PendingEngagementSection) so the F-B4 historical
@@ -153,7 +153,7 @@ function MatchDetailsContent() {
   // can render the "Accept (late)" affordance, but the read-model resolver
   // classifies expired/declined as *historical* and zeroes out
   // `current_engagement`. Drive the gate from `displayEngagement` (current
-  // ∪ latest_historical) — the card itself enforces the respondable
+  // ∪ latest_historical) - the card itself enforces the respondable
   // status whitelist (`notification_sent` | `contacted` | `expired`) so
   // accepted/declined/cancelled never re-surface an action button.
   const engagementStatus: EngagementStatus = (displayEngagement?.engagement_status as EngagementStatus) || null;

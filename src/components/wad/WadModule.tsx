@@ -92,12 +92,12 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
         // P4: gate failures are a workflow prerequisite, not a system error.
         // The persistent banner below (rendered when gateFailures.length > 0)
         // already lists each unmet gate with an actionable description, so we
-        // do NOT raise a toast here — that conflates "the system failed" with
+        // do NOT raise a toast here - that conflates "the system failed" with
         // "you have prerequisites to complete" and dismisses before the user
         // can read it.
         setGateFailures(result.gateFailures);
       } else {
-        // True infra/edge failure (no gate detail) — toast is appropriate.
+        // True infra/edge failure (no gate detail) - toast is appropriate.
         toast.error(result.error || "Failed to confirm Signed Deal");
       }
     } finally {
@@ -210,7 +210,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               >
                 <p className="text-sm font-medium text-destructive flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  Signed Deal blocked — {gateFailures.length} prerequisite{gateFailures.length > 1 ? "s" : ""} not yet met
+                  Signed Deal blocked - {gateFailures.length} prerequisite{gateFailures.length > 1 ? "s" : ""} not yet met
                 </p>
                 <ol className="text-sm list-decimal list-inside space-y-1 text-foreground/80">
                   {gateFailures.map((f, i) => (

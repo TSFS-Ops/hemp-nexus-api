@@ -175,7 +175,7 @@ function Field({
         {label}
       </dt>
       <dd className="break-all font-mono text-xs text-slate-900">
-        {value ?? <span className="text-slate-400">—</span>}
+        {value ?? <span className="text-slate-400">-</span>}
       </dd>
     </div>
   );

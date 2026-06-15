@@ -96,7 +96,7 @@ export function InboundReview() {
       if (!match) throw new Error("Match not found or you do not have access.");
 
       // Engagement (counterparty hold-point record).
-      // Phase 1.5: read via canonical resolver — never `.maybeSingle()` on
+      // Phase 1.5: read via canonical resolver - never `.maybeSingle()` on
       // poi_engagements by match_id. Once Phase 2 allows multiple rows per
       // match (expired parent + renewed child), this surface must show the
       // renewed-child row to the counterparty, not the expired parent.

@@ -397,7 +397,7 @@ export default function TradeDeskProductPage() {
                   <h3 className="text-3xl font-semibold tracking-tighter text-foreground">
                     Real-time telemetry.
                   </h3>
-                  <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> A product preview rendered from demo data — not customer activity — surfaces every state transition across a desk (from match creation to certificate issuance) with cryptographic provenance on every pulse. </p>
+                  <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> A product preview rendered from demo data - not customer activity - surfaces every state transition across a desk (from match creation to certificate issuance) with cryptographic provenance on every pulse. </p>
                 </div>
                 <div className="rounded-xl bg-muted/70 ring-1 ring-slate-100 p-8">
                   <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground mb-5">

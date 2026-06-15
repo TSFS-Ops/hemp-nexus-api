@@ -98,7 +98,7 @@ export function AdminResidencyReviewsPanel() {
                     <span className="text-muted-foreground">{r.requirement_source}</span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    region: {r.requested_region ?? "—"} · country: {r.requested_country ?? "—"} · {new Date(r.created_at).toLocaleString()}
+                    region: {r.requested_region ?? "-"} · country: {r.requested_country ?? "-"} · {new Date(r.created_at).toLocaleString()}
                   </div>
                   {r.legal_basis && <div className="text-xs">basis: {r.legal_basis}</div>}
                 </div>

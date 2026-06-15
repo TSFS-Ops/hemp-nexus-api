@@ -35,7 +35,7 @@ export type HostType = 'public' | 'console' | 'marketplace' | 'preview';
 export function getHostType(): HostType {
   const hostname = window.location.hostname;
 
-  // Preview / localhost — show all routes for development.
+  // Preview / localhost - show all routes for development.
   if (
     hostname.includes('lovable.app') ||
     hostname.includes('localhost') ||
@@ -44,7 +44,7 @@ export function getHostType(): HostType {
     return 'preview';
   }
 
-  // Console first — it is the most specific subdomain and itself contains
+  // Console first - it is the most specific subdomain and itself contains
   // "trade.izenzo.co.za", so it must be matched before the marketplace check.
   if (hostname === HOSTNAMES.CONSOLE || hostname.endsWith('.' + HOSTNAMES.CONSOLE)) {
     return 'console';

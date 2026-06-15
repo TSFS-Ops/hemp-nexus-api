@@ -3,7 +3,7 @@
  * ──────────────────────────────────────────────────────────────────────
  * Admin-only sub-panel for the AI Outreach Drafter (Phase 1).
  *
- * IMPORTANT — Phase 1 boundary:
+ * IMPORTANT - Phase 1 boundary:
  *   • The panel can generate, regenerate, edit, approve, and reject
  *     drafts.
  *   • The panel does NOT send anything. There is no Send button. After
@@ -153,7 +153,7 @@ export function EngagementOutreachDraftPanel({ engagementId }: Props) {
                 className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900"
                 data-testid="manual-send-notice"
               >
-                Approved — manual send required. No automated dispatch is wired.
+                Approved - manual send required. No automated dispatch is wired.
               </div>
             )}
 

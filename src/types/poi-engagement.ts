@@ -24,7 +24,7 @@ export interface BindingHintBound {
 
 /**
  * The email is valid but no registered profile matches it. Engagement is
- * still saved — the recipient simply won't see it in their inbound queue
+ * still saved - the recipient simply won't see it in their inbound queue
  * until they sign up or the email is corrected. NON-FATAL.
  */
 export interface BindingHintNoMatch {
@@ -35,7 +35,7 @@ export interface BindingHintNoMatch {
 
 /**
  * The engagement was already bound to an organisation before this PATCH.
- * The auto-resolver intentionally does NOT overwrite an existing binding —
+ * The auto-resolver intentionally does NOT overwrite an existing binding -
  * a deliberate prior binding wins.
  */
 export interface BindingHintAlreadyBound {
@@ -66,9 +66,9 @@ export interface BindingHintBindingReviewRequired {
   email: string;
   /**
    * One or more of:
-   *   • "shared_email_multi_org"       — same email registered to ≥2 orgs
-   *   • "shared_mailbox_local_part"    — info@/sales@/etc. with real candidates
-   *   • "domain_only_ambiguity"        — domain registered to ≥2 orgs (non-free)
+   *   • "shared_email_multi_org"       - same email registered to ≥2 orgs
+   *   • "shared_mailbox_local_part"    - info@/sales@/etc. with real candidates
+   *   • "domain_only_ambiguity"        - domain registered to ≥2 orgs (non-free)
    */
   reason_codes: string[];
   candidate_count: number;
@@ -94,7 +94,7 @@ export interface UpdatePoiEngagementResponse {
 
 /**
  * UI copy keyed by binding status. The reviewer dashboard uses these as
- * the canonical, brand-aligned messages — keeping them out of the panel
+ * the canonical, brand-aligned messages - keeping them out of the panel
  * component keeps the admin/UI contract close to the type definition.
  */
 export const BINDING_HINT_MESSAGES: Record<
@@ -103,7 +103,7 @@ export const BINDING_HINT_MESSAGES: Record<
 > = {
   bound: {
     tone: "success",
-    title: "Email matched a registered organisation — counterparty will see this in their inbound queue.",
+    title: "Email matched a registered organisation - counterparty will see this in their inbound queue.",
   },
   no_match: {
     tone: "warning",
@@ -112,7 +112,7 @@ export const BINDING_HINT_MESSAGES: Record<
   },
   already_bound: {
     tone: "info",
-    title: "Engagement was already bound to a counterparty — the existing binding was preserved.",
+    title: "Engagement was already bound to a counterparty - the existing binding was preserved.",
   },
   lookup_error: {
     tone: "error",
