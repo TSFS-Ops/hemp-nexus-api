@@ -80,16 +80,60 @@ async function _handle(req: Request): Promise<Response> {
 
   let userId: string | null = null;
   try {
-    const ctx = await authenticateRequest(req, supabaseUrl, serviceKey);
-    requireRole(ctx, "platform_admin");
-    userId = ctx.userId;
+    // Phase 2: internal-key invocation bypasses platform_admin requirement.
+    const internalKey = Deno.env.get("INTERNAL_CRON_KEY");
+    const providedKey = req.headers.get("x-internal-key");
+    const isInternal = !!internalKey && providedKey === internalKey;
+
+    if (!isInternal) {
+      const ctx = await authenticateRequest(req, supabaseUrl, serviceKey);
+      requireRole(ctx, "platform_admin");
+      userId = ctx.userId;
+    }
 
     const body = await req.json().catch(() => ({}));
     const trade_request_id = body?.trade_request_id;
     const interpretation_id = body?.interpretation_id ?? null;
+    const match_id: string | null =
+      typeof body?.match_id === "string" ? body.match_id : null;
+    const requestedMax = Number(body?.max_results);
+    const MAX_CANDIDATES =
+      Number.isFinite(requestedMax) && requestedMax > 0 && requestedMax <= MAX_CANDIDATES_DEFAULT
+        ? Math.floor(requestedMax)
+        : MAX_CANDIDATES_DEFAULT;
+
     if (!trade_request_id || typeof trade_request_id !== "string") {
       return json(400, { error: "trade_request_id is required" });
     }
+
+    // Phase 2: enforce per-match hard cap (3 runs). Only applies when match_id is supplied.
+    if (match_id) {
+      const { data: counted, error: cntErr } = await admin
+        .rpc("ai_increment_match_run_count", { p_match_id: match_id, p_max_runs: MAX_RUNS_PER_MATCH });
+      if (cntErr) throw cntErr;
+      if (counted === -1) {
+        await writeAdminAudit({
+          admin,
+          action: "ai_review.usage_limit_exceeded",
+          status: "blocked",
+          actorUserId: userId,
+          targetType: "match",
+          targetId: match_id,
+          requestId,
+          endpoint: "ai-source-counterparties",
+          ipAddress: extractIp(req),
+          userAgent: extractUserAgent(req),
+          extra: { limit: MAX_RUNS_PER_MATCH, kind: "runs_per_match", trade_request_id },
+        }).catch(() => {});
+        return json(429, {
+          error: "usage_limit_exceeded",
+          limit: MAX_RUNS_PER_MATCH,
+          kind: "runs_per_match",
+          retry_after: null,
+        });
+      }
+    }
+
 
     const { data: tr, error: trErr } = await admin
       .from("trade_requests")
