@@ -136,19 +136,32 @@ export function AiSuggestionLauncher() {
         body: { trade_request_id: selectedId },
       });
       if (error) throw new Error(error.message || "Edge function error");
-      const payload = data as { error?: string; created?: number; proposed?: unknown[] };
+      const payload = data as {
+        error?: string;
+        created?: number;
+        proposed?: unknown[];
+        proposed_matches?: unknown[];
+      };
       if (payload?.error) throw new Error(payload.error);
       const n =
         typeof payload?.created === "number"
           ? payload.created
-          : Array.isArray(payload?.proposed)
-            ? payload.proposed.length
-            : null;
-      toast.success(
-        n != null
-          ? `Sourcing complete. ${n} proposed match${n === 1 ? "" : "es"} added — advisory only.`
-          : "Sourcing complete. Advisory only — no outreach was sent.",
-      );
+          : Array.isArray(payload?.proposed_matches)
+            ? payload.proposed_matches.length
+            : Array.isArray(payload?.proposed)
+              ? payload.proposed.length
+              : null;
+      if (n === 0) {
+        toast.message(
+          "No proposed matches were found from approved internal sources for this trade request. Try a different trade request or approve more source data.",
+        );
+      } else if (n != null) {
+        toast.success(
+          `Sourcing complete. ${n} proposed match${n === 1 ? "" : "es"} added — advisory only.`,
+        );
+      } else {
+        toast.success("Sourcing complete. Advisory only — no outreach was sent.");
+      }
       qc.invalidateQueries({ queryKey: ["ai-proposed-matches"] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
