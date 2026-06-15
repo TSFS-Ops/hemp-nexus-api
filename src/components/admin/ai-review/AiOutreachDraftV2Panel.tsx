@@ -18,9 +18,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Mail, RefreshCw, Check, X, Pencil, Copy, Archive, Send } from "lucide-react";
 import { toast } from "sonner";
+
+// Approved V1 outreach outcomes (mirrors supabase/functions/_shared/outreach-validator.ts).
+const APPROVED_OUTCOMES = [
+  "no_response",
+  "bounced",
+  "interested",
+  "not_interested",
+  "wrong_contact",
+  "call_booked",
+  "onboarded",
+  "converted_to_match",
+  "converted_to_POI",
+  "closed",
+] as const;
+
+const SEND_CONFIRMATION_TEXT =
+  "I confirm this outreach has been reviewed and contains no sensitive commercial, verification, bank, price, volume, document or personal-phone information.";
+
 
 export interface DraftRow {
   id: string;
