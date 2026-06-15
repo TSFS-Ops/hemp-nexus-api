@@ -209,8 +209,16 @@ function DraftCard({
         body: { draft_id: draft.id, ...payload },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return (data as any).draft as DraftRow;
+      const d = data as any;
+      if (d?.error === "first_outreach_validation_failed") {
+        const cats = Array.isArray(d.failed_categories) ? d.failed_categories.join(", ") : "";
+        throw new Error(`First-outreach content rejected: ${cats}. Edit and try again.`);
+      }
+      if (d?.error === "confirmation_acknowledged_required") {
+        throw new Error("Manual-send confirmation is required.");
+      }
+      if (d?.error) throw new Error(typeof d.error === "string" ? d.error : "Action failed");
+      return d.draft as DraftRow;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ai-outreach-drafts-v2", proposedMatchId] });
