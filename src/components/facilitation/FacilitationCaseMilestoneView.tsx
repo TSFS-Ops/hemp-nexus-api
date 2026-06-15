@@ -15,7 +15,9 @@ import { toast } from "sonner";
 import { friendlyFacilitationError } from "@/lib/facilitation-labels";
 import {
   USER_FACING_LABELS,
+  ROLE_LABELS,
   type FacilitationUserFacingStatus,
+  type FacilitationRole,
 } from "@/lib/facilitation-case-state";
 
 type FacilitationCase = {
