@@ -400,9 +400,11 @@ export function AiSuggestionsQueuePanel(props: AiSuggestionsQueuePanelProps = {}
         </SheetContent>
       </Sheet>
 
-      <div className="border-t border-border">
-        <DoNotContactPanel />
-      </div>
+      {hideDoNotContact ? null : (
+        <div className="border-t border-border">
+          <DoNotContactPanel />
+        </div>
+      )}
     </section>
     </div>
   );
