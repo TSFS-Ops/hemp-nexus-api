@@ -325,6 +325,7 @@ function MatchDetailsContent() {
 
       {matchId && <EngagementTracker matchId={matchId} match={match} />}
 
+      {matchId && <MatchApprovedAiSummary matchId={matchId} />}
       {showPrePoiVerification && <CounterpartyIntelPanel match={match} />}
       {/*
         Per Daniel Davies (2026-04-29): the user-facing "Request Enhanced
