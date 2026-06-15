@@ -25,16 +25,42 @@ const BodySchema = z.object({
   counterparty_phone: z.string().trim().max(64).nullable().optional(),
   counterparty_contact_name: z.string().trim().max(255).nullable().optional(),
   product_or_commodity: z.string().trim().min(2).max(500),
-  role: z.enum(["buyer", "seller"]),
+  sector: z.string().trim().max(120).nullable().optional(),
+  role: z.enum(["buyer", "seller", "service_provider", "funder", "other"]),
   estimated_value_amount: z.number().nonnegative().max(1e15),
   estimated_value_currency: z.string().trim().min(3).max(8),
   urgency: z.enum(["low", "normal", "high", "critical"]),
+  target_response_date: z.string().trim().max(32).nullable().optional(),
+  relationship_status: z.enum([
+    "no_prior_contact", "prior_contact", "referral", "known_but_not_verified",
+  ]).nullable().optional(),
+  registration_number: z.string().trim().max(120).nullable().optional(),
+  tax_vat_number: z.string().trim().max(120).nullable().optional(),
+  physical_address: z.string().trim().max(500).nullable().optional(),
+  contact_person_title: z.string().trim().max(120).nullable().optional(),
+  contact_person_phone: z.string().trim().max(64).nullable().optional(),
+  contact_person_email: z.string().trim().email().max(255).nullable().optional(),
+  preferred_contact_language: z.string().trim().max(64).nullable().optional(),
   reason: z.string().trim().min(10).max(2000),
   how_user_knows_counterparty: z.string().trim().min(2).max(500),
   how_user_knows_notes: z.string().trim().max(2000).nullable().optional(),
+  source_evidence_summary: z.string().trim().min(2).max(2000),
   permission_to_contact: z.boolean(),
   user_declaration_accepted: z.literal(true),
-});
+}).refine(
+  (v) =>
+    Boolean(v.counterparty_email) ||
+    Boolean(v.counterparty_website) ||
+    Boolean(v.counterparty_phone) ||
+    Boolean(v.counterparty_contact_name) ||
+    Boolean(v.registration_number) ||
+    Boolean(v.contact_person_email) ||
+    Boolean(v.contact_person_phone),
+  {
+    message: "At least one contact identifier is required (email, website, phone, registration number, or named contact).",
+    path: ["counterparty_email"],
+  },
+);
 
 function json(req: Request, body: unknown, status = 200) {
   return withCors(req, new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }));
@@ -90,13 +116,24 @@ Deno.serve(async (req) => {
     counterparty_phone: parsed.data.counterparty_phone ?? null,
     counterparty_contact_name: parsed.data.counterparty_contact_name ?? null,
     product_or_commodity: parsed.data.product_or_commodity,
+    sector: parsed.data.sector ?? null,
     role: parsed.data.role,
     estimated_value_amount: parsed.data.estimated_value_amount,
     estimated_value_currency: parsed.data.estimated_value_currency.toUpperCase(),
     urgency: parsed.data.urgency,
+    target_response_date: parsed.data.target_response_date ?? null,
+    relationship_status: parsed.data.relationship_status ?? null,
+    registration_number: parsed.data.registration_number ?? null,
+    tax_vat_number: parsed.data.tax_vat_number ?? null,
+    physical_address: parsed.data.physical_address ?? null,
+    contact_person_title: parsed.data.contact_person_title ?? null,
+    contact_person_phone: parsed.data.contact_person_phone ?? null,
+    contact_person_email: parsed.data.contact_person_email ?? null,
+    preferred_contact_language: parsed.data.preferred_contact_language ?? null,
     reason: parsed.data.reason,
     how_user_knows_counterparty: parsed.data.how_user_knows_counterparty,
     how_user_knows_notes: parsed.data.how_user_knows_notes ?? null,
+    source_evidence_summary: parsed.data.source_evidence_summary,
     permission_to_contact: parsed.data.permission_to_contact,
     user_declaration_accepted: parsed.data.user_declaration_accepted,
     internal_status: "new",
@@ -112,7 +149,13 @@ Deno.serve(async (req) => {
     action: "facilitation_case.created",
     from_status: null,
     to_status: "new",
-    payload: { case_number: created.case_number, urgency: parsed.data.urgency },
+    payload: {
+      case_number: created.case_number,
+      urgency: parsed.data.urgency,
+      role: parsed.data.role,
+      sector: parsed.data.sector ?? null,
+      relationship_status: parsed.data.relationship_status ?? null,
+    },
   });
 
   return json(req, { case: created }, 201);
