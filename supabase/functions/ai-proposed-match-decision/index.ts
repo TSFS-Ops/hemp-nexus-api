@@ -174,12 +174,17 @@ async function _handle(req: Request): Promise<Response> {
         break;
       case "escalate":
         if (!reason) return json(400, { error: "reason is required for escalate" });
+        if (escalationTarget && !ESCALATION_TARGETS.has(escalationTarget)) {
+          return json(400, { error: `escalation_target must be one of: ${Array.from(ESCALATION_TARGETS).join(", ")}` });
+        }
         patch.status = "escalated";
         patch.escalation_required = true;
         patch.escalation_reason = reason;
         auditAction = "ai_review.proposed_match_escalated";
         auditExtra.reason = reason;
+        if (escalationTarget) auditExtra.escalation_target = escalationTarget;
         break;
+
       case "needs_more_research":
         patch.status = "needs_more_research";
         if (note) patch.reviewer_note = note;
