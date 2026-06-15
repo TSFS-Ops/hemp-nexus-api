@@ -226,8 +226,11 @@ function App() {
                       Two routes: bare /hq lands on default tab; /hq/:tab deep-links.
                       Defence-in-depth: route-level RequireAuth(platform_admin) AND
                       page-level guard inside HQ.tsx (ForbiddenHQ screen). */}
-                  <Route path="/hq" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><HQ /></RequireAuth>} />
-                  <Route path="/hq/:tab" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><HQ /></RequireAuth>} />
+                  {/* compliance_analyst is allowed to reach /hq solely to operate the
+                      Facilitation surface (escalation resolve/reopen, DNC revoke). HQ.tsx
+                      restricts that role to the Facilitation tab and hides every other tab. */}
+                  <Route path="/hq" element={<RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk"><HQ /></RequireAuth>} />
+                  <Route path="/hq/:tab" element={<RequireAuth role={["platform_admin", "compliance_analyst"]} fallbackRoute="/desk"><HQ /></RequireAuth>} />
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
