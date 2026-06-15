@@ -19,7 +19,13 @@ import {
   type FacilitationInternalStatus,
 } from "@/lib/facilitation-case-state";
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
-import { friendlyFacilitationError } from "@/lib/facilitation-labels";
+import {
+  friendlyFacilitationError,
+  rolesLabel,
+  timelineActionLabel,
+  outcomeLabel,
+  OUTCOME_LABEL,
+} from "@/lib/facilitation-labels";
 
 type CaseRow = Record<string, unknown> & { id: string; case_number: string; internal_status: string; case_owner_id: string | null };
 
