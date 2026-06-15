@@ -3905,6 +3905,14 @@ export type Database = {
           how_user_knows_counterparty: string
           how_user_knows_notes: string | null
           id: string
+          info_request_due_date: string | null
+          info_request_items: string[] | null
+          info_request_message: string | null
+          info_request_requested_at: string | null
+          info_request_requested_by: string | null
+          info_request_response_at: string | null
+          info_request_response_evidence_summary: string | null
+          info_request_response_message: string | null
           internal_status: string
           linked_organization_id: string | null
           permission_to_contact: boolean
@@ -3952,6 +3960,14 @@ export type Database = {
           how_user_knows_counterparty: string
           how_user_knows_notes?: string | null
           id?: string
+          info_request_due_date?: string | null
+          info_request_items?: string[] | null
+          info_request_message?: string | null
+          info_request_requested_at?: string | null
+          info_request_requested_by?: string | null
+          info_request_response_at?: string | null
+          info_request_response_evidence_summary?: string | null
+          info_request_response_message?: string | null
           internal_status?: string
           linked_organization_id?: string | null
           permission_to_contact: boolean
@@ -3999,6 +4015,14 @@ export type Database = {
           how_user_knows_counterparty?: string
           how_user_knows_notes?: string | null
           id?: string
+          info_request_due_date?: string | null
+          info_request_items?: string[] | null
+          info_request_message?: string | null
+          info_request_requested_at?: string | null
+          info_request_requested_by?: string | null
+          info_request_response_at?: string | null
+          info_request_response_evidence_summary?: string | null
+          info_request_response_message?: string | null
           internal_status?: string
           linked_organization_id?: string | null
           permission_to_contact?: boolean

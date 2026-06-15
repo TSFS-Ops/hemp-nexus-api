@@ -94,6 +94,8 @@ export const TIMELINE_ACTION_LABEL: Record<string, string> = {
   "facilitation_case.outcome_set": "Final outcome set",
   "facilitation_case.closed": "Case closed",
   "facilitation_case.cancelled_by_requester": "Cancelled by requester",
+  "facilitation_case.more_information_requested": "More information requested from requester",
+  "facilitation_case.more_information_submitted": "Requester submitted more information",
 };
 
 
