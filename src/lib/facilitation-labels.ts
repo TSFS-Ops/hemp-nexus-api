@@ -85,17 +85,13 @@ export const ESCALATION_STATUS_LABEL: Record<string, string> = {
 export const TIMELINE_ACTION_LABEL: Record<string, string> = {
   "facilitation_case.created": "Case created",
   "facilitation_case.assigned": "Owner assigned",
-  "facilitation_case.unassigned": "Owner removed",
   "facilitation_case.status_changed": "Status changed",
   "facilitation_case.note_added": "Internal note added",
   "facilitation_case.evidence_uploaded": "Evidence uploaded",
-  "facilitation_case.evidence_removed": "Evidence removed",
   "facilitation_case.closed": "Case closed",
-  "facilitation_case.reopened": "Case reopened",
-  "facilitation_case.escalated": "Escalated to compliance",
-  "facilitation_case.escalation_resolved": "Escalation resolved",
-  "facilitation_case.outreach_sent": "Outreach sent",
+  "facilitation_case.cancelled_by_requester": "Cancelled by requester",
 };
+
 
 export function timelineActionLabel(action: string): string {
   return (
