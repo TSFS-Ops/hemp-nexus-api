@@ -48,7 +48,6 @@ type TaskRow = {
   id: string;
   kind: string;
   status: string;
-  title: string | null;
   description: string | null;
   proposed_match_id: string | null;
   match_id: string | null;
