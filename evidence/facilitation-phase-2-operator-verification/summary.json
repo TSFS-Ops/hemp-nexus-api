@@ -91,8 +91,8 @@
     {
       "id": "EMB-6",
       "check": "no raw event codes in Timeline; no role tokens in Assign owner dropdown; no raw enum keys in outcome picker",
-      "status": "FIX APPLIED — RE-CAPTURE PENDING",
-      "evidence": "src/lib/facilitation-labels.ts now exports TIMELINE_ACTION_LABEL/timelineActionLabel, OUTCOME_LABEL/outcomeLabel, ROLE_LABEL/roleLabel/rolesLabel. FacilitationCaseDrawer Timeline, OwnerPicker and outcome Select use these maps. Raw codes preserved in audit payloads only.",
+      "status": "RESOLVED (live-verified)",
+      "evidence": "src/lib/facilitation-labels.ts exports TIMELINE_ACTION_LABEL/timelineActionLabel, OUTCOME_LABEL/outcomeLabel, ROLE_LABEL/roleLabel/rolesLabel. FacilitationCaseDrawer Timeline, OwnerPicker, and Outcome Select use these maps. to_status falls back through INTERNAL_STATUS_LABELS → OUTCOME_LABEL → humanised text so 'closed_admin' renders as 'Closed by admin'. Re-screenshot 02 (2026-06-15T09:32Z) confirms a clean UI.",
       "smallest_safe_fix": "Re-capture screenshot 02 once the preview rebuilds to confirm Timeline reads 'Case created → New' / 'Evidence uploaded' / 'Case closed → Closed' and owner picker reads 'Platform admin' (not 'platform_admin').",
       "blocks_client_uat": false
     },
