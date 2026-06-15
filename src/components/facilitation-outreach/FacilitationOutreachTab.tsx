@@ -1,24 +1,9 @@
 /**
- * Phase 2 Step 4 — Facilitation Outreach drawer tab.
+ * Facilitation Outreach drawer tab.
  *
- * Mounted inside FacilitationCaseDrawer as the "Outreach" tab.
- *
- * Surfaces (HQ only — platform_admin and compliance_analyst):
- *   - Candidate list for the case (with gate-result chips returned by server)
- *   - Add-candidate form  (→ facilitation-outreach-candidate-add)
- *   - Per-candidate detail panel with:
- *       · Approved-template picker + email preview
- *       · Warn-acknowledgement checkboxes (driven by server gate result)
- *       · Manual single-recipient Send button (→ facilitation-outreach-send)
- *       · Compliance-escalation open  (platform_admin → facilitation-outreach-escalate)
- *       · Compliance-escalation resolve/reopen (compliance_analyst only
- *         → facilitation-outreach-escalation-resolve)
- *
- * The UI NEVER computes a gate decision client-side; it only renders the
- * server-returned result, reasons, and resulting send/escalation rows.
- *
- * No POI / WaD / match / token / credit / payment / poi_engagements /
- * compliance_cases mutation occurs from this surface.
+ * Operator surface for managing outreach candidates on a facilitation case.
+ * All gating decisions are made server-side; this tab only renders the
+ * results and offers the lifecycle controls each role is allowed to use.
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +16,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOutreachRoles } from "./useOutreachRoles";
+import {
+  outreachStateLabel,
+  GATE_RESULT_LABEL,
+  gateReasonLabel,
+  SEND_STATUS_LABEL,
+  ESCALATION_STATUS_LABEL,
+  friendlyFacilitationError,
+} from "@/lib/facilitation-labels";
 
 type Candidate = {
   id: string;
@@ -85,15 +78,15 @@ const stateBadge = (s: string) => {
     sent: "default",
     suppressed: "destructive",
   };
-  return <Badge variant={map[s] ?? "outline"}>{s}</Badge>;
+  return <Badge variant={map[s] ?? "outline"}>{outreachStateLabel(s)}</Badge>;
 };
 
 const gateResultBadge = (dnc: string | null, dup: string | null) => {
   // Render the server-stored chips. UI does NOT compute gate locally.
-  if (dnc === "block" || dup === "red") return <Badge variant="destructive">BLOCK</Badge>;
-  if (dnc === "warn" || dup === "amber") return <Badge variant="secondary">WARN</Badge>;
-  if (dnc === "clear" && dup === "green") return <Badge variant="default">ALLOW</Badge>;
-  return <Badge variant="outline">unevaluated</Badge>;
+  if (dnc === "block" || dup === "red") return <Badge variant="destructive">{GATE_RESULT_LABEL.block}</Badge>;
+  if (dnc === "warn" || dup === "amber") return <Badge variant="secondary">{GATE_RESULT_LABEL.warn}</Badge>;
+  if (dnc === "clear" && dup === "green") return <Badge variant="default">{GATE_RESULT_LABEL.allow}</Badge>;
+  return <Badge variant="outline">{GATE_RESULT_LABEL.unevaluated}</Badge>;
 };
 
 function genIdempotencyKey() {
@@ -147,7 +140,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       setCandidates((cands.data ?? []) as Candidate[]);
       setTemplates((tpls.data ?? []) as Template[]);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load outreach data");
+      toast.error(await friendlyFacilitationError(err, "Could not load outreach data. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -162,7 +155,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       setSends((s.data ?? []) as SendRow[]);
       setEscalations((e.data ?? []) as Escalation[]);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load candidate detail");
+      toast.error(await friendlyFacilitationError(err, "Could not load candidate details. Please try again."));
     }
   }, []);
 
@@ -214,11 +207,11 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
         },
       });
       if (error) throw error;
-      toast.success("Candidate registered. Gate evaluated server-side.");
+      toast.success("Candidate added. Contact checks have been run.");
       setAddEmail(""); setAddName(""); setAddOrg(""); setAddNote("");
       await loadAll();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Add candidate failed");
+      toast.error(await friendlyFacilitationError(err, "Could not register the candidate. Please check the details and try again."));
     } finally { setBusy(false); }
   };
 
@@ -236,13 +229,13 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       });
       if (error) throw error;
       const replay = (data as { replay?: boolean } | null)?.replay;
-      toast.success(replay ? "Idempotent replay (no new send)." : "Send dispatched.");
+      toast.success(replay ? "Already sent — no duplicate message was delivered." : "Message sent.");
       setIdemKey(genIdempotencyKey());
       setAckedWarns([]);
       await loadCandidateDetail(selectedCand.id);
       await loadAll();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Send failed");
+      toast.error(await friendlyFacilitationError(err, "The message could not be sent. Please try again."));
     } finally { setBusy(false); }
   };
 
@@ -263,13 +256,13 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       await loadCandidateDetail(selectedCand.id);
       await loadAll();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Escalate failed");
+      toast.error(await friendlyFacilitationError(err, "Could not open the compliance escalation. Please try again."));
     } finally { setBusy(false); }
   };
 
   const handleEscalationTransition = async (escalation_id: string, next_status: "resolved" | "open") => {
     if (!isComplianceAnalyst || !escNotes.trim()) {
-      toast.error("Notes are required.");
+      toast.error("Please add resolution notes before continuing.");
       return;
     }
     setBusy(true);
@@ -283,13 +276,13 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
       if (selectedCandidate) await loadCandidateDetail(selectedCandidate);
       await loadAll();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Escalation update failed");
+      toast.error(await friendlyFacilitationError(err, "Could not update the escalation. Please try again."));
     } finally { setBusy(false); }
   };
 
   if (rolesLoading) return <p className="text-sm text-slate-500">Loading…</p>;
   if (!isPlatformAdmin && !isComplianceAnalyst) {
-    return <p className="text-xs text-slate-500">Outreach surface restricted to platform_admin / compliance_analyst.</p>;
+    return <p className="text-xs text-slate-500">You do not have permission to use the outreach tools.</p>;
   }
 
   return (
@@ -323,8 +316,8 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
             <div><Label className="text-xs">Contact name</Label><Input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Optional" /></div>
             <div><Label className="text-xs">Source note</Label><Input value={addNote} onChange={(e) => setAddNote(e.target.value)} placeholder="Optional internal source" /></div>
           </div>
-          <Button onClick={handleAddCandidate} disabled={busy || !addOrg.trim() || !addEmail.trim()} variant="outline">Register candidate</Button>
-          <p className="text-[11px] text-slate-500">Gate (DNC + duplicate + suppression + escalation) is evaluated server-side on insert. UI never computes gate locally.</p>
+          <Button onClick={handleAddCandidate} disabled={busy || !addOrg.trim() || !addEmail.trim()} variant="outline">Add candidate</Button>
+          <p className="text-[11px] text-slate-500">The system checks contact restrictions, duplicates, suppression and open escalations before this candidate can be contacted.</p>
         </section>
       )}
 
@@ -357,39 +350,37 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
 
               {requiredAckCodes.length > 0 && (
                 <div className="space-y-1">
-                  <Label className="text-xs">Warn acknowledgements (server-required)</Label>
+                  <Label className="text-xs">Please acknowledge before sending</Label>
                   {requiredAckCodes.map((code) => (
-                    <label key={code} className="flex items-center gap-2 text-xs">
+                    <label key={code} className="flex items-start gap-2 text-xs">
                       <Checkbox checked={ackedWarns.includes(code)} onCheckedChange={(v) => setAckedWarns((cur) => v ? [...cur, code] : cur.filter((c) => c !== code))} />
-                      <span className="font-mono">{code}</span>
+                      <span>{gateReasonLabel(code)}</span>
                     </label>
                   ))}
                 </div>
               )}
 
-              <div>
-                <Label className="text-xs">Idempotency key</Label>
-                <div className="flex gap-2">
-                  <Input value={idemKey} onChange={(e) => setIdemKey(e.target.value)} className="font-mono text-xs" />
-                  <Button variant="outline" type="button" onClick={() => setIdemKey(genIdempotencyKey())}>New</Button>
-                </div>
-              </div>
+              {/* Duplicate-send guard: generated automatically per send; regenerated after success. */}
 
               <Button onClick={handleSend} disabled={sendDisabled}>
-                {isBlocked ? "Blocked by gate" : openEscalation ? "Blocked: open escalation" : "Send"}
+                {isBlocked
+                  ? "Cannot send — this candidate cannot be contacted"
+                  : openEscalation
+                    ? "Cannot send — resolve the open escalation first"
+                    : "Send message"}
               </Button>
-              <p className="text-[11px] text-slate-500">Server re-evaluates the gate immediately before dispatch. Block ⇒ 409, warn ⇒ acknowledgement required.</p>
+              <p className="text-[11px] text-slate-500">The system re-checks contact restrictions immediately before sending. If anything has changed, the send will be refused.</p>
 
               <div className="mt-2">
                 <h5 className="text-[11px] uppercase tracking-wider text-slate-500">Send history</h5>
                 <ul className="text-xs space-y-1 mt-1">
                   {sends.map((s) => (
                     <li key={s.id} className="flex items-center justify-between gap-2">
-                      <span className="font-mono">{s.subject}</span>
-                      <span className="flex items-center gap-2"><Badge variant={s.status === "sent" ? "default" : s.status === "failed" ? "destructive" : "outline"}>{s.status}</Badge><span className="text-slate-400">{new Date(s.created_at).toLocaleString()}</span></span>
+                      <span className="truncate">{s.subject}</span>
+                      <span className="flex items-center gap-2"><Badge variant={s.status === "sent" ? "default" : s.status === "failed" ? "destructive" : "outline"}>{SEND_STATUS_LABEL[s.status] ?? s.status}</Badge><span className="text-slate-400">{new Date(s.created_at).toLocaleString()}</span></span>
                     </li>
                   ))}
-                  {sends.length === 0 && <li className="text-slate-500">No sends yet.</li>}
+                  {sends.length === 0 && <li className="text-slate-500">No messages sent yet.</li>}
                 </ul>
               </div>
             </div>
@@ -400,7 +391,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
             <h4 className="text-xs uppercase tracking-wider text-slate-500">Compliance escalation</h4>
             {openEscalation ? (
               <div className="border rounded-sm p-2 bg-amber-50 text-xs space-y-1">
-                <div><Badge variant="destructive">OPEN</Badge> <span className="text-slate-500">{new Date(openEscalation.created_at).toLocaleString()}</span></div>
+                <div><Badge variant="destructive">{ESCALATION_STATUS_LABEL.open}</Badge> <span className="text-slate-500">{new Date(openEscalation.created_at).toLocaleString()}</span></div>
                 <div className="whitespace-pre-wrap">{openEscalation.reason}</div>
                 {isComplianceAnalyst && (
                   <div className="mt-2 space-y-2">
@@ -409,13 +400,13 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
                   </div>
                 )}
                 {isPlatformAdmin && !isComplianceAnalyst && (
-                  <p className="text-[11px] text-slate-500">platform_admin cannot resolve. Awaiting compliance_analyst.</p>
+                  <p className="text-[11px] text-slate-500">A compliance analyst must resolve this escalation before contact can resume.</p>
                 )}
               </div>
             ) : isPlatformAdmin ? (
               <div className="space-y-2">
                 <Textarea value={escReason} onChange={(e) => setEscReason(e.target.value)} placeholder="Reason for escalation" rows={2} />
-                <Button variant="outline" disabled={busy || !escReason.trim()} onClick={handleEscalate}>Open compliance escalation</Button>
+                <Button variant="outline" disabled={busy || !escReason.trim()} onClick={handleEscalate}>Raise compliance escalation</Button>
               </div>
             ) : (
               <p className="text-[11px] text-slate-500">No open escalation.</p>
@@ -425,7 +416,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
             <ul className="text-xs space-y-1 mt-2">
               {escalations.filter((e) => e.status !== "open").map((e) => (
                 <li key={e.id} className="border rounded-sm p-2">
-                  <div className="flex items-center gap-2"><Badge variant="outline">{e.status}</Badge><span className="text-slate-400">{new Date(e.created_at).toLocaleString()}</span></div>
+                  <div className="flex items-center gap-2"><Badge variant="outline">{ESCALATION_STATUS_LABEL[e.status] ?? e.status}</Badge><span className="text-slate-400">{new Date(e.created_at).toLocaleString()}</span></div>
                   <div className="text-slate-600 whitespace-pre-wrap mt-1">{e.reason}</div>
                   {e.resolution_notes && <div className="text-slate-500 mt-1">Notes: {e.resolution_notes}</div>}
                   {isComplianceAnalyst && e.status === "resolved" && (

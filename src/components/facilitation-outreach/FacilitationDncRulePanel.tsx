@@ -19,6 +19,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOutreachRoles } from "./useOutreachRoles";
+import {
+  DNC_RULE_TYPE_LABEL,
+  DNC_SEVERITY_LABEL,
+  DNC_STATUS_LABEL,
+  friendlyFacilitationError,
+} from "@/lib/facilitation-labels";
 
 type DncRow = {
   id: string;
@@ -62,7 +68,7 @@ export const FacilitationDncRulePanel: React.FC = () => {
       if (error) throw error;
       setRows((data ?? []) as DncRow[]);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load DNC rules");
+      toast.error(await friendlyFacilitationError(err, "Could not load do-not-contact rules. Please try again."));
     } finally { setLoading(false); }
   }, []);
 
@@ -70,58 +76,58 @@ export const FacilitationDncRulePanel: React.FC = () => {
 
   const handleAdd = async () => {
     if (!canAdd) return;
-    if (!ruleValue.trim() || !ruleReason.trim()) { toast.error("Value and reason required."); return; }
+    if (!ruleValue.trim() || !ruleReason.trim()) { toast.error("Please fill in both the value and a reason."); return; }
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("facilitation-outreach-dnc-add", {
         body: { rule_type: ruleType, value: ruleValue.trim(), reason: ruleReason.trim() },
       });
       if (error) throw error;
-      toast.success("DNC rule added.");
+      toast.success("Do-not-contact rule added.");
       setRuleValue(""); setRuleReason("");
       await load();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Add failed");
+      toast.error(await friendlyFacilitationError(err, "Could not add the rule. Please try again."));
     } finally { setBusy(false); }
   };
 
   const handleRevoke = async (id: string) => {
     if (!isComplianceAnalyst) return;
     const reason = (revokeReason[id] ?? "").trim();
-    if (!reason) { toast.error("Revoke reason required."); return; }
+    if (!reason) { toast.error("Please add a reason before revoking."); return; }
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("facilitation-outreach-dnc-revoke", {
         body: { rule_id: id, reason },
       });
       if (error) throw error;
-      toast.success("DNC rule revoked.");
+      toast.success("Do-not-contact rule revoked.");
       setRevokeReason((r) => ({ ...r, [id]: "" }));
       await load();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Revoke failed");
+      toast.error(await friendlyFacilitationError(err, "Could not revoke the rule. Please try again."));
     } finally { setBusy(false); }
   };
 
   return (
     <div className="space-y-3">
-      <header className="flex items-center justify-between">
+      <header className="space-y-1">
         <h3 className="font-medium">Do-not-contact rules</h3>
-        <p className="text-[11px] text-slate-500 font-mono">facilitation-outreach-dnc-add · facilitation-outreach-dnc-revoke</p>
+        <p className="text-[11px] text-slate-500">Add an entry here to prevent the platform from contacting a specific email address, email domain or organisation. Email and email-domain entries block all outreach; organisation entries trigger a warning that must be acknowledged before sending.</p>
       </header>
 
       {canAdd && (
         <div className="border rounded-sm p-3 space-y-2 text-sm">
-          <h4 className="text-xs uppercase tracking-wider text-slate-500">Add DNC rule</h4>
+          <h4 className="text-xs uppercase tracking-wider text-slate-500">Add a rule</h4>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <Label className="text-xs">Type</Label>
+              <Label className="text-xs">What to block</Label>
               <Select value={ruleType} onValueChange={(v) => setRuleType(v as RuleType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="email">Email (block)</SelectItem>
-                  <SelectItem value="email_domain">Email domain (block)</SelectItem>
-                  <SelectItem value="org_name">Org name (warn)</SelectItem>
+                  <SelectItem value="email">{DNC_RULE_TYPE_LABEL.email} (blocks contact)</SelectItem>
+                  <SelectItem value="email_domain">{DNC_RULE_TYPE_LABEL.email_domain} (blocks contact)</SelectItem>
+                  <SelectItem value="org_name">{DNC_RULE_TYPE_LABEL.org_name} (warning only)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -144,12 +150,12 @@ export const FacilitationDncRulePanel: React.FC = () => {
           <li key={r.id} className="border rounded-sm px-3 py-2 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="font-mono text-xs truncate">{r.rule_type} · {r.value_norm}</div>
+                <div className="text-xs truncate"><span className="text-slate-500">{DNC_RULE_TYPE_LABEL[r.rule_type] ?? r.rule_type}:</span> {r.value_norm}</div>
                 <div className="text-[11px] text-slate-500 truncate">{r.reason}</div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Badge variant={r.match_severity === "block" ? "destructive" : "secondary"}>{r.match_severity}</Badge>
-                <Badge variant={r.status === "active" ? "default" : "outline"}>{r.status}</Badge>
+                <Badge variant={r.match_severity === "block" ? "destructive" : "secondary"}>{DNC_SEVERITY_LABEL[r.match_severity] ?? r.match_severity}</Badge>
+                <Badge variant={r.status === "active" ? "default" : "outline"}>{DNC_STATUS_LABEL[r.status] ?? r.status}</Badge>
               </div>
             </div>
             {isComplianceAnalyst && r.status === "active" && (
@@ -165,7 +171,7 @@ export const FacilitationDncRulePanel: React.FC = () => {
             )}
           </li>
         ))}
-        {!loading && rows.length === 0 && <li className="text-xs text-slate-500">No DNC rules registered.</li>}
+        {!loading && rows.length === 0 && <li className="text-xs text-slate-500">No do-not-contact rules.</li>}
       </ul>
     </div>
   );

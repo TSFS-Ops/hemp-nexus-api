@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useOutreachRoles } from "./useOutreachRoles";
+import { TEMPLATE_STATUS_LABEL, friendlyFacilitationError } from "@/lib/facilitation-labels";
 
 type Template = {
   id: string;
@@ -47,7 +48,7 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
       if (error) throw error;
       setRows((data ?? []) as Template[]);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load templates");
+      toast.error(await friendlyFacilitationError(err, "Could not load the templates. Please try again."));
     } finally { setLoading(false); }
   }, []);
 
@@ -56,26 +57,26 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
   const transition = async (tpl: Template, next_status: "approved" | "archived") => {
     if (!isPlatformAdmin) return;
     const reason = (reasonById[tpl.id] ?? "").trim();
-    if (!reason) { toast.error("Reason required."); return; }
+    if (!reason) { toast.error("Please add a reason before continuing."); return; }
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("facilitation-outreach-template-status", {
         body: { template_id: tpl.id, next_status, reason },
       });
       if (error) throw error;
-      toast.success(`Template ${next_status}.`);
+      toast.success(next_status === "approved" ? "Template approved." : "Template archived.");
       setReasonById((r) => ({ ...r, [tpl.id]: "" }));
       await load();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Transition failed");
+      toast.error(await friendlyFacilitationError(err, "Could not update the template. Please try again."));
     } finally { setBusy(false); }
   };
 
   return (
     <div className="space-y-3">
-      <header className="flex items-center justify-between">
-        <h3 className="font-medium">Outreach template registry</h3>
-        <p className="text-[11px] text-slate-500 font-mono">facilitation-outreach-template-status</p>
+      <header className="space-y-1">
+        <h3 className="font-medium">Outreach email templates</h3>
+        <p className="text-[11px] text-slate-500">Only approved templates can be used to contact a candidate. Archived templates are kept for record but cannot be used.</p>
       </header>
       {loading && <p className="text-xs text-slate-500">Loading…</p>}
       <ul className="space-y-2">
@@ -84,9 +85,8 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="font-medium truncate">{t.name} <span className="text-slate-400 text-xs">v{t.version}</span></div>
-                <div className="font-mono text-[11px] text-slate-500 truncate">{t.slug}</div>
               </div>
-              <Badge variant={t.status === "approved" ? "default" : t.status === "archived" ? "outline" : "secondary"}>{t.status}</Badge>
+              <Badge variant={t.status === "approved" ? "default" : t.status === "archived" ? "outline" : "secondary"}>{TEMPLATE_STATUS_LABEL[t.status] ?? t.status}</Badge>
             </div>
             <div className="mt-2 text-xs">
               <div className="text-slate-500">Subject:</div>
@@ -111,7 +111,7 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
             )}
           </li>
         ))}
-        {!loading && rows.length === 0 && <li className="text-xs text-slate-500">No templates registered.</li>}
+        {!loading && rows.length === 0 && <li className="text-xs text-slate-500">No templates available.</li>}
       </ul>
     </div>
   );

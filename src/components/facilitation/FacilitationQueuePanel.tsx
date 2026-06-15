@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { INTERNAL_STATUSES, INTERNAL_STATUS_LABELS, type FacilitationInternalStatus } from "@/lib/facilitation-case-state";
 import { FacilitationCaseDrawer } from "@/components/facilitation/FacilitationCaseDrawer";
+import { friendlyFacilitationError } from "@/lib/facilitation-labels";
 
 type Row = {
   id: string; case_number: string; internal_status: FacilitationInternalStatus;
@@ -39,7 +40,7 @@ export const FacilitationQueuePanel: React.FC = () => {
       });
       if (error) throw error;
       setRows(((data as { cases: Row[] }).cases) ?? []);
-    } catch (err: unknown) { toast.error(err instanceof Error ? err.message : "Load failed"); }
+    } catch (err: unknown) { toast.error(await friendlyFacilitationError(err, "Could not load facilitation cases. Please try again.")); }
     finally { setLoading(false); }
   }, [status, urgency, q, assignedToMe]);
 

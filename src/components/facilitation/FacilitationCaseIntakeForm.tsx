@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { BackButton } from "@/components/BackButton";
+import { friendlyFacilitationError } from "@/lib/facilitation-labels";
 
 export const FacilitationCaseIntakeForm: React.FC = () => {
   const [params] = useSearchParams();
@@ -86,7 +87,7 @@ export const FacilitationCaseIntakeForm: React.FC = () => {
       toast.success("Facilitation case submitted.");
       navigate(`/desk/facilitation/${created.id}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Submission failed";
+      const msg = await friendlyFacilitationError(err, "Could not submit. Please check the form and try again.");
       toast.error(msg);
     } finally {
       setSubmitting(false);
