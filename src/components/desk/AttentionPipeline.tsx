@@ -274,7 +274,7 @@ export function AttentionPipeline() {
                   onClick={() => navigate(item.href)}
                   className="shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md bg-[hsl(var(--emerald))] text-white text-xs font-semibold hover:bg-[hsl(var(--emerald))]/90 transition-colors"
                 >
-                  <span className="hidden sm:inline">Review &amp; Seal</span>
+                  <span className="hidden sm:inline">Review and seal</span>
                   <span className="sm:hidden">Review</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
