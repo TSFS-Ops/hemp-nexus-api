@@ -123,7 +123,7 @@ export function AiReviewWorkspace() {
           <StaleIntelTab />
         </TabsContent>
         <TabsContent value="analytics" className="mt-3">
-          <AnalyticsPlaceholder />
+          <AiAnalyticsTab />
         </TabsContent>
       </Tabs>
 
