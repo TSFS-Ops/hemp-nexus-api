@@ -801,7 +801,7 @@ type DncRule = {
   deactivated_at: string | null;
 };
 
-function DoNotContactPanel() {
+export function DoNotContactPanel() {
   const qc = useQueryClient();
   const [openAdd, setOpenAdd] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
