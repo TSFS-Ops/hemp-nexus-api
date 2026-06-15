@@ -32,7 +32,39 @@ const json = (status: number, body: unknown) =>
     headers: { "Content-Type": "application/json" },
   });
 
-const MAX_CANDIDATES = 25;
+const MAX_CANDIDATES_DEFAULT = 10; // Phase 2: hard cap of 10 results per run (was 25).
+const MAX_RUNS_PER_MATCH = 3;       // Phase 2: hard cap on AI runs per match.
+
+async function aiGatewayCallWithRetry(
+  body: unknown,
+  apiKey: string,
+): Promise<{ ok: true; data: any } | { ok: false; status: number; detail: string }> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (resp.ok) return { ok: true, data: await resp.json() };
+      if (attempt === 0 && (resp.status >= 500 || resp.status === 408 || resp.status === 429)) {
+        await new Promise((r) => setTimeout(r, 500));
+        continue;
+      }
+      return { ok: false, status: resp.status, detail: (await resp.text()).slice(0, 500) };
+    } catch (e: any) {
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 500));
+        continue;
+      }
+      return { ok: false, status: 599, detail: e?.message ?? "network error" };
+    }
+  }
+  return { ok: false, status: 599, detail: "unreachable" };
+}
 
 serve(async (req) => {
   const pre = handleCorsPreflight(req);
