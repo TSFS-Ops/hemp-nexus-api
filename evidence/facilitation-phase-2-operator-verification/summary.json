@@ -33,7 +33,7 @@
         "observed": "Timeline rows rendered raw event codes (facilitation_case.created → new, facilitation_case.evidence_uploaded, facilitation_case.closed → closed_admin). Assign owner dropdown showed 'Josh Kruger · platform_admin'. Final-outcome dropdown listed raw enum keys.",
         "class": "EMB-2/EMB-3 / raw enum + internal copy",
         "applied_fix": "Extended src/lib/facilitation-labels.ts with TIMELINE_ACTION_LABEL + timelineActionLabel(), OUTCOME_LABEL + outcomeLabel(), and ROLE_LABEL + roleLabel()/rolesLabel(). Drawer Timeline now renders 'Case created → New', 'Evidence uploaded', 'Case closed → Closed · Closed by admin'. OwnerPicker renders 'Platform admin' instead of 'platform_admin'. Final-outcome dropdown renders plain-English outcomes. Raw codes remain in audit logs/payloads only.",
-        "verified_live": "PENDING — requires re-capture of screenshot 02 once preview rebuild settles.",
+        "verified_live": "PASS (live) — screenshot 02 re-captured 2026-06-15T09:32Z. Timeline now reads 'Case created → New', 'Evidence uploaded', 'Case closed → Closed by admin'. OwnerPicker reads 'Josh Kruger · Platform admin'. No raw event codes, no raw outcome enum keys, and no raw role tokens visible.",
         "blocks_client_uat": false
       }
     ],
