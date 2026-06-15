@@ -45,11 +45,28 @@ const ACTIONS = [
   "assign",
   "reviewer_note",
   "confidence_override",
+  // ── Phase 3 additions ──────────────────────────────────────────────
+  "set_due_date",
+  "mark_duplicate",
+  "mark_not_relevant",
+  "set_feedback_reason",
+  "request_rerun",
+  "approve_for_client_view",
+  "approve_for_outreach",
+  "edit_payload",
 ] as const;
 type Action = (typeof ACTIONS)[number];
 
-const TERMINAL = new Set(["approved", "rejected", "archived"]);
+const TERMINAL = new Set(["approved", "approved_internal", "approved_client_view", "rejected", "archived", "expired", "closed"]);
 const CONFIDENCE = new Set(["low", "medium", "high"]);
+const ESCALATION_TARGETS = new Set(["verification", "wad", "kyb", "compliance"]);
+const FEEDBACK_REASONS = new Set([
+  "wrong_company", "wrong_country", "wrong_product", "wrong_counterparty_role",
+  "weak_source", "bad_contact", "dead_email", "duplicate",
+  "possible_compliance_concern", "poor_outreach_draft",
+  "not_commercially_relevant", "insufficient_evidence", "other",
+]);
+
 
 serve(async (req) => {
   const pre = handleCorsPreflight(req);
@@ -83,6 +100,13 @@ async function _handle(req: Request): Promise<Response> {
     const note: string | null = typeof body?.note === "string" ? body.note : null;
     const assigneeId: string | null = typeof body?.assignee_id === "string" ? body.assignee_id : null;
     const overrideLevel: string | null = typeof body?.confidence_override === "string" ? body.confidence_override : null;
+    // Phase 3 inputs
+    const dueAt: string | null = typeof body?.due_at === "string" ? body.due_at : null;
+    const feedbackReason: string | null = typeof body?.feedback_reason === "string" ? body.feedback_reason : null;
+    const escalationTarget: string | null = typeof body?.escalation_target === "string" ? body.escalation_target : null;
+    const editedPayload: Record<string, unknown> | null =
+      body?.edited_payload && typeof body.edited_payload === "object" ? body.edited_payload as Record<string, unknown> : null;
+
 
     // Load current row.
     const { data: row, error: loadErr } = await admin
@@ -96,9 +120,23 @@ async function _handle(req: Request): Promise<Response> {
     // Reject transitions out of terminal states (except archive of a non-archived row,
     // which we still permit). Once a match is approved/rejected/archived, only archive
     // remains as a follow-up admin action.
-    if (TERMINAL.has(row.status) && action !== "archive" && action !== "reviewer_note") {
+    // Actions allowed on terminal-state rows (approved/approved_internal,
+    // approved_client_view, archived, rejected, expired, closed). Everything
+    // else returns 409 if the row is already terminal.
+    const TERMINAL_ALLOWED: Action[] = [
+      "archive",
+      "reviewer_note",
+      "approve_for_client_view",
+      "approve_for_outreach",
+      "edit_payload",
+      "set_feedback_reason",
+      "set_due_date",
+      "assign",
+      "request_rerun",
+    ];
+    if (TERMINAL.has(row.status) && !TERMINAL_ALLOWED.includes(action)) {
       return json(409, {
-        error: `proposed_match is in terminal status '${row.status}'; no further decisions allowed`,
+        error: `proposed_match is in terminal status '${row.status}'; action '${action}' not allowed`,
       });
     }
 
@@ -106,6 +144,7 @@ async function _handle(req: Request): Promise<Response> {
     const patch: Record<string, unknown> = { updated_at: now };
     let auditAction: string;
     const auditExtra: Record<string, unknown> = { prior_status: row.status };
+
 
     switch (action) {
       case "approve":
@@ -135,12 +174,17 @@ async function _handle(req: Request): Promise<Response> {
         break;
       case "escalate":
         if (!reason) return json(400, { error: "reason is required for escalate" });
+        if (escalationTarget && !ESCALATION_TARGETS.has(escalationTarget)) {
+          return json(400, { error: `escalation_target must be one of: ${Array.from(ESCALATION_TARGETS).join(", ")}` });
+        }
         patch.status = "escalated";
         patch.escalation_required = true;
         patch.escalation_reason = reason;
         auditAction = "ai_review.proposed_match_escalated";
         auditExtra.reason = reason;
+        if (escalationTarget) auditExtra.escalation_target = escalationTarget;
         break;
+
       case "needs_more_research":
         patch.status = "needs_more_research";
         if (note) patch.reviewer_note = note;
@@ -176,8 +220,121 @@ async function _handle(req: Request): Promise<Response> {
         auditExtra.new_confidence = overrideLevel;
         auditExtra.reason = reason;
         break;
+      case "set_due_date":
+        if (!dueAt) return json(400, { error: "due_at (ISO timestamp) is required" });
+        if (Number.isNaN(Date.parse(dueAt))) return json(400, { error: "due_at must be a valid ISO timestamp" });
+        patch.due_at = dueAt;
+        auditAction = "ai_review.proposed_match_reviewed";
+        auditExtra.due_at = dueAt;
+        auditExtra.field = "due_at";
+        break;
+      case "mark_duplicate":
+        patch.status = "archived";
+        patch.archived_at = now;
+        patch.feedback_reason = "duplicate";
+        auditAction = "ai_review.proposed_match_archived";
+        auditExtra.feedback_reason = "duplicate";
+        auditExtra.reason = reason ?? "marked_duplicate";
+        break;
+      case "mark_not_relevant":
+        patch.status = "archived";
+        patch.archived_at = now;
+        patch.feedback_reason = "not_commercially_relevant";
+        auditAction = "ai_review.proposed_match_archived";
+        auditExtra.feedback_reason = "not_commercially_relevant";
+        auditExtra.reason = reason ?? "marked_not_relevant";
+        break;
+      case "set_feedback_reason":
+        if (!feedbackReason || !FEEDBACK_REASONS.has(feedbackReason)) {
+          return json(400, { error: `feedback_reason must be one of: ${Array.from(FEEDBACK_REASONS).join(", ")}` });
+        }
+        patch.feedback_reason = feedbackReason;
+        auditAction = "ai_review.proposed_match_reviewed";
+        auditExtra.feedback_reason = feedbackReason;
+        auditExtra.field = "feedback_reason";
+        break;
+      case "request_rerun":
+        if (!reason) return json(400, { error: "reason is required for request_rerun" });
+        // Audit-only: this does NOT directly call the AI source function.
+        // An admin separately clicks "Source counterparties" to actually rerun.
+        auditAction = "ai_review.rerun_requested";
+        auditExtra.reason = reason;
+        break;
+      case "approve_for_client_view": {
+        // Require prior approve. Snapshot approved_payload + flip client_visible.
+        const priorOk =
+          row.status === "approved" ||
+          row.status === "approved_internal" ||
+          row.status === "approved_client_view";
+        if (!priorOk) {
+          return json(409, {
+            error: "approve_for_client_view requires the proposal to be approved (internal) first",
+          });
+        }
+        patch.status = "approved_client_view";
+        patch.client_visible = true;
+        // Snapshot the approved payload from the current advisory fields.
+        patch.approved_payload = {
+          suggested_counterparty_name: row.suggested_counterparty_name,
+          counterparty_role: row.counterparty_role,
+          jurisdiction: row.jurisdiction,
+          sector_or_product_fit: row.sector_or_product_fit,
+          capacity_indicator: row.capacity_indicator,
+          prior_activity_summary: row.prior_activity_summary,
+          source_summary: row.source_summary,
+          match_rationale: row.match_rationale,
+          fit_label: row.fit_label,
+          confidence_level: row.confidence_override ?? row.confidence_level,
+          approved_at: now,
+          approved_by: userId,
+        };
+        patch.approved_at = patch.approved_at ?? now;
+        if (reason) auditExtra.reason = reason;
+        auditAction = "ai_review.proposed_match_approved_for_client_view";
+        break;
+      }
+      case "approve_for_outreach": {
+        const priorOk =
+          row.status === "approved" ||
+          row.status === "approved_internal" ||
+          row.status === "approved_client_view";
+        if (!priorOk) {
+          return json(409, {
+            error: "approve_for_outreach requires the proposal to be approved (internal) first",
+          });
+        }
+        // Audit-only state marker. Phase 5 owns the outreach draft state machine.
+        auditAction = "ai_review.proposed_match_approved_for_outreach";
+        if (reason) auditExtra.reason = reason;
+        break;
+      }
+      case "edit_payload": {
+        if (!editedPayload) return json(400, { error: "edited_payload (object) is required" });
+        // Snapshot original_payload on first edit.
+        if (!row.original_payload) {
+          patch.original_payload = {
+            suggested_counterparty_name: row.suggested_counterparty_name,
+            counterparty_role: row.counterparty_role,
+            jurisdiction: row.jurisdiction,
+            sector_or_product_fit: row.sector_or_product_fit,
+            capacity_indicator: row.capacity_indicator,
+            prior_activity_summary: row.prior_activity_summary,
+            source_summary: row.source_summary,
+            match_rationale: row.match_rationale,
+            fit_label: row.fit_label,
+            confidence_level: row.confidence_level,
+            snapshot_at: now,
+          };
+        }
+        patch.edited_payload = { ...editedPayload, edited_at: now, edited_by: userId };
+        auditAction = "ai_review.proposed_match_edited";
+        auditExtra.had_prior_edit = !!row.edited_payload;
+        if (reason) auditExtra.reason = reason;
+        break;
+      }
       default:
         return json(400, { error: "unsupported action" });
+
     }
 
     if (!AI_REVIEW_AUDIT_NAMES.includes(auditAction as never)) {

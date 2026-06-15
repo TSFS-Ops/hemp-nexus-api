@@ -46,7 +46,13 @@ const REQUIRED = [
   "ai_review.proposed_match_stale",
   "ai_review.proposed_match_expired",
   "ai_review.provider_failure_recorded",
+  // ── Phase 3 review-queue completeness ──────────────────────────────
+  "ai_review.proposed_match_approved_for_client_view",
+  "ai_review.proposed_match_approved_for_outreach",
+  "ai_review.proposed_match_edited",
+  "ai_review.rerun_requested",
 ];
+
 
 
 const SSOT_FILES = [
