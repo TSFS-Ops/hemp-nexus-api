@@ -1,8 +1,9 @@
 {
   "status": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
   "phase": "Facilitation Phase 2 — Outreach + DNC + Escalations",
-  "generated_at": "2026-06-15T09:10:00Z",
-  "scope": "Live single-role click-through performed by agent as the currently-logged-in platform_admin in the preview session. compliance_analyst and requester/trader roles remain OPERATOR-VERIFY-REQUIRED — agent cannot sign in/out of preview session as other identities without hijacking the user's session.",
+  "generated_at": "2026-06-15T10:05:00Z",
+  "scope": "Cosmetic UI surface is live-verified clean (EMB-1..EMB-6 resolved). No further UI-label fixes are required based on the latest live re-audit. Three operator-verification blockers remain: compliance_analyst live click-through, requester/trader live click-through, and platform_admin destructive flow against seeded UAT fixtures only.",
+  "ui_label_audit": "CLEAN (live-verified) — no raw enum codes, internal role tokens, edge-function slugs, or generic non-2xx error strings visible on any rendered Facilitation Phase 2 surface as of 2026-06-15T09:32Z.",
 
   "method_disclosure": {
     "platform_admin": "LIVE — driven via browser tool against /hq/facilitation with the user's currently-logged-in platform_admin account. Screenshots captured.",
@@ -123,5 +124,5 @@
   ],
 
   "verdict": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
-  "verdict_reason": "Live single-role pass confirms platform_admin UI surfaces render cleanly with prior EMB-1..EMB-4 fixes. EMB-5 is live-verified resolved. EMB-6 label-leak fix has been applied (timeline action labels, outcome labels, role labels); re-capture of the Triage screenshot is the only remaining task before the cosmetic surface is fully clean. Live click-throughs for compliance_analyst and requester/trader, plus destructive platform_admin flows against seeded fixtures, remain operator-driven and block CLIENT_UAT_READY."
+  "verdict_reason": "All cosmetic UI-label blockers (EMB-1..EMB-6) are resolved and live-verified clean. No further UI-label fixes are required. The three remaining blockers are operator-verification only: (1) compliance_analyst live click-through, (2) requester/trader live click-through, (3) platform_admin destructive end-to-end flow against seeded UAT fixtures only — destructive checks must NOT be run against live client or production-like data."
 }

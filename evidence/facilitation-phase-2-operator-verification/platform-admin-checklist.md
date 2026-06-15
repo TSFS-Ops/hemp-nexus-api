@@ -1,7 +1,11 @@
-# Platform admin checklist — Facilitation Phase 2
+# Platform admin checklist — Facilitation Phase 2 (destructive flow)
 
 Tick when verified live in a real preview session as a `platform_admin`.
 "PASS (live)" requires a corresponding screenshot in `./screenshots/`.
+
+> Use **seeded UAT fixtures only**. Do not run these against live client or production-like
+> data, and do not send real outreach to a real counterparty during verification unless
+> explicitly authorised.
 
 ## Access & navigation
 
@@ -10,7 +14,7 @@ Tick when verified live in a real preview session as a `platform_admin`.
 - [x] PASS (live) — Outreach tab is present and renders Candidates + Add candidate _(screenshot 03)_
 - [x] PASS (live) — Outreach email templates panel renders below the queue _(screenshot 04)_
 - [x] PASS (live) — Do-not-contact rules panel renders below the queue _(screenshot 04)_
-- [ ] OPERATOR-VERIFY — Case drawer subtitle is plain English (no `platform_admin / compliance_analyst` tokens) _(re-screenshot 02 after EMB-5 fix is live)_
+- [x] PASS (live) — Case drawer subtitle, Timeline, OwnerPicker, and outcome picker are all plain English (no raw enum codes, no role tokens) _(screenshot 02, re-captured post EMB-6)_
 
 ## Template lifecycle
 
