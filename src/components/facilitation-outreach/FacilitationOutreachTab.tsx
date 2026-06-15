@@ -207,7 +207,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
         },
       });
       if (error) throw error;
-      toast.success("Candidate registered. Gate evaluated server-side.");
+      toast.success("Candidate added. Contact checks have been run.");
       setAddEmail(""); setAddName(""); setAddOrg(""); setAddNote("");
       await loadAll();
     } catch (err: unknown) {
