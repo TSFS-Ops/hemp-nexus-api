@@ -1,5 +1,5 @@
 /**
- * Match document upload permission — single source of truth.
+ * Match document upload permission - single source of truth.
  *
  * This is the canonical evaluator that BOTH the UI gate (the "not a
  * participant" panel in `MatchDocuments`) AND the server-side audit logger

@@ -1,5 +1,5 @@
 /**
- * OPS-010 — HQ → Demo Workspaces admin panel.
+ * OPS-010 - HQ → Demo Workspaces admin panel.
  *
  * Platform-admin-only. Lists existing demo workspaces, supports create /
  * reset / archive. All mutations call the dedicated admin edge functions
@@ -100,7 +100,7 @@ export function AdminDemoWorkspacesPanel() {
         <div>
           <h3 className="text-lg font-semibold">Demo Workspaces</h3>
           <p className="text-sm text-muted-foreground">
-            OPS-010 — controlled demo isolation. Zero outbound email, zero live payments, zero live compliance.
+            OPS-010 - controlled demo isolation. Zero outbound email, zero live payments, zero live compliance.
           </p>
         </div>
         <Button onClick={() => setOpen({ mode: "create" })}>New demo workspace</Button>
@@ -131,7 +131,7 @@ export function AdminDemoWorkspacesPanel() {
                 </td>
                 <td className="px-3 py-2 font-mono text-xs">{r.dataset_id}</td>
                 <td className="px-3 py-2 text-xs">{new Date(r.created_at).toLocaleString()}</td>
-                <td className="px-3 py-2 text-xs">{r.reset_at ? new Date(r.reset_at).toLocaleString() : "—"}</td>
+                <td className="px-3 py-2 text-xs">{r.reset_at ? new Date(r.reset_at).toLocaleString() : "-"}</td>
                 <td className="px-3 py-2 text-right space-x-2">
                   <Button size="sm" variant="outline" disabled={r.status === "archived"} onClick={() => setOpen({ mode: "reset", row: r })}>Reset</Button>
                   <Button size="sm" variant="destructive" disabled={r.status === "archived"} onClick={() => setOpen({ mode: "archive", row: r })}>Archive</Button>
@@ -160,7 +160,7 @@ export function AdminDemoWorkspacesPanel() {
             )}
             <div>
               <label className="text-sm font-medium">
-                Reason (≥ {OPS_010_MIN_REASON_LENGTH} chars) — recorded in audit log
+                Reason (≥ {OPS_010_MIN_REASON_LENGTH} chars) - recorded in audit log
               </label>
               <Textarea
                 value={reason}

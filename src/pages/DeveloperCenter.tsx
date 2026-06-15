@@ -39,7 +39,7 @@ function DeveloperHeader({ section, badge }: { section: string; badge?: string }
 }
 
 /**
- * IntroBox — short plain-English orientation. Lives only on the Keys tab
+ * IntroBox - short plain-English orientation. Lives only on the Keys tab
  * (the landing tab) so a brand-new visitor immediately knows what this
  * area is, and what it is not.
  */

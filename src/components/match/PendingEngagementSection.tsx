@@ -14,7 +14,7 @@
  * This card complements (it does NOT replace) the existing onboarding
  * timeline (`UnknownCounterpartyStatus`) and the detailed
  * `EngagementTracker`. Its job is to be the single, scannable header that
- * tells the user what state they're in and what — if anything — is missing.
+ * tells the user what state they're in and what - if anything - is missing.
  *
  * Hidden when:
  *   • there is no engagement row for this match, OR
@@ -39,7 +39,7 @@ import {
   getRenewedEngagementCreatedWording,
   type EngagementWording,
 } from "@/lib/engagement-wording";
-// Batch A — single source of truth for the contact-state label/tooltip
+// Batch A - single source of truth for the contact-state label/tooltip
 // shown above the missing-fields callout.
 import {
   contactBlockReason,
@@ -49,7 +49,7 @@ import {
   isOutreachBlocked,
   type ContactState,
 } from "@/lib/contact-completeness";
-// Batch E Phase 2 — neutral, initiator-facing copy for platform pauses.
+// Batch E Phase 2 - neutral, initiator-facing copy for platform pauses.
 // Source of truth lives in `src/lib/initiator-blocked-copy.ts` and is
 // shared with the admin Pending Engagements panel via the catalogue
 // SSOT in `src/lib/batch-d-events.ts`.
@@ -64,26 +64,26 @@ export interface PendingEngagementRow {
   counterparty_type: string | null;
   /**
    * Legacy fallback only. Canonical display name comes from the parent
-   * `matches` row (`buyer_name` / `seller_name`) — that is the field the
+   * `matches` row (`buyer_name` / `seller_name`) - that is the field the
    * user typed when drafting the trade and the field every other surface
    * (hero card, wizard, admin pipeline) reads.
    */
   counterparty_name?: string | null;
   counterparty_email: string | null;
   counterparty_org_id: string | null;
-  /** Batch A — counterparty contact labelling fields. */
+  /** Batch A - counterparty contact labelling fields. */
   contact_type?: "organisation" | "named_individual" | null;
   contact_name?: string | null;
   created_at?: string | null;
   contacted_at?: string | null;
   responded_at?: string | null;
   expires_at?: string | null;
-  /** Batch B Phase 5 — used to derive late-acceptance wording. */
+  /** Batch B Phase 5 - used to derive late-acceptance wording. */
   counterparty_response?: string | null;
   renewed_from_engagement_id?: string | null;
   late_acceptance_recorded_at?: string | null;
   /**
-   * Batch B Phase 8.5b — drives the F-B4 wording branch. One of:
+   * Batch B Phase 8.5b - drives the F-B4 wording branch. One of:
    *   • `reconfirmation_window_expired`
    *   • `initiator_declined_renewal`
    *   • `renewed_engagement_created`
@@ -95,10 +95,10 @@ export interface PendingEngagementRow {
   /** Reconfirmation deadline (ISO timestamp). */
   reconfirmation_window_expires_at?: string | null;
   /**
-   * Batch E Phase 2 — drives the initiator-facing "engagement paused for
+   * Batch E Phase 2 - drives the initiator-facing "engagement paused for
    * platform review" / "confirming counterparty record" banner. Returned
    * by `GET /poi-engagements/by-match/:matchId` (server `select("*")`).
-   * The banner ONLY consumes the operational/status fields — the raw
+   * The banner ONLY consumes the operational/status fields - the raw
    * `binding_candidates` payload is intentionally NOT read here so no
    * candidate-org identity can leak into initiator-facing UI.
    */
@@ -119,7 +119,7 @@ export interface PendingEngagementMatch {
 
 interface Props {
   engagement: PendingEngagementRow | null | undefined;
-  /** Parent match row — source of truth for the counterparty display name. */
+  /** Parent match row - source of truth for the counterparty display name. */
   match?: PendingEngagementMatch | null;
   /** True when the current viewer is the initiator (the POI creator). */
   isInitiator: boolean;
@@ -151,7 +151,7 @@ interface StatusMeta {
 /**
  * Copy is deliberately conservative: at the moment the soft-route creates
  * a Pending Engagement, NO email is dispatched and NO in-app notification
- * is queued — only a `poi_engagements` row and a `match.poi.soft_routed`
+ * is queued - only a `poi_engagements` row and a `match.poi.soft_routed`
  * audit entry. Outreach is performed later by a compliance reviewer from
  * the admin Pending Engagements panel. So we must not claim "Invitation
  * sent" or "We have emailed your counterparty" in the `pending` state.
@@ -163,7 +163,7 @@ function statusMeta(status: string | null): StatusMeta {
         label: "Pending Engagement created",
         tone: "pending",
         description:
-          "Counterparty details have been recorded. No invitation has been sent yet — our compliance desk will review this engagement and reach out to your counterparty manually. You will be notified when outreach occurs or when they respond.",
+          "Counterparty details have been recorded. No invitation has been sent yet - our compliance desk will review this engagement and reach out to your counterparty manually. You will be notified when outreach occurs or when they respond.",
         icon: Clock,
       };
     case "notification_sent":
@@ -223,13 +223,13 @@ function statusMeta(status: string | null): StatusMeta {
       };
     }
     case "disputed_being_named":
-      // CP-012 — explicit, non-fallback branch. The detailed CP-012 panel
+      // CP-012 - explicit, non-fallback branch. The detailed CP-012 panel
       // (MatchDisputeBeingNamedPanel) on the deal-desk match page is the
       // canonical surface for initiator / counterparty / admin messages
       // and the Release/Close controls. This card just needs an honest
       // header so it never falls into the "unrecognised state" branch.
       return {
-        label: "Dispute hold — platform admin review required",
+        label: "Dispute hold - platform admin review required",
         tone: "fail",
         description:
           "A dispute has been raised against this engagement. The trade is on dispute hold and cannot progress until an Izenzo platform admin releases or closes the dispute. See the Dispute hold panel above for details.",
@@ -297,7 +297,7 @@ export function PendingEngagementSection({ engagement, match, isInitiator, isLoa
   }
 
   if (!engagement) return null;
-  // Hide once fully resolved AND linked — other surfaces own that story.
+  // Hide once fully resolved AND linked - other surfaces own that story.
   // Batch B Phase 9 F-B4 exception: when an expired row carries a recorded
   // late acceptance OR a `late_acceptance_resolution`, this card is the
   // ONLY surface that explains "initiator did not reconfirm / late
@@ -311,7 +311,7 @@ export function PendingEngagementSection({ engagement, match, isInitiator, isLoa
     !!engagement.late_acceptance_resolution;
   if (terminal && engagement.counterparty_org_id && !hasLateAcceptanceHistory) return null;
 
-  // Batch B Phase 5 + Phase 8.5b — overlay wording-engine output for
+  // Batch B Phase 5 + Phase 8.5b - overlay wording-engine output for
   // late-acceptance semantics so an expired row that already carries a
   // recorded late acceptance is never described as a flat dead window,
   // AND so a row whose reconfirmation window has elapsed is no longer
@@ -367,7 +367,7 @@ export function PendingEngagementSection({ engagement, match, isInitiator, isLoa
 
   // Identify any missing counterparty fields that would block / weaken outreach.
   const missingFields: { label: string; hint: string }[] = [];
-  // Derive display name from the parent match — that is the canonical
+  // Derive display name from the parent match - that is the canonical
   // source. Prefer whichever side is unregistered (no *_org_id). Fall back
   // to the engagement row only if the match is missing both names.
   const buyerName = (match?.buyer_name || "").trim();
@@ -394,7 +394,7 @@ export function PendingEngagementSection({ engagement, match, isInitiator, isLoa
       hint: "Without an email, our compliance desk has no address to reach out to.",
     });
   }
-  // NOTE: an unlinked counterparty organisation is INFORMATIONAL — the
+  // NOTE: an unlinked counterparty organisation is INFORMATIONAL - the
   // dl row above already shows "Awaiting signup", and the server-side
   // outreach gate (`getContactState`) does not require a linked org. It
   // used to be listed under "items still required", but that confused
@@ -459,7 +459,7 @@ export function PendingEngagementSection({ engagement, match, isInitiator, isLoa
             <Badge variant="outline" className={cn("text-xs", badgeClass)}>
               {meta.label}
             </Badge>
-            {/* Batch A — canonical contact-state badge so the initiator can
+            {/* Batch A - canonical contact-state badge so the initiator can
                 see at a glance whether the recorded contact is sufficient
                 for the compliance desk to send outreach. */}
             {(() => {
@@ -496,7 +496,7 @@ export function PendingEngagementSection({ engagement, match, isInitiator, isLoa
 
       <CardContent className="space-y-5">
         {(() => {
-          // ── Batch E Phase 2 — initiator-facing platform-pause banner ──
+          // ── Batch E Phase 2 - initiator-facing platform-pause banner ──
           // Surfaces the canonical "engagement paused" reasons (binding
           // review pending / disputed being named) using neutral copy
           // from `getInitiatorBlockedCopy`. Contact-incomplete pauses
@@ -526,7 +526,7 @@ export function PendingEngagementSection({ engagement, match, isInitiator, isLoa
             ? getInitiatorBlockedCopy(blockedCode)
             : null;
 
-          // Contact-incomplete banner — only when an engagement is still
+          // Contact-incomplete banner - only when an engagement is still
           // pre-acceptance and the contact is unusable.
           const cs: ContactState = getContactState(
             {
@@ -615,7 +615,7 @@ export function PendingEngagementSection({ engagement, match, isInitiator, isLoa
               Recorded
             </dt>
             <dd className="text-foreground tabular-nums">
-              {formatTs(engagement.created_at) || "—"}
+              {formatTs(engagement.created_at) || "-"}
             </dd>
           </div>
           {engagement.contacted_at && (

@@ -53,7 +53,7 @@ export async function parseEdgeError(error: unknown): Promise<ParsedEdgeError> {
         body = (await (reader as Response).json()) as typeof body;
       }
     } catch {
-      // ignore parse errors — fall through to message
+      // ignore parse errors - fall through to message
     }
   }
 

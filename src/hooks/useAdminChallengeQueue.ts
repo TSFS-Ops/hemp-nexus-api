@@ -1,5 +1,5 @@
 /**
- * useAdminChallengeQueue — Phase 3C
+ * useAdminChallengeQueue - Phase 3C
  *
  * Platform-admin queue read. Relies on the `challenges_select_admins` RLS
  * policy (platform_admin sees all rows via `is_admin()`). No new server

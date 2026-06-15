@@ -90,7 +90,7 @@ export function AdminTokenManagement() {
    *   4. Writes admin_audit_logs for every attempt (success and failure).
    *
    * The client therefore no longer writes to token_ledger or admin_audit_logs
-   * directly — the edge function and atomic_token_credit own those writes.
+   * directly - the edge function and atomic_token_credit own those writes.
    */
   const handleTopUp = async () => {
     if (!selectedOrg || !topUpAmount) return;

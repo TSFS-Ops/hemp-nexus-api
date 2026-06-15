@@ -1,5 +1,5 @@
 /**
- * client-analytics — minimal first-party event log for UI interactions.
+ * client-analytics - minimal first-party event log for UI interactions.
  *
  * This is intentionally a *stand-in* for a heavier analytics SDK: there
  * is no PostHog / Segment / GA in this app, and we don't want to ship
@@ -26,7 +26,7 @@ export const CLIENT_ANALYTICS_DOM_EVENT = "izenzo:client-analytics";
 /**
  * Surface where a clipboard interaction originated. Lets us tell apart
  * the inline "Copy" button on the persistent error alert from the
- * "Copy Ref" action button on the transient sonner toast — both write
+ * "Copy Ref" action button on the transient sonner toast - both write
  * the same value but their UX flavour is different.
  */
 export type CopyRefSurface = "alert" | "toast";
@@ -84,7 +84,7 @@ interface CounterEntry {
   total: number;
   /** ISO timestamp of most recent occurrence. */
   lastAt: string;
-  /** Last payload we saw — handy when triaging from the debug panel. */
+  /** Last payload we saw - handy when triaging from the debug panel. */
   lastPayload: Record<string, unknown>;
 }
 
@@ -105,7 +105,7 @@ function writeState(state: CountersState): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
-    /* storage full / disabled — best-effort */
+    /* storage full / disabled - best-effort */
   }
 }
 
@@ -119,7 +119,7 @@ function bucketKey(event: ClientAnalyticsEvent): string {
 }
 
 /**
- * Track a UI interaction. Safe to call from any render path — no-ops on
+ * Track a UI interaction. Safe to call from any render path - no-ops on
  * the server, swallows storage errors, never throws.
  */
 export function trackClientEvent(event: ClientAnalyticsEvent): void {
@@ -150,7 +150,7 @@ export function trackClientEvent(event: ClientAnalyticsEvent): void {
   );
 }
 
-/** Read the counter snapshot — for support / debug panels. */
+/** Read the counter snapshot - for support / debug panels. */
 export function getClientAnalyticsCounters(): CountersState {
   return readState();
 }

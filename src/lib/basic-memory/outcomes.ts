@@ -1,5 +1,5 @@
 /**
- * Basic Memory Record v1 — approved closed vocabularies.
+ * Basic Memory Record v1 - approved closed vocabularies.
  *
  * Single source of truth for the v1 trigger types, outcomes and reason
  * codes used by `public.basic_memory_records`. Mirrored verbatim in the
@@ -7,7 +7,7 @@
  * `scripts/check-basic-memory-vocab-drift.mjs` so the vocab cannot drift
  * between the TS layer, the DB and downstream UI panels.
  *
- * v1 scope is intentionally tiny — see audit doc and binding decisions.
+ * v1 scope is intentionally tiny - see audit doc and binding decisions.
  * Do NOT add payment/refund/credit/late-acceptance/cancelled-engagement
  * triggers, scoring, AI summaries or counterparty-visible outcomes here.
  */
@@ -44,7 +44,7 @@ export type BasicMemoryEnvironment =
   (typeof BASIC_MEMORY_ENVIRONMENTS)[number];
 
 /**
- * Human-readable labels — used by the HQ panel in a later batch. Kept
+ * Human-readable labels - used by the HQ panel in a later batch. Kept
  * here so wording lives next to the canonical codes.
  */
 export const BASIC_MEMORY_OUTCOME_LABELS: Record<BasicMemoryOutcome, string> = {

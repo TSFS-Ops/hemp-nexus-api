@@ -70,7 +70,7 @@ export function MatchHeroCard({ match, isSettled, engagementStatus }: MatchHeroC
   const isRevealed = true; // Names are always visible per client requirement
   const isUnilateral = matchType === "unilateral";
 
-  // UI-001: soft-route pending — see DealWizard / StateProgressionCard for
+  // UI-001: soft-route pending - see DealWizard / StateProgressionCard for
   // the matching SSOT. We compute it locally so the hero stays a leaf.
   const softRoutePending =
     currentState === "discovery" &&

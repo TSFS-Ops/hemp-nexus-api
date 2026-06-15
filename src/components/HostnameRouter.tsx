@@ -10,7 +10,7 @@ import Landing from "@/pages/Landing";
  * Hard-redirect (full page navigation) the current browser to the live
  * console host, preserving path, query, and hash. Used when traffic lands
  * on the public Mother Ship (izenzo.co.za / www.izenzo.co.za) or on the
- * reserved marketplace host (trade.izenzo.co.za) — per client direction
+ * reserved marketplace host (trade.izenzo.co.za) - per client direction
  * (David Davies, 2026-05-08), neither of those domains should serve a
  * holding page; both must funnel visitors to api.trade.izenzo.co.za so the
  * SEO presence and inbound traffic routes into the live product.
@@ -65,7 +65,7 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
 
   // Console domain only: if a signed-in user lands on "/", send them to the
   // dashboard. Unauthenticated visitors at "/" see the public Landing page
-  // (the former izenzo.co.za home), handled below — no redirect.
+  // (the former izenzo.co.za home), handled below - no redirect.
   useEffect(() => {
     if (hostType === 'console' && pathname === '/' && !authLoading && user) {
       navigate('/dashboard', { replace: true });
@@ -77,14 +77,14 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
     return <>{children}</>;
   }
 
-  // Reserved marketplace host (trade.izenzo.co.za) — per client direction
+  // Reserved marketplace host (trade.izenzo.co.za) - per client direction
   // (2026-05-08), redirect all traffic to the live console at
   // api.trade.izenzo.co.za, preserving path + query + hash. No holding page.
   if (hostType === 'marketplace') {
     return redirectToConsole();
   }
 
-  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za) — per client direction
+  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za) - per client direction
   // (2026-05-08), the under-construction holding page is retired so that
   // search-engine indexing of the apex domain is not damaged. All traffic
   // is hard-redirected to the live console.

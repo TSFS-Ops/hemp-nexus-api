@@ -6,7 +6,7 @@
  *   • true   →  amber  "MAINTENANCE MODE"
  *
  * Subscribes to realtime changes on the `admin_settings` row so the badge
- * flips the moment another admin toggles the switch — no refresh needed.
+ * flips the moment another admin toggles the switch - no refresh needed.
  *
  * Replaces the previous hard-coded "Operational" literal which contradicted
  * the DB during maintenance windows.

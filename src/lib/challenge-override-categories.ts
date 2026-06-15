@@ -1,10 +1,10 @@
 /**
- * Batch C — Admin override closure governance fields.
+ * Batch C - Admin override closure governance fields.
  *
  * Closed catalogue of reason categories that may be recorded against an
  * Admin override closure. Mirrors the validation list inside the
  * `platform_admin_break_glass_progress` RPC. Neutral, governance-led
- * wording — no fault/blame language.
+ * wording - no fault/blame language.
  */
 
 export const ADMIN_OVERRIDE_REASON_CATEGORIES = [
@@ -24,7 +24,7 @@ export const ADMIN_OVERRIDE_REASON_CATEGORY_LABELS: Record<
   string
 > = {
   documentation_corrected_commercial_confirmation_received:
-    "Documentation corrected — commercial confirmation received",
+    "Documentation corrected - commercial confirmation received",
   compliance_review_completed: "Compliance review completed",
   regulator_or_authority_instruction: "Regulator or authority instruction",
   platform_risk_review_completed: "Platform risk review completed",

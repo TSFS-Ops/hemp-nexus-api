@@ -5,10 +5,10 @@
  * engagements, dispatches, receipts and attestations.
  *
  * Alarms detected:
- *   A1 (critical) accepted_without_notification    — accepted, no dispatch ≤5 min
- *   A2 (high)     receipt_missing_attestation      — receipt exists, attestation missing
- *   A3 (high)     dispatch_stuck_pending           — dispatch pending >10 min
- *   A4 (medium)   delivered_without_message_id     — parity break
+ *   A1 (critical) accepted_without_notification    - accepted, no dispatch ≤5 min
+ *   A2 (high)     receipt_missing_attestation      - receipt exists, attestation missing
+ *   A3 (high)     dispatch_stuck_pending           - dispatch pending >10 min
+ *   A4 (medium)   delivered_without_message_id     - parity break
  *
  * One-click engagement trace jumps into the existing forensics surface
  * (?sub=forensics&trace=<engagement_id>) where admins can already inspect
@@ -209,7 +209,7 @@ export function AdminRiskAlarmsPanel() {
               Showing <span className="font-medium text-foreground">{filtered.length}</span> of {alarms.length} alarms · auto-refreshes every 60s
             </p>
             <div className="flex items-center gap-3">
-              {/* Batch T — UI-012: visible last-updated chip. */}
+              {/* Batch T - UI-012: visible last-updated chip. */}
               <p
                 className="font-mono text-[10px] tracking-wider uppercase text-muted-foreground"
                 data-testid="risk-alarms-last-updated"
@@ -217,7 +217,7 @@ export function AdminRiskAlarmsPanel() {
                 Last updated{" "}
                 {dataUpdatedAt
                   ? formatDistanceToNow(new Date(dataUpdatedAt), { addSuffix: true })
-                  : "—"}
+                  : "-"}
               </p>
               <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
                 <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
@@ -293,7 +293,7 @@ export function AdminRiskAlarmsPanel() {
                     </TableCell>
                     <TableCell className="text-xs">
                       <div className="font-mono text-foreground truncate max-w-[200px]">
-                        {a.counterparty_email ?? "—"}
+                        {a.counterparty_email ?? "-"}
                       </div>
                       {a.match_id && (
                         <div className="text-muted-foreground font-mono">

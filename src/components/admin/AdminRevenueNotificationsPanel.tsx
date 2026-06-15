@@ -1,7 +1,7 @@
 /**
  * AdminRevenueNotificationsPanel
  * ─────────────────────────────────────────────────────────────────────
- * Admin/auditor-only view of `public.revenue_notification_audit` — the
+ * Admin/auditor-only view of `public.revenue_notification_audit` - the
  * append-only log of every revenue email attempt fired to support@izenzo.co.za
  * by the poi-mint, credits-purchased, and wad-sealed hooks.
  *
@@ -172,7 +172,7 @@ export function AdminRevenueNotificationsPanel() {
           <CardTitle>Revenue notifications</CardTitle>
           <CardDescription>
             Every email attempt fired to support@izenzo.co.za when revenue is
-            recognised — POI mint, credit purchase, or trade certification.
+            recognised - POI mint, credit purchase, or trade certification.
             Investigate failures here when the support inbox looks quiet.
           </CardDescription>
         </CardHeader>
@@ -293,10 +293,10 @@ export function AdminRevenueNotificationsPanel() {
                       </TableCell>
                       <TableCell>{renderEventBadge(r.event_type)}</TableCell>
                       <TableCell className="font-mono text-xs max-w-[200px] truncate">
-                        {r.reference_id || "—"}
+                        {r.reference_id || "-"}
                       </TableCell>
                       <TableCell className="text-sm max-w-[180px] truncate">
-                        {r.org_name || (r.org_id ? r.org_id.slice(0, 8) + "…" : "—")}
+                        {r.org_name || (r.org_id ? r.org_id.slice(0, 8) + "…" : "-")}
                       </TableCell>
                       <TableCell>{renderStatus(r.status)}</TableCell>
                       <TableCell className="hidden lg:table-cell text-xs text-destructive max-w-[280px] truncate">
@@ -335,14 +335,14 @@ export function AdminRevenueNotificationsPanel() {
                 <span className="font-mono text-xs">{selected.recipient_email}</span>
               </DetailRow>
               <DetailRow label="Reference ID">
-                <span className="font-mono text-xs break-all">{selected.reference_id || "—"}</span>
+                <span className="font-mono text-xs break-all">{selected.reference_id || "-"}</span>
               </DetailRow>
               <DetailRow label="Idempotency key">
                 <span className="font-mono text-xs break-all">{selected.idempotency_key}</span>
               </DetailRow>
               <DetailRow label="Organisation">
                 <div>
-                  <div>{selected.org_name || "—"}</div>
+                  <div>{selected.org_name || "-"}</div>
                   {selected.org_id && (
                     <div className="font-mono text-[11px] text-muted-foreground">{selected.org_id}</div>
                   )}

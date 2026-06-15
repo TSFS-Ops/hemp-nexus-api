@@ -84,14 +84,14 @@ export interface ConsequenceResult<T> {
   /**
    * High-level error category so the UI can render tailored next-step hints
    * without having to introspect HTTP status codes itself.
-   *   - auth_required: no/expired session — user must sign in again
-   *   - client_error:  4xx other than 401 — user-correctable (validation, conflict, forbidden)
-   *   - server_error:  5xx — transient/infra; retry then escalate
+   *   - auth_required: no/expired session - user must sign in again
+   *   - client_error:  4xx other than 401 - user-correctable (validation, conflict, forbidden)
+   *   - server_error:  5xx - transient/infra; retry then escalate
    *   - network_error: status 0 (timeout/offline)
    *   - unknown:       anything else (non-Error throws, etc.)
    */
   errorKind?: "auth_required" | "client_error" | "server_error" | "network_error" | "unknown";
-  /** Raw HTTP status (when known) — useful for telemetry/tests. */
+  /** Raw HTTP status (when known) - useful for telemetry/tests. */
   errorStatus?: number;
 }
 

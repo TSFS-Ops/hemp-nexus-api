@@ -1,5 +1,5 @@
 /**
- * AdminComplianceHoldPanel — HQ Compliance sub-tab.
+ * AdminComplianceHoldPanel - HQ Compliance sub-tab.
  *
  * Lists active compliance_holds joined to operator_verification_requests
  * (Verification Queue). Allows platform admins to Release or Close a hold
@@ -51,7 +51,7 @@ function ageInDays(iso: string): number {
 }
 
 function holdLabel(t: string): string {
-  if (t.includes("sanctions_potential_match")) return "Sanctions — potential match";
+  if (t.includes("sanctions_potential_match")) return "Sanctions - potential match";
   if (t.includes("sanctions")) return "Sanctions screening";
   if (t.includes("verification_failed")) return "Verification failed";
   return "Verification refresh";

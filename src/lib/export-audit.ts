@@ -1,8 +1,8 @@
 /**
- * Batch O — AUD-012 export audit wrapper.
+ * Batch O - AUD-012 export audit wrapper.
  * DATA-010 Phase 1 (2026-05-23): `purpose` + `reason` are now required
  * at the helper boundary and validated server-side. Callers that do
- * not have a real reason MUST prompt the operator for one — never
+ * not have a real reason MUST prompt the operator for one - never
  * silently pass a fake reason.
  */
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,7 @@ export interface ExportAuditInput {
   format?: "csv" | "json";
   row_count: number;
   filters?: Record<string, unknown>;
-  /** Advisory only — server treats every admin export as sensitive. */
+  /** Advisory only - server treats every admin export as sensitive. */
   sensitive?: boolean;
   /** DATA-010 Phase 1: required. */
   purpose: ExportPurpose;
@@ -59,7 +59,7 @@ function validateInput(input: ExportAuditInput): void {
 }
 
 /**
- * Best-effort. Never blocks the download silently — but throws
+ * Best-effort. Never blocks the download silently - but throws
  * `ExportAuditValidationError` if purpose/reason are missing so the
  * caller cannot accidentally ship an unaudited export.
  */
@@ -85,7 +85,7 @@ export async function recordExportAudit(
     if (error) {
       const status = (error as { context?: { status?: number } })?.context?.status;
       // 403 with code MFA_REQUIRED comes through as a generic error from
-      // functions.invoke — surface aal_required when possible.
+      // functions.invoke - surface aal_required when possible.
       const message = error.message ?? "audit write failed";
       const aal = /mfa_required|aal/i.test(message) || status === 403;
       return { ok: false, error: message, aal_required: aal };

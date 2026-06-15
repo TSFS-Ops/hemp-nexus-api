@@ -49,7 +49,7 @@ function formatCountdown(expiresAt: string | null): { label: string; expired: bo
   if (!expiresAt) return null;
   const ms = new Date(expiresAt).getTime() - Date.now();
   if (!Number.isFinite(ms)) return null;
-  if (ms <= 0) return { label: "expired — bypasses are inert until you renew", expired: true };
+  if (ms <= 0) return { label: "expired - bypasses are inert until you renew", expired: true };
   const days = Math.floor(ms / (24 * 60 * 60 * 1000));
   const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
   const mins = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
@@ -180,7 +180,7 @@ export function TestModeBypassPanel() {
           >
             <div className="flex items-center gap-2 font-semibold text-sm">
               <AlertTriangle className="h-4 w-4" />
-              Production lockout active — every control below is inert
+              Production lockout active - every control below is inert
             </div>
             <p className="text-xs opacity-90">
               This deployment's environment tier is <code className="font-mono">{tier}</code>.
@@ -188,7 +188,7 @@ export function TestModeBypassPanel() {
               here, and <code className="font-mono">is_test_mode_bypass_enabled()</code> at the
               database layer returns <code className="font-mono">false</code> for every gate
               regardless of what's saved. To override a compliance gate in production, use the
-              break-glass / second-approval workflow (Stage 3 plan) — not test-mode bypass.
+              break-glass / second-approval workflow (Stage 3 plan) - not test-mode bypass.
             </p>
           </div>
         )}
@@ -198,7 +198,7 @@ export function TestModeBypassPanel() {
               <Label className="text-sm font-semibold">Master switch</Label>
               <p className="text-xs text-muted-foreground mt-1">
                 Off by default. When off, all per-gate flags below are ignored.
-                Enabling auto-stamps a {DEFAULT_TTL_DAYS}-day expiry — bypasses self-disable on that date.
+                Enabling auto-stamps a {DEFAULT_TTL_DAYS}-day expiry - bypasses self-disable on that date.
               </p>
             </div>
             <Switch
@@ -261,7 +261,7 @@ export function TestModeBypassPanel() {
                     enabled: true,
                     enabled_at: state.enabled_at ?? new Date().toISOString(),
                     expires_at: addDaysISO(DEFAULT_TTL_DAYS),
-                    note: state.note?.trim() ? state.note : "Demo preset — full bypass for client walkthrough",
+                    note: state.note?.trim() ? state.note : "Demo preset - full bypass for client walkthrough",
                   });
                 }}
               >
@@ -312,7 +312,7 @@ export function TestModeBypassPanel() {
             <p className="text-xs text-muted-foreground mb-3">
               The WaD function runs four hard-gates of its own that are <em>not</em> covered by the upstream
               bypasses above. Enable these to let the workflow reach the evidence pack step.
-              Every WaD issued under any of these flags is permanently stamped <strong>"TEST MODE — demo
+              Every WaD issued under any of these flags is permanently stamped <strong>"TEST MODE - demo
               grade only"</strong> on its certificate and in its evidence bundle hash.
             </p>
             <div className="space-y-4">
@@ -337,7 +337,7 @@ export function TestModeBypassPanel() {
           <Label htmlFor="bypass-note">Reason / ticket reference (audit trail)</Label>
           <Textarea
             id="bypass-note"
-            placeholder="e.g. INTEG-204 — testing evidence pack rendering before Onfido is live"
+            placeholder="e.g. INTEG-204 - testing evidence pack rendering before Onfido is live"
             value={state.note}
             onChange={(e) => setState({ ...state, note: e.target.value })}
             rows={2}

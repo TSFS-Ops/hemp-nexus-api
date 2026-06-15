@@ -1,14 +1,14 @@
 /**
- * DEC-006 — POI must not be described as binding before counterparty
+ * DEC-006 - POI must not be described as binding before counterparty
  * acceptance. Signed pre-acceptance and post-acceptance wording.
  */
 
 import { FORBIDDEN_PRE_ACCEPTANCE_TERMS, findForbiddenTerms } from "./forbidden-terms";
 
 export const DRAFT_POI_LABEL =
-  "Draft POI — initiator-generated intent record, awaiting counterparty confirmation.";
+  "Draft POI - initiator-generated intent record, awaiting counterparty confirmation.";
 
-export const ACCEPTED_POI_LABEL = "Accepted POI — mutual intent recorded.";
+export const ACCEPTED_POI_LABEL = "Accepted POI - mutual intent recorded.";
 
 export const POST_ACCEPTANCE_QUALIFIER =
   "Proof of mutual intention recorded. WaD, execution, and finality remain subject to the next required workflow steps.";

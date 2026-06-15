@@ -5,7 +5,7 @@
  * (waivers, T&Cs, multi-step forms). Guarantees on every viewport:
  *   • Header pinned at the top
  *   • Body scrolls (touch + scroll-wheel + keyboard)
- *   • Footer pinned at the bottom — Cancel / Confirm always reachable
+ *   • Footer pinned at the bottom - Cancel / Confirm always reachable
  *   • Respects iOS safe-area top + bottom
  *   • Width caps at max-w-lg, never exceeds the viewport
  *
@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 type ScrollableAlertDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Maximum width — defaults to max-w-lg. */
+  /** Maximum width - defaults to max-w-lg. */
   maxWidthClassName?: string;
   /** Optional className appended to the dialog content shell. */
   className?: string;

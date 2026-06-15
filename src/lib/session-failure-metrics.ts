@@ -1,5 +1,5 @@
 /**
- * session-failure-metrics — lightweight client-side counters for tracking
+ * session-failure-metrics - lightweight client-side counters for tracking
  * how often downloads / edge calls fail due to expired or unrecoverable
  * sessions.
  *
@@ -13,9 +13,9 @@
  * (and future telemetry shippers) can subscribe live without polling.
  *
  * Tracked codes:
- *   - UNAUTHORIZED         — server returned 401
- *   - REFRESH_FAILED       — supabase.auth.refreshSession() rejected
- *   - HEALTH_CHECK_FAILED  — background session ping failed
+ *   - UNAUTHORIZED         - server returned 401
+ *   - REFRESH_FAILED       - supabase.auth.refreshSession() rejected
+ *   - HEALTH_CHECK_FAILED  - background session ping failed
  */
 
 export type TrackedSessionFailureCode =
@@ -77,7 +77,7 @@ function writeRaw(state: SessionFailureCounters): void {
   try {
     window.localStorage.setItem(METRICS_KEY, JSON.stringify(state));
   } catch {
-    /* storage full / disabled — counters are best-effort */
+    /* storage full / disabled - counters are best-effort */
   }
 }
 
@@ -108,11 +108,11 @@ export function recordSessionFailure(
   bucket.lastContext = opts.context ?? bucket.lastContext;
   writeRaw(state);
 
-  // Dev console signal — easy to spot in support sessions.
+  // Dev console signal - easy to spot in support sessions.
   // eslint-disable-next-line no-console
   console.info(
     `[session-failure-metrics] ${code} (#${bucket.count})` +
-      (opts.context ? ` — ${opts.context}` : "") +
+      (opts.context ? ` - ${opts.context}` : "") +
       (opts.requestId ? ` [ref ${opts.requestId}]` : "")
   );
 
@@ -133,7 +133,7 @@ export function getSessionFailureCounters(): SessionFailureCounters {
   return readRaw();
 }
 
-/** Reset all counters — useful for QA, support sessions, or after a fix ships. */
+/** Reset all counters - useful for QA, support sessions, or after a fix ships. */
 export function resetSessionFailureCounters(): void {
   writeRaw(emptyCounters());
 }

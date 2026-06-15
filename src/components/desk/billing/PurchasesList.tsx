@@ -1,5 +1,5 @@
 /**
- * DEC-007 — Org-side purchases list with Request refund affordance.
+ * DEC-007 - Org-side purchases list with Request refund affordance.
  *
  * Lists completed token_purchases for the caller's org and exposes a
  * "Request refund" button per eligible row. Eligibility is intentionally
@@ -109,7 +109,7 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
           </CardTitle>
           <CardDescription>
             Recent credit purchases. You can request a refund on a completed
-            purchase below — your request will be reviewed before any credits
+            purchase below - your request will be reviewed before any credits
             are adjusted.
           </CardDescription>
         </CardHeader>
@@ -126,9 +126,9 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                 const blockedStatus = blockedMap.get(p.id);
                 const blockedLabel =
                   blockedStatus === "blocked_credits_used"
-                    ? "Refund unavailable — credits already used"
+                    ? "Refund unavailable - credits already used"
                     : blockedStatus === "blocked_expired"
-                      ? "Refund unavailable — outside window"
+                      ? "Refund unavailable - outside window"
                       : null;
                 const resolved = !hasPending ? resolvedMap.get(p.id) : undefined;
                 const resolvedLabel =
@@ -181,7 +181,7 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                           data-testid={`refund-resolved-${p.id}`}
                           title={
                             resolved?.decision_reason
-                              ? `${resolvedLabel} — ${resolved.decision_reason}`
+                              ? `${resolvedLabel} - ${resolved.decision_reason}`
                               : resolvedLabel
                           }
                         >

@@ -1,5 +1,5 @@
 /**
- * CP-015 — Email-change history evidence panel for /desk/match/:matchId.
+ * CP-015 - Email-change history evidence panel for /desk/match/:matchId.
  *
  * Renders the full Daniel-acceptance evidence whenever this match has
  * had a Pending Engagement cancelled via the "cancel for email change"
@@ -8,7 +8,7 @@
  * CP-015 user-facing message, the inactive-old-link wording, and the
  * blocked side-effects note.
  *
- * Pinned acceptance strings — do NOT rephrase. Pinned by
+ * Pinned acceptance strings - do NOT rephrase. Pinned by
  * src/tests/cp-015-match-email-change-history.test.tsx.
  */
 

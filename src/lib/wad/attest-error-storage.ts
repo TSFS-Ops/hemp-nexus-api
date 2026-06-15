@@ -1,7 +1,7 @@
 /**
  * Session-scoped persistence for the last attestation error per WaD.
  *
- * Why sessionStorage: the error is only useful within the same browser tab —
+ * Why sessionStorage: the error is only useful within the same browser tab -
  * a fresh tab or a closed/reopened browser shouldn't resurface a stale error,
  * but a page reload (e.g. after the user navigates away and back, or after an
  * unrelated refresh) should still show the last failure with its Reference ID
@@ -21,12 +21,12 @@ export interface PersistedAttestError {
   message: string;
   requestId?: string;
   kind?: PersistedAttestErrorKind;
-  /** Epoch ms — used to age out very old entries (defensive). */
+  /** Epoch ms - used to age out very old entries (defensive). */
   savedAt: number;
 }
 
 const KEY_PREFIX = "wad:attestError:";
-/** Drop entries older than 24h — past that they're rarely actionable. */
+/** Drop entries older than 24h - past that they're rarely actionable. */
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function storage(): Storage | null {
@@ -80,7 +80,7 @@ export function saveAttestError(
     };
     s.setItem(key(wadId), JSON.stringify(payload));
   } catch {
-    /* quota or disabled storage — best-effort only */
+    /* quota or disabled storage - best-effort only */
   }
 }
 

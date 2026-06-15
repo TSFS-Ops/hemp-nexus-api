@@ -41,8 +41,8 @@ const PACKS: Array<{
   saving?: string;
 }> = [
   // USD-native settlement (cutover 2026-05-01). Paystack charges
-  // Izenzo customers directly in USD — no FX conversion at checkout.
-  // Display only USD here — drift between this list and the backend
+  // Izenzo customers directly in USD - no FX conversion at checkout.
+  // Display only USD here - drift between this list and the backend
   // `TOKEN_PACKAGES` registry will charge the wrong amount.
   { id: "single", credits: 1, price: "$1", unit: "$1.00 / credit" },
   { id: "pack_10", credits: 10, price: "$10", unit: "$1.00 / credit" },
@@ -62,10 +62,10 @@ export function BillingOverview() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<CreditPackageId | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
-  // Reference picked up from the Paystack redirect query string — passed
+  // Reference picked up from the Paystack redirect query string - passed
   // down to PaymentReferenceStatus so it can prioritise polling that ref.
   const [activeReference, setActiveReference] = useState<string | null>(null);
-  // Per-pack error message — when the Paystack initialisation fails we
+  // Per-pack error message - when the Paystack initialisation fails we
   // surface the backend's reason inline beside the failing Purchase
   // button (with a Retry control), instead of just a transient toast.
   const [packErrors, setPackErrors] = useState<Partial<Record<CreditPackageId, string>>>({});
@@ -86,7 +86,7 @@ export function BillingOverview() {
     }
     setOrgId(profile.org_id);
     const [walletRes, ledgerRes] = await Promise.all([
-      // `token_balances` is the canonical wallet — it is what
+      // `token_balances` is the canonical wallet - it is what
       // `atomic_token_credit` (purchase) and `atomic_token_burn` (POI
       // mint) mutate. Reading from `token_wallets` here previously
       // caused a phantom-zero balance after a real top-up.
@@ -133,7 +133,7 @@ export function BillingOverview() {
             toast.success(
               result.alreadyCredited
                 ? "Credits already applied to your wallet."
-                : `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "—"}.`
+                : `${result.credits ?? ""} credit${result.credits === 1 ? "" : "s"} added. New balance: ${result.newBalance ?? "-"}.`
             );
             await refresh();
           } else {
@@ -233,7 +233,7 @@ export function BillingOverview() {
         onCredited={() => void refresh()}
       />
 
-      {/* ── DEC-007 — YOUR PURCHASES (refund request affordance) ── */}
+      {/* ── DEC-007 - YOUR PURCHASES (refund request affordance) ── */}
       <section className="mb-20">
         <PurchasesList orgId={orgId ?? undefined} />
       </section>
@@ -255,7 +255,7 @@ export function BillingOverview() {
           </div>
         )}
 
-        {/* Batch C — Fix 4: soft warning if a recent attempt is pending. */}
+        {/* Batch C - Fix 4: soft warning if a recent attempt is pending. */}
         <PendingPurchaseNotice orgId={orgId} />
 
         <div className="space-y-3">

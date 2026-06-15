@@ -222,7 +222,7 @@ export function GovernanceDocSubmit({ matchId, orgId }: GovernanceDocSubmitProps
       // Batch E Required Fix 3/4: storage object is now an orphan because
       // the governance-docs finaliser failed. The server cleans up its own
       // insert failures, but a session-dead error or a network blip never
-      // reaches the server — fall back to direct delete + enqueue.
+      // reaches the server - fall back to direct delete + enqueue.
       if (storageUploaded && storagePath) {
         if (isSessionDeadError(err)) {
           await cleanupOrphanUpload("match-documents", storagePath, "gov_finaliser_session_dead").catch(() => {});

@@ -1,5 +1,5 @@
 /**
- * DEC-005 — Legally safe language before counterparty acceptance.
+ * DEC-005 - Legally safe language before counterparty acceptance.
  *
  * Signed wording constants. Import these instead of hard-coding the strings.
  */
@@ -7,7 +7,7 @@
 import { FORBIDDEN_PRE_ACCEPTANCE_TERMS, findForbiddenTerms } from "./forbidden-terms";
 
 export const PENDING_ENGAGEMENT_LABEL =
-  "Pending Engagement — counterparty invited, awaiting confirmation.";
+  "Pending Engagement - counterparty invited, awaiting confirmation.";
 
 export const INITIATOR_PENDING_COPY =
   "Counterparty invitation sent. This trade remains pending until the counterparty confirms participation.";

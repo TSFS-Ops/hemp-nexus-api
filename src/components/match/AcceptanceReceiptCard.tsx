@@ -12,7 +12,7 @@
  *      receipt_acknowledged) and an acknowledgement row, closing the
  *      audit loop. This is the institutional answer to the
  *      "Daniel emailed support asking 'did the platinum trade work?'"
- *      failure mode — the platform now records, on-chain, that the
+ *      failure mode - the platform now records, on-chain, that the
  *      initiator personally saw and accepted the counterparty's signed
  *      acceptance.
  */
@@ -343,7 +343,7 @@ export function AcceptanceReceiptCard({ matchId }: AcceptanceReceiptCardProps) {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Your counterparty has signed and accepted. Please confirm you have seen
-                    this receipt — your acknowledgement closes the audit loop and is
+                    this receipt - your acknowledgement closes the audit loop and is
                     recorded against the attestation chain.
                   </p>
                   <Button size="sm" onClick={() => setConfirmOpen(true)}>

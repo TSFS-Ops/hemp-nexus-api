@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
- * SecurityTab — minimal TOTP MFA enrolment + challenge UI.
+ * SecurityTab - minimal TOTP MFA enrolment + challenge UI.
  *
  * Purpose
  * ───────
@@ -231,7 +231,7 @@ export function SecurityTab() {
             hasVerifiedFactor
               ? `Authenticator app enabled${
                   verifiedFactor!.friendly_name
-                    ? ` — ${verifiedFactor!.friendly_name}`
+                    ? ` - ${verifiedFactor!.friendly_name}`
                     : ""
                 }`
               : "Authenticator app not yet enabled"

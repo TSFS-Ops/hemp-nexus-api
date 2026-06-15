@@ -1,5 +1,5 @@
 /**
- * DATA-005 / DATA-010 Phase 2A — Shared export-lifecycle canonical audit
+ * DATA-005 / DATA-010 Phase 2A - Shared export-lifecycle canonical audit
  * SSOT (client mirror).
  *
  * Mirror file: supabase/functions/_shared/export-lifecycle-audit.ts
@@ -11,7 +11,7 @@
  * canonical names. Do NOT remove the legacy names in this patch.
  */
 
-/** DATA-005 — user (subject-access) export lifecycle. */
+/** DATA-005 - user (subject-access) export lifecycle. */
 export const DATA_005_AUDIT_ACTIONS = {
   request_received: "data.export_request_received",
   requester_verified: "data.export_requester_verified",
@@ -23,7 +23,7 @@ export const DATA_005_AUDIT_ACTIONS = {
   file_destroyed: "data.export_file_destroyed",
 } as const;
 
-/** DATA-010 — admin client-data export lifecycle. */
+/** DATA-010 - admin client-data export lifecycle. */
 export const DATA_010_AUDIT_ACTIONS = {
   requested: "data.admin_export_requested",
   approved: "data.admin_export_approved",
@@ -44,7 +44,7 @@ export const EXPORT_LIFECYCLE_CANONICAL_AUDIT_ACTIONS: readonly string[] =
     ...Object.values(DATA_010_AUDIT_ACTIONS),
   ]);
 
-/** Phase 1 legacy audit names — DO NOT remove until Phase 2B cutover. */
+/** Phase 1 legacy audit names - DO NOT remove until Phase 2B cutover. */
 export const DATA_005_LEGACY_AUDIT_ACTIONS: readonly string[] = Object.freeze([
   "data.user_export_requested",
   "data.user_export_scope_resolved",

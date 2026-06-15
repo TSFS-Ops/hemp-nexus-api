@@ -91,21 +91,21 @@ function DeskOverview() {
     <>
       <DeskDeniedBanner />
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-8 mb-8 sm:mb-12">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-8 mb-8 sm:mb-10">
         <div className="min-w-0">
-          <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
-            Commercial Trading
-          </p>
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 tracking-tight leading-tight break-words">
-            Your Deal Desk
+          <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight leading-tight">
+            Your Trade Desk
           </h1>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-xl">
+            Everything that needs your attention today, and every trade you are working on.
+          </p>
         </div>
         <button
           onClick={() => navigate("/desk/discover")}
-          className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" strokeWidth={2} />
-          Start New Trade
+          Start a new trade
         </button>
       </header>
 
@@ -211,12 +211,9 @@ export default function Desk() {
                   element={
                     <>
                       <header className="mb-8">
-                        <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-slate-400 mb-3">
-                          Commercial Trading
-                        </p>
-                        <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">My Deals</h1>
-                        <p className="mt-4 text-base text-slate-500 leading-relaxed max-w-xl">
-                          The complete archive of your trade activity, including drafts, active negotiations, and sealed Proofs of Intent.
+                        <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight">My Trades</h1>
+                        <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-xl">
+                          Every trade you have started, from early drafts to sealed agreements.
                         </p>
                       </header>
                       <MatchesList />

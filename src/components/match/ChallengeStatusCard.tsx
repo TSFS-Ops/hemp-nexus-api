@@ -1,5 +1,5 @@
 /**
- * ChallengeStatusCard — Phase 3B
+ * ChallengeStatusCard - Phase 3B
  *
  * Read-only summary of the latest challenge on a match. Renders only when
  * the latest row has one of:
@@ -26,7 +26,7 @@ const STATUS_LABELS: Record<ChallengeStatus, string> = {
   under_review: "Under review",
   outcome_recorded: "Outcome recorded",
   withdrawn: "Withdrawn",
-  closed_no_action: "Closed — no action",
+  closed_no_action: "Closed - no action",
 };
 
 const OUTCOME_LABELS: Record<string, string> = {
@@ -54,7 +54,7 @@ const VISIBLE_STATUSES = new Set<ChallengeStatus>([
 ]);
 
 function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString();
   } catch {
@@ -111,7 +111,7 @@ export function ChallengeStatusCard({ challenge }: ChallengeStatusCardProps) {
             <dd className="text-foreground">
               {challenge.raised_by_role
                 ? ROLE_LABELS[challenge.raised_by_role] ?? challenge.raised_by_role
-                : "—"}
+                : "-"}
             </dd>
           </div>
           <div>

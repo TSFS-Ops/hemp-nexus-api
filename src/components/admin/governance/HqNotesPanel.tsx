@@ -1,5 +1,5 @@
 /**
- * Batch B — HQ Notes panel.
+ * Batch B - HQ Notes panel.
  *
  * HQ-only. Calls the `hq-note-add` edge function to append a manual note
  * or a correction note. Never edits an existing event.
@@ -95,7 +95,7 @@ export function HqNotesPanel({
       toast({
         title: noteType === "correction" ? "Correction recorded" : "HQ note added",
         description: data?.deduplicated
-          ? "Duplicate detected — existing event reused."
+          ? "Duplicate detected - existing event reused."
           : "Appended to the Governance Record.",
       });
       setNote("");

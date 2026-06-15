@@ -52,7 +52,7 @@ export function AdminAuditLogs() {
         query = query.eq("entity_type", entityFilter);
       }
 
-      // Batch S Fix 8: group filter — prefix match on action.
+      // Batch S Fix 8: group filter - prefix match on action.
       // Ticket 2 (POI Gate Admin Visibility): adds a `poi_gate` pseudo-group
       // that surfaces blocked POI attempts (legitimacy + authority denials)
       // through a single filter without inventing new event types.
@@ -112,7 +112,7 @@ export function AdminAuditLogs() {
     const { promptExportReason } = await import("@/lib/export-purpose");
     const reason = promptExportReason("audit or regulatory review", "admin audit-logs export");
     if (!reason) {
-      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      toast.error("Export cancelled - a reason of at least 10 characters is required.");
       return;
     }
 
@@ -145,7 +145,7 @@ export function AdminAuditLogs() {
       log.entity_id || "",
       log.actor_user_id || log.actor_api_key_id || "",
       log.created_at,
-      // Batch O DATA-005: never dump raw metadata — strip ip/user_agent/tokens/secrets/etc.
+      // Batch O DATA-005: never dump raw metadata - strip ip/user_agent/tokens/secrets/etc.
       JSON.stringify(redactExportMetadata(log.metadata ?? {})),
     ]);
 
@@ -174,7 +174,7 @@ export function AdminAuditLogs() {
   };
 
 
-  // Ticket 2: POI Gate Admin Visibility — friendly labels + tone for the
+  // Ticket 2: POI Gate Admin Visibility - friendly labels + tone for the
   // blocked POI events emitted by the legitimacy + authority gates. Raw
   // event keys remain visible in the details dialog.
   const POI_GATE_LABELS: Record<string, { label: string; tone: string }> = {
@@ -517,14 +517,14 @@ export function AdminAuditLogs() {
 
 
 
-              {/* Ticket 2: POI Gate Admin Visibility — promote the most useful
+              {/* Ticket 2: POI Gate Admin Visibility - promote the most useful
                   gate fields to a labelled summary so HQ operators don't have
                   to read raw JSON to understand a blocked POI attempt. The
                   raw metadata block below remains visible for forensic use. */}
               {selectedLog.action && POI_GATE_LABELS[selectedLog.action] && selectedLog.metadata && (
                 <div className="rounded-md border border-rose-200 bg-rose-50 p-3 space-y-2">
                   <p className="text-sm font-semibold text-rose-900">
-                    Blocked POI attempt — {POI_GATE_LABELS[selectedLog.action].label}
+                    Blocked POI attempt - {POI_GATE_LABELS[selectedLog.action].label}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     {selectedLog.metadata.reason_code && (

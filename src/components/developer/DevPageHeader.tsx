@@ -7,7 +7,7 @@
  *   - "Who this page is for" (one line, plain English)
  *   - The viewer's role and API scope context (so an operator knows what
  *     they themselves are allowed to do here)
- *   - The support contact (api@izenzo.co.za) — surfaced on every tab,
+ *   - The support contact (api@izenzo.co.za) - surfaced on every tab,
  *     not only buried in the Integration Docs footer
  *
  * Keep this dumb and presentational. No data fetching, no side effects.

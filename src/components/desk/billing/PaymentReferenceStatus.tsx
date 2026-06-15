@@ -1,5 +1,5 @@
 /**
- * PaymentReferenceStatus — visible audit panel for Paystack checkout
+ * PaymentReferenceStatus - visible audit panel for Paystack checkout
  * references on the Billing page.
  *
  * Why this exists:
@@ -88,12 +88,12 @@ export function recordPaystackAttempt(attempt: PaystackAttempt): void {
     ].slice(0, MAX_TRACKED);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
-    /* localStorage unavailable — non-fatal */
+    /* localStorage unavailable - non-fatal */
   }
 }
 
 /**
- * Batch C — Fix 4: read recent Paystack attempts that look "pending"
+ * Batch C - Fix 4: read recent Paystack attempts that look "pending"
  * to the local device (started within the window, no ledger evidence
  * has reached this tab yet). Used to render a soft two-tab warning
  * near the Purchase CTAs.
@@ -142,7 +142,7 @@ interface PaymentReferenceStatusProps {
   /** Called when a poll/verify cycle credits a previously-pending row,
    *  so the parent can refresh wallet balance + ledger view. */
   onCredited?: () => void;
-  /** Most-recent reference picked up from the URL on this load — gets
+  /** Most-recent reference picked up from the URL on this load - gets
    *  priority polling treatment. */
   activeReference?: string | null;
 }
@@ -207,7 +207,7 @@ export function PaymentReferenceStatus({
     const seen = new Set<string>();
     const out: RowState[] = [];
 
-    // 1. Local attempts first — they preserve order + show "pending" UX
+    // 1. Local attempts first - they preserve order + show "pending" UX
     for (const a of attempts) {
       seen.add(a.reference);
       const ledgerRow = ledgerByRef.get(a.reference);
@@ -429,7 +429,7 @@ export function PaymentReferenceStatus({
                         +{row.credits}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground/60">—</span>
+                      <span className="text-muted-foreground/60">-</span>
                     )}
                     {typeof row.newBalance === "number" && (
                       <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
@@ -446,7 +446,7 @@ export function PaymentReferenceStatus({
                           hour: "2-digit",
                           minute: "2-digit",
                         })}`
-                      : "—"}
+                      : "-"}
                   </td>
                   <td className="px-5 py-4 text-right">
                     {isFinal ? (

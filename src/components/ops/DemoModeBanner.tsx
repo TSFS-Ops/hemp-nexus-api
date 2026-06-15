@@ -1,5 +1,5 @@
 /**
- * OPS-010 — Global demo-mode banner.
+ * OPS-010 - Global demo-mode banner.
  *
  * Shown whenever the signed-in user belongs to an organisation flagged
  * is_demo=true. Sits beneath any TestModeBanner. Copy is fixed and lives

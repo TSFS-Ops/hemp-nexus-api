@@ -17,7 +17,7 @@ type MatchEvidenceCountsResponse = {
     min_bundle_satisfied?: boolean;
     buyer_side_satisfied?: boolean;
     seller_side_satisfied?: boolean;
-    /** @deprecated waiver gate removed 2026-04-30 — always false. */
+    /** @deprecated waiver gate removed 2026-04-30 - always false. */
     waiver_required: boolean;
   };
 };

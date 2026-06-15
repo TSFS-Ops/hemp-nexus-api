@@ -51,7 +51,7 @@ const PHASE_LABEL: Record<string, string> = {
 };
 
 function shorten(value: string | null | undefined, head = 8): string {
-  if (!value) return "—";
+  if (!value) return "-";
   return value.length <= head + 2 ? value : `${value.slice(0, head)}…`;
 }
 
@@ -208,7 +208,7 @@ export function AdminUploadAuditPanel() {
                       <Badge variant="destructive">failure</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-xs">{PHASE_LABEL[m.phase] ?? m.phase ?? "—"}</TableCell>
+                  <TableCell className="text-xs">{PHASE_LABEL[m.phase] ?? m.phase ?? "-"}</TableCell>
                   <TableCell className="font-mono text-[11px]">
                     <button onClick={() => copyText(r.entity_id ?? "")} className="hover:underline" title={r.entity_id ?? ""}>
                       {shorten(r.entity_id)}
@@ -233,7 +233,7 @@ export function AdminUploadAuditPanel() {
                         {storageStatus}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">-</span>
                     )}
                     {m.storage_error && <div className="text-[11px] text-destructive truncate max-w-[180px]" title={m.storage_error}>{m.storage_error}</div>}
                   </TableCell>
@@ -243,7 +243,7 @@ export function AdminUploadAuditPanel() {
                     ) : dbErr ? (
                       <span className="text-destructive truncate max-w-[180px] block" title={dbErr}>{dbErr}</span>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">-</span>
                     )}
                   </TableCell>
                   <TableCell>

@@ -191,7 +191,7 @@ export function CompanyIdentityTab() {
         <div>
           <h2 className="text-lg md:text-xl font-medium text-foreground tracking-tight">Company Identity</h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md">
-            Optional now — completing this speeds up your first Proof of Intent. Identity is bound to every POI you generate.
+            Optional now - completing this speeds up your first Proof of Intent. Identity is bound to every POI you generate.
           </p>
         </div>
         <div className="self-start"><VerificationBadge state={verification} /></div>

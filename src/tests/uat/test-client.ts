@@ -34,7 +34,7 @@ export const BASE_URL = SUPABASE_URL;
  * signs them in, and returns the session + org_id.
  *
  * Uses the `provision-test-user` edge function which calls
- * `auth.admin.createUser({ email_confirm: true })` — no confirmation email is
+ * `auth.admin.createUser({ email_confirm: true })` - no confirmation email is
  * ever sent, so the per-hour signup quota is not consumed.
  *
  * Idempotent: if the email already exists, the password is reset and reused.

@@ -1,5 +1,5 @@
 /**
- * OpenGovernanceRecordLink — HQ-only deep-link to the Governance Record view.
+ * OpenGovernanceRecordLink - HQ-only deep-link to the Governance Record view.
  *
  * Renders null unless the current user is a platform admin and at least one
  * anchor id is supplied. Lives under /hq/governance-records?<param>=<uuid>.

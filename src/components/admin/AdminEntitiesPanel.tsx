@@ -29,7 +29,7 @@ interface Entity {
 }
 
 /**
- * Batch F UI surfacing — provider error signal per entity.
+ * Batch F UI surfacing - provider error signal per entity.
  * Sourced strictly from:
  *   - audit_logs (action='idv.failed', entity_type='entity', entity_id=<id>)
  *   - screening_results (status='provider_error', entity_id=<id>)
@@ -141,7 +141,7 @@ function ProviderErrorBadges({ errors }: { errors: EntityProviderError[] | undef
             key={`${e.source}-${i}`}
             variant="outline"
             className="bg-amber-50 text-amber-800 border-amber-300 text-[10px] font-medium"
-            title={`${label} — manual review required. ${pieces.join(" · ")}`}
+            title={`${label} - manual review required. ${pieces.join(" · ")}`}
             data-provider-error={e.source}
           >
             <AlertTriangle className="h-3 w-3 mr-1" />

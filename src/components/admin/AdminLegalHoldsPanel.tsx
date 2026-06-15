@@ -1,13 +1,13 @@
 /**
- * DATA-003 Phase 1 — HQ Legal Holds admin panel.
+ * DATA-003 Phase 1 - HQ Legal Holds admin panel.
  *
  * Platform-admin only. Lists active + released legal holds and lets the
  * admin apply and release holds via the `admin-legal-hold` edge function.
  *
  * Wording is the signed Phase 1 copy:
- *   apply success →  "Legal hold applied — deletion/anonymisation suspended for this scope."
+ *   apply success →  "Legal hold applied - deletion/anonymisation suspended for this scope."
  *   block        →  "Deletion/anonymisation is blocked because an active legal hold exists for this scope."
- *   release success → "Legal hold released — deletion/anonymisation may resume where otherwise permitted."
+ *   release success → "Legal hold released - deletion/anonymisation may resume where otherwise permitted."
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -72,7 +72,7 @@ export function AdminLegalHoldsPanel() {
   const [applying, setApplying] = useState(false);
   const [releasingId, setReleasingId] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<{ title: string; message: string } | null>(null);
-  // Preflight AAL state — drives the persistent inline MFA banner so that
+  // Preflight AAL state - drives the persistent inline MFA banner so that
   // an aal1 caller sees a clear "MFA required" message BEFORE clicking
   // Apply hold (DANIEL_RETEST gate A).
   const [aalState, setAalState] = useState<"loading" | "aal1" | "aal2" | "unknown">("loading");
@@ -136,7 +136,7 @@ export function AdminLegalHoldsPanel() {
   }, []);
 
   // Server requires AAL2 for BOTH apply and release (see
-  // supabase/functions/admin-legal-hold/index.ts — assertAal2 around L174-186,
+  // supabase/functions/admin-legal-hold/index.ts - assertAal2 around L174-186,
   // applied to both `apply` and `release`; `list` is read-only). We therefore
   // gate both destructive actions in the UI when the preflight reports
   // anything other than aal2. We distinguish:
@@ -190,7 +190,7 @@ export function AdminLegalHoldsPanel() {
       } else {
         toast({
           title: "Legal hold applied",
-          description: "Legal hold applied — deletion/anonymisation suspended for this scope.",
+          description: "Legal hold applied - deletion/anonymisation suspended for this scope.",
         });
         setScopeId("");
         setReason("");
@@ -234,7 +234,7 @@ export function AdminLegalHoldsPanel() {
       } else {
         toast({
           title: "Legal hold released",
-          description: "Legal hold released — deletion/anonymisation may resume where otherwise permitted.",
+          description: "Legal hold released - deletion/anonymisation may resume where otherwise permitted.",
         });
         setReleaseReasons((s) => ({ ...s, [hold.id]: "" }));
         refresh();
@@ -252,7 +252,7 @@ export function AdminLegalHoldsPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Persistent MFA preflight banner — gate A. */}
+      {/* Persistent MFA preflight banner - gate A. */}
       {needsMfa && (
         <Alert variant="destructive" data-testid="legal-holds-mfa-banner">
           <ShieldAlert className="h-4 w-4" />

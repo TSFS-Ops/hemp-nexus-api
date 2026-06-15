@@ -1,5 +1,5 @@
 /**
- * DEC-005 / DEC-006 — Canonical audit-name SSOT for legal pre-acceptance
+ * DEC-005 / DEC-006 - Canonical audit-name SSOT for legal pre-acceptance
  * and POI binding wording governance.
  *
  * Phase 1 scope: declare the six canonical audit action names signed
@@ -10,7 +10,7 @@
  * helpers (`assertPreAcceptanceSafe`, `assertPoiWordingSafe`,
  * `getPoiLabel`) are pure, side-effect-free static helpers with no
  * runtime callers in the repo today. Inventing fake `audit_logs` writes
- * here would be dishonest — it would suggest enforcement coverage that
+ * here would be dishonest - it would suggest enforcement coverage that
  * does not exist. When a real wording-application or wording-blocking
  * surface ships (Phase 2), it MUST import the constants below and emit
  * them via the standard `audit_logs` insert path; the prebuild guard
@@ -24,7 +24,7 @@
  *   - Static guard:   scripts/check-engagement-wording.mjs (wired in prebuild)
  */
 
-/** DEC-005 — legally safe language before counterparty acceptance. */
+/** DEC-005 - legally safe language before counterparty acceptance. */
 export const DEC_005_AUDIT_ACTIONS = {
   /** Emitted when a wording helper applied signed pre-acceptance copy. */
   pre_acceptance_wording_applied: "legal.pre_acceptance_wording_applied",
@@ -35,7 +35,7 @@ export const DEC_005_AUDIT_ACTIONS = {
     "counterparty.acceptance_recorded_wording_state_updated",
 } as const;
 
-/** DEC-006 — POI binding-wording governance. */
+/** DEC-006 - POI binding-wording governance. */
 export const DEC_006_AUDIT_ACTIONS = {
   /** Emitted when Draft / Accepted POI label was applied via `getPoiLabel`. */
   poi_binding_wording_applied: "legal.poi_binding_wording_applied",
@@ -51,7 +51,7 @@ export type Dec005AuditAction =
 export type Dec006AuditAction =
   (typeof DEC_006_AUDIT_ACTIONS)[keyof typeof DEC_006_AUDIT_ACTIONS];
 
-/** Frozen tuple of every canonical name — used by the prebuild guard + tests. */
+/** Frozen tuple of every canonical name - used by the prebuild guard + tests. */
 export const DEC_005_006_CANONICAL_AUDIT_ACTIONS: readonly string[] = Object.freeze([
   ...Object.values(DEC_005_AUDIT_ACTIONS),
   ...Object.values(DEC_006_AUDIT_ACTIONS),

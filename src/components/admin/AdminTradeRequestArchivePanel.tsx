@@ -1,11 +1,11 @@
 /**
- * MT-012 — Admin HQ panel for trade-request archive lifecycle.
+ * MT-012 - Admin HQ panel for trade-request archive lifecycle.
  *
  * Lists recent trade requests with archive state, exception-hold child
  * counts, and inline {@link Mt012ArchiveControls} actions. This is the
  * canonical HQ surface for normal archive, admin override, and exception
  * hold release. No POI / WaD / execution / finality / credit / payment
- * side effects are produced by this panel — it only invokes the three
+ * side effects are produced by this panel - it only invokes the three
  * MT-012 edge functions, all of which delegate to `service_role`-only
  * SECDEF RPCs.
  */
@@ -120,11 +120,11 @@ export function AdminTradeRequestArchivePanel() {
                   <td className="p-2">
                     <div className="font-mono text-xs">{r.id.slice(0, 8)}</div>
                     <div className="text-xs text-muted-foreground">
-                      {r.commodity ?? "—"} · {r.side ?? "—"}
+                      {r.commodity ?? "-"} · {r.side ?? "-"}
                     </div>
                   </td>
                   <td className="p-2">
-                    <Badge variant="outline" className="text-[10px]">{r.status ?? "—"}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{r.status ?? "-"}</Badge>
                   </td>
                   <td className="p-2 text-xs">
                     {r.archived_at ? (
@@ -142,7 +142,7 @@ export function AdminTradeRequestArchivePanel() {
                         {r.exception_hold_count} held
                       </Badge>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">-</span>
                     )}
                   </td>
                   <td className="p-2">

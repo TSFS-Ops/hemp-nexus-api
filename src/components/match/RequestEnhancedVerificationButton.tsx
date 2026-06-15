@@ -1,10 +1,10 @@
 /**
- * RequestEnhancedVerificationButton — visible, priced, user-facing entry
+ * RequestEnhancedVerificationButton - visible, priced, user-facing entry
  * ────────────────────────────────────────────────────────────────────────
  * Implements Daniel Davies' two directives (2026-04-28):
  *
  *   (a) Make the "Request Enhanced Verification" affordance discoverable on
- *       the match page — not buried as a tiny ghost link.
+ *       the match page - not buried as a tiny ghost link.
  *   (b) Charge for it. Every use carries a price (provider cost + 80%
  *       Izenzo margin). The same pricing model applies if the clip-on is
  *       switched on permanently for a particular client integration.
@@ -138,7 +138,7 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
   const creditsRequired = Math.max(1, Math.ceil(totalPerRequest / 10));
 
   // Pull the org's live wallet balance so we can pre-warn before the user
-  // accepts the charge. Skipped for always-on orgs (subscription path —
+  // accepts the charge. Skipped for always-on orgs (subscription path -
   // no per-request burn). Re-fetched whenever the dialog opens.
   const { data: balanceRow } = useQuery({
     queryKey: ["org-credit-balance-for-clip-on", session?.user.id, open],
@@ -283,7 +283,7 @@ export function RequestEnhancedVerificationButton({ match }: { match: Match }) {
             </p>
             <p className="text-xs text-muted-foreground leading-snug max-w-prose">
               You can ask the Izenzo team to run an enhanced verification on your
-              counterparty. Reviewer-managed, audit-logged, and informational —
+              counterparty. Reviewer-managed, audit-logged, and informational -
               it never blocks your trading workflow. Additional charge applies:{" "}
               <span className="font-medium text-foreground">
                 {formatMoney(totalPerRequest, pricing.currency)}

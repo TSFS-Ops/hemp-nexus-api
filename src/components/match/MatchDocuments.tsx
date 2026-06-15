@@ -121,7 +121,7 @@ interface MatchDocumentsProps {
   orgId: string;
 }
 
-// Batch L DOC-001: conservative initial taxonomy — mirrors the
+// Batch L DOC-001: conservative initial taxonomy - mirrors the
 // match_documents_doc_type_check DB constraint. Final taxonomy is
 // policy-pending; legacy/unknown values render as "Unrecognised".
 const DOC_TYPES = [
@@ -170,7 +170,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
 
   const [documents, setDocuments] = useState<MatchDocument[]>([]);
   // Truncation state: when the server cap is hit we MUST surface a persistent
-  // banner — a sonner toast auto-dismisses in <4s and operators routinely
+  // banner - a sonner toast auto-dismisses in <4s and operators routinely
   // missed it, leading to compliance reviews on incomplete document sets.
   const [docsTruncated, setDocsTruncated] = useState(false);
   const [docsTruncationWarning, setDocsTruncationWarning] = useState<string | null>(null);
@@ -232,7 +232,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         if (draft.title) setTitle(draft.title);
         if (draft.notes) setNotes(draft.notes);
         if (draft.visibility) setVisibility(draft.visibility);
-        toast.info("Document details restored from your previous session. Please re-select the file you wanted to upload — browsers do not allow saved file selections.", {
+        toast.info("Document details restored from your previous session. Please re-select the file you wanted to upload - browsers do not allow saved file selections.", {
           duration: 8000,
         });
       }
@@ -269,7 +269,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       if (cancelled) return;
       if (matchErr || !data) {
         // If we cannot read the match (RLS or missing), leave matchOrgIds null
-        // — the participant guard below will treat that as "unknown" and the
+        // - the participant guard below will treat that as "unknown" and the
         // existing fetchDocuments error path will surface the real reason.
         setMatchOrgIds({ initiator: null, buyer: null, seller: null });
         return;
@@ -462,7 +462,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
         });
 
       if (uploadError) {
-        // Extract whatever the storage client gave us — status code lives on
+        // Extract whatever the storage client gave us - status code lives on
         // a few different shapes depending on supabase-js version.
         const errAny = uploadError as unknown as {
           status?: number;
@@ -596,7 +596,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
       // Map Supabase RLS / storage rejections to a plain-English reason so
       // counterparties on the wrong match don't see the useless generic
       // "Failed to upload document". Storage RLS rejects with a 403 and a
-      // body that mentions "row-level security" or "new row violates" — and
+      // body that mentions "row-level security" or "new row violates" - and
       // the storage client surfaces "row violates row-level security policy"
       // or "Unauthorized". Treat those as a participant/permission failure.
       const lower = `${raw} ${serverBody}`.toLowerCase();
@@ -810,7 +810,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
   // participant guard fires. Two sources are merged:
   //   (1) matches where viewer's org is initiator/buyer/seller (RLS allows
   //       direct read).
-  //   (2) accepted poi_engagements where the counterparty is viewer's org —
+  //   (2) accepted poi_engagements where the counterparty is viewer's org -
   //       these are matches the viewer was explicitly invited to and may not
   //       yet be on the matches table as buyer/seller.
   // Cap to 5 most recent each so a non-participant gets a short, useful CTA
@@ -848,7 +848,7 @@ export function MatchDocuments({ matchId, orgId }: MatchDocumentsProps) {
           seen.add(r.id);
           merged.push({ id: r.id, commodity: r.commodity, status: r.status, source: "owned" });
         }
-        // Resolve engagement match details (commodity/status) in a second hop —
+        // Resolve engagement match details (commodity/status) in a second hop -
         // engagements alone don't carry that, and we want the CTA labels to
         // be self-explanatory.
         const engagementIds = (engagementsRes.data ?? [])

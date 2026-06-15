@@ -1,5 +1,5 @@
 /**
- * OPS-010 — Canonical demo-workspace audit names (browser SSOT).
+ * OPS-010 - Canonical demo-workspace audit names (browser SSOT).
  *
  * Mirrored in `supabase/functions/_shared/ops-010-audit.ts`. Both files MUST
  * stay byte-identical for the constant set; `scripts/check-ops-010-audit-names.mjs`
@@ -26,6 +26,6 @@ export type Ops010AuditName = (typeof OPS_010_AUDIT)[keyof typeof OPS_010_AUDIT]
 export const OPS_010_MIN_REASON_LENGTH = 20;
 
 export const OPS_010_DEMO_BANNER_COPY =
-  "Demo workspace — no live emails, no live payments, no live compliance calls.";
+  "Demo workspace - no live emails, no live payments, no live compliance calls.";
 
-export const OPS_010_DEMO_WATERMARK = "DEMO — NOT A PRODUCTION ARTEFACT";
+export const OPS_010_DEMO_WATERMARK = "DEMO - NOT A PRODUCTION ARTEFACT";

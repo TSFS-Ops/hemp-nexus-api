@@ -1,5 +1,5 @@
 /**
- * MT-009 Phase 1 — Read model for controlled named contact records.
+ * MT-009 Phase 1 - Read model for controlled named contact records.
  *
  * Phase 1 is detection-only:
  *   - Read active named contacts for a match.
@@ -53,7 +53,7 @@ export async function fetchActiveNamedContacts(
     console.warn("[match-named-contacts] read failed:", error.message);
     return [];
   }
-  // Defensive side filter — DB CHECK guarantees this but cheap to verify.
+  // Defensive side filter - DB CHECK guarantees this but cheap to verify.
   return ((data ?? []) as MatchNamedContactRow[]).filter(
     (r): r is MatchNamedContactRow =>
       r.side === "buyer" || r.side === "seller",
@@ -72,7 +72,7 @@ export function toActiveNamedContacts(
  * `match-named-contacts-assign` edge function. Caller authorisation is
  * enforced server-side (org-admin own-org OR platform-admin with AAL2).
  *
- * NEVER sends email/invite/notification — the edge function and RPC are
+ * NEVER sends email/invite/notification - the edge function and RPC are
  * source-guarded against any such import.
  */
 export type AssignNamedContactInput = {

@@ -472,7 +472,7 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
               >
                 <p className="text-sm font-medium flex items-center gap-2 text-destructive">
                   <AlertTriangle className="h-4 w-4" />
-                  POI generation blocked — please correct the highlighted fields
+                  POI generation blocked - please correct the highlighted fields
                 </p>
                 {denialReasons.length > 0 && (
                   <ul className="text-xs text-destructive/90 list-disc pl-5 space-y-0.5">
@@ -558,14 +558,14 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ZAR">ZAR — South African Rand</SelectItem>
-                      <SelectItem value="USD">USD — US Dollar</SelectItem>
-                      <SelectItem value="EUR">EUR — Euro</SelectItem>
-                      <SelectItem value="GBP">GBP — British Pound</SelectItem>
-                      <SelectItem value="CNY">CNY — Chinese Yuan</SelectItem>
-                      <SelectItem value="JPY">JPY — Japanese Yen</SelectItem>
-                      <SelectItem value="AUD">AUD — Australian Dollar</SelectItem>
-                      <SelectItem value="CHF">CHF — Swiss Franc</SelectItem>
+                      <SelectItem value="ZAR">ZAR - South African Rand</SelectItem>
+                      <SelectItem value="USD">USD - US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                      <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                      <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                      <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                      <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                      <SelectItem value="CHF">CHF - Swiss Franc</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

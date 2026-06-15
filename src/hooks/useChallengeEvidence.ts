@@ -1,5 +1,5 @@
 /**
- * useChallengeEvidence — Phase 3D
+ * useChallengeEvidence - Phase 3D
  *
  * Direct RLS read of `match_challenge_evidence` for a challenge, plus a
  * write mutation that base64-encodes a file client-side and posts to the

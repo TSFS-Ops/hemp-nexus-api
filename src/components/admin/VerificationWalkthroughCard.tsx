@@ -6,12 +6,12 @@
  * into substantive ones by walking a real synthetic record through the
  * production code path:
  *
- *   1. Seed   — creates an open match + intel row + pending OVR
- *   2. Action — admin completes the OVR via the existing queue dialog
- *   3. Verify — re-runs INV-B / INV-D / INV-G across the live data set
- *   4. Clean  — deletes the synthetic fixtures + their audit rows
+ *   1. Seed   - creates an open match + intel row + pending OVR
+ *   2. Action - admin completes the OVR via the existing queue dialog
+ *   3. Verify - re-runs INV-B / INV-D / INV-G across the live data set
+ *   4. Clean  - deletes the synthetic fixtures + their audit rows
  *
- * The completion in step 2 is intentionally NOT performed by this card —
+ * The completion in step 2 is intentionally NOT performed by this card -
  * the audit row INV-G inspects must be written by the same UI/code path a
  * real admin uses in production, otherwise the test proves nothing.
  */
@@ -131,7 +131,7 @@ export function VerificationWalkthroughCard() {
           <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
             Seeds one synthetic, isolated verification request so cross-consistency
             invariants (INV-B / INV-D / INV-G) can be validated against a real
-            completion event instead of an empty table. Safe — fixtures are
+            completion event instead of an empty table. Safe - fixtures are
             tagged and removable in one click.
           </p>
         </div>
@@ -153,7 +153,7 @@ export function VerificationWalkthroughCard() {
 
       {seed && (
         <div className="rounded-sm border border-dashed border-border bg-background p-3 text-xs space-y-1">
-          <div className="font-medium text-sm">Step 2 — Action the request below</div>
+          <div className="font-medium text-sm">Step 2 - Action the request below</div>
           <div className="text-muted-foreground">
             Subject: <span className="font-mono">{seed.subject_name}</span>
           </div>
@@ -200,8 +200,8 @@ function InvariantsTable({ before, after }: { before: InvariantResult | null; af
             return (
               <tr key={r.key} className="border-t border-border align-top">
                 <td className="px-3 py-2 font-mono">{r.label}</td>
-                <td className="px-3 py-2">{b ? <Cell violations={b.violations} substantive={b.substantive} /> : "—"}</td>
-                <td className="px-3 py-2">{a ? <Cell violations={a.violations} substantive={a.substantive} /> : "—"}</td>
+                <td className="px-3 py-2">{b ? <Cell violations={b.violations} substantive={b.substantive} /> : "-"}</td>
+                <td className="px-3 py-2">{a ? <Cell violations={a.violations} substantive={a.substantive} /> : "-"}</td>
                 <td className="px-3 py-2">
                   {a ? (
                     a.violations === 0 ? (

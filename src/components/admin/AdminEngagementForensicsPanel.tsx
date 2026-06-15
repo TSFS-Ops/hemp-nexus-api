@@ -10,7 +10,7 @@
  * date range. Per-engagement drawer shows the linked acceptance receipt,
  * every notification dispatch attempt, and the outreach log.
  *
- * Independent of the triage tabs in AdminPendingEngagementsPanel —
+ * Independent of the triage tabs in AdminPendingEngagementsPanel -
  * this panel exists exactly to find rows that triage filters hide.
  */
 
@@ -141,7 +141,7 @@ export function AdminEngagementForensicsPanel() {
               aria-pressed={showDemo}
               data-testid="forensics-show-demo-toggle"
             >
-              {showDemo ? "DEMO rows visible — click to hide" : "Show DEMO rows"}
+              {showDemo ? "DEMO rows visible - click to hide" : "Show DEMO rows"}
             </button>
             <span className="text-xs text-muted-foreground">
               Independent of triage tabs · returns up to 200 rows · case-insensitive prefix match
@@ -157,7 +157,7 @@ export function AdminEngagementForensicsPanel() {
               <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
                 <span className="font-semibold">Results capped.</span>
                 <span>
-                  Showing the most recent {FORENSICS_LIMIT} engagements that match these filters. Older matches are not displayed — narrow by Match ID, email, org or status to surface them.
+                  Showing the most recent {FORENSICS_LIMIT} engagements that match these filters. Older matches are not displayed - narrow by Match ID, email, org or status to surface them.
                 </span>
               </div>
             )}
@@ -182,7 +182,7 @@ export function AdminEngagementForensicsPanel() {
                       {r.id.slice(0, 8)}…
                     </TableCell>
                     <TableCell className="font-mono text-xs">{r.match_id.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-xs">{r.counterparty_email || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-xs">{r.counterparty_email || <span className="text-muted-foreground">-</span>}</TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-0.5">
                         <Badge variant={statusVariant(r.engagement_status) as never}>
@@ -194,7 +194,7 @@ export function AdminEngagementForensicsPanel() {
                       </div>
                     </TableCell>
                     <TableCell className="text-xs">
-                      {r.responded_at ? format(new Date(r.responded_at), "yyyy-MM-dd HH:mm") : "—"}
+                      {r.responded_at ? format(new Date(r.responded_at), "yyyy-MM-dd HH:mm") : "-"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => setSelected(r)}>
@@ -290,17 +290,17 @@ function ForensicTrace({ engagement }: { engagement: EngagementRow }) {
                   <Badge variant="outline" className="shrink-0">Backfilled</Badge>
                   <span className="text-muted-foreground">
                     {(receipt as { metadata?: { backfill_reason?: string } }).metadata?.backfill_reason ||
-                      "Legacy seed receipt — predates the dispatch system; no notification was expected."}
+                      "Legacy seed receipt - predates the dispatch system; no notification was expected."}
                   </span>
                 </div>
               )}
               <p><span className="text-muted-foreground">Receipt ID:</span> <span className="font-mono">{receipt.id}</span></p>
               <p><span className="text-muted-foreground">Accepted at:</span> {format(new Date(receipt.accepted_at), "yyyy-MM-dd HH:mm:ss")}</p>
               <p><span className="text-muted-foreground">Signature:</span> <span className="font-mono break-all">{receipt.signature_hash}</span></p>
-              <p><span className="text-muted-foreground">Attestation:</span> <span className="font-mono">{receipt.attestation_id || "—"}</span></p>
+              <p><span className="text-muted-foreground">Attestation:</span> <span className="font-mono">{receipt.attestation_id || "-"}</span></p>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground italic">No receipt — engagement not yet accepted.</p>
+            <p className="text-xs text-muted-foreground italic">No receipt - engagement not yet accepted.</p>
           )}
         </section>
 
@@ -312,7 +312,7 @@ function ForensicTrace({ engagement }: { engagement: EngagementRow }) {
           {dispatches.length === 0 ? (
             (receipt as { metadata?: { backfill?: boolean } } | null)?.metadata?.backfill ? (
               <p className="text-xs text-muted-foreground italic">
-                No dispatches expected — this is a backfilled receipt from before the dispatch system existed.
+                No dispatches expected - this is a backfilled receipt from before the dispatch system existed.
               </p>
             ) : (
               <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs flex items-start gap-2">

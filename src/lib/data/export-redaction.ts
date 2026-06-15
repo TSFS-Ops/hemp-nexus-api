@@ -1,12 +1,12 @@
 /**
- * DATA-005 / DATA-010 Phase 2A — Server-side redaction SSOT (client
+ * DATA-005 / DATA-010 Phase 2A - Server-side redaction SSOT (client
  * mirror). Authoritative copy: supabase/functions/_shared/export-redaction.ts
  *
  * Two layers:
- *   1. FORBIDDEN_EXPORT_COLUMN_NAMES — column tokens that must never
+ *   1. FORBIDDEN_EXPORT_COLUMN_NAMES - column tokens that must never
  *      appear in any export projection, regardless of category.
- *   2. CATEGORY_ALLOW_LISTS — explicit per-category column allow-lists.
- *      Exports MUST be built from these projections — never SELECT *.
+ *   2. CATEGORY_ALLOW_LISTS - explicit per-category column allow-lists.
+ *      Exports MUST be built from these projections - never SELECT *.
  */
 
 export const FORBIDDEN_EXPORT_COLUMN_NAMES: readonly string[] = Object.freeze([
@@ -27,7 +27,7 @@ export const FORBIDDEN_EXPORT_COLUMN_NAMES: readonly string[] = Object.freeze([
   // webhook secrets
   "webhook_secret",
   "signing_secret",
-  // payment card data (defence in depth — we don't store it)
+  // payment card data (defence in depth - we don't store it)
   "card_number",
   "card_cvv",
   "card_cvc",

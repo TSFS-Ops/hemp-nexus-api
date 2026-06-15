@@ -1,12 +1,12 @@
 /**
- * Facilitation Case State Machine — Single Source of Truth (browser mirror).
+ * Facilitation Case State Machine - Single Source of Truth (browser mirror).
  *
  * Phase 1 only: unknown-counterparty facilitation queue. No outreach, no SLA,
  * no reporting, no email/notification send paths. UI MUST use these constants
  * to render and validate transitions; never inline string comparisons against
  * `internal_status` literals.
  *
- * Mirror of supabase/functions/_shared/facilitation-case-state.ts — both
+ * Mirror of supabase/functions/_shared/facilitation-case-state.ts - both
  * files are pinned by scripts/check-facilitation-status-drift.mjs.
  */
 

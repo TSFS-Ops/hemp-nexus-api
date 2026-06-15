@@ -1,5 +1,5 @@
 /**
- * Phase 2 — Zod schemas for the future facilitation outreach edge
+ * Phase 2 - Zod schemas for the future facilitation outreach edge
  * functions. Browser mirror.
  *
  * No edge function is implemented yet in this batch. These schemas
@@ -8,7 +8,7 @@
  *      the server will enforce;
  *   2. the drift guard can prove client/server schema parity.
  *
- * Mirror of supabase/functions/_shared/facilitation-outreach-schemas.ts —
+ * Mirror of supabase/functions/_shared/facilitation-outreach-schemas.ts -
  * both files are pinned by scripts/check-facilitation-outreach-drift.mjs.
  */
 
@@ -64,7 +64,7 @@ export const EscalationTransitionSchema = z.object({
 });
 export type EscalationTransitionInput = z.infer<typeof EscalationTransitionSchema>;
 
-/** Candidate status — exposed for UI list filters only; mutations go through dedicated endpoints. */
+/** Candidate status - exposed for UI list filters only; mutations go through dedicated endpoints. */
 export const CandidateStatusEnum = z.enum(CANDIDATE_STATUSES);
 
 export const FACILITATION_OUTREACH_SCHEMA_NAMES = [

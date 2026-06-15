@@ -1,5 +1,5 @@
 /**
- * DEC-005 / DEC-006 / DEC-010 — single source of forbidden wording.
+ * DEC-005 / DEC-006 / DEC-010 - single source of forbidden wording.
  *
  * Pre-acceptance wording must avoid any term that implies legal finality,
  * mutual acceptance, completed transaction, settlement, execution, or WaD.
@@ -26,7 +26,7 @@ export const FORBIDDEN_PRE_ACCEPTANCE_TERMS: readonly string[] = [
 ];
 
 /**
- * DEC-010 — phrases that may never appear on public marketing, docs,
+ * DEC-010 - phrases that may never appear on public marketing, docs,
  * UI, email, generated-document, or investor-facing surfaces.
  *
  * Phase 1 expands this list with the explicit DEC-010 prohibited prose
@@ -35,7 +35,7 @@ export const FORBIDDEN_PRE_ACCEPTANCE_TERMS: readonly string[] = [
  * presented as live traction).
  *
  * Manual-review-required phrases (e.g. "enterprise-ready") are NOT
- * on this list — they are classified in
+ * on this list - they are classified in
  * `src/lib/legal/claims-register.ts` under
  * `MANUAL_REVIEW_REQUIRED_CLAIMS` and are not auto-blocked.
  */
@@ -53,7 +53,7 @@ export const FORBIDDEN_PUBLIC_CLAIM_PHRASES: readonly string[] = [
   "fully automated end-to-end",
   "guarantees compliance",
   "prevents all fraud",
-  // DEC-010 Phase 1 additions — prohibited prose claims.
+  // DEC-010 Phase 1 additions - prohibited prose claims.
   "Izenzo replaces legal review",
   "Izenzo replaces financial review",
   "Izenzo replaces regulatory review",
@@ -91,7 +91,7 @@ export function findForbiddenTerms(
 }
 
 /**
- * Phrase scanner — does NOT enforce word boundaries (phrases may include
+ * Phrase scanner - does NOT enforce word boundaries (phrases may include
  * punctuation/spaces). Case-insensitive substring search.
  */
 export function findForbiddenPhrases(

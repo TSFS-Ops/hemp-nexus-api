@@ -1,5 +1,5 @@
 /**
- * Batch D — Event Catalogue (single source of truth, D4a + D4b)
+ * Batch D - Event Catalogue (single source of truth, D4a + D4b)
  *
  * Canonical list of every notification / audit event introduced by
  * Batch D (Pending Engagement controls). Used by:
@@ -12,7 +12,7 @@
  *
  * D4a contract (preserved): NO event in this catalogue may dispatch
  * outbound email to ANY non-admin recipient. There is no general
- * "email enabled" flag — the only flag is `adminDispatchEnabled`,
+ * "email enabled" flag - the only flag is `adminDispatchEnabled`,
  * which permits dispatch to the platform admin mailbox + Slack
  * webhook ONLY (never to org admins, ordinary members, external
  * counterparties, or disputed counterparties).
@@ -37,7 +37,7 @@ export type RecipientGroup =
   | "disputed_counterparty"
   // D4c-0: a registered org surfaced by the binding resolver as a *possible*
   // match for an ambiguous counterparty email. Candidate orgs MUST NEVER be
-  // contacted — doing so would leak that the platform suspects a binding.
+  // contacted - doing so would leak that the platform suspects a binding.
   | "candidate_org";
 
 export type NotificationRecommendation =
@@ -66,7 +66,7 @@ export interface BatchDEventEntry {
   /**
    * D4b dispatch flag. When `true`, the D4b admin-notify helper is
    * permitted to dispatch this event via the existing
-   * `notification-dispatch` edge function — and ONLY to the platform
+   * `notification-dispatch` edge function - and ONLY to the platform
    * admin mailbox + Slack webhook. This is NOT a general "email is
    * enabled" flag; it never permits dispatch to org admins, members,
    * external counterparties, or disputed counterparties. The runtime
@@ -171,7 +171,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
   },
   {
     event: "outreach.blocked.contact_incomplete",
-    label: "Outreach blocked — contact incomplete",
+    label: "Outreach blocked - contact incomplete",
     recommendation: "audit_only",
     allowedRecipients: ["initiating_org_admin"],
     forbiddenRecipients: [
@@ -185,7 +185,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
   },
   {
     event: "outreach.blocked.binding_review_pending",
-    label: "Outreach blocked — binding review pending",
+    label: "Outreach blocked - binding review pending",
     recommendation: "audit_only",
     allowedRecipients: ["initiating_org_admin"],
     forbiddenRecipients: [
@@ -199,7 +199,7 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
   },
   {
     event: "outreach.blocked.disputed_being_named",
-    label: "Outreach blocked — counterparty query under review",
+    label: "Outreach blocked - counterparty query under review",
     recommendation: "audit_only",
     allowedRecipients: ["initiating_org_admin"],
     forbiddenRecipients: [
@@ -212,18 +212,18 @@ export const BATCH_D_EVENTS: readonly BatchDEventEntry[] = [
     adminDispatchEnabled: false,
   },
   {
-    // D4c-0 — late acceptance after engagement expiry.
+    // D4c-0 - late acceptance after engagement expiry.
     //
     // Initiator-relevant only. Cautious wording: the engagement EXPIRED;
     // the counterparty's late acceptance has been RECORDED; initiator
     // RECONFIRMATION is REQUIRED before anything progresses. No POI is
     // completed, no WaD is triggered, no credit is used, no execution
     // occurs. Counterparty-facing confirmation is intentionally NOT
-    // wired in this catalogue entry — that path is deferred to a later
+    // wired in this catalogue entry - that path is deferred to a later
     // scope. Outbound dispatch is NOT enabled in D4c-0; this entry
     // exists so D4c-1+ can build on a verified catalogue surface.
     event: "engagement.late_acceptance_pending_reconfirmation",
-    label: "Late acceptance recorded — initiator reconfirmation required",
+    label: "Late acceptance recorded - initiator reconfirmation required",
     recommendation: "audit_only",
     allowedRecipients: ["initiating_org_admin", "platform_admin"],
     forbiddenRecipients: [

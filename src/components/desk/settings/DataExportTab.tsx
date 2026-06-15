@@ -137,13 +137,13 @@ export function DataExportTab() {
           You may request an export of your personal and account data.
           Submitting this form records your request and confirms which
           categories are eligible. File generation is reviewed and prepared
-          separately — your export is not immediately downloadable. You will
+          separately - your export is not immediately downloadable. You will
           be notified when it is ready.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Restricted data — passwords, API keys, webhook secrets, payment
+          Restricted data - passwords, API keys, webhook secrets, payment
           card data, admin-only notes, privileged legal records, raw audit
-          logs, and other organisations' or users' data — is never included.
+          logs, and other organisations' or users' data - is never included.
         </p>
       </section>
 
@@ -179,7 +179,7 @@ export function DataExportTab() {
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           maxLength={500}
-          placeholder="Optional — tell us why you are requesting this export."
+          placeholder="Optional - tell us why you are requesting this export."
           rows={3}
         />
       </section>
@@ -220,7 +220,7 @@ export function DataExportTab() {
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
                   Requested:{" "}
-                  {(r.requested_categories ?? []).join(", ") || "—"}
+                  {(r.requested_categories ?? []).join(", ") || "-"}
                 </div>
                 {r.resolved_categories && r.resolved_categories.length > 0 && (
                   <div className="mt-1 text-xs text-muted-foreground">

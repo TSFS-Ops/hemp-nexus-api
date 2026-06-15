@@ -38,22 +38,22 @@ export default function DocsCounterparties() {
         </DocLede>
 
         <Callout>
-          The word <em>counterparty</em> is used in two senses on this platform — keep them
+          The word <em>counterparty</em> is used in two senses on this platform - keep them
           distinct:
           <ul className="mt-2 list-disc pl-5 space-y-1">
             <li>
-              <strong className="text-foreground">counterparty record</strong> — a verified
+              <strong className="text-foreground">counterparty record</strong> - a verified
               entity in your registry (this page).
             </li>
             <li>
-              <strong className="text-foreground">opposite party</strong> — in any specific
+              <strong className="text-foreground">opposite party</strong> - in any specific
               trade, the org sitting in the slot opposite to yours
               (<InlineCode>buyer_org_id</InlineCode> from a seller's perspective,
               <InlineCode>seller_org_id</InlineCode> from a buyer's). This is always
               relative to the viewer.
             </li>
             <li>
-              <strong className="text-foreground">named lead</strong> — the specific
+              <strong className="text-foreground">named lead</strong> - the specific
               person/email named on the trade (the contact you would actually reach out to).
               A named lead is bound to an org but is not the same thing as a counterparty
               record; multiple named leads can resolve to one counterparty record, and a
@@ -142,7 +142,7 @@ export default function DocsCounterparties() {
           issues a <InlineCode>poi_engagement</InlineCode> record. If a deliverable email is on
           file for the named contact, an outreach notification is sent to that contact;
           otherwise the engagement waits for an admin to capture a contact via the engagements
-          panel. POI mint is blocked until the opposite party explicitly accepts — this is a
+          panel. POI mint is blocked until the opposite party explicitly accepts - this is a
           deliberate single-side acknowledgement hold-point, not a bug, and it is{" "}
           <em>not</em> the same as both-party POI commitment.
         </DocP>

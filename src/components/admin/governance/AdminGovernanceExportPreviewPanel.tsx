@@ -1,11 +1,11 @@
 /**
- * Admin Export Controls Batch 9 — HQ Redaction Preview Shell.
+ * Admin Export Controls Batch 9 - HQ Redaction Preview Shell.
  *
  * Platform-admin only (UI guard) + AAL2-required (server enforced).
  * READ-ONLY preview of what a Governance Record export would look
  * like after applying the Batch 8 redaction contract.
  *
- * Hard contract — this panel NEVER renders:
+ * Hard contract - this panel NEVER renders:
  *   - prepare / generate / download / destroy controls
  *   - temporary links, file paths, storage keys, download tokens
  *   - CSV / JSON / PDF export buttons
@@ -122,7 +122,7 @@ export function AdminGovernanceExportPreviewPanel() {
       const message = e instanceof Error ? e.message : String(e);
       setState({ kind: "error", message });
     } finally {
-      // Zero Swallowed Errors — state always advances.
+      // Zero Swallowed Errors - state always advances.
     }
   }, [isPlatformAdmin, mode, recordId]);
 
@@ -165,7 +165,7 @@ export function AdminGovernanceExportPreviewPanel() {
           className="text-[10px]"
           data-testid="badge-preview-only"
         >
-          <Eye className="mr-1 h-3 w-3" /> Preview only — no file generated
+          <Eye className="mr-1 h-3 w-3" /> Preview only - no file generated
         </Badge>
         <Badge
           variant="outline"
@@ -196,7 +196,7 @@ export function AdminGovernanceExportPreviewPanel() {
         <AlertDescription className="text-xs">
           Previewing a Governance Record export requires multi-factor
           authentication. This view shows the redacted payload and its
-          manifest only — it exposes no raw sanctions / PEP / adverse-media
+          manifest only - it exposes no raw sanctions / PEP / adverse-media
           payloads, no raw legal-hold reasons or notes, no storage paths,
           and no download tokens.
         </AlertDescription>
@@ -366,7 +366,7 @@ function ManifestList({
         {title} · {items.length}
       </p>
       {items.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground">—</p>
+        <p className="text-[11px] text-muted-foreground">-</p>
       ) : (
         <ul className="space-y-0.5 text-[11px] font-mono text-foreground">
           {items.map((f) => (

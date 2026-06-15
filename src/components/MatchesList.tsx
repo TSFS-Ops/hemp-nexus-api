@@ -234,7 +234,7 @@ export function MatchesList() {
     };
   }, []);
 
-  // Batch T — UI-013: derive truthfulness qualifiers from row metadata so
+  // Batch T - UI-013: derive truthfulness qualifiers from row metadata so
   // operators never see a clean "settled" label when the row was actually
   // produced via a test-mode bypass or a failed provider attempt.
   const getStatusBadge = (status: string, metadata?: Record<string, unknown> | null) => {
@@ -342,7 +342,7 @@ export function MatchesList() {
           } else {
             failed++;
             failedIds.push(matchId);
-            // Friendly error translation — never leak raw "Unauthorized" or
+            // Friendly error translation - never leak raw "Unauthorized" or
             // "non-2xx status code" to the user.
             let msg: string;
             if (res.status === 401) {
@@ -373,7 +373,7 @@ export function MatchesList() {
       // Record a single bulk audit event capturing the batch outcome.
       // Per-match audit rows are written by the match/settle endpoint;
       // this gives reviewers a single batch-level entry to inspect.
-      // Fire-and-forget — audit failure must not block the user flow.
+      // Fire-and-forget - audit failure must not block the user flow.
       try {
         await supabase.functions.invoke("audit-bulk-confirm", {
           body: {
@@ -388,7 +388,7 @@ export function MatchesList() {
         console.warn("[bulk-confirm] audit event failed", auditErr);
       }
 
-      // Precise messaging — server charges 1 credit per successful POI
+      // Precise messaging - server charges 1 credit per successful POI
       const creditsCharged = succeeded;
       if (succeeded > 0 && failed === 0) {
         toast.success(`Intent confirmed for ${succeeded} match${succeeded > 1 ? "es" : ""}. ${creditsCharged.toLocaleString()} credit${creditsCharged !== 1 ? "s" : ""} deducted.`);
@@ -435,7 +435,7 @@ export function MatchesList() {
       m.status, m.created_at, m.settled_at || "", m.hash,
     ]);
 
-    // Batch T — AUD-017: route through audited export so audit_logs is
+    // Batch T - AUD-017: route through audited export so audit_logs is
     // written before any rows leave the browser, and so the file carries
     // a `# generated_at` provenance preamble.
     const result = await auditedDownloadCSV(headers, rows, {
@@ -444,7 +444,7 @@ export function MatchesList() {
       target_type: "matches",
       sensitive: true,
       purpose: "client_approved_reporting",
-      reason: `bulk matches export — page ${page + 1}/${totalPages}, ${matches.length} rows`,
+      reason: `bulk matches export - page ${page + 1}/${totalPages}, ${matches.length} rows`,
       data_categories: ["matches", "counterparties"],
       filters: { page: page + 1, totalPages, rowCount: matches.length },
     });
@@ -733,14 +733,14 @@ export function MatchesList() {
                                     "ID", "Commodity", "Buyer ID", "Buyer Name", "Seller ID", "Seller Name",
                                     "Quantity", "Unit", "Price", "Currency", "Status", "Created At", "Settled At", "Hash",
                                   ];
-                                  // Batch T — AUD-017: single-row export is also audited.
+                                  // Batch T - AUD-017: single-row export is also audited.
                                   const result = await auditedDownloadCSV(headers, [row], {
                                     reportName: "matches.single_export",
                                     filename: `match-${match.id.slice(0, 8)}.csv`,
                                     target_type: "matches",
                                     sensitive: true,
                                     purpose: "client_approved_reporting",
-                                    reason: `single match export — id ${match.id.slice(0, 8)}`,
+                                    reason: `single match export - id ${match.id.slice(0, 8)}`,
                                     data_categories: ["matches"],
                                     filters: { match_id: match.id },
                                   });

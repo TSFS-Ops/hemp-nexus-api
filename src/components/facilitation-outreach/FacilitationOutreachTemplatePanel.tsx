@@ -1,5 +1,5 @@
 /**
- * Phase 2 Step 4 — Facilitation Outreach template registry panel.
+ * Phase 2 Step 4 - Facilitation Outreach template registry panel.
  *
  * HQ-level read panel + lifecycle transitions for the approved-email
  * template registry. platform_admin can approve drafts and archive

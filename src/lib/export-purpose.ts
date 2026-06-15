@@ -1,5 +1,5 @@
 /**
- * DATA-010 Phase 1 — Single source of truth for admin export purpose enum
+ * DATA-010 Phase 1 - Single source of truth for admin export purpose enum
  * and data-category labels.
  *
  * Every admin CSV/JSON export call MUST supply one of these `purpose`

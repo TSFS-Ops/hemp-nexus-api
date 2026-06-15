@@ -1,5 +1,5 @@
 /**
- * Phase 2 — Outreach Gate Resolver (pure, browser mirror).
+ * Phase 2 - Outreach Gate Resolver (pure, browser mirror).
  *
  * `resolveOutreachGate` is a pure function that evaluates a candidate
  * against pre-fetched DNC rules, duplicate-gate status, suppression
@@ -10,7 +10,7 @@
  * future UI) fetches the inputs and passes them in. This keeps the
  * resolver trivially unit-testable on both runtimes.
  *
- * Mirror of supabase/functions/_shared/facilitation-outreach-gate.ts —
+ * Mirror of supabase/functions/_shared/facilitation-outreach-gate.ts -
  * both files are pinned by scripts/check-facilitation-outreach-drift.mjs.
  *
  * NO database calls, NO send path, NO mutations of POI/WaD/match/token/

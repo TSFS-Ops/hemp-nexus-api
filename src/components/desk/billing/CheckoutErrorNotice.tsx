@@ -1,5 +1,5 @@
 /**
- * CheckoutErrorNotice — surfaces a Paystack checkout-initiation failure
+ * CheckoutErrorNotice - surfaces a Paystack checkout-initiation failure
  * inline (next to the Purchase button that failed) with the backend's
  * returned error message and a Retry control.
  *

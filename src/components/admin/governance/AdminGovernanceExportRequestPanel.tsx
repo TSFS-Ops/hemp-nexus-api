@@ -1,8 +1,8 @@
 /**
- * Admin Export Controls Batch 2 — HQ Governance Record Export Request panel.
+ * Admin Export Controls Batch 2 - HQ Governance Record Export Request panel.
  *
  * Platform-admin only. AAL2-required (server enforced). Submits a
- * Governance Record export REQUEST only — no file is generated, no
+ * Governance Record export REQUEST only - no file is generated, no
  * download link is shown, no signed URL is minted.
  */
 
@@ -40,7 +40,7 @@ type ExportPurpose = (typeof EXPORT_PURPOSES)[number];
 const REDACTION_MODES = [
   {
     value: "redacted_client_safe",
-    label: "Redacted — client-safe (default)",
+    label: "Redacted - client-safe (default)",
     hint: "Personal identifiers and internal notes removed.",
   },
   {
@@ -191,7 +191,7 @@ export function AdminGovernanceExportRequestPanel({
       setState({ kind: "failed", message });
       toast.error(`Request failed: ${message}`);
     } finally {
-      // Zero Swallowed Errors — state machine always advances.
+      // Zero Swallowed Errors - state machine always advances.
     }
   };
 
@@ -217,7 +217,7 @@ export function AdminGovernanceExportRequestPanel({
         <AlertTitle className="text-xs">AAL2 required</AlertTitle>
         <AlertDescription className="text-xs">
           Submitting this request requires multi-factor authentication.
-          This batch only records the request — no file is generated, no
+          This batch only records the request - no file is generated, no
           download link is created, and no data leaves the platform.
           A second platform admin must approve before any file is
           produced.

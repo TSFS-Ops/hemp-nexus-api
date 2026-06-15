@@ -1,5 +1,5 @@
 /**
- * session-expiry-bus — tiny pub/sub for "your session is dead, force re-auth".
+ * session-expiry-bus - tiny pub/sub for "your session is dead, force re-auth".
  *
  * Why: previously a session-expired error surfaced as a small toast in the
  * corner that users routinely missed (see screenshot from client incident
@@ -45,7 +45,7 @@ export function notifySessionExpired(
   requestId?: string
 ): void {
   if (typeof window === "undefined") return;
-  // 1) Emergency-save first — synchronous dispatch so listeners run before
+  // 1) Emergency-save first - synchronous dispatch so listeners run before
   //    the modal opens and any subsequent navigation happens.
   window.dispatchEvent(new CustomEvent(SESSION_EMERGENCY_SAVE_EVENT));
   // 2) Then surface the modal.

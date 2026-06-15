@@ -6,7 +6,7 @@
  * file a trade under the wrong identity.
  *
  * Renders a quiet chip in normal cases, and an amber warning when the active
- * org is a "Pending verification (legacy)" placeholder — these orgs exist for
+ * org is a "Pending verification (legacy)" placeholder - these orgs exist for
  * historical continuity and trades filed under them are difficult to recover
  * onto the operator's primary org.
  */

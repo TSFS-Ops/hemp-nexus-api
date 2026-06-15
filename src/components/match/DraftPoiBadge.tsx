@@ -1,5 +1,5 @@
 /**
- * DraftPoiBadge — per-POI "Internal draft only" label.
+ * DraftPoiBadge - per-POI "Internal draft only" label.
  *
  * Mounted on the POI surface (MatchHeroCard) whenever the POI is in DRAFT.
  * Distinct from the wizard-level VerificationRequiredBanner: the banner

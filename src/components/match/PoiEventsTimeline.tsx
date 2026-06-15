@@ -1,5 +1,5 @@
 /**
- * PoiEventsTimeline — Intent state transition history for a match.
+ * PoiEventsTimeline - Intent state transition history for a match.
  *
  * Phase 1 fix (Governance Record): the legacy `poi_events` table is currently
  * empty in production. Actual POI activity is persisted in `audit_logs` and

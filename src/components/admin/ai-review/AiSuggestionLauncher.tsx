@@ -1,5 +1,5 @@
 /**
- * AI Suggestion Launcher — Batch 1 / Fix 1 (entry-point wiring).
+ * AI Suggestion Launcher - Batch 1 / Fix 1 (entry-point wiring).
  *
  * Lives at the top of /hq/ai-suggestions. Lets a platform_admin:
  *   1. Pick a real existing trade_request (no seeding, no fake data).
@@ -119,7 +119,7 @@ export function AiSuggestionLauncher() {
       const payload = data as { interpretation?: InterpretationRow; error?: string };
       if (payload?.error) throw new Error(payload.error);
       if (payload?.interpretation) setLatestInterpretation(payload.interpretation);
-      toast.success("Interpretation generated. Advisory only — nothing was contacted.");
+      toast.success("Interpretation generated. Advisory only - nothing was contacted.");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       toast.error(`Interpret failed: ${msg}`);
@@ -157,10 +157,10 @@ export function AiSuggestionLauncher() {
         );
       } else if (n != null) {
         toast.success(
-          `Sourcing complete. ${n} proposed match${n === 1 ? "" : "es"} added — advisory only.`,
+          `Sourcing complete. ${n} proposed match${n === 1 ? "" : "es"} added - advisory only.`,
         );
       } else {
-        toast.success("Sourcing complete. Advisory only — no outreach was sent.");
+        toast.success("Sourcing complete. Advisory only - no outreach was sent.");
       }
       qc.invalidateQueries({ queryKey: ["ai-proposed-matches"] });
     } catch (e) {
@@ -230,11 +230,11 @@ export function AiSuggestionLauncher() {
                     return (
                       <tr key={r.id} className={`border-t border-border hover:bg-muted/30 ${isSel ? "bg-emerald-50/40" : ""}`}>
                         <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">{r.id.slice(0, 8)}…</td>
-                        <td className="px-3 py-2 text-foreground">{r.commodity ?? "—"}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{r.side ?? "—"}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{r.location ?? "—"}</td>
+                        <td className="px-3 py-2 text-foreground">{r.commodity ?? "-"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{r.side ?? "-"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{r.location ?? "-"}</td>
                         <td className="px-3 py-2">
-                          <Badge variant="outline" className="text-[10.5px]">{r.status ?? "—"}</Badge>
+                          <Badge variant="outline" className="text-[10.5px]">{r.status ?? "-"}</Badge>
                         </td>
                         <td className="px-3 py-2 text-muted-foreground">
                           {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
@@ -268,7 +268,7 @@ export function AiSuggestionLauncher() {
                 {activeRow.location ? <Badge variant="outline">{activeRow.location}</Badge> : null}
               </>
             ) : (
-              <span className="text-[12px] text-muted-foreground">None — pick a trade request above.</span>
+              <span className="text-[12px] text-muted-foreground">None - pick a trade request above.</span>
             )}
           </div>
 
@@ -327,7 +327,7 @@ function Row({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="flex gap-2">
       <dt className="text-emerald-700/80 shrink-0">{label}:</dt>
-      <dd className="text-emerald-900 break-words">{value && value.trim() ? value : "—"}</dd>
+      <dd className="text-emerald-900 break-words">{value && value.trim() ? value : "-"}</dd>
     </div>
   );
 }

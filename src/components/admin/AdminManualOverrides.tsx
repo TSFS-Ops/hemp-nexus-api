@@ -1,5 +1,5 @@
 import { useState } from "react";
-// Batch S: client no longer issues direct DB writes — all overrides go via
+// Batch S: client no longer issues direct DB writes - all overrides go via
 // the admin-manual-overrides edge function which is the only audited path.
 import { apiFetch } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +38,7 @@ export function AdminManualOverrides() {
       return;
     }
     // Batch S SUP-001: client-side floor must mirror server (>=10 chars).
-    // Server is authoritative — this is just UX feedback.
+    // Server is authoritative - this is just UX feedback.
     if (reason.trim().length < 10) {
       toast.error("Reason must be at least 10 characters");
       return;

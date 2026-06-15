@@ -5,7 +5,7 @@
  *
  * Renders the canonical "verification required before issuing / sending /
  * progressing" message near any counterparty-facing action surface. The
- * server (_shared/legitimacy.ts) is the source of truth — this banner only
+ * server (_shared/legitimacy.ts) is the source of truth - this banner only
  * surfaces the same decision in the UI so users don't click a button just
  * to receive a 403.
  *

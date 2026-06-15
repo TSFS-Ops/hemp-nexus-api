@@ -1,5 +1,5 @@
 /**
- * ReconfirmLateAcceptanceCard — Batch B Phase 8.5b
+ * ReconfirmLateAcceptanceCard - Batch B Phase 8.5b
  *
  * Surfaces the only two workflow-authority actions a late acceptance allows:
  *
@@ -19,7 +19,7 @@
  *
  * Platform admin override:
  *   - If (1) is true and viewer holds platform_admin (but is NOT a member of
- *     the initiating org with org_admin), we still render — but with an
+ *     the initiating org with org_admin), we still render - but with an
  *     explicit "Platform admin override" banner and a destructive accent so
  *     the action is visibly an admin override, not an ordinary participation
  *     action. This mirrors the server's separate audit channel
@@ -122,14 +122,14 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
 
   // Gate 2: viewer must be on the initiating org with org_admin, OR a
   // platform_admin acting as override. We deliberately treat the union as
-  // restrictive — we never grant access to ordinary org members or to
+  // restrictive - we never grant access to ordinary org members or to
   // counterparty-side admins.
   const isInitiatorOrg = !!viewerOrgId && viewerOrgId === match.org_id;
   const isInitiatorOrgAdmin = isInitiatorOrg && isOrgAdmin && !isPlatformAdmin;
   // `isOrgAdmin` from AuthContext is true for platform_admin too, so the
   // override path is "platform_admin without being on the initiating org as
   // an ordinary org_admin". Also covers a platform_admin who happens to be
-  // on the initiating org — surfaced as override + initiator role.
+  // on the initiating org - surfaced as override + initiator role.
   const isPlatformOverride = isPlatformAdmin && !isInitiatorOrgAdmin;
 
   if (!isInitiatorOrgAdmin && !isPlatformOverride) return null;
@@ -218,7 +218,7 @@ export function ReconfirmLateAcceptanceCard({ match, engagement, onResolved }: P
           </p>
           <p className="text-sm">
             The trading partner will see that the initiator did not renew.
-            No automatic decline takes place — this is your explicit decision.
+            No automatic decline takes place - this is your explicit decision.
           </p>
         </div>
       ),

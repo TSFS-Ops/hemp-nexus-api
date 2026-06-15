@@ -1,5 +1,5 @@
 /**
- * OrgAdminContactCompletionCard — Batch A (MT-009 Option B/C)
+ * OrgAdminContactCompletionCard - Batch A (MT-009 Option B/C)
  * ──────────────────────────────────────────────────────────────────────────
  *
  * Surfaces an inline "complete your counterparty contact" affordance on the
@@ -34,7 +34,7 @@ import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-// Inline counterparty-side check — mirrors the backend predicate in
+// Inline counterparty-side check - mirrors the backend predicate in
 // supabase/functions/_shared/engagement-counterparty.ts. The backend
 // remains the source of truth; this is a UX visibility gate only.
 export function isCounterpartySide(
@@ -156,7 +156,7 @@ export function OrgAdminContactCompletionCard({
 }: Props) {
   const { isPlatformAdmin, isOrgAdmin } = useAuth();
 
-  // Visibility gate — must mirror the backend MT-009 Option B rule exactly.
+  // Visibility gate - must mirror the backend MT-009 Option B rule exactly.
   const visible = useMemo(
     () =>
       shouldShowOrgAdminContactCard({
@@ -259,7 +259,7 @@ export function OrgAdminContactCompletionCard({
             <CardDescription>
               You are listed as the counterparty on this trade. Add or correct
               the contact details so our compliance desk can reach you.
-              You cannot send platform outreach yourself — that remains with the desk.
+              You cannot send platform outreach yourself - that remains with the desk.
             </CardDescription>
           </div>
           <Badge

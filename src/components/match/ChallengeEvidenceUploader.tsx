@@ -1,5 +1,5 @@
 /**
- * ChallengeEvidenceUploader — Phase 3D
+ * ChallengeEvidenceUploader - Phase 3D
  *
  * Uploads a file to the existing `match-challenges/upload-evidence` edge
  * route. The hook computes SHA-256 + base64 client-side; the server

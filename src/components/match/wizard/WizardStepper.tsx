@@ -47,7 +47,7 @@ function stepAriaLabel(
     ? "completed"
     : "available";
 
-  const parts = [`Step ${idx + 1} of ${total}`, step.label, `— ${stateText}`];
+  const parts = [`Step ${idx + 1} of ${total}`, step.label, `- ${stateText}`];
   if (isActive && step.description) parts.push(`. ${step.description}`);
   if (step.locked && step.lockedReason) parts.push(`. ${step.lockedReason}`);
   return parts.join(" ");
@@ -154,7 +154,7 @@ export function WizardStepper({ steps, activeStep, onStepClick }: WizardStepperP
                   <span className="flex-1 flex justify-center">{button}</span>
                 )}
 
-                {/* Connector line — thicker, semantic */}
+                {/* Connector line - thicker, semantic */}
                 {idx < steps.length - 1 && (
                   <div
                     aria-hidden="true"

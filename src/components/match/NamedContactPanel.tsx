@@ -1,5 +1,5 @@
 /**
- * MT-009 Phase 1 — Named Contact Panel (display-only).
+ * MT-009 Phase 1 - Named Contact Panel (display-only).
  *
  * Shows per-side named-contact status on Match Details. Phase 1 is
  * detection-only:
@@ -231,7 +231,7 @@ export function NamedContactPanel({ matchId, match }: NamedContactPanelProps) {
         </CardTitle>
         <CardDescription>
           Each side with an attached organisation must have either a registered
-          Izenzo user or a controlled named contact. This is informational —
+          Izenzo user or a controlled named contact. This is informational -
           progression is not blocked yet.
         </CardDescription>
       </CardHeader>

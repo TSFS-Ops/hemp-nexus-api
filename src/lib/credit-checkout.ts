@@ -1,5 +1,5 @@
 /**
- * credit-checkout — client helper for the `token-purchase` edge function.
+ * credit-checkout - client helper for the `token-purchase` edge function.
  *
  * Centralises:
  *   - initiating Paystack checkout (`startCreditCheckout`)
@@ -7,7 +7,7 @@
  *   - the canonical `CreditPackageId` union understood by the backend
  *
  * Keeping this in one module ensures every Purchase button across the
- * desk talks to the same backend contract — preventing the UI/backend
+ * desk talks to the same backend contract - preventing the UI/backend
  * drift that originally caused the "checkout coming online soon" stub.
  */
 import { supabase } from "@/integrations/supabase/client";
@@ -85,7 +85,7 @@ export interface VerifyCheckoutResult {
 
 /**
  * Verifies a Paystack reference and credits the org wallet if the
- * webhook hasn't already done so. Safe to call repeatedly — the
+ * webhook hasn't already done so. Safe to call repeatedly - the
  * backend has both soft and hard idempotency guards.
  */
 export async function verifyCreditCheckout(

@@ -1,5 +1,5 @@
 /**
- * Batch D — HQ-only governance waiver/bypass grant + renew panel.
+ * Batch D - HQ-only governance waiver/bypass grant + renew panel.
  *
  * Small UI affordance inside Governance Record detail. Lists currently-known
  * waivers for the anchor (most recent first) and lets a platform_admin grant
@@ -9,7 +9,7 @@
  * Hard rules:
  *   - Visible to platform_admin only (the parent already gates HQ access).
  *   - Submits trigger MFA/AAL2 on the backend; UI surfaces the MFA error.
- *   - Does NOT change business outcomes by itself — enforcement is in
+ *   - Does NOT change business outcomes by itself - enforcement is in
  *     backend hooks (`assertWaiverActive` / `consumeGovernanceWaiver`).
  */
 

@@ -1,6 +1,6 @@
 // src/lib/admin-facilitation-queue.ts
 //
-// Batch 2 — Queue UI Badges + Filters helpers (pure, display-only).
+// Batch 2 - Queue UI Badges + Filters helpers (pure, display-only).
 //
 // HARD BOUNDARIES:
 //   • No network calls. No DB calls. No mutation.
@@ -46,7 +46,7 @@ export const NEXT_ACTION_LABELS: Record<NextActionLabel, string> = {
   binding_review_required: "Binding review required",
   no_outreach_logged: "No outreach logged",
   draft_pending_review: "Draft pending review",
-  draft_approved_manual_send: "Draft approved — manual send",
+  draft_approved_manual_send: "Draft approved - manual send",
   draft_rejected: "Draft rejected",
   overdue: "Overdue",
   waiting_on_counterparty: "Waiting on counterparty",
@@ -89,7 +89,7 @@ export function priorityIndex(label: NextActionLabel | undefined): number {
   return idx < 0 ? NEXT_ACTION_PRIORITY.length : idx;
 }
 
-/** Stable tone classes for badges — clinical neutral palette. */
+/** Stable tone classes for badges - clinical neutral palette. */
 export type BadgeTone =
   | "neutral"
   | "info"
@@ -158,7 +158,7 @@ export const FACILITATION_FILTERS: ReadonlyArray<{
   { value: "no_outreach_logged", label: "No outreach logged" },
   { value: "overdue", label: "Overdue" },
   { value: "due_soon", label: "Due soon" },
-  { value: "draft_approved_manual_send", label: "Draft approved — manual send" },
+  { value: "draft_approved_manual_send", label: "Draft approved - manual send" },
   { value: "draft_pending_review", label: "Draft pending review" },
   { value: "waiting_on_counterparty", label: "Waiting on counterparty" },
   { value: "waiting_on_initiator", label: "Waiting on requesting org" },

@@ -1,5 +1,5 @@
 /**
- * AddContactDialog — admin contact-capture for unregistered counterparties
+ * AddContactDialog - admin contact-capture for unregistered counterparties
  * ────────────────────────────────────────────────────────────────────────
  *
  * Closes the UX gap identified after the "Could not load email preview"
@@ -13,18 +13,18 @@
  *   CTA and can join/review the trade.
  *
  * The previous UI hid "save a discovered email" inside a button labelled
- * "Mark contacted" — which implies the admin has *already* reached the
+ * "Mark contacted" - which implies the admin has *already* reached the
  * counterparty. This dialog gives the discovery step its own dedicated
  * affordance ("Add contact") with the right semantics:
  *
- *   • Email  — required, validated client-side (zod `.email()`, 3–254 chars,
+ *   • Email  - required, validated client-side (zod `.email()`, 3–254 chars,
  *              must NOT end in `.invalid` per RFC 2606). Saved via the
  *              existing `poi-engagements` PATCH `counterparty_email`
- *              endpoint — backend validation is the source of truth and
+ *              endpoint - backend validation is the source of truth and
  *              is unchanged.
- *   • Phone  — optional. Persisted as part of `admin_notes` (until/unless
+ *   • Phone  - optional. Persisted as part of `admin_notes` (until/unless
  *              a `counterparty_phone` column is added) so it survives.
- *   • Notes  — optional, prepended to `admin_notes`.
+ *   • Notes  - optional, prepended to `admin_notes`.
  *
  * Once the email saves successfully the row's existing Notify button
  * enables and the existing preview-outreach / send-outreach flow runs
@@ -68,7 +68,7 @@ import {
 // for `counterparty_email` (3–254, .email()) and adds a frontend-only
 // `.invalid`-TLD block. Backend stays the source of truth.
 // ────────────────────────────────────────────────────────────────────────
-// Batch A — schema mirrors the server-side `PatchPoiEngagementSchema`
+// Batch A - schema mirrors the server-side `PatchPoiEngagementSchema`
 // for `counterparty_email`, `contact_type` and `contact_name`. The
 // `superRefine` enforces the workflow rule signed on 06 May 2026:
 //   • named individual → contact_name is required
@@ -144,11 +144,11 @@ export interface AddContactEngagementSummary {
   counterparty_org_name: string | null;
   counterparty_email: string | null;
   commodity: string | null;
-  /** Batch A — current contact_type on the engagement, if any. */
+  /** Batch A - current contact_type on the engagement, if any. */
   contact_type?: "organisation" | "named_individual" | null;
-  /** Batch A — current free-text contact_name on the engagement, if any. */
+  /** Batch A - current free-text contact_name on the engagement, if any. */
   contact_name?: string | null;
-  /** Batch A — true when the engagement has a registered counterparty
+  /** Batch A - true when the engagement has a registered counterparty
    *  organisation linked. Used so the schema can accept "organisation"
    *  contact_type without forcing the admin to retype the name. */
   has_org_link?: boolean;
@@ -164,7 +164,7 @@ interface AddContactDialogProps {
 
 /**
  * Builds three deep-link helpers (Google, LinkedIn, Companies House
- * search). Pure client-side — opens a new tab. Helps the admin do the
+ * search). Pure client-side - opens a new tab. Helps the admin do the
  * external research step from inside the desk.
  */
 function buildResearchLinks(orgName: string | null) {
@@ -187,7 +187,7 @@ export function AddContactDialog({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
-  // Batch A — contact_type/contact_name local state. Default to
+  // Batch A - contact_type/contact_name local state. Default to
   // "organisation" when the engagement has an org name/link, otherwise
   // default to "named_individual" so the admin is steered away from
   // creating an "email-only / Contact incomplete" record.
@@ -239,7 +239,7 @@ export function AddContactDialog({
   );
 
   // Fetch the underlying match so we can mount the existing
-  // CounterpartyIntelPanel (it requires a full Match row). Read-only —
+  // CounterpartyIntelPanel (it requires a full Match row). Read-only -
   // no schema changes, no new edge functions. The panel itself runs
   // the system-assisted public-source sketch on first render.
   const matchId = engagement?.match_id ?? null;
@@ -299,7 +299,7 @@ export function AddContactDialog({
 
     setSaving(true);
     try {
-      // Step 1 — persist the email through the existing, unchanged backend
+      // Step 1 - persist the email through the existing, unchanged backend
       // contract. Surfaces the auto-resolution `binding` hint so the admin
       // immediately knows whether the address auto-linked to a registered
       // org, hit suppression, or remained unregistered.
@@ -310,7 +310,7 @@ export function AddContactDialog({
           headers: { "Idempotency-Key": crypto.randomUUID() },
           body: {
             counterparty_email: parsed.data.email.trim(),
-            // Batch A — persist the contact_type radio + free-text name
+            // Batch A - persist the contact_type radio + free-text name
             // so the canonical contact-state badge resolves correctly
             // and the backend's preview/send gate has the right inputs.
             contact_type: parsed.data.contact_type,
@@ -364,7 +364,7 @@ export function AddContactDialog({
       setSaveError(humanised);
       const description = [humanised.hint, humanised.requestId ? `Request ID: ${humanised.requestId}` : null]
         .filter(Boolean)
-        .join(" — ");
+        .join(" - ");
       toast.error(humanised.headline, {
         description: description || undefined,
       });
@@ -381,14 +381,14 @@ export function AddContactDialog({
           <DialogDescription>
             Capture a real contact email for this counterparty so platform
             outreach can be sent. This does <strong>not</strong> send an email
-            and does <strong>not</strong> mark the engagement as contacted —
+            and does <strong>not</strong> mark the engagement as contacted -
             after saving, use <em>Send outreach</em> to email them, or <em>Record contact</em> to log off-platform contact.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* ── Left column: capture form + manual research deep-links ── */}
           <div className="space-y-4">
-            {/* Research helpers — only useful when we know the counterparty name. */}
+            {/* Research helpers - only useful when we know the counterparty name. */}
         {research && (
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
             <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
@@ -444,10 +444,10 @@ export function AddContactDialog({
             )}
           </div>
 
-          {/* Batch A — contact_type radio. Drives the canonical contact-state
+          {/* Batch A - contact_type radio. Drives the canonical contact-state
               badge and the backend's preview/send gate. "Email-only with no
               organisation/name" remains Contact incomplete and is rejected
-              by the schema's superRefine — admins must pick a type and,
+              by the schema's superRefine - admins must pick a type and,
               for named individuals, supply a name. */}
           <fieldset className="space-y-2 rounded-md border border-slate-200 bg-slate-50/40 p-3">
             <legend className="px-1 text-xs font-medium text-slate-700">
@@ -536,7 +536,7 @@ export function AddContactDialog({
             {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
             <p className="text-xs text-muted-foreground">
               Stored in admin notes for now. Outreach will still be sent by
-              email — phone is captured for the audit trail.
+              email - phone is captured for the audit trail.
             </p>
           </div>
 
@@ -562,7 +562,7 @@ export function AddContactDialog({
             </div>
             {!matchId ? (
               <p className="text-xs text-muted-foreground">
-                No match context available — research deep-links on the left can still help.
+                No match context available - research deep-links on the left can still help.
               </p>
             ) : matchLoading ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

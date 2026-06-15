@@ -1,5 +1,5 @@
 /**
- * Batch 4 — HQ Identity admin panel.
+ * Batch 4 - HQ Identity admin panel.
  *
  * Platform-admin only. Lists organisations with their SSO and SCIM
  * lifecycle posture, and lets an admin:
@@ -9,7 +9,7 @@
  *
  * Claim-control:
  *   - The "SSO live" badge is ONLY rendered when ssoClaimAllowed() === true.
- *   - The phrase "SCIM live" is NEVER rendered — Batch 4 ships lifecycle
+ *   - The phrase "SCIM live" is NEVER rendered - Batch 4 ships lifecycle
  *     structure only, no external SCIM HTTP endpoint exists yet.
  *   - "Enterprise ready", "Bank ready", "DFI ready" are not used.
  */
@@ -200,7 +200,7 @@ export function AdminIdentityPanel() {
           {" "}
           <span className="font-mono">No custom SAML.</span> Live SSO is only flipped on
           per-org after a passing connection test against a Supabase native SAML
-          provider. SCIM lifecycle structure only — no external SCIM HTTP endpoint
+          provider. SCIM lifecycle structure only - no external SCIM HTTP endpoint
           exists in Batch 4.
         </p>
         <Button size="sm" variant="outline" onClick={() => void loadAll()} disabled={loading}>
@@ -233,13 +233,13 @@ export function AdminIdentityPanel() {
               return (
                 <tr key={org.id} className="border-t border-border hover:bg-muted/30">
                   <td className="px-3 py-2">
-                    <div className="font-medium">{org.name ?? org.legal_name ?? "—"}</div>
+                    <div className="font-medium">{org.name ?? org.legal_name ?? "-"}</div>
                     <div className="font-mono text-[10px] text-muted-foreground">{org.id}</div>
                   </td>
                   <td className="px-3 py-2"><SsoStatusPill config={cfg} /></td>
                   <td className="px-3 py-2">
                     {(cfg?.verified_domains ?? []).length === 0 ? (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground">-</span>
                     ) : (
                       <span className="font-mono text-[11px]">
                         {(cfg!.verified_domains.slice(0, 3)).join(", ")}
@@ -248,7 +248,7 @@ export function AdminIdentityPanel() {
                     )}
                   </td>
                   <td className="px-3 py-2 font-mono text-[11px]">
-                    {cfg?.last_tested_at ? new Date(cfg.last_tested_at).toLocaleString() : "—"}
+                    {cfg?.last_tested_at ? new Date(cfg.last_tested_at).toLocaleString() : "-"}
                   </td>
                   <td className="px-3 py-2">
                     {claimOk ? (
@@ -427,7 +427,7 @@ function OrgIdentityDrawer({
           <>
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                Identity · {org.name ?? org.legal_name ?? "—"}
+                Identity · {org.name ?? org.legal_name ?? "-"}
                 <SsoStatusPill config={cfg} />
               </SheetTitle>
               <SheetDescription className="font-mono text-[10px] text-muted-foreground">
@@ -476,7 +476,7 @@ function OrgIdentityDrawer({
                     <SelectContent>
                       <SelectItem value="not_configured">Not configured</SelectItem>
                       <SelectItem value="pending_metadata">Pending metadata</SelectItem>
-                      <SelectItem value="configured_not_connected">Configured — not connected</SelectItem>
+                      <SelectItem value="configured_not_connected">Configured - not connected</SelectItem>
                       <SelectItem value="disabled">Disabled</SelectItem>
                     </SelectContent>
                   </Select>
@@ -612,7 +612,7 @@ function ScimLifecycleTable({
                     value={targetById[r.user_id] ?? ""}
                     onValueChange={(v) => setTargetById((m) => ({ ...m, [r.user_id]: v as ScimState }))}
                   >
-                    <SelectTrigger className="w-[160px]"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="w-[160px]"><SelectValue placeholder="-" /></SelectTrigger>
                     <SelectContent>
                       {allowed.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>

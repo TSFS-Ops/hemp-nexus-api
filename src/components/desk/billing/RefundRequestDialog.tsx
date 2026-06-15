@@ -1,5 +1,5 @@
 /**
- * DEC-007 — Org-side Refund Request dialog.
+ * DEC-007 - Org-side Refund Request dialog.
  *
  * Allows an org member to record a refund request against one of their
  * own completed token_purchases. Calls the existing `refund-request`
@@ -38,8 +38,8 @@ import {
 import { parseEdgeError } from "@/lib/edge-error";
 
 const REASON_LABELS: Record<RefundReasonCode, string> = {
-  unused_within_window: "Unused credits — within refund window",
-  unused_outside_window: "Unused credits — outside refund window",
+  unused_within_window: "Unused credits - within refund window",
+  unused_outside_window: "Unused credits - outside refund window",
   accidental_purchase: "Accidental purchase",
   duplicate_purchase: "Duplicate purchase",
   service_dissatisfaction: "Service dissatisfaction",

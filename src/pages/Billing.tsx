@@ -28,7 +28,7 @@ import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalida
 import { publish as publishCrossTab } from "@/lib/cross-tab-bus";
 
 // ==============================================
-// CREDIT PACKAGES — USD-native settlement (cutover 2026-05-01)
+// CREDIT PACKAGES - USD-native settlement (cutover 2026-05-01)
 // ==============================================
 // Paystack charges Izenzo customers directly in USD. There is no FX
 // conversion at checkout. 1 credit = $1.00 USD. Drift between this
@@ -42,7 +42,7 @@ const CREDIT_PACKAGES = [
     priceUsd: 1,
     label: 'Single Credit',
     pricePerCredit: '1.00',
-    description: 'One credit — pay as you go',
+    description: 'One credit - pay as you go',
     popular: false,
   },
   {
@@ -93,7 +93,7 @@ function BillingContent() {
   const { availability: billingAvailability } = useBillingAvailability();
   const [paymentFailure, setPaymentFailure] = useState<string | null>(null);
   const [paymentCancelled, setPaymentCancelled] = useState(false);
-  // SEC P0-3: settling state — payment authorised by Paystack but
+  // SEC P0-3: settling state - payment authorised by Paystack but
   // webhook settlement / ledger write hasn't confirmed credits yet.
   // Drives a persistent banner (instead of a single toast) so the user
   // never sees "0 credits" without context.
@@ -101,7 +101,7 @@ function BillingContent() {
   const queryClient = useQueryClient();
   const verifyAttempted = useRef(false);
 
-  // (USD-native cutover 2026-05-01) — FX rate fetch removed. Paystack
+  // (USD-native cutover 2026-05-01) - FX rate fetch removed. Paystack
   // charges the customer in USD directly; no ZAR estimate to display.
 
   // Auto-verify payment when returning from Paystack checkout
@@ -163,7 +163,7 @@ function BillingContent() {
               setPaymentFailure("Your payment was not successful. Your card was not charged. Please try again below or use a different payment method.");
               toast.error("Payment failed. Your card was not charged.", { duration: 8000 });
             } else {
-              // SEC P0-3: persistent settling banner — webhook hasn't
+              // SEC P0-3: persistent settling banner - webhook hasn't
               // confirmed credit yet; show pending/settling, NOT credits.
               setPaymentSettling({ reference });
               toast.info("Payment is still being processed. Credits will appear shortly. If they don't arrive within 5 minutes, contact support@izenzo.co.za.");
@@ -400,7 +400,7 @@ function BillingContent() {
           </Alert>
         )}
 
-        {/* SEC P0-3: settling banner — webhook hasn't confirmed credit yet.
+        {/* SEC P0-3: settling banner - webhook hasn't confirmed credit yet.
             Shows pending/settling state, never implies credits are available. */}
         {paymentSettling && (
           <Alert>
@@ -409,7 +409,7 @@ function BillingContent() {
               <div>
                 <p className="font-medium text-foreground">Payment settling</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  We've received your payment but haven't confirmed credit settlement yet. Credits will appear within 5 minutes — your balance below will not reflect this purchase until settlement completes. Reference: <code className="font-mono text-xs">{paymentSettling.reference}</code>
+                  We've received your payment but haven't confirmed credit settlement yet. Credits will appear within 5 minutes - your balance below will not reflect this purchase until settlement completes. Reference: <code className="font-mono text-xs">{paymentSettling.reference}</code>
                 </p>
               </div>
               <Button variant="ghost" size="sm" className="shrink-0 self-start sm:self-auto" onClick={() => setPaymentSettling(null)}>
@@ -581,7 +581,7 @@ function BillingContent() {
 
         <Separator />
 
-        {/* DEC-007 — Org-side purchases + refund request affordance */}
+        {/* DEC-007 - Org-side purchases + refund request affordance */}
         <PurchasesList orgId={billingProfile?.org_id} />
 
 

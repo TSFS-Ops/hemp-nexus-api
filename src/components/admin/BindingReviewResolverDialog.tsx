@@ -1,8 +1,8 @@
 /**
- * D2b — minimal admin "Binding Review Resolver" dialog.
+ * D2b - minimal admin "Binding Review Resolver" dialog.
  *
  * Lives only inside the Pending Engagements admin panel. There is no
- * client-facing surface — counterparties never see the candidate JSON
+ * client-facing surface - counterparties never see the candidate JSON
  * or the resolution actions. The dialog is a thin wrapper around the
  * server endpoint:
  *
@@ -137,7 +137,7 @@ export function BindingReviewResolverDialog({
       }
       toast.success(
         resolution === "rejected"
-          ? "Binding review marked rejected — engagement remains blocked."
+          ? "Binding review marked rejected - engagement remains blocked."
           : "Binding review resolved.",
       );
       void data;
@@ -206,7 +206,7 @@ export function BindingReviewResolverDialog({
               <label className="flex items-start gap-2 cursor-pointer">
                 <RadioGroupItem value="rejected" id="binding-rejected" />
                 <div>
-                  <div className="text-sm font-medium">Reject — keep blocked</div>
+                  <div className="text-sm font-medium">Reject - keep blocked</div>
                   <div className="text-xs text-muted-foreground">
                     Record that the candidates are not credible. Engagement stays in binding review.
                   </div>

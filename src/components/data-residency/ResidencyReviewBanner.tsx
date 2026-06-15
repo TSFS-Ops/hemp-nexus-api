@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 /**
- * DATA-009 Phase 2 — org-side banner.
+ * DATA-009 Phase 2 - org-side banner.
  * Shows when the org has an open residency_review onboarding hold.
  * Does NOT promise hosting/region change.
  */
@@ -36,7 +36,7 @@ export function ResidencyReviewBanner() {
       <AlertDescription>
         A data-residency requirement has been recorded for your organisation and is awaiting Izenzo review.
         Production artefacts, exports and progression are paused while the review is open. This is a policy
-        review state only — no hosting, region or storage change is implied.
+        review state only - no hosting, region or storage change is implied.
       </AlertDescription>
     </Alert>
   );

@@ -1,5 +1,5 @@
 /**
- * DEC-010 Phase 1 — Investor / client / public claims register.
+ * DEC-010 Phase 1 - Investor / client / public claims register.
  *
  * Source of truth: signed Client-Only Decision Form, DEC-010.
  *
@@ -26,7 +26,7 @@
  *                                contexts, misleading in others.
  *                                Requires human review before public
  *                                use. Phase 1 does NOT auto-approve or
- *                                auto-block these phrases — it merely
+ *                                auto-block these phrases - it merely
  *                                surfaces them as a known review queue.
  *                                The Phase 2 admin approval workflow
  *                                (UI + emissions) is explicitly NOT
@@ -71,13 +71,13 @@ export interface ClaimEntry {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// approved_now — true today, may be used unqualified
+// approved_now - true today, may be used unqualified
 // ─────────────────────────────────────────────────────────────────────
 export const APPROVED_NOW_CLAIMS: ClaimEntry[] = [
   { id: "workflow.governed", text: "Governed trade workflow.", classification: "approved_now", surfaces: ["marketing", "ui", "docs"] },
   { id: "workflow.recording", text: "Record, manage, and progress trade intent.", classification: "approved_now", surfaces: ["marketing", "ui"] },
   { id: "poi.pre-acceptance", text: "POI before counterparty acceptance is an initiator-generated intent record awaiting counterparty confirmation.", classification: "approved_now", surfaces: ["marketing", "docs", "ui"] },
-  { id: "poi.post-acceptance", text: "After counterparty acceptance, a POI is an accepted POI / mutual intent record — not a final contract or completed transaction.", classification: "approved_now", surfaces: ["marketing", "docs", "ui"] },
+  { id: "poi.post-acceptance", text: "After counterparty acceptance, a POI is an accepted POI / mutual intent record - not a final contract or completed transaction.", classification: "approved_now", surfaces: ["marketing", "docs", "ui"] },
   { id: "admin.hold-points", text: "Admin-controlled hold-points for unknown or off-platform counterparties.", classification: "approved_now", surfaces: ["marketing", "docs"] },
   { id: "billing.credits", text: "Pay-as-you-go credit billing with full usage history.", classification: "approved_now", surfaces: ["marketing", "ui"] },
   { id: "hash.recorded", text: "SHA-256 hash recorded on critical state transitions. Coverage is being progressively hardened.", classification: "approved_now", surfaces: ["marketing", "docs"] },
@@ -85,7 +85,7 @@ export const APPROVED_NOW_CLAIMS: ClaimEntry[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────
-// approved_after_hardening — direction-of-travel; must be qualified
+// approved_after_hardening - direction-of-travel; must be qualified
 // ─────────────────────────────────────────────────────────────────────
 export const APPROVED_AFTER_HARDENING_CLAIMS: ClaimEntry[] = [
   { id: "status.public", text: "Public status feed is in development.", classification: "approved_after_hardening", surfaces: ["marketing"] },
@@ -95,7 +95,7 @@ export const APPROVED_AFTER_HARDENING_CLAIMS: ClaimEntry[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────
-// manual_review_required — context-sensitive; needs human approval
+// manual_review_required - context-sensitive; needs human approval
 // ─────────────────────────────────────────────────────────────────────
 export const MANUAL_REVIEW_REQUIRED_CLAIMS: ClaimEntry[] = [
   { id: "review.enterprise-ready", text: "enterprise-ready", classification: "manual_review_required", surfaces: ["marketing", "investor"], rationale: "Truthful only in defined enterprise contexts; must not imply blanket enterprise certification." },
@@ -113,7 +113,7 @@ export const MANUAL_REVIEW_REQUIRED_CLAIMS: ClaimEntry[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────
-// prohibited — forbidden outright; blocked by static + runtime guards
+// prohibited - forbidden outright; blocked by static + runtime guards
 // ─────────────────────────────────────────────────────────────────────
 export const PROHIBITED_CLAIMS: ClaimEntry[] = [
   { id: "prohibited.replaces-legal-review", text: "Izenzo replaces legal review", classification: "prohibited", surfaces: [] },
@@ -197,18 +197,18 @@ export function isApprovedAfterHardeningId(id: string): boolean {
 // ─────────────────────────────────────────────────────────────────────
 // DEC-010 canonical audit action constants.
 //
-// `claims.claim_evaluated` — emitted whenever the platform evaluates a
+// `claims.claim_evaluated` - emitted whenever the platform evaluates a
 //   claim against this register (runtime call to assertClaimSafe OR
 //   static call during prebuild). The Phase 1 surface for evaluation
 //   is the `assertClaimSafe` helper and the prebuild guards; an emit
 //   adapter is exposed below so future server-side callers can attach
 //   their own audit emitter without re-coining the action name.
 //
-// `claims.unapproved_claim_blocked` — emitted when an evaluation
+// `claims.unapproved_claim_blocked` - emitted when an evaluation
 //   decision blocks a claim. Already in use today by the POI /
 //   Pending Engagement claim guard.
 //
-// `claims.claim_approved_by_admin` — Phase 2 placeholder. There is NO
+// `claims.claim_approved_by_admin` - Phase 2 placeholder. There is NO
 //   admin approval workflow in this repo. The constant exists so that
 //   future approval emit points have a fixed SSOT, but tests assert
 //   that no runtime emission of this string exists outside this SSOT
@@ -228,7 +228,7 @@ export const DEC010_AUDIT_ACTIONS = [
 
 export type Dec010AuditAction = (typeof DEC010_AUDIT_ACTIONS)[number];
 
-/** Phase marker — Phase 2 admin approval workflow is NOT implemented. */
+/** Phase marker - Phase 2 admin approval workflow is NOT implemented. */
 export const DEC010_PHASE = 1 as const;
 export const DEC010_ADMIN_APPROVAL_WORKFLOW_IMPLEMENTED = false as const;
 

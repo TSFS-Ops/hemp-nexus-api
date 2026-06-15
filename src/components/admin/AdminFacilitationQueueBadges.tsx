@@ -1,6 +1,6 @@
 // src/components/admin/AdminFacilitationQueueBadges.tsx
 //
-// Batch 2 — Read-only visual surface for `queue_derived`.
+// Batch 2 - Read-only visual surface for `queue_derived`.
 //
 // HARD BOUNDARIES:
 //   • Display only. No mutation, no fetch, no dispatch.
@@ -82,7 +82,7 @@ export function AdminFacilitationQueueBadges({ queueDerived, engagementId }: Pro
           className="text-amber-900 leading-snug"
           data-testid="queue-manual-send-notice"
         >
-          Approved draft available — manual send required. The platform does
+          Approved draft available - manual send required. The platform does
           not transmit outreach automatically.
         </div>
       )}

@@ -1,5 +1,5 @@
 /**
- * ChallengeCommentThread — Phase 3D
+ * ChallengeCommentThread - Phase 3D
  *
  * Read-only chronological comment list for a challenge. Direct RLS read of
  * `match_challenge_comments`. Visibility is governed by the row-level

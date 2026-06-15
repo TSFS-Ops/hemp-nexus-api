@@ -1,5 +1,5 @@
 /**
- * useGovernanceEvents — fetches and merges events for a single Governance
+ * useGovernanceEvents - fetches and merges events for a single Governance
  * Record (HQ-only). RLS on each underlying table restricts row visibility
  * to platform_admin / auditor in production, so the supabase client call
  * pattern matches AdminAuditLogs / AdminEventStorePanel.
@@ -139,7 +139,7 @@ export function useGovernanceEvents(anchor: GovernanceAnchor) {
               for (const r of nested ?? []) events.push(normaliseEventStore(r));
             }
           } catch {
-            // Nested JSON filter is opportunistic — never fail the whole fetch.
+            // Nested JSON filter is opportunistic - never fail the whole fetch.
           }
         }
       }

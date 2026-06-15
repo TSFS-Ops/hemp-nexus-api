@@ -1,16 +1,16 @@
 /**
- * AdminRatingAppealsPanel — platform admin queue for counterparty rating appeals.
+ * AdminRatingAppealsPanel - platform admin queue for counterparty rating appeals.
  *
  * Filed by org admins, resolved by platform admins. Each appeal carries the
  * full snapshot of the rating at filing time so resolutions are auditable
  * even if the score later changes.
  *
  * Resolution actions:
- *   • Mark Reviewing — claim the appeal (sets reviewing_admin_id).
- *   • Uphold       — appeal accepted; admin should follow up with manual
+ *   • Mark Reviewing - claim the appeal (sets reviewing_admin_id).
+ *   • Uphold       - appeal accepted; admin should follow up with manual
  *                     intervention (e.g. excluding wash-trade signals).
- *   • Dismiss      — appeal rejected with reason.
- *   • Recompute    — kicks compute-counterparty-ratings for the org.
+ *   • Dismiss      - appeal rejected with reason.
+ *   • Recompute    - kicks compute-counterparty-ratings for the org.
  */
 
 import { useMemo, useState } from "react";

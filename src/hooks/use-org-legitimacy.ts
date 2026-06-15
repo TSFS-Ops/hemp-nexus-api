@@ -1,11 +1,11 @@
 /**
- * useOrgLegitimacy — client-side mirror of supabase/functions/_shared/legitimacy.ts.
+ * useOrgLegitimacy - client-side mirror of supabase/functions/_shared/legitimacy.ts.
  *
  * Read-only check of the caller's org `trade_approvals` row. Used to render
  * the legitimacy gate pre-flight (disabled buttons + recovery CTA) so users
  * never click a button only to be denied by a 403.
  *
- * IMPORTANT: this hook is for UX only. The server is the source of truth —
+ * IMPORTANT: this hook is for UX only. The server is the source of truth -
  * never rely on this to authorise an action.
  */
 
@@ -92,7 +92,7 @@ export function useOrgLegitimacy() {
 
       // RLS may legitimately hide approval rows from non-admin members of the
       // same org. We therefore treat a lookup failure as ALLOWED-by-default
-      // for UX purposes — the server still enforces the gate. This avoids
+      // for UX purposes - the server still enforces the gate. This avoids
       // false-positive blocks on legitimate users whose admin has been
       // approved but who themselves lack visibility on the row.
       if (error || !data) {

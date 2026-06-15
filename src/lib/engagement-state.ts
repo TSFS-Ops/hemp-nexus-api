@@ -9,7 +9,7 @@
  * `engagement_status = 'pending'`; any UI branch that keys solely off
  * `'pending'` is dead code and produces empty admin views.
  *
- * Defect: D-05 (Pending Engagements enum drift) — Fix-First Remediation Plan.
+ * Defect: D-05 (Pending Engagements enum drift) - Fix-First Remediation Plan.
  *
  * Rules for use:
  *   • All admin filters/counters/badges/empty-states for "needs admin action"
@@ -39,7 +39,7 @@ export const ENGAGEMENT_TERMINAL_STATES = [
 /**
  * Legacy-only. Kept for type compatibility with rows that may still carry
  * `'pending'` after historical migrations. New code MUST NOT branch on this
- * literal — use `isEngagementPending()` instead so legacy rows are still
+ * literal - use `isEngagementPending()` instead so legacy rows are still
  * surfaced in pending views without polluting the canonical set.
  */
 export const LEGACY_PENDING_STATE = "pending" as const;

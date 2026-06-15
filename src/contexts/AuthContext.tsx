@@ -17,7 +17,7 @@ interface AuthContextType {
    * True once the initial role fetch for the current authenticated user has
    * resolved at least once (success or failure), OR when there is no
    * authenticated user. Route guards MUST wait for this before deciding to
-   * redirect on a missing required role — otherwise a valid platform_admin
+   * redirect on a missing required role - otherwise a valid platform_admin
    * gets bounced to /desk?denied=1 on hard reload before fetchRoles resolves.
    */
   rolesLoaded: boolean;
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const invalidateRoleScopedCaches = useCallback(() => {
     // Force-refetch anything that depends on the caller's role/org context.
-    // Backend remains the final authority — this only keeps the UI honest.
+    // Backend remains the final authority - this only keeps the UI honest.
     queryClient.invalidateQueries();
   }, []);
 
@@ -203,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           window.dispatchEvent(beforeUnloadEvent);
 
           // Surface the global blocking modal instead of a corner toast
-          // (clients were missing the toast — see incident 2026-04-24).
+          // (clients were missing the toast - see incident 2026-04-24).
           notifySessionExpired("REFRESH_FAILED");
           recordSessionFailure("REFRESH_FAILED", { context: "auth-state-change" });
         }
@@ -216,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (session?.user) {
         hadUserRef.current = true;
-        // A new authenticated user appeared — the next role fetch is the
+        // A new authenticated user appeared - the next role fetch is the
         // authoritative one. Mark roles as not-yet-loaded so RequireAuth
         // shows the loader instead of redirecting on stale roles=[].
         setRolesLoaded(false);
@@ -241,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       
       if (session?.user) {
-        // Initial restore — roles fetch is in flight; guards must wait.
+        // Initial restore - roles fetch is in flight; guards must wait.
         setRolesLoaded(false);
         await ensureProfileIfNeeded(session.user.id, session.user.email ?? "");
         fetchRoles(session.user.id);
@@ -348,9 +348,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               triggerExpiry("HEALTH_CHECK_FAILED");
               return;
             }
-            // Other errors (network, 5xx) — skip this cycle.
+            // Other errors (network, 5xx) - skip this cycle.
           } else {
-            // Server confirms session — opportunistically refresh roles so a
+            // Server confirms session - opportunistically refresh roles so a
             // demoted user in an idle background tab is reflected within ~60s.
             fetchRoles(currentSession.user.id);
           }

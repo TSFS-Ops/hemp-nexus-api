@@ -1,9 +1,9 @@
 /**
- * upload-cleanup-on-failure — Batch E SEC-012 / WEB-008 helper
+ * upload-cleanup-on-failure - Batch E SEC-012 / WEB-008 helper
  *
  * After a storage upload SUCCEEDED but the follow-up DB / finaliser call
- * FAILED — including because the auth session died (REFRESH_FAILED,
- * NO_SESSION, UNAUTHORIZED) — we must not leave the storage object
+ * FAILED - including because the auth session died (REFRESH_FAILED,
+ * NO_SESSION, UNAUTHORIZED) - we must not leave the storage object
  * dangling until the 24 h sweeper.
  *
  * Strategy (best-effort, never throws):
@@ -16,7 +16,7 @@
  *      `storage_deletion_queue` for the next sweeper pass (~5 minutes).
  *
  * Callers should `await` this in the upload error path but MUST NOT
- * re-throw — the user-visible error is the upload failure itself.
+ * re-throw - the user-visible error is the upload failure itself.
  */
 import { supabase } from "@/integrations/supabase/client";
 

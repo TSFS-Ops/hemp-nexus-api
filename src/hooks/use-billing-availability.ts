@@ -1,5 +1,5 @@
 /**
- * use-billing-availability — small read-only hook that returns the
+ * use-billing-availability - small read-only hook that returns the
  * platform's current credit-purchase availability.
  *
  * Reads from the `get_billing_availability()` RPC, which returns the
@@ -17,7 +17,7 @@
  * to both `anon` and `authenticated` and only exposes the single
  * non-sensitive availability blob.
  *
- * Default behaviour while loading or on error is **disabled** — we
+ * Default behaviour while loading or on error is **disabled** - we
  * fail-closed so a transient backend hiccup never silently re-enables
  * checkout while Paystack USD settlement is pending.
  */

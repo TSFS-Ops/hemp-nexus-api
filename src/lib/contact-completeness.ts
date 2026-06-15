@@ -1,5 +1,5 @@
 /**
- * Batch A — Counterparty contact-completeness helper
+ * Batch A - Counterparty contact-completeness helper
  * ──────────────────────────────────────────────────────────────────────────
  *
  * Single source of truth for the question: "Can platform outreach be sent
@@ -10,30 +10,30 @@
  *   • Add Contact dialog (radio constraints + post-save badge)
  *   • Match-detail Pending Engagement card (badge shown to the initiator)
  *   • Edge function `poi-engagements` (preview-outreach + send-outreach
- *     gate) — mirrored verbatim in
+ *     gate) - mirrored verbatim in
  *     `supabase/functions/_shared/contact-completeness.ts` because edge
  *     functions cannot import from `src/`. The two files MUST stay in
  *     lockstep; the regression test
  *     `src/tests/contact-completeness.test.ts` pins the behaviour.
  *
- * ── Decision rules (signed: David, James, Daniel — 06 May 2026) ──
+ * ── Decision rules (signed: David, James, Daniel - 06 May 2026) ──
  *
  * Returns one of:
  *
- *   • "organisation_contact"   — usable email present AND (counterparty_org_id
+ *   • "organisation_contact"   - usable email present AND (counterparty_org_id
  *                                is linked OR a non-empty organisation name
  *                                is on the engagement / parent match).
  *
- *   • "named_individual_contact" — usable email present AND a non-empty
+ *   • "named_individual_contact" - usable email present AND a non-empty
  *                                  contact_name is recorded on the engagement.
  *                                  (contact_type='named_individual' is the
  *                                  authoritative signal once captured.)
  *
- *   • "email_missing"          — a name is recorded (organisation OR
+ *   • "email_missing"          - a name is recorded (organisation OR
  *                                individual) BUT counterparty_email is null,
  *                                blank, malformed or .invalid.
  *
- *   • "contact_incomplete"     — neither a usable name NOR a usable email is
+ *   • "contact_incomplete"     - neither a usable name NOR a usable email is
  *                                present. The most restrictive state.
  *
  * Outreach (preview + send) is BLOCKED for "email_missing" and
@@ -42,7 +42,7 @@
  *
  * ── Important client correction (06 May 2026) ──
  * Email-only with no organisation name, no linked counterparty organisation,
- * AND no named individual is "contact_incomplete" — NEVER
+ * AND no named individual is "contact_incomplete" - NEVER
  * "organisation_contact". Do not relax this rule without re-signing.
  */
 
@@ -94,7 +94,7 @@ export function isUsableContactEmail(email: string | null | undefined): boolean 
 /**
  * Resolve the "organisation name" the engagement is associated with, if any.
  * Looks at:
- *   1. The joined counterparty_org.name (preferred — explicit FK link).
+ *   1. The joined counterparty_org.name (preferred - explicit FK link).
  *   2. The unregistered side of the parent match's *_name column.
  *
  * Returns the trimmed name, or null when nothing usable is recorded.
@@ -118,7 +118,7 @@ function resolveOrgName(
 }
 
 /**
- * The single rule. Pure function — same inputs always yield the same state.
+ * The single rule. Pure function - same inputs always yield the same state.
  */
 export function getContactState(
   engagement: ContactEngagementInput,
@@ -168,7 +168,7 @@ export function isOutreachBlocked(state: ContactState): boolean {
 
 /**
  * Plain-English label for badges and tooltips. Wording is part of the
- * signed spec — do not change without re-confirming with the client.
+ * signed spec - do not change without re-confirming with the client.
  */
 export function contactStateLabel(state: ContactState): string {
   switch (state) {

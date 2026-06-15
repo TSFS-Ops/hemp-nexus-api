@@ -6,12 +6,12 @@
  *
  * Centralises the settled→confirmed mapping so consumers never need to know about it.
  *
- * Batch T — UI-013: supports two optional truthfulness qualifiers that
+ * Batch T - UI-013: supports two optional truthfulness qualifiers that
  * are rendered as small chips alongside the canonical status badge so
  * the UI never lies about the underlying backend state:
- *   - `testMode`        — row was created/processed under a test-mode
+ *   - `testMode`        - row was created/processed under a test-mode
  *                         bypass (e.g. `metadata.test_mode_bypass=true`)
- *   - `providerError`   — last provider/dispatch attempt failed (e.g.
+ *   - `providerError`   - last provider/dispatch attempt failed (e.g.
  *                         `metadata.provider_status === "provider_error"`
  *                         or `last_status === "failed"`)
  *
@@ -54,7 +54,7 @@ export function MatchStatusBadge({
       {testMode && (
         <span
           data-testid="status-badge-test-mode"
-          title="This row was produced under a test-mode bypass — not real data"
+          title="This row was produced under a test-mode bypass - not real data"
           className="inline-flex items-center rounded-sm border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-amber-800 dark:bg-amber-500/10 dark:text-amber-400"
         >
           TEST-MODE

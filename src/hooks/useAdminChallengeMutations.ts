@@ -1,5 +1,5 @@
 /**
- * useAdminChallengeMutations — Phase 3C
+ * useAdminChallengeMutations - Phase 3C
  *
  * Thin wrappers over the existing `match-challenges/transition` and
  * `match-challenges/break-glass` endpoints. No new server endpoints.

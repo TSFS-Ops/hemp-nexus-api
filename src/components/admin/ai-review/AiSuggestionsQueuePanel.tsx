@@ -15,7 +15,7 @@
  *     / confidence_override → `ai-proposed-match-decision`
  *   - Do-not-contact rule create / deactivate → `ai-do-not-contact-rules`
  *
- * Stale = active status + age > 30 days. UI-derived only — nothing persists,
+ * Stale = active status + age > 30 days. UI-derived only - nothing persists,
  * auto-archives, or auto-deletes.
  */
 
@@ -40,7 +40,7 @@ import { AiSuggestionLauncher } from "./AiSuggestionLauncher";
 const ROW_LIMIT = 200;
 const STALE_AFTER_DAYS = 30;
 // Active statuses eligible for the stale badge. Stale = active + age > 30 days.
-// UI-derived only — nothing here persists, auto-archives, or auto-deletes.
+// UI-derived only - nothing here persists, auto-archives, or auto-deletes.
 const STALE_ACTIVE_STATUSES = new Set<string>([
   "new",
   "pending",
@@ -336,14 +336,14 @@ export function AiSuggestionsQueuePanel(props: AiSuggestionsQueuePanelProps = {}
                 const stale = isStale(r);
                 return (
                   <tr key={r.id} className="border-t border-border hover:bg-muted/30">
-                    <Td className="font-mono text-[11px] text-muted-foreground">{r.rank_position ?? "—"}</Td>
+                    <Td className="font-mono text-[11px] text-muted-foreground">{r.rank_position ?? "-"}</Td>
                     <Td>
                       <div className="font-medium text-foreground">{r.suggested_counterparty_name}</div>
                       {r.jurisdiction ? (
                         <div className="font-mono text-[10.5px] text-muted-foreground">{r.jurisdiction}</div>
                       ) : null}
                     </Td>
-                    <Td className="text-muted-foreground">{r.counterparty_role ?? "—"}</Td>
+                    <Td className="text-muted-foreground">{r.counterparty_role ?? "-"}</Td>
                     <Td>
                       <Badge variant="outline" className={confidenceTone(r.confidence_override ?? r.confidence_level)}>
                         {r.confidence_override ?? r.confidence_level}
@@ -363,7 +363,7 @@ export function AiSuggestionsQueuePanel(props: AiSuggestionsQueuePanelProps = {}
                           <span className="font-mono text-[11px]">{flags.length || (r.escalation_required ? 1 : 0)}</span>
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </Td>
                     <Td>
@@ -608,7 +608,7 @@ function Prose({ value }: { value: string | null }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Action bar — admin decisions on a proposed match. All mutations go through
+// Action bar - admin decisions on a proposed match. All mutations go through
 // the `ai-proposed-match-decision` edge function so RLS, role-gating, and
 // canonical `ai_review.*` audit writes stay server-side.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -669,7 +669,7 @@ const DIALOG_SPECS: Record<ActionKey, DialogSpec> = {
   reviewer_note: { action: "reviewer_note", title: "Add reviewer note", description: "Append or replace the reviewer note. Recorded in audit trail.", needsNote: true, confirmLabel: "Save note" },
   confidence_override: { action: "confidence_override", title: "Override Discovery Confidence", description: "Manually set the Discovery Confidence level. This is advisory; it does not assert verification.", needsOverride: true, needsReason: true, confirmLabel: "Apply override" },
   assign: { action: "assign", title: "Assign to platform admin", description: "Assign this proposal to a specific platform_admin reviewer (paste their user id).", needsAssignee: true, confirmLabel: "Assign" },
-  set_due_date: { action: "set_due_date", title: "Set due date", description: "Internal review due date. Advisory only — no automatic action is taken when the date passes.", needsDueAt: true, confirmLabel: "Set due date" },
+  set_due_date: { action: "set_due_date", title: "Set due date", description: "Internal review due date. Advisory only - no automatic action is taken when the date passes.", needsDueAt: true, confirmLabel: "Set due date" },
   mark_duplicate: { action: "mark_duplicate", title: "Mark duplicate", description: "Archive this proposal and tag as a duplicate of another suggestion.", needsReason: true, confirmLabel: "Mark duplicate" },
   mark_not_relevant: { action: "mark_not_relevant", title: "Mark not relevant", description: "Archive this proposal as not commercially relevant.", needsReason: true, confirmLabel: "Mark not relevant" },
   set_feedback_reason: { action: "set_feedback_reason", title: "Set feedback reason", description: "Record a fixed feedback reason against this proposal.", needsFeedbackReason: true, confirmLabel: "Save feedback reason" },
@@ -791,7 +791,7 @@ function DecisionDialog({
       return data;
     },
     onSuccess: () => {
-      toast.success(`${spec.title} — recorded`);
+      toast.success(`${spec.title} - recorded`);
       qc.invalidateQueries({ queryKey: ["ai-proposed-matches"] });
       qc.invalidateQueries({ queryKey: ["ai-proposed-match-audit", row.id] });
       onSuccess();
@@ -820,7 +820,7 @@ function DecisionDialog({
         <div className="space-y-3">
           {spec.clientVisibleConfirm ? (
             <div className="border border-amber-300 bg-amber-50 rounded-sm p-3 text-[12px] text-amber-900 space-y-2">
-              <p className="font-medium">Heads up — client-visible exposure.</p>
+              <p className="font-medium">Heads up - client-visible exposure.</p>
               <p>
                 Approving for client view sets <span className="font-mono">client_visible = true</span> and
                 snapshots the approved payload. In a future phase (Phase 4) this snapshot may be shown
@@ -916,7 +916,7 @@ function DecisionDialog({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Edit payload — admin-only. Edits safe advisory fields. Calls `edit_payload`
+// Edit payload - admin-only. Edits safe advisory fields. Calls `edit_payload`
 // on the decision edge function which lazily snapshots `original_payload` and
 // stamps `edited_payload`. Edits are NOT approved; a separate approve action
 // is still required.
@@ -959,7 +959,7 @@ function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => 
       return data;
     },
     onSuccess: () => {
-      toast.success("Edit recorded. Not yet approved — separate approval required.");
+      toast.success("Edit recorded. Not yet approved - separate approval required.");
       qc.invalidateQueries({ queryKey: ["ai-proposed-matches"] });
       qc.invalidateQueries({ queryKey: ["ai-proposed-match-audit", row.id] });
       onClose();
@@ -975,7 +975,7 @@ function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => 
           <DialogDescription>
             Edits the safe advisory fields only. The original AI payload is preserved as
             <span className="font-mono"> original_payload</span> and your edits are saved as
-            <span className="font-mono"> edited_payload</span>. <b>Edits are not approved</b> — a separate
+            <span className="font-mono"> edited_payload</span>. <b>Edits are not approved</b> - a separate
             approval action is still required before any client-visible or outreach step.
           </DialogDescription>
         </DialogHeader>
@@ -1010,7 +1010,7 @@ function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Versions drawer — shows original AI payload, edited payload and approved
+// Versions drawer - shows original AI payload, edited payload and approved
 // payload side-by-side. Admin-only. Not exposed to external users.
 // ─────────────────────────────────────────────────────────────────────────────
 function VersionsDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void }) {
@@ -1180,7 +1180,7 @@ export function DoNotContactPanel() {
               <tr key={r.id} className="border-t border-border">
                 <Td className="font-mono text-[11.5px]">{r.rule_type}</Td>
                 <Td className="font-mono text-[11.5px] break-all">{r.rule_value}</Td>
-                <Td className="text-muted-foreground">{r.reason ?? "—"}</Td>
+                <Td className="text-muted-foreground">{r.reason ?? "-"}</Td>
                 <Td>
                   <Badge variant="outline" className={r.active ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-slate-100 text-slate-500 border-slate-200"}>
                     {r.active ? "active · blocking" : "inactive"}

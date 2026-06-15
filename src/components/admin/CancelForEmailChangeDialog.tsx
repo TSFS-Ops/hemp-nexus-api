@@ -1,5 +1,5 @@
 /**
- * D3 — Admin "Cancel for email change" dialog (D2a wiring).
+ * D3 - Admin "Cancel for email change" dialog (D2a wiring).
  *
  * Wraps POST /poi-engagements/:id/cancel-for-email-change. Used when the
  * recorded counterparty email turns out to be wrong AND outreach has
@@ -8,7 +8,7 @@
  * cancel the live engagement and create a replacement.
  *
  * D2a deliberately implements the cancel half only. Replacement creation
- * is left to the existing engagement-creation flow on success — the
+ * is left to the existing engagement-creation flow on success - the
  * toast message points the operator at it explicitly.
  */
 
@@ -158,7 +158,7 @@ export function CancelForEmailChangeDialog({
             Engagement{" "}
             <span className="font-mono">{engagement.id.substring(0, 8)}…</span>
             {engagement.counterparty_email
-              ? <> — current email <span className="font-mono">{engagement.counterparty_email}</span></>
+              ? <> - current email <span className="font-mono">{engagement.counterparty_email}</span></>
               : null}
             .
           </DialogDescription>

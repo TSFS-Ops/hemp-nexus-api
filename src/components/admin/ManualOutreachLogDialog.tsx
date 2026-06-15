@@ -1,15 +1,15 @@
 /**
  * ManualOutreachLogDialog
  * ───────────────────────
- * Batch 3 — Unknown-Counterparty Admin Facilitation: Manual Outreach Logging UX.
+ * Batch 3 - Unknown-Counterparty Admin Facilitation: Manual Outreach Logging UX.
  *
  * RECORDS outreach that happened OUTSIDE the platform. It does NOT send
  * anything. There is no Send button, no provider call.
  *
  * Reuses the existing `poi-engagements` PATCH endpoint side-field path:
  *   - contact_method  (existing column)
- *   - contact_date    (existing column — last contact attempt timestamp)
- *   - admin_notes     (existing column — appended via PATCH)
+ *   - contact_date    (existing column - last contact attempt timestamp)
+ *   - admin_notes     (existing column - appended via PATCH)
  *
  * Backend already:
  *   - validates admin auth on PATCH
@@ -97,10 +97,10 @@ export function ManualOutreachLogDialog({
     }
     setSaving(true);
     try {
-      // Compose admin_notes payload — include method + optional detail so the
+      // Compose admin_notes payload - include method + optional detail so the
       // append-only outreach log row carries the manual outreach context.
       const detailLine = contactDetail.trim()
-        ? ` — ${contactDetail.trim()}`
+        ? ` - ${contactDetail.trim()}`
         : "";
       const composedNotes =
         `[Manual outreach recorded · ${method}${detailLine}]\n${trimmedNotes}`.slice(0, 2000);

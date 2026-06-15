@@ -1,5 +1,5 @@
 /**
- * Public /status — UI-010 holding page (signed Decision Form).
+ * Public /status - UI-010 holding page (signed Decision Form).
  *
  * The signed Client-Only Decision Form (UI-010) requires that this public
  * route does NOT make any availability claim of any kind (no operational,

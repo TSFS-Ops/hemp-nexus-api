@@ -1,5 +1,5 @@
 /**
- * useChallengeComments — Phase 3D
+ * useChallengeComments - Phase 3D
  *
  * Direct RLS read of `match_challenge_comments` for a single challenge,
  * plus a write mutation that posts to the existing `match-challenges/comment`

@@ -94,7 +94,7 @@ export default function DocsWebhooks() {
           <strong className="text-foreground font-medium">Perspective.</strong> Webhook
           payloads are scoped to the <strong className="text-foreground font-medium">subscribing org</strong>.
           Any field prefixed <InlineCode>counterparty_</InlineCode> describes the org sitting in
-          the slot <em>opposite</em> to the subscribing org — never an absolute buyer or
+          the slot <em>opposite</em> to the subscribing org - never an absolute buyer or
           seller. The same match emits one delivery per subscribed org and the
           <InlineCode>counterparty_*</InlineCode> values flip accordingly.
         </Callout>
@@ -156,7 +156,7 @@ export default function DocsWebhooks() {
 
         <DocH2 id="best-practices">Best practices</DocH2>
         <DocP>
-          Make your handler idempotent — the platform may retry a delivery you've already
+          Make your handler idempotent - the platform may retry a delivery you've already
           processed. Key your processing on{" "}
           <InlineCode>X-Webhook-Idempotency-Key</InlineCode> (or the most specific
           identifier in the payload) and skip duplicates. Respond 2xx as soon as the

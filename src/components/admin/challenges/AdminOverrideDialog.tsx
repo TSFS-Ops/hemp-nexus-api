@@ -1,5 +1,5 @@
 /**
- * AdminOverrideDialog — Phase 3C + 3E governance tightening.
+ * AdminOverrideDialog - Phase 3C + 3E governance tightening.
  *
  * Sober UI for the platform-admin closure path. User-facing label is
  * "Admin override closure" (never "break glass"). Two-step confirmation
@@ -206,7 +206,7 @@ export function AdminOverrideDialog({
               <Label htmlFor="override-regulator-ref">
                 Regulator reference{" "}
                 <span className="text-muted-foreground">
-                  (optional — stored as "{REGULATOR_REFERENCE_NOT_APPLICABLE}" if blank)
+                  (optional - stored as "{REGULATOR_REFERENCE_NOT_APPLICABLE}" if blank)
                 </span>
               </Label>
               <Input

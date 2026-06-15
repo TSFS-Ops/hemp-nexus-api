@@ -1,5 +1,5 @@
 /**
- * PendingPurchaseNotice — Batch C / Fix 4.
+ * PendingPurchaseNotice - Batch C / Fix 4.
  *
  * Soft UX warning surfaced near the Purchase CTAs when this device has
  * a recent Paystack attempt that has not been confirmed credited yet
@@ -87,7 +87,7 @@ export function PendingPurchaseNotice({ orgId }: PendingPurchaseNoticeProps) {
           You have a recent payment ({" "}
           <span className="font-mono text-[12px]">{latest.reference}</span>{" "}
           ) that has not yet been confirmed as credited. Complete or verify
-          that payment before starting another — otherwise you may be charged
+          that payment before starting another - otherwise you may be charged
           twice for the same intent.
         </p>
       </div>

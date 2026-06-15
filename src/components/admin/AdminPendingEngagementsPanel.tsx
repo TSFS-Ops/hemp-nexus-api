@@ -47,7 +47,7 @@ import {
   BINDING_HINT_MESSAGES,
   type UpdatePoiEngagementResponse,
 } from "@/types/poi-engagement";
-// Defect D-05 — Pending Engagements enum drift. Canonical pre-acceptance
+// Defect D-05 - Pending Engagements enum drift. Canonical pre-acceptance
 // state set lives in one place so filters/counters/badges cannot drift.
 import {
   ENGAGEMENT_PENDING_STATES,
@@ -72,7 +72,7 @@ import {
   pickAdminEngagementBlockedReason,
 } from "@/lib/admin-engagement-blocked-reasons";
 import { EngagementOutreachDraftPanel } from "@/components/admin/EngagementOutreachDraftPanel";
-// Batch A — single source of truth for contact-completeness labels and the
+// Batch A - single source of truth for contact-completeness labels and the
 // outreach gate. Mirrors the edge-function helper so the UI badge, tooltip
 // and Send-outreach disabled state always match the backend's 422 response.
 import {
@@ -82,7 +82,7 @@ import {
   isOutreachBlocked,
   type ContactState,
 } from "@/lib/contact-completeness";
-// Batch 2 — Unknown-Counterparty Admin Facilitation: read-only badges + filters
+// Batch 2 - Unknown-Counterparty Admin Facilitation: read-only badges + filters
 // driven entirely by the Batch 1 `queue_derived` payload. No send, no dispatch.
 import { AdminFacilitationQueueBadges } from "@/components/admin/AdminFacilitationQueueBadges";
 import {
@@ -90,7 +90,7 @@ import {
   matchesFacilitationFilter,
   type FacilitationFilterValue,
 } from "@/lib/admin-facilitation-queue";
-// Batch 3 — Manual outreach logging UX. RECORDS outreach performed outside
+// Batch 3 - Manual outreach logging UX. RECORDS outreach performed outside
 // the platform. No send, no dispatch.
 import { ManualOutreachLogDialog } from "@/components/admin/ManualOutreachLogDialog";
 
@@ -119,7 +119,7 @@ interface Engagement {
   renewed_from_engagement_id?: string | null;
   late_acceptance_recorded_at?: string | null;
   reconfirmation_window_expires_at?: string | null;
-  // Batch A — counterparty contact labelling fields.
+  // Batch A - counterparty contact labelling fields.
   contact_type: "organisation" | "named_individual" | null;
   contact_name: string | null;
   contact_method: string | null;
@@ -132,7 +132,7 @@ interface Engagement {
   created_at: string;
   sla_reminder_sent_at?: string | null;
   sla_reminder_count?: number | null;
-  // D2b — binding-review fields surfaced by the GET /poi-engagements list
+  // D2b - binding-review fields surfaced by the GET /poi-engagements list
   // (the server returns `*` so these come along automatically).
   operational_state?: string | null;
   binding_candidates?: unknown;
@@ -157,7 +157,7 @@ interface Engagement {
   queue_derived?: import("@/lib/admin-facilitation-queue").QueueDerived | null;
 }
 
-// D2b — predicate: is this engagement awaiting an admin binding-review
+// D2b - predicate: is this engagement awaiting an admin binding-review
 // decision? Mirrors the server-side gate (operational_state OR
 // binding_candidates without binding_resolution).
 function isBindingReviewPending(e: { operational_state?: string | null; binding_candidates?: unknown; binding_resolution?: string | null }): boolean {
@@ -169,7 +169,7 @@ function isBindingReviewPending(e: { operational_state?: string | null; binding_
 
 /**
  * Returns true when the engagement has a counterparty email that is plausibly
- * deliverable. Frontend UX guard only — the backend (`poi-engagements`
+ * deliverable. Frontend UX guard only - the backend (`poi-engagements`
  * `preview-outreach` / `send-outreach`) remains the source of truth and will
  * still reject anything that fails its own validation. We exclude:
  *   • missing / null / whitespace-only addresses
@@ -180,7 +180,7 @@ export function isUsableOutreachEmail(email: string | null | undefined): boolean
   if (!email) return false;
   const trimmed = email.trim().toLowerCase();
   if (!trimmed) return false;
-  // Basic shape check — must contain a single '@' with content on both sides.
+  // Basic shape check - must contain a single '@' with content on both sides.
   const at = trimmed.indexOf("@");
   if (at <= 0 || at !== trimmed.lastIndexOf("@") || at === trimmed.length - 1) return false;
   const domain = trimmed.slice(at + 1);
@@ -223,7 +223,7 @@ const STATUS_STYLES: Record<string, string> = {
   accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
   declined: "bg-rose-50 text-rose-700 border-rose-200",
   expired: "bg-slate-100 text-slate-500 border-slate-200",
-  // Batch B Phase 5: visually distinct from `accepted` — late acceptance
+  // Batch B Phase 5: visually distinct from `accepted` - late acceptance
   // does NOT progress the workflow until the initiator reconfirms.
   late_acceptance_pending_initiator_reconfirmation:
     "bg-amber-50 text-amber-800 border-amber-300",
@@ -249,8 +249,8 @@ const STATUS_LABELS: Record<string, string> = {
   declined: "Declined",
   expired: "Expired",
   late_acceptance_pending_initiator_reconfirmation:
-    "Late acceptance — awaiting initiator reconfirmation",
-  disputed_being_named: "Disputed — being named",
+    "Late acceptance - awaiting initiator reconfirmation",
+  disputed_being_named: "Disputed - being named",
   cancelled_email_change: "Cancelled (email change)",
 };
 
@@ -271,13 +271,13 @@ const FILTER_TABS = [
   // "Accepted" so the workflow status is unambiguous.
   {
     value: "late_acceptance_pending_initiator_reconfirmation",
-    label: "Late acceptance — awaiting reconfirmation",
+    label: "Late acceptance - awaiting reconfirmation",
   },
-  // D2b — surface engagements parked in binding-review so admins can
+  // D2b - surface engagements parked in binding-review so admins can
   // open the resolver dialog without scrolling through "All".
   { value: "binding_review_required", label: "Binding review required" },
-  // D3 — surface engagements parked in dispute / cancelled-email-change.
-  { value: "disputed_being_named", label: "Disputed — being named" },
+  // D3 - surface engagements parked in dispute / cancelled-email-change.
+  { value: "disputed_being_named", label: "Disputed - being named" },
   { value: "cancelled_email_change", label: "Cancelled for email change" },
   // ── Batch 2: additive facilitation filters driven entirely by `queue_derived` ──
   // These never mutate canonical state and never enable a send affordance.
@@ -285,7 +285,7 @@ const FILTER_TABS = [
   { value: "no_outreach_logged", label: "No outreach logged" },
   { value: "overdue", label: "Overdue" },
   { value: "due_soon", label: "Due soon" },
-  { value: "draft_approved_manual_send", label: "Draft approved — manual send" },
+  { value: "draft_approved_manual_send", label: "Draft approved - manual send" },
   { value: "draft_pending_review", label: "Draft pending review" },
   { value: "waiting_on_counterparty", label: "Waiting on counterparty" },
   { value: "waiting_on_initiator", label: "Waiting on requesting org" },
@@ -315,7 +315,7 @@ export function AdminPendingEngagementsPanel() {
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  // Default to "all" so accepted/declined rows are visible by default — the
+  // Default to "all" so accepted/declined rows are visible by default - the
   // previous "active" default silently hid resolved rows and caused support
   // tickets ("did the trade work?"). The Active queue remains one click away.
   const [filter, setFilter] = useState<string>("all");
@@ -326,7 +326,7 @@ export function AdminPendingEngagementsPanel() {
   // Phase 1 demo isolation: hide is_demo rows by default so admins never
   // confuse Daniel-facing fixture rows with real production engagements.
   const [showDemo, setShowDemo] = useState<boolean>(false);
-  // Off-scope counters: UI-002 fix — when admin is on "Unknown only", we
+  // Off-scope counters: UI-002 fix - when admin is on "Unknown only", we
   // surface every engagement that does NOT match the current scope so a
   // row with `counterparty_type` of `'known'`, `NULL`, or any future value
   // is never silently invisible. The recent counter still tracks the
@@ -343,11 +343,11 @@ export function AdminPendingEngagementsPanel() {
 
   // ── ID lookup ──
   // Free-text search across Engagement ID and Match ID. Accepts a full UUID
-  // (the canonical operator workflow — paste the ID from a support ticket or
+  // (the canonical operator workflow - paste the ID from a support ticket or
   // test guide) or any substring for convenience. Case-insensitive.
   // Applied AFTER the tab/notes filters in `filtered`, but when a non-empty
   // ID query is present we widen the base set to ALL engagements regardless
-  // of the active tab — operators looking up a specific row by ID should
+  // of the active tab - operators looking up a specific row by ID should
   // never have it hidden by the current tab.
   // Pre-scope from URL: links like /admin/engagements?match=<uuid> or
   // ?engagement=<uuid> (used in Daniel-fixture acceptance emails) must
@@ -368,16 +368,16 @@ export function AdminPendingEngagementsPanel() {
   const [notesDraft, setNotesDraft] = useState<string>("");
   const [notesSaving, setNotesSaving] = useState(false);
 
-  // ── Batch 3 — Manual outreach logging dialog state ──
+  // ── Batch 3 - Manual outreach logging dialog state ──
   const [manualOutreachFor, setManualOutreachFor] = useState<string | null>(null);
 
   // ── Add-contact dialog (capture discovered email/phone for unregistered counterparties) ──
-  // Distinct from "Mark contacted" — this is the *discovery* step that
+  // Distinct from "Mark contacted" - this is the *discovery* step that
   // unblocks Notify, not a record that contact has actually happened.
   const [addContactFor, setAddContactFor] = useState<AddContactEngagementSummary | null>(null);
-  // D2b — admin Binding Review Resolver dialog state.
+  // D2b - admin Binding Review Resolver dialog state.
   const [bindingReviewFor, setBindingReviewFor] = useState<BindingReviewEngagement | null>(null);
-  // D3 — admin Dispute + Cancel-for-email-change dialog state.
+  // D3 - admin Dispute + Cancel-for-email-change dialog state.
   const [disputeFor, setDisputeFor] = useState<DisputeEngagementTarget | null>(null);
   const [cancelEmailFor, setCancelEmailFor] = useState<CancelEngagementTarget | null>(null);
   const [disputeResolutionFor, setDisputeResolutionFor] = useState<{
@@ -394,17 +394,17 @@ export function AdminPendingEngagementsPanel() {
   // bounced / complained / suppressed without leaving the panel.
   //
   // RLS: `email_send_log` allows SELECT only to `is_admin(auth.uid())`. Failure
-  // here must NEVER block the panel — it is enrichment only.
+  // here must NEVER block the panel - it is enrichment only.
   // OutreachDelivery / DELIVERY_STYLES / DELIVERY_LABELS / deriveDeliveryMap
   // are imported from ./adminDeliveryStatus so they can be unit-tested in
   // isolation. Behaviour is unchanged.
   const [delivery, setDelivery] = useState<Record<string, OutreachDelivery>>({});
 
-  // Batch F UI surfacing — engagement-linked bounce/complaint audit signal.
+  // Batch F UI surfacing - engagement-linked bounce/complaint audit signal.
   // Source-of-truth: audit_logs rows written by handle-email-suppression with
   //   entity_type='poi_engagement', action in ('engagement.outreach_bounced',
   //   'engagement.outreach_complained'), entity_id = <engagement_id>.
-  // Strict UUID-linked — no inference. Latest row per engagement wins.
+  // Strict UUID-linked - no inference. Latest row per engagement wins.
   type EngagementBounceAudit = {
     kind: "bounced" | "complained";
     at: string;
@@ -440,7 +440,7 @@ export function AdminPendingEngagementsPanel() {
         if (cancelled || !data) return;
         setDelivery(deriveDeliveryMap(data as never, visibleIds));
       } catch (err) {
-        // Zero swallowed errors — log but keep panel functional.
+        // Zero swallowed errors - log but keep panel functional.
         console.warn(
           "[AdminPendingEngagementsPanel] failed to load email_send_log delivery status:",
           err,
@@ -604,7 +604,7 @@ export function AdminPendingEngagementsPanel() {
       `pending engagements export (${filtered.length} rows)`,
     );
     if (!reason) {
-      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      toast.error("Export cancelled - a reason of at least 10 characters is required.");
       return;
     }
     const rows = exportRowsForFiltered();
@@ -615,7 +615,7 @@ export function AdminPendingEngagementsPanel() {
     ].join("\r\n");
 
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    // Batch T — AUD-017: pending-engagements export is sensitive
+    // Batch T - AUD-017: pending-engagements export is sensitive
     // (counterparty emails + support notes). Audited helper with BOM
     // preserved for Excel compatibility.
     const result = await auditedDownloadCSVRaw(csv, {
@@ -654,14 +654,14 @@ export function AdminPendingEngagementsPanel() {
         <tr>
           <td>${escapeHtml(r.match_id.slice(0, 8))}…</td>
           <td>${escapeHtml(r.status)}</td>
-          <td>${escapeHtml(r.counterparty_org || r.counterparty_email || "—")}</td>
+          <td>${escapeHtml(r.counterparty_org || r.counterparty_email || "-")}</td>
           <td>${escapeHtml(r.initiator_org)}</td>
           <td>${escapeHtml(r.commodity)}<br/><small>${escapeHtml(r.quantity)} · ${escapeHtml(r.price)}</small></td>
           <td>${escapeHtml(r.created_at ? new Date(r.created_at).toLocaleString() : "")}</td>
           <td>${r.support_notes
             ? `<div class="notes">${escapeHtml(r.support_notes)}</div>
-               <small>updated ${escapeHtml(r.support_notes_updated_at ? new Date(r.support_notes_updated_at).toLocaleString() : "—")}</small>`
-            : '<span class="muted">—</span>'}</td>
+               <small>updated ${escapeHtml(r.support_notes_updated_at ? new Date(r.support_notes_updated_at).toLocaleString() : "-")}</small>`
+            : '<span class="muted">-</span>'}</td>
         </tr>`
       )
       .join("");
@@ -683,7 +683,7 @@ export function AdminPendingEngagementsPanel() {
   tr { page-break-inside: avoid; }
 </style></head>
 <body>
-  <h1>Pending Engagements — Reviewer Export</h1>
+  <h1>Pending Engagements - Reviewer Export</h1>
   <div class="meta">
     Generated ${escapeHtml(stamp)} · ${rows.length} engagement${rows.length === 1 ? "" : "s"} ·
     Scope: ${escapeHtml(scope)} · Status filter: ${escapeHtml(filter)} ·
@@ -707,7 +707,7 @@ export function AdminPendingEngagementsPanel() {
     w.document.open();
     w.document.write(html);
     w.document.close();
-    toast.success(`Opened ${rows.length} engagement${rows.length === 1 ? "" : "s"} — use the print dialog to save as PDF.`);
+    toast.success(`Opened ${rows.length} engagement${rows.length === 1 ? "" : "s"} - use the print dialog to save as PDF.`);
   };
 
   // ── SLA configuration (loaded from admin_settings.outreach_sla) ──
@@ -762,12 +762,12 @@ export function AdminPendingEngagementsPanel() {
     }
   };
 
-  // ── UI-002 — Off-scope visibility: never silently hide engagements ──
+  // ── UI-002 - Off-scope visibility: never silently hide engagements ──
   // Counts every row that would NOT appear under the current "unknown"
   // scope. We treat `counterparty_type IN ('known', NULL)` AND any future
   // non-`'unknown'` literal as off-scope so a forward-compatible value
   // cannot disappear from the admin landing view. Failures here are
-  // non-fatal — we just hide the badge/banner.
+  // non-fatal - we just hide the badge/banner.
   const fetchOffScopeCounts = async () => {
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -829,7 +829,7 @@ export function AdminPendingEngagementsPanel() {
           `SLA digest sent to ${result.recipient}: ${result.eligible_for_reminder} engagement(s) flagged.`
         );
       } else if ((result?.overdue_total ?? 0) === 0) {
-        toast.success("SLA scan complete — no overdue engagements.");
+        toast.success("SLA scan complete - no overdue engagements.");
       } else {
         toast.info(
           `SLA scan complete: ${result?.overdue_total ?? 0} overdue, all recently reminded (no new digest).`
@@ -895,7 +895,7 @@ export function AdminPendingEngagementsPanel() {
   const isAutoLinked = (e: Engagement) => Boolean(e.counterparty_org_id);
 
   /**
-   * Persistent row-level binding state — derived from the engagement row, NOT
+   * Persistent row-level binding state - derived from the engagement row, NOT
    * from the transient PATCH toast. This means the badge survives reloads,
    * filter changes, and tab switches, so admins never have to remember what
    * a previous toast said. Mirrors the four states defined by the
@@ -913,7 +913,7 @@ export function AdminPendingEngagementsPanel() {
         key: "linked",
         label: "Linked",
         title:
-          "Counterparty email is bound to a registered organisation — they will see this in their inbound queue.",
+          "Counterparty email is bound to a registered organisation - they will see this in their inbound queue.",
         className: "bg-emerald-50 text-emerald-800 border-emerald-300",
       };
     }
@@ -939,13 +939,13 @@ export function AdminPendingEngagementsPanel() {
       key: "unregistered",
       label: "Unregistered",
       title:
-        "Email saved but no registered organisation matches it yet. Outreach can be sent — they will see the engagement once they sign up.",
+        "Email saved but no registered organisation matches it yet. Outreach can be sent - they will see the engagement once they sign up.",
       className: "bg-amber-50 text-amber-800 border-amber-300",
     };
   };
 
   /**
-   * Batch A — canonical contact-state badge. Single source of truth via
+   * Batch A - canonical contact-state badge. Single source of truth via
    * `getContactState`. Drives both the badge label and the Send-outreach
    * disabled tooltip so admin and backend never disagree.
    */
@@ -974,7 +974,7 @@ export function AdminPendingEngagementsPanel() {
             // unregistered counterparty. Previously both were passed as
             // undefined, which made resolveOrgName treat BOTH sides as
             // unregistered and pick the initiator's own org name as the
-            // "counterparty" name — wrongly returning organisation_contact
+            // "counterparty" name - wrongly returning organisation_contact
             // for the email-present / no-counterparty-name case and
             // leaving Send outreach enabled.
             buyer_org_id: e.matches.buyer_org_id ?? null,
@@ -1055,7 +1055,7 @@ export function AdminPendingEngagementsPanel() {
     } else if (filter === "notification_sent") {
       base = engagements.filter((e) => e.engagement_status === filter && !isAutoLinked(e));
     } else if (filter === "binding_review_required") {
-      // D2b — engagements awaiting an admin binding-review decision.
+      // D2b - engagements awaiting an admin binding-review decision.
       base = engagements.filter(isBindingReviewPending);
     } else if (isFacilitationFilter(filter)) {
       // ── Batch 2: additive facilitation filters (queue_derived-only) ──
@@ -1084,7 +1084,7 @@ export function AdminPendingEngagementsPanel() {
     }
     // Phase 1 demo isolation: hide is_demo rows unless operator opts in.
     // BUT when an explicit ID lookup is active (e.g. Daniel landing from
-    // /admin/engagements?match=<uuid>), surface demo rows too — otherwise
+    // /admin/engagements?match=<uuid>), surface demo rows too - otherwise
     // the targeted fixture row would be silently filtered out.
     if (!showDemo && idQuery.trim().length === 0) base = base.filter((e) => e.is_demo !== true);
     return base;
@@ -1202,7 +1202,7 @@ export function AdminPendingEngagementsPanel() {
 
   // Try to extract the real error message from a Supabase functions.invoke
   // failure. The SDK throws a generic "Edge Function returned a non-2xx status
-  // code" — the useful detail lives on `error.context.body` (a Response).
+  // code" - the useful detail lives on `error.context.body` (a Response).
   const extractEdgeError = async (err: any, fallback: string): Promise<string> => {
     try {
       const ctxBody = err?.context?.body;
@@ -1293,7 +1293,7 @@ export function AdminPendingEngagementsPanel() {
         );
         // ── Surface PATCH failures explicitly. Previously we only
         // destructured `data`, which silently swallowed save errors and
-        // let the code fall through to preview-outreach — which then
+        // let the code fall through to preview-outreach - which then
         // 400'd with the misleading "no usable counterparty email on
         // file" toast even though the real failure was the upstream
         // PATCH (e.g. validation rejected the address, idempotency
@@ -1312,7 +1312,7 @@ export function AdminPendingEngagementsPanel() {
         }
         // Surface the auto-resolution outcome to the reviewer so they know
         // immediately whether the recipient will see this in their inbound
-        // queue. Non-fatal — the email is saved either way.
+        // queue. Non-fatal - the email is saved either way.
         const hint = patchData?.binding;
         if (hint) {
           const copy = BINDING_HINT_MESSAGES[hint.status];
@@ -1336,7 +1336,7 @@ export function AdminPendingEngagementsPanel() {
       const td = data?.template_data ?? {};
       setOutreachRecipient(data?.recipient ?? "");
       setOutreachSuppressed(!!data?.suppressed);
-      // Defensive client-side clamp — server contract is 200 chars. The server
+      // Defensive client-side clamp - server contract is 200 chars. The server
       // already truncates safely, but if an older deployment returns a longer
       // subject we clamp here so the field never exceeds the limit on prefill.
       setOutreachSubject((data?.subject ?? "").slice(0, 200));
@@ -1358,7 +1358,7 @@ export function AdminPendingEngagementsPanel() {
       // the user is not led to the wrong fix.
       const msg = await extractEdgeError(
         err,
-        "Could not load email preview. Please try again — if the problem persists, check the engagement details and reload.",
+        "Could not load email preview. Please try again - if the problem persists, check the engagement details and reload.",
       );
       toast.error(msg);
       setOutreachDialog(null);
@@ -1430,7 +1430,7 @@ export function AdminPendingEngagementsPanel() {
               }
               description = parts.join(" · ") || undefined;
             } catch {
-              // Non-JSON body — show raw text + status.
+              // Non-JSON body - show raw text + status.
               title = text || fallback;
               description = status ? `HTTP ${status}` : undefined;
             }
@@ -1569,7 +1569,7 @@ export function AdminPendingEngagementsPanel() {
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Pending Engagements</h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
             POI hold-point queue for {scope === "unknown" ? "unknown counterparties awaiting outreach" : "all counterparty engagements"}.
-            Send notifications and record manual contact attempts — every action is written to an immutable outreach log.
+            Send notifications and record manual contact attempts - every action is written to an immutable outreach log.
           </p>
           <p className="text-xs text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>
@@ -1654,7 +1654,7 @@ export function AdminPendingEngagementsPanel() {
             aria-pressed={showDemo}
             data-testid="show-demo-toggle"
           >
-            {showDemo ? "DEMO rows visible — click to hide" : "Show DEMO rows"}
+            {showDemo ? "DEMO rows visible - click to hide" : "Show DEMO rows"}
           </button>
           <Button
             variant="outline"
@@ -1683,7 +1683,7 @@ export function AdminPendingEngagementsPanel() {
             size="sm"
             onClick={handleExportPdf}
             disabled={filtered.length === 0}
-            title="Open a print-ready report of filtered engagements — use your browser's Save as PDF"
+            title="Open a print-ready report of filtered engagements - use your browser's Save as PDF"
           >
             <FileText className="h-4 w-4 mr-2" />
             PDF
@@ -1702,7 +1702,7 @@ export function AdminPendingEngagementsPanel() {
                 ? "Live: support-note edits and status changes from other admins appear automatically"
                 : liveStatus === "connecting"
                   ? "Connecting to live updates…"
-                  : "Live updates offline — use Refresh to reload"
+                  : "Live updates offline - use Refresh to reload"
             }
           >
             <span
@@ -1746,7 +1746,7 @@ export function AdminPendingEngagementsPanel() {
         ))}
       </div>
 
-      {/* ID lookup — find an engagement directly by Engagement ID or Match ID.
+      {/* ID lookup - find an engagement directly by Engagement ID or Match ID.
           When a query is present it overrides the active tab so the matching
           row is never hidden. Pasting a full UUID is the canonical workflow
           for support tickets, test guides, and audit references. */}
@@ -1770,7 +1770,7 @@ export function AdminPendingEngagementsPanel() {
         {idQuery.trim().length > 0 && (
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="bg-emerald-50 text-emerald-900 border-emerald-300 text-[11px]">
-              ID lookup active — tab filter ignored
+              ID lookup active - tab filter ignored
             </Badge>
             <Button
               variant="ghost"
@@ -1884,7 +1884,7 @@ export function AdminPendingEngagementsPanel() {
                   data-testid="off-scope-empty-hint"
                   className="text-xs text-muted-foreground mt-2"
                 >
-                  {offScopeTotalCount} engagement{offScopeTotalCount === 1 ? "" : "s"} exist in other scopes —{" "}
+                  {offScopeTotalCount} engagement{offScopeTotalCount === 1 ? "" : "s"} exist in other scopes -{" "}
                   <button
                     type="button"
                     onClick={() => setScope("all")}
@@ -1949,14 +1949,14 @@ export function AdminPendingEngagementsPanel() {
                                 variant="inline"
                               />
                             </div>
-                            {/* Batch 2 — read-only queue intelligence badges
+                            {/* Batch 2 - read-only queue intelligence badges
                                 (SLA, draft status, next action, last outreach).
                                 Display-only. No send affordance. */}
                             <AdminFacilitationQueueBadges
                               queueDerived={e.queue_derived ?? null}
                               engagementId={e.id}
                             />
-                            {/* Batch 3 — Manual outreach logging. RECORDS
+                            {/* Batch 3 - Manual outreach logging. RECORDS
                                 outreach performed outside the platform.
                                 No send, no dispatch. */}
                             <Button
@@ -2065,7 +2065,7 @@ export function AdminPendingEngagementsPanel() {
                               // Always render exactly one binding badge so
                               // admins can see the persisted contact-binding
                               // state at a glance (linked / unregistered /
-                              // suppressed / no contact) — no need to rely
+                              // suppressed / no contact) - no need to rely
                               // on the transient toast from the last save.
                               const b = getBindingBadge(e);
                               return (
@@ -2084,7 +2084,7 @@ export function AdminPendingEngagementsPanel() {
                             })()}
                             {(() => {
                               // Outreach delivery status from email_send_log.
-                              // Read-only enrichment — absent when no outreach
+                              // Read-only enrichment - absent when no outreach
                               // has been attempted yet for this engagement.
                               const d = delivery[e.id];
                               if (!d) return null;
@@ -2094,7 +2094,7 @@ export function AdminPendingEngagementsPanel() {
                                 "bg-slate-100 text-slate-700 border-slate-200";
                               const ts = new Date(d.created_at).toLocaleString();
                               const title = `Outreach delivery: ${label} at ${ts}${
-                                d.error_message ? ` — ${d.error_message}` : ""
+                                d.error_message ? ` - ${d.error_message}` : ""
                               }`;
                               const isWarn =
                                 d.status === "failed" ||
@@ -2119,7 +2119,7 @@ export function AdminPendingEngagementsPanel() {
                               );
                             })()}
                             {(() => {
-                              // Batch F UI surfacing — strict UUID-linked
+                              // Batch F UI surfacing - strict UUID-linked
                               // bounce/complaint audit. Only renders when an
                               // audit_logs row with entity_type='poi_engagement'
                               // and entity_id === e.id exists. No inference.
@@ -2127,7 +2127,7 @@ export function AdminPendingEngagementsPanel() {
                               if (!a) return null;
                               const label = a.kind === "complained" ? "Complaint" : "Bounced";
                               const ts = new Date(a.at).toLocaleString();
-                              const title = `Outreach ${a.kind} (suppressed — future sends to this address are blocked) at ${ts}`;
+                              const title = `Outreach ${a.kind} (suppressed - future sends to this address are blocked) at ${ts}`;
                               return (
                                 <Badge
                                   variant="outline"
@@ -2142,7 +2142,7 @@ export function AdminPendingEngagementsPanel() {
                                 </Badge>
                               );
                             })()}
-                            {/* Batch A — canonical contact-completeness badge.
+                            {/* Batch A - canonical contact-completeness badge.
                                 Mirrors the backend's outreach gate so an
                                 operator can read the state without opening
                                 the row. Wording is the signed spec. */}
@@ -2184,7 +2184,7 @@ export function AdminPendingEngagementsPanel() {
                                 </Badge>
                               );
                             })()}
-                            {/* D2b — Binding-review badge + resolver button. */}
+                            {/* D2b - Binding-review badge + resolver button. */}
                             {isBindingReviewPending(e) && (
                               <div className="flex items-center gap-1 flex-wrap">
                                 <Badge
@@ -2214,7 +2214,7 @@ export function AdminPendingEngagementsPanel() {
                                 </Button>
                               </div>
                             )}
-                            {/* D3 — "Why this is blocked / what to do next" hint per row. */}
+                            {/* D3 - "Why this is blocked / what to do next" hint per row. */}
                             {(() => {
                               const cs = getEngagementContactState(e);
                               const reason = pickAdminEngagementBlockedReason({
@@ -2249,9 +2249,9 @@ export function AdminPendingEngagementsPanel() {
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end flex-wrap">
                             {/* Add contact: dedicated discovery affordance for unregistered counterparties.
-                                Distinct from "Mark contacted" — captures a discovered email so Notify can run.
+                                Distinct from "Mark contacted" - captures a discovered email so Notify can run.
                                 Shown whenever the row has no usable email and the engagement isn't terminal. */}
-                            {/* Batch A — Add/Edit contact dialog. Captures
+                            {/* Batch A - Add/Edit contact dialog. Captures
                                 counterparty_email + contact_type +
                                 contact_name in one place. Shown for any
                                 non-terminal engagement so admins can move a
@@ -2293,7 +2293,7 @@ export function AdminPendingEngagementsPanel() {
                             })()}
                             {/* Send outreach (formerly "Notify"): platform-sent email via Resend. Only offered for
                                 pre-acceptance states with a deliverable email. Distinct from "Record contact" which is audit-only. */}
-                            {/* Batch A — outreach button is gated on the
+                            {/* Batch A - outreach button is gated on the
                                 canonical pre-acceptance state set
                                 (`isEngagementPending`, includes legacy
                                 'pending' defensively) AND on the
@@ -2305,13 +2305,13 @@ export function AdminPendingEngagementsPanel() {
                             {isEngagementPending(e.engagement_status) && (() => {
                               const cs = getEngagementContactState(e);
                               const contactBlock = isOutreachBlocked(cs);
-                              // Batch E Phase 2 — also pre-disable the
+                              // Batch E Phase 2 - also pre-disable the
                               // Send-outreach button when the server-side
                               // outreach gate would 409 (binding-review
                               // pending or disputed-being-named). Without
                               // this, admins click Send, the server 409s,
                               // and the UI surfaces the failure as a
-                              // toast — confusing because the row already
+                              // toast - confusing because the row already
                               // shows the parked-state chip. Tooltip uses
                               // neutral wording (no counterparty /
                               // candidate / dispute identity).
@@ -2413,7 +2413,7 @@ export function AdminPendingEngagementsPanel() {
                                 <XCircle className="h-3 w-3 mr-1" /> Decline
                               </Button>
                             )}
-                            {/* D3 — Record dispute (admin_report or counterparty_token).
+                            {/* D3 - Record dispute (admin_report or counterparty_token).
                                 Only offered when the engagement is not already disputed
                                 or in a terminal state. */}
                             {!isTerminal && e.engagement_status !== "disputed_being_named" && (
@@ -2458,7 +2458,7 @@ export function AdminPendingEngagementsPanel() {
                                 </Button>
                               </>
                             )}
-                            {/* D3 — Cancel for email change. Offered when outreach has
+                            {/* D3 - Cancel for email change. Offered when outreach has
                                 already started so the PATCH email-change path is refused. */}
                             {!isTerminal && e.engagement_status !== "cancelled_email_change" && (
                               <Button
@@ -2473,7 +2473,7 @@ export function AdminPendingEngagementsPanel() {
                                   })
                                 }
                                 disabled={actionLoadingId === e.id}
-                                title="Email turned out to be wrong after outreach started — cancel and recreate."
+                                title="Email turned out to be wrong after outreach started - cancel and recreate."
                               >
                                 <Mail className="h-3 w-3 mr-1" /> Cancel for email change
                               </Button>
@@ -2580,7 +2580,7 @@ export function AdminPendingEngagementsPanel() {
                                         <div className="text-[10px] uppercase tracking-wide text-slate-500 font-medium">Before (saved)</div>
                                         <div className="rounded border border-slate-200 bg-white p-2 font-mono text-[11px] leading-relaxed max-h-32 overflow-auto whitespace-pre-wrap break-words">
                                           {prevLines.length === 0
-                                            ? <span className="italic text-slate-400">— empty —</span>
+                                            ? <span className="italic text-slate-400">- empty -</span>
                                             : prevLines.map((line, i) => (
                                                 <div
                                                   key={`p-${i}`}
@@ -2595,7 +2595,7 @@ export function AdminPendingEngagementsPanel() {
                                         <div className="text-[10px] uppercase tracking-wide text-slate-500 font-medium">After (draft)</div>
                                         <div className="rounded border border-slate-200 bg-white p-2 font-mono text-[11px] leading-relaxed max-h-32 overflow-auto whitespace-pre-wrap break-words">
                                           {nextLines.length === 0
-                                            ? <span className="italic text-slate-400">— empty —</span>
+                                            ? <span className="italic text-slate-400">- empty -</span>
                                             : nextLines.map((line, i) => (
                                                 <div
                                                   key={`n-${i}`}
@@ -2656,9 +2656,9 @@ export function AdminPendingEngagementsPanel() {
 
       {/* ── Record contact dialog ──────────────────────────────────────────
           Three sibling actions, one rule each:
-            • Add contact   — capture/discovery (AddContactDialog), unblocks email outreach
-            • Send outreach — platform sends an email via Resend (row button)
-            • Record contact — THIS dialog: audit-only log of off-platform contact
+            • Add contact   - capture/discovery (AddContactDialog), unblocks email outreach
+            • Send outreach - platform sends an email via Resend (row button)
+            • Record contact - THIS dialog: audit-only log of off-platform contact
           When the admin selects "Email" inside this dialog, the footer routes
           them into the platform send path (Preview & send) so we never
           silently log "I emailed them" without actually sending. */}
@@ -2667,7 +2667,7 @@ export function AdminPendingEngagementsPanel() {
           <DialogHeader>
             <DialogTitle>Record contact with counterparty</DialogTitle>
             <DialogDescription>
-              Log how you reached the counterparty <strong>outside the platform</strong> (phone, WhatsApp, LinkedIn, in person). This is an audit-only record — Izenzo does not send anything on your behalf. To send a platform email, close this dialog and use <em>Send outreach</em>.
+              Log how you reached the counterparty <strong>outside the platform</strong> (phone, WhatsApp, LinkedIn, in person). This is an audit-only record - Izenzo does not send anything on your behalf. To send a platform email, close this dialog and use <em>Send outreach</em>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -2686,7 +2686,7 @@ export function AdminPendingEngagementsPanel() {
               </SafeSelect>
               <p className="text-xs text-muted-foreground">
                 {contactMethod === "email"
-                  ? "Email is the only method where the platform can send the outreach for you. Choosing Email here will open the preview-and-send flow — it does not silently log a contact."
+                  ? "Email is the only method where the platform can send the outreach for you. Choosing Email here will open the preview-and-send flow - it does not silently log a contact."
                   : "This is an audit-only record of how you reached the counterparty off-platform. No message is sent."}
               </p>
             </div>
@@ -2915,7 +2915,7 @@ export function AdminPendingEngagementsPanel() {
         onSaved={() => fetchEngagements()}
       />
 
-      {/* D2b — Binding Review Resolver (admin only). */}
+      {/* D2b - Binding Review Resolver (admin only). */}
       <BindingReviewResolverDialog
         open={!!bindingReviewFor}
         engagement={bindingReviewFor}
@@ -2923,7 +2923,7 @@ export function AdminPendingEngagementsPanel() {
         onResolved={() => fetchEngagements()}
       />
 
-      {/* D3 — Record dispute dialog (admin_report or counterparty_token). */}
+      {/* D3 - Record dispute dialog (admin_report or counterparty_token). */}
       <DisputeEngagementDialog
         open={!!disputeFor}
         engagement={disputeFor}
@@ -2931,7 +2931,7 @@ export function AdminPendingEngagementsPanel() {
         onResolved={() => fetchEngagements()}
       />
 
-      {/* D3 — Cancel-for-email-change dialog. */}
+      {/* D3 - Cancel-for-email-change dialog. */}
       <CancelForEmailChangeDialog
         open={!!cancelEmailFor}
         engagement={cancelEmailFor}
@@ -2976,7 +2976,7 @@ export function AdminPendingEngagementsPanel() {
         </DialogContent>
       </Dialog>
 
-      {/* Batch 3 — Manual outreach logging dialog. Records outreach
+      {/* Batch 3 - Manual outreach logging dialog. Records outreach
           performed outside the platform. No send path. */}
       <ManualOutreachLogDialog
         open={!!manualOutreachFor}

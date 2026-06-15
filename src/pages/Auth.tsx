@@ -77,7 +77,7 @@ export default function Auth() {
                 "izenzo_admin_redirect_origin",
                 JSON.stringify({ link: safeRequested, at: Date.now() })
               );
-            } catch { /* storage blocked — fall through to toast only */ }
+            } catch { /* storage blocked - fall through to toast only */ }
           }
           toast.info(
             safeRequested
@@ -104,7 +104,7 @@ export default function Auth() {
             AUTH_REDIRECT_NOTICE_KEY,
             JSON.stringify({ destination: safe, reason: searchParams.get("expired") === "1" ? "expired" : "returnTo", at: Date.now() })
           );
-        } catch { /* storage unavailable — redirect still works */ }
+        } catch { /* storage unavailable - redirect still works */ }
         console.info("[Auth] resolved → returnTo", final);
         return final;
       }

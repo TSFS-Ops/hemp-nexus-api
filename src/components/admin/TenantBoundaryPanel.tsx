@@ -1,5 +1,5 @@
 /**
- * Tenant Boundary Panel — HQ · platform_admin only.
+ * Tenant Boundary Panel - HQ · platform_admin only.
  *
  * Surfaces the Stronger Tenant-Boundary Evidence Pack:
  *  - "Run probe" button → tenant-boundary-probe edge function

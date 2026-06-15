@@ -1,8 +1,8 @@
 /**
- * DEC-007 — Refund Policy SSOT (TS mirror).
+ * DEC-007 - Refund Policy SSOT (TS mirror).
  *
  * Authoritative rules used by the admin UI and tests.
- * No legal/public refund copy lives here — admin disclaimer copy only.
+ * No legal/public refund copy lives here - admin disclaimer copy only.
  */
 
 export const DEC_007_REFUND_POLICY = {

@@ -1,9 +1,9 @@
 /**
- * AI Light-Intel — Phase 6 Analytics tab.
+ * AI Light-Intel - Phase 6 Analytics tab.
  *
  * Admin-only operational analytics for the AI review workspace.
  *
- * Data sources (read-only, existing tables — no new schema):
+ * Data sources (read-only, existing tables - no new schema):
  *   - ai_proposed_matches   → searches/found/approved/rejected/reasons/confidence
  *   - ai_outreach_drafts_v2 → drafts/sent/outcomes/bounce/reply rates
  *   - ai_intel_tasks        → failed searches (kind=provider_failure_review)
@@ -230,7 +230,7 @@ export function AiAnalyticsTab() {
       <div className="border border-slate-200 bg-slate-50 rounded-sm p-3 flex gap-3">
         <Info className="h-4 w-4 text-slate-700 mt-0.5 shrink-0" strokeWidth={1.75} />
         <div className="text-[12.5px] leading-relaxed text-slate-800">
-          <p className="font-medium">Operational analytics — not compliance analytics.</p>
+          <p className="font-medium">Operational analytics - not compliance analytics.</p>
           <p>
             Counts reflect AI Light-Intel discovery activity only. AI confidence is shown as
             <b> Discovery Confidence</b> / <b>AI Intel Confidence</b> and is advisory.
@@ -276,8 +276,8 @@ export function AiAnalyticsTab() {
         <SummaryCard label="Rejected" value={rejected} />
         <SummaryCard label="Outreach drafts" value={outreachCreated} />
         <SummaryCard label="Outreach sent" value={outreachSent} />
-        <SummaryCard label="Bounce rate" value={bounceRate === null ? "—" : `${bounceRate}%`} />
-        <SummaryCard label="Reply rate" value={replyRate === null ? "—" : `${replyRate}%`} />
+        <SummaryCard label="Bounce rate" value={bounceRate === null ? "-" : `${bounceRate}%`} />
+        <SummaryCard label="Reply rate" value={replyRate === null ? "-" : `${replyRate}%`} />
         <SummaryCard label="Positive replies" value={positiveReplies} />
         <SummaryCard label="Negative replies" value={negativeReplies} />
         <SummaryCard label="POIs created" value={poiCreated} />
@@ -285,7 +285,7 @@ export function AiAnalyticsTab() {
         <SummaryCard label="Failed searches" value={failedSearches} />
         <SummaryCard
           label="Avg AI Intel Confidence"
-          value={avgConfidence === null ? "—" : `${avgConfidence} / 100`}
+          value={avgConfidence === null ? "-" : `${avgConfidence} / 100`}
           hint="Discovery Confidence average. Advisory only."
         />
         <SummaryCard label="Total AI calls" value={totalCalls} />
@@ -359,13 +359,13 @@ export function AiAnalyticsTab() {
             rows={providers.map((p) => [
               <span className="font-medium">{p.provider}</span>,
               <div className="flex items-center gap-1.5">
-                <Badge variant="outline">{p.last_status ?? "—"}</Badge>
+                <Badge variant="outline">{p.last_status ?? "-"}</Badge>
                 {p.last_status_code ? (
                   <span className="font-mono text-[11px] text-muted-foreground">{p.last_status_code}</span>
                 ) : null}
               </div>,
               <span className="font-mono text-[11px] text-muted-foreground">
-                {p.cooldown_until ? new Date(p.cooldown_until).toLocaleString() : "—"}
+                {p.cooldown_until ? new Date(p.cooldown_until).toLocaleString() : "-"}
               </span>,
               <span className="text-muted-foreground text-[11.5px]">
                 {new Date(p.updated_at).toLocaleString()}
@@ -394,7 +394,7 @@ export function AiAnalyticsTab() {
             headers={["Status", "Description", "Opened"]}
             rows={tasks.slice(0, 50).map((t) => [
               <Badge variant="outline">{t.status}</Badge>,
-              <span className="text-muted-foreground line-clamp-2">{t.description ?? "—"}</span>,
+              <span className="text-muted-foreground line-clamp-2">{t.description ?? "-"}</span>,
               <span className="text-muted-foreground text-[11.5px]">
                 {new Date(t.created_at).toLocaleString()}
               </span>,

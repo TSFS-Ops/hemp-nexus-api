@@ -1,5 +1,5 @@
 /**
- * ChallengeEvidenceList — Phase 3D
+ * ChallengeEvidenceList - Phase 3D
  *
  * Read-only list of evidence rows attached to a challenge. RLS governs
  * visibility (participants + platform admins). No download/delete in 3D.

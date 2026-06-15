@@ -220,12 +220,12 @@ function DangerZone({ userEmail, onDeleted }: { userEmail: string; onDeleted: ()
               onChange={(e) => setReason(e.target.value)}
               rows={3}
               maxLength={500}
-              placeholder="Help us improve — what's prompting you to leave?"
+              placeholder="Help us improve - what's prompting you to leave?"
               className="w-full bg-card border border-border rounded-md px-4 py-3 text-sm text-foreground focus:outline-none focus:border-slate-400 transition-colors resize-none"
               aria-required="true"
             />
             <p className="text-xs text-muted-foreground/70">
-              {reason.trim().length}/500 — admins review these to improve the platform.
+              {reason.trim().length}/500 - admins review these to improve the platform.
             </p>
           </div>
           <div className="space-y-2">

@@ -1,5 +1,5 @@
 /**
- * Phase 2 Step 4 — small hook resolving the two outreach roles
+ * Phase 2 Step 4 - small hook resolving the two outreach roles
  * relevant to the Facilitation Outreach UI.
  *
  * UI must NEVER use these flags as security; they only drive

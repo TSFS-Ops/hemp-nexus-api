@@ -1,10 +1,10 @@
 /**
- * DEC-007 / PAY-009 — canonical audit names (TS mirror).
+ * DEC-007 / PAY-009 - canonical audit names (TS mirror).
  * Must remain string-identical to supabase/functions/_shared/dec-007-pay-009-audit.ts.
  * Pinned by scripts/check-dec-007-pay-009-audit-names.mjs.
  */
 
-// DEC-007 — Refund governance
+// DEC-007 - Refund governance
 export const BILLING_REFUND_REQUESTED = "billing.refund_requested" as const;
 export const BILLING_REFUND_APPROVED = "billing.refund_approved" as const;
 export const BILLING_REFUND_DECLINED = "billing.refund_declined" as const;
@@ -15,7 +15,7 @@ export const BILLING_REFUND_BLOCKED_CREDITS_EXPIRED =
 export const BILLING_CREDIT_ADJUSTMENT_RECORDED =
   "billing.credit_adjustment_recorded" as const;
 
-// PAY-009 — Payment dispute / chargeback governance
+// PAY-009 - Payment dispute / chargeback governance
 export const BILLING_PAYMENT_DISPUTE_DETECTED =
   "billing.payment_dispute_detected" as const;
 export const BILLING_CREDITS_FROZEN_DUE_TO_DISPUTE =

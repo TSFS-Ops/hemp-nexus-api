@@ -1,5 +1,5 @@
 /**
- * AdminOutreachBlocksPanel — Batch G + Batch I observability surface
+ * AdminOutreachBlocksPanel - Batch G + Batch I observability surface
  * ──────────────────────────────────────────────────────────────────
  * Read-only admin view that counts and lists the three canonical
  * Batch E outreach-blocked audit events:
@@ -15,7 +15,7 @@
  *   • "Top organisations blocked" rollup so admins can see which
  *     organisations are repeatedly hitting outreach blocks and why.
  *
- * SAFETY (Batch G + Batch I contract — enforced by tests):
+ * SAFETY (Batch G + Batch I contract - enforced by tests):
  *   This panel ONLY surfaces a tight allowlist of safe fields:
  *     id, action, org_id, entity_id, surface, created_at.
  *   It MUST NEVER read or display:
@@ -62,7 +62,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { auditedDownloadCSV, timestampedFilename } from "@/lib/download-utils";
 import { toast } from "sonner";
 
-// Canonical actions — must match the three Batch E catalogue entries.
+// Canonical actions - must match the three Batch E catalogue entries.
 export const OUTREACH_BLOCKED_ACTIONS = [
   "outreach.blocked.contact_incomplete",
   "outreach.blocked.binding_review_pending",
@@ -71,7 +71,7 @@ export const OUTREACH_BLOCKED_ACTIONS = [
 
 type OutreachBlockedAction = (typeof OUTREACH_BLOCKED_ACTIONS)[number];
 
-// Plain-English label per action. Deliberately neutral wording — no
+// Plain-English label per action. Deliberately neutral wording - no
 // blame, fault, guilt, fraud, breach, liability or finality language.
 const ACTION_LABEL: Record<OutreachBlockedAction, string> = {
   "outreach.blocked.contact_incomplete":
@@ -84,13 +84,13 @@ const ACTION_LABEL: Record<OutreachBlockedAction, string> = {
 
 const ROW_LIMIT = 500;
 
-// Batch M+ — precise-count cache window. The count is a strictly read-only
+// Batch M+ - precise-count cache window. The count is a strictly read-only
 // audit aggregate, so a 60s freshness window is safe and cheap; cache is
 // retained for 5 minutes so re-toggling the same filter set is instant.
 const COUNT_QUERY_STALE_MS = 60_000;
 const COUNT_QUERY_GC_MS = 5 * 60_000;
 
-// Safe surface allowlist — must match the two real call sites in
+// Safe surface allowlist - must match the two real call sites in
 // supabase/functions/poi-engagements/index.ts.
 const SAFE_SURFACES = ["preview-outreach", "send-outreach"] as const;
 type SafeSurface = (typeof SAFE_SURFACES)[number];
@@ -130,7 +130,7 @@ function pickSafeMetadata(meta: unknown): { surface: SafeSurface | null } {
   return { surface: null };
 }
 
-// Batch N — auto-refresh interval. Long enough that an idle panel doesn't
+// Batch N - auto-refresh interval. Long enough that an idle panel doesn't
 // hammer the database, short enough to feel responsive while ops triage.
 const AUTO_REFRESH_INTERVAL_MS = 30_000;
 
@@ -140,7 +140,7 @@ export function AdminOutreachBlocksPanel() {
   >("all");
   const [surfaceFilter, setSurfaceFilter] = useState<SafeSurface | "all">("all");
   const [windowFilter, setWindowFilter] = useState<WindowId>("7d");
-  // Batch N — opt-in auto-refresh. OFF by default so the panel never
+  // Batch N - opt-in auto-refresh. OFF by default so the panel never
   // surprises an admin with background DB load.
   const [autoRefresh, setAutoRefresh] = useState(false);
 
@@ -148,7 +148,7 @@ export function AdminOutreachBlocksPanel() {
     queryKey: ["admin-outreach-blocks", actionFilter, surfaceFilter, windowFilter],
     queryFn: async (): Promise<{ rows: SafeRow[]; orgNames: Record<string, string> }> => {
       // Read only the columns we are allowed to surface. We deliberately
-      // do NOT select(*) — that would pull metadata fields we must not
+      // do NOT select(*) - that would pull metadata fields we must not
       // read (counterparty identity, dispute text, candidate lists,
       // commercial terms, admin/support notes).
       let q = supabase
@@ -190,7 +190,7 @@ export function AdminOutreachBlocksPanel() {
         ? mapped.filter((r) => r.surface === surfaceFilter)
         : mapped;
 
-      // Safe org-name resolution — uses the same pattern as
+      // Safe org-name resolution - uses the same pattern as
       // AdminTradeApprovalsPanel: read ONLY (id, name) from the
       // organizations table, scoped to org_ids already surfaced by
       // the audit query. No joins to matches / poi_engagements /
@@ -216,7 +216,7 @@ export function AdminOutreachBlocksPanel() {
     refetchIntervalInBackground: false,
   });
 
-  // Batch M — precise total count for the SAME filter set as the row query.
+  // Batch M - precise total count for the SAME filter set as the row query.
   // Uses a head/count-only query: no metadata, no counterparty, no engagement
   // data, no commercial/dispute/notes fields are selected. Surface filter is
   // applied server-side via the safe `metadata->>surface` JSON path so that
@@ -250,7 +250,7 @@ export function AdminOutreachBlocksPanel() {
       if (error) throw error;
       return count ?? 0;
     },
-    // Batch M+ — cache the precise count per filter set so frequent panel
+    // Batch M+ - cache the precise count per filter set so frequent panel
     // reloads, refetches and filter toggles don't repeatedly hammer the
     // audit_logs count(*) path. The queryKey already encodes the full
     // (action, surface, window) filter tuple, so each distinct filter set
@@ -266,7 +266,7 @@ export function AdminOutreachBlocksPanel() {
     refetchIntervalInBackground: false,
   });
 
-  // Batch N — "last refreshed" indicator. Use the most recent successful
+  // Batch N - "last refreshed" indicator. Use the most recent successful
   // fetch across both queries so the timestamp reflects the freshest data
   // the panel is actually showing. Re-render every 15s so the relative
   // wording ("just now" → "1 min ago") stays accurate without polling
@@ -291,7 +291,7 @@ export function AdminOutreachBlocksPanel() {
     : rows.length >= ROW_LIMIT;
   const orgNames = query.data?.orgNames ?? {};
   const orgLabel = (id: string | null) =>
-    id ? (orgNames[id] ?? `${id.substring(0, 12)}…`) : "—";
+    id ? (orgNames[id] ?? `${id.substring(0, 12)}…`) : "-";
 
   const counts = useMemo(() => {
     const c: Record<OutreachBlockedAction, number> = {
@@ -303,7 +303,7 @@ export function AdminOutreachBlocksPanel() {
     return c;
   }, [rows]);
 
-  // Per-organisation rollup — uses ONLY the safe org_id field.
+  // Per-organisation rollup - uses ONLY the safe org_id field.
   // Display name comes from a scoped (id, name) read on organizations
   // (Batch J), the same safe pattern used by AdminTradeApprovalsPanel.
   // No joins to matches / poi_engagements / profiles / binding_candidates.
@@ -332,7 +332,7 @@ export function AdminOutreachBlocksPanel() {
   const windowLabel =
     WINDOW_OPTIONS.find((w) => w.id === windowFilter)?.label ?? "Last 7 days";
 
-  // Batch N polish — surface query failures so operators don't silently
+  // Batch N polish - surface query failures so operators don't silently
   // act on a stale or empty view. We deliberately render the error
   // *message* only (no stack, no metadata leak) and offer a retry that
   // re-runs both queries.
@@ -342,7 +342,7 @@ export function AdminOutreachBlocksPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Batch N polish — explicit read-only notice. The panel is observability
+      {/* Batch N polish - explicit read-only notice. The panel is observability
           only: no outreach is ever sent from this surface, no row can be
           edited or resolved here. */}
       <div
@@ -354,7 +354,7 @@ export function AdminOutreachBlocksPanel() {
         outreach, notification, or row resolution is performed from here.
       </div>
 
-      {/* Batch N polish — query error surface. Hidden when both queries
+      {/* Batch N polish - query error surface. Hidden when both queries
           succeed. Retry re-runs both the rows and the precise-count query. */}
       {hasError && (
         <div
@@ -389,7 +389,7 @@ export function AdminOutreachBlocksPanel() {
         </div>
       )}
 
-      {/* Filters row — read-only operational scoping */}
+      {/* Filters row - read-only operational scoping */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">Time window</label>
@@ -458,7 +458,7 @@ export function AdminOutreachBlocksPanel() {
           variant="outline"
           size="sm"
           onClick={() => {
-            // Manual Refresh bypasses the count cache deliberately —
+            // Manual Refresh bypasses the count cache deliberately -
             // the cache is only meant to absorb passive reloads and
             // filter toggles, not explicit operator-driven refreshes.
             query.refetch();
@@ -470,7 +470,7 @@ export function AdminOutreachBlocksPanel() {
           Refresh
         </Button>
         {/*
-          Batch K — CSV export.
+          Batch K - CSV export.
           Intentionally uses ONLY the safe panel view-model (`rows` + `orgNames`)
           that has already been filtered by time-window / surface / reason.
           MUST NOT include raw audit metadata, counterparty identity, dispute
@@ -487,7 +487,7 @@ export function AdminOutreachBlocksPanel() {
               `outreach blocks export (${rows.length} rows)`,
             );
             if (!reason) {
-              toast.error("Export cancelled — a reason of at least 10 characters is required.");
+              toast.error("Export cancelled - a reason of at least 10 characters is required.");
               return;
             }
             const headers = [
@@ -508,7 +508,7 @@ export function AdminOutreachBlocksPanel() {
               r.entity_id ?? "",
               r.surface ?? "",
             ]);
-            // Batch U AUD-018: audited CSV — audit row written before bytes leave.
+            // Batch U AUD-018: audited CSV - audit row written before bytes leave.
             const result = await auditedDownloadCSV(headers, csvRows, {
               reportName: "outreach-blocks",
               filename: timestampedFilename("izenzo-outreach-blocks", "csv"),
@@ -531,7 +531,7 @@ export function AdminOutreachBlocksPanel() {
         </Button>
       </div>
 
-      {/* Reason summary cards — clickable to toggle the reason filter */}
+      {/* Reason summary cards - clickable to toggle the reason filter */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {OUTREACH_BLOCKED_ACTIONS.map((a) => (
           <Card
@@ -558,7 +558,7 @@ export function AdminOutreachBlocksPanel() {
         ))}
       </div>
 
-      {/* Per-organisation rollup — safe org_id only, no joins */}
+      {/* Per-organisation rollup - safe org_id only, no joins */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
@@ -613,7 +613,7 @@ export function AdminOutreachBlocksPanel() {
       </Card>
 
       {/*
-        Batch L — export transparency.
+        Batch L - export transparency.
         Plain-English notes describing exactly what the CSV does and does
         not include. No backend, no dispatcher, no counterparty surface.
       */}
@@ -692,7 +692,7 @@ export function AdminOutreachBlocksPanel() {
       </div>
 
       {/*
-        Batch N — Last refreshed indicator.
+        Batch N - Last refreshed indicator.
         Reads only react-query's local dataUpdatedAt (no DB roundtrip).
         Tooltips/title carry the absolute timestamp; the visible label uses
         relative wording for legibility during ops triage.
@@ -704,7 +704,7 @@ export function AdminOutreachBlocksPanel() {
       >
         {lastRefreshedAt
           ? `Last refreshed ${formatDistanceToNow(lastRefreshedAt, { addSuffix: true })}`
-          : "Last refreshed —"}
+          : "Last refreshed -"}
         {autoRefresh ? " · auto-refresh on (every 30s)" : ""}
       </p>
 
@@ -741,13 +741,13 @@ export function AdminOutreachBlocksPanel() {
                             {r.org_id.substring(0, 12)}
                           </div>
                         </>
-                      ) : "—"}
+                      ) : "-"}
                     </TableCell>
                     <TableCell className="font-mono text-xs">
-                      {r.entity_id ? r.entity_id.substring(0, 12) : "—"}
+                      {r.entity_id ? r.entity_id.substring(0, 12) : "-"}
                     </TableCell>
                     <TableCell className="text-xs">
-                      {r.surface ?? "—"}
+                      {r.surface ?? "-"}
                     </TableCell>
                     <TableCell className="text-xs">
                       {format(new Date(r.created_at), "yyyy-MM-dd HH:mm")}

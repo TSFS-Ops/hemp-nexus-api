@@ -156,7 +156,7 @@ export function AdminBillingReviewPanel() {
             <div key={h.id} className="border border-border rounded-sm p-3 flex items-center justify-between gap-3 bg-card">
               <div>
                 <div className="text-sm font-medium">{h.name ?? h.id}</div>
-                <div className="text-xs text-muted-foreground">{h.billing_hold_reason ?? "—"} · since {h.billing_hold_applied_at ?? "—"}</div>
+                <div className="text-xs text-muted-foreground">{h.billing_hold_reason ?? "-"} · since {h.billing_hold_applied_at ?? "-"}</div>
               </div>
               <Button size="sm" variant="outline" onClick={() => setDecision({ kind: "hold_release", org_id: h.id })}>Release</Button>
             </div>

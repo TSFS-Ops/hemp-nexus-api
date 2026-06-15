@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  * Subscribes to realtime changes on the `admin_settings` table so a flip
  * by an admin propagates within seconds, no hard reload required.
  *
- * Platform admins are NOT shown the banner — they need an unobstructed
+ * Platform admins are NOT shown the banner - they need an unobstructed
  * console to diagnose / resolve whatever caused the maintenance window.
  * Their corresponding back-end requests are also exempt from the gate.
  */
@@ -109,7 +109,7 @@ export function MaintenanceBanner() {
           : "Izenzo is in scheduled maintenance. New trades, engagements, document uploads and team invites are temporarily paused. Existing data remains viewable."}
       </span>
       <span className="opacity-80 sm:hidden">
-        Mutations paused — existing data still viewable.
+        Mutations paused - existing data still viewable.
       </span>
     </div>
   );

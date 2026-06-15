@@ -1,5 +1,5 @@
 /**
- * DEC-010 — Claims guard.
+ * DEC-010 - Claims guard.
  *
  * Server-side validator for admin-edited copy (outreach body, notification
  * titles, claim-bearing admin fields). Static public pages are policed

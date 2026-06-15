@@ -1,5 +1,5 @@
 /**
- * GovernanceEventDrawer — HQ-only event detail dialog.
+ * GovernanceEventDrawer - HQ-only event detail dialog.
  * Shows source, ids, actor, posture, redacted metadata. Never raw payloads.
  */
 

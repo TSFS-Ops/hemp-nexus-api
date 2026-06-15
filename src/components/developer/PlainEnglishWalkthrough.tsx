@@ -6,7 +6,7 @@ import { ChevronDown, BookOpenCheck } from "lucide-react";
  * PlainEnglishWalkthrough
  *
  * A collapsible, page-aware panel that sits at the top of every Developer
- * Centre view and explains — in plain English, no jargon — what each visible
+ * Centre view and explains - in plain English, no jargon - what each visible
  * card and button does, in the order an operator encounters them.
  *
  * Why this lives in the Developer Centre (not in /docs):
@@ -33,24 +33,24 @@ type PageGuide = {
 
 const GUIDES: Record<string, PageGuide> = {
   keys: {
-    title: "API Keys — what you are looking at",
+    title: "API Keys - what you are looking at",
     intro:
       "This page is where machines (your back-office system, a partner integration, a script) get permission to talk to Izenzo on your behalf. Read top-to-bottom; each card builds on the one above it.",
     steps: [
       {
         label: "Environment switcher (top right)",
         body:
-          "Toggles between Sandbox and Live. Sandbox is a safe playground — no real records, no billing. Live affects real trades, real counterparties, and real credit balances. Always confirm which side you are on before clicking anything.",
+          "Toggles between Sandbox and Live. Sandbox is a safe playground - no real records, no billing. Live affects real trades, real counterparties, and real credit balances. Always confirm which side you are on before clicking anything.",
       },
       {
         label: "API Keys panel",
         body:
-          "Lists the credentials issued to your organisation. Each key has a prefix (sk_live_ or sk_test_) you can share freely for support, and a secret half that is shown ONCE at creation. Treat the secret like a password: paste it into your secrets manager immediately, then close the dialog. If you lose it, revoke and reissue — there is no recovery.",
+          "Lists the credentials issued to your organisation. Each key has a prefix (sk_live_ or sk_test_) you can share freely for support, and a secret half that is shown ONCE at creation. Treat the secret like a password: paste it into your secrets manager immediately, then close the dialog. If you lose it, revoke and reissue - there is no recovery.",
       },
       {
         label: "Create key button",
         body:
-          "Issues a new credential. You will be asked to name it (e.g. ‘Back-office sync — production’) and pick scopes (the specific things this key is allowed to do, like read matches or write webhooks). Default to least privilege — only tick what the integration actually needs.",
+          "Issues a new credential. You will be asked to name it (e.g. ‘Back-office sync - production’) and pick scopes (the specific things this key is allowed to do, like read matches or write webhooks). Default to least privilege - only tick what the integration actually needs.",
       },
       {
         label: "Revoke",
@@ -60,12 +60,12 @@ const GUIDES: Record<string, PageGuide> = {
       {
         label: "Quick-Start (left)",
         body:
-          "A copy-paste shell snippet that proves your key works. It hits the /healthz endpoint and expects a ‘ledger synchronised’ reply. If this fails, the rest of the API will fail too — fix this first.",
+          "A copy-paste shell snippet that proves your key works. It hits the /healthz endpoint and expects a ‘ledger synchronised’ reply. If this fails, the rest of the API will fail too - fix this first.",
       },
       {
         label: "System Diagnostics (right)",
         body:
-          "Live readout of platform health: database, edge functions, latency. Green across the board means the platform is fine and any error you are seeing is in your own integration. Amber or red means the issue is on our side — check Status before debugging your code.",
+          "Live readout of platform health: database, edge functions, latency. Green across the board means the platform is fine and any error you are seeing is in your own integration. Amber or red means the issue is on our side - check Status before debugging your code.",
       },
       {
         label: "Live Activity Feed",
@@ -75,14 +75,14 @@ const GUIDES: Record<string, PageGuide> = {
       {
         label: "Quick Schema",
         body:
-          "A condensed view of the most-used request and response shapes — match objects, POI payloads, webhook envelopes. Full reference lives under Schema Explorer.",
+          "A condensed view of the most-used request and response shapes - match objects, POI payloads, webhook envelopes. Full reference lives under Schema Explorer.",
       },
     ],
     footnote:
       "If a key stops working, check three things in order: (1) is it revoked? (2) is the environment switcher on the right side? (3) does the key have the scope for the endpoint you are calling?",
   },
   webhooks: {
-    title: "Webhook Logs — what you are looking at",
+    title: "Webhook Logs - what you are looking at",
     intro:
       "Webhooks are how Izenzo pushes events to your systems (a counterparty accepted a trade request, a POI was sealed, a credit balance changed). This page proves whether those pushes are arriving and being acknowledged.",
     steps: [
@@ -94,7 +94,7 @@ const GUIDES: Record<string, PageGuide> = {
       {
         label: "Status column",
         body:
-          "Green ‘delivered’ = your server returned 200–299. Amber ‘retrying’ = transient failure, scheduled for another attempt. Red ‘failed’ = exhausted retries; the event is in the dead-letter queue and your endpoint may have been auto-disabled (which itself blocks WaD sealing — see Gate 10).",
+          "Green ‘delivered’ = your server returned 200–299. Amber ‘retrying’ = transient failure, scheduled for another attempt. Red ‘failed’ = exhausted retries; the event is in the dead-letter queue and your endpoint may have been auto-disabled (which itself blocks WaD sealing - see Gate 10).",
       },
       {
         label: "Replay button",
@@ -108,41 +108,41 @@ const GUIDES: Record<string, PageGuide> = {
       },
     ],
     footnote:
-      "Webhooks are protected by replay guards — if you re-deliver an event your server has already processed, you will get a 409 WEBHOOK_REPLAY response. That is by design, not an error.",
+      "Webhooks are protected by replay guards - if you re-deliver an event your server has already processed, you will get a 409 WEBHOOK_REPLAY response. That is by design, not an error.",
   },
   schema: {
-    title: "Schema Explorer — what you are looking at",
+    title: "Schema Explorer - what you are looking at",
     intro:
       "A browsable map of every public API endpoint, the fields it accepts, and the fields it returns. Think of it as the menu and the recipe book combined.",
     steps: [
       {
         label: "Endpoint list (left)",
         body:
-          "Grouped by resource — matches, counterparties, POIs, webhooks, billing. Click one to load its full definition on the right. Endpoints marked with a credit icon will burn credits when called in Live; everything else is free.",
+          "Grouped by resource - matches, counterparties, POIs, webhooks, billing. Click one to load its full definition on the right. Endpoints marked with a credit icon will burn credits when called in Live; everything else is free.",
       },
       {
         label: "Definition panel (right)",
         body:
-          "For each endpoint: the HTTP method, the path, the required and optional fields, the possible response codes, and a sample response. Use this as the source of truth — it is generated from the live OpenAPI spec, not hand-written.",
+          "For each endpoint: the HTTP method, the path, the required and optional fields, the possible response codes, and a sample response. Use this as the source of truth - it is generated from the live OpenAPI spec, not hand-written.",
       },
       {
         label: "Try-it (where shown)",
         body:
-          "Lets you fire a real request from the browser using the currently selected key and environment. Treat with care on Live — a successful trade.create is a real trade.",
+          "Lets you fire a real request from the browser using the currently selected key and environment. Treat with care on Live - a successful trade.create is a real trade.",
       },
     ],
     footnote:
       "If a field appears in this explorer it is supported and stable. If it does not appear, do not rely on it even if it works today.",
   },
   docs: {
-    title: "Integration Docs — what you are looking at",
+    title: "Integration Docs - what you are looking at",
     intro:
       "Narrative guides for common integration patterns: authenticating, creating a match, generating a POI, handling webhooks, and recovering from errors. Where Schema Explorer answers ‘what fields exist’, this section answers ‘in what order do I call them and why’.",
     steps: [
       {
         label: "Quickstart",
         body:
-          "Start here on day one. Walks from issuing a key to making a first authenticated call to recording a match — about five minutes end-to-end.",
+          "Start here on day one. Walks from issuing a key to making a first authenticated call to recording a match - about five minutes end-to-end.",
       },
       {
         label: "Authentication",
@@ -152,7 +152,7 @@ const GUIDES: Record<string, PageGuide> = {
       {
         label: "Matches",
         body:
-          "The full state machine for a bilateral trade — from draft, through engagement, to POI sealed. Includes the exact preconditions for each transition.",
+          "The full state machine for a bilateral trade - from draft, through engagement, to POI sealed. Includes the exact preconditions for each transition.",
       },
       {
         label: "Webhooks",
@@ -166,7 +166,7 @@ const GUIDES: Record<string, PageGuide> = {
       },
     ],
     footnote:
-      "All examples in this section are runnable as-is against Sandbox with a sk_test_ key — no setup required beyond the snippet on the page.",
+      "All examples in this section are runnable as-is against Sandbox with a sk_test_ key - no setup required beyond the snippet on the page.",
   },
 };
 
@@ -194,7 +194,7 @@ export function PlainEnglishWalkthrough() {
     try {
       window.localStorage.setItem(storageKey, next ? "1" : "0");
     } catch {
-      /* localStorage unavailable — non-fatal */
+      /* localStorage unavailable - non-fatal */
     }
   };
 

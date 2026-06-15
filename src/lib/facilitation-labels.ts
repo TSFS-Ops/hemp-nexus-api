@@ -4,7 +4,7 @@
  * Raw enum/code strings (e.g. `dnc_org_name_warning`, `blocked`,
  * `suppressed`, `email_domain`) are written by the server and persisted
  * in audit/event logs as the source of truth. They must never be
- * rendered verbatim to operators — every visible label is mapped here.
+ * rendered verbatim to operators - every visible label is mapped here.
  */
 
 export const OUTREACH_STATE_LABEL: Record<string, string> = {
@@ -122,13 +122,13 @@ export const OUTCOME_LABEL: Record<string, string> = {
 };
 
 export function outcomeLabel(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "-";
   return OUTCOME_LABEL[value] ?? value.replace(/_/g, " ");
 }
 
 /**
  * Internal user/role tokens. Never render the raw token (e.g. `platform_admin`)
- * directly — always pass through `roleLabel`.
+ * directly - always pass through `roleLabel`.
  */
 export const ROLE_LABEL: Record<string, string> = {
   platform_admin: "Platform admin",

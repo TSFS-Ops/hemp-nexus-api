@@ -211,9 +211,9 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
   // Completion is free, only POI generation costs credits
   const isFreeAction = currentState === "committed";
 
-  // UI-001/005: pre-POI soft-route — server returned 202 ENGAGEMENT_PENDING,
+  // UI-001/005: pre-POI soft-route - server returned 202 ENGAGEMENT_PENDING,
   // didn't burn credits, didn't progress state. The mint CTA must be
-  // disabled here (otherwise users see "Generate POI — 1 credit" while a
+  // disabled here (otherwise users see "Generate POI - 1 credit" while a
   // Pending Engagement card is open above), the dialog must show truthful
   // "no credits will be burned" copy, and the focal banner is owned by
   // DealWizard (see softRoutePending there).
@@ -408,7 +408,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
       if (isPoiAction) {
         await refetchEvidence();
         // D-02: capture the canonical terms hash the user is about to ack.
-        // This snapshot is bound to the click — if terms drift between now
+        // This snapshot is bound to the click - if terms drift between now
         // and submit (back-edit, two-tab race), the server rejects mint.
         try {
           const hash = await computeMatchTermsHash(matchToCanonicalTerms(match));
@@ -433,7 +433,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
     let payload: Record<string, unknown> | undefined = undefined;
 
     if (isPoiAction) {
-      // Always-on acknowledgements — never bypassable.
+      // Always-on acknowledgements - never bypassable.
       if (!declarationAck || !atbAck) return;
 
       // Stale-evidence guard: re-check counts immediately before submit.
@@ -613,7 +613,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    You can't {isPoiAction ? "generate a Proof of Intent" : isCompleteAction ? "complete this trade" : "progress this match"} — your organisation is not a participant on this match
+                    You can't {isPoiAction ? "generate a Proof of Intent" : isCompleteAction ? "complete this trade" : "progress this match"} - your organisation is not a participant on this match
                   </p>
                   <p className="text-xs text-amber-800 dark:text-amber-200">
                     Only the buyer organisation or the seller organisation listed on this trade can attach the supporting documents required for {isPoiAction ? "POI mint" : "this step"} and trigger the action. Because your organisation is neither, you cannot upload the required evidence on either side and the {isPoiAction ? "POI" : "action"} cannot be sealed from this account.
@@ -755,7 +755,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                             counterparty side has <strong>{cpCount}</strong>.
                             Open the <strong>Documents</strong> tab to attach a
                             file on your side. The counterparty must attach
-                            their own document on their side — you cannot
+                            their own document on their side - you cannot
                             upload on their behalf.
                           </>
                         ) : yourSideUnmet ? (
@@ -769,7 +769,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                           <>
                             Your side ({yourSide}) has <strong>{yourCount}</strong>,
                             so your side is satisfied. The counterparty side
-                            still has <strong>{cpCount}</strong> — only they
+                            still has <strong>{cpCount}</strong> - only they
                             can upload on their side. POI mint is blocked
                             until they attach at least one supporting
                             document.
@@ -812,7 +812,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 }
                 title={
                   softRoutePending
-                    ? "A Pending Engagement is in progress for this trade — POI mint resumes once the counterparty accepts. See the Pending Engagement card above."
+                    ? "A Pending Engagement is in progress for this trade - POI mint resumes once the counterparty accepts. See the Pending Engagement card above."
                     : undefined
                 }
                 data-soft-route-pending={softRoutePending ? "true" : undefined}
@@ -826,7 +826,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 ) : softRoutePending ? (
                   <>
                     <ShieldAlert className="h-4 w-4" />
-                    Pending Engagement — counterparty invited, awaiting confirmation.
+                    Pending Engagement - counterparty invited, awaiting confirmation.
                   </>
                 ) : !isFreeAction && recheckingBalance ? (
                   <>
@@ -872,7 +872,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                 className="text-xs text-muted-foreground text-center"
                 data-soft-route-pending-note="true"
               >
-                No credits will be burned — pending engagement in progress. POI minting resumes once the counterparty accepts.
+                No credits will be burned - pending engagement in progress. POI minting resumes once the counterparty accepts.
               </p>
             )}
 
@@ -894,7 +894,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                   <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div className="space-y-2 text-left w-full">
                     <p className="text-sm font-semibold text-foreground">
-                      Counterparty is not yet registered — POI will still be issued
+                      Counterparty is not yet registered - POI will still be issued
                     </p>
                     <ul className="space-y-1 text-xs text-muted-foreground">
                       {missingBuyerId && (
@@ -911,7 +911,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                       )}
                     </ul>
                     <p className="text-[11px] text-muted-foreground border-t border-border pt-2">
-                      You can proceed with <strong>Generate POI</strong> now —
+                      You can proceed with <strong>Generate POI</strong> now -
                       the credit will be burned and the Proof of Intent sealed
                       on the audit ledger. To progress beyond POI to a Signed
                       Deal (WaD), the counterparty will need to register and
@@ -952,7 +952,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                     data-soft-route-pending-dialog="true"
                   >
                     <p className="font-medium text-foreground">
-                      No credits will be burned — pending engagement in progress.
+                      No credits will be burned - pending engagement in progress.
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       A Pending Engagement is open for this trade. POI minting resumes once the counterparty accepts. See the Pending Engagement card on the match page for full status.

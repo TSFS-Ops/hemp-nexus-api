@@ -239,7 +239,7 @@ function useActiveLanes(orgId: string | null, page: number) {
         .select(MATCH_COLUMNS, { count: "exact" })
         .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId},org_id.eq.${orgId}`)
         .in("state", activeStates)
-        // Batch T — UI-010: never inflate the desk pipeline with demo seeds.
+        // Batch T - UI-010: never inflate the desk pipeline with demo seeds.
         .eq("is_demo", false)
         .order("created_at", { ascending: false })
         .range(0, to);
@@ -327,7 +327,7 @@ function useSealedPage(orgId: string | null, page: number) {
         .select(MATCH_COLUMNS, { count: "exact" })
         .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId},org_id.eq.${orgId}`)
         .in("state", POI_STATES)
-        // Batch T — UI-010: sealed lane must reflect production matches only.
+        // Batch T - UI-010: sealed lane must reflect production matches only.
         .eq("is_demo", false)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -339,7 +339,7 @@ function useSealedPage(orgId: string | null, page: number) {
       const ids = list.map((m) => m.id);
       const engagementByMatch = new Map<string, string>();
       if (ids.length > 0) {
-        // Phase 1.5: read-model resolver — see the active-lanes block above
+        // Phase 1.5: read-model resolver - see the active-lanes block above
         // for the full rationale. Same shape, same Phase 2 forward-compat.
         const { data: engagements } = await supabase
           .from("poi_engagements")
@@ -611,16 +611,16 @@ export function DealPipeline() {
       <section>
         <PipelineHeader totalDeals={0} sortKey={sortKey} onSortChange={setSortKey} />
         <EmptyStateCard
-          kicker="Pipeline Idle"
-          title="No active pipeline"
-          description="Discover verified counterparty liquidity, then initiate a trade request to populate your desk."
+          kicker="Nothing in flight"
+          title="No trades in your pipeline yet"
+          description="Find a verified counterparty and start a trade. It will appear here as soon as you do."
           icon={<Compass className="h-5 w-5" strokeWidth={1.75} />}
           primaryAction={{
-            label: "Discover Counterparties",
+            label: "Find counterparties",
             onClick: () => navigate("/desk/discover"),
           }}
           secondaryAction={{
-            label: "Initiate Trade Request",
+            label: "Start a new trade",
             onClick: () => navigate("/desk/match/new"),
           }}
         />
@@ -686,10 +686,10 @@ export function DealPipeline() {
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", accent.dot)} />
-                  <h3 className="text-xs font-bold tracking-wider uppercase text-muted-foreground whitespace-nowrap">
+                  <h3 className="text-sm font-semibold tracking-tight text-foreground whitespace-nowrap">
                     {lane.title}
                   </h3>
-                  <span className="hidden xl:inline text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground/70 truncate">
+                  <span className="hidden xl:inline text-xs text-muted-foreground truncate">
                     · {lane.subtitle}
                   </span>
                 </div>
@@ -909,7 +909,7 @@ function FilterBar({
 
       {/* Visible count + reset affordance */}
       <div className="flex items-center gap-3 lg:ml-auto">
-        <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {visibleCount} visible
         </span>
         {hasActiveFilters && (
@@ -938,17 +938,17 @@ function PipelineHeader({
   return (
     <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4">
       <div className="min-w-0">
-        <p className="text-[10px] font-mono tracking-[0.25em] uppercase text-muted-foreground/70 mb-1.5">
-          9-Step WaD Workflow
-        </p>
-        <h2 className="text-lg font-semibold text-foreground tracking-tight">
-          Active Deal Pipeline
+        <h2 className="text-xl font-semibold text-foreground tracking-tight">
+          Your trades in flight
         </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Every trade you are working on, grouped by stage.
+        </p>
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4">
-        <p className="text-[11px] font-mono tracking-[0.18em] uppercase text-muted-foreground tabular-nums">
-          {totalDeals} {totalDeals === 1 ? "Deal" : "Deals"} in flight
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {totalDeals} {totalDeals === 1 ? "trade" : "trades"} in flight
         </p>
 
         {/* Sort selector - applied client-side across all three lanes so the

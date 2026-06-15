@@ -3,7 +3,7 @@
  *
  * Extracted so the mapping rules (raw `email_send_log.status` → UI badge label
  * + style, dedupe-by-newest per engagement) can be unit-tested without
- * mounting the full admin panel. NO email behaviour lives here — this is a
+ * mounting the full admin panel. NO email behaviour lives here - this is a
  * read-only presentation derivation only.
  */
 

@@ -125,7 +125,7 @@ export function JurisdictionSelector({ matchId, orgId, onSelectionComplete }: Ju
         });
         setEscalationReason(conflict);
         // P4: workflow shift, not a system error. The persistent escalation
-        // card below carries the actionable detail and contact route — toast
+        // card below carries the actionable detail and contact route - toast
         // is informational only so the user understands the state changed.
         toast.info("This trade has been routed to governance review. See the escalation panel below.");
         return;
@@ -145,7 +145,7 @@ export function JurisdictionSelector({ matchId, orgId, onSelectionComplete }: Ju
           selectedBy: session?.user?.id ?? null,
         });
         setEscalationReason(reason);
-        // P4: same reasoning — persistent panel below states the next step.
+        // P4: same reasoning - persistent panel below states the next step.
         toast.info("No documentary rules for this jurisdiction. Routed to governance review.");
         return;
       }

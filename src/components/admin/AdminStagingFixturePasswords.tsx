@@ -68,7 +68,7 @@ export function AdminStagingFixturePasswords() {
       await navigator.clipboard.writeText(url);
       toast.success("Reveal URL copied");
     } catch {
-      toast.error("Copy failed — select the URL manually");
+      toast.error("Copy failed - select the URL manually");
     }
   };
 
@@ -83,7 +83,7 @@ export function AdminStagingFixturePasswords() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setRevealedPassword({ email: data.email, password: data.password });
-      // Burn the URL — it's now consumed.
+      // Burn the URL - it's now consumed.
       setReveals((prev) => {
         const next = { ...prev };
         delete next[email];
@@ -175,7 +175,7 @@ export function AdminStagingFixturePasswords() {
           <CardContent className="space-y-2">
             <p className="text-xs text-slate-600">
               Copy now. This will not be shown again. Share via your agreed
-              secure channel only — never paste into chat, email, or the test guide.
+              secure channel only - never paste into chat, email, or the test guide.
             </p>
             <div className="flex items-center gap-2">
               <code className="flex-1 rounded bg-slate-900 px-3 py-2 font-mono text-sm text-emerald-200">

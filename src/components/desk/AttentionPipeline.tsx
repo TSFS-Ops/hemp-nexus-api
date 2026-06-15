@@ -176,10 +176,10 @@ export function AttentionPipeline() {
             strokeWidth={2}
           />
           <h2 className={cn(
-            "text-xs font-bold tracking-widest uppercase",
-            hasUrgent ? "text-amber-900" : "text-muted-foreground",
+            "text-sm font-semibold tracking-tight",
+            hasUrgent ? "text-amber-900" : "text-foreground",
           )}>
-            Requires Your Attention
+            Needs your attention
           </h2>
         </div>
         {sorted.length > 0 && (
@@ -269,12 +269,12 @@ export function AttentionPipeline() {
                   </p>
                 </div>
 
-                {/* CTA — flat operational style; severity already conveyed by row chrome */}
+                {/* CTA - flat operational style; severity already conveyed by row chrome */}
                 <button
                   onClick={() => navigate(item.href)}
                   className="shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md bg-[hsl(var(--emerald))] text-white text-xs font-semibold hover:bg-[hsl(var(--emerald))]/90 transition-colors"
                 >
-                  <span className="hidden sm:inline">Review &amp; Seal</span>
+                  <span className="hidden sm:inline">Review and seal</span>
                   <span className="sm:hidden">Review</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
