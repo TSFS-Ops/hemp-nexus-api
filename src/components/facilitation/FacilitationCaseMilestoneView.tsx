@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/BackButton";
 import { toast } from "sonner";
+import { friendlyFacilitationError } from "@/lib/facilitation-labels";
 import {
   USER_FACING_LABELS,
   type FacilitationUserFacingStatus,
@@ -51,7 +52,7 @@ export const FacilitationCaseMilestoneView: React.FC = () => {
       setEvents(payload.events ?? []);
       setCoarseOutreach(payload.coarse_outreach_state ?? "not_started");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load case";
+      const msg = await friendlyFacilitationError(err, "Could not load this facilitation case. Please try again.");
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -72,7 +73,7 @@ export const FacilitationCaseMilestoneView: React.FC = () => {
       toast.success("Request cancelled.");
       await load();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Cancel failed";
+      const msg = await friendlyFacilitationError(err, "Could not cancel this case. Please try again.");
       toast.error(msg);
     } finally {
       setCancelling(false);

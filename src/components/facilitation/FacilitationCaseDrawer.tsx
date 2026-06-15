@@ -19,6 +19,7 @@ import {
   type FacilitationInternalStatus,
 } from "@/lib/facilitation-case-state";
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
+import { friendlyFacilitationError } from "@/lib/facilitation-labels";
 
 type CaseRow = Record<string, unknown> & { id: string; case_number: string; internal_status: string; case_owner_id: string | null };
 
@@ -36,7 +37,7 @@ const OwnerPicker: React.FC<{ value: string; onChange: (v: string) => void; onSa
         if (error) throw error;
         if (!cancelled) setOwners(((data as { owners?: Owner[] })?.owners ?? []));
       } catch (err: unknown) {
-        if (!cancelled) toast.error(err instanceof Error ? err.message : "Failed to load owners");
+        if (!cancelled) toast.error(await friendlyFacilitationError(err, "Could not load case owners. Please try again."));
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -81,7 +82,7 @@ export const FacilitationCaseDrawer: React.FC<{
       setData(resp as typeof data);
       setOwnerInput(((resp as { case: CaseRow }).case.case_owner_id as string | null) ?? "");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to load");
+      toast.error(await friendlyFacilitationError(err, "Could not load. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,7 @@ export const FacilitationCaseDrawer: React.FC<{
     try {
       await call({ action: "assign", case_id: caseId, owner_user_id: ownerInput.trim() || null });
       toast.success("Owner updated.");
-    } catch (err: unknown) { toast.error(err instanceof Error ? err.message : "Assign failed"); }
+    } catch (err: unknown) { toast.error(await friendlyFacilitationError(err, "Could not assign this case. Please try again.")); }
   };
   const doStatus = async () => {
     if (!nextStatus) return;
@@ -112,7 +113,7 @@ export const FacilitationCaseDrawer: React.FC<{
       });
       toast.success("Status updated.");
       setClosingReason(""); setOutcome(""); setNextStatus("");
-    } catch (err: unknown) { toast.error(err instanceof Error ? err.message : "Status change failed"); }
+    } catch (err: unknown) { toast.error(await friendlyFacilitationError(err, "Could not change the case status. Please try again.")); }
   };
   const doNote = async () => {
     if (note.trim().length < 2) return;
@@ -120,7 +121,7 @@ export const FacilitationCaseDrawer: React.FC<{
       await call({ action: "note", case_id: caseId, body: note.trim() });
       setNote("");
       toast.success("Note added.");
-    } catch (err: unknown) { toast.error(err instanceof Error ? err.message : "Note failed"); }
+    } catch (err: unknown) { toast.error(await friendlyFacilitationError(err, "Could not save the note. Please try again.")); }
   };
 
   const open = !!caseId;
