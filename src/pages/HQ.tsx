@@ -83,7 +83,7 @@ import { AdminGovernanceExportPreviewPanel } from "@/components/admin/governance
 import { AdminBasicMemoryPanel } from "@/components/admin/AdminBasicMemoryPanel";
 import { AdminIdentityPanel } from "@/components/admin/AdminIdentityPanel";
 import { TenantBoundaryPanel } from "@/components/admin/TenantBoundaryPanel";
-import { AiSuggestionsQueuePanel } from "@/components/admin/ai-review/AiSuggestionsQueuePanel";
+import { AiReviewWorkspace } from "@/components/admin/ai-review/AiReviewWorkspace";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
@@ -867,7 +867,7 @@ function HQLayout({ restrictedToFacilitation = false }: { restrictedToFacilitati
                   AI Suggestions · advisory only · platform_admin · no outreach · no POI/WaD/formal-match
                 </p>
               </header>
-              <div className="p-3 sm:p-5"><AiSuggestionsQueuePanel /></div>
+              <div className="p-3 sm:p-5"><AiReviewWorkspace /></div>
             </section>
           </TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
