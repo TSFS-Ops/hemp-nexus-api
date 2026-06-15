@@ -176,10 +176,10 @@ export function AttentionPipeline() {
             strokeWidth={2}
           />
           <h2 className={cn(
-            "text-xs font-bold tracking-widest uppercase",
-            hasUrgent ? "text-amber-900" : "text-muted-foreground",
+            "text-sm font-semibold tracking-tight",
+            hasUrgent ? "text-amber-900" : "text-foreground",
           )}>
-            Requires Your Attention
+            Needs your attention
           </h2>
         </div>
         {sorted.length > 0 && (
