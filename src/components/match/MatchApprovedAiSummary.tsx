@@ -195,7 +195,7 @@ export function MatchApprovedAiSummary({ matchId }: MatchApprovedAiSummaryProps)
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Izenzo is reviewing next steps. This summary is information only —
-            it is not a verified compliance, KYB, or bank-detail check.
+            it is not a compliance, KYB, or bank-detail confirmation.
           </p>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
