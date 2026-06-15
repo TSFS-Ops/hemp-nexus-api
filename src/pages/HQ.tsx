@@ -867,7 +867,7 @@ function HQLayout({ restrictedToFacilitation = false }: { restrictedToFacilitati
                   AI Suggestions · advisory only · platform_admin · no outreach · no POI/WaD/formal-match
                 </p>
               </header>
-              <div className="p-3 sm:p-5"><AiSuggestionsQueuePanel /></div>
+              <div className="p-3 sm:p-5"><AiReviewWorkspace /></div>
             </section>
           </TabsContent>
           <TabsContent value="disputes" className="mt-0 animate-section-enter"><DisputesTab /></TabsContent>
