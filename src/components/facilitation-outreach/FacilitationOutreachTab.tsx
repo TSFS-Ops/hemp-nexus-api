@@ -1,24 +1,9 @@
 /**
- * Phase 2 Step 4 — Facilitation Outreach drawer tab.
+ * Facilitation Outreach drawer tab.
  *
- * Mounted inside FacilitationCaseDrawer as the "Outreach" tab.
- *
- * Surfaces (HQ only — platform_admin and compliance_analyst):
- *   - Candidate list for the case (with gate-result chips returned by server)
- *   - Add-candidate form  (→ facilitation-outreach-candidate-add)
- *   - Per-candidate detail panel with:
- *       · Approved-template picker + email preview
- *       · Warn-acknowledgement checkboxes (driven by server gate result)
- *       · Manual single-recipient Send button (→ facilitation-outreach-send)
- *       · Compliance-escalation open  (platform_admin → facilitation-outreach-escalate)
- *       · Compliance-escalation resolve/reopen (compliance_analyst only
- *         → facilitation-outreach-escalation-resolve)
- *
- * The UI NEVER computes a gate decision client-side; it only renders the
- * server-returned result, reasons, and resulting send/escalation rows.
- *
- * No POI / WaD / match / token / credit / payment / poi_engagements /
- * compliance_cases mutation occurs from this surface.
+ * Operator surface for managing outreach candidates on a facilitation case.
+ * All gating decisions are made server-side; this tab only renders the
+ * results and offers the lifecycle controls each role is allowed to use.
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +16,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOutreachRoles } from "./useOutreachRoles";
+import {
+  outreachStateLabel,
+  GATE_RESULT_LABEL,
+  gateReasonLabel,
+  SEND_STATUS_LABEL,
+  ESCALATION_STATUS_LABEL,
+  friendlyFacilitationError,
+} from "@/lib/facilitation-labels";
 
 type Candidate = {
   id: string;
