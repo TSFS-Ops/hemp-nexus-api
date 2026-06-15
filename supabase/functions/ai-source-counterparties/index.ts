@@ -294,14 +294,14 @@ async function _handle(req: Request): Promise<Response> {
 
       if (material) {
         await admin.from("ai_intel_tasks").insert({
-          task_type: "provider_failure_review",
+          kind: "provider_failure_review",
           status: "open",
-          priority: "high",
           match_id,
           trade_request_id,
-          title: "AI provider failure — admin review",
-          notes: `ai-source-counterparties provider failure (status=${provider_status}, retried once). Detail: ${aiCall.detail.slice(0, 300)}`,
+          description: `AI provider failure (status=${provider_status}, retried once). Detail: ${aiCall.detail.slice(0, 300)}`,
+          metadata: { provider: "lovable_ai_gateway", provider_status, retried_once: true },
         }).then(() => {}).catch((e) => console.warn("[ai-source-counterparties] task insert failed", e));
+
       }
 
       // Surface to caller but DO NOT throw. Continue with zero ranked results.
