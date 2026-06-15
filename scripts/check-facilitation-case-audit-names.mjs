@@ -22,6 +22,8 @@ const REQUIRED = [
   "facilitation_case.evidence_uploaded",
   "facilitation_case.closed",
   "facilitation_case.cancelled_by_requester",
+  "facilitation_case.more_information_requested",
+  "facilitation_case.more_information_submitted",
 ];
 
 const SSOT_FILES = [
