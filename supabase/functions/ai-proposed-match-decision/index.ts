@@ -45,11 +45,28 @@ const ACTIONS = [
   "assign",
   "reviewer_note",
   "confidence_override",
+  // ── Phase 3 additions ──────────────────────────────────────────────
+  "set_due_date",
+  "mark_duplicate",
+  "mark_not_relevant",
+  "set_feedback_reason",
+  "request_rerun",
+  "approve_for_client_view",
+  "approve_for_outreach",
+  "edit_payload",
 ] as const;
 type Action = (typeof ACTIONS)[number];
 
-const TERMINAL = new Set(["approved", "rejected", "archived"]);
+const TERMINAL = new Set(["approved", "approved_internal", "approved_client_view", "rejected", "archived", "expired", "closed"]);
 const CONFIDENCE = new Set(["low", "medium", "high"]);
+const ESCALATION_TARGETS = new Set(["verification", "wad", "kyb", "compliance"]);
+const FEEDBACK_REASONS = new Set([
+  "wrong_company", "wrong_country", "wrong_product", "wrong_counterparty_role",
+  "weak_source", "bad_contact", "dead_email", "duplicate",
+  "possible_compliance_concern", "poor_outreach_draft",
+  "not_commercially_relevant", "insufficient_evidence", "other",
+]);
+
 
 serve(async (req) => {
   const pre = handleCorsPreflight(req);
