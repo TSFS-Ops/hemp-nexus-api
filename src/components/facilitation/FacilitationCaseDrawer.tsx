@@ -19,7 +19,13 @@ import {
   type FacilitationInternalStatus,
 } from "@/lib/facilitation-case-state";
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
-import { friendlyFacilitationError } from "@/lib/facilitation-labels";
+import {
+  friendlyFacilitationError,
+  rolesLabel,
+  timelineActionLabel,
+  outcomeLabel,
+  OUTCOME_LABEL,
+} from "@/lib/facilitation-labels";
 
 type CaseRow = Record<string, unknown> & { id: string; case_number: string; internal_status: string; case_owner_id: string | null };
 
@@ -50,7 +56,7 @@ const OwnerPicker: React.FC<{ value: string; onChange: (v: string) => void; onSa
         <SelectContent>
           <SelectItem value="__none__">— Unassigned —</SelectItem>
           {owners.map((o) => (
-            <SelectItem key={o.id} value={o.id}>{label(o)} <span className="text-slate-400">· {o.roles.join(", ")}</span></SelectItem>
+            <SelectItem key={o.id} value={o.id}>{label(o)}{o.roles.length ? <span className="text-slate-400"> · {rolesLabel(o.roles)}</span> : null}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -190,7 +196,7 @@ export const FacilitationCaseDrawer: React.FC<{
                 <Select value={outcome} onValueChange={setOutcome}>
                   <SelectTrigger><SelectValue placeholder="Final outcome (optional)" /></SelectTrigger>
                   <SelectContent>
-                    {OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    {OUTCOMES.map((o) => <SelectItem key={o} value={o}>{OUTCOME_LABEL[o] ?? o}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -210,7 +216,13 @@ export const FacilitationCaseDrawer: React.FC<{
                 {data.events.map((ev) => (
                   <li key={ev.id} className="border-l-2 border-slate-200 pl-3">
                     <div className="text-slate-400 font-mono">{new Date(ev.created_at).toLocaleString()}</div>
-                    <div className="text-slate-800">{ev.action} {ev.to_status ? `→ ${ev.to_status}` : ""}</div>
+                    <div className="text-slate-800">
+                      {timelineActionLabel(ev.action)}
+                      {ev.to_status ? <> → {INTERNAL_STATUS_LABELS[ev.to_status as FacilitationInternalStatus] ?? OUTCOME_LABEL[ev.to_status] ?? ev.to_status.replace(/_/g, " ")}</> : null}
+                      {ev.payload && typeof (ev.payload as Record<string, unknown>).final_outcome === "string"
+                        ? <> · {outcomeLabel((ev.payload as Record<string, unknown>).final_outcome as string)}</>
+                        : null}
+                    </div>
                     {ev.payload?.body ? <div className="text-slate-600 whitespace-pre-wrap mt-1">{String(ev.payload.body)}</div> : null}
                   </li>
                 ))}

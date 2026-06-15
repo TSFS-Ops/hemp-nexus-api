@@ -79,6 +79,92 @@ export const ESCALATION_STATUS_LABEL: Record<string, string> = {
 };
 
 /**
+ * Timeline / event-log action codes written by edge functions.
+ * Keep raw codes in audit logs; only the labels here are shown in the UI.
+ */
+export const TIMELINE_ACTION_LABEL: Record<string, string> = {
+  "facilitation_case.created": "Case created",
+  "facilitation_case.assigned": "Owner assigned",
+  "facilitation_case.unassigned": "Owner removed",
+  "facilitation_case.status_changed": "Status changed",
+  "facilitation_case.note_added": "Internal note added",
+  "facilitation_case.evidence_uploaded": "Evidence uploaded",
+  "facilitation_case.evidence_removed": "Evidence removed",
+  "facilitation_case.closed": "Case closed",
+  "facilitation_case.reopened": "Case reopened",
+  "facilitation_case.escalated": "Escalated to compliance",
+  "facilitation_case.escalation_resolved": "Escalation resolved",
+  "facilitation_case.outreach_sent": "Outreach sent",
+};
+
+export function timelineActionLabel(action: string): string {
+  return (
+    TIMELINE_ACTION_LABEL[action] ??
+    action
+      .replace(/^facilitation_case\./, "")
+      .replace(/[._]/g, " ")
+      .replace(/^\w/, (c) => c.toUpperCase())
+  );
+}
+
+/**
+ * Final-outcome enum values surfaced in the case drawer dropdown and timeline.
+ */
+export const OUTCOME_LABEL: Record<string, string> = {
+  converted_to_known_counterparty_poi: "Converted to known counterparty (POI)",
+  linked_to_existing_organisation: "Linked to existing organisation",
+  new_counterparty_profile_created: "New counterparty profile created",
+  more_information_not_provided: "More information not provided",
+  counterparty_declined: "Counterparty declined",
+  unable_to_contact: "Unable to contact",
+  blocked_by_compliance: "Blocked by compliance",
+  duplicate_case: "Duplicate case",
+  cancelled_by_requester: "Cancelled by requester",
+  outside_supported_scope: "Outside supported scope",
+  closed_by_admin_decision: "Closed by admin decision",
+  closed_admin: "Closed by admin",
+};
+
+export function outcomeLabel(value: string | null | undefined): string {
+  if (!value) return "—";
+  return OUTCOME_LABEL[value] ?? value.replace(/_/g, " ");
+}
+
+/**
+ * Internal user/role tokens. Never render the raw token (e.g. `platform_admin`)
+ * directly — always pass through `roleLabel`.
+ */
+export const ROLE_LABEL: Record<string, string> = {
+  platform_admin: "Platform admin",
+  compliance_analyst: "Compliance analyst",
+  compliance_officer: "Compliance officer",
+  org_admin: "Organisation admin",
+  org_member: "Organisation member",
+  billing_admin: "Billing admin",
+  api_admin: "API admin",
+  director: "Director",
+  auditor: "Auditor",
+  legal: "Legal",
+  requester: "Requester",
+  trader: "Trader",
+};
+
+export function roleLabel(token: string | null | undefined): string {
+  if (!token) return "";
+  return (
+    ROLE_LABEL[token] ??
+    token
+      .replace(/_/g, " ")
+      .replace(/^\w/, (c) => c.toUpperCase())
+  );
+}
+
+export function rolesLabel(tokens: readonly string[] | null | undefined): string {
+  if (!tokens || tokens.length === 0) return "";
+  return Array.from(new Set(tokens.map(roleLabel).filter(Boolean))).join(", ");
+}
+
+/**
  * Wraps `parseEdgeError` with a Phase-2-specific fallback so toasts never
  * leak the generic "Edge Function returned a non-2xx status code".
  */
