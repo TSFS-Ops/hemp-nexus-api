@@ -99,10 +99,10 @@ describe("AiReviewWorkspace", () => {
     expect(container.textContent).toMatch(/Stale Intel/i);
   });
 
-  it("renders the Analytics placeholder", async () => {
+  it("renders the Analytics tab", async () => {
     const { container } = renderWorkspace();
     fireEvent.click(screen.getByRole("tab", { name: "Analytics" }));
     await new Promise((r) => setTimeout(r, 50));
-    expect(container.textContent).toMatch(/Phase 6|Analytics/);
+    expect(container.textContent).toMatch(/Analytics|Operational analytics/);
   });
 });

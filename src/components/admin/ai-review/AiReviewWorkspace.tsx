@@ -26,6 +26,7 @@ import {
   AiSuggestionsQueuePanel,
   DoNotContactPanel,
 } from "./AiSuggestionsQueuePanel";
+import { AiAnalyticsTab } from "./AiAnalyticsTab";
 
 const STALE_AFTER_DAYS = 30;
 
@@ -122,7 +123,7 @@ export function AiReviewWorkspace() {
           <StaleIntelTab />
         </TabsContent>
         <TabsContent value="analytics" className="mt-3">
-          <AnalyticsPlaceholder />
+          <AiAnalyticsTab />
         </TabsContent>
       </Tabs>
 
@@ -293,20 +294,7 @@ function StaleIntelTab() {
   );
 }
 
-function AnalyticsPlaceholder() {
-  return (
-    <Panel title="Analytics" subtitle="Placeholder · platform_admin">
-      <div className="text-[12.5px] text-muted-foreground space-y-2">
-        <p>Full AI Light-Intel analytics arrives in Phase 6.</p>
-        <p>
-          Planned views: run counts per trade request, hit-rate of Approved Shortlists,
-          outreach response rates, feedback-reason distribution, provider-failure trends,
-          and Discovery Confidence calibration. None of these are wired yet.
-        </p>
-      </div>
-    </Panel>
-  );
-}
+// Phase 6: AnalyticsPlaceholder replaced by `AiAnalyticsTab`.
 
 // ─── tiny shared primitives ────────────────────────────────────────────────
 function Panel({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
