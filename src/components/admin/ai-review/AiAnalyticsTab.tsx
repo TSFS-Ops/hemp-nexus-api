@@ -234,7 +234,7 @@ export function AiAnalyticsTab() {
           <p>
             Counts reflect AI Light-Intel discovery activity only. AI confidence is shown as
             <b> Discovery Confidence</b> / <b>AI Intel Confidence</b> and is advisory.
-            Nothing here is a verified counterparty signal.
+            Nothing here asserts compliance status or hard verification of a counterparty.
           </p>
         </div>
       </div>
