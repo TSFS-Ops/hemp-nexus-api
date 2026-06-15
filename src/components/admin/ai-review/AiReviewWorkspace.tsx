@@ -222,7 +222,7 @@ function FailedSearchesTab() {
           headers={["Title", "Status", "Trade request", "Opened"]}
           rows={(q.data ?? []).map((t) => [
             <div>
-              <div className="font-medium">{t.title ?? "Provider failure review"}</div>
+              <div className="font-medium">Provider failure review</div>
               {t.description ? (
                 <div className="text-[11.5px] text-muted-foreground line-clamp-2">{t.description}</div>
               ) : null}
