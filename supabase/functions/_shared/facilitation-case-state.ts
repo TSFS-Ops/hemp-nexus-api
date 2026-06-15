@@ -3,7 +3,8 @@
  * Mirror of src/lib/facilitation-case-state.ts. Both are pinned by
  * scripts/check-facilitation-status-drift.mjs.
  *
- * Phase 1 only. No outreach, no SLA, no reporting.
+ * Batch 3: aligned with client questionnaire (intake, statuses, outcomes,
+ * user-facing labels). Still no outreach, no SLA, no reporting.
  */
 
 export const INTERNAL_STATUSES = [
@@ -18,6 +19,7 @@ export const INTERNAL_STATUSES = [
   "contact_attempted",
   "awaiting_counterparty_response",
   "counterparty_responded",
+  "profile_verification_in_progress",
   "counterparty_declined",
   "ready_for_known_counterparty_poi",
   "converted_to_known_counterparty_poi",
@@ -39,8 +41,20 @@ export const OUTCOMES = [
   "cancelled_by_requester",
   "outside_supported_scope",
   "closed_by_admin_decision",
+  "no_authority_confirmed",
 ] as const;
 export type FacilitationOutcome = (typeof OUTCOMES)[number];
+
+export const ROLES = ["buyer", "seller", "service_provider", "funder", "other"] as const;
+export type FacilitationRole = (typeof ROLES)[number];
+
+export const RELATIONSHIP_STATUSES = [
+  "no_prior_contact",
+  "prior_contact",
+  "referral",
+  "known_but_not_verified",
+] as const;
+export type FacilitationRelationshipStatus = (typeof RELATIONSHIP_STATUSES)[number];
 
 const ADMIN_TRANSITIONS: Record<FacilitationInternalStatus, readonly FacilitationInternalStatus[]> = {
   new: ["awaiting_assignment", "admin_reviewing", "duplicate_review", "compliance_review_required", "cancelled_by_requester", "closed"],
@@ -53,7 +67,8 @@ const ADMIN_TRANSITIONS: Record<FacilitationInternalStatus, readonly Facilitatio
   ready_for_contact: ["contact_attempted", "unable_to_proceed", "closed"],
   contact_attempted: ["awaiting_counterparty_response", "unable_to_proceed", "closed"],
   awaiting_counterparty_response: ["counterparty_responded", "counterparty_declined", "unable_to_proceed", "closed"],
-  counterparty_responded: ["ready_for_known_counterparty_poi", "more_information_needed", "unable_to_proceed", "closed"],
+  counterparty_responded: ["profile_verification_in_progress", "ready_for_known_counterparty_poi", "more_information_needed", "unable_to_proceed", "closed"],
+  profile_verification_in_progress: ["ready_for_known_counterparty_poi", "more_information_needed", "compliance_review_required", "unable_to_proceed", "closed"],
   counterparty_declined: ["unable_to_proceed", "closed"],
   ready_for_known_counterparty_poi: ["converted_to_known_counterparty_poi", "closed"],
   converted_to_known_counterparty_poi: [],
@@ -74,6 +89,7 @@ const REQUESTER_TRANSITIONS: Record<FacilitationInternalStatus, readonly Facilit
   contact_attempted: ["cancelled_by_requester"],
   awaiting_counterparty_response: ["cancelled_by_requester"],
   counterparty_responded: ["cancelled_by_requester"],
+  profile_verification_in_progress: ["cancelled_by_requester"],
   counterparty_declined: [],
   ready_for_known_counterparty_poi: ["cancelled_by_requester"],
   converted_to_known_counterparty_poi: [],
@@ -96,8 +112,12 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.created",
   "facilitation_case.assigned",
   "facilitation_case.status_changed",
+  "facilitation_case.intake_updated",
   "facilitation_case.note_added",
   "facilitation_case.evidence_uploaded",
+  "facilitation_case.source_added",
+  "facilitation_case.milestone_changed",
+  "facilitation_case.outcome_set",
   "facilitation_case.closed",
   "facilitation_case.cancelled_by_requester",
 ] as const;
