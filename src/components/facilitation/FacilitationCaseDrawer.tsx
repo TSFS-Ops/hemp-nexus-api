@@ -84,6 +84,11 @@ export const FacilitationCaseDrawer: React.FC<{
   const [nextStatus, setNextStatus] = useState<FacilitationInternalStatus | "">("");
   const [closingReason, setClosingReason] = useState("");
   const [outcome, setOutcome] = useState<string>("");
+  const [moreInfoOpen, setMoreInfoOpen] = useState(false);
+  const [moreInfoMessage, setMoreInfoMessage] = useState("");
+  const [moreInfoItemsText, setMoreInfoItemsText] = useState("");
+  const [moreInfoDueDate, setMoreInfoDueDate] = useState("");
+  const [moreInfoSubmitting, setMoreInfoSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     if (!caseId) return;
