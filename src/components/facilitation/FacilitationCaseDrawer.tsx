@@ -56,7 +56,7 @@ const OwnerPicker: React.FC<{ value: string; onChange: (v: string) => void; onSa
         <SelectContent>
           <SelectItem value="__none__">— Unassigned —</SelectItem>
           {owners.map((o) => (
-            <SelectItem key={o.id} value={o.id}>{label(o)} <span className="text-slate-400">· {o.roles.join(", ")}</span></SelectItem>
+            <SelectItem key={o.id} value={o.id}>{label(o)}{o.roles.length ? <span className="text-slate-400"> · {rolesLabel(o.roles)}</span> : null}</SelectItem>
           ))}
         </SelectContent>
       </Select>
