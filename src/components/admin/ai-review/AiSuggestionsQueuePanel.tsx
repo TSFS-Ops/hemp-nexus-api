@@ -87,7 +87,9 @@ type AuditRow = {
 
 const STATUS_OPTIONS = [
   { id: "all", label: "All statuses" },
+  { id: "new", label: "New" },
   { id: "pending", label: "Pending" },
+  { id: "under_review", label: "Under review" },
   { id: "approved", label: "Approved" },
   { id: "rejected", label: "Rejected" },
   { id: "archived", label: "Archived" },
@@ -158,7 +160,7 @@ function statusTone(status: string): string {
 }
 
 export function AiSuggestionsQueuePanel() {
-  const [statusFilter, setStatusFilter] = useState<string>("pending");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [confidenceFilter, setConfidenceFilter] = useState<string>("all");
   const [fitFilter, setFitFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
@@ -207,7 +209,7 @@ export function AiSuggestionsQueuePanel() {
 
   const totalLoaded = listQuery.data?.length ?? 0;
   const filtersActive =
-    statusFilter !== "pending" ||
+    statusFilter !== "all" ||
     confidenceFilter !== "all" ||
     fitFilter !== "all" ||
     riskFilter !== "all" ||
