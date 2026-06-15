@@ -909,7 +909,7 @@ function FilterBar({
 
       {/* Visible count + reset affordance */}
       <div className="flex items-center gap-3 lg:ml-auto">
-        <span className="text-[10px] font-mono tracking-[0.18em] uppercase text-muted-foreground tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {visibleCount} visible
         </span>
         {hasActiveFilters && (
