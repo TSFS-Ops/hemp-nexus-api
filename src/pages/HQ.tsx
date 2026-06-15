@@ -823,7 +823,7 @@ function HQLayout({ restrictedToFacilitation = false }: { restrictedToFacilitati
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <div className="bg-card border-b border-border sticky top-0 z-10">
           <div className="px-4 sm:px-6 lg:px-10">
-            <AdminTabsNav tabs={TABS} activeTab={activeTab} onSelect={handleTabChange} />
+            <AdminTabsNav tabs={visibleTabs} activeTab={activeTab} onSelect={handleTabChange} />
           </div>
         </div>
 
