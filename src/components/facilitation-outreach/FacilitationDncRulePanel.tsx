@@ -171,7 +171,7 @@ export const FacilitationDncRulePanel: React.FC = () => {
             )}
           </li>
         ))}
-        {!loading && rows.length === 0 && <li className="text-xs text-slate-500">No DNC rules registered.</li>}
+        {!loading && rows.length === 0 && <li className="text-xs text-slate-500">No do-not-contact rules.</li>}
       </ul>
     </div>
   );
