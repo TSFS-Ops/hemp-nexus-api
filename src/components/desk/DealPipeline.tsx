@@ -611,16 +611,16 @@ export function DealPipeline() {
       <section>
         <PipelineHeader totalDeals={0} sortKey={sortKey} onSortChange={setSortKey} />
         <EmptyStateCard
-          kicker="Pipeline Idle"
-          title="No active pipeline"
-          description="Discover verified counterparty liquidity, then initiate a trade request to populate your desk."
+          kicker="Nothing in flight"
+          title="No trades in your pipeline yet"
+          description="Find a verified counterparty and start a trade. It will appear here as soon as you do."
           icon={<Compass className="h-5 w-5" strokeWidth={1.75} />}
           primaryAction={{
-            label: "Discover Counterparties",
+            label: "Find counterparties",
             onClick: () => navigate("/desk/discover"),
           }}
           secondaryAction={{
-            label: "Initiate Trade Request",
+            label: "Start a new trade",
             onClick: () => navigate("/desk/match/new"),
           }}
         />
