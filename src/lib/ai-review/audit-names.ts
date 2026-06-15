@@ -25,6 +25,13 @@ export const AI_REVIEW_AUDIT_NAMES = [
   "ai_review.admin_override_applied",
   "ai_review.do_not_contact_rule_created",
   "ai_review.do_not_contact_rule_deactivated",
+  // ── Phase 2 lifecycle additions ────────────────────────────────────
+  "ai_review.auto_trigger_evaluated",
+  "ai_review.usage_limit_exceeded",
+  "ai_review.proposed_match_stale",
+  "ai_review.proposed_match_expired",
+  "ai_review.provider_failure_recorded",
 ] as const;
+
 
 export type AiReviewAuditName = typeof AI_REVIEW_AUDIT_NAMES[number];
