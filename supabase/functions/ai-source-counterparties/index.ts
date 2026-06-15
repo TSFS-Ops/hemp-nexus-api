@@ -239,48 +239,83 @@ async function _handle(req: Request): Promise<Response> {
       },
     };
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You rank candidate counterparties for an admin review queue. " +
-              "Use approved internal data only. Do NOT label anyone verified. " +
-              "Flag risks conservatively. Escalate when source evidence is weak.",
-          },
-          {
-            role: "user",
-            content: JSON.stringify({
-              trade_request: tr,
-              candidate_pool: filtered,
-              prior_matches: matches.data ?? [],
-              prior_pois: pois.data ?? [],
-              prior_intel: intel.data ?? [],
-            }),
-          },
-        ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "rank_counterparties" } },
-      }),
-    });
+    const aiCall = await aiGatewayCallWithRetry({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You rank candidate counterparties for an admin review queue. " +
+            "Use approved internal data only. Do NOT label anyone verified. " +
+            "Flag risks conservatively. Escalate when source evidence is weak.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            trade_request: tr,
+            candidate_pool: filtered,
+            prior_matches: matches.data ?? [],
+            prior_pois: pois.data ?? [],
+            prior_intel: intel.data ?? [],
+          }),
+        },
+      ],
+      tools: [tool],
+      tool_choice: { type: "function", function: { name: "rank_counterparties" } },
+    }, LOVABLE_API_KEY);
 
-    if (!aiResp.ok) {
-      const txt = await aiResp.text();
-      return json(aiResp.status, { error: "AI gateway error", detail: txt.slice(0, 500) });
+    // Phase 2 provider-failure handling: retry-once already attempted by helper.
+    // On terminal failure: audit, create an admin task, do NOT crash — return 200
+    // with zero proposed matches so the workflow continues.
+    if (!aiCall.ok) {
+      const provider_status = aiCall.status;
+      const material = provider_status >= 500 || provider_status === 429 || provider_status === 408 || provider_status === 599;
+
+      await writeAdminAudit({
+        admin,
+        action: "ai_review.provider_failure_recorded",
+        status: "error",
+        actorUserId: userId,
+        targetType: "trade_request",
+        targetId: trade_request_id,
+        requestId,
+        endpoint: "ai-source-counterparties",
+        reason: aiCall.detail,
+        ipAddress: extractIp(req),
+        userAgent: extractUserAgent(req),
+        extra: {
+          provider: "lovable_ai_gateway",
+          provider_status,
+          retried_once: true,
+          material,
+          match_id,
+        },
+      }).catch(() => {});
+
+      if (material) {
+        await admin.from("ai_intel_tasks").insert({
+          task_type: "provider_failure_review",
+          status: "open",
+          priority: "high",
+          match_id,
+          trade_request_id,
+          title: "AI provider failure — admin review",
+          notes: `ai-source-counterparties provider failure (status=${provider_status}, retried once). Detail: ${aiCall.detail.slice(0, 300)}`,
+        }).then(() => {}).catch((e) => console.warn("[ai-source-counterparties] task insert failed", e));
+      }
+
+      // Surface to caller but DO NOT throw. Continue with zero ranked results.
+      return json(200, {
+        proposed_matches: [],
+        provider_failure: { status: provider_status, material, retried_once: true },
+      });
     }
 
-    const ai = await aiResp.json();
-    const args = ai?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    const args = aiCall.data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) return json(502, { error: "AI returned no ranking" });
     const parsed = JSON.parse(args);
     const ranked = Array.isArray(parsed.ranked) ? parsed.ranked : [];
+
 
     const rowsToInsert = ranked.slice(0, MAX_CANDIDATES).map((r: any, i: number) => ({
       trade_request_id,
