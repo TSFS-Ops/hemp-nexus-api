@@ -69,7 +69,7 @@ const PATTERNS: Array<{ category: ForbiddenCategory; re: RegExp }> = [
   // AI confidence / unapproved risk commentary
   { category: "ai_confidence_score", re: /\b(ai\s+confidence|confidence\s+score|model\s+confidence|fit\s+score)\b/i },
   { category: "ai_confidence_score", re: /\b\d{1,3}\s*%?\s*(confidence|match\s+score|fit)\b/i },
-  { category: "unapproved_risk_comments", re: /\b(risk\s+(flag|score|rating)|sanction(ed|s)?|pep|adverse\s+media|kyb\s+(fail|pass|status)|wad\s+(ready|status)|bank[- ]?verified|verified|cleared)\b/i },
+  { category: "unapproved_risk_comments", re: /\b(risk\s+(flag|score|rating)|sanction(ed|s)?|\bpep\b|adverse\s+media|kyb\s+(fail|pass|status|approved|cleared)|wad\s+(ready|status|sealed)|bank[- ]?verified|identity\s+verified|sanctions\s+cleared|compliance\s+cleared)\b/i },
 
   // Sensitive commercial
   { category: "sensitive_commercial", re: /\b(incoterms?|fob|cif|cfr|exw|ddp|letter of credit|lc\b|advance payment|deposit\s+\d)/i },
