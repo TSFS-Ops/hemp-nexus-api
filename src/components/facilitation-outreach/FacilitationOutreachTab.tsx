@@ -262,7 +262,7 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
 
   const handleEscalationTransition = async (escalation_id: string, next_status: "resolved" | "open") => {
     if (!isComplianceAnalyst || !escNotes.trim()) {
-      toast.error("Notes are required.");
+      toast.error("Please add resolution notes before continuing.");
       return;
     }
     setBusy(true);
