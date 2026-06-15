@@ -257,7 +257,7 @@ export function AiSuggestionsQueuePanel(props: AiSuggestionsQueuePanelProps = {}
 
   return (
     <div className="space-y-4">
-      <AiSuggestionLauncher />
+      {hideLauncher ? null : <AiSuggestionLauncher />}
       <section className="bg-card border border-border rounded-sm overflow-hidden">
       <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
         <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
