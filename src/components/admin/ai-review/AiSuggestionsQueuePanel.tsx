@@ -209,7 +209,7 @@ export function AiSuggestionsQueuePanel() {
 
   const totalLoaded = listQuery.data?.length ?? 0;
   const filtersActive =
-    statusFilter !== "pending" ||
+    statusFilter !== "all" ||
     confidenceFilter !== "all" ||
     fitFilter !== "all" ||
     riskFilter !== "all" ||
