@@ -130,7 +130,7 @@ export const FacilitationCaseDrawer: React.FC<{
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{data?.case.case_number ?? "Facilitation case"}</SheetTitle>
-          <SheetDescription>Admin triage · Phase 2 outreach surface (platform_admin / compliance_analyst)</SheetDescription>
+          <SheetDescription>Review the case and run outreach</SheetDescription>
         </SheetHeader>
 
         {loading && <p className="mt-4 text-sm text-slate-500">Loading…</p>}
