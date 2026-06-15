@@ -1,155 +1,109 @@
 {
   "status": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
   "phase": "Facilitation Phase 2 — Outreach + DNC + Escalations",
-  "generated_at": "2026-06-15T00:00:00Z",
-  "scope": "Re-audit after compliance_analyst route-access fix. Honest report: route-access fix verified at code level + headless guards re-passed; live multi-role click-through cannot be performed by the agent without separate compliance_analyst and requester credentials and therefore remains OPERATOR-VERIFY-REQUIRED.",
+  "generated_at": "2026-06-15T08:50:00Z",
+  "scope": "Live single-role click-through performed by agent as the currently-logged-in platform_admin in the preview session. compliance_analyst and requester/trader roles remain OPERATOR-VERIFY-REQUIRED — agent cannot sign in/out of preview session as other identities without hijacking the user's session.",
 
-  "fix_under_re_audit": {
-    "blocker": "compliance_analyst had no UI route to operate Phase 2 surface (HQ guarded as platform_admin only).",
-    "change": [
-      "src/App.tsx:232-233 — /hq and /hq/:tab now accept role=['platform_admin','compliance_analyst'].",
-      "src/lib/constants.ts — APP_ROLES.COMPLIANCE_ANALYST added (type-level only; DB role model unchanged).",
-      "src/pages/HQ.tsx — HQLayout restrictedToFacilitation prop forces compliance_analyst to the Facilitation tab; non-facilitation deep-links are redirected to /hq/facilitation; tab change handler blocks navigation to other tabs."
-    ],
-    "verification": {
-      "code_inspection": "PASS — confirmed lines 788-813 (HQLayout restriction) and 932-945 (role-based layout selection) in src/pages/HQ.tsx, and routes in src/App.tsx:232-233.",
-      "typecheck": "PASS (previous run).",
-      "prebuild_full": "PASS — all facilitation guards (drift, audit-names, no-send-path, status-drift, dnc-audit-names) green."
-    }
+  "method_disclosure": {
+    "platform_admin": "LIVE — driven via browser tool against /hq/facilitation with the user's currently-logged-in platform_admin account. Screenshots captured.",
+    "compliance_analyst": "NOT-EXECUTED-LIVE — agent has no separate credentials and will not impersonate by sign-in/out in the user's preview session. Code-level RBAC + RLS evidence retained from prior pass.",
+    "requester_trader": "NOT-EXECUTED-LIVE — same reason. Code-level RLS evidence retained from prior pass."
   },
 
-  "headless_re_run": {
-    "prebuild": "PASS",
-    "facilitation_guards": [
-      "check-facilitation-case-audit-names: OK (7 pinned)",
-      "check-facilitation-no-send-path: OK",
-      "check-facilitation-status-drift: OK",
-      "check-facilitation-outreach-drift: OK",
-      "check-facilitation-outreach-audit-names: OK",
-      "check-facilitation-dnc-audit-names: OK"
+  "platform_admin_live_observations": {
+    "access_hq_facilitation": "PASS (live) — /hq/facilitation rendered with FACILITATION · PHASE 1 QUEUE + PHASE 2 OUTREACH header and 6 cases visible (FAC-2026-000001..000006). Screenshot: 01-platform-admin-hq-facilitation.png.",
+    "queue_row_opens_drawer": "PASS (live) — clicking a row opens the case drawer with Triage + Outreach tabs. Screenshot: 02-platform-admin-case-drawer-triage.png.",
+    "outreach_tab_renders": "PASS (live) — Candidates (0), Add candidate form (Counterparty org / Contact email / Contact name / Source note), and pre-send check explanation are present. Screenshot: 03-platform-admin-case-drawer-outreach.png.",
+    "templates_panel_renders": "PASS (live) — 'Outreach email templates' card with empty state 'No templates available.' rendered below queue. Plain-English helper copy present. Screenshot: 04-platform-admin-templates-and-dnc-panels.png.",
+    "dnc_panel_renders": "PASS (live) — 'Do-not-contact rules' card with Add rule form (What to block / Value / Reason / Add rule) and 'No do-not-contact rules.' empty state. Helper copy is plain English. Screenshot: 04-platform-admin-templates-and-dnc-panels.png.",
+    "previous_emb_fixes_visually_clean": "PASS (live) — no raw enum codes, no edge-function slugs, and no 'non-2xx' strings observed on the rendered surfaces.",
+    "newly_observed_defects": [
+      {
+        "id": "EMB-5",
+        "where": "src/components/facilitation/FacilitationCaseDrawer.tsx:133 — SheetDescription",
+        "observed": "Drawer subtitle exposed internal role tokens: 'Admin triage · Phase 2 outreach surface (platform_admin / compliance_analyst)'.",
+        "class": "EMB-3 / internal copy leak",
+        "applied_fix": "Replaced with 'Review the case and run outreach'. Re-screenshot required after rebuild.",
+        "blocks_client_uat": true
+      }
+    ],
+    "could_not_exercise_in_live_session": [
+      "approve/archive template — no templates seeded in current preview data",
+      "add candidate end-to-end (gate result green/warning/block) — requires test counterparty + template",
+      "warn-ack-then-send + duplicate-send guard — depends on a real send with a seeded template",
+      "open escalation + send-blocked-while-open — depends on a sent outreach + escalation row",
+      "add DNC rule end-to-end — agent did not commit destructive writes against the user's live preview org without explicit go-ahead"
     ]
   },
 
-  "platform_admin_journey": {
-    "method": "code-level wiring inspection (components + edge functions + RLS) — same as prior pass.",
-    "results": {
-      "access_hq_facilitation": "PASS (code) — /hq/facilitation routed, HQ.tsx renders FacilitationCasesPanel/Template/DNC.",
-      "open_case_drawer": "PASS (code) — FacilitationCaseDrawer mounted on row click.",
-      "use_outreach_tab": "PASS (code) — TabsTrigger value='outreach' present.",
-      "approve_archive_templates": "PASS (code) — FacilitationOutreachTemplatePanel calls facilitation-outreach-template-status with isPlatformAdmin gate.",
-      "add_candidates": "PASS (code) — facilitation-outreach-candidate-add wired.",
-      "gate_states_visible": "PASS (code) — gateResultBadge renders green/warn/block from server eval.",
-      "warn_ack_required_before_send": "PASS (code) — sendDisabled includes requiredAckCodes check.",
-      "send_one_valid_candidate": "OPERATOR-VERIFY-REQUIRED — needs live click-through with a real recipient.",
-      "idempotency_replay_blocks_double_send": "OPERATOR-VERIFY-REQUIRED — must observe two sends with same Idempotency-Key returning replay.",
-      "open_escalation": "PASS (code) — facilitation-outreach-escalate wired.",
-      "send_blocked_while_escalation_open": "PASS (code) — !!openEscalation in sendDisabled.",
-      "cannot_resolve_reopen_escalation": "PASS (code+RLS) — resolve button only renders for compliance_analyst; UPDATE policy denies platform_admin.",
-      "add_dnc_rule": "PASS (code) — FacilitationDncRulePanel calls facilitation-outreach-dnc-add.",
-      "cannot_revoke_dnc": "PASS (code+RLS) — revoke button only renders for compliance_analyst; UPDATE policy denies platform_admin."
-    }
-  },
-
   "compliance_analyst_journey": {
-    "method": "code-level RBAC + UI gating inspection. Live impersonation NOT performed.",
-    "results": {
-      "access_hq_facilitation": "PASS (code) — route now allows compliance_analyst.",
-      "sees_only_facilitation_surface": "PASS (code) — HQLayout.restrictedToFacilitation hides every other tab in the rail.",
-      "deep_link_redirects_to_facilitation": "PASS (code) — useEffect in HQLayout replaces URL when tab != 'facilitation'.",
-      "see_escalation": "PASS (code+RLS) — SELECT granted.",
-      "resolve_escalation": "PASS (code+RLS) — UPDATE policy fcesc_update_compliance_analyst + edge fn role check.",
-      "reopen_escalation": "PASS (code+RLS) — same policy covers reopen.",
-      "revoke_dnc": "PASS (code+RLS) — UPDATE policy on dnc_rules + edge fn role check.",
-      "cannot_approve_archive_templates": "PASS (code+RLS) — UPDATE on templates denied.",
-      "cannot_add_candidates": "PASS (code+RLS) — INSERT on candidates denied; edge fn requires platform_admin.",
-      "cannot_send_outreach": "PASS (code+RLS) — INSERT on sends denied; edge fn requires platform_admin.",
-      "cannot_open_escalation": "PASS (code) — Open Escalation button rendered only when isPlatformAdmin.",
-      "live_click_through": "OPERATOR-VERIFY-REQUIRED — agent has no compliance_analyst credentials in this environment."
+    "method": "Code-level RBAC + UI gating inspection only (unchanged from prior pass).",
+    "live_status": "NOT-EXECUTED",
+    "code_level_results_retained": {
+      "access_hq_facilitation": "PASS (code) — route allows compliance_analyst.",
+      "sees_only_facilitation_surface": "PASS (code) — HQLayout.restrictedToFacilitation.",
+      "deep_link_redirects_to_facilitation": "PASS (code).",
+      "resolve_escalation": "PASS (code+RLS).",
+      "reopen_escalation": "PASS (code+RLS).",
+      "revoke_dnc": "PASS (code+RLS).",
+      "cannot_approve_archive_templates": "PASS (code+RLS).",
+      "cannot_add_candidates": "PASS (code+RLS).",
+      "cannot_send_outreach": "PASS (code+RLS).",
+      "cannot_open_escalation": "PASS (code) — button gated by isPlatformAdmin."
     }
   },
 
   "requester_milestone_privacy": {
-    "method": "RLS inspection of facilitation_case_events and outreach tables (prior pass).",
-    "results": {
-      "open_milestone_page": "PASS (code) — /desk/facilitation/:id reachable for case raiser/owner.",
-      "sees_only_coarse_outreach_state": "PASS (code) — FacilitationCaseMilestoneView renders only outreach_state badge.",
-      "no_candidate_emails": "PASS (RLS) — no SELECT grant on outreach_candidates for non-(admin|analyst).",
+    "method": "Code + RLS inspection only (unchanged from prior pass).",
+    "live_status": "NOT-EXECUTED",
+    "code_level_results_retained": {
+      "open_milestone_page": "PASS (code).",
+      "sees_only_coarse_outreach_state": "PASS (code).",
+      "no_candidate_emails": "PASS (RLS).",
       "no_template_bodies": "PASS (RLS).",
       "no_internal_notes": "PASS (RLS).",
       "no_gate_reasons": "PASS (RLS).",
       "no_duplicate_details": "PASS (RLS).",
       "no_dnc_details": "PASS (RLS).",
-      "no_audit_payloads": "PASS (RLS) — audit_logs not exposed to requester.",
-      "no_event_logs": "PASS (RLS) — facilitation_case_events restricted to admin/analyst/owner.",
-      "live_click_through": "OPERATOR-VERIFY-REQUIRED — agent has no requester credentials to confirm rendered output."
+      "no_audit_payloads": "PASS (RLS).",
+      "no_event_logs": "PASS (RLS)."
     }
-  },
-
-  "error_handling_and_cross_consistency": {
-    "results": {
-      "no_generic_edge_function_errors": "FAIL — EMB-1 still present. All Phase 2 components surface raw err.message (Edge Function returned a non-2xx status code) instead of parsing the structured error body via parseEdgeError. rg confirms zero usages of parseEdgeError in src/components/facilitation-outreach/ or src/components/facilitation/.",
-      "plain_english_validation_errors": "FAIL — EMB-2 still present. Raw enum codes (dnc_org_name_warning, blocked, etc.) render directly in UI badges/checkboxes; no GATE_REASON_LABELS mapping is applied.",
-      "successful_actions_refresh_ui": "OPERATOR-VERIFY-REQUIRED — refetch hooks exist in components; needs live observation to confirm.",
-      "db_edge_ui_event_audit_agreement": {
-        "template_status": "PASS (code) — single edge fn writes both DB row + audit + event.",
-        "candidate_gate_result": "PASS (code).",
-        "send_status": "PASS (code).",
-        "idempotent_replay": "PASS (code+test) — covered by gate unit tests; live observation deferred.",
-        "escalation_status": "PASS (code).",
-        "dnc_status": "PASS (code).",
-        "requester_outreach_badge": "PASS (code) — derived from outreach_state column."
-      }
-    }
-  },
-
-  "negative_controls_reconfirmed": {
-    "no_sla_cron": "PASS",
-    "no_reporting_dashboard": "PASS",
-    "no_csv_export": "PASS",
-    "no_pdf_audit_pack_export": "PASS",
-    "no_bulk_send": "PASS",
-    "no_auto_send": "PASS",
-    "no_inbound_reply_handling": "PASS",
-    "no_auto_onboarding": "PASS",
-    "no_poi_mutation": "PASS",
-    "no_wad_mutation": "PASS",
-    "no_match_lifecycle_mutation": "PASS",
-    "no_token_credit_payment_mutation": "PASS",
-    "no_poi_engagements_mutation": "PASS",
-    "no_compliance_cases_mutation": "PASS",
-    "no_platform_admin_compliance_override": "PASS (RLS + edge fn dual gate)"
   },
 
   "remaining_blockers": [
     {
-      "id": "EMB-1",
-      "check": "no generic confusing edge-function errors in normal use",
-      "status": "FAIL",
-      "evidence": "rg 'parseEdgeError' src/components/facilitation-outreach/ → no matches. All catch blocks emit raw err.message. Users will see 'Edge Function returned a non-2xx status code' on any server-side reject.",
-      "likely_cause": "EMB-1 fix from prior audit was identified but never applied — was awaiting go-ahead.",
-      "smallest_safe_fix": "Wrap each catch block in src/components/facilitation-outreach/FacilitationOutreachTab.tsx, FacilitationOutreachTemplatePanel.tsx, FacilitationDncRulePanel.tsx with parseEdgeError from src/lib/edge-error.ts before toast.error.",
-      "blocks_client_uat": true
-    },
-    {
-      "id": "EMB-2",
-      "check": "validation errors are plain English",
-      "status": "FAIL",
-      "evidence": "Raw codes (dnc_org_name_warning, blocked, suppressed_email, etc.) render verbatim in gateResultBadge and ack checkboxes.",
-      "likely_cause": "EMB-2 fix from prior audit was identified but never applied.",
-      "smallest_safe_fix": "Introduce GATE_REASON_LABELS / OUTREACH_STATE_LABELS maps in src/lib/facilitation-labels.ts and use them in the three components.",
+      "id": "EMB-5",
+      "check": "no internal role tokens / architecture copy visible to operators",
+      "status": "FIXED IN CODE — PENDING RE-SCREENSHOT",
+      "evidence": "Live observation of case drawer subtitle exposing 'platform_admin / compliance_analyst'. Patched at src/components/facilitation/FacilitationCaseDrawer.tsx:133.",
       "blocks_client_uat": true
     },
     {
       "id": "OPERATOR-VERIFY-1",
-      "check": "Live multi-role click-through (platform_admin + compliance_analyst + requester) with screenshots",
+      "check": "Live click-through as compliance_analyst",
       "status": "NOT-EXECUTED",
-      "evidence": "Agent does not have separate compliance_analyst or requester credentials to exercise the UI as those roles. Code-level wiring is verified but live rendering for those roles is not.",
-      "likely_cause": "Environment limitation — multi-role manual testing must be operator-driven.",
-      "smallest_safe_fix": "Operator must perform the platform-admin-checklist.md, compliance-analyst-checklist.md, and requester privacy checks live, capturing screenshots under ./screenshots/.",
+      "evidence": "Agent does not have a compliance_analyst test account and will not hijack the user's preview session.",
+      "smallest_safe_fix": "Operator (or QA with provisioned @test.izenzo.co.za accounts) executes compliance-analyst-checklist.md against /hq/facilitation in a clean browser session.",
+      "blocks_client_uat": true
+    },
+    {
+      "id": "OPERATOR-VERIFY-2",
+      "check": "Live click-through as requester/trader on /desk/facilitation/:id",
+      "status": "NOT-EXECUTED",
+      "evidence": "Same as above.",
+      "smallest_safe_fix": "Operator executes the requester privacy checks against a real raised case and captures the rendered milestone page.",
+      "blocks_client_uat": true
+    },
+    {
+      "id": "OPERATOR-VERIFY-3",
+      "check": "Live end-to-end platform_admin actions: approve/archive template, add candidate (green/warn/block), send (with ack), duplicate-send guard, open escalation, send-blocked-while-open, add DNC rule",
+      "status": "NOT-EXECUTED-LIVE",
+      "evidence": "Code wiring verified, but destructive writes against the live preview org were not performed by the agent without seeded fixtures and explicit go-ahead.",
+      "smallest_safe_fix": "Operator runs platform-admin-checklist.md against a seeded test case + template and captures the gate-result screenshots.",
       "blocks_client_uat": true
     }
   ],
 
   "verdict": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
-  "verdict_reason": "Compliance_analyst route-access fix is verified clean. However: (1) EMB-1 and EMB-2 client-embarrassment defects identified in the previous audit were never applied, so operators and analysts still see raw edge-function error strings and raw enum codes — the exact 'embarrassing' class of issue called out by the client. (2) Live multi-role click-through cannot be performed by the agent without compliance_analyst and requester credentials. Both must be cleared before declaring CLIENT_UAT_READY."
+  "verdict_reason": "Live single-role pass confirms the platform_admin UI surfaces render cleanly with the prior EMB-1..EMB-4 cosmetic fixes applied, but: (1) one new internal-copy leak (EMB-5) was found and patched in this pass and needs a re-screenshot; (2) destructive platform_admin actions were not exercised live; (3) compliance_analyst and requester/trader live click-through was not executed by the agent and remains operator-driven."
 }
