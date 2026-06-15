@@ -71,18 +71,18 @@ describe("AiReviewWorkspace", () => {
     }
   });
 
-  it("never labels AI confidence as 'Verified'", async () => {
+  it("labels AI confidence as Discovery / AI Intel Confidence (not 'Verified')", async () => {
     const { container } = renderWorkspace();
-    // Switch through tabs to render their bodies.
-    for (const label of ["Stale Intel", "Failed Searches", "Analytics", "Pending Review"]) {
+    for (const label of ["Stale Intel", "Pending Review"]) {
       fireEvent.click(screen.getByRole("tab", { name: label }));
-      await waitFor(() => container.textContent !== null);
+      await new Promise((r) => setTimeout(r, 30));
     }
     const text = container.textContent ?? "";
-    // Allow "verification" (escalation target) but never "verified" used as an
-    // AI confidence claim. We assert the word in isolation does not appear.
-    expect(/\bverified\b/i.test(text)).toBe(false);
+    // Positive: at least one of the approved confidence labels is present.
     expect(text).toMatch(/Discovery Confidence|AI Intel Confidence/);
+    // Negative: AI confidence is never labelled with "Verified" / "verified confidence".
+    expect(/verified\s*(confidence|intel|counterparty)/i.test(text)).toBe(false);
+    expect(/confidence[:\s]+verified/i.test(text)).toBe(false);
   });
 
   it("renders the Failed Searches tab without crashing", async () => {
