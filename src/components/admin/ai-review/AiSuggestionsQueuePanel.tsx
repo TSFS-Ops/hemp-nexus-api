@@ -612,6 +612,18 @@ function Prose({ value }: { value: string | null }) {
 // the `ai-proposed-match-decision` edge function so RLS, role-gating, and
 // canonical `ai_review.*` audit writes stay server-side.
 // ─────────────────────────────────────────────────────────────────────────────
+const CONFIDENCE_LEVELS = ["low", "medium", "high"] as const;
+
+// Mirrors supabase/functions/ai-proposed-match-decision/index.ts FEEDBACK_REASONS.
+const FEEDBACK_REASONS = [
+  "wrong_company", "wrong_country", "wrong_product", "wrong_counterparty_role",
+  "weak_source", "bad_contact", "dead_email", "duplicate",
+  "possible_compliance_concern", "poor_outreach_draft",
+  "not_commercially_relevant", "insufficient_evidence", "other",
+] as const;
+
+const ESCALATION_TARGETS = ["verification", "wad", "kyb", "compliance"] as const;
+
 type ActionKey =
   | "approve"
   | "reject"
@@ -620,7 +632,15 @@ type ActionKey =
   | "needs_more_research"
   | "under_review"
   | "reviewer_note"
-  | "confidence_override";
+  | "confidence_override"
+  | "assign"
+  | "set_due_date"
+  | "mark_duplicate"
+  | "mark_not_relevant"
+  | "set_feedback_reason"
+  | "request_rerun"
+  | "approve_for_client_view"
+  | "approve_for_outreach";
 
 type DialogSpec = {
   action: ActionKey;
@@ -629,43 +649,90 @@ type DialogSpec = {
   needsReason?: boolean;
   needsNote?: boolean;
   needsOverride?: boolean;
+  needsAssignee?: boolean;
+  needsDueAt?: boolean;
+  needsFeedbackReason?: boolean;
+  needsEscalationTarget?: boolean;
+  /** Show a destructive confirmation banner before submit (client-visible exposure). */
+  clientVisibleConfirm?: boolean;
   confirmLabel: string;
   destructive?: boolean;
 };
 
 const DIALOG_SPECS: Record<ActionKey, DialogSpec> = {
-  approve: { action: "approve", title: "Approve proposal", description: "Mark this proposal as approved for further admin work. No outreach is triggered. No POI, WaD, or formal match is created.", needsNote: true, confirmLabel: "Approve" },
-  reject: { action: "reject", title: "Reject proposal", description: "Record a rejection reason. A short reason is required and is captured in the audit trail.", needsReason: true, needsNote: true, confirmLabel: "Reject", destructive: true },
+  approve: { action: "approve", title: "Approve (internal)", description: "Approve for internal admin work only. Does not expose this proposal to external users.", needsNote: true, confirmLabel: "Approve internal" },
+  reject: { action: "reject", title: "Reject proposal", description: "Record a rejection reason. Captured in the audit trail.", needsReason: true, needsNote: true, confirmLabel: "Reject", destructive: true },
   archive: { action: "archive", title: "Archive proposal", description: "Move out of the active queue. An optional note explains why.", needsReason: true, confirmLabel: "Archive" },
-  escalate: { action: "escalate", title: "Escalate proposal", description: "Flag for senior review. A reason is required.", needsReason: true, confirmLabel: "Escalate" },
-  needs_more_research: { action: "needs_more_research", title: "Needs more research", description: "Park the proposal while further internal research is gathered. Optional note.", needsNote: true, confirmLabel: "Mark needs more research" },
+  escalate: { action: "escalate", title: "Escalate proposal", description: "Flag for senior review. Pick an escalation target.", needsReason: true, needsEscalationTarget: true, confirmLabel: "Escalate" },
+  needs_more_research: { action: "needs_more_research", title: "Needs more research", description: "Park while further internal research is gathered.", needsNote: true, confirmLabel: "Mark needs more research" },
   under_review: { action: "under_review", title: "Mark under review", description: "Indicate that an admin is actively reviewing this proposal.", confirmLabel: "Mark under review" },
-  reviewer_note: { action: "reviewer_note", title: "Add reviewer note", description: "Append or replace the reviewer note. The note is recorded in the audit trail.", needsNote: true, confirmLabel: "Save note" },
-  confidence_override: { action: "confidence_override", title: "Override confidence", description: "Manually set the confidence level. A reason is required and the override is audited.", needsOverride: true, needsReason: true, confirmLabel: "Apply override" },
+  reviewer_note: { action: "reviewer_note", title: "Add reviewer note", description: "Append or replace the reviewer note. Recorded in audit trail.", needsNote: true, confirmLabel: "Save note" },
+  confidence_override: { action: "confidence_override", title: "Override Discovery Confidence", description: "Manually set the Discovery Confidence level. This is advisory; it does not assert verification.", needsOverride: true, needsReason: true, confirmLabel: "Apply override" },
+  assign: { action: "assign", title: "Assign to platform admin", description: "Assign this proposal to a specific platform_admin reviewer (paste their user id).", needsAssignee: true, confirmLabel: "Assign" },
+  set_due_date: { action: "set_due_date", title: "Set due date", description: "Internal review due date. Advisory only — no automatic action is taken when the date passes.", needsDueAt: true, confirmLabel: "Set due date" },
+  mark_duplicate: { action: "mark_duplicate", title: "Mark duplicate", description: "Archive this proposal and tag as a duplicate of another suggestion.", needsReason: true, confirmLabel: "Mark duplicate" },
+  mark_not_relevant: { action: "mark_not_relevant", title: "Mark not relevant", description: "Archive this proposal as not commercially relevant.", needsReason: true, confirmLabel: "Mark not relevant" },
+  set_feedback_reason: { action: "set_feedback_reason", title: "Set feedback reason", description: "Record a fixed feedback reason against this proposal.", needsFeedbackReason: true, confirmLabel: "Save feedback reason" },
+  request_rerun: { action: "request_rerun", title: "Request rerun", description: "Records a rerun request in the audit trail. The actual rerun is launched separately by an admin clicking Source counterparties.", needsReason: true, confirmLabel: "Request rerun" },
+  approve_for_client_view: {
+    action: "approve_for_client_view",
+    title: "Approve for client view",
+    description: "Snapshots the approved payload and sets client_visible = true. This is a separate explicit action; it is not implied by any other approval.",
+    needsReason: true,
+    clientVisibleConfirm: true,
+    confirmLabel: "Approve for client view",
+    destructive: true,
+  },
+  approve_for_outreach: { action: "approve_for_outreach", title: "Approve for outreach", description: "Marks the proposal as cleared for manual outreach drafting. Does not send anything.", needsReason: true, confirmLabel: "Approve for outreach" },
 };
 
 function ActionsBar({ row, onDone }: { row: ProposedRow; onDone: () => void }) {
   const [open, setOpen] = useState<ActionKey | null>(null);
-  const terminal = row.status === "approved" || row.status === "rejected" || row.status === "archived";
+  const [openVersions, setOpenVersions] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+
+  const terminalArchived = row.status === "rejected" || row.status === "archived" || row.status === "expired" || row.status === "closed";
+  const isApprovedInternal = row.status === "approved" || row.status === "approved_internal";
+  const isApprovedClient = row.status === "approved_client_view";
 
   return (
     <div className="border border-border rounded-sm bg-muted/30 p-3 space-y-2">
       <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Admin actions</p>
-      {terminal ? (
+      {terminalArchived ? (
         <p className="text-[12px] text-muted-foreground">
-          This proposal is in terminal status <span className="font-mono">{row.status}</span>. Only archive
-          and reviewer note remain available.
+          This proposal is in terminal status <span className="font-mono">{row.status}</span>. Only reviewer notes,
+          rerun requests and feedback reason capture remain available.
         </p>
       ) : null}
       <div className="flex flex-wrap gap-1.5">
-        {!terminal && <Button size="sm" variant="default" onClick={() => setOpen("approve")}>Approve</Button>}
-        {!terminal && <Button size="sm" variant="destructive" onClick={() => setOpen("reject")}>Reject</Button>}
-        {!terminal && <Button size="sm" variant="outline" onClick={() => setOpen("escalate")}>Escalate</Button>}
-        {!terminal && <Button size="sm" variant="outline" onClick={() => setOpen("needs_more_research")}>Needs more research</Button>}
-        {!terminal && <Button size="sm" variant="outline" onClick={() => setOpen("under_review")}>Under review</Button>}
-        {!terminal && <Button size="sm" variant="outline" onClick={() => setOpen("confidence_override")}>Override confidence</Button>}
-        {row.status !== "archived" && <Button size="sm" variant="outline" onClick={() => setOpen("archive")}>Archive</Button>}
+        {!terminalArchived && !isApprovedInternal && !isApprovedClient && (
+          <Button size="sm" variant="default" onClick={() => setOpen("approve")}>Approve (internal)</Button>
+        )}
+        {(isApprovedInternal || isApprovedClient) && (
+          <Button size="sm" variant="default" onClick={() => setOpen("approve_for_client_view")}>
+            Approve for client view
+          </Button>
+        )}
+        {(isApprovedInternal || isApprovedClient) && (
+          <Button size="sm" variant="outline" onClick={() => setOpen("approve_for_outreach")}>
+            Approve for outreach
+          </Button>
+        )}
+        {!terminalArchived && <Button size="sm" variant="destructive" onClick={() => setOpen("reject")}>Reject</Button>}
+        {!terminalArchived && <Button size="sm" variant="outline" onClick={() => setOpen("escalate")}>Escalate…</Button>}
+        {!terminalArchived && <Button size="sm" variant="outline" onClick={() => setOpen("needs_more_research")}>Needs more research</Button>}
+        {!terminalArchived && <Button size="sm" variant="outline" onClick={() => setOpen("under_review")}>Under review</Button>}
+        {!terminalArchived && <Button size="sm" variant="outline" onClick={() => setOpen("confidence_override")}>Override Discovery Confidence</Button>}
+        {!terminalArchived && <Button size="sm" variant="outline" onClick={() => setOpen("mark_duplicate")}>Mark duplicate</Button>}
+        {!terminalArchived && <Button size="sm" variant="outline" onClick={() => setOpen("mark_not_relevant")}>Mark not relevant</Button>}
+        <Button size="sm" variant="outline" onClick={() => setOpen("set_feedback_reason")}>Feedback reason</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpen("set_due_date")}>Set due date</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpen("assign")}>Assign</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpen("request_rerun")}>Request rerun</Button>
+        {row.status !== "archived" && !terminalArchived && <Button size="sm" variant="outline" onClick={() => setOpen("archive")}>Archive</Button>}
         <Button size="sm" variant="outline" onClick={() => setOpen("reviewer_note")}>Reviewer note</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpenEdit(true)}>Edit payload…</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpenVersions(true)}>View versions</Button>
       </div>
       {open ? (
         <DecisionDialog
@@ -675,6 +742,8 @@ function ActionsBar({ row, onDone }: { row: ProposedRow; onDone: () => void }) {
           onSuccess={() => { setOpen(null); onDone(); }}
         />
       ) : null}
+      {openEdit ? <EditPayloadDialog row={row} onClose={() => setOpenEdit(false)} /> : null}
+      {openVersions ? <VersionsDrawer row={row} onClose={() => setOpenVersions(false)} /> : null}
     </div>
   );
 }
@@ -694,6 +763,11 @@ function DecisionDialog({
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [override, setOverride] = useState<string>(row.confidence_override ?? row.confidence_level);
+  const [assigneeId, setAssigneeId] = useState("");
+  const [dueAt, setDueAt] = useState("");
+  const [feedbackReason, setFeedbackReason] = useState<string>(FEEDBACK_REASONS[0]);
+  const [escalationTarget, setEscalationTarget] = useState<string>(ESCALATION_TARGETS[0]);
+  const [clientVisibleAck, setClientVisibleAck] = useState(false);
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -707,6 +781,10 @@ function DecisionDialog({
         payload.confidence_override = override;
         payload.reason = reason.trim();
       }
+      if (spec.needsAssignee) payload.assignee_id = assigneeId.trim();
+      if (spec.needsDueAt) payload.due_at = new Date(dueAt).toISOString();
+      if (spec.needsFeedbackReason) payload.feedback_reason = feedbackReason;
+      if (spec.needsEscalationTarget) payload.escalation_target = escalationTarget;
       const { data, error } = await supabase.functions.invoke("ai-proposed-match-decision", { body: payload });
       if (error) throw new Error(error.message || "Edge function error");
       if ((data as { error?: string })?.error) throw new Error((data as { error?: string }).error!);
@@ -724,7 +802,13 @@ function DecisionDialog({
   });
 
   const reasonRequired = !!spec.needsReason || !!spec.needsOverride;
-  const canSubmit = !mut.isPending && (!reasonRequired || reason.trim().length > 0) && (!spec.needsOverride || (CONFIDENCE_LEVELS as readonly string[]).includes(override));
+  const canSubmit =
+    !mut.isPending &&
+    (!reasonRequired || reason.trim().length > 0) &&
+    (!spec.needsOverride || (CONFIDENCE_LEVELS as readonly string[]).includes(override)) &&
+    (!spec.needsAssignee || assigneeId.trim().length > 0) &&
+    (!spec.needsDueAt || (!!dueAt && !Number.isNaN(Date.parse(dueAt)))) &&
+    (!spec.clientVisibleConfirm || clientVisibleAck);
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -734,9 +818,29 @@ function DecisionDialog({
           <DialogDescription>{spec.description}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {spec.clientVisibleConfirm ? (
+            <div className="border border-amber-300 bg-amber-50 rounded-sm p-3 text-[12px] text-amber-900 space-y-2">
+              <p className="font-medium">Heads up — client-visible exposure.</p>
+              <p>
+                Approving for client view sets <span className="font-mono">client_visible = true</span> and
+                snapshots the approved payload. In a future phase (Phase 4) this snapshot may be shown
+                to the trade-request originator. No external user surfaces are built yet. AI Intel
+                Confidence remains advisory and is not labelled as verified.
+              </p>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={clientVisibleAck}
+                  onChange={(e) => setClientVisibleAck(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>I understand this approval is a separate, audited, client-visible exposure step.</span>
+              </label>
+            </div>
+          ) : null}
           {spec.needsOverride ? (
             <div className="space-y-1.5">
-              <Label htmlFor="ai-override-level">Confidence level</Label>
+              <Label htmlFor="ai-override-level">Discovery Confidence</Label>
               <Select value={override} onValueChange={setOverride}>
                 <SelectTrigger id="ai-override-level"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -745,6 +849,44 @@ function DecisionDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          ) : null}
+          {spec.needsEscalationTarget ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="ai-escalation-target">Escalation target</Label>
+              <Select value={escalationTarget} onValueChange={setEscalationTarget}>
+                <SelectTrigger id="ai-escalation-target"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ESCALATION_TARGETS.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+          {spec.needsFeedbackReason ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="ai-feedback-reason">Feedback reason</Label>
+              <Select value={feedbackReason} onValueChange={setFeedbackReason}>
+                <SelectTrigger id="ai-feedback-reason"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {FEEDBACK_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r.replace(/_/g, " ")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+          {spec.needsAssignee ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="ai-assignee">Platform admin user id</Label>
+              <Input id="ai-assignee" value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} placeholder="UUID of platform_admin reviewer" />
+            </div>
+          ) : null}
+          {spec.needsDueAt ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="ai-due-at">Due date</Label>
+              <Input id="ai-due-at" type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
             </div>
           ) : null}
           {spec.needsReason ? (
@@ -773,7 +915,162 @@ function DecisionDialog({
   );
 }
 
-const CONFIDENCE_LEVELS = ["low", "medium", "high"] as const;
+// ─────────────────────────────────────────────────────────────────────────────
+// Edit payload — admin-only. Edits safe advisory fields. Calls `edit_payload`
+// on the decision edge function which lazily snapshots `original_payload` and
+// stamps `edited_payload`. Edits are NOT approved; a separate approve action
+// is still required.
+// ─────────────────────────────────────────────────────────────────────────────
+const SAFE_EDIT_FIELDS = [
+  "suggested_counterparty_name",
+  "counterparty_role",
+  "jurisdiction",
+  "sector_or_product_fit",
+  "capacity_indicator",
+  "prior_activity_summary",
+  "source_summary",
+  "match_rationale",
+] as const;
+
+function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {};
+    for (const f of SAFE_EDIT_FIELDS) {
+      const v = (row as unknown as Record<string, unknown>)[f];
+      out[f] = typeof v === "string" ? v : "";
+    }
+    return out;
+  });
+  const [reason, setReason] = useState("");
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ai-proposed-match-decision", {
+        body: {
+          proposed_match_id: row.id,
+          action: "edit_payload",
+          edited_payload: draft,
+          reason: reason.trim() || undefined,
+        },
+      });
+      if (error) throw new Error(error.message || "Edge function error");
+      if ((data as { error?: string })?.error) throw new Error((data as { error?: string }).error!);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Edit recorded. Not yet approved — separate approval required.");
+      qc.invalidateQueries({ queryKey: ["ai-proposed-matches"] });
+      qc.invalidateQueries({ queryKey: ["ai-proposed-match-audit", row.id] });
+      onClose();
+    },
+    onError: (err: Error) => toast.error(`Edit failed: ${err.message}`),
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit advisory fields</DialogTitle>
+          <DialogDescription>
+            Edits the safe advisory fields only. The original AI payload is preserved as
+            <span className="font-mono"> original_payload</span> and your edits are saved as
+            <span className="font-mono"> edited_payload</span>. <b>Edits are not approved</b> — a separate
+            approval action is still required before any client-visible or outreach step.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {SAFE_EDIT_FIELDS.map((f) => (
+            <div key={f} className="space-y-1.5">
+              <Label htmlFor={`edit-${f}`} className="font-mono text-[11px] tracking-[0.1em] uppercase">{f}</Label>
+              <Textarea
+                id={`edit-${f}`}
+                value={draft[f] ?? ""}
+                onChange={(e) => setDraft((d) => ({ ...d, [f]: e.target.value }))}
+                rows={2}
+                maxLength={4000}
+              />
+            </div>
+          ))}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-reason">Reason (optional)</Label>
+            <Textarea id="edit-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} rows={2} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>Cancel</Button>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending}>
+            {mut.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null}
+            Save edit (not approved)
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Versions drawer — shows original AI payload, edited payload and approved
+// payload side-by-side. Admin-only. Not exposed to external users.
+// ─────────────────────────────────────────────────────────────────────────────
+function VersionsDrawer({ row, onClose }: { row: ProposedRow; onClose: () => void }) {
+  // Fetch the full row to pick up payload columns not in the list select.
+  const q = useQuery({
+    queryKey: ["ai-proposed-match-versions", row.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_proposed_matches")
+        .select("original_payload, edited_payload, approved_payload, client_visible, status")
+        .eq("id", row.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  return (
+    <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Payload versions · admin only</SheetTitle>
+          <SheetDescription>
+            Side-by-side view of the original AI payload, any admin edits, and the snapshot taken at
+            client-visible approval. Not shown to external users. AI Intel Confidence is advisory and
+            is not labelled as verified.
+          </SheetDescription>
+        </SheetHeader>
+        <div className="mt-4 space-y-4">
+          <div className="text-[11px] font-mono text-muted-foreground">
+            status · {q.data?.status ?? row.status} · client_visible · {String(q.data?.client_visible ?? false)}
+          </div>
+          <VersionBlock title="Original AI payload" value={q.data?.original_payload as unknown} />
+          <VersionBlock title="Edited payload (admin)" value={q.data?.edited_payload as unknown} />
+          <VersionBlock title="Approved payload (snapshot at client-visible approval)" value={q.data?.approved_payload as unknown} />
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function VersionBlock({ title, value }: { title: string; value: unknown }) {
+  const isEmpty = value == null || (typeof value === "object" && Object.keys(value as object).length === 0);
+  return (
+    <div className="border border-border rounded-sm">
+      <div className="px-3 py-2 border-b border-border bg-muted/40 font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+        {title}
+      </div>
+      {isEmpty ? (
+        <p className="px-3 py-3 text-[12.5px] text-muted-foreground italic">Not yet captured.</p>
+      ) : (
+        <pre className="px-3 py-3 text-[11.5px] whitespace-pre-wrap break-words font-mono leading-snug text-foreground">
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Do-Not-Contact rules manager. Mutations go through `ai-do-not-contact-rules`
