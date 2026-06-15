@@ -218,7 +218,7 @@ export const FacilitationCaseDrawer: React.FC<{
                     <div className="text-slate-400 font-mono">{new Date(ev.created_at).toLocaleString()}</div>
                     <div className="text-slate-800">
                       {timelineActionLabel(ev.action)}
-                      {ev.to_status ? <> → {INTERNAL_STATUS_LABELS[ev.to_status as FacilitationInternalStatus] ?? ev.to_status}</> : null}
+                      {ev.to_status ? <> → {INTERNAL_STATUS_LABELS[ev.to_status as FacilitationInternalStatus] ?? OUTCOME_LABEL[ev.to_status] ?? ev.to_status.replace(/_/g, " ")}</> : null}
                       {ev.payload && typeof (ev.payload as Record<string, unknown>).final_outcome === "string"
                         ? <> · {outcomeLabel((ev.payload as Record<string, unknown>).final_outcome as string)}</>
                         : null}
