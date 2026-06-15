@@ -238,6 +238,14 @@ function DraftCard({
         <Badge variant="outline" className={statusTone(draft.draft_status)}>
           {draft.draft_status.replace(/_/g, " ")}
         </Badge>
+        {isFirst ? (
+          <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">first outreach</Badge>
+        ) : (
+          <Badge variant="outline" className="bg-zinc-50 text-zinc-700 border-zinc-200">follow-up</Badge>
+        )}
+        {draft.outcome ? (
+          <Badge variant="outline" className="bg-sky-50 text-sky-800 border-sky-200">outcome · {draft.outcome.replace(/_/g, " ")}</Badge>
+        ) : null}
         {draft.model ? <Badge variant="outline" className="font-mono text-[10px]">{draft.model}</Badge> : null}
       </div>
 
