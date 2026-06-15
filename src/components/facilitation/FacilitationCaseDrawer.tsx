@@ -16,7 +16,11 @@ import {
   INTERNAL_STATUSES,
   OUTCOMES,
   INTERNAL_STATUS_LABELS,
+  ROLE_LABELS,
+  RELATIONSHIP_STATUS_LABELS,
   type FacilitationInternalStatus,
+  type FacilitationRole,
+  type FacilitationRelationshipStatus,
 } from "@/lib/facilitation-case-state";
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
 import {
