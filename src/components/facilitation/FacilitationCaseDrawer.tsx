@@ -193,7 +193,7 @@ export const FacilitationCaseDrawer: React.FC<{
                   ["Email", get("counterparty_email") as React.ReactNode],
                   ["Phone", get("counterparty_phone") as React.ReactNode],
                   ["Website", get("counterparty_website") as React.ReactNode],
-                  ["Contact person", get("contact_person_name") as React.ReactNode],
+                  ["Contact person", get("counterparty_contact_name") as React.ReactNode],
                   ["Contact title", get("contact_person_title") as React.ReactNode],
                   ["Contact phone", get("contact_person_phone") as React.ReactNode],
                   ["Contact email", get("contact_person_email") as React.ReactNode],
