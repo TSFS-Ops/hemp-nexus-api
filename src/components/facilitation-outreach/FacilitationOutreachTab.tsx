@@ -376,11 +376,11 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
                 <ul className="text-xs space-y-1 mt-1">
                   {sends.map((s) => (
                     <li key={s.id} className="flex items-center justify-between gap-2">
-                      <span className="font-mono">{s.subject}</span>
-                      <span className="flex items-center gap-2"><Badge variant={s.status === "sent" ? "default" : s.status === "failed" ? "destructive" : "outline"}>{s.status}</Badge><span className="text-slate-400">{new Date(s.created_at).toLocaleString()}</span></span>
+                      <span className="truncate">{s.subject}</span>
+                      <span className="flex items-center gap-2"><Badge variant={s.status === "sent" ? "default" : s.status === "failed" ? "destructive" : "outline"}>{SEND_STATUS_LABEL[s.status] ?? s.status}</Badge><span className="text-slate-400">{new Date(s.created_at).toLocaleString()}</span></span>
                     </li>
                   ))}
-                  {sends.length === 0 && <li className="text-slate-500">No sends yet.</li>}
+                  {sends.length === 0 && <li className="text-slate-500">No messages sent yet.</li>}
                 </ul>
               </div>
             </div>
