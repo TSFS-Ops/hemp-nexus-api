@@ -319,6 +319,8 @@ async function _handle(req: Request): Promise<Response> {
 
     const rowsToInsert = ranked.slice(0, MAX_CANDIDATES).map((r: any, i: number) => ({
       trade_request_id,
+      match_id,
+
       interpretation_id,
       suggested_counterparty_name: r.name,
       suggested_counterparty_org_id:
