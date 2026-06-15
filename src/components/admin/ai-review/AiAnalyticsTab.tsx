@@ -88,7 +88,7 @@ export function AiAnalyticsTab() {
       const { data, error } = await supabase
         .from("ai_proposed_matches")
         .select(
-          "id, status, confidence_level, confidence_override, feedback_reason, rejection_reason, client_visible, created_at, trade_request_id, suggested_country",
+          "id, status, confidence_level, confidence_override, feedback_reason, rejection_reason, client_visible, created_at, trade_request_id",
         )
         .gte("created_at", fromIso)
         .lte("created_at", toIso)
