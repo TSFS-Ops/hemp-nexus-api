@@ -29,12 +29,12 @@
       },
       {
         "id": "EMB-6",
-        "where": "Case drawer Timeline section + Assign owner dropdown",
-        "observed": "Timeline rows render raw event codes (facilitation_case.created → new, facilitation_case.evidence_uploaded, facilitation_case.closed → closed_admin). Assign owner dropdown shows 'Josh Kruger · platform_admin' — role token exposed in label.",
+        "where": "src/components/facilitation/FacilitationCaseDrawer.tsx — Timeline section + OwnerPicker SelectItem + Outcome SelectItem",
+        "observed": "Timeline rows rendered raw event codes (facilitation_case.created → new, facilitation_case.evidence_uploaded, facilitation_case.closed → closed_admin). Assign owner dropdown showed 'Josh Kruger · platform_admin'. Final-outcome dropdown listed raw enum keys.",
         "class": "EMB-2/EMB-3 / raw enum + internal copy",
-        "applied_fix": null,
-        "verified_live": "NEW — found in re-capture of screenshot 02 on 2026-06-15T08:52Z.",
-        "blocks_client_uat": true
+        "applied_fix": "Extended src/lib/facilitation-labels.ts with TIMELINE_ACTION_LABEL + timelineActionLabel(), OUTCOME_LABEL + outcomeLabel(), and ROLE_LABEL + roleLabel()/rolesLabel(). Drawer Timeline now renders 'Case created → New', 'Evidence uploaded', 'Case closed → Closed · Closed by admin'. OwnerPicker renders 'Platform admin' instead of 'platform_admin'. Final-outcome dropdown renders plain-English outcomes. Raw codes remain in audit logs/payloads only.",
+        "verified_live": "PENDING — requires re-capture of screenshot 02 once preview rebuild settles.",
+        "blocks_client_uat": false
       }
     ],
     "could_not_exercise_in_live_session": [
