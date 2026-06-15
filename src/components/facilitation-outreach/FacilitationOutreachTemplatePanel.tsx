@@ -74,9 +74,9 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <header className="flex items-center justify-between">
-        <h3 className="font-medium">Outreach template registry</h3>
-        <p className="text-[11px] text-slate-500 font-mono">facilitation-outreach-template-status</p>
+      <header className="space-y-1">
+        <h3 className="font-medium">Outreach email templates</h3>
+        <p className="text-[11px] text-slate-500">Only approved templates can be used to contact a candidate. Archived templates are kept for record but cannot be used.</p>
       </header>
       {loading && <p className="text-xs text-slate-500">Loading…</p>}
       <ul className="space-y-2">
@@ -85,9 +85,8 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="font-medium truncate">{t.name} <span className="text-slate-400 text-xs">v{t.version}</span></div>
-                <div className="font-mono text-[11px] text-slate-500 truncate">{t.slug}</div>
               </div>
-              <Badge variant={t.status === "approved" ? "default" : t.status === "archived" ? "outline" : "secondary"}>{t.status}</Badge>
+              <Badge variant={t.status === "approved" ? "default" : t.status === "archived" ? "outline" : "secondary"}>{TEMPLATE_STATUS_LABEL[t.status] ?? t.status}</Badge>
             </div>
             <div className="mt-2 text-xs">
               <div className="text-slate-500">Subject:</div>
