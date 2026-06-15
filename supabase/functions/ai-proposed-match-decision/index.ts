@@ -120,16 +120,26 @@ async function _handle(req: Request): Promise<Response> {
     // Reject transitions out of terminal states (except archive of a non-archived row,
     // which we still permit). Once a match is approved/rejected/archived, only archive
     // remains as a follow-up admin action.
-    if (TERMINAL.has(row.status) && action !== "archive" && action !== "reviewer_note") {
+    // Actions allowed on terminal-state rows (approved/approved_internal,
+    // approved_client_view, archived, rejected, expired, closed). Everything
+    // else returns 409 if the row is already terminal.
+    const TERMINAL_ALLOWED: Action[] = [
+      "archive",
+      "reviewer_note",
+      "approve_for_client_view",
+      "approve_for_outreach",
+      "edit_payload",
+      "set_feedback_reason",
+      "set_due_date",
+      "assign",
+      "request_rerun",
+    ];
+    if (TERMINAL.has(row.status) && !TERMINAL_ALLOWED.includes(action)) {
       return json(409, {
-        error: `proposed_match is in terminal status '${row.status}'; no further decisions allowed`,
+        error: `proposed_match is in terminal status '${row.status}'; action '${action}' not allowed`,
       });
     }
 
-    const now = new Date().toISOString();
-    const patch: Record<string, unknown> = { updated_at: now };
-    let auditAction: string;
-    const auditExtra: Record<string, unknown> = { prior_status: row.status };
 
     switch (action) {
       case "approve":
