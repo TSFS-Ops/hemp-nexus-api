@@ -357,6 +357,14 @@ function DraftCard({
         </div>
       )}
 
+      {draft.draft_status === "sent_by_human" && (
+        <div className="flex flex-wrap gap-2 pt-1 border-t border-border">
+          <Button size="sm" variant="outline" disabled={decide.isPending} onClick={() => { setOutcomeChoice(draft.outcome ?? ""); setOpenAction("outcome"); }}>
+            {draft.outcome ? "Update outcome" : "Record outcome"}
+          </Button>
+        </div>
+      )}
+
       <div className="text-[10.5px] text-muted-foreground font-mono pt-1 border-t border-border">
         id · {draft.id}<br />
         created · {new Date(draft.created_at).toISOString()}
