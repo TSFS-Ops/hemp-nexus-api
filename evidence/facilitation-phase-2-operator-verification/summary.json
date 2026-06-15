@@ -1,7 +1,7 @@
 {
   "status": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
   "phase": "Facilitation Phase 2 — Outreach + DNC + Escalations",
-  "generated_at": "2026-06-15T08:50:00Z",
+  "generated_at": "2026-06-15T08:52:00Z",
   "scope": "Live single-role click-through performed by agent as the currently-logged-in platform_admin in the preview session. compliance_analyst and requester/trader roles remain OPERATOR-VERIFY-REQUIRED — agent cannot sign in/out of preview session as other identities without hijacking the user's session.",
 
   "method_disclosure": {
@@ -12,7 +12,7 @@
 
   "platform_admin_live_observations": {
     "access_hq_facilitation": "PASS (live) — /hq/facilitation rendered with FACILITATION · PHASE 1 QUEUE + PHASE 2 OUTREACH header and 6 cases visible (FAC-2026-000001..000006). Screenshot: 01-platform-admin-hq-facilitation.png.",
-    "queue_row_opens_drawer": "PASS (live) — clicking a row opens the case drawer with Triage + Outreach tabs. Screenshot: 02-platform-admin-case-drawer-triage.png.",
+    "queue_row_opens_drawer": "PASS (live) — clicking a row opens the case drawer with Triage + Outreach tabs. Screenshot: 02-platform-admin-case-drawer-triage.png (re-captured 2026-06-15T08:52Z after EMB-5 fix; subtitle now reads 'Review the case and run outreach', no internal role tokens).",
     "outreach_tab_renders": "PASS (live) — Candidates (0), Add candidate form (Counterparty org / Contact email / Contact name / Source note), and pre-send check explanation are present. Screenshot: 03-platform-admin-case-drawer-outreach.png.",
     "templates_panel_renders": "PASS (live) — 'Outreach email templates' card with empty state 'No templates available.' rendered below queue. Plain-English helper copy present. Screenshot: 04-platform-admin-templates-and-dnc-panels.png.",
     "dnc_panel_renders": "PASS (live) — 'Do-not-contact rules' card with Add rule form (What to block / Value / Reason / Add rule) and 'No do-not-contact rules.' empty state. Helper copy is plain English. Screenshot: 04-platform-admin-templates-and-dnc-panels.png.",
@@ -23,7 +23,17 @@
         "where": "src/components/facilitation/FacilitationCaseDrawer.tsx:133 — SheetDescription",
         "observed": "Drawer subtitle exposed internal role tokens: 'Admin triage · Phase 2 outreach surface (platform_admin / compliance_analyst)'.",
         "class": "EMB-3 / internal copy leak",
-        "applied_fix": "Replaced with 'Review the case and run outreach'. Re-screenshot required after rebuild.",
+        "applied_fix": "Replaced with 'Review the case and run outreach'.",
+        "verified_live": "PASS (live) — re-screenshot 02 captured 2026-06-15T08:52Z confirms new subtitle and no role tokens visible.",
+        "blocks_client_uat": false
+      },
+      {
+        "id": "EMB-6",
+        "where": "Case drawer Timeline section + Assign owner dropdown",
+        "observed": "Timeline rows render raw event codes (facilitation_case.created → new, facilitation_case.evidence_uploaded, facilitation_case.closed → closed_admin). Assign owner dropdown shows 'Josh Kruger · platform_admin' — role token exposed in label.",
+        "class": "EMB-2/EMB-3 / raw enum + internal copy",
+        "applied_fix": null,
+        "verified_live": "NEW — found in re-capture of screenshot 02 on 2026-06-15T08:52Z.",
         "blocks_client_uat": true
       }
     ],
@@ -73,9 +83,17 @@
   "remaining_blockers": [
     {
       "id": "EMB-5",
-      "check": "no internal role tokens / architecture copy visible to operators",
-      "status": "FIXED IN CODE — PENDING RE-SCREENSHOT",
-      "evidence": "Live observation of case drawer subtitle exposing 'platform_admin / compliance_analyst'. Patched at src/components/facilitation/FacilitationCaseDrawer.tsx:133.",
+      "check": "no internal role tokens in case drawer subtitle",
+      "status": "RESOLVED (live-verified)",
+      "evidence": "Re-screenshot 02 confirms subtitle now reads 'Review the case and run outreach'.",
+      "blocks_client_uat": false
+    },
+    {
+      "id": "EMB-6",
+      "check": "no raw event codes in Timeline; no role tokens in Assign owner dropdown",
+      "status": "FAIL (live)",
+      "evidence": "Re-screenshot 02 shows Timeline rendering 'facilitation_case.created → new', 'facilitation_case.evidence_uploaded', 'facilitation_case.closed → closed_admin'; Assign owner dropdown shows 'Josh Kruger · platform_admin'.",
+      "smallest_safe_fix": "Add a TIMELINE_EVENT_LABELS map (and STATUS_LABELS for the arrow target) in src/lib/facilitation-labels.ts and apply in the Timeline renderer; render assignee dropdown label as 'Josh Kruger' (drop role suffix, or replace with humanised role e.g. 'Platform admin' only when disambiguation is needed).",
       "blocks_client_uat": true
     },
     {
