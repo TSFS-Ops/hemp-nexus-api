@@ -350,28 +350,26 @@ export const FacilitationOutreachTab: React.FC<{ caseId: string }> = ({ caseId }
 
               {requiredAckCodes.length > 0 && (
                 <div className="space-y-1">
-                  <Label className="text-xs">Warn acknowledgements (server-required)</Label>
+                  <Label className="text-xs">Please acknowledge before sending</Label>
                   {requiredAckCodes.map((code) => (
-                    <label key={code} className="flex items-center gap-2 text-xs">
+                    <label key={code} className="flex items-start gap-2 text-xs">
                       <Checkbox checked={ackedWarns.includes(code)} onCheckedChange={(v) => setAckedWarns((cur) => v ? [...cur, code] : cur.filter((c) => c !== code))} />
-                      <span className="font-mono">{code}</span>
+                      <span>{gateReasonLabel(code)}</span>
                     </label>
                   ))}
                 </div>
               )}
 
-              <div>
-                <Label className="text-xs">Idempotency key</Label>
-                <div className="flex gap-2">
-                  <Input value={idemKey} onChange={(e) => setIdemKey(e.target.value)} className="font-mono text-xs" />
-                  <Button variant="outline" type="button" onClick={() => setIdemKey(genIdempotencyKey())}>New</Button>
-                </div>
-              </div>
+              {/* Duplicate-send guard: generated automatically per send; regenerated after success. */}
 
               <Button onClick={handleSend} disabled={sendDisabled}>
-                {isBlocked ? "Blocked by gate" : openEscalation ? "Blocked: open escalation" : "Send"}
+                {isBlocked
+                  ? "Cannot send — this candidate cannot be contacted"
+                  : openEscalation
+                    ? "Cannot send — resolve the open escalation first"
+                    : "Send message"}
               </Button>
-              <p className="text-[11px] text-slate-500">Server re-evaluates the gate immediately before dispatch. Block ⇒ 409, warn ⇒ acknowledgement required.</p>
+              <p className="text-[11px] text-slate-500">The system re-checks contact restrictions immediately before sending. If anything has changed, the send will be refused.</p>
 
               <div className="mt-2">
                 <h5 className="text-[11px] uppercase tracking-wider text-slate-500">Send history</h5>
