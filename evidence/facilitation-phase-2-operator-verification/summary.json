@@ -23,7 +23,17 @@
         "where": "src/components/facilitation/FacilitationCaseDrawer.tsx:133 — SheetDescription",
         "observed": "Drawer subtitle exposed internal role tokens: 'Admin triage · Phase 2 outreach surface (platform_admin / compliance_analyst)'.",
         "class": "EMB-3 / internal copy leak",
-        "applied_fix": "Replaced with 'Review the case and run outreach'. Re-screenshot required after rebuild.",
+        "applied_fix": "Replaced with 'Review the case and run outreach'.",
+        "verified_live": "PASS (live) — re-screenshot 02 captured 2026-06-15T08:52Z confirms new subtitle and no role tokens visible.",
+        "blocks_client_uat": false
+      },
+      {
+        "id": "EMB-6",
+        "where": "Case drawer Timeline section + Assign owner dropdown",
+        "observed": "Timeline rows render raw event codes (facilitation_case.created → new, facilitation_case.evidence_uploaded, facilitation_case.closed → closed_admin). Assign owner dropdown shows 'Josh Kruger · platform_admin' — role token exposed in label.",
+        "class": "EMB-2/EMB-3 / raw enum + internal copy",
+        "applied_fix": null,
+        "verified_live": "NEW — found in re-capture of screenshot 02 on 2026-06-15T08:52Z.",
         "blocks_client_uat": true
       }
     ],
