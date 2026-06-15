@@ -156,6 +156,6 @@
     }
   ],
 
-  "verdict": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
-  "verdict_reason": "All cosmetic UI-label blockers (EMB-1..EMB-6) are resolved and live-verified clean. No further UI-label fixes are required. The three remaining blockers are operator-verification only: (1) compliance_analyst live click-through, (2) requester/trader live click-through, (3) platform_admin destructive end-to-end flow against seeded UAT fixtures only — destructive checks must NOT be run against live client or production-like data."
+  "verdict": "TRANSPORT_BLOCKER_CLEARED — LIVE_PLATFORM_ADMIN_RETEST_REQUIRED",
+  "verdict_reason": "All cosmetic UI-label blockers (EMB-1..EMB-6) are resolved and live-verified clean. The Interpret with AI transport blocker is cleared: all seven AI-review edge functions are deployed; OPTIONS returns 204; unauthenticated POST returns structured 401 from the function itself; platform_admin guard intact. Status not yet CLIENT_UAT_READY — a real platform_admin must live-retest Interpret with AI and Source counterparties on /hq/ai-suggestions, confirm structured UI output, ai_trade_request_interpretations row, and ai_review.trade_request_interpreted / ai_review.counterparty_sourced / ai_review.proposed_match_created audit rows, with no downstream outreach/send/POI/WaD/formal-match/verification mutation. The three operator-verification blockers (compliance_analyst, requester/trader, platform_admin destructive flow against seeded fixtures) also remain."
 }
