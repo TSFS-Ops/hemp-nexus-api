@@ -927,10 +927,18 @@ function ForbiddenHQ() {
 export default function HQ() {
   const {
     isAdmin,
-    isLoading
+    isLoading,
+    roles,
   } = useAuth();
   if (isLoading) return null;
+  const isComplianceAnalyst = roles.includes("compliance_analyst");
+  // platform_admin → full HQ. compliance_analyst → Facilitation tab only (Phase 2
+  // contract: they must reach escalation resolve/reopen and DNC revoke). Anyone
+  // else who somehow reaches this route gets the 403 surface.
+  if (!isAdmin && !isComplianceAnalyst) {
+    return <RequireAuth><ForbiddenHQ /></RequireAuth>;
+  }
   return <RequireAuth>
-      {!isAdmin ? <ForbiddenHQ /> : <HQLayout />}
+      <HQLayout restrictedToFacilitation={!isAdmin && isComplianceAnalyst} />
     </RequireAuth>;
 }
