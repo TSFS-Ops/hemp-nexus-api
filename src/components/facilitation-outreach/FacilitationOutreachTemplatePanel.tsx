@@ -57,18 +57,18 @@ export const FacilitationOutreachTemplatePanel: React.FC = () => {
   const transition = async (tpl: Template, next_status: "approved" | "archived") => {
     if (!isPlatformAdmin) return;
     const reason = (reasonById[tpl.id] ?? "").trim();
-    if (!reason) { toast.error("Reason required."); return; }
+    if (!reason) { toast.error("Please add a reason before continuing."); return; }
     setBusy(true);
     try {
       const { error } = await supabase.functions.invoke("facilitation-outreach-template-status", {
         body: { template_id: tpl.id, next_status, reason },
       });
       if (error) throw error;
-      toast.success(`Template ${next_status}.`);
+      toast.success(next_status === "approved" ? "Template approved." : "Template archived.");
       setReasonById((r) => ({ ...r, [tpl.id]: "" }));
       await load();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Transition failed");
+      toast.error(await friendlyFacilitationError(err, "Could not update the template. Please try again."));
     } finally { setBusy(false); }
   };
 
