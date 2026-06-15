@@ -111,23 +111,23 @@ export const FacilitationDncRulePanel: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <header className="flex items-center justify-between">
+      <header className="space-y-1">
         <h3 className="font-medium">Do-not-contact rules</h3>
-        <p className="text-[11px] text-slate-500 font-mono">facilitation-outreach-dnc-add · facilitation-outreach-dnc-revoke</p>
+        <p className="text-[11px] text-slate-500">Add an entry here to prevent the platform from contacting a specific email address, email domain or organisation. Email and email-domain entries block all outreach; organisation entries trigger a warning that must be acknowledged before sending.</p>
       </header>
 
       {canAdd && (
         <div className="border rounded-sm p-3 space-y-2 text-sm">
-          <h4 className="text-xs uppercase tracking-wider text-slate-500">Add DNC rule</h4>
+          <h4 className="text-xs uppercase tracking-wider text-slate-500">Add a rule</h4>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <Label className="text-xs">Type</Label>
+              <Label className="text-xs">What to block</Label>
               <Select value={ruleType} onValueChange={(v) => setRuleType(v as RuleType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="email">Email (block)</SelectItem>
-                  <SelectItem value="email_domain">Email domain (block)</SelectItem>
-                  <SelectItem value="org_name">Org name (warn)</SelectItem>
+                  <SelectItem value="email">{DNC_RULE_TYPE_LABEL.email} (blocks contact)</SelectItem>
+                  <SelectItem value="email_domain">{DNC_RULE_TYPE_LABEL.email_domain} (blocks contact)</SelectItem>
+                  <SelectItem value="org_name">{DNC_RULE_TYPE_LABEL.org_name} (warning only)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
