@@ -785,15 +785,32 @@ function SettingsTab() {
 // Admin layout, top bar + tab rail. Tab state lives in the URL (/hq/:tab)
 // so admins can deep-link and bookmark surfaces without losing context.
 // ─────────────────────────────────────────────────────────────────────────────
-function HQLayout() {
+function HQLayout({ restrictedToFacilitation = false }: { restrictedToFacilitation?: boolean }) {
   const navigate = useNavigate();
   const {
     tab
   } = useParams<{
     tab?: string;
   }>();
-  const activeTab: TabId = (VALID_TAB_IDS as readonly string[]).includes(tab ?? "") ? tab as TabId : "spine";
+  // When compliance_analyst lands here, the only tab they may operate is Facilitation.
+  // We narrow the tab rail to that single entry and force any deep-link to /hq/<other>
+  // back to /hq/facilitation so they can never see (or accidentally render) other panels.
+  const visibleTabs = restrictedToFacilitation
+    ? TABS.filter(t => t.id === "facilitation")
+    : TABS;
+  const allowedIds = visibleTabs.map(t => t.id) as readonly TabId[];
+  const rawTab: TabId = (VALID_TAB_IDS as readonly string[]).includes(tab ?? "") ? tab as TabId : "spine";
+  const activeTab: TabId = restrictedToFacilitation
+    ? "facilitation"
+    : rawTab;
+  // If a compliance_analyst tries to deep-link to a non-facilitation tab, replace the URL.
+  useLayoutEffect(() => {
+    if (restrictedToFacilitation && tab && tab !== "facilitation") {
+      navigate("/hq/facilitation", { replace: true });
+    }
+  }, [restrictedToFacilitation, tab, navigate]);
   const handleTabChange = (next: string) => {
+    if (restrictedToFacilitation && next !== "facilitation") return;
     navigate(`/hq/${next}`, {
       replace: false
     });
