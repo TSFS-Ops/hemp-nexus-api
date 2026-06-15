@@ -1,35 +1,42 @@
 # Facilitation Phase 2 — Operator Verification Pack
 
-**Status:** `PHASE_2_HEADLESS_VERIFICATION_PASS — MANUAL_OPERATOR_CHECKS_PENDING`
+**Current status:** `PHASE_2_PARTIAL — NOT CLIENT_UAT_READY`
+**Last updated:** 2026-06-15
 
-This directory holds the closeout evidence for Phase 2 of the Unknown-Counterparty Facilitation Outreach system (DNC + Compliance Escalation + Send + Owner Picker + Trader Redaction). No new features were added during verification — this is observation only.
+## What changed since the previous audit
 
-## Contents
+The compliance_analyst route-access blocker was fixed (`src/App.tsx`, `src/pages/HQ.tsx`, `src/lib/constants.ts`). All facilitation prebuild guards re-passed.
 
-| File | Purpose |
-| --- | --- |
-| `summary.json` | Machine-readable headless verification result (prebuild, typecheck, gate unit tests, RLS inspection, send-path uniqueness, negative controls, audit-name SSOT). |
-| `platform-admin-checklist.md` | Manual operator checks to be performed while signed in as a `platform_admin`. |
-| `compliance-analyst-checklist.md` | Manual operator checks to be performed while signed in as a `compliance_analyst`. |
-| `screenshot-checklist.md` | Exact list of UI states to capture and drop into `./screenshots/`. |
+## Why we are still PARTIAL
 
-## Headless verification — what passed
+Two classes of issue remain open:
 
-1. **Full `npm run prebuild`** (not only the new guards) — PASS. Three new facilitation guards added to `RELEASE_GATE.md` so the gate-sync check is happy.
-2. **TypeScript typecheck** (`npx tsc --noEmit`) — PASS, 0 errors.
-3. **Gate unit tests** (`src/tests/facilitation-outreach-gate.test.ts`) — 11/11 PASS, covering green / warning / hard-block / suppressed-email / open-escalation-dominates / warning-ack-required / approved-template-required / duplicate-detection / DNC separation-of-duties.
-4. **RLS inspection** of all 5 Phase 2 tables (`facilitation_outreach_templates`, `facilitation_outreach_candidates`, `facilitation_outreach_sends`, `facilitation_do_not_contact_rules`, `facilitation_compliance_escalations`) — RLS ENABLED on every table, ordinary requester/trader users have no SELECT policy, UPDATE on DNC rules and escalations is `compliance_analyst`-only.
-5. **Send-path uniqueness** — Resend / `send-transactional-email` / `notification-dispatch` only appear in `facilitation-outreach-send`. Verified by `check-facilitation-outreach-audit-names.mjs`.
-6. **Negative controls** — no SLA cron, no reporting dashboard, no CSV export, no audit-pack PDF, no bulk send, no auto-send, no inbound reply handling, no auto-onboarding, no POI / WaD / match / token / credit / payment / `poi_engagements` / `compliance_cases` mutation, no platform-admin compliance override path. Each enforced by a wired prebuild guard.
-7. **Audit-name SSOT** — 10 canonical `facilitation_outreach.*` codes and 2 canonical `facilitation.dnc.*` codes pinned across edge + browser SSOT files.
+### 1. Client-embarrassment defects identified in the previous audit but never applied
 
-## What is not yet covered
+| ID | Defect | File evidence |
+|---|---|---|
+| EMB-1 | Catch blocks throw raw `err.message` so the UI shows "Edge Function returned a non-2xx status code" instead of the structured server error. `parseEdgeError` exists in `src/lib/edge-error.ts` but is not imported by any facilitation component. | `rg 'parseEdgeError' src/components/facilitation-outreach/` → 0 matches |
+| EMB-2 | Gate codes (`dnc_org_name_warning`, `blocked`, `suppressed_email`, …) render verbatim in badges and ack checkboxes. No label map is applied. | `src/components/facilitation-outreach/FacilitationOutreachTab.tsx:91-97, 358-368` |
 
-Live runtime observations (template approve, candidate add, DNC block, escalation block, idempotent replay, trader milestone view) — these belong to the two manual operator checklists below and must be completed before the system can be declared `PHASE_2_CLIENT_UAT_READY`.
+Smallest safe fix for both is described in `summary.json → remaining_blockers`.
 
-## How to close out
+### 2. Live multi-role click-through cannot be performed by the agent
 
-1. Sign in as a `platform_admin` test user, walk through `platform-admin-checklist.md`, tick every line, attach screenshots.
-2. Sign in as a `compliance_analyst` test user, walk through `compliance-analyst-checklist.md`, tick every line, attach screenshots.
-3. Re-run `npm run prebuild` and capture the final clean output.
-4. Update `summary.json.status` to `PHASE_2_CLIENT_UAT_READY` and commit the closeout.
+The agent does not have separate `compliance_analyst` or requester credentials in this environment. Code-level RBAC, RLS, and component-gating are all verified, but the operator must still drive a live click-through with screenshots before client UAT.
+
+Items still requiring live operator verification are listed in `summary.json → platform_admin_journey`, `compliance_analyst_journey`, and `requester_milestone_privacy` (every `OPERATOR-VERIFY-REQUIRED` entry).
+
+## Files in this pack
+
+- `summary.json` — machine-readable result of the re-audit.
+- `platform-admin-checklist.md` — manual click-through script for the platform_admin role.
+- `compliance-analyst-checklist.md` — manual click-through script for the compliance_analyst role.
+- `screenshot-checklist.md` — list of screenshots required for the evidence pack.
+- `screenshots/` — empty until the operator captures the live runs.
+
+## Path to PHASE_2_CLIENT_UAT_READY
+
+1. Apply EMB-1 and EMB-2 fixes.
+2. Operator runs both role checklists live, captures screenshots.
+3. Re-run prebuild.
+4. Update `summary.json` status to `PHASE_2_CLIENT_UAT_READY`.
