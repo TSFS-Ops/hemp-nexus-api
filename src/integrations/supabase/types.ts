@@ -526,13 +526,20 @@ export type Database = {
           draft_status: string
           draft_subject: string
           id: string
+          is_first_outreach: boolean
           model: string | null
+          outcome: string | null
+          outcome_set_at: string | null
+          outcome_set_by: string | null
           proposed_match_id: string
           recipient_email_if_known: string | null
           recipient_name: string | null
           recipient_organisation: string | null
           review_note: string | null
           reviewed_by: string | null
+          send_confirmation_text: string | null
+          send_confirmed_at: string | null
+          send_confirmed_by: string | null
           sent_at: string | null
           sent_by_user_id: string | null
           trade_request_id: string
@@ -548,13 +555,20 @@ export type Database = {
           draft_status?: string
           draft_subject: string
           id?: string
+          is_first_outreach?: boolean
           model?: string | null
+          outcome?: string | null
+          outcome_set_at?: string | null
+          outcome_set_by?: string | null
           proposed_match_id: string
           recipient_email_if_known?: string | null
           recipient_name?: string | null
           recipient_organisation?: string | null
           review_note?: string | null
           reviewed_by?: string | null
+          send_confirmation_text?: string | null
+          send_confirmed_at?: string | null
+          send_confirmed_by?: string | null
           sent_at?: string | null
           sent_by_user_id?: string | null
           trade_request_id: string
@@ -570,13 +584,20 @@ export type Database = {
           draft_status?: string
           draft_subject?: string
           id?: string
+          is_first_outreach?: boolean
           model?: string | null
+          outcome?: string | null
+          outcome_set_at?: string | null
+          outcome_set_by?: string | null
           proposed_match_id?: string
           recipient_email_if_known?: string | null
           recipient_name?: string | null
           recipient_organisation?: string | null
           review_note?: string | null
           reviewed_by?: string | null
+          send_confirmation_text?: string | null
+          send_confirmed_at?: string | null
+          send_confirmed_by?: string | null
           sent_at?: string | null
           sent_by_user_id?: string | null
           trade_request_id?: string
