@@ -985,6 +985,86 @@ Deno.serve(async (req: Request) => {
       };
     }
 
+    // ── AI Light-Intel Phase 2: staleness + operational expiry ──────────
+    // Marks ai_proposed_matches as stale once stale_at is in the past, and
+    // closes-as-expired once expires_at is in the past AND the row is not
+    // referenced by POI/WaD/match/outreach/intel-task (see
+    // ai_proposed_match_is_linked). Dry-run does NOT mutate.
+    try {
+      // 1. Staleness: any non-terminal row whose stale_at has passed and that
+      //    is not already flagged stale.
+      const TERMINAL_STATUSES = ["approved", "rejected", "archived", "expired"];
+      let staleRows: Array<{ id: string }> = [];
+      if (dryRun) {
+        const { data } = await admin
+          .from("ai_proposed_matches")
+          .select("id")
+          .lt("stale_at", nowIso)
+          .not("status", "in", `(${TERMINAL_STATUSES.concat(["stale"]).join(",")})`)
+          .limit(500);
+        staleRows = (data ?? []) as Array<{ id: string }>;
+      } else {
+        const { data } = await admin
+          .from("ai_proposed_matches")
+          .update({ status: "stale" })
+          .lt("stale_at", nowIso)
+          .not("status", "in", `(${TERMINAL_STATUSES.concat(["stale"]).join(",")})`)
+          .select("id");
+        staleRows = (data ?? []) as Array<{ id: string }>;
+        for (const r of staleRows) {
+          await admin.from("audit_logs").insert({
+            org_id: "00000000-0000-0000-0000-000000000000",
+            action: "ai_review.proposed_match_stale",
+            entity_type: "ai_proposed_match",
+            entity_id: r.id,
+            metadata: { source: "lifecycle-scheduler", request_id: runRequestId },
+          }).then(() => {}).catch(() => {});
+        }
+      }
+      (results as any).ai_proposed_match_stale = { count: staleRows.length };
+
+      // 2. Operational expiry: expires_at in the past AND not linked.
+      const { data: expiryCandidates } = await admin
+        .from("ai_proposed_matches")
+        .select("id")
+        .lt("expires_at", nowIso)
+        .not("status", "in", `(${TERMINAL_STATUSES.join(",")})`)
+        .limit(500);
+      const candidates = (expiryCandidates ?? []) as Array<{ id: string }>;
+      const expirable: string[] = [];
+      for (const c of candidates) {
+        const { data: linkedData } = await admin
+          .rpc("ai_proposed_match_is_linked", { p_proposed_match_id: c.id });
+        if (linkedData !== true) expirable.push(c.id);
+      }
+      if (!dryRun && expirable.length) {
+        await admin
+          .from("ai_proposed_matches")
+          .update({ status: "expired" })
+          .in("id", expirable);
+        for (const id of expirable) {
+          await admin.from("audit_logs").insert({
+            org_id: "00000000-0000-0000-0000-000000000000",
+            action: "ai_review.proposed_match_expired",
+            entity_type: "ai_proposed_match",
+            entity_id: id,
+            metadata: { source: "lifecycle-scheduler", request_id: runRequestId },
+          }).then(() => {}).catch(() => {});
+        }
+      }
+      (results as any).ai_proposed_match_expired = {
+        considered: candidates.length,
+        expired: expirable.length,
+        skipped_linked: candidates.length - expirable.length,
+      };
+    } catch (err) {
+      (results as any).ai_proposed_match_lifecycle = {
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+
+
+
     // ── Audit (Batch K Fix 5: richer run_summary envelope) ──
     // Production runs write a completion row. Dry-runs write NOTHING to the
     // database (true zero-mutation contract); the manifest is returned in the

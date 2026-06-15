@@ -5853,6 +5853,9 @@ export type Database = {
       }
       matches: {
         Row: {
+          ai_auto_trigger_status: string | null
+          ai_last_run_at: string | null
+          ai_run_count: number
           buyer_authorised_user_id: string | null
           buyer_committed_at: string | null
           buyer_id: string | null
@@ -5893,6 +5896,9 @@ export type Database = {
           trade_request_id: string | null
         }
         Insert: {
+          ai_auto_trigger_status?: string | null
+          ai_last_run_at?: string | null
+          ai_run_count?: number
           buyer_authorised_user_id?: string | null
           buyer_committed_at?: string | null
           buyer_id?: string | null
@@ -5933,6 +5939,9 @@ export type Database = {
           trade_request_id?: string | null
         }
         Update: {
+          ai_auto_trigger_status?: string | null
+          ai_last_run_at?: string | null
+          ai_run_count?: number
           buyer_authorised_user_id?: string | null
           buyer_committed_at?: string | null
           buyer_id?: string | null
@@ -11042,9 +11051,17 @@ export type Database = {
         }
         Returns: Json
       }
+      ai_increment_match_run_count: {
+        Args: { p_match_id: string; p_max_runs: number }
+        Returns: number
+      }
       ai_meter_check_and_increment: {
         Args: { p_call_type: string; p_daily_cap: number; p_org_id: string }
         Returns: number
+      }
+      ai_proposed_match_is_linked: {
+        Args: { p_proposed_match_id: string }
+        Returns: boolean
       }
       ai_provider_in_cooldown: {
         Args: { p_org_id: string; p_provider?: string }
@@ -11772,6 +11789,10 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_counterparty_unknown_for_match: {
+        Args: { p_match_id: string }
+        Returns: boolean
+      }
       is_match_participant: {
         Args: { _match_id: string; _user_id: string }
         Returns: boolean
