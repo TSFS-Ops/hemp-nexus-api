@@ -90,12 +90,24 @@ const STATUS_OPTIONS = [
   { id: "new", label: "New" },
   { id: "pending", label: "Pending" },
   { id: "under_review", label: "Under review" },
-  { id: "approved", label: "Approved" },
+  { id: "approved", label: "Approved (internal)" },
+  { id: "approved_internal", label: "Approved · internal" },
+  { id: "approved_client_view", label: "Approved · client view" },
   { id: "rejected", label: "Rejected" },
   { id: "archived", label: "Archived" },
   { id: "escalated", label: "Escalated" },
   { id: "needs_more_research", label: "Needs more research" },
+  { id: "expired", label: "Expired" },
+  { id: "closed", label: "Closed" },
+  { id: "stale", label: "Stale" },
 ] as const;
+
+// Status groups used by the workspace tabs.
+export const STATUS_GROUPS = {
+  pending: ["new", "pending", "under_review"],
+  approved: ["approved", "approved_internal", "approved_client_view"],
+} as const;
+export type AiReviewStatusGroup = keyof typeof STATUS_GROUPS | "all" | "stale";
 
 const CONFIDENCE_OPTIONS = [
   { id: "all", label: "All confidence" },
