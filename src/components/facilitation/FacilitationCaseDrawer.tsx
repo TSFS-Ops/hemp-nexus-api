@@ -196,7 +196,7 @@ export const FacilitationCaseDrawer: React.FC<{
                 <Select value={outcome} onValueChange={setOutcome}>
                   <SelectTrigger><SelectValue placeholder="Final outcome (optional)" /></SelectTrigger>
                   <SelectContent>
-                    {OUTCOMES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    {OUTCOMES.map((o) => <SelectItem key={o} value={o}>{OUTCOME_LABEL[o] ?? o}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
