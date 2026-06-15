@@ -1,25 +1,32 @@
 /**
  * ai-outreach-draft-v2-decision
  * ──────────────────────────────────────────────────────────────────────
- * AI Counterparty Intelligence & Match Review — Batch 4.
+ * AI Counterparty Intelligence & Match Review.
  *
  * Single gated edge function for admin decisions on rows in
  * `ai_outreach_drafts_v2`. platform_admin only. Every action writes a
  * canonical `ai_review.*` audit.
  *
  * Supported actions (body { draft_id, action, ... }):
- *   - edit              { subject?, body? }              draft_status='draft_created' (kept)
+ *   - edit              { subject?, body? }              draft_status='draft_created'
  *   - approve           { review_note? }                 draft_status='approved_for_send'
  *   - reject            { review_note (required) }       draft_status='rejected'
- *   - mark_sent_by_human                                  draft_status='sent_by_human'
+ *   - mark_sent_by_human { confirmation_acknowledged }   draft_status='sent_by_human'
  *   - archive                                             draft_status='archived'
+ *   - set_outcome       { outcome }                       records V1 outcome
+ *
+ * Phase 5 hardening:
+ *   - Approve and mark_sent_by_human re-run the first-outreach content
+ *     validator server-side. UI validation is not trusted.
+ *   - mark_sent_by_human REQUIRES `confirmation_acknowledged === true`
+ *     and persists the exact confirmation text + actor + timestamp.
+ *   - set_outcome only accepts the fixed V1 outcome vocabulary.
  *
  * HARD GUARANTEES:
  *   - No provider call. No email/SMS/WhatsApp/notification dispatch.
  *   - `mark_sent_by_human` ONLY records that a human sent it manually
  *     outside the platform; it never transmits anything.
- *   - The legacy Phase 1 `engagement_outreach_drafts` table is NEVER touched.
- *   - No POI/WaD/verification/formal-match creation.
+ *   - No POI/WaD/verification/match/KYB/compliance state is mutated.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
@@ -27,6 +34,12 @@ import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { writeAdminAudit, extractIp, extractUserAgent } from "../_shared/admin-audit.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
+import {
+  validateFirstOutreach,
+  isApprovedOutcome,
+  APPROVED_OUTCOMES,
+  SEND_CONFIRMATION_TEXT,
+} from "../_shared/outreach-validator.ts";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -34,7 +47,7 @@ const json = (status: number, body: unknown) =>
     headers: { "Content-Type": "application/json" },
   });
 
-const ACTIONS = ["edit", "approve", "reject", "mark_sent_by_human", "archive"] as const;
+const ACTIONS = ["edit", "approve", "reject", "mark_sent_by_human", "archive", "set_outcome"] as const;
 type Action = (typeof ACTIONS)[number];
 
 const TERMINAL = new Set(["sent_by_human", "rejected", "archived"]);
@@ -76,7 +89,8 @@ async function _handle(req: Request): Promise<Response> {
     if (cur.error) throw cur.error;
     if (!cur.data) return json(404, { error: "draft not found" });
 
-    if (TERMINAL.has(cur.data.draft_status) && action !== "archive") {
+    // set_outcome can run in any post-send state; everything else respects TERMINAL.
+    if (action !== "set_outcome" && TERMINAL.has(cur.data.draft_status) && action !== "archive") {
       return json(409, {
         error: `draft is in terminal status '${cur.data.draft_status}'; further changes are blocked`,
       });
@@ -86,6 +100,7 @@ async function _handle(req: Request): Promise<Response> {
     const patch: Record<string, unknown> = { updated_at: now };
     let auditAction: string;
     const extra: Record<string, unknown> = {};
+    const isFirst = cur.data.is_first_outreach !== false;
 
     if (action === "edit") {
       const subject = typeof body?.subject === "string" ? clampSubject(body.subject) : null;
@@ -99,6 +114,21 @@ async function _handle(req: Request): Promise<Response> {
       auditAction = "ai_review.outreach_draft_edited";
       extra.fields_edited = [subject && "subject", bodyText && "body"].filter(Boolean);
     } else if (action === "approve") {
+      // Approve must validate first-outreach content. Approval ≠ send.
+      if (isFirst) {
+        const failed = validateFirstOutreach(
+          (patch.draft_subject as string) ?? cur.data.draft_subject,
+          (patch.draft_body as string) ?? cur.data.draft_body,
+        );
+        if (failed.length > 0) {
+          return json(422, {
+            error: "first_outreach_validation_failed",
+            failed_categories: failed,
+            message:
+              "First outreach must not contain buyer/seller identity, price, volume, bank, documents, personal phone, exact location, internal/AI commentary or sensitive commercial info. Edit and try again.",
+          });
+        }
+      }
       const review_note = typeof body?.review_note === "string" ? body.review_note.slice(0, 1000) : null;
       patch.draft_status = "approved_for_send";
       patch.reviewed_by = userId;
@@ -106,6 +136,7 @@ async function _handle(req: Request): Promise<Response> {
       patch.approved_at = now;
       if (review_note) patch.review_note = review_note;
       auditAction = "ai_review.outreach_draft_approved";
+      extra.approval_means_send = false;
     } else if (action === "reject") {
       const review_note = typeof body?.review_note === "string" ? body.review_note.trim() : "";
       if (review_note.length < 3) {
@@ -123,18 +154,52 @@ async function _handle(req: Request): Promise<Response> {
           current_status: cur.data.draft_status,
         });
       }
+      if (body?.confirmation_acknowledged !== true) {
+        return json(400, {
+          error: "confirmation_acknowledged_required",
+          message: "Manual send requires explicit confirmation_acknowledged=true.",
+          required_text: SEND_CONFIRMATION_TEXT,
+        });
+      }
+      // Re-run validator at send time — never trust UI-only validation.
+      if (isFirst) {
+        const failed = validateFirstOutreach(cur.data.draft_subject, cur.data.draft_body);
+        if (failed.length > 0) {
+          return json(422, {
+            error: "first_outreach_validation_failed",
+            failed_categories: failed,
+            message:
+              "This draft cannot be marked as sent — it still contains forbidden content for first outreach.",
+          });
+        }
+      }
       patch.draft_status = "sent_by_human";
       patch.sent_by_user_id = userId;
       patch.sent_at = now;
+      patch.send_confirmation_text = SEND_CONFIRMATION_TEXT;
+      patch.send_confirmed_by = userId;
+      patch.send_confirmed_at = now;
       auditAction = "ai_review.outreach_sent_by_human";
       extra.manual_send = true;
       extra.platform_dispatched = false;
+      extra.confirmation_acknowledged = true;
     } else if (action === "archive") {
       patch.draft_status = "archived";
-      auditAction = "ai_review.outreach_draft_rejected"; // canonical mapping for non-rejection archive uses the reject family
-      // Better: keep auditing under draft_edited for archive since there's no canonical archived code.
       auditAction = "ai_review.outreach_draft_edited";
       extra.archived = true;
+    } else if (action === "set_outcome") {
+      const outcome = body?.outcome;
+      if (!isApprovedOutcome(outcome)) {
+        return json(400, {
+          error: "invalid_outcome",
+          allowed: APPROVED_OUTCOMES,
+        });
+      }
+      patch.outcome = outcome;
+      patch.outcome_set_at = now;
+      patch.outcome_set_by = userId;
+      auditAction = "ai_review.outreach_draft_edited";
+      extra.outcome = outcome;
     } else {
       return json(400, { error: "unsupported action" });
     }
@@ -162,6 +227,7 @@ async function _handle(req: Request): Promise<Response> {
         action,
         previous_status: cur.data.draft_status,
         new_status: patch.draft_status ?? cur.data.draft_status,
+        is_first_outreach: isFirst,
         ...extra,
       },
     });

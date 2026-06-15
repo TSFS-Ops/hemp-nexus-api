@@ -18,9 +18,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Mail, RefreshCw, Check, X, Pencil, Copy, Archive, Send } from "lucide-react";
 import { toast } from "sonner";
+
+// Approved V1 outreach outcomes (mirrors supabase/functions/_shared/outreach-validator.ts).
+const APPROVED_OUTCOMES = [
+  "no_response",
+  "bounced",
+  "interested",
+  "not_interested",
+  "wrong_contact",
+  "call_booked",
+  "onboarded",
+  "converted_to_match",
+  "converted_to_POI",
+  "closed",
+] as const;
+
+const SEND_CONFIRMATION_TEXT =
+  "I confirm this outreach has been reviewed and contains no sensitive commercial, verification, bank, price, volume, document or personal-phone information.";
+
 
 export interface DraftRow {
   id: string;
@@ -38,6 +58,9 @@ export interface DraftRow {
   sent_at: string | null;
   created_at: string;
   updated_at: string;
+  is_first_outreach?: boolean;
+  outcome?: string | null;
+  outcome_set_at?: string | null;
 }
 
 function statusTone(s: DraftRow["draft_status"]) {
@@ -174,8 +197,11 @@ function DraftCard({
   const [subject, setSubject] = useState(draft.draft_subject);
   const [bodyText, setBodyText] = useState(draft.draft_body);
 
-  const [openAction, setOpenAction] = useState<null | "reject" | "approve" | "sent">(null);
+  const [openAction, setOpenAction] = useState<null | "reject" | "approve" | "sent" | "outcome">(null);
   const [note, setNote] = useState("");
+  const [sendConfirmed, setSendConfirmed] = useState(false);
+  const [outcomeChoice, setOutcomeChoice] = useState<string>("");
+  const isFirst = draft.is_first_outreach !== false;
 
   const decide = useMutation({
     mutationFn: async (payload: any) => {
@@ -183,8 +209,16 @@ function DraftCard({
         body: { draft_id: draft.id, ...payload },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return (data as any).draft as DraftRow;
+      const d = data as any;
+      if (d?.error === "first_outreach_validation_failed") {
+        const cats = Array.isArray(d.failed_categories) ? d.failed_categories.join(", ") : "";
+        throw new Error(`First-outreach content rejected: ${cats}. Edit and try again.`);
+      }
+      if (d?.error === "confirmation_acknowledged_required") {
+        throw new Error("Manual-send confirmation is required.");
+      }
+      if (d?.error) throw new Error(typeof d.error === "string" ? d.error : "Action failed");
+      return d.draft as DraftRow;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ai-outreach-drafts-v2", proposedMatchId] });
@@ -204,6 +238,14 @@ function DraftCard({
         <Badge variant="outline" className={statusTone(draft.draft_status)}>
           {draft.draft_status.replace(/_/g, " ")}
         </Badge>
+        {isFirst ? (
+          <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">first outreach</Badge>
+        ) : (
+          <Badge variant="outline" className="bg-zinc-50 text-zinc-700 border-zinc-200">follow-up</Badge>
+        )}
+        {draft.outcome ? (
+          <Badge variant="outline" className="bg-sky-50 text-sky-800 border-sky-200">outcome · {draft.outcome.replace(/_/g, " ")}</Badge>
+        ) : null}
         {draft.model ? <Badge variant="outline" className="font-mono text-[10px]">{draft.model}</Badge> : null}
       </div>
 
@@ -315,6 +357,14 @@ function DraftCard({
         </div>
       )}
 
+      {draft.draft_status === "sent_by_human" && (
+        <div className="flex flex-wrap gap-2 pt-1 border-t border-border">
+          <Button size="sm" variant="outline" disabled={decide.isPending} onClick={() => { setOutcomeChoice(draft.outcome ?? ""); setOpenAction("outcome"); }}>
+            {draft.outcome ? "Update outcome" : "Record outcome"}
+          </Button>
+        </div>
+      )}
+
       <div className="text-[10.5px] text-muted-foreground font-mono pt-1 border-t border-border">
         id · {draft.id}<br />
         created · {new Date(draft.created_at).toISOString()}
@@ -375,26 +425,90 @@ function DraftCard({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={openAction === "sent"} onOpenChange={(o) => !o && setOpenAction(null)}>
-        <DialogContent>
+      <Dialog open={openAction === "sent"} onOpenChange={(o) => { if (!o) { setOpenAction(null); setSendConfirmed(false); } }}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Mark sent by me (manual)</DialogTitle>
+            <DialogTitle>Final review · manual send</DialogTitle>
             <DialogDescription>
-              This only records that you sent this draft yourself outside the platform. The platform
-              does not transmit anything.
+              The platform never sends. This is the final preview of what you intend to paste into
+              your own email client. Sending must be a separate action — confirm below only after
+              you have actually sent it.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-auto border border-border rounded-sm bg-muted/30 p-3">
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Subject</p>
+              <p className="text-[13px] font-medium">{draft.draft_subject}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Body</p>
+              <pre className="whitespace-pre-wrap text-[12.5px] font-sans">{draft.draft_body}</pre>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">First outreach</p>
+              <p className="text-[12px]">{isFirst ? "Yes — first-outreach content rules apply." : "No — follow-up message."}</p>
+            </div>
+          </div>
+          <label className="flex gap-2 items-start text-[12.5px] cursor-pointer pt-2">
+            <Checkbox
+              checked={sendConfirmed}
+              onCheckedChange={(v) => setSendConfirmed(v === true)}
+              data-testid="ai-outreach-v2-send-confirm"
+            />
+            <span>{SEND_CONFIRMATION_TEXT}</span>
+          </label>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setOpenAction(null); setSendConfirmed(false); }}>Cancel</Button>
+            <Button
+              disabled={decide.isPending || !sendConfirmed}
+              onClick={async () => {
+                const r = await decide.mutateAsync({
+                  action: "mark_sent_by_human",
+                  confirmation_acknowledged: true,
+                });
+                if (r) {
+                  toast.success("Recorded as manually sent.");
+                  setOpenAction(null);
+                  setSendConfirmed(false);
+                }
+              }}
+            >
+              I have sent it · record manual send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openAction === "outcome"} onOpenChange={(o) => !o && setOpenAction(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record outreach outcome</DialogTitle>
+            <DialogDescription>
+              Only the approved V1 outcomes are accepted. This does not change match, POI, WaD, KYB
+              or compliance state.
+            </DialogDescription>
+          </DialogHeader>
+          <Select value={outcomeChoice} onValueChange={setOutcomeChoice}>
+            <SelectTrigger><SelectValue placeholder="Select outcome" /></SelectTrigger>
+            <SelectContent>
+              {APPROVED_OUTCOMES.map((o) => (
+                <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpenAction(null)}>Cancel</Button>
             <Button
-              disabled={decide.isPending}
+              disabled={decide.isPending || !outcomeChoice}
               onClick={async () => {
-                await decide.mutateAsync({ action: "mark_sent_by_human" });
-                toast.success("Recorded as manually sent.");
-                setOpenAction(null);
+                const r = await decide.mutateAsync({ action: "set_outcome", outcome: outcomeChoice });
+                if (r) {
+                  toast.success("Outcome recorded.");
+                  setOpenAction(null);
+                }
               }}
             >
-              Confirm manual send
+              Save outcome
             </Button>
           </DialogFooter>
         </DialogContent>
