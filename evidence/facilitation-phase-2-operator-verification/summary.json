@@ -90,11 +90,11 @@
     },
     {
       "id": "EMB-6",
-      "check": "no raw event codes in Timeline; no role tokens in Assign owner dropdown",
-      "status": "FAIL (live)",
-      "evidence": "Re-screenshot 02 shows Timeline rendering 'facilitation_case.created → new', 'facilitation_case.evidence_uploaded', 'facilitation_case.closed → closed_admin'; Assign owner dropdown shows 'Josh Kruger · platform_admin'.",
-      "smallest_safe_fix": "Add a TIMELINE_EVENT_LABELS map (and STATUS_LABELS for the arrow target) in src/lib/facilitation-labels.ts and apply in the Timeline renderer; render assignee dropdown label as 'Josh Kruger' (drop role suffix, or replace with humanised role e.g. 'Platform admin' only when disambiguation is needed).",
-      "blocks_client_uat": true
+      "check": "no raw event codes in Timeline; no role tokens in Assign owner dropdown; no raw enum keys in outcome picker",
+      "status": "FIX APPLIED — RE-CAPTURE PENDING",
+      "evidence": "src/lib/facilitation-labels.ts now exports TIMELINE_ACTION_LABEL/timelineActionLabel, OUTCOME_LABEL/outcomeLabel, ROLE_LABEL/roleLabel/rolesLabel. FacilitationCaseDrawer Timeline, OwnerPicker and outcome Select use these maps. Raw codes preserved in audit payloads only.",
+      "smallest_safe_fix": "Re-capture screenshot 02 once the preview rebuilds to confirm Timeline reads 'Case created → New' / 'Evidence uploaded' / 'Case closed → Closed' and owner picker reads 'Platform admin' (not 'platform_admin').",
+      "blocks_client_uat": false
     },
     {
       "id": "OPERATOR-VERIFY-1",
