@@ -11713,6 +11713,20 @@ export type Database = {
         Returns: number
       }
       get_email_retention_health: { Args: never; Returns: Json }
+      get_match_approved_ai_summary: {
+        Args: { _match_id: string }
+        Returns: {
+          approved_at: string
+          counterparty_role: string
+          jurisdiction: string
+          match_id: string
+          proposed_match_id: string
+          sector_or_product_fit: string
+          short_summary: string
+          status_label: string
+          suggested_counterparty_name: string
+        }[]
+      }
       get_match_evidence: {
         Args: { p_match_id: string; p_org_id: string }
         Returns: {
