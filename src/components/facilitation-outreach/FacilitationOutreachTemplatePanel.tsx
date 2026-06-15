@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useOutreachRoles } from "./useOutreachRoles";
+import { TEMPLATE_STATUS_LABEL, friendlyFacilitationError } from "@/lib/facilitation-labels";
 
 type Template = {
   id: string;
