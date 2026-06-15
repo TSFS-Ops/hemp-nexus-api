@@ -78,15 +78,15 @@ const stateBadge = (s: string) => {
     sent: "default",
     suppressed: "destructive",
   };
-  return <Badge variant={map[s] ?? "outline"}>{s}</Badge>;
+  return <Badge variant={map[s] ?? "outline"}>{outreachStateLabel(s)}</Badge>;
 };
 
 const gateResultBadge = (dnc: string | null, dup: string | null) => {
   // Render the server-stored chips. UI does NOT compute gate locally.
-  if (dnc === "block" || dup === "red") return <Badge variant="destructive">BLOCK</Badge>;
-  if (dnc === "warn" || dup === "amber") return <Badge variant="secondary">WARN</Badge>;
-  if (dnc === "clear" && dup === "green") return <Badge variant="default">ALLOW</Badge>;
-  return <Badge variant="outline">unevaluated</Badge>;
+  if (dnc === "block" || dup === "red") return <Badge variant="destructive">{GATE_RESULT_LABEL.block}</Badge>;
+  if (dnc === "warn" || dup === "amber") return <Badge variant="secondary">{GATE_RESULT_LABEL.warn}</Badge>;
+  if (dnc === "clear" && dup === "green") return <Badge variant="default">{GATE_RESULT_LABEL.allow}</Badge>;
+  return <Badge variant="outline">{GATE_RESULT_LABEL.unevaluated}</Badge>;
 };
 
 function genIdempotencyKey() {
