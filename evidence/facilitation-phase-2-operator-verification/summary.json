@@ -83,9 +83,17 @@
   "remaining_blockers": [
     {
       "id": "EMB-5",
-      "check": "no internal role tokens / architecture copy visible to operators",
-      "status": "FIXED IN CODE — PENDING RE-SCREENSHOT",
-      "evidence": "Live observation of case drawer subtitle exposing 'platform_admin / compliance_analyst'. Patched at src/components/facilitation/FacilitationCaseDrawer.tsx:133.",
+      "check": "no internal role tokens in case drawer subtitle",
+      "status": "RESOLVED (live-verified)",
+      "evidence": "Re-screenshot 02 confirms subtitle now reads 'Review the case and run outreach'.",
+      "blocks_client_uat": false
+    },
+    {
+      "id": "EMB-6",
+      "check": "no raw event codes in Timeline; no role tokens in Assign owner dropdown",
+      "status": "FAIL (live)",
+      "evidence": "Re-screenshot 02 shows Timeline rendering 'facilitation_case.created → new', 'facilitation_case.evidence_uploaded', 'facilitation_case.closed → closed_admin'; Assign owner dropdown shows 'Josh Kruger · platform_admin'.",
+      "smallest_safe_fix": "Add a TIMELINE_EVENT_LABELS map (and STATUS_LABELS for the arrow target) in src/lib/facilitation-labels.ts and apply in the Timeline renderer; render assignee dropdown label as 'Josh Kruger' (drop role suffix, or replace with humanised role e.g. 'Platform admin' only when disambiguation is needed).",
       "blocks_client_uat": true
     },
     {
