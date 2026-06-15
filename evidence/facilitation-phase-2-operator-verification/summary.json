@@ -123,5 +123,5 @@
   ],
 
   "verdict": "PHASE_2_PARTIAL — NOT CLIENT_UAT_READY",
-  "verdict_reason": "Live single-role pass confirms the platform_admin UI surfaces render cleanly with the prior EMB-1..EMB-4 cosmetic fixes applied, but: (1) one new internal-copy leak (EMB-5) was found and patched in this pass and needs a re-screenshot; (2) destructive platform_admin actions were not exercised live; (3) compliance_analyst and requester/trader live click-through was not executed by the agent and remains operator-driven."
+  "verdict_reason": "Live single-role pass confirms platform_admin UI surfaces render cleanly with prior EMB-1..EMB-4 fixes. EMB-5 is live-verified resolved. EMB-6 label-leak fix has been applied (timeline action labels, outcome labels, role labels); re-capture of the Triage screenshot is the only remaining task before the cosmetic surface is fully clean. Live click-throughs for compliance_analyst and requester/trader, plus destructive platform_admin flows against seeded fixtures, remain operator-driven and block CLIENT_UAT_READY."
 }
