@@ -2,11 +2,14 @@
  * facilitation-case-admin-action — Phase 1 admin/requester triage actions.
  *
  * Supported actions:
- *   - assign           (admin only)        — set/clear case_owner_id
- *   - status_change    (admin or requester w/ allowed transition)
- *   - note             (any party with case visibility)
+ *   - assign                      (admin only)        — set/clear case_owner_id
+ *   - status_change               (admin or requester w/ allowed transition)
+ *   - note                        (any party with case visibility)
+ *   - request_more_information    (admin only)        — Batch 4
+ *   - submit_more_information     (requester only)    — Batch 4
  *
- * No outreach, no notification, no email, no POI/WaD/match/token mutation.
+ * No outreach, no SLA, no email, no POI/WaD/match/token mutation.
+ * Notifications: in-app `notifications` rows only.
  */
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { z } from "npm:zod@3.23.8";
@@ -49,6 +52,19 @@ const BodySchema = z.discriminatedUnion("action", [
     case_id: z.string().uuid(),
     body: z.string().trim().min(2).max(4000),
   }),
+  z.object({
+    action: z.literal("request_more_information"),
+    case_id: z.string().uuid(),
+    message: z.string().trim().min(5).max(2000),
+    items: z.array(z.string().trim().min(1).max(200)).min(1).max(20),
+    due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  }),
+  z.object({
+    action: z.literal("submit_more_information"),
+    case_id: z.string().uuid(),
+    response_message: z.string().trim().min(2).max(4000),
+    evidence_summary: z.string().trim().max(2000).nullable().optional(),
+  }),
 ]);
 
 Deno.serve(async (req) => {
@@ -75,7 +91,6 @@ Deno.serve(async (req) => {
 
   const admin = createClient(url, service, { auth: { persistSession: false } });
 
-  // Role detection.
   async function hasRole(role: string): Promise<boolean> {
     const { data } = await admin.rpc("has_role", { _user_id: userId, _role: role });
     return !!data;
@@ -83,17 +98,31 @@ Deno.serve(async (req) => {
   const isPlatformAdmin = await hasRole("platform_admin");
   const isAdmin = isPlatformAdmin || (await hasRole("admin")) || (await hasRole("compliance_analyst"));
 
-  // Load case via service role + caller-visibility re-check.
   const caseId = parsed.data.case_id;
   const { data: kase, error: kerr } = await admin.from("facilitation_cases").select("*").eq("id", caseId).maybeSingle();
   if (kerr) return json(req, { error: kerr.message }, 500);
   if (!kase) return json(req, { error: "Not found" }, 404);
 
-  // Visibility: admin OR same-org requesting user OR assigned owner.
   const { data: profile } = await admin.from("profiles").select("org_id").eq("id", userId).maybeSingle();
-  const isRequester = profile?.org_id === kase.requesting_org_id;
+  const isRequesterUser = kase.requesting_user_id === userId;
+  const isSameRequestingOrg = profile?.org_id === kase.requesting_org_id;
   const isOwner = kase.case_owner_id === userId;
-  if (!(isAdmin || isRequester || isOwner)) return json(req, { error: "Forbidden" }, 403);
+  if (!(isAdmin || isSameRequestingOrg || isOwner)) return json(req, { error: "Forbidden" }, 403);
+
+  // Helper: insert in-app notification row (RLS bypassed via service role).
+  async function notifyUser(opts: { user_id: string; title: string; body: string }) {
+    try {
+      await admin.from("notifications").insert({
+        user_id: opts.user_id,
+        type: "facilitation_case",
+        title: opts.title,
+        body: opts.body,
+        link: `/facilitation/cases/${caseId}`,
+        entity_type: "facilitation_case",
+        entity_id: caseId,
+      });
+    } catch (_e) { /* non-fatal */ }
+  }
 
   if (parsed.data.action === "assign") {
     if (!isAdmin) return json(req, { error: "Only admins can assign cases" }, 403);
@@ -151,6 +180,116 @@ Deno.serve(async (req) => {
       from_status: kase.internal_status, to_status: kase.internal_status,
       payload: { body: parsed.data.body, by_admin: isAdmin },
     });
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "request_more_information") {
+    if (!(isPlatformAdmin || isOwner)) {
+      return json(req, { error: "Only platform admins or the assigned case owner can request more information" }, 403);
+    }
+    const from = kase.internal_status as FacilitationInternalStatus;
+    if (!isTransitionAllowed(from, "more_information_needed", "admin")) {
+      return json(req, { error: "More information cannot be requested from the current status", from }, 409);
+    }
+    const nowIso = new Date().toISOString();
+    const { error: uerr } = await admin.from("facilitation_cases").update({
+      internal_status: "more_information_needed",
+      info_request_message: parsed.data.message,
+      info_request_items: parsed.data.items,
+      info_request_due_date: parsed.data.due_date,
+      info_request_requested_by: userId,
+      info_request_requested_at: nowIso,
+      // clear any prior response so a fresh round is independent
+      info_request_response_message: null,
+      info_request_response_at: null,
+      info_request_response_evidence_summary: null,
+    }).eq("id", caseId);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.more_information_requested",
+      from_status: from, to_status: "more_information_needed",
+      payload: {
+        message: parsed.data.message,
+        items: parsed.data.items,
+        due_date: parsed.data.due_date,
+      },
+    });
+
+    // Notify the requesting user (in-app only).
+    if (kase.requesting_user_id) {
+      await notifyUser({
+        user_id: kase.requesting_user_id,
+        title: "More information is required",
+        body: "Izenzo needs more information before your facilitation request can continue. Open the request to respond.",
+      });
+    }
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "submit_more_information") {
+    // Only the requester (same org) may submit. Owners/admins cannot submit on
+    // behalf of a requester.
+    if (!isSameRequestingOrg) {
+      return json(req, { error: "Only the requester can submit more information" }, 403);
+    }
+    if (kase.internal_status !== "more_information_needed") {
+      return json(req, { error: "No active information request for this case", current_status: kase.internal_status }, 409);
+    }
+    const nowIso = new Date().toISOString();
+
+    // Block compliance/hard-block edge case: if a compliance status appeared
+    // (defence in depth — current state machine routes through admin only),
+    // keep the case as-is.
+    const toStatus: FacilitationInternalStatus =
+      isTransitionAllowed("more_information_needed", "admin_reviewing", "admin")
+        ? "admin_reviewing"
+        : "more_information_needed";
+
+    const { error: uerr } = await admin.from("facilitation_cases").update({
+      internal_status: toStatus,
+      info_request_response_message: parsed.data.response_message,
+      info_request_response_at: nowIso,
+      info_request_response_evidence_summary: parsed.data.evidence_summary ?? null,
+    }).eq("id", caseId);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.more_information_submitted",
+      from_status: "more_information_needed", to_status: toStatus,
+      payload: {
+        response_message: parsed.data.response_message,
+        evidence_summary: parsed.data.evidence_summary ?? null,
+      },
+    });
+
+    // Notify the assigned case owner if any.
+    if (kase.case_owner_id) {
+      await notifyUser({
+        user_id: kase.case_owner_id,
+        title: "Requester has submitted more information",
+        body: "A facilitation requester has provided the additional information you asked for. Open the case to review.",
+      });
+    }
+    // Also notify platform admins so the queue is picked up even if unassigned.
+    try {
+      const { data: admins } = await admin
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "platform_admin");
+      for (const a of admins ?? []) {
+        if (a.user_id && a.user_id !== kase.case_owner_id) {
+          await notifyUser({
+            user_id: a.user_id,
+            title: "Requester has submitted more information",
+            body: "A facilitation requester has provided additional information on a case.",
+          });
+        }
+      }
+    } catch (_e) { /* non-fatal */ }
+
     return json(req, { ok: true });
   }
 
