@@ -150,12 +150,12 @@ export const FacilitationDncRulePanel: React.FC = () => {
           <li key={r.id} className="border rounded-sm px-3 py-2 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="font-mono text-xs truncate">{r.rule_type} · {r.value_norm}</div>
+                <div className="text-xs truncate"><span className="text-slate-500">{DNC_RULE_TYPE_LABEL[r.rule_type] ?? r.rule_type}:</span> {r.value_norm}</div>
                 <div className="text-[11px] text-slate-500 truncate">{r.reason}</div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Badge variant={r.match_severity === "block" ? "destructive" : "secondary"}>{r.match_severity}</Badge>
-                <Badge variant={r.status === "active" ? "default" : "outline"}>{r.status}</Badge>
+                <Badge variant={r.match_severity === "block" ? "destructive" : "secondary"}>{DNC_SEVERITY_LABEL[r.match_severity] ?? r.match_severity}</Badge>
+                <Badge variant={r.status === "active" ? "default" : "outline"}>{DNC_STATUS_LABEL[r.status] ?? r.status}</Badge>
               </div>
             </div>
             {isComplianceAnalyst && r.status === "active" && (
