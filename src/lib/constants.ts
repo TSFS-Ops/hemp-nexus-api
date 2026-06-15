@@ -13,6 +13,7 @@ export const APP_ROLES = {
   ORG_MEMBER: 'org_member',
   BUYER: 'buyer',
   AUDITOR: 'auditor',
+  COMPLIANCE_ANALYST: 'compliance_analyst',
 } as const;
 
 export type AppRole = (typeof APP_ROLES)[keyof typeof APP_ROLES];
