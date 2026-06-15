@@ -28,7 +28,7 @@ type FacilitationCase = {
   counterparty_legal_name: string;
   counterparty_country: string;
   product_or_commodity: string;
-  role: "buyer" | "seller";
+  role: FacilitationRole;
   urgency: string;
   created_at: string;
   closed_at: string | null;
