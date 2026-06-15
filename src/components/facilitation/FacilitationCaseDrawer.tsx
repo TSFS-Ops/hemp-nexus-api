@@ -187,6 +187,72 @@ export const FacilitationCaseDrawer: React.FC<{
               <Badge variant="secondary">{INTERNAL_STATUS_LABELS[data.case.internal_status as FacilitationInternalStatus] ?? data.case.internal_status}</Badge>
             </section>
 
+            {/* Batch 4 — More information request panel */}
+            <section className="space-y-2 rounded-md border border-slate-200 bg-slate-50/50 p-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">More information</h3>
+                <Dialog open={moreInfoOpen} onOpenChange={setMoreInfoOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">Request more information</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Request more information</DialogTitle>
+                      <DialogDescription>
+                        The requester will be notified and the case status will change to "More information needed".
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="mi-msg">Message to the requester</Label>
+                        <Textarea id="mi-msg" rows={3} value={moreInfoMessage} onChange={(e) => setMoreInfoMessage(e.target.value)} placeholder="Explain what is missing in plain English. No internal compliance reasoning." />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="mi-items">Items needed (one per line)</Label>
+                        <Textarea id="mi-items" rows={4} value={moreInfoItemsText} onChange={(e) => setMoreInfoItemsText(e.target.value)} placeholder={"e.g.\nProof of trading address\nUpdated contact email"} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="mi-due">Due date</Label>
+                        <Input id="mi-due" type="date" value={moreInfoDueDate} onChange={(e) => setMoreInfoDueDate(e.target.value)} />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="ghost" onClick={() => setMoreInfoOpen(false)} disabled={moreInfoSubmitting}>Cancel</Button>
+                      <Button onClick={doRequestMoreInfo} disabled={moreInfoSubmitting}>{moreInfoSubmitting ? "Sending…" : "Send request"}</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              {data.case.info_request_requested_at ? (
+                <div className="text-xs space-y-1">
+                  <div><span className="text-slate-500">Requested:</span> {new Date(data.case.info_request_requested_at as string).toLocaleString()}</div>
+                  {data.case.info_request_due_date ? <div><span className="text-slate-500">Due:</span> {data.case.info_request_due_date as string}</div> : null}
+                  {data.case.info_request_message ? <div className="whitespace-pre-wrap"><span className="text-slate-500">Message:</span> {data.case.info_request_message as string}</div> : null}
+                  {Array.isArray(data.case.info_request_items) && (data.case.info_request_items as string[]).length > 0 ? (
+                    <div>
+                      <span className="text-slate-500">Items requested:</span>
+                      <ul className="list-disc pl-5 mt-1 text-slate-700">
+                        {(data.case.info_request_items as string[]).map((it, i) => <li key={i}>{it}</li>)}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {data.case.info_request_response_at ? (
+                    <div className="mt-2 rounded bg-white border border-slate-200 p-2">
+                      <div><span className="text-slate-500">Requester response:</span> {new Date(data.case.info_request_response_at as string).toLocaleString()}</div>
+                      {data.case.info_request_response_message ? <div className="whitespace-pre-wrap text-slate-700 mt-1">{data.case.info_request_response_message as string}</div> : null}
+                      {data.case.info_request_response_evidence_summary ? <div className="whitespace-pre-wrap text-slate-600 mt-1"><span className="text-slate-500">Source / evidence: </span>{data.case.info_request_response_evidence_summary as string}</div> : null}
+                    </div>
+                  ) : (
+                    <div className="text-slate-500">Awaiting requester response.</div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">No active information request.</p>
+              )}
+            </section>
+
+
+
             <section>
               <h3 className="font-medium mb-2">Intake</h3>
               {(() => {
