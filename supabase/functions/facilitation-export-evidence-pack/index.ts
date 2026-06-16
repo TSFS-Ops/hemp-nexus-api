@@ -258,10 +258,14 @@ Deno.serve(async (req) => {
 
   // Audit (best-effort).
   try {
+    const { data: prof } = await admin.from("profiles").select("org_id").eq("id", userId).maybeSingle();
     await admin.from("audit_logs").insert({
-      action: "facilitation.management.evidence_pack_exported",
+      org_id: (prof?.org_id as string | null) ?? null,
       actor_user_id: userId,
-      metadata: { case_id: caseId, case_number: kase.case_number },
+      action: "facilitation.management.evidence_pack_exported",
+      entity_type: "facilitation_case",
+      entity_id: caseId,
+      metadata: { case_number: kase.case_number },
     });
   } catch (e) {
     console.error("[facilitation-export-evidence-pack] audit insert failed", e);
