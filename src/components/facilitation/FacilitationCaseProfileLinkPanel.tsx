@@ -40,6 +40,16 @@ type Props = {
 
 type OrgHit = { id: string; name: string; legal_name: string | null; registration_number: string | null };
 
+// Cleared-state phrasing (shown with ✓ when the blocker does not apply).
+const CLEARED_LABEL: Record<string, string> = {
+  active_hard_block: "No compliance block",
+  unresolved_compliance_review: "No unresolved compliance review",
+  unresolved_more_information_request: "No outstanding 'more information' request",
+  confirmed_sanctions_pep_block: "No confirmed sanctions or PEP match",
+  active_do_not_contact_block: "No active do-not-contact block",
+  missing_profile_or_organisation_link: "Organisation linked or profile recorded",
+};
+// Active-blocker phrasing (shown with • when the blocker still needs attention).
 const BLOCKER_LABEL: Record<string, string> = {
   active_hard_block: "Case is currently blocked by compliance",
   unresolved_compliance_review: "Compliance review must be cleared first",
@@ -381,12 +391,13 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
           </Dialog>
         </div>
         <ul className="text-xs space-y-1">
-          {Object.keys(BLOCKER_LABEL).map((code) => {
+          {Object.keys(CLEARED_LABEL).map((code) => {
             const active = blockers.includes(code);
+            const label = active ? BLOCKER_LABEL[code] : CLEARED_LABEL[code];
             return (
               <li key={code} className={`flex items-start gap-2 ${active ? "text-amber-800" : "text-emerald-800"}`}>
                 <span aria-hidden>{active ? "•" : "✓"}</span>
-                <span>{BLOCKER_LABEL[code]}</span>
+                <span>{label}</span>
               </li>
             );
           })}
