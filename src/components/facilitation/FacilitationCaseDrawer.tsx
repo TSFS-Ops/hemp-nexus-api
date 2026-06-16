@@ -190,6 +190,15 @@ export const FacilitationCaseDrawer: React.FC<{
               <Badge variant="secondary">{INTERNAL_STATUS_LABELS[data.case.internal_status as FacilitationInternalStatus] ?? data.case.internal_status}</Badge>
             </section>
 
+            {/* Batch 7 — service-level tracking (admin/owner/compliance only) */}
+            {caseId && (data.case as Record<string, unknown>).sla_last_evaluated_at !== undefined ? (
+              <FacilitationCaseSlaPanel
+                caseId={caseId}
+                kase={data.case as unknown as Parameters<typeof FacilitationCaseSlaPanel>[0]["kase"]}
+                onChanged={load}
+              />
+            ) : null}
+
             {/* Batch 4 — More information request panel */}
             <section className="space-y-2 rounded-md border border-slate-200 bg-slate-50/50 p-3">
               <div className="flex items-center justify-between">
