@@ -147,30 +147,35 @@ Deno.serve(async (req) => {
     .sort()
     .at(-1) ?? null;
 
-  // Last meaningful activity = max(latest event, latest contact attempt, kase.updated_at).
-  // Exclude SLA/system-internal events so the evaluator's own audit writes do not
-  // reset the stale/no-activity clock.
+  // Last meaningful activity = max(latest real event, latest contact attempt, created_at).
+  // We deliberately DO NOT use kase.updated_at here: a BEFORE UPDATE trigger on
+  // facilitation_cases sets updated_at := now() on every write, so the SLA
+  // evaluator's own persist would otherwise reset the stale-no-activity clock.
+  // We also exclude SLA/system-internal events for the same reason.
   const SYSTEM_INTERNAL_EVENT_ACTIONS = [
     "facilitation_case.sla_evaluated",
     "facilitation_case.reminder_sent",
     "facilitation_case.overdue_marked",
     "facilitation_case.overdue_cleared",
   ];
-  const { data: lastEvent } = await admin
+  // Fetch a small recent window and filter in JS — avoids PostgREST not.in
+  // quoting quirks with dotted action names.
+  const { data: recentEvents } = await admin
     .from("facilitation_case_events")
-    .select("created_at")
+    .select("action, created_at")
     .eq("case_id", caseId)
-    .not("action", "in", `(${SYSTEM_INTERNAL_EVENT_ACTIONS.map((a) => `"${a}"`).join(",")})`)
     .order("created_at", { ascending: false })
-    .limit(1);
+    .limit(50);
+  const lastRealEventAt = (recentEvents ?? []).find(
+    (e) => !SYSTEM_INTERNAL_EVENT_ACTIONS.includes((e as { action: string }).action),
+  )?.created_at as string | undefined;
 
   const candidates: string[] = [];
-  if (lastEvent?.[0]?.created_at) candidates.push(lastEvent[0].created_at as string);
+  if (lastRealEventAt) candidates.push(lastRealEventAt);
   if (lastContact) candidates.push(lastContact);
-  if ((kase as { updated_at?: string }).updated_at) {
-    candidates.push((kase as { updated_at: string }).updated_at);
-  }
   const lastActivityAt = candidates.sort().at(-1) ?? (kase as { created_at: string }).created_at;
+
+
 
   const slaInputs: SlaInputs = {
     created_at: (kase as { created_at: string }).created_at,
