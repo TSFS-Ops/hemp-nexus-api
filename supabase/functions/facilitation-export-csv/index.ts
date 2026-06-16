@@ -228,13 +228,14 @@ Deno.serve(async (req) => {
 
   // Audit (best-effort, non-blocking semantics).
   try {
+    const { data: prof } = await admin.from("profiles").select("org_id").eq("id", userId).maybeSingle();
     await admin.from("audit_logs").insert({
-      action: "facilitation.management.csv_exported",
+      org_id: (prof?.org_id as string | null) ?? null,
       actor_user_id: userId,
-      metadata: {
-        row_count: cases.length,
-        filters: f,
-      },
+      action: "facilitation.management.csv_exported",
+      entity_type: "facilitation_case",
+      entity_id: null,
+      metadata: { row_count: cases.length, filters: f },
     });
   } catch (e) {
     console.error("[facilitation-export-csv] audit insert failed", e);
