@@ -142,6 +142,18 @@ Deno.serve(async (req) => {
     "poi_conversion_reason",
     "poi_conversion_evidence_summary",
     "poi_conversion_recorded_by",
+    // Batch 7 — SLA fields are operational-only; never expose to requesters.
+    "owner_assignment_due_at",
+    "initial_triage_due_at",
+    "more_info_response_due_at",
+    "first_outreach_due_at",
+    "follow_up_outreach_due_at",
+    "compliance_review_due_at",
+    "next_action_due_at",
+    "is_overdue",
+    "overdue_reasons",
+    "sla_last_evaluated_at",
+    "last_activity_at",
   ];
   const caseOut = { ...(kase as Record<string, unknown>) };
   if (!isAdminish) {
