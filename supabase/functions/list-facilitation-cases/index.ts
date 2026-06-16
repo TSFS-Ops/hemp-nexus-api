@@ -52,6 +52,7 @@ Deno.serve(async (req) => {
   if (parsed.data.status) q = q.eq("internal_status", parsed.data.status);
   if (parsed.data.urgency) q = q.eq("urgency", parsed.data.urgency);
   if (parsed.data.assigned_to_me) q = q.eq("case_owner_id", userId);
+  if (parsed.data.overdue_only) q = q.eq("is_overdue", true);
   if (parsed.data.q) q = q.ilike("case_number", `${parsed.data.q}%`);
   q = q.range(parsed.data.offset, parsed.data.offset + parsed.data.limit - 1);
 
