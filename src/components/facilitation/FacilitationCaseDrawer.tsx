@@ -264,6 +264,17 @@ export const FacilitationCaseDrawer: React.FC<{
               />
             ) : null}
 
+            {/* Batch 6 — profile linking + ready-for-POI controls */}
+            {caseId ? (
+              <FacilitationCaseProfileLinkPanel
+                caseId={caseId}
+                kase={data.case as unknown as Parameters<typeof FacilitationCaseProfileLinkPanel>[0]["kase"]}
+                linkedOrganisation={data.linked_organisation ?? null}
+                onChanged={load}
+              />
+            ) : null}
+
+
             <section>
               <h3 className="font-medium mb-2">Intake</h3>
               {(() => {
