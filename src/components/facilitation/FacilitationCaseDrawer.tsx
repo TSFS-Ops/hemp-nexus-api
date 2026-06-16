@@ -27,6 +27,7 @@ import {
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
 import { FacilitationCaseManualChecksPanel } from "@/components/facilitation/FacilitationCaseManualChecksPanel";
 import { FacilitationCaseProfileLinkPanel } from "@/components/facilitation/FacilitationCaseProfileLinkPanel";
+import { FacilitationCaseSlaPanel } from "@/components/facilitation/FacilitationCaseSlaPanel";
 import {
   friendlyFacilitationError,
   rolesLabel,
@@ -188,6 +189,15 @@ export const FacilitationCaseDrawer: React.FC<{
               <h3 className="font-medium mb-2">Status</h3>
               <Badge variant="secondary">{INTERNAL_STATUS_LABELS[data.case.internal_status as FacilitationInternalStatus] ?? data.case.internal_status}</Badge>
             </section>
+
+            {/* Batch 7 — service-level tracking (admin/owner/compliance only) */}
+            {caseId && (data.case as Record<string, unknown>).sla_last_evaluated_at !== undefined ? (
+              <FacilitationCaseSlaPanel
+                caseId={caseId}
+                kase={data.case as unknown as Parameters<typeof FacilitationCaseSlaPanel>[0]["kase"]}
+                onChanged={load}
+              />
+            ) : null}
 
             {/* Batch 4 — More information request panel */}
             <section className="space-y-2 rounded-md border border-slate-200 bg-slate-50/50 p-3">

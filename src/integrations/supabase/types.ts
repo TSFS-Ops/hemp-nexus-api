@@ -4037,12 +4037,45 @@ export type Database = {
           },
         ]
       }
+      facilitation_case_sla_reminders: {
+        Row: {
+          case_id: string
+          id: string
+          reason_code: string
+          sent_at: string
+          sent_to_user_id: string
+        }
+        Insert: {
+          case_id: string
+          id?: string
+          reason_code: string
+          sent_at?: string
+          sent_to_user_id: string
+        }
+        Update: {
+          case_id?: string
+          id?: string
+          reason_code?: string
+          sent_at?: string
+          sent_to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_case_sla_reminders_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilitation_cases: {
         Row: {
           case_number: string
           case_owner_id: string | null
           closed_at: string | null
           closing_reason: string | null
+          compliance_review_due_at: string | null
           contact_person_email: string | null
           contact_person_phone: string | null
           contact_person_title: string | null
@@ -4058,6 +4091,8 @@ export type Database = {
           estimated_value_amount: number
           estimated_value_currency: string
           final_outcome: string | null
+          first_outreach_due_at: string | null
+          follow_up_outreach_due_at: string | null
           how_user_knows_counterparty: string
           how_user_knows_notes: string | null
           id: string
@@ -4069,12 +4104,19 @@ export type Database = {
           info_request_response_at: string | null
           info_request_response_evidence_summary: string | null
           info_request_response_message: string | null
+          initial_triage_due_at: string | null
           internal_status: string
+          is_overdue: boolean
+          last_activity_at: string | null
           linked_organization_evidence_summary: string | null
           linked_organization_id: string | null
           linked_organization_linked_at: string | null
           linked_organization_linked_by: string | null
           linked_organization_reason: string | null
+          more_info_response_due_at: string | null
+          next_action_due_at: string | null
+          overdue_reasons: string[]
+          owner_assignment_due_at: string | null
           permission_to_contact: boolean
           physical_address: string | null
           poi_conversion_evidence_summary: string | null
@@ -4100,6 +4142,7 @@ export type Database = {
           requesting_user_id: string
           role: string
           sector: string | null
+          sla_last_evaluated_at: string | null
           source_evidence_summary: string | null
           target_response_date: string | null
           tax_vat_number: string | null
@@ -4115,6 +4158,7 @@ export type Database = {
           case_owner_id?: string | null
           closed_at?: string | null
           closing_reason?: string | null
+          compliance_review_due_at?: string | null
           contact_person_email?: string | null
           contact_person_phone?: string | null
           contact_person_title?: string | null
@@ -4130,6 +4174,8 @@ export type Database = {
           estimated_value_amount: number
           estimated_value_currency: string
           final_outcome?: string | null
+          first_outreach_due_at?: string | null
+          follow_up_outreach_due_at?: string | null
           how_user_knows_counterparty: string
           how_user_knows_notes?: string | null
           id?: string
@@ -4141,12 +4187,19 @@ export type Database = {
           info_request_response_at?: string | null
           info_request_response_evidence_summary?: string | null
           info_request_response_message?: string | null
+          initial_triage_due_at?: string | null
           internal_status?: string
+          is_overdue?: boolean
+          last_activity_at?: string | null
           linked_organization_evidence_summary?: string | null
           linked_organization_id?: string | null
           linked_organization_linked_at?: string | null
           linked_organization_linked_by?: string | null
           linked_organization_reason?: string | null
+          more_info_response_due_at?: string | null
+          next_action_due_at?: string | null
+          overdue_reasons?: string[]
+          owner_assignment_due_at?: string | null
           permission_to_contact: boolean
           physical_address?: string | null
           poi_conversion_evidence_summary?: string | null
@@ -4172,6 +4225,7 @@ export type Database = {
           requesting_user_id: string
           role: string
           sector?: string | null
+          sla_last_evaluated_at?: string | null
           source_evidence_summary?: string | null
           target_response_date?: string | null
           tax_vat_number?: string | null
@@ -4187,6 +4241,7 @@ export type Database = {
           case_owner_id?: string | null
           closed_at?: string | null
           closing_reason?: string | null
+          compliance_review_due_at?: string | null
           contact_person_email?: string | null
           contact_person_phone?: string | null
           contact_person_title?: string | null
@@ -4202,6 +4257,8 @@ export type Database = {
           estimated_value_amount?: number
           estimated_value_currency?: string
           final_outcome?: string | null
+          first_outreach_due_at?: string | null
+          follow_up_outreach_due_at?: string | null
           how_user_knows_counterparty?: string
           how_user_knows_notes?: string | null
           id?: string
@@ -4213,12 +4270,19 @@ export type Database = {
           info_request_response_at?: string | null
           info_request_response_evidence_summary?: string | null
           info_request_response_message?: string | null
+          initial_triage_due_at?: string | null
           internal_status?: string
+          is_overdue?: boolean
+          last_activity_at?: string | null
           linked_organization_evidence_summary?: string | null
           linked_organization_id?: string | null
           linked_organization_linked_at?: string | null
           linked_organization_linked_by?: string | null
           linked_organization_reason?: string | null
+          more_info_response_due_at?: string | null
+          next_action_due_at?: string | null
+          overdue_reasons?: string[]
+          owner_assignment_due_at?: string | null
           permission_to_contact?: boolean
           physical_address?: string | null
           poi_conversion_evidence_summary?: string | null
@@ -4244,6 +4308,7 @@ export type Database = {
           requesting_user_id?: string
           role?: string
           sector?: string | null
+          sla_last_evaluated_at?: string | null
           source_evidence_summary?: string | null
           target_response_date?: string | null
           tax_vat_number?: string | null
