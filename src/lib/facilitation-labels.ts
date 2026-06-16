@@ -96,6 +96,9 @@ export const TIMELINE_ACTION_LABEL: Record<string, string> = {
   "facilitation_case.cancelled_by_requester": "Cancelled by requester",
   "facilitation_case.more_information_requested": "More information requested from requester",
   "facilitation_case.more_information_submitted": "Requester submitted more information",
+  "facilitation_case.registry_check_recorded": "Registry / KYB check recorded",
+  "facilitation_case.sanctions_pep_recorded": "Sanctions / PEP screening recorded",
+  "facilitation_case.contact_attempt_recorded": "Call / contact attempt recorded",
 };
 
 
@@ -108,6 +111,67 @@ export function timelineActionLabel(action: string): string {
       .replace(/^\w/, (c) => c.toUpperCase())
   );
 }
+
+// ─── Batch 5 — manual check & contact-attempt result labels ─────────────
+export const REGISTRY_RESULT_LABEL: Record<string, string> = {
+  clear: "Clear",
+  possible_match: "Possible match",
+  no_match: "No match",
+  unavailable: "Source unavailable",
+  failed: "Lookup failed",
+};
+export const CONFIDENCE_LABEL: Record<string, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+  unknown: "Unknown",
+};
+export const SANCTIONS_RESULT_LABEL: Record<string, string> = {
+  clear: "Clear",
+  possible_match: "Possible match",
+  confirmed_match: "Confirmed match",
+  unavailable: "Source unavailable",
+  failed: "Screening failed",
+};
+export const RISK_LEVEL_LABEL: Record<string, string> = {
+  low: "Low risk",
+  medium: "Medium risk",
+  high: "High risk",
+  critical: "Critical risk",
+  unknown: "Unknown risk",
+};
+export const COMPLIANCE_DECISION_LABEL: Record<string, string> = {
+  no_issue: "No issue",
+  review_required: "Review required",
+  blocked: "Blocked",
+  cleared_after_review: "Cleared after review",
+};
+export const CONTACT_CHANNEL_LABEL: Record<string, string> = {
+  phone: "Phone",
+  email_outside_system: "Email (outside the system)",
+  meeting: "Meeting",
+  other: "Other",
+};
+export const CONTACT_RESULT_LABEL: Record<string, string> = {
+  no_answer: "No answer",
+  left_message: "Left a message",
+  reached_counterparty: "Reached counterparty",
+  wrong_contact: "Wrong contact",
+  declined: "Declined",
+  requested_more_information: "Requested more information",
+  other: "Other",
+};
+function plainLabel(map: Record<string, string>, v: string | null | undefined): string {
+  if (!v) return "-";
+  return map[v] ?? v.replace(/_/g, " ");
+}
+export const registryResultLabel = (v: string | null | undefined) => plainLabel(REGISTRY_RESULT_LABEL, v);
+export const confidenceLabel = (v: string | null | undefined) => plainLabel(CONFIDENCE_LABEL, v);
+export const sanctionsResultLabel = (v: string | null | undefined) => plainLabel(SANCTIONS_RESULT_LABEL, v);
+export const riskLevelLabel = (v: string | null | undefined) => plainLabel(RISK_LEVEL_LABEL, v);
+export const complianceDecisionLabel = (v: string | null | undefined) => plainLabel(COMPLIANCE_DECISION_LABEL, v);
+export const contactChannelLabel = (v: string | null | undefined) => plainLabel(CONTACT_CHANNEL_LABEL, v);
+export const contactResultLabel = (v: string | null | undefined) => plainLabel(CONTACT_RESULT_LABEL, v);
 
 /**
  * Final-outcome enum values surfaced in the case drawer dropdown and timeline.
