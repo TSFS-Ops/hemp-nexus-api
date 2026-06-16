@@ -25,6 +25,7 @@ import {
   type FacilitationRelationshipStatus,
 } from "@/lib/facilitation-case-state";
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
+import { FacilitationCaseManualChecksPanel } from "@/components/facilitation/FacilitationCaseManualChecksPanel";
 import {
   friendlyFacilitationError,
   rolesLabel,
