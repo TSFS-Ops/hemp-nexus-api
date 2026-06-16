@@ -33,6 +33,15 @@ function json(req: Request, body: unknown, status = 200) {
 const StatusSchema = z.enum(INTERNAL_STATUSES as unknown as [string, ...string[]]);
 const OutcomeSchema = z.enum(OUTCOMES as unknown as [string, ...string[]]);
 
+const RegistryResult = z.enum(["clear","possible_match","no_match","unavailable","failed"]);
+const Confidence    = z.enum(["high","medium","low","unknown"]);
+const SanctionsResult   = z.enum(["clear","possible_match","confirmed_match","unavailable","failed"]);
+const RiskLevel         = z.enum(["low","medium","high","critical","unknown"]);
+const ComplianceDecision = z.enum(["no_issue","review_required","blocked","cleared_after_review"]);
+const ContactChannel = z.enum(["phone","email_outside_system","meeting","other"]);
+const ContactResult  = z.enum(["no_answer","left_message","reached_counterparty","wrong_contact","declined","requested_more_information","other"]);
+const optStr = (max: number) => z.string().trim().max(max).nullable().optional();
+
 const BodySchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("assign"),
@@ -64,6 +73,42 @@ const BodySchema = z.discriminatedUnion("action", [
     case_id: z.string().uuid(),
     response_message: z.string().trim().min(2).max(4000),
     evidence_summary: z.string().trim().max(2000).nullable().optional(),
+  }),
+  z.object({
+    action: z.literal("record_registry_check"),
+    case_id: z.string().uuid(),
+    provider_name: z.string().trim().min(1).max(200),
+    lookup_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    result: RegistryResult,
+    confidence: Confidence,
+    source_reference: optStr(500),
+    note: optStr(4000),
+    evidence_summary: optStr(2000),
+  }),
+  z.object({
+    action: z.literal("record_sanctions_check"),
+    case_id: z.string().uuid(),
+    screening_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    result: SanctionsResult,
+    screening_source: z.string().trim().min(1).max(200),
+    matched_name: optStr(300),
+    risk_level: RiskLevel,
+    compliance_decision: ComplianceDecision,
+    note: optStr(4000),
+    evidence_summary: optStr(2000),
+  }),
+  z.object({
+    action: z.literal("record_contact_attempt"),
+    case_id: z.string().uuid(),
+    channel: ContactChannel,
+    contact_at: z.string().datetime(),
+    recipient: optStr(200),
+    contact_details_used: optStr(300),
+    result: ContactResult,
+    note: optStr(4000),
+    next_action_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    evidence_summary: optStr(2000),
+    advance_status: z.enum(["contact_attempted","counterparty_responded"]).nullable().optional(),
   }),
 ]);
 
