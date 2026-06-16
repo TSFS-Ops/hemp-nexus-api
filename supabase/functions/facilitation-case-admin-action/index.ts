@@ -110,6 +110,33 @@ const BodySchema = z.discriminatedUnion("action", [
     evidence_summary: optStr(2000),
     advance_status: z.enum(["contact_attempted","counterparty_responded"]).nullable().optional(),
   }),
+  z.object({
+    action: z.literal("link_organisation"),
+    case_id: z.string().uuid(),
+    organization_id: z.string().uuid(),
+    reason: z.string().trim().min(3).max(2000),
+    evidence_summary: optStr(2000),
+  }),
+  z.object({
+    action: z.literal("record_profile_created"),
+    case_id: z.string().uuid(),
+    organization_id: z.string().uuid().nullable().optional(),
+    profile_reference: optStr(500),
+    note: z.string().trim().min(3).max(4000),
+    evidence_summary: optStr(2000),
+  }),
+  z.object({
+    action: z.literal("mark_ready_for_poi"),
+    case_id: z.string().uuid(),
+    authority_summary: z.string().trim().min(3).max(4000),
+  }),
+  z.object({
+    action: z.literal("record_poi_conversion"),
+    case_id: z.string().uuid(),
+    poi_reference: z.string().trim().min(3).max(500),
+    reason: z.string().trim().min(3).max(2000),
+    evidence_summary: optStr(2000),
+  }),
 ]);
 
 Deno.serve(async (req) => {
@@ -477,6 +504,200 @@ Deno.serve(async (req) => {
       },
     });
     return json(req, { ok: true, new_status: nextStatus ?? from });
+  }
+
+  // ─── Batch 6 — profile linking + ready-for-POI ──────────────────────────
+  if (parsed.data.action === "link_organisation") {
+    if (!(isPlatformAdmin || isOwner)) {
+      return json(req, { error: "Only platform admins or the assigned case owner can link an organisation" }, 403);
+    }
+    const p = parsed.data;
+    const { data: org, error: oerr } = await admin
+      .from("organizations").select("id,name").eq("id", p.organization_id).maybeSingle();
+    if (oerr) return json(req, { error: oerr.message }, 500);
+    if (!org) return json(req, { error: "Selected organisation was not found" }, 404);
+
+    const nowIso = new Date().toISOString();
+    const { error: uerr } = await admin.from("facilitation_cases").update({
+      linked_organization_id: p.organization_id,
+      linked_organization_reason: p.reason,
+      linked_organization_evidence_summary: p.evidence_summary ?? null,
+      linked_organization_linked_at: nowIso,
+      linked_organization_linked_by: userId,
+    }).eq("id", caseId);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.organisation_linked",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: {
+        organization_id: p.organization_id,
+        organization_name: (org as { name: string }).name,
+        reason: p.reason,
+      },
+    });
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "record_profile_created") {
+    if (!(isPlatformAdmin || isOwner)) {
+      return json(req, { error: "Only platform admins or the assigned case owner can record a counterparty profile" }, 403);
+    }
+    const p = parsed.data;
+    // If an organisation_id is given, link it using the approved field.
+    if (p.organization_id) {
+      const { data: org } = await admin
+        .from("organizations").select("id").eq("id", p.organization_id).maybeSingle();
+      if (!org) return json(req, { error: "Selected organisation was not found" }, 404);
+    }
+    const nowIso = new Date().toISOString();
+    const patch: Record<string, unknown> = {
+      profile_record_reference: p.profile_reference ?? null,
+      profile_record_note: p.note,
+      profile_record_evidence_summary: p.evidence_summary ?? null,
+      profile_record_recorded_at: nowIso,
+      profile_record_recorded_by: userId,
+    };
+    if (p.organization_id) {
+      patch.linked_organization_id = p.organization_id;
+      patch.linked_organization_reason = p.note;
+      patch.linked_organization_evidence_summary = p.evidence_summary ?? null;
+      patch.linked_organization_linked_at = nowIso;
+      patch.linked_organization_linked_by = userId;
+    }
+    const { error: uerr } = await admin.from("facilitation_cases").update(patch).eq("id", caseId);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.profile_created_recorded",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: {
+        organization_id: p.organization_id ?? null,
+        profile_reference: p.profile_reference ?? null,
+        has_evidence_summary: !!p.evidence_summary,
+      },
+    });
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "mark_ready_for_poi") {
+    if (!(isPlatformAdmin || isOwner)) {
+      return json(req, { error: "Only platform admins or the assigned case owner can mark a case ready for POI" }, 403);
+    }
+    const p = parsed.data;
+    const from = kase.internal_status as FacilitationInternalStatus;
+    const blockers: string[] = [];
+
+    if (from === "blocked_by_compliance") blockers.push("active_hard_block");
+    if (from === "compliance_review_required") blockers.push("unresolved_compliance_review");
+    if (from === "more_information_needed") blockers.push("unresolved_more_information_request");
+
+    // Latest sanctions/PEP result
+    const { data: lastSanc } = await admin
+      .from("facilitation_case_sanctions_checks")
+      .select("result,compliance_decision")
+      .eq("case_id", caseId)
+      .order("created_at", { ascending: false }).limit(1);
+    const lastS = lastSanc?.[0] as { result?: string; compliance_decision?: string } | undefined;
+    if (lastS && (lastS.result === "confirmed_match" || lastS.compliance_decision === "blocked")) {
+      blockers.push("confirmed_sanctions_pep_block");
+    }
+
+    // Active DNC block by org name / email / domain
+    const orgName = (kase as { counterparty_legal_name?: string | null }).counterparty_legal_name?.trim();
+    const cpEmail = (kase as { counterparty_email?: string | null }).counterparty_email?.trim()?.toLowerCase();
+    const emailDomain = cpEmail?.includes("@") ? cpEmail.split("@")[1] : null;
+    const orFilters: string[] = [];
+    if (orgName) orFilters.push(`and(rule_type.eq.org_name,value.ilike.${orgName})`);
+    if (cpEmail) orFilters.push(`and(rule_type.eq.email,value.eq.${cpEmail})`);
+    if (emailDomain) orFilters.push(`and(rule_type.eq.email_domain,value.eq.${emailDomain})`);
+    if (orFilters.length > 0) {
+      const { data: dnc } = await admin
+        .from("facilitation_do_not_contact_rules")
+        .select("id")
+        .eq("status", "active").eq("severity", "block")
+        .or(orFilters.join(","));
+      if (dnc && dnc.length > 0) blockers.push("active_do_not_contact_block");
+    }
+
+    const hasProfileOrOrg =
+      !!(kase as { linked_organization_id?: string | null }).linked_organization_id
+      || !!(kase as { profile_record_recorded_at?: string | null }).profile_record_recorded_at;
+    if (!hasProfileOrOrg) blockers.push("missing_profile_or_organisation_link");
+
+    if (blockers.length > 0) {
+      return json(req, { error: "Cannot mark ready for POI yet", blockers }, 409);
+    }
+
+    if (!isTransitionAllowed(from, "ready_for_known_counterparty_poi", "admin")) {
+      return json(req, { error: "Status does not allow marking ready for POI", from }, 409);
+    }
+
+    const nowIso = new Date().toISOString();
+    const { error: uerr } = await admin.from("facilitation_cases").update({
+      internal_status: "ready_for_known_counterparty_poi",
+      ready_for_poi_at: nowIso,
+      ready_for_poi_by: userId,
+      ready_for_poi_authority_summary: p.authority_summary,
+    }).eq("id", caseId);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.ready_for_poi_marked",
+      from_status: from, to_status: "ready_for_known_counterparty_poi",
+      payload: { has_authority_summary: true },
+    });
+
+    if (kase.requesting_user_id) {
+      await notifyUser({
+        user_id: kase.requesting_user_id,
+        title: "The counterparty is ready for POI",
+        body: "The counterparty is ready for POI. You may proceed under the stated terms.",
+      });
+    }
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "record_poi_conversion") {
+    if (!isPlatformAdmin) {
+      return json(req, { error: "Only platform admins can record a POI conversion" }, 403);
+    }
+    const p = parsed.data;
+    const from = kase.internal_status as FacilitationInternalStatus;
+    if (from !== "ready_for_known_counterparty_poi") {
+      return json(req, { error: "Case must be ready for POI before a conversion can be recorded", from }, 409);
+    }
+    const nowIso = new Date().toISOString();
+    const { error: uerr } = await admin.from("facilitation_cases").update({
+      internal_status: "converted_to_known_counterparty_poi",
+      final_outcome: "converted_to_known_counterparty_poi",
+      poi_conversion_reference: p.poi_reference,
+      poi_conversion_reason: p.reason,
+      poi_conversion_evidence_summary: p.evidence_summary ?? null,
+      poi_conversion_recorded_at: nowIso,
+      poi_conversion_recorded_by: userId,
+      closed_at: nowIso,
+    }).eq("id", caseId);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.poi_conversion_recorded",
+      from_status: from, to_status: "converted_to_known_counterparty_poi",
+      payload: { poi_reference: p.poi_reference },
+    });
+
+    if (kase.requesting_user_id) {
+      await notifyUser({
+        user_id: kase.requesting_user_id,
+        title: "Your facilitation request has been converted",
+        body: "This opportunity has been converted into a known-counterparty POI.",
+      });
+    }
+    return json(req, { ok: true });
   }
 
   return json(req, { error: "Unsupported action" }, 400);

@@ -97,13 +97,47 @@ Deno.serve(async (req) => {
     }
   } catch { /* fall through to default */ }
 
+  // Batch 6 — resolve linked organisation name for the drawer.
+  let linked_organisation: { id: string; name: string } | null = null;
+  const linkedOrgId = (kase as { linked_organization_id?: string | null }).linked_organization_id ?? null;
+  if (linkedOrgId) {
+    const { data: org } = await svc.from("organizations").select("id,name").eq("id", linkedOrgId).maybeSingle();
+    if (org) linked_organisation = { id: (org as { id: string }).id, name: (org as { name: string }).name };
+  }
+
+  // Strip Batch 6 admin-only free-text fields for non-admin requesters.
+  const ADMIN_ONLY_FIELDS = [
+    "linked_organization_reason",
+    "linked_organization_evidence_summary",
+    "linked_organization_linked_at",
+    "linked_organization_linked_by",
+    "profile_record_reference",
+    "profile_record_note",
+    "profile_record_evidence_summary",
+    "profile_record_recorded_at",
+    "profile_record_recorded_by",
+    "ready_for_poi_authority_summary",
+    "ready_for_poi_by",
+    "poi_conversion_reference",
+    "poi_conversion_reason",
+    "poi_conversion_evidence_summary",
+    "poi_conversion_recorded_by",
+  ];
+  const caseOut = { ...(kase as Record<string, unknown>) };
+  if (!isAdminish) {
+    for (const f of ADMIN_ONLY_FIELDS) delete caseOut[f];
+    // Also hide the linked organisation id and resolved record from non-admins.
+    delete (caseOut as Record<string, unknown>).linked_organization_id;
+  }
+
   return json(req, {
-    case: kase,
+    case: caseOut,
     events: events ?? [],
     evidence: evidence ?? [],
     coarse_outreach_state,
     registry_checks,
     sanctions_checks,
     contact_attempts,
+    linked_organisation: isAdminish ? linked_organisation : null,
   });
 });

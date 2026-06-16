@@ -4070,12 +4070,29 @@ export type Database = {
           info_request_response_evidence_summary: string | null
           info_request_response_message: string | null
           internal_status: string
+          linked_organization_evidence_summary: string | null
           linked_organization_id: string | null
+          linked_organization_linked_at: string | null
+          linked_organization_linked_by: string | null
+          linked_organization_reason: string | null
           permission_to_contact: boolean
           physical_address: string | null
+          poi_conversion_evidence_summary: string | null
+          poi_conversion_reason: string | null
+          poi_conversion_recorded_at: string | null
+          poi_conversion_recorded_by: string | null
+          poi_conversion_reference: string | null
           poi_engagement_id: string | null
           preferred_contact_language: string | null
           product_or_commodity: string
+          profile_record_evidence_summary: string | null
+          profile_record_note: string | null
+          profile_record_recorded_at: string | null
+          profile_record_recorded_by: string | null
+          profile_record_reference: string | null
+          ready_for_poi_at: string | null
+          ready_for_poi_authority_summary: string | null
+          ready_for_poi_by: string | null
           reason: string
           registration_number: string | null
           relationship_status: string | null
@@ -4125,12 +4142,29 @@ export type Database = {
           info_request_response_evidence_summary?: string | null
           info_request_response_message?: string | null
           internal_status?: string
+          linked_organization_evidence_summary?: string | null
           linked_organization_id?: string | null
+          linked_organization_linked_at?: string | null
+          linked_organization_linked_by?: string | null
+          linked_organization_reason?: string | null
           permission_to_contact: boolean
           physical_address?: string | null
+          poi_conversion_evidence_summary?: string | null
+          poi_conversion_reason?: string | null
+          poi_conversion_recorded_at?: string | null
+          poi_conversion_recorded_by?: string | null
+          poi_conversion_reference?: string | null
           poi_engagement_id?: string | null
           preferred_contact_language?: string | null
           product_or_commodity: string
+          profile_record_evidence_summary?: string | null
+          profile_record_note?: string | null
+          profile_record_recorded_at?: string | null
+          profile_record_recorded_by?: string | null
+          profile_record_reference?: string | null
+          ready_for_poi_at?: string | null
+          ready_for_poi_authority_summary?: string | null
+          ready_for_poi_by?: string | null
           reason: string
           registration_number?: string | null
           relationship_status?: string | null
@@ -4180,12 +4214,29 @@ export type Database = {
           info_request_response_evidence_summary?: string | null
           info_request_response_message?: string | null
           internal_status?: string
+          linked_organization_evidence_summary?: string | null
           linked_organization_id?: string | null
+          linked_organization_linked_at?: string | null
+          linked_organization_linked_by?: string | null
+          linked_organization_reason?: string | null
           permission_to_contact?: boolean
           physical_address?: string | null
+          poi_conversion_evidence_summary?: string | null
+          poi_conversion_reason?: string | null
+          poi_conversion_recorded_at?: string | null
+          poi_conversion_recorded_by?: string | null
+          poi_conversion_reference?: string | null
           poi_engagement_id?: string | null
           preferred_contact_language?: string | null
           product_or_commodity?: string
+          profile_record_evidence_summary?: string | null
+          profile_record_note?: string | null
+          profile_record_recorded_at?: string | null
+          profile_record_recorded_by?: string | null
+          profile_record_reference?: string | null
+          ready_for_poi_at?: string | null
+          ready_for_poi_authority_summary?: string | null
+          ready_for_poi_by?: string | null
           reason?: string
           registration_number?: string | null
           relationship_status?: string | null

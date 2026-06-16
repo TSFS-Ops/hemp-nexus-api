@@ -26,6 +26,7 @@ import {
 } from "@/lib/facilitation-case-state";
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
 import { FacilitationCaseManualChecksPanel } from "@/components/facilitation/FacilitationCaseManualChecksPanel";
+import { FacilitationCaseProfileLinkPanel } from "@/components/facilitation/FacilitationCaseProfileLinkPanel";
 import {
   friendlyFacilitationError,
   rolesLabel,
@@ -78,7 +79,7 @@ export const FacilitationCaseDrawer: React.FC<{
   onClose: () => void;
   onChanged?: () => void;
 }> = ({ caseId, onClose, onChanged }) => {
-  const [data, setData] = useState<{ case: CaseRow; events: Array<{ id: string; action: string; created_at: string; payload: Record<string, unknown> | null; from_status: string | null; to_status: string | null }>; evidence: Array<{ id: string; original_filename: string; created_at: string; storage_path: string }>; registry_checks?: Array<Record<string, unknown>>; sanctions_checks?: Array<Record<string, unknown>>; contact_attempts?: Array<Record<string, unknown>> } | null>(null);
+  const [data, setData] = useState<{ case: CaseRow; events: Array<{ id: string; action: string; created_at: string; payload: Record<string, unknown> | null; from_status: string | null; to_status: string | null }>; evidence: Array<{ id: string; original_filename: string; created_at: string; storage_path: string }>; registry_checks?: Array<Record<string, unknown>>; sanctions_checks?: Array<Record<string, unknown>>; contact_attempts?: Array<Record<string, unknown>>; linked_organisation?: { id: string; name: string } | null } | null>(null);
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState("");
   const [ownerInput, setOwnerInput] = useState("");
@@ -262,6 +263,17 @@ export const FacilitationCaseDrawer: React.FC<{
                 onChanged={load}
               />
             ) : null}
+
+            {/* Batch 6 — profile linking + ready-for-POI controls */}
+            {caseId ? (
+              <FacilitationCaseProfileLinkPanel
+                caseId={caseId}
+                kase={data.case as unknown as Parameters<typeof FacilitationCaseProfileLinkPanel>[0]["kase"]}
+                linkedOrganisation={data.linked_organisation ?? null}
+                onChanged={load}
+              />
+            ) : null}
+
 
             <section>
               <h3 className="font-medium mb-2">Intake</h3>

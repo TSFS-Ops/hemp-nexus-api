@@ -99,6 +99,10 @@ export const TIMELINE_ACTION_LABEL: Record<string, string> = {
   "facilitation_case.registry_check_recorded": "Registry / KYB check recorded",
   "facilitation_case.sanctions_pep_recorded": "Sanctions / PEP screening recorded",
   "facilitation_case.contact_attempt_recorded": "Call / contact attempt recorded",
+  "facilitation_case.organisation_linked": "Linked to an existing organisation",
+  "facilitation_case.profile_created_recorded": "Counterparty profile recorded",
+  "facilitation_case.ready_for_poi_marked": "Marked ready for POI",
+  "facilitation_case.poi_conversion_recorded": "POI conversion recorded",
 };
 
 

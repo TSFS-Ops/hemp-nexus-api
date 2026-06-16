@@ -31,6 +31,10 @@ const REQUIRED = [
   "facilitation_case.registry_check_recorded",
   "facilitation_case.sanctions_pep_recorded",
   "facilitation_case.contact_attempt_recorded",
+  "facilitation_case.organisation_linked",
+  "facilitation_case.profile_created_recorded",
+  "facilitation_case.ready_for_poi_marked",
+  "facilitation_case.poi_conversion_recorded",
 ];
 
 const SSOT_FILES = [
