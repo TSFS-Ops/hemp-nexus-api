@@ -94,6 +94,9 @@ Deno.serve(async (req) => {
         .from("facilitation_cases").select("*").eq("id", parsed.data.case_id).maybeSingle();
       if (refreshed) Object.assign(kase as Record<string, unknown>, refreshed);
     } catch { /* non-fatal — caller still gets the read */ }
+  }
+
+
 
   // Phase 2 Step 5 — coarse outreach state for trader milestone view.
   let coarse_outreach_state: "not_started" | "in_progress" | "sent" | "blocked" = "not_started";
