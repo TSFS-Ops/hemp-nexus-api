@@ -148,10 +148,19 @@ Deno.serve(async (req) => {
     .at(-1) ?? null;
 
   // Last meaningful activity = max(latest event, latest contact attempt, kase.updated_at).
+  // Exclude SLA/system-internal events so the evaluator's own audit writes do not
+  // reset the stale/no-activity clock.
+  const SYSTEM_INTERNAL_EVENT_ACTIONS = [
+    "facilitation_case.sla_evaluated",
+    "facilitation_case.reminder_sent",
+    "facilitation_case.overdue_marked",
+    "facilitation_case.overdue_cleared",
+  ];
   const { data: lastEvent } = await admin
     .from("facilitation_case_events")
     .select("created_at")
     .eq("case_id", caseId)
+    .not("action", "in", `(${SYSTEM_INTERNAL_EVENT_ACTIONS.map((a) => `"${a}"`).join(",")})`)
     .order("created_at", { ascending: false })
     .limit(1);
 
