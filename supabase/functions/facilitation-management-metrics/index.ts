@@ -114,20 +114,20 @@ Deno.serve(async (req) => {
       .select("case_id, action, created_at")
       .in("case_id", caseIds)
       .in("action", [
-        "facilitation_case.owner_assigned",
+        "facilitation_case.assigned",
         "facilitation_case.status_changed",
-        "facilitation_case.ready_for_contact",
+        "facilitation_case.contact_attempt_recorded",
       ])
       .order("created_at", { ascending: true })
       .limit(10000);
     for (const e of (evs ?? []) as { case_id: string; action: string; created_at: string }[]) {
-      if (e.action === "facilitation_case.owner_assigned" && !firstOwnerAssignedById.has(e.case_id)) {
+      if (e.action === "facilitation_case.assigned" && !firstOwnerAssignedById.has(e.case_id)) {
         firstOwnerAssignedById.set(e.case_id, e.created_at);
       }
       if (e.action === "facilitation_case.status_changed" && !firstTriageReviewedById.has(e.case_id)) {
         firstTriageReviewedById.set(e.case_id, e.created_at);
       }
-      if (e.action === "facilitation_case.ready_for_contact" && !firstOutreachReadyById.has(e.case_id)) {
+      if (e.action === "facilitation_case.contact_attempt_recorded" && !firstOutreachReadyById.has(e.case_id)) {
         firstOutreachReadyById.set(e.case_id, e.created_at);
       }
     }

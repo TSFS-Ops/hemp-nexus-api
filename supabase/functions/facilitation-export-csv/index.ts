@@ -227,14 +227,19 @@ Deno.serve(async (req) => {
   }
 
   // Audit (best-effort, non-blocking semantics).
-  await admin.from("audit_logs").insert({
-    action: "facilitation.management.csv_exported",
-    user_id: userId,
-    metadata: {
-      row_count: cases.length,
-      filters: f,
-    },
-  }).then(() => undefined).catch(() => undefined);
+  try {
+    const { data: prof } = await admin.from("profiles").select("org_id").eq("id", userId).maybeSingle();
+    await admin.from("audit_logs").insert({
+      org_id: (prof?.org_id as string | null) ?? null,
+      actor_user_id: userId,
+      action: "facilitation.management.csv_exported",
+      entity_type: "facilitation_case",
+      entity_id: null,
+      metadata: { row_count: cases.length, filters: f },
+    });
+  } catch (e) {
+    console.error("[facilitation-export-csv] audit insert failed", e);
+  }
 
   const csv = lines.join("\r\n") + "\r\n";
   const filename = `facilitation-cases-${new Date().toISOString().slice(0, 10)}.csv`;
