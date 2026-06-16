@@ -7,7 +7,7 @@
 import { FORBIDDEN_PRE_ACCEPTANCE_TERMS, findForbiddenTerms } from "./forbidden-terms";
 
 export const PENDING_ENGAGEMENT_LABEL =
-  "Pending Engagement - counterparty invited, awaiting confirmation.";
+  "Pending Engagement — counterparty invited, awaiting confirmation.";
 
 export const INITIATOR_PENDING_COPY =
   "Counterparty invitation sent. This trade remains pending until the counterparty confirms participation.";
