@@ -252,7 +252,16 @@ export const FacilitationCaseDrawer: React.FC<{
               )}
             </section>
 
-
+            {/* Batch 5 — manual checks & contact-attempt capture */}
+            {caseId ? (
+              <FacilitationCaseManualChecksPanel
+                caseId={caseId}
+                registryChecks={(data.registry_checks ?? []) as Parameters<typeof FacilitationCaseManualChecksPanel>[0]["registryChecks"]}
+                sanctionsChecks={(data.sanctions_checks ?? []) as Parameters<typeof FacilitationCaseManualChecksPanel>[0]["sanctionsChecks"]}
+                contactAttempts={(data.contact_attempts ?? []) as Parameters<typeof FacilitationCaseManualChecksPanel>[0]["contactAttempts"]}
+                onChanged={load}
+              />
+            ) : null}
 
             <section>
               <h3 className="font-medium mb-2">Intake</h3>
