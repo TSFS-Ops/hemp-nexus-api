@@ -3799,6 +3799,59 @@ export type Database = {
         }
         Relationships: []
       }
+      facilitation_case_contact_attempts: {
+        Row: {
+          actor_user_id: string
+          case_id: string
+          channel: string
+          contact_at: string
+          contact_details_used: string | null
+          created_at: string
+          evidence_summary: string | null
+          id: string
+          next_action_date: string | null
+          note: string | null
+          recipient: string | null
+          result: string
+        }
+        Insert: {
+          actor_user_id: string
+          case_id: string
+          channel: string
+          contact_at: string
+          contact_details_used?: string | null
+          created_at?: string
+          evidence_summary?: string | null
+          id?: string
+          next_action_date?: string | null
+          note?: string | null
+          recipient?: string | null
+          result: string
+        }
+        Update: {
+          actor_user_id?: string
+          case_id?: string
+          channel?: string
+          contact_at?: string
+          contact_details_used?: string | null
+          created_at?: string
+          evidence_summary?: string | null
+          id?: string
+          next_action_date?: string | null
+          note?: string | null
+          recipient?: string | null
+          result?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_case_contact_attempts_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilitation_case_events: {
         Row: {
           action: string
@@ -3874,6 +3927,109 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "facilitation_case_evidence_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilitation_case_registry_checks: {
+        Row: {
+          actor_user_id: string
+          case_id: string
+          confidence: string
+          created_at: string
+          evidence_summary: string | null
+          id: string
+          lookup_date: string
+          note: string | null
+          provider_name: string
+          result: string
+          source_reference: string | null
+        }
+        Insert: {
+          actor_user_id: string
+          case_id: string
+          confidence: string
+          created_at?: string
+          evidence_summary?: string | null
+          id?: string
+          lookup_date: string
+          note?: string | null
+          provider_name: string
+          result: string
+          source_reference?: string | null
+        }
+        Update: {
+          actor_user_id?: string
+          case_id?: string
+          confidence?: string
+          created_at?: string
+          evidence_summary?: string | null
+          id?: string
+          lookup_date?: string
+          note?: string | null
+          provider_name?: string
+          result?: string
+          source_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_case_registry_checks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facilitation_case_sanctions_checks: {
+        Row: {
+          actor_user_id: string
+          case_id: string
+          compliance_decision: string
+          created_at: string
+          evidence_summary: string | null
+          id: string
+          matched_name: string | null
+          note: string | null
+          result: string
+          risk_level: string
+          screening_date: string
+          screening_source: string
+        }
+        Insert: {
+          actor_user_id: string
+          case_id: string
+          compliance_decision: string
+          created_at?: string
+          evidence_summary?: string | null
+          id?: string
+          matched_name?: string | null
+          note?: string | null
+          result: string
+          risk_level: string
+          screening_date: string
+          screening_source: string
+        }
+        Update: {
+          actor_user_id?: string
+          case_id?: string
+          compliance_decision?: string
+          created_at?: string
+          evidence_summary?: string | null
+          id?: string
+          matched_name?: string | null
+          note?: string | null
+          result?: string
+          risk_level?: string
+          screening_date?: string
+          screening_source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_case_sanctions_checks_case_id_fkey"
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "facilitation_cases"
