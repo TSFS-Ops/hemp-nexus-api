@@ -78,7 +78,7 @@ export const FacilitationCaseDrawer: React.FC<{
   onClose: () => void;
   onChanged?: () => void;
 }> = ({ caseId, onClose, onChanged }) => {
-  const [data, setData] = useState<{ case: CaseRow; events: Array<{ id: string; action: string; created_at: string; payload: Record<string, unknown> | null; from_status: string | null; to_status: string | null }>; evidence: Array<{ id: string; original_filename: string; created_at: string; storage_path: string }> } | null>(null);
+  const [data, setData] = useState<{ case: CaseRow; events: Array<{ id: string; action: string; created_at: string; payload: Record<string, unknown> | null; from_status: string | null; to_status: string | null }>; evidence: Array<{ id: string; original_filename: string; created_at: string; storage_path: string }>; registry_checks?: Array<Record<string, unknown>>; sanctions_checks?: Array<Record<string, unknown>>; contact_attempts?: Array<Record<string, unknown>> } | null>(null);
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState("");
   const [ownerInput, setOwnerInput] = useState("");
