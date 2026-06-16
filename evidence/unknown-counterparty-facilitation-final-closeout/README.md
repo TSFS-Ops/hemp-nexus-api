@@ -57,7 +57,7 @@ This document is the single source of truth mapping Daniel's completed client qu
 - **R8-C2** Compliance_analyst live access not exercised — code-level access is metrics + CSV allowed, evidence-pack denied.
 - **R8-C3** Cross-tenant live probe not exercised against a second-organisation case — evidence pack is hard-scoped by `case_id`.
 
-None of the seven caveats are functional blockers. All are deferred *live exercises* on seeded fixtures.
+None of the seven caveats prevent client UAT, provided UAT is run against seeded/test accounts and the caveats are explicitly carried into the UAT checklist. All are deferred *live exercises* on seeded fixtures (not build blockers, but still real-world proof items).
 
 ---
 
