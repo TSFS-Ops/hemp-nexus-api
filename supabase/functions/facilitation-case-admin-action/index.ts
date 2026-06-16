@@ -339,5 +339,145 @@ Deno.serve(async (req) => {
     return json(req, { ok: true });
   }
 
+  // ─── Batch 5 — manual check & contact-attempt capture ───────────────────
+  if (parsed.data.action === "record_registry_check") {
+    if (!(isPlatformAdmin || isComplianceAnalyst || isOwner)) {
+      return json(req, { error: "Only platform admins, compliance analysts, or the assigned case owner can record registry checks" }, 403);
+    }
+    const p = parsed.data;
+    const { error: ierr } = await admin.from("facilitation_case_registry_checks").insert({
+      case_id: caseId,
+      actor_user_id: userId,
+      provider_name: p.provider_name,
+      lookup_date: p.lookup_date,
+      result: p.result,
+      confidence: p.confidence,
+      source_reference: p.source_reference ?? null,
+      note: p.note ?? null,
+      evidence_summary: p.evidence_summary ?? null,
+    });
+    if (ierr) return json(req, { error: ierr.message }, 500);
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.registry_check_recorded",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: {
+        provider_name: p.provider_name,
+        lookup_date: p.lookup_date,
+        result: p.result,
+        confidence: p.confidence,
+        source_reference: p.source_reference ?? null,
+      },
+    });
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "record_sanctions_check") {
+    const p = parsed.data;
+    // Only platform_admin or compliance_analyst may record; case owner may not.
+    if (!(isPlatformAdmin || isComplianceAnalyst)) {
+      return json(req, { error: "Only platform admins or compliance analysts can record sanctions/PEP results" }, 403);
+    }
+    // Clearing a prior possible/confirmed match requires compliance_analyst.
+    const { data: priorRows } = await admin
+      .from("facilitation_case_sanctions_checks")
+      .select("result")
+      .eq("case_id", caseId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const priorResult = priorRows?.[0]?.result as string | undefined;
+    const priorWasMatch = priorResult === "possible_match" || priorResult === "confirmed_match";
+    const clearingMatch = priorWasMatch
+      && (p.result === "clear" || p.result === "no_match")
+      && p.compliance_decision === "cleared_after_review";
+    if (clearingMatch && !isComplianceAnalyst) {
+      return json(req, { error: "Only a compliance analyst can clear a prior possible or confirmed match" }, 403);
+    }
+    const { error: ierr } = await admin.from("facilitation_case_sanctions_checks").insert({
+      case_id: caseId,
+      actor_user_id: userId,
+      screening_date: p.screening_date,
+      result: p.result,
+      screening_source: p.screening_source,
+      matched_name: p.matched_name ?? null,
+      risk_level: p.risk_level,
+      compliance_decision: p.compliance_decision,
+      note: p.note ?? null,
+      evidence_summary: p.evidence_summary ?? null,
+    });
+    if (ierr) return json(req, { error: ierr.message }, 500);
+
+    // Hard-block routing — confirmed match preserves/creates a compliance block.
+    // Possible match requires compliance review before any outreach/conversion.
+    const from = kase.internal_status as FacilitationInternalStatus;
+    let nextStatus: FacilitationInternalStatus | null = null;
+    if (p.result === "confirmed_match" || p.compliance_decision === "blocked") {
+      if (isTransitionAllowed(from, "blocked_by_compliance", "admin")) nextStatus = "blocked_by_compliance";
+      else if (isTransitionAllowed(from, "compliance_review_required", "admin")) nextStatus = "compliance_review_required";
+    } else if (p.result === "possible_match" || p.compliance_decision === "review_required") {
+      if (isTransitionAllowed(from, "compliance_review_required", "admin")) nextStatus = "compliance_review_required";
+    }
+    if (nextStatus) {
+      await admin.from("facilitation_cases").update({ internal_status: nextStatus }).eq("id", caseId);
+    }
+
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.sanctions_pep_recorded",
+      from_status: from, to_status: nextStatus ?? from,
+      payload: {
+        screening_date: p.screening_date,
+        result: p.result,
+        screening_source: p.screening_source,
+        risk_level: p.risk_level,
+        compliance_decision: p.compliance_decision,
+        matched_name: p.matched_name ?? null,
+      },
+    });
+    return json(req, { ok: true, new_status: nextStatus ?? from });
+  }
+
+  if (parsed.data.action === "record_contact_attempt") {
+    if (!(isPlatformAdmin || isOwner || isComplianceAnalyst)) {
+      return json(req, { error: "Only platform admins, compliance analysts, or the assigned case owner can record contact attempts" }, 403);
+    }
+    const p = parsed.data;
+    const { error: ierr } = await admin.from("facilitation_case_contact_attempts").insert({
+      case_id: caseId,
+      actor_user_id: userId,
+      channel: p.channel,
+      contact_at: p.contact_at,
+      recipient: p.recipient ?? null,
+      contact_details_used: p.contact_details_used ?? null,
+      result: p.result,
+      note: p.note ?? null,
+      next_action_date: p.next_action_date ?? null,
+      evidence_summary: p.evidence_summary ?? null,
+    });
+    if (ierr) return json(req, { error: ierr.message }, 500);
+
+    // Optional state transition — only when the operator explicitly requests it
+    // and the normal transition rules allow it.
+    const from = kase.internal_status as FacilitationInternalStatus;
+    let nextStatus: FacilitationInternalStatus | null = null;
+    if (p.advance_status && isTransitionAllowed(from, p.advance_status as FacilitationInternalStatus, "admin")) {
+      nextStatus = p.advance_status as FacilitationInternalStatus;
+      await admin.from("facilitation_cases").update({ internal_status: nextStatus }).eq("id", caseId);
+    }
+
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.contact_attempt_recorded",
+      from_status: from, to_status: nextStatus ?? from,
+      payload: {
+        channel: p.channel,
+        result: p.result,
+        contact_at: p.contact_at,
+        next_action_date: p.next_action_date ?? null,
+      },
+    });
+    return json(req, { ok: true, new_status: nextStatus ?? from });
+  }
+
   return json(req, { error: "Unsupported action" }, 400);
 });
