@@ -545,8 +545,13 @@ Deno.serve(async (req) => {
       return json(req, { error: "Only platform admins or the assigned case owner can record a counterparty profile" }, 403);
     }
     const p = parsed.data;
-    // If an organisation_id is given, link it using the approved field.
+    const existingLinkedOrgId = (kase as { linked_organization_id?: string | null }).linked_organization_id ?? null;
     if (p.organization_id) {
+      if (existingLinkedOrgId && existingLinkedOrgId !== p.organization_id) {
+        return json(req, {
+          error: "Case is already linked to a different organisation. Unlink first or omit organisation_id.",
+        }, 409);
+      }
       const { data: org } = await admin
         .from("organizations").select("id").eq("id", p.organization_id).maybeSingle();
       if (!org) return json(req, { error: "Selected organisation was not found" }, 404);
@@ -559,7 +564,8 @@ Deno.serve(async (req) => {
       profile_record_recorded_at: nowIso,
       profile_record_recorded_by: userId,
     };
-    if (p.organization_id) {
+    // Only write link fields when there is no existing link (first-time link via this action).
+    if (p.organization_id && !existingLinkedOrgId) {
       patch.linked_organization_id = p.organization_id;
       patch.linked_organization_reason = p.note;
       patch.linked_organization_evidence_summary = p.evidence_summary ?? null;

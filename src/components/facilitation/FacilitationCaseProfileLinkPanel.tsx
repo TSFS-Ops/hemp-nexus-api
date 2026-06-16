@@ -87,6 +87,7 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
   const [orgQuery, setOrgQuery] = useState("");
   const [orgHits, setOrgHits] = useState<OrgHit[]>([]);
   const [orgSearching, setOrgSearching] = useState(false);
+  const [orgSearched, setOrgSearched] = useState(false);
   const [chosenOrg, setChosenOrg] = useState<OrgHit | null>(null);
   const [linkReason, setLinkReason] = useState("");
   const [linkEvidence, setLinkEvidence] = useState("");
@@ -102,8 +103,9 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
       if (error) throw error;
       setOrgHits(((data as { organisations?: OrgHit[] })?.organisations) ?? []);
     } catch (err) {
+      setOrgHits([]);
       toast.error(await friendlyFacilitationError(err, "Could not search organisations. Please try again."));
-    } finally { setOrgSearching(false); }
+    } finally { setOrgSearching(false); setOrgSearched(true); }
   }
 
   async function doLink() {
@@ -132,7 +134,6 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
 
   // ─── Record counterparty profile created ──────────────────────────────
   const [profOpen, setProfOpen] = useState(false);
-  const [profOrgId, setProfOrgId] = useState("");
   const [profRef, setProfRef] = useState("");
   const [profNote, setProfNote] = useState("");
   const [profEvidence, setProfEvidence] = useState("");
