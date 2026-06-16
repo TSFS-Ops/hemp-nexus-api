@@ -1,0 +1,18 @@
+ALTER TABLE public.facilitation_cases
+  ADD COLUMN IF NOT EXISTS linked_organization_reason TEXT,
+  ADD COLUMN IF NOT EXISTS linked_organization_evidence_summary TEXT,
+  ADD COLUMN IF NOT EXISTS linked_organization_linked_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS linked_organization_linked_by UUID,
+  ADD COLUMN IF NOT EXISTS profile_record_reference TEXT,
+  ADD COLUMN IF NOT EXISTS profile_record_note TEXT,
+  ADD COLUMN IF NOT EXISTS profile_record_evidence_summary TEXT,
+  ADD COLUMN IF NOT EXISTS profile_record_recorded_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS profile_record_recorded_by UUID,
+  ADD COLUMN IF NOT EXISTS ready_for_poi_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS ready_for_poi_by UUID,
+  ADD COLUMN IF NOT EXISTS ready_for_poi_authority_summary TEXT,
+  ADD COLUMN IF NOT EXISTS poi_conversion_reference TEXT,
+  ADD COLUMN IF NOT EXISTS poi_conversion_reason TEXT,
+  ADD COLUMN IF NOT EXISTS poi_conversion_evidence_summary TEXT,
+  ADD COLUMN IF NOT EXISTS poi_conversion_recorded_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS poi_conversion_recorded_by UUID;
