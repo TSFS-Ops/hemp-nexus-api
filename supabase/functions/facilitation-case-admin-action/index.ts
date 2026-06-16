@@ -110,6 +110,33 @@ const BodySchema = z.discriminatedUnion("action", [
     evidence_summary: optStr(2000),
     advance_status: z.enum(["contact_attempted","counterparty_responded"]).nullable().optional(),
   }),
+  z.object({
+    action: z.literal("link_organisation"),
+    case_id: z.string().uuid(),
+    organization_id: z.string().uuid(),
+    reason: z.string().trim().min(3).max(2000),
+    evidence_summary: optStr(2000),
+  }),
+  z.object({
+    action: z.literal("record_profile_created"),
+    case_id: z.string().uuid(),
+    organization_id: z.string().uuid().nullable().optional(),
+    profile_reference: optStr(500),
+    note: z.string().trim().min(3).max(4000),
+    evidence_summary: optStr(2000),
+  }),
+  z.object({
+    action: z.literal("mark_ready_for_poi"),
+    case_id: z.string().uuid(),
+    authority_summary: z.string().trim().min(3).max(4000),
+  }),
+  z.object({
+    action: z.literal("record_poi_conversion"),
+    case_id: z.string().uuid(),
+    poi_reference: z.string().trim().min(3).max(500),
+    reason: z.string().trim().min(3).max(2000),
+    evidence_summary: optStr(2000),
+  }),
 ]);
 
 Deno.serve(async (req) => {
