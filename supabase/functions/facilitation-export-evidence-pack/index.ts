@@ -257,11 +257,15 @@ Deno.serve(async (req) => {
   };
 
   // Audit (best-effort).
-  await admin.from("audit_logs").insert({
-    action: "facilitation.management.evidence_pack_exported",
-    user_id: userId,
-    metadata: { case_id: caseId, case_number: kase.case_number },
-  }).then(() => undefined).catch(() => undefined);
+  try {
+    await admin.from("audit_logs").insert({
+      action: "facilitation.management.evidence_pack_exported",
+      actor_user_id: userId,
+      metadata: { case_id: caseId, case_number: kase.case_number },
+    });
+  } catch (e) {
+    console.error("[facilitation-export-evidence-pack] audit insert failed", e);
+  }
 
   const filename = `evidence-pack-${kase.case_number ?? caseId}-${new Date().toISOString().slice(0, 10)}.json`;
   return json(req, pack, 200, {
