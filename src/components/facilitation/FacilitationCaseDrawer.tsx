@@ -27,6 +27,7 @@ import {
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
 import { FacilitationCaseManualChecksPanel } from "@/components/facilitation/FacilitationCaseManualChecksPanel";
 import { FacilitationCaseProfileLinkPanel } from "@/components/facilitation/FacilitationCaseProfileLinkPanel";
+import { FacilitationCaseSlaPanel } from "@/components/facilitation/FacilitationCaseSlaPanel";
 import {
   friendlyFacilitationError,
   rolesLabel,
