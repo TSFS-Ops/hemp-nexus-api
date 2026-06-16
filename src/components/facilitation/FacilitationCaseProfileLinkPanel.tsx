@@ -87,6 +87,7 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
   const [orgQuery, setOrgQuery] = useState("");
   const [orgHits, setOrgHits] = useState<OrgHit[]>([]);
   const [orgSearching, setOrgSearching] = useState(false);
+  const [orgSearched, setOrgSearched] = useState(false);
   const [chosenOrg, setChosenOrg] = useState<OrgHit | null>(null);
   const [linkReason, setLinkReason] = useState("");
   const [linkEvidence, setLinkEvidence] = useState("");
@@ -102,8 +103,9 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
       if (error) throw error;
       setOrgHits(((data as { organisations?: OrgHit[] })?.organisations) ?? []);
     } catch (err) {
+      setOrgHits([]);
       toast.error(await friendlyFacilitationError(err, "Could not search organisations. Please try again."));
-    } finally { setOrgSearching(false); }
+    } finally { setOrgSearching(false); setOrgSearched(true); }
   }
 
   async function doLink() {
@@ -132,7 +134,6 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
 
   // ─── Record counterparty profile created ──────────────────────────────
   const [profOpen, setProfOpen] = useState(false);
-  const [profOrgId, setProfOrgId] = useState("");
   const [profRef, setProfRef] = useState("");
   const [profNote, setProfNote] = useState("");
   const [profEvidence, setProfEvidence] = useState("");
@@ -146,7 +147,7 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
         body: {
           action: "record_profile_created",
           case_id: caseId,
-          organization_id: profOrgId.trim() ? profOrgId.trim() : null,
+          organization_id: null,
           profile_reference: profRef.trim() ? profRef.trim() : null,
           note: profNote.trim(),
           evidence_summary: profEvidence.trim() ? profEvidence.trim() : null,
@@ -154,7 +155,7 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
       });
       if (error) throw error;
       toast.success("Counterparty profile recorded.");
-      setProfOpen(false); setProfOrgId(""); setProfRef(""); setProfNote(""); setProfEvidence("");
+      setProfOpen(false); setProfRef(""); setProfNote(""); setProfEvidence("");
       await onChanged();
     } catch (err) {
       toast.error(await friendlyFacilitationError(err, "Could not record the profile. Please try again."));
@@ -279,6 +280,8 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
                       </li>
                     ))}
                   </ul>
+                ) : orgSearched && !orgSearching ? (
+                  <p className="text-xs text-slate-500">No matching organisations.</p>
                 ) : null}
                 {chosenOrg ? (
                   <div className="text-xs text-slate-600">Selected: <span className="font-medium text-slate-800">{chosenOrg.name}</span></div>
@@ -325,10 +328,10 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label htmlFor="prof-org">Existing organisation ID (optional)</Label>
-                  <Input id="prof-org" value={profOrgId} onChange={(e) => setProfOrgId(e.target.value)} placeholder="If a safe organisation already exists, paste its ID to link it." />
-                </div>
+                <p className="text-xs text-slate-500">
+                  To attach an organisation, use “Link existing organisation” above. This step only records the profile note.
+                </p>
+
                 <div className="space-y-1">
                   <Label htmlFor="prof-ref">Profile reference (optional)</Label>
                   <Input id="prof-ref" value={profRef} onChange={(e) => setProfRef(e.target.value)} placeholder="Internal reference or note pointing to the profile." />
