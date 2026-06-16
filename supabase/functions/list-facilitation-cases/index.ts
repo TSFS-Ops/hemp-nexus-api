@@ -22,6 +22,7 @@ const BodySchema = z.object({
   status: z.string().trim().max(64).nullable().optional(),
   urgency: z.enum(["low", "normal", "high", "critical"]).nullable().optional(),
   assigned_to_me: z.boolean().nullable().optional(),
+  overdue_only: z.boolean().nullable().optional(),
   q: z.string().trim().max(64).nullable().optional(),
   limit: z.number().int().min(1).max(200).default(50),
   offset: z.number().int().min(0).max(10000).default(0),
