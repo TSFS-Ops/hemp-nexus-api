@@ -141,7 +141,8 @@ Deno.serve(async (req) => {
     return !!data;
   }
   const isPlatformAdmin = await hasRole("platform_admin");
-  const isAdmin = isPlatformAdmin || (await hasRole("admin")) || (await hasRole("compliance_analyst"));
+  const isComplianceAnalyst = await hasRole("compliance_analyst");
+  const isAdmin = isPlatformAdmin || (await hasRole("admin")) || isComplianceAnalyst;
 
   const caseId = parsed.data.case_id;
   const { data: kase, error: kerr } = await admin.from("facilitation_cases").select("*").eq("id", caseId).maybeSingle();
