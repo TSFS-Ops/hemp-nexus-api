@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
   const token = authHeader.replace("Bearer ", "");
   const { data: claims, error: cerr } = await userClient.auth.getClaims(token);
   if (cerr || !claims?.claims?.sub) return json(req, { error: "Unauthorized" }, 401);
+  const userId = claims.claims.sub as string;
 
   let parsed;
   try { parsed = BodySchema.safeParse(await req.json()); } catch { return json(req, { error: "Invalid JSON" }, 400); }
@@ -47,13 +48,34 @@ Deno.serve(async (req) => {
   const { data: evidence } = await userClient.from("facilitation_case_evidence")
     .select("*").eq("case_id", parsed.data.case_id).order("created_at", { ascending: true });
 
-  // Phase 2 Step 5 — coarse outreach state for trader milestone view.
-  // Computed via service role so traders can see a high-level summary
-  // WITHOUT any candidate emails, template bodies, gate reasons, audit
-  // payloads, or DNC details. Returns one of:
-  //   "not_started" | "in_progress" | "sent" | "blocked"
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const svc = createClient(url, service, { auth: { persistSession: false } });
+
+  // Batch 5 — registry/sanctions/contact records (admin/compliance/owner only).
+  async function hasRole(role: string): Promise<boolean> {
+    const { data } = await svc.rpc("has_role", { _user_id: userId, _role: role });
+    return !!data;
+  }
+  const isAdminish =
+    (await hasRole("platform_admin"))
+    || (await hasRole("compliance_analyst"))
+    || (kase as { case_owner_id?: string }).case_owner_id === userId;
+
+  let registry_checks: unknown[] = [];
+  let sanctions_checks: unknown[] = [];
+  let contact_attempts: unknown[] = [];
+  if (isAdminish) {
+    const [{ data: r }, { data: s }, { data: c }] = await Promise.all([
+      svc.from("facilitation_case_registry_checks").select("*").eq("case_id", parsed.data.case_id).order("created_at", { ascending: false }),
+      svc.from("facilitation_case_sanctions_checks").select("*").eq("case_id", parsed.data.case_id).order("created_at", { ascending: false }),
+      svc.from("facilitation_case_contact_attempts").select("*").eq("case_id", parsed.data.case_id).order("created_at", { ascending: false }),
+    ]);
+    registry_checks = r ?? [];
+    sanctions_checks = s ?? [];
+    contact_attempts = c ?? [];
+  }
+
+  // Phase 2 Step 5 — coarse outreach state for trader milestone view.
   let coarse_outreach_state: "not_started" | "in_progress" | "sent" | "blocked" = "not_started";
   try {
     const { data: cands } = await svc
@@ -75,5 +97,13 @@ Deno.serve(async (req) => {
     }
   } catch { /* fall through to default */ }
 
-  return json(req, { case: kase, events: events ?? [], evidence: evidence ?? [], coarse_outreach_state });
+  return json(req, {
+    case: kase,
+    events: events ?? [],
+    evidence: evidence ?? [],
+    coarse_outreach_state,
+    registry_checks,
+    sanctions_checks,
+    contact_attempts,
+  });
 });

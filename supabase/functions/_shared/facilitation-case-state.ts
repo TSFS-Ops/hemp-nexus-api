@@ -122,5 +122,8 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.cancelled_by_requester",
   "facilitation_case.more_information_requested",
   "facilitation_case.more_information_submitted",
+  "facilitation_case.registry_check_recorded",
+  "facilitation_case.sanctions_pep_recorded",
+  "facilitation_case.contact_attempt_recorded",
 ] as const;
 export type FacilitationAuditName = (typeof FACILITATION_AUDIT_NAMES)[number];
