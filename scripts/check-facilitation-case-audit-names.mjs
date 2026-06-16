@@ -35,6 +35,11 @@ const REQUIRED = [
   "facilitation_case.profile_created_recorded",
   "facilitation_case.ready_for_poi_marked",
   "facilitation_case.poi_conversion_recorded",
+  // Batch 7 — SLA tracking & reminders.
+  "facilitation_case.sla_evaluated",
+  "facilitation_case.overdue_marked",
+  "facilitation_case.overdue_cleared",
+  "facilitation_case.reminder_sent",
 ];
 
 const SSOT_FILES = [
