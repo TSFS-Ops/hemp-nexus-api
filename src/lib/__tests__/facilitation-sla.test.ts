@@ -11,7 +11,6 @@ import { describe, it, expect } from "vitest";
 import {
   addBusinessHours,
   addBusinessDays,
-  computeSla,
   OVERDUE_REASON_CODES,
 } from "../facilitation-sla";
 
