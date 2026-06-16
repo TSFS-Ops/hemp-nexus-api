@@ -391,12 +391,13 @@ export const FacilitationCaseProfileLinkPanel: React.FC<Props> = ({
           </Dialog>
         </div>
         <ul className="text-xs space-y-1">
-          {Object.keys(BLOCKER_LABEL).map((code) => {
+          {Object.keys(CLEARED_LABEL).map((code) => {
             const active = blockers.includes(code);
+            const label = active ? BLOCKER_LABEL[code] : CLEARED_LABEL[code];
             return (
               <li key={code} className={`flex items-start gap-2 ${active ? "text-amber-800" : "text-emerald-800"}`}>
                 <span aria-hidden>{active ? "•" : "✓"}</span>
-                <span>{BLOCKER_LABEL[code]}</span>
+                <span>{label}</span>
               </li>
             );
           })}
