@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       const { data: existing } = await admin.from("organizations").select("id").eq("name", name).maybeSingle();
       if (existing?.id) return existing.id as string;
       const { data: created, error } = await admin.from("organizations").insert({
-        name, country_code: "ZA",
+        name,
       }).select("id").single();
       if (error || !created) throw new Error(`org ${name} create failed: ${error?.message}`);
       return created.id as string;
