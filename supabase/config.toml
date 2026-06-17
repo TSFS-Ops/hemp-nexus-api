@@ -92,6 +92,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.seed-ai-light-intel-uat]
     verify_jwt = false
+  [functions.set-uat-passwords]
+    verify_jwt = false
   [functions.search]
     verify_jwt = false
   [functions.send-transactional-email]
