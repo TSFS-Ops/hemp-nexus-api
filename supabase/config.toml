@@ -90,6 +90,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.seed-uat-facilitation-accounts]
     verify_jwt = false
+  [functions.seed-ai-light-intel-uat]
+    verify_jwt = false
   [functions.search]
     verify_jwt = false
   [functions.send-transactional-email]
