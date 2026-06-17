@@ -32,14 +32,23 @@ Deno.serve(async (req) => {
 
     const results: Record<string, unknown>[] = [];
 
-    for (const email of ALLOWLIST) {
-      const { data: list, error: lErr } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      if (lErr) throw lErr;
-      const user = list.users.find(u => (u.email || "").toLowerCase() === email);
-      if (!user) {
-        results.push({ email, status: "FAIL", reason: "user_not_found" });
+    const TARGETS: Array<{ email: string; user_id: string }> = [
+      { email: "api@izenzo.co.za",  user_id: "a9398f73-1bc0-4943-abfe-1bb5763cb18d" },
+      { email: "test1@izenzo.co.za", user_id: "f07073dc-4a43-4803-9fb6-7ef7579ae332" },
+    ];
+
+    for (const t of TARGETS) {
+      const email = t.email;
+      if (!ALLOWLIST.has(email)) {
+        results.push({ email, status: "FAIL", reason: "not_in_allowlist" });
         continue;
       }
+      const { data: got, error: gErr } = await admin.auth.admin.getUserById(t.user_id);
+      if (gErr || !got?.user) {
+        results.push({ email, status: "FAIL", reason: gErr?.message || "user_not_found" });
+        continue;
+      }
+      const user = got.user;
       if (user.deleted_at || (user as any).banned_until) {
         results.push({ email, status: "FAIL", reason: "user_disabled_or_deleted" });
         continue;
