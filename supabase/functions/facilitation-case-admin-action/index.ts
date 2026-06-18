@@ -408,6 +408,9 @@ Deno.serve(async (req) => {
     if (isAdmin && parsed.data.to_status === "counterparty_responded") {
       await ensurePositiveResponseNextStep(evt?.id ?? null, from);
     }
+    // Batch 9C: requester-safe in-app milestone notification (idempotent,
+    // any transition path — admin or requester).
+    await notifyRequesterMilestone(parsed.data.to_status as FacilitationInternalStatus);
     return json(req, { ok: true });
   }
 
