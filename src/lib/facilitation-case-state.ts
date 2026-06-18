@@ -277,6 +277,8 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.next_step_assigned",
   "facilitation_case.next_step_status_changed",
   "facilitation_case.next_step_completed",
+  // Batch 9C — requester-facing in-app notifications.
+  "facilitation_case.requester_notification_emitted",
 ] as const;
 export type FacilitationAuditName = (typeof FACILITATION_AUDIT_NAMES)[number];
 
