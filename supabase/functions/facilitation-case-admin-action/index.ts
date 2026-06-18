@@ -220,6 +220,34 @@ Deno.serve(async (req) => {
     if (!isTransitionAllowed(from, parsed.data.to_status as FacilitationInternalStatus, role)) {
       return json(req, { error: "Transition not allowed", from, to: parsed.data.to_status, role }, 409);
     }
+
+    // ─── Batch 9A — closure-evidence enforcement ──────────────────────────
+    const TERMINAL_CLOSURE_STATUSES: FacilitationInternalStatus[] = [
+      "closed", "unable_to_proceed", "converted_to_known_counterparty_poi",
+    ];
+    const isTerminalClosure = TERMINAL_CLOSURE_STATUSES.includes(parsed.data.to_status as FacilitationInternalStatus);
+    if (isTerminalClosure) {
+      const outcome = parsed.data.final_outcome ?? (kase.final_outcome as FacilitationOutcome | null);
+      if (!outcome) {
+        return json(req, {
+          error: "A final outcome is required to close this case.",
+          code: "FINAL_OUTCOME_REQUIRED",
+          to: parsed.data.to_status,
+        }, 409);
+      }
+      if (SENSITIVE_OUTCOMES_REQUIRING_REASON.has(outcome as FacilitationOutcome)) {
+        const reason = (parsed.data.closing_reason ?? kase.closing_reason ?? "").toString().trim();
+        if (reason.length < CLOSURE_REASON_MIN_LENGTH) {
+          return json(req, {
+            error: `A closing reason of at least ${CLOSURE_REASON_MIN_LENGTH} characters is required for outcome "${outcome}".`,
+            code: "CLOSING_REASON_REQUIRED",
+            outcome,
+            min_length: CLOSURE_REASON_MIN_LENGTH,
+          }, 409);
+        }
+      }
+    }
+
     const patch: Record<string, unknown> = { internal_status: parsed.data.to_status };
     if (parsed.data.closing_reason !== undefined) patch.closing_reason = parsed.data.closing_reason;
     if (parsed.data.final_outcome !== undefined) patch.final_outcome = parsed.data.final_outcome;
