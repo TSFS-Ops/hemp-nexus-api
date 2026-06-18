@@ -25,7 +25,9 @@ type Metrics = {
   averages_hours: {
     time_to_owner_assignment: number | null;
     time_to_triage: number | null;
+    time_to_first_review: number | null;
     time_to_first_outreach: number | null;
+    time_to_first_contact: number | null;
     time_to_close: number | null;
   };
   outcome_rates_pct: {
@@ -35,6 +37,15 @@ type Metrics = {
     compliance_block: number | null;
     duplicate: number | null;
   };
+  conversion_rate?: {
+    numerator: number;
+    denominator: number;
+    rate_pct: number | null;
+  };
+  breached_deadline_breakdown?: {
+    total_breached: number;
+    items: { deadline_type: string; count: number; pct_of_breached: number | null }[];
+  };
   grouping: {
     by_country: { label: string; count: number }[];
     by_sector: { label: string; count: number }[];
@@ -43,9 +54,34 @@ type Metrics = {
 };
 
 const NA = "Not available yet";
+const NOT_ENOUGH = "Not enough data";
 
-const fmtHours = (h: number | null): string => (h == null ? NA : h < 24 ? `${h} h` : `${Math.round((h / 24) * 10) / 10} d`);
+const fmtHours = (h: number | null): string => {
+  if (h == null) return NOT_ENOUGH;
+  if (h < 1) {
+    const m = Math.max(1, Math.round(h * 60));
+    return `${m}m`;
+  }
+  if (h < 24) {
+    const whole = Math.floor(h);
+    const mins = Math.round((h - whole) * 60);
+    return mins > 0 ? `${whole}h ${mins}m` : `${whole}h`;
+  }
+  const days = Math.round((h / 24) * 10) / 10;
+  return `${days} d`;
+};
 const fmtPct = (p: number | null): string => (p == null ? NA : `${p}%`);
+
+const DEADLINE_LABELS: Record<string, string> = {
+  owner_assignment_overdue: "Owner assignment missed",
+  initial_triage_overdue: "First review missed",
+  more_information_response_overdue: "Requester-response review missed",
+  first_outreach_overdue: "First contact missed",
+  follow_up_outreach_overdue: "Follow-up missed",
+  compliance_review_overdue: "Contact approval missed",
+  next_action_overdue: "Next-action missed",
+  stale_no_activity: "Closure review missed",
+};
 
 export const FacilitationManagementMetrics: React.FC = () => {
   const [data, setData] = useState<Metrics | null>(null);
