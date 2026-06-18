@@ -28,6 +28,7 @@ import { FacilitationOutreachTab } from "@/components/facilitation-outreach/Faci
 import { FacilitationCaseManualChecksPanel } from "@/components/facilitation/FacilitationCaseManualChecksPanel";
 import { FacilitationCaseProfileLinkPanel } from "@/components/facilitation/FacilitationCaseProfileLinkPanel";
 import { FacilitationCaseSlaPanel } from "@/components/facilitation/FacilitationCaseSlaPanel";
+import { FacilitationCaseNextStepsPanel } from "@/components/facilitation/FacilitationCaseNextStepsPanel";
 import {
   friendlyFacilitationError,
   rolesLabel,
@@ -198,6 +199,11 @@ export const FacilitationCaseDrawer: React.FC<{
                 onChanged={load}
               />
             ) : null}
+
+            {/* Batch 9B — positive-response next-step tasks (admin/owner/compliance only) */}
+            {caseId ? <FacilitationCaseNextStepsPanel caseId={caseId} onChanged={load} /> : null}
+
+
 
             {/* Batch 4 — More information request panel */}
             <section className="space-y-2 rounded-md border border-slate-200 bg-slate-50/50 p-3">

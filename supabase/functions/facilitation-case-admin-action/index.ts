@@ -20,6 +20,8 @@ import {
   isTransitionAllowed,
   SENSITIVE_OUTCOMES_REQUIRING_REASON,
   CLOSURE_REASON_MIN_LENGTH,
+  POSITIVE_RESPONSE_REQUIRED_ACTIONS,
+  NEXT_STEP_STATUSES,
   type FacilitationInternalStatus,
   type FacilitationOutcome,
 } from "../_shared/facilitation-case-state.ts";
@@ -140,6 +142,25 @@ const BodySchema = z.discriminatedUnion("action", [
     reason: z.string().trim().min(3).max(2000),
     evidence_summary: optStr(2000),
   }),
+  // ─── Batch 9B — positive-response next-step task lifecycle ──────────────
+  z.object({
+    action: z.literal("assign_next_step"),
+    case_id: z.string().uuid(),
+    next_step_id: z.string().uuid(),
+    assigned_to: z.string().uuid().nullable(),
+  }),
+  z.object({
+    action: z.literal("update_next_step_status"),
+    case_id: z.string().uuid(),
+    next_step_id: z.string().uuid(),
+    to_status: z.enum(NEXT_STEP_STATUSES as unknown as [string, ...string[]]),
+  }),
+  z.object({
+    action: z.literal("complete_next_step"),
+    case_id: z.string().uuid(),
+    next_step_id: z.string().uuid(),
+    completion_note: z.string().trim().min(3).max(4000),
+  }),
 ]);
 
 Deno.serve(async (req) => {
@@ -199,6 +220,65 @@ Deno.serve(async (req) => {
       });
     } catch (_e) { /* non-fatal */ }
   }
+
+  // ─── Batch 9B — auto-create positive-response next-step task ───────────
+  // Idempotent on (case_id, next_step_type='positive_response_followup')
+  // when an open/in-progress row already exists (DB unique partial index).
+  // NEVER creates POI / WaD / verification / compliance clearance /
+  // commercial state / external outreach. Pure internal task record.
+  async function ensurePositiveResponseNextStep(
+    triggerEventId: string | null,
+    fromStatus: FacilitationInternalStatus,
+  ): Promise<void> {
+    try {
+      const { data: existing } = await admin
+        .from("facilitation_case_next_steps")
+        .select("id,status")
+        .eq("case_id", caseId)
+        .eq("next_step_type", "positive_response_followup")
+        .in("status", ["open", "in_progress"])
+        .maybeSingle();
+      if (existing?.id) return; // idempotent
+
+      await admin.from("facilitation_case_events").insert({
+        case_id: caseId, actor_user_id: userId,
+        action: "facilitation_case.positive_response_recorded",
+        from_status: fromStatus, to_status: "counterparty_responded",
+        payload: { trigger_event_id: triggerEventId },
+      });
+
+      const { data: inserted, error: insErr } = await admin
+        .from("facilitation_case_next_steps")
+        .insert({
+          case_id: caseId,
+          created_by: userId,
+          assigned_to: kase.case_owner_id ?? null,
+          status: "open",
+          next_step_type: "positive_response_followup",
+          title: "Follow up on positive counterparty response",
+          description:
+            "The counterparty has responded positively. Work through the required actions before any POI step. This task is internal-only and does not create a POI, WaD, verification or commercial commitment.",
+          required_actions: POSITIVE_RESPONSE_REQUIRED_ACTIONS,
+          related_trade_request_id: (kase as { related_trade_request_id?: string | null }).related_trade_request_id ?? null,
+          related_match_id: (kase as { related_match_id?: string | null }).related_match_id ?? null,
+          related_organization_id: (kase as { linked_organization_id?: string | null }).linked_organization_id ?? null,
+          trigger_event_id: triggerEventId,
+        })
+        .select("id")
+        .maybeSingle();
+
+      // Unique partial index races resolve to a duplicate row error — treat as idempotent no-op.
+      if (insErr) return;
+
+      await admin.from("facilitation_case_events").insert({
+        case_id: caseId, actor_user_id: userId,
+        action: "facilitation_case.next_step_created",
+        from_status: "counterparty_responded", to_status: "counterparty_responded",
+        payload: { next_step_id: inserted?.id ?? null, next_step_type: "positive_response_followup" },
+      });
+    } catch (_e) { /* non-fatal — never block transition */ }
+  }
+
 
   if (parsed.data.action === "assign") {
     if (!isAdmin) return json(req, { error: "Only admins can assign cases" }, 403);
@@ -264,7 +344,7 @@ Deno.serve(async (req) => {
         ? "facilitation_case.closed"
         : "facilitation_case.status_changed";
 
-    await admin.from("facilitation_case_events").insert({
+    const { data: evt } = await admin.from("facilitation_case_events").insert({
       case_id: caseId, actor_user_id: userId,
       action,
       from_status: from, to_status: parsed.data.to_status,
@@ -273,7 +353,14 @@ Deno.serve(async (req) => {
         final_outcome: parsed.data.final_outcome ?? null,
         linked_organization_id: parsed.data.linked_organization_id ?? null,
       },
-    });
+    }).select("id").maybeSingle();
+
+    // Batch 9B: positive-response signal — only when the admin explicitly
+    // transitions to counterparty_responded (positive outcome by definition
+    // in the state machine; declined/no-answer routes elsewhere).
+    if (isAdmin && parsed.data.to_status === "counterparty_responded") {
+      await ensurePositiveResponseNextStep(evt?.id ?? null, from);
+    }
     return json(req, { ok: true });
   }
 
@@ -523,7 +610,7 @@ Deno.serve(async (req) => {
       await admin.from("facilitation_cases").update({ internal_status: nextStatus }).eq("id", caseId);
     }
 
-    await admin.from("facilitation_case_events").insert({
+    const { data: cevt } = await admin.from("facilitation_case_events").insert({
       case_id: caseId, actor_user_id: userId,
       action: "facilitation_case.contact_attempt_recorded",
       from_status: from, to_status: nextStatus ?? from,
@@ -533,7 +620,19 @@ Deno.serve(async (req) => {
         contact_at: p.contact_at,
         next_action_date: p.next_action_date ?? null,
       },
-    });
+    }).select("id").maybeSingle();
+
+    // Batch 9B: create the next-step task only when BOTH the contact result is
+    // genuinely positive (reached_counterparty) AND the admin advanced the
+    // case into counterparty_responded. Any other result (no_answer,
+    // wrong_contact, declined, requested_more_information, etc.) is excluded.
+    if (
+      (isPlatformAdmin || isComplianceAnalyst || isOwner) &&
+      p.result === "reached_counterparty" &&
+      nextStatus === "counterparty_responded"
+    ) {
+      await ensurePositiveResponseNextStep(cevt?.id ?? null, from);
+    }
     return json(req, { ok: true, new_status: nextStatus ?? from });
   }
 
@@ -734,6 +833,97 @@ Deno.serve(async (req) => {
         body: "This opportunity has been converted into a known-counterparty POI.",
       });
     }
+    return json(req, { ok: true });
+  }
+
+
+  // ─── Batch 9B — next-step task lifecycle ────────────────────────────────
+  async function loadNextStep(nextStepId: string) {
+    const { data, error } = await admin
+      .from("facilitation_case_next_steps")
+      .select("*").eq("id", nextStepId).eq("case_id", caseId).maybeSingle();
+    return { row: data as Record<string, unknown> | null, error };
+  }
+  function canManageNextStep(row: Record<string, unknown> | null): boolean {
+    if (!row) return false;
+    if (isPlatformAdmin || isComplianceAnalyst || isOwner) return true;
+    return row.assigned_to === userId;
+  }
+
+  if (parsed.data.action === "assign_next_step") {
+    const { row, error } = await loadNextStep(parsed.data.next_step_id);
+    if (error) return json(req, { error: error.message }, 500);
+    if (!row) return json(req, { error: "Next-step task not found" }, 404);
+    if (!(isPlatformAdmin || isOwner)) {
+      return json(req, { error: "Only platform admins or the assigned case owner can assign next-step tasks" }, 403);
+    }
+    if (["completed","cancelled"].includes(row.status as string)) {
+      return json(req, { error: "Completed or cancelled tasks cannot be reassigned", code: "TASK_TERMINAL" }, 409);
+    }
+    const { error: uerr } = await admin.from("facilitation_case_next_steps")
+      .update({ assigned_to: parsed.data.assigned_to }).eq("id", parsed.data.next_step_id);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.next_step_assigned",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: { next_step_id: parsed.data.next_step_id, assigned_to: parsed.data.assigned_to },
+    });
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "update_next_step_status") {
+    const { row, error } = await loadNextStep(parsed.data.next_step_id);
+    if (error) return json(req, { error: error.message }, 500);
+    if (!row) return json(req, { error: "Next-step task not found" }, 404);
+    if (!canManageNextStep(row)) {
+      return json(req, { error: "Forbidden" }, 403);
+    }
+    if (parsed.data.to_status === "completed") {
+      return json(req, { error: "Use complete_next_step to complete a task (a completion note is required).", code: "USE_COMPLETE_ACTION" }, 409);
+    }
+    if (["completed","cancelled"].includes(row.status as string)) {
+      return json(req, { error: "Terminal task cannot be changed", code: "TASK_TERMINAL" }, 409);
+    }
+    const { error: uerr } = await admin.from("facilitation_case_next_steps")
+      .update({ status: parsed.data.to_status }).eq("id", parsed.data.next_step_id);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.next_step_status_changed",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: {
+        next_step_id: parsed.data.next_step_id,
+        from: row.status, to: parsed.data.to_status,
+      },
+    });
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "complete_next_step") {
+    const { row, error } = await loadNextStep(parsed.data.next_step_id);
+    if (error) return json(req, { error: error.message }, 500);
+    if (!row) return json(req, { error: "Next-step task not found" }, 404);
+    if (!canManageNextStep(row)) {
+      return json(req, { error: "Forbidden" }, 403);
+    }
+    if (["completed","cancelled"].includes(row.status as string)) {
+      return json(req, { error: "Task is already terminal", code: "TASK_TERMINAL" }, 409);
+    }
+    const nowIso = new Date().toISOString();
+    const { error: uerr } = await admin.from("facilitation_case_next_steps").update({
+      status: "completed",
+      completed_at: nowIso,
+      completed_by: userId,
+      completion_note: parsed.data.completion_note,
+    }).eq("id", parsed.data.next_step_id);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.next_step_completed",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: { next_step_id: parsed.data.next_step_id },
+    });
     return json(req, { ok: true });
   }
 

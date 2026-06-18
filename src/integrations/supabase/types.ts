@@ -3934,6 +3934,77 @@ export type Database = {
           },
         ]
       }
+      facilitation_case_next_steps: {
+        Row: {
+          assigned_to: string | null
+          case_id: string
+          completed_at: string | null
+          completed_by: string | null
+          completion_note: string | null
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          next_step_type: string
+          related_match_id: string | null
+          related_organization_id: string | null
+          related_trade_request_id: string | null
+          required_actions: Json
+          status: string
+          title: string
+          trigger_event_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          case_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_note?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          next_step_type: string
+          related_match_id?: string | null
+          related_organization_id?: string | null
+          related_trade_request_id?: string | null
+          required_actions?: Json
+          status?: string
+          title: string
+          trigger_event_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          case_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_note?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          next_step_type?: string
+          related_match_id?: string | null
+          related_organization_id?: string | null
+          related_trade_request_id?: string | null
+          required_actions?: Json
+          status?: string
+          title?: string
+          trigger_event_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_case_next_steps_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilitation_case_registry_checks: {
         Row: {
           actor_user_id: string

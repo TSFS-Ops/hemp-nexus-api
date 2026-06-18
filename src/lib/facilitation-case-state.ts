@@ -271,5 +271,38 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.overdue_marked",
   "facilitation_case.overdue_cleared",
   "facilitation_case.reminder_sent",
+  // Batch 9B — positive-response next-step tasks.
+  "facilitation_case.positive_response_recorded",
+  "facilitation_case.next_step_created",
+  "facilitation_case.next_step_assigned",
+  "facilitation_case.next_step_status_changed",
+  "facilitation_case.next_step_completed",
 ] as const;
 export type FacilitationAuditName = (typeof FACILITATION_AUDIT_NAMES)[number];
+
+// ─── Batch 9B — positive-response next-step tasks ────────────────────────
+export const NEXT_STEP_TYPES = ["positive_response_followup"] as const;
+export type FacilitationNextStepType = (typeof NEXT_STEP_TYPES)[number];
+
+export const NEXT_STEP_STATUSES = ["open","in_progress","completed","cancelled"] as const;
+export type FacilitationNextStepStatus = (typeof NEXT_STEP_STATUSES)[number];
+
+export const POSITIVE_RESPONSE_REQUIRED_ACTIONS: readonly string[] = [
+  "Verify basic counterparty details against the recorded response",
+  "Create or update the counterparty organisation record if appropriate",
+  "Invite the counterparty to Izenzo where appropriate",
+  "Link the counterparty to the relevant trade request or match",
+  "Notify the requester using approved safe wording",
+  "Prepare the next POI-related step (subject to the existing POI verification gate)",
+];
+
+export const POSITIVE_CONTACT_RESULTS = ["reached_counterparty"] as const;
+export type FacilitationPositiveContactResult = (typeof POSITIVE_CONTACT_RESULTS)[number];
+
+export const NEXT_STEP_STATUS_LABELS: Record<FacilitationNextStepStatus, string> = {
+  open: "Open",
+  in_progress: "In progress",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
