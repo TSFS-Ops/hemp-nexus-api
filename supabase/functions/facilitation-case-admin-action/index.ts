@@ -221,6 +221,65 @@ Deno.serve(async (req) => {
     } catch (_e) { /* non-fatal */ }
   }
 
+  // ─── Batch 9B — auto-create positive-response next-step task ───────────
+  // Idempotent on (case_id, next_step_type='positive_response_followup')
+  // when an open/in-progress row already exists (DB unique partial index).
+  // NEVER creates POI / WaD / verification / compliance clearance /
+  // commercial state / external outreach. Pure internal task record.
+  async function ensurePositiveResponseNextStep(
+    triggerEventId: string | null,
+    fromStatus: FacilitationInternalStatus,
+  ): Promise<void> {
+    try {
+      const { data: existing } = await admin
+        .from("facilitation_case_next_steps")
+        .select("id,status")
+        .eq("case_id", caseId)
+        .eq("next_step_type", "positive_response_followup")
+        .in("status", ["open", "in_progress"])
+        .maybeSingle();
+      if (existing?.id) return; // idempotent
+
+      await admin.from("facilitation_case_events").insert({
+        case_id: caseId, actor_user_id: userId,
+        action: "facilitation_case.positive_response_recorded",
+        from_status: fromStatus, to_status: "counterparty_responded",
+        payload: { trigger_event_id: triggerEventId },
+      });
+
+      const { data: inserted, error: insErr } = await admin
+        .from("facilitation_case_next_steps")
+        .insert({
+          case_id: caseId,
+          created_by: userId,
+          assigned_to: kase.case_owner_id ?? null,
+          status: "open",
+          next_step_type: "positive_response_followup",
+          title: "Follow up on positive counterparty response",
+          description:
+            "The counterparty has responded positively. Work through the required actions before any POI step. This task is internal-only and does not create a POI, WaD, verification or commercial commitment.",
+          required_actions: POSITIVE_RESPONSE_REQUIRED_ACTIONS,
+          related_trade_request_id: (kase as { related_trade_request_id?: string | null }).related_trade_request_id ?? null,
+          related_match_id: (kase as { related_match_id?: string | null }).related_match_id ?? null,
+          related_organization_id: (kase as { linked_organization_id?: string | null }).linked_organization_id ?? null,
+          trigger_event_id: triggerEventId,
+        })
+        .select("id")
+        .maybeSingle();
+
+      // Unique partial index races resolve to a duplicate row error — treat as idempotent no-op.
+      if (insErr) return;
+
+      await admin.from("facilitation_case_events").insert({
+        case_id: caseId, actor_user_id: userId,
+        action: "facilitation_case.next_step_created",
+        from_status: "counterparty_responded", to_status: "counterparty_responded",
+        payload: { next_step_id: inserted?.id ?? null, next_step_type: "positive_response_followup" },
+      });
+    } catch (_e) { /* non-fatal — never block transition */ }
+  }
+
+
   if (parsed.data.action === "assign") {
     if (!isAdmin) return json(req, { error: "Only admins can assign cases" }, 403);
     const { error: uerr } = await admin.from("facilitation_cases")
