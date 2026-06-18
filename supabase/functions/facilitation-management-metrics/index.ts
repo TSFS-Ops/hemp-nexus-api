@@ -80,6 +80,7 @@ Deno.serve(async (req) => {
         "created_at",
         "closed_at",
         "is_overdue",
+        "overdue_reasons",
         "counterparty_country",
         "sector",
         "final_outcome",
