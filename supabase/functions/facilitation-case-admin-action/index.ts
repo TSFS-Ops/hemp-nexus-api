@@ -281,6 +281,51 @@ Deno.serve(async (req) => {
     } catch (_e) { /* non-fatal — never block transition */ }
   }
 
+  // ─── Batch 9C — requester-safe in-app notifications ─────────────────────
+  // Emits exactly one in-app notification per (case, milestone) when the case
+  // transitions into a requester-safe milestone. Idempotent via dedup query
+  // on (user_id, type, entity_id). Payload is the SSOT safe wording — no
+  // internal status, owner, SLA, compliance, risk or audit metadata.
+  async function notifyRequesterMilestone(toStatus: FacilitationInternalStatus): Promise<void> {
+    try {
+      const trigger = getRequesterSafeNotification(toStatus);
+      if (!trigger) return;
+      if (!kase.requesting_user_id) return;
+      assertRequesterSafeNotification(trigger); // defence-in-depth
+
+      // Dedup: never insert a second row for the same case + milestone.
+      const { data: existing } = await admin
+        .from("notifications")
+        .select("id")
+        .eq("user_id", kase.requesting_user_id)
+        .eq("type", trigger.type)
+        .eq("entity_type", "facilitation_case")
+        .eq("entity_id", caseId)
+        .limit(1)
+        .maybeSingle();
+      if (existing?.id) return;
+
+      await admin.from("notifications").insert({
+        user_id: kase.requesting_user_id,
+        type: trigger.type,
+        title: trigger.title,
+        body: trigger.body,
+        link: `/facilitation/cases/${caseId}`,
+        entity_type: "facilitation_case",
+        entity_id: caseId,
+      });
+
+      await admin.from("facilitation_case_events").insert({
+        case_id: caseId, actor_user_id: userId,
+        action: "facilitation_case.requester_notification_emitted",
+        from_status: kase.internal_status, to_status: toStatus,
+        payload: { milestone_key: trigger.key, notification_type: trigger.type },
+      });
+    } catch (_e) { /* non-fatal — never block transition */ }
+  }
+
+
+
 
   if (parsed.data.action === "assign") {
     if (!isAdmin) return json(req, { error: "Only admins can assign cases" }, 403);
