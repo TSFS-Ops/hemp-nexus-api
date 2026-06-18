@@ -683,8 +683,14 @@ Deno.serve(async (req) => {
     ) {
       await ensurePositiveResponseNextStep(cevt?.id ?? null, from);
     }
+    // Batch 9C: requester-safe milestone notification when the contact
+    // attempt advanced the case into a requester-safe milestone.
+    if (nextStatus) {
+      await notifyRequesterMilestone(nextStatus);
+    }
     return json(req, { ok: true, new_status: nextStatus ?? from });
   }
+
 
   // ─── Batch 6 — profile linking + ready-for-POI ──────────────────────────
   if (parsed.data.action === "link_organisation") {
