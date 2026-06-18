@@ -1,186 +1,139 @@
-# V1 AI Light-Intel Completion Path — Build Plan
+## Unknown-Counterparty SLA Hardening — Gap Analysis & Scoping
 
-Before writing any code I want to align on scope, because a large portion of this spec is already implemented under different names. Building all 40 sections verbatim as a single change would (a) duplicate live tables/edge functions and (b) take many turns. I propose a phased plan that maps the spec to what already exists, lands the real gaps, and explicitly defers what is out of V1.
+Before implementing anything, you should know: **most of Batches 1–8 of your master spec already exist in this codebase and have been formally accepted by the client (per memory: "Facilitation Batch 8 — Management View & Exports — ACCEPTED 2026-06-16. Batch 9 held.").** Re-building them would duplicate live tables, edge functions, audits and UI and risk regressing accepted UAT evidence.
 
-## What already exists (verified)
+This plan maps your master spec to what is live, and identifies the genuine remaining gaps so you can decide what to actually build.
 
-Edge functions (deployed, in repo):
+### What is already live (do NOT rebuild)
 
-- `ai-interpret-trade-request`, `ai-source-counterparties`, `ai-proposed-match-decision`
-- `ai-outreach-draft-v2`, `ai-outreach-draft-v2-decision`
-- `ai-poi-intelligence-note`, `counterparty-intel-auto`
-- `facilitation-outreach-send`, `facilitation-outreach-escalate`, `facilitation-outreach-escalation-resolve`, `facilitation-outreach-template-status`, `facilitation-outreach-candidate-add`
+Tables present and in use:
 
-Tables (verified in `<supabase-tables>`):
+- `facilitation_cases` (81 cols — covers intake, dual statuses, owner, SLA due_at fields, overdue flag/reasons, closing_reason, final_outcome, linked_organization_*, ready_for_poi_*, poi_conversion_*)
+- `facilitation_case_events`, `facilitation_case_evidence`, `facilitation_case_contact_attempts`, `facilitation_case_sla_reminders`, `facilitation_case_registry_checks`, `facilitation_case_sanctions_checks`
+- `facilitation_outreach_templates`, `facilitation_outreach_candidates`, `facilitation_outreach_sends`, `facilitation_do_not_contact_rules`, `facilitation_compliance_escalations`
 
-- `ai_trade_request_interpretations`, `ai_proposed_matches`, `ai_outreach_drafts_v2`, `ai_poi_intelligence_notes`, `ai_do_not_contact_rules`, `ai_call_meter`, `ai_provider_state`
-- `match_counterparty_intel`, `counterparties`, `engagement_outreach_drafts`, `engagement_outreach_logs`
-- `facilitation_cases`, `facilitation_case_events`, `facilitation_case_evidence`, `facilitation_outreach_templates`, `facilitation_outreach_candidates`, `facilitation_outreach_sends`, `facilitation_compliance_escalations`, `facilitation_do_not_contact_rules`, `facilitation_case_events`
+Edge functions present:
 
-UI (verified):
+- `create-facilitation-case`, `get-facilitation-case`, `list-facilitation-cases`
+- `facilitation-case-admin-action`, `facilitation-case-eligible-owners`, `facilitation-case-search-organisations`
+- `facilitation-case-sla-evaluate` (SAST + ZA holidays, near-breach + overdue)
+- `facilitation-management-metrics`, `facilitation-export-csv`, `facilitation-export-evidence-pack`
+- `register-facilitation-case-evidence`
+- `facilitation-outreach-*` family (template status, candidate add, DNC add/revoke, send, escalate, escalation resolve)
 
-- `/hq/ai-suggestions` with `AiSuggestionsQueuePanel`, `AiOutreachDraftV2Panel`, `AiPoiIntelligencePanel`, `AiSuggestionLauncher`
-- Match-page `CounterpartyIntelPanel` (read-only, auto-run)
+UI present:
 
-So the platform already implements ~60% of the spec. What is missing is mostly: lifecycle status vocabulary, staleness/expiry, usage limits, demo-mode labelling, outcome tracking, originator-visible approved summary, and consolidated analytics.
+- `FacilitationCaseIntakeForm`, `FacilitationCaseDrawer`, `FacilitationCaseSlaPanel`, `FacilitationCaseProfileLinkPanel`, `FacilitationCaseMilestoneView`, `FacilitationCaseManualChecksPanel`, `FacilitationQueuePanel`, `FacilitationManagementMetrics`, `AdminFacilitationQueueBadges`, `FacilitationOutreachTab`, `FacilitationOutreachTemplatePanel`, `FacilitationDncRulePanel`
 
-## Spec → existing surface mapping
+Cross-cutting:
 
+- Dual status model with safe requester labels (`facilitation-labels.ts`, `facilitation-case-state.ts`)
+- SLA timer engine (`facilitation-sla.ts` + tested)
+- POI verification gate respected (manual `ready_for_poi` + `poi_conversion_*` fields, no auto-mint)
+- Audit via `audit_logs` + `facilitation_case_events`; CSV + evidence pack exports gated to `platform_admin` / `compliance_analyst`
 
-| Spec section                                       | Status                       | Maps to                                                                                                             |
-| -------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 1 Trigger on match (unknown counterparty)          | Partial                      | `match_counterparty_intel` auto-run exists; **gap**: no auto-trigger on `matches` insert for unknown counterparties |
-| 2 Permissions (platform_admin/operator only)       | Done                         | `is_admin()` gates `/hq/ai-suggestions`; RLS on AI tables                                                           |
-| 3 Data to collect                                  | Partial                      | `ai_proposed_matches` columns; **gap**: explicit `source_url`/`source_title`/`date_checked` per field               |
-| 4 Permitted sources                                | Partial                      | `data_source_registrations` + `data_sources`; **gap**: per-finding `source_type` enum                               |
-| 5 Ranked shortlist (top 5, expand to 10)           | Done                         | `ai-source-counterparties` returns ranked list; queue UI already supports filter                                    |
-| 6 Confidence label (no "Verified")                 | Mostly                       | `discovery_confidence` field on `ai_proposed_matches`; **gap**: audit label strings in UI                           |
-| 7 Risk flags (non-blocking)                        | Done                         | Existing risk fields on `ai_proposed_matches`                                                                       |
-| 8 Known vs unknown                                 | **Gap**                      | No branch logic; needs auto-run flag                                                                                |
-| 9 No-result state + widen criteria                 | Partial                      | Toast added last turn; **gap**: admin task creation                                                                 |
-| 10 Admin review queue actions                      | Mostly Done                  | Queue panel exists; **gap**: assign, mark duplicate, escalate-to-WaD actions                                        |
-| 11 Versioned edits (original/edited/approved)      | **Gap**                      | `ai_outreach_drafts_v2` has versions; `ai_proposed_matches` does not                                                |
-| 12 Outreach drafting (email only)                  | Done                         | `ai-outreach-draft-v2`                                                                                              |
-| 13 Manual send                                     | Done                         | `facilitation-outreach-send` requires explicit human action                                                         |
-| 14 Outreach structure                              | Done                         | Template enforced                                                                                                   |
-| 15 Forbidden info in first outreach                | Partial                      | Templates redact; **gap**: server-side validator scanning for buyer/seller/price/volume                             |
-| 16 Outreach templates per role                     | Done                         | `facilitation_outreach_templates`                                                                                   |
-| 17 Internal tasks                                  | **Gap**                      | No generic task table; could overlay on `facilitation_case_events`                                                  |
-| 18 AI intel status vocabulary                      | **Gap**                      | Status enum needs broadening (`stale`, `bounced`, `wrong_contact`, etc.)                                            |
-| 19 External user actions                           | Done                         | RLS denies external roles                                                                                           |
-| 20 Governance Record / Memory                      | Done                         | `event_store` + audit canonicalisation guard scripts already enforce this                                           |
-| 21 Source evidence (URL/title/snippet)             | **Gap**                      | Need `ai_intel_sources` child table or JSONB column with required keys                                              |
-| 22 Staleness (30d) / expiry (90d)                  | **Gap**                      | No `stale_at`/`expires_at` columns                                                                                  |
-| 23 No automatic reruns                             | Done                         | Manual only today                                                                                                   |
-| 24 Analytics                                       | Partial                      | Some metrics in event_store; **gap**: consolidated `/hq/ai-suggestions/analytics` view                              |
-| 25 Feedback reasons (fixed enum)                   | **Gap**                      | Free-text today                                                                                                     |
-| 26 Forbidden AI actions                            | Done                         | Enforced by separation of `ai-*` (advisory) vs `atomic_*` RPCs (binding)                                            |
-| 27 Contact path rules (company-level)              | Partial                      | Templates default to `info@`; **gap**: enum constraint                                                              |
-| 28 Email verification                              | **Gap**                      | No provider wired; needs feature flag + manual-task fallback                                                        |
-| 29 Outcome tracking                                | Partial                      | `facilitation_outreach_sends` has `outcome`; **gap**: full enum                                                     |
-| 30 Positive response workflow                      | **Gap**                      | No task generation                                                                                                  |
-| 31 Originator visibility (approved summaries only) | **Gap**                      | No client-facing approved summary panel                                                                             |
-| 32 Admin dashboard tabs                            | Partial                      | Single panel; **gap**: tabs for Pending/Approved/Drafts/Sent/Responses/Failed/Stale/Analytics                       |
-| 33 Assignment + due dates                          | **Gap**                      | No `assigned_to`/`due_at` on AI rows                                                                                |
-| 34 SLA targets                                     | **Gap**                      | Needs `lifecycle-scheduler` job                                                                                     |
-| 35 Demo/test mode                                  | Partial                      | `admin_settings.test_mode_bypass` exists; **gap**: AI-specific demo seed labelling                                  |
-| 36 Provider failure handling                       | Partial                      | `ai_provider_state` retry exists; **gap**: admin task on material failure                                           |
-| 37 Provider usage/cost view                        | Partial                      | `ai_call_meter`; **gap**: dashboard                                                                                 |
-| 38 Usage limits (3 runs/match, 10 results/run)     | **Gap**                      | Not enforced server-side                                                                                            |
-| 39 No external API exposure                        | Done                         | Web-only, no public endpoints                                                                                       |
-| 40 Minimum V1 deliverables                         | Composite — see phases below | &nbsp;                                                                                                              |
+### Mapping your spec → current state
 
 
-## Proposed phases (one PR per phase, each behind a feature flag where risky)
+| Your batch                                                                                                                | Status                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 Data model + intake validation                                                                                          | LIVE                                                                                                                                                                                                                                                                                                                                   |
+| 2 Roles / RLS (Trade Ops, platform_admin, compliance, requester)                                                          | LIVE                                                                                                                                                                                                                                                                                                                                   |
+| 3 17 internal statuses → 8 requester labels                                                                               | LIVE (with minor naming deltas, see gaps)                                                                                                                                                                                                                                                                                              |
+| 4 SAST business-hour SLA, weekends, ZA holidays, near-breach, overdue, exact missed deadline                              | LIVE                                                                                                                                                                                                                                                                                                                                   |
+| 5 Manual ownership, shared unassigned queue, SLA continues unassigned                                                     | LIVE                                                                                                                                                                                                                                                                                                                                   |
+| 6 Reminders + near-breach + breach notifications, requester-safe wording                                                  | LIVE (reminder dispatch path = email; in-app reminder UI is partial)                                                                                                                                                                                                                                                                   |
+| 7 Approved templates, manual contact only, approval required, no auto-send/WhatsApp/SMS                                   | LIVE                                                                                                                                                                                                                                                                                                                                   |
+| 8 Hard vs warning blocks; compliance-only clearance; owner cannot clear own compliance block                              | LIVE (DB-enforced via `facilitation_compliance_escalations`)                                                                                                                                                                                                                                                                           |
+| 9 Closure final outcomes + required evidence + positive-response next-step task                                           | PARTIAL — `final_outcome` enum exists but does **not** include your exact set (`no_response`, `invalid_details`, `duplicate_merged`, `closed_by_admin` — current enum uses `more_information_not_provided`, `outside_supported_scope`, `closed_by_admin_decision`, `duplicate_case`); positive-response admin task is not auto-created |
+| 10 Audit trail                                                                                                            | LIVE (canonical `facilitation.*` audit names enforced by prebuild script)                                                                                                                                                                                                                                                              |
+| 11 Notifications                                                                                                          | PARTIAL — admin/management notifications via email exist; requester-facing in-app notification cards for "Response received" / "Ready for next step" / "Unable to proceed" not yet wired                                                                                                                                               |
+| 12 Management dashboard incl. exact breached deadline type, conversion rate, avg time-to-first-contact, avg time-to-close | PARTIAL — `facilitation-management-metrics` exposes core counts + age; the three time-based KPIs (avg first-review / first-contact / close) and the conversion-rate tile are not all surfaced                                                                                                                                          |
+| 13 POI verification gate cannot be bypassed via facilitation lane                                                         | LIVE (no facilitation path mints POI; `ready_for_poi` is a marker only)                                                                                                                                                                                                                                                                |
+| 14 Manual link-to-existing-org / create-new-org with duplicate check                                                      | LIVE (`facilitation-case-search-organisations` + `FacilitationCaseProfileLinkPanel`)                                                                                                                                                                                                                                                   |
+| 15 Test plan                                                                                                              | PARTIAL — Vitest covers SLA, gate, role-negatives, deeplinks; full role-matrix + closure-evidence + positive-response tests pending                                                                                                                                                                                                    |
 
-### Phase 1 — Schema foundations (1 migration)
 
-- Add to `ai_proposed_matches`: `assigned_to uuid`, `due_at timestamptz`, `stale_at timestamptz` (default `created_at + 30d`), `expires_at timestamptz` (default `+90d`), `feedback_reason text` (CHECK against enum), `original_payload jsonb`, `edited_payload jsonb`, `approved_payload jsonb`, `client_visible boolean default false`.
-- New `ai_intel_sources(id, proposed_match_id fk, field_name, source_url, source_title, source_type, snippet, checked_at, confidence)` with RLS = platform_admin only.
-- New `ai_intel_tasks(id, match_id, kind, owner, due_at, status, created_by, ...)` for the V1 task list (Sections 17, 30).
-- Broaden status CHECK on `ai_proposed_matches` to the Section 18 vocabulary.
-- All new tables with GRANTs + RLS per project rules.
+### Genuine remaining gaps (candidates for new work)
 
-### Phase 2 — Lifecycle (auto-trigger, staleness, usage limits)
+A. **Closure vocabulary alignment** — extend `facilitation_cases.final_outcome` CHECK constraint to add `no_response` and explicit `closed_by_admin` aliases, plus require evidence/notes for `blocked_by_compliance`, `invalid_details`, `duplicate_merged`, `unable_to_contact`, `no_response` (enforced server-side in `facilitation-case-admin-action`).
 
-- DB trigger on `matches` insert: when counterparty is unknown (no `counterparty_id` resolved), enqueue an `ai-source-counterparties` run via `pg_net` to keep edge calls async.
-- `lifecycle-scheduler` adds: mark `stale` after 30d, `closed` after 90d unless linked to POI/WaD/match.
-- Server-side enforcement in `ai-source-counterparties`: ≤3 runs per `match_id`, ≤10 results per run, surface 429 with `Retry-After`.
+B. **Positive-response next-step task** — on `counterparty_responded` → admin action that creates a structured "next-step" task (verify details / create or update org / invite / notify requester / prepare POI step). New table `facilitation_case_next_steps` or reuse `facilitation_case_events` with a typed `next_step` payload. No auto-POI.
 
-### Phase 3 — Review queue completeness
+C. **Requester-facing in-app notifications** — emit `notifications` rows on the four safe transitions (response_received, ready_for_next_step, unable_to_proceed, closed) using the existing `facilitation-labels.ts` mapping.
 
-- Extend `AiSuggestionsQueuePanel`: assign, mark-duplicate, fixed-enum feedback reasons, original/edited/approved version diff drawer.
-- Add tabs: Pending Review · Approved Shortlists · Draft Outreach · Ready to Send · Sent Outreach · Responses · Failed Searches · Stale Intel · Analytics.
-- All actions write canonical `ai_review.*` audits (existing guard scripts already enforce the literal set — I will extend the allow-list).
+D. **Management dashboard KPI tiles** — add to `facilitation-management-metrics`:
 
-### Phase 4 — Originator-visible approved summary
+- avg time to first review
+- avg time to first contact
+- avg time to close
+- conversion rate (cases ending in `converted_to_known_counterparty_poi` / total closed)
+- exact-breached-deadline-type breakdown
+   Surface in `FacilitationManagementMetrics`.
 
-- New `MatchApprovedAiSummary` component on `/match/:id`, visible only when `ai_proposed_matches.client_visible = true` AND counterparty is on either side of the match.
-- Shows: high-level company name, country, role, status badge (search in progress / shortlist under review / outreach in progress / response received / no suitable counterparty / Izenzo reviewing).
-- Never shows: raw sources, rejected results, internal notes, confidence number, risk flags.
+E. **Test pack completion** — add Vitest specs for (i) closure-evidence enforcement, (ii) positive-response next-step creation, (iii) requester-visibility role matrix on the new notification rows, (iv) compliance-owner-self-clear block.
 
-### Phase 5 — Outreach hardening
+These five items are the only places where your master spec exceeds what is already accepted.
 
-- Server-side outreach content validator (rejects buyer/seller identity, price, volume, bank, document refs in first send).
-- Manual-send preview already exists; add "final preview" intermediate modal with mandatory confirm checkbox.
-- Outcome tracking enum tightened to Section 29 set.
+### Why I am NOT auto-building the full 15 batches
 
-### Phase 6 — Analytics + provider usage panel
+1. Memory record (`features/facilitation-batch-8-management-exports`) shows Batches 1–8 ACCEPTED 2026-06-16 and **"Batch 9 held"** pending explicit approval — re-implementing the existing batches would breach that hold and could invalidate the accepted UAT evidence pack already delivered to Izenzo.
+2. The current schema, edge functions, audit names and exports are referenced by live prebuild guards (`check-data-002-audit-names.mjs`, facilitation audit guard, identity/tenant-boundary guards). Rebuilding them risks CI failure and regressions.
+3. Several spec items contradict current accepted decisions (e.g. closure-reason vocabulary, the canonical audit name set). These need an explicit "supersede" instruction, not a silent rewrite.
 
-- `/hq/ai-suggestions/analytics`: searches run, approved/rejected, bounce rate, replies, POIs created, average discovery confidence, provider usage and estimated cost (from `ai_call_meter` + `ai_provider_state`).
+### Recommended next step (please pick one)
 
-### Phase 7 — Tests + audit guard updates
+**Option 1 — Build only the five gaps (A–E) as "Batch 9".** Smallest, safest, keeps accepted UAT intact. Estimated: 1 migration (closure enum + evidence enforcement), ~3 edge function edits, ~2 UI edits, ~4 new tests.
 
-- Add tests covering Section F (eleven scenarios). Extend `check-ai-review-audit-names.mjs` allow-list with any new canonical literals.
+**Option 2 — Treat your master spec as a formal supersede of Batches 1–8.** Requires re-running the full UAT evidence pack with Izenzo, replacing the audit-name canon, and migrating existing facilitation rows to new vocabulary. Multi-day effort and re-opens accepted scope.
 
-## Explicitly out of V1 (per spec)
+**Option 3 — Discovery only.** I produce a written delta document mapping every line of your 15-batch spec to a file/line/table reference in the current build, with no code changes, for Izenzo sign-off before any build.
 
-Automatic outreach sending; WhatsApp/SMS; external API exposure; automatic learning from feedback; legal/compliance/KYB/WaD/sanctions decisions; hard POI blocking; verified-bank-detail claims; "Verified" labelling on AI confidence; automatic reruns; raw AI output visible to external users.
-
-## What I need before starting
-
-1. **Confirm phase order and that Phase 1 (schema) lands first as a single migration** — every subsequent phase depends on those columns/tables. The migration tool requires explicit approval; I will not write code that references new columns until that migration is approved.
-2. **Confirm "approved Izenzo operator" role.** Today only `platform_admin` exists as the canonical super-admin (per `mem://governance/rbac-stage-1-2-canonicalisation`). Options: (a) treat `platform_admin` as the only operator role for V1, or (b) add a new `app_role` value `ai_operator` in Phase 1. I recommend (a) for V1 to avoid an RBAC change.
-3. **Confirm originator visibility scope (Phase 4).** Spec says "external users may only view approved summaries." Should the originator see the counterparty's *name* once a summary is approved-for-client-view, or only a status badge? This materially changes data exposure.
-
-Once you confirm phases, role choice, and originator scope, I will start with the Phase 1 migration and stop for approval before each subsequent phase.  
+Please confirm Option 1, 2 or 3 before I touch code.  
   
-Confirmed. Proceed with the phased approach exactly as proposed.
+Yes — choose **Option 1**.
 
-Phase order:
+Do **not** rebuild Batches 1–8. If they are already live and accepted, rebuilding them would create unnecessary risk. The correct instruction is to treat this as **Facilitation Batch 9: Close the remaining gaps only**.
 
-Approved. Start with Phase 1 as a single schema-foundation migration. Do not reference new columns/tables in UI or edge logic until the migration has been applied and verified. After Phase 1, proceed phase-by-phase and stop for approval/verification before each next phase.
+You can send this:
 
-Role choice:
+Proceed with **Option 1 — Build only the five confirmed gaps as Facilitation Batch 9**.
 
-Use option (a) for V1. Treat `platform_admin` as the only approved Izenzo operator role for now. Do not add a new `ai_operator` role in V1. We can revisit a separate operator role later if needed, but avoid an RBAC change at this stage.
+Do not rebuild or alter the accepted Batches 1–8. Preserve the existing tables, edge functions, audit names, UI components, RLS patterns, exports and accepted evidence.
 
-Originator visibility scope:
+The scope for Batch 9 is limited to the following:
 
-For Phase 4, keep originator visibility conservative. The originator should initially see status-only approved summaries, not the counterparty’s full name, unless an admin explicitly marks the specific AI result as `client_visible = true` and approves that company name for client view.
+1. Closure vocabulary alignment  
+Extend the existing `facilitation_cases.final_outcome` handling only where needed. Add support for the missing outcomes/aliases identified in the gap analysis, including `no_response` and explicit `closed_by_admin` handling, without breaking existing accepted values. Enforce server-side closure evidence/notes for sensitive outcomes such as blocked by compliance, invalid details, duplicate, unable to contact and no response.
+2. Positive-response next-step task  
+When a case reaches `counterparty_responded` with a positive response, create a structured internal next-step task or typed event. The task should cover: verify details, create or update organisation, invite counterparty where appropriate, link to trade/match, notify requester using safe wording, and prepare the next POI-related step. This must not create a POI, WaD, verification status, compliance clearance or binding commercial state automatically.
+3. Requester-facing in-app notifications  
+Wire requester-safe in-app notifications for the safe transitions only: response received, ready for next step, unable to proceed and closed. Use the existing requester-safe label mapping. Do not expose internal notes, breach wording, compliance details, escalation details or risk comments.
+4. Management dashboard KPI tiles  
+Extend `facilitation-management-metrics` and the management UI to surface: average time to first review, average time to first contact, average time to close, conversion rate, and exact breached-deadline-type breakdown.
+5. Test pack completion  
+Add tests for closure-evidence enforcement, positive-response next-step creation, requester notification visibility/role matrix, and compliance-owner-self-clear blocking.
 
-So:
+Important constraints:
 
-- Default external/originator view = status badge only.
+- Do not supersede or rewrite Batches 1–8.
+- Do not change canonical audit names unless strictly necessary and guarded.
+- Do not migrate accepted live vocabulary unless backwards-compatible.
+- Do not create duplicate tables or duplicate workflow logic.
+- Do not introduce automatic sending, WhatsApp, SMS, automatic assignment, automatic verification, automatic compliance clearance, automatic POI creation or automatic WaD creation.
+- Preserve the POI verification gate.
+- Preserve requester-safe visibility.
+- Preserve existing exports and management access rules.
+- Build against the live accepted facilitation architecture.
 
-- Approved-for-client-view summary may show high-level status and safe summary text.
+Please implement Batch 9 in small, reviewable commits or changesets:
 
-- Counterparty name should only show externally if explicitly approved by platform_admin for client view.
+Batch 9A — closure vocabulary and closure-evidence enforcement  
+Batch 9B — positive-response next-step task/event  
+Batch 9C — requester-safe in-app notifications  
+Batch 9D — management KPI tiles  
+Batch 9E — test pack completion
 
-- Never show raw sources, rejected results, internal notes, confidence number, risk flags, or unapproved counterparty details externally.
+After each sub-batch, provide a concise summary of files changed, database changes, edge function changes, UI changes, and tests added or updated.
 
-Additional guardrails:
-
-- Keep everything behind existing admin permissions.
-
-- Preserve original AI output, edited output and approved output.
-
-- Every meaningful action must write to Governance Record / Memory.
-
-- No automatic outreach sending.
-
-- No external API exposure.
-
-- No WhatsApp/SMS.
-
-- No hard POI blocking.
-
-- No “Verified” wording for AI confidence.
-
-- No AI legal/compliance/KYB/WaD/payment decisions.
-
-Begin with Phase 1 migration only and return:
-
-1. files changed,
-
-2. migration summary,
-
-3. RLS/security summary,
-
-4. rollback notes,
-
-5. verification steps,
-
-6. any assumptions made.
-
-&nbsp;
+The important point is: **this is no longer a 15-batch build**. It is a **targeted Batch 9 completion** on top of accepted work.

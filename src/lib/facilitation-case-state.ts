@@ -62,8 +62,24 @@ export const OUTCOMES = [
   "outside_supported_scope",
   "closed_by_admin_decision",
   "no_authority_confirmed",
+  // Batch 9A — master-spec closure-vocabulary aliases.
+  "no_response",
+  "invalid_details",
+  "closed_by_admin",
 ] as const;
 export type FacilitationOutcome = (typeof OUTCOMES)[number];
+
+// Batch 9A — sensitive outcomes that require an evidenced closing_reason.
+// Enforced server-side in facilitation-case-admin-action (status_change).
+export const SENSITIVE_OUTCOMES_REQUIRING_REASON: ReadonlySet<FacilitationOutcome> = new Set<FacilitationOutcome>([
+  "blocked_by_compliance",
+  "invalid_details",
+  "duplicate_case",
+  "unable_to_contact",
+  "no_response",
+  "more_information_not_provided",
+]);
+export const CLOSURE_REASON_MIN_LENGTH = 10;
 
 export const ROLES = ["buyer", "seller", "service_provider", "funder", "other"] as const;
 export type FacilitationRole = (typeof ROLES)[number];
