@@ -344,7 +344,7 @@ Deno.serve(async (req) => {
         ? "facilitation_case.closed"
         : "facilitation_case.status_changed";
 
-    await admin.from("facilitation_case_events").insert({
+    const { data: evt } = await admin.from("facilitation_case_events").insert({
       case_id: caseId, actor_user_id: userId,
       action,
       from_status: from, to_status: parsed.data.to_status,
@@ -353,7 +353,14 @@ Deno.serve(async (req) => {
         final_outcome: parsed.data.final_outcome ?? null,
         linked_organization_id: parsed.data.linked_organization_id ?? null,
       },
-    });
+    }).select("id").maybeSingle();
+
+    // Batch 9B: positive-response signal — only when the admin explicitly
+    // transitions to counterparty_responded (positive outcome by definition
+    // in the state machine; declined/no-answer routes elsewhere).
+    if (isAdmin && parsed.data.to_status === "counterparty_responded") {
+      await ensurePositiveResponseNextStep(evt?.id ?? null, from);
+    }
     return json(req, { ok: true });
   }
 
