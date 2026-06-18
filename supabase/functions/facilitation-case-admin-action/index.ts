@@ -18,7 +18,10 @@ import {
   INTERNAL_STATUSES,
   OUTCOMES,
   isTransitionAllowed,
+  SENSITIVE_OUTCOMES_REQUIRING_REASON,
+  CLOSURE_REASON_MIN_LENGTH,
   type FacilitationInternalStatus,
+  type FacilitationOutcome,
 } from "../_shared/facilitation-case-state.ts";
 
 const corsHeaders = {
