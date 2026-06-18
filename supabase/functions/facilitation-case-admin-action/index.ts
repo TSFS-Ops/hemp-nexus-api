@@ -610,7 +610,7 @@ Deno.serve(async (req) => {
       await admin.from("facilitation_cases").update({ internal_status: nextStatus }).eq("id", caseId);
     }
 
-    await admin.from("facilitation_case_events").insert({
+    const { data: cevt } = await admin.from("facilitation_case_events").insert({
       case_id: caseId, actor_user_id: userId,
       action: "facilitation_case.contact_attempt_recorded",
       from_status: from, to_status: nextStatus ?? from,
@@ -620,7 +620,19 @@ Deno.serve(async (req) => {
         contact_at: p.contact_at,
         next_action_date: p.next_action_date ?? null,
       },
-    });
+    }).select("id").maybeSingle();
+
+    // Batch 9B: create the next-step task only when BOTH the contact result is
+    // genuinely positive (reached_counterparty) AND the admin advanced the
+    // case into counterparty_responded. Any other result (no_answer,
+    // wrong_contact, declined, requested_more_information, etc.) is excluded.
+    if (
+      (isPlatformAdmin || isComplianceAnalyst || isOwner) &&
+      p.result === "reached_counterparty" &&
+      nextStatus === "counterparty_responded"
+    ) {
+      await ensurePositiveResponseNextStep(cevt?.id ?? null, from);
+    }
     return json(req, { ok: true, new_status: nextStatus ?? from });
   }
 
