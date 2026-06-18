@@ -142,6 +142,25 @@ const BodySchema = z.discriminatedUnion("action", [
     reason: z.string().trim().min(3).max(2000),
     evidence_summary: optStr(2000),
   }),
+  // ─── Batch 9B — positive-response next-step task lifecycle ──────────────
+  z.object({
+    action: z.literal("assign_next_step"),
+    case_id: z.string().uuid(),
+    next_step_id: z.string().uuid(),
+    assigned_to: z.string().uuid().nullable(),
+  }),
+  z.object({
+    action: z.literal("update_next_step_status"),
+    case_id: z.string().uuid(),
+    next_step_id: z.string().uuid(),
+    to_status: z.enum(NEXT_STEP_STATUSES as unknown as [string, ...string[]]),
+  }),
+  z.object({
+    action: z.literal("complete_next_step"),
+    case_id: z.string().uuid(),
+    next_step_id: z.string().uuid(),
+    completion_note: z.string().trim().min(3).max(4000),
+  }),
 ]);
 
 Deno.serve(async (req) => {
