@@ -850,6 +850,8 @@ Deno.serve(async (req) => {
         body: "The counterparty is ready for POI. You may proceed under the stated terms.",
       });
     }
+    // Batch 9C: requester-safe "ready for next step" milestone notification.
+    await notifyRequesterMilestone("ready_for_known_counterparty_poi");
     return json(req, { ok: true });
   }
 
