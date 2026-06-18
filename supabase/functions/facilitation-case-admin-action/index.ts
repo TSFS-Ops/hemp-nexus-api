@@ -20,6 +20,8 @@ import {
   isTransitionAllowed,
   SENSITIVE_OUTCOMES_REQUIRING_REASON,
   CLOSURE_REASON_MIN_LENGTH,
+  POSITIVE_RESPONSE_REQUIRED_ACTIONS,
+  NEXT_STEP_STATUSES,
   type FacilitationInternalStatus,
   type FacilitationOutcome,
 } from "../_shared/facilitation-case-state.ts";
