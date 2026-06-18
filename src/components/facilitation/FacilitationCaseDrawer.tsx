@@ -200,6 +200,11 @@ export const FacilitationCaseDrawer: React.FC<{
               />
             ) : null}
 
+            {/* Batch 9B — positive-response next-step tasks (admin/owner/compliance only) */}
+            {caseId ? <FacilitationCaseNextStepsPanel caseId={caseId} onChanged={load} /> : null}
+
+
+
             {/* Batch 4 — More information request panel */}
             <section className="space-y-2 rounded-md border border-slate-200 bg-slate-50/50 p-3">
               <div className="flex items-center justify-between">
