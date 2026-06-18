@@ -277,6 +277,8 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.next_step_assigned",
   "facilitation_case.next_step_status_changed",
   "facilitation_case.next_step_completed",
+  // Batch 9C — requester-facing in-app notifications.
+  "facilitation_case.requester_notification_emitted",
 ] as const;
 export type FacilitationAuditName = (typeof FACILITATION_AUDIT_NAMES)[number];
 
@@ -305,4 +307,61 @@ export const NEXT_STEP_STATUS_LABELS: Record<FacilitationNextStepStatus, string>
   completed: "Completed",
   cancelled: "Cancelled",
 };
+
+// ─── Batch 9C — Requester-facing in-app notifications (mirror of Deno SSOT) ─
+export interface RequesterSafeNotification {
+  readonly key: string;
+  readonly type: string;
+  readonly title: string;
+  readonly body: string;
+}
+
+export const REQUESTER_SAFE_NOTIFICATION_TRIGGERS: Record<string, RequesterSafeNotification> = {
+  counterparty_responded: {
+    key: "counterparty_responded",
+    type: "facilitation_case.requester.counterparty_responded",
+    title: "Counterparty response received",
+    body: "There has been a response on your unknown-counterparty request. Izenzo is reviewing the next step.",
+  },
+  ready_for_known_counterparty_poi: {
+    key: "ready_for_next_step",
+    type: "facilitation_case.requester.ready_for_next_step",
+    title: "Request ready for next step",
+    body: "Your unknown-counterparty request is ready for the next step. Please review the latest status.",
+  },
+  unable_to_proceed: {
+    key: "unable_to_proceed",
+    type: "facilitation_case.requester.unable_to_proceed",
+    title: "Unable to proceed",
+    body: "Izenzo is unable to proceed with this unknown-counterparty request at this stage. Please review the status for next steps.",
+  },
+  closed: {
+    key: "closed",
+    type: "facilitation_case.requester.closed",
+    title: "Request closed",
+    body: "Your unknown-counterparty request has been closed. Please review the final status.",
+  },
+};
+
+export const REQUESTER_NOTIFICATION_FORBIDDEN_SUBSTRINGS: readonly string[] = [
+  "sla", "breach", "overdue", "deadline",
+  "compliance", "sanction", "pep", "risk score",
+  "owner", "assignee", "assigned to", "escalat",
+  "audit", "internal note", "evidence pack",
+  "platform admin", "compliance analyst",
+];
+
+export function getRequesterSafeNotification(internalStatus: string): RequesterSafeNotification | null {
+  return REQUESTER_SAFE_NOTIFICATION_TRIGGERS[internalStatus] ?? null;
+}
+
+export function assertRequesterSafeNotification(n: RequesterSafeNotification): void {
+  const haystack = `${n.title}\n${n.body}`.toLowerCase();
+  for (const term of REQUESTER_NOTIFICATION_FORBIDDEN_SUBSTRINGS) {
+    if (haystack.includes(term)) {
+      throw new Error(`Requester-safe notification "${n.key}" contains forbidden term "${term}"`);
+    }
+  }
+}
+
 

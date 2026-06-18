@@ -22,6 +22,8 @@ import {
   CLOSURE_REASON_MIN_LENGTH,
   POSITIVE_RESPONSE_REQUIRED_ACTIONS,
   NEXT_STEP_STATUSES,
+  getRequesterSafeNotification,
+  assertRequesterSafeNotification,
   type FacilitationInternalStatus,
   type FacilitationOutcome,
 } from "../_shared/facilitation-case-state.ts";
@@ -279,6 +281,51 @@ Deno.serve(async (req) => {
     } catch (_e) { /* non-fatal — never block transition */ }
   }
 
+  // ─── Batch 9C — requester-safe in-app notifications ─────────────────────
+  // Emits exactly one in-app notification per (case, milestone) when the case
+  // transitions into a requester-safe milestone. Idempotent via dedup query
+  // on (user_id, type, entity_id). Payload is the SSOT safe wording — no
+  // internal status, owner, SLA, compliance, risk or audit metadata.
+  async function notifyRequesterMilestone(toStatus: FacilitationInternalStatus): Promise<void> {
+    try {
+      const trigger = getRequesterSafeNotification(toStatus);
+      if (!trigger) return;
+      if (!kase.requesting_user_id) return;
+      assertRequesterSafeNotification(trigger); // defence-in-depth
+
+      // Dedup: never insert a second row for the same case + milestone.
+      const { data: existing } = await admin
+        .from("notifications")
+        .select("id")
+        .eq("user_id", kase.requesting_user_id)
+        .eq("type", trigger.type)
+        .eq("entity_type", "facilitation_case")
+        .eq("entity_id", caseId)
+        .limit(1)
+        .maybeSingle();
+      if (existing?.id) return;
+
+      await admin.from("notifications").insert({
+        user_id: kase.requesting_user_id,
+        type: trigger.type,
+        title: trigger.title,
+        body: trigger.body,
+        link: `/facilitation/cases/${caseId}`,
+        entity_type: "facilitation_case",
+        entity_id: caseId,
+      });
+
+      await admin.from("facilitation_case_events").insert({
+        case_id: caseId, actor_user_id: userId,
+        action: "facilitation_case.requester_notification_emitted",
+        from_status: kase.internal_status, to_status: toStatus,
+        payload: { milestone_key: trigger.key, notification_type: trigger.type },
+      });
+    } catch (_e) { /* non-fatal — never block transition */ }
+  }
+
+
+
 
   if (parsed.data.action === "assign") {
     if (!isAdmin) return json(req, { error: "Only admins can assign cases" }, 403);
@@ -361,6 +408,9 @@ Deno.serve(async (req) => {
     if (isAdmin && parsed.data.to_status === "counterparty_responded") {
       await ensurePositiveResponseNextStep(evt?.id ?? null, from);
     }
+    // Batch 9C: requester-safe in-app milestone notification (idempotent,
+    // any transition path — admin or requester).
+    await notifyRequesterMilestone(parsed.data.to_status as FacilitationInternalStatus);
     return json(req, { ok: true });
   }
 
@@ -633,8 +683,14 @@ Deno.serve(async (req) => {
     ) {
       await ensurePositiveResponseNextStep(cevt?.id ?? null, from);
     }
+    // Batch 9C: requester-safe milestone notification when the contact
+    // attempt advanced the case into a requester-safe milestone.
+    if (nextStatus) {
+      await notifyRequesterMilestone(nextStatus);
+    }
     return json(req, { ok: true, new_status: nextStatus ?? from });
   }
+
 
   // ─── Batch 6 — profile linking + ready-for-POI ──────────────────────────
   if (parsed.data.action === "link_organisation") {
@@ -794,6 +850,8 @@ Deno.serve(async (req) => {
         body: "The counterparty is ready for POI. You may proceed under the stated terms.",
       });
     }
+    // Batch 9C: requester-safe "ready for next step" milestone notification.
+    await notifyRequesterMilestone("ready_for_known_counterparty_poi");
     return json(req, { ok: true });
   }
 
