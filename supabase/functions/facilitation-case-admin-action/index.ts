@@ -836,5 +836,96 @@ Deno.serve(async (req) => {
     return json(req, { ok: true });
   }
 
+
+  // ─── Batch 9B — next-step task lifecycle ────────────────────────────────
+  async function loadNextStep(nextStepId: string) {
+    const { data, error } = await admin
+      .from("facilitation_case_next_steps")
+      .select("*").eq("id", nextStepId).eq("case_id", caseId).maybeSingle();
+    return { row: data as Record<string, unknown> | null, error };
+  }
+  function canManageNextStep(row: Record<string, unknown> | null): boolean {
+    if (!row) return false;
+    if (isPlatformAdmin || isComplianceAnalyst || isOwner) return true;
+    return row.assigned_to === userId;
+  }
+
+  if (parsed.data.action === "assign_next_step") {
+    const { row, error } = await loadNextStep(parsed.data.next_step_id);
+    if (error) return json(req, { error: error.message }, 500);
+    if (!row) return json(req, { error: "Next-step task not found" }, 404);
+    if (!(isPlatformAdmin || isOwner)) {
+      return json(req, { error: "Only platform admins or the assigned case owner can assign next-step tasks" }, 403);
+    }
+    if (["completed","cancelled"].includes(row.status as string)) {
+      return json(req, { error: "Completed or cancelled tasks cannot be reassigned", code: "TASK_TERMINAL" }, 409);
+    }
+    const { error: uerr } = await admin.from("facilitation_case_next_steps")
+      .update({ assigned_to: parsed.data.assigned_to }).eq("id", parsed.data.next_step_id);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.next_step_assigned",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: { next_step_id: parsed.data.next_step_id, assigned_to: parsed.data.assigned_to },
+    });
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "update_next_step_status") {
+    const { row, error } = await loadNextStep(parsed.data.next_step_id);
+    if (error) return json(req, { error: error.message }, 500);
+    if (!row) return json(req, { error: "Next-step task not found" }, 404);
+    if (!canManageNextStep(row)) {
+      return json(req, { error: "Forbidden" }, 403);
+    }
+    if (parsed.data.to_status === "completed") {
+      return json(req, { error: "Use complete_next_step to complete a task (a completion note is required).", code: "USE_COMPLETE_ACTION" }, 409);
+    }
+    if (["completed","cancelled"].includes(row.status as string)) {
+      return json(req, { error: "Terminal task cannot be changed", code: "TASK_TERMINAL" }, 409);
+    }
+    const { error: uerr } = await admin.from("facilitation_case_next_steps")
+      .update({ status: parsed.data.to_status }).eq("id", parsed.data.next_step_id);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.next_step_status_changed",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: {
+        next_step_id: parsed.data.next_step_id,
+        from: row.status, to: parsed.data.to_status,
+      },
+    });
+    return json(req, { ok: true });
+  }
+
+  if (parsed.data.action === "complete_next_step") {
+    const { row, error } = await loadNextStep(parsed.data.next_step_id);
+    if (error) return json(req, { error: error.message }, 500);
+    if (!row) return json(req, { error: "Next-step task not found" }, 404);
+    if (!canManageNextStep(row)) {
+      return json(req, { error: "Forbidden" }, 403);
+    }
+    if (["completed","cancelled"].includes(row.status as string)) {
+      return json(req, { error: "Task is already terminal", code: "TASK_TERMINAL" }, 409);
+    }
+    const nowIso = new Date().toISOString();
+    const { error: uerr } = await admin.from("facilitation_case_next_steps").update({
+      status: "completed",
+      completed_at: nowIso,
+      completed_by: userId,
+      completion_note: parsed.data.completion_note,
+    }).eq("id", parsed.data.next_step_id);
+    if (uerr) return json(req, { error: uerr.message }, 500);
+    await admin.from("facilitation_case_events").insert({
+      case_id: caseId, actor_user_id: userId,
+      action: "facilitation_case.next_step_completed",
+      from_status: kase.internal_status, to_status: kase.internal_status,
+      payload: { next_step_id: parsed.data.next_step_id },
+    });
+    return json(req, { ok: true });
+  }
+
   return json(req, { error: "Unsupported action" }, 400);
 });
