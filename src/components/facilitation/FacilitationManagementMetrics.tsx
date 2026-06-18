@@ -143,9 +143,9 @@ export const FacilitationManagementMetrics: React.FC = () => {
         <div>
           <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">Average times</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Tile label="To first review" value={fmtHours(data.averages_hours.time_to_first_review ?? data.averages_hours.time_to_triage)} />
+            <Tile label="To first contact" value={fmtHours(data.averages_hours.time_to_first_contact ?? null)} />
             <Tile label="To owner assignment" value={fmtHours(data.averages_hours.time_to_owner_assignment)} />
-            <Tile label="To triage" value={fmtHours(data.averages_hours.time_to_triage)} />
-            <Tile label="To first outreach" value={fmtHours(data.averages_hours.time_to_first_outreach)} />
             <Tile label="To close" value={fmtHours(data.averages_hours.time_to_close)} />
           </div>
         </div>
@@ -157,6 +157,39 @@ export const FacilitationManagementMetrics: React.FC = () => {
             <Tile label="Counterparty declined" value={fmtPct(data.outcome_rates_pct.counterparty_declined)} />
             <Tile label="Compliance block" value={fmtPct(data.outcome_rates_pct.compliance_block)} />
             <Tile label="Duplicate" value={fmtPct(data.outcome_rates_pct.duplicate)} />
+          </div>
+        </div>
+        <div>
+          <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">Conversion & breached deadlines</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Tile
+              label="Conversion rate (closed cases)"
+              value={
+                data.conversion_rate
+                  ? `${fmtPct(data.conversion_rate.rate_pct)} (${data.conversion_rate.numerator}/${data.conversion_rate.denominator})`
+                  : NA
+              }
+            />
+            <div className="md:col-span-2 px-3 py-2 border border-slate-200 rounded-md bg-white">
+              <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1">
+                Breached by deadline type
+                {data.breached_deadline_breakdown ? ` · ${data.breached_deadline_breakdown.total_breached} breached` : ""}
+              </div>
+              {!data.breached_deadline_breakdown || data.breached_deadline_breakdown.items.length === 0 ? (
+                <div className="text-sm text-slate-500">No breached deadlines in this period</div>
+              ) : (
+                <ul className="text-sm text-slate-700 space-y-0.5 max-h-40 overflow-auto">
+                  {data.breached_deadline_breakdown.items.map((i) => (
+                    <li key={i.deadline_type} className="flex justify-between gap-2">
+                      <span className="truncate pr-2">{DEADLINE_LABELS[i.deadline_type] ?? i.deadline_type}</span>
+                      <span className="text-slate-500 whitespace-nowrap">
+                        {i.count}{i.pct_of_breached != null ? ` · ${i.pct_of_breached}%` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
