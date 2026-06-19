@@ -108,6 +108,7 @@ export function AdminApiUsageAlertsPanel() {
           p_severity: severity === "any" ? null : severity,
           p_api_client_id: null,
           p_limit: 200,
+          p_assigned_to,
         } as never,
       );
       if (error) throw error;
@@ -118,7 +119,7 @@ export function AdminApiUsageAlertsPanel() {
     } finally {
       setLoading(false);
     }
-  }, [user, hasAccess, status, environment, severity]);
+  }, [user, hasAccess, status, environment, severity, assignment]);
 
   useEffect(() => {
     void load();
