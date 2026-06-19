@@ -34,8 +34,10 @@ import { useUrlTab } from "@/hooks/use-url-tab";
 import UsersManagement from "@/components/admin/UsersManagement";
 import OrgsManagement from "@/components/admin/OrgsManagement";
 import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
-import { AdminApiClientsPanel } from "@/components/admin/AdminApiClientsPanel";
+import { AdminApiClientsPanel, CommercialPlanCataloguePanel } from "@/components/admin/AdminApiClientsPanel";
 import { AdminApiMonitoringPanel } from "@/components/admin/AdminApiMonitoringPanel";
+import { AdminApiSecuritySignalsPanel } from "@/components/admin/AdminApiSecuritySignalsPanel";
+import { SandboxScenarioViewer } from "@/components/admin/SandboxScenarioViewer";
 import { AdminApiSupportTicketsPanel } from "@/components/admin/AdminApiSupportTicketsPanel";
 import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
@@ -455,7 +457,10 @@ function OrganisationsTab() {
           <TabsTrigger value="entities">Legal Entities</TabsTrigger>
           <TabsTrigger value="kyb">KYB Documents</TabsTrigger>
           <TabsTrigger value="api-clients">API Clients</TabsTrigger>
+          <TabsTrigger value="api-plans">API Plans</TabsTrigger>
           <TabsTrigger value="api-monitoring">API Monitoring</TabsTrigger>
+          <TabsTrigger value="api-security">API Security</TabsTrigger>
+          <TabsTrigger value="api-sandbox">Sandbox Scenarios</TabsTrigger>
           <TabsTrigger value="api-support">API Support</TabsTrigger>
         </TabsList>
         <TabsContent value="orgs">
@@ -478,9 +483,24 @@ function OrganisationsTab() {
             <AdminApiClientsPanel />
           </Surface>
         </TabsContent>
+        <TabsContent value="api-plans">
+          <Surface label="Public API V1 commercial plan catalogue · public.api_commercial_plans · platform_admin manages, api_admin/auditor read-only">
+            <CommercialPlanCataloguePanel />
+          </Surface>
+        </TabsContent>
         <TabsContent value="api-monitoring">
           <Surface label="Internal Public API V1 monitoring · platform_admin / api_admin / auditor only">
             <AdminApiMonitoringPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="api-security">
+          <Surface label="Public API V1 security signals · failed auth, rate-limit, monthly-limit, IP exceptions · triage view (no export)">
+            <AdminApiSecuritySignalsPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="api-sandbox">
+          <Surface label="Sandbox scenario catalogue · public.api_sandbox_records · deterministic test data only, never real counterparties">
+            <SandboxScenarioViewer />
           </Surface>
         </TabsContent>
         <TabsContent value="api-support">
