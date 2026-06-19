@@ -117,29 +117,36 @@ Deno.serve(async (req) => {
         handleDatabaseError(error, requestId);
       }
 
-      await supabase.from('audit_logs').insert({
-        org_id: authCtx.orgId,
-        actor_user_id: actorUserId,
-        actor_api_key_id: actorApiKeyId,
-        action: environment === 'production'
-          ? 'api_key.created.production'
-          : environment === 'sandbox'
-            ? 'api_key.created.sandbox'
-            : 'api_key.created',
-        entity_type: 'api_key',
-        entity_id: data.id,
-        metadata: {
-          name,
-          scopes,
-          environment: environment ?? null,
-          api_client_id: api_client_id ?? null,
-          allowed_ips: allowed_ips ?? null,
-          allowed_origins: allowed_origins ?? null,
-          request_id: requestId,
-          actor_ip: authCtx.actorIp ?? null,
-          user_agent: authCtx.userAgent ?? null,
-        },
-      });
+      // Emit canonical sandprod Batch-3 audit name for sandbox/production
+      // alongside legacy api_key.created.* for back-compat.
+      const canonicalAudit = environment === 'production'
+        ? 'api.production_key.created'
+        : environment === 'sandbox'
+          ? 'api.sandbox_key.created'
+          : 'api_key.created';
+      const legacyAudit = environment === 'production'
+        ? 'api_key.created.production'
+        : environment === 'sandbox'
+          ? 'api_key.created.sandbox'
+          : 'api_key.created';
+      const auditMeta = {
+        name,
+        scopes,
+        environment: environment ?? null,
+        api_client_id: api_client_id ?? null,
+        allowed_ips: allowed_ips ?? null,
+        allowed_origins: allowed_origins ?? null,
+        request_id: requestId,
+        actor_ip: authCtx.actorIp ?? null,
+        user_agent: authCtx.userAgent ?? null,
+        expires_at: data.expires_at ?? null,
+      };
+      await supabase.from('audit_logs').insert([
+        { org_id: authCtx.orgId, actor_user_id: actorUserId, actor_api_key_id: actorApiKeyId,
+          action: canonicalAudit, entity_type: 'api_key', entity_id: data.id, metadata: auditMeta },
+        { org_id: authCtx.orgId, actor_user_id: actorUserId, actor_api_key_id: actorApiKeyId,
+          action: legacyAudit, entity_type: 'api_key', entity_id: data.id, metadata: auditMeta },
+      ]);
 
       return new Response(
         JSON.stringify({ 
