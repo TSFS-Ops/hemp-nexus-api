@@ -167,6 +167,8 @@ function App() {
                       query string + hash, and the HQ Engagements panel reads
                       ?match= / ?engagement= to pre-scope the row. */}
                   <Route path="/admin/engagements" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/engagements" label="Admin Engagements" /></RequireAuth>} />
+                  {/* API Usage Dashboard V1 — Batch 2 stable route alias. */}
+                  <Route path="/admin/api/usage" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/organisations?sub=api-usage" label="Platform Admin API Usage Dashboard" /></RequireAuth>} />
                   {/* Catch-all: anything else under /admin lands on Users (default tab) */}
                   <Route path="/admin/*" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/hq/users" label="Admin Console" /></RequireAuth>} />
 
