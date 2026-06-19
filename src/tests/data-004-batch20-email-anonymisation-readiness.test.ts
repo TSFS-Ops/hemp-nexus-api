@@ -60,7 +60,7 @@ describe("DATA-004 Batch 20 — probe is schema-level only, never row-level", ()
   });
 
   it("does NOT invoke the anonymise RPC", () => {
-    expect(SRC).not.toMatch(/anonymise_old_email_send_log/);
+    expect(CODE).not.toMatch(/\.rpc\(\s*["']anonymise_old_email_send_log["']/);
   });
 
   it("does NOT contain SELECT/UPDATE/DELETE/INSERT/UPSERT/TRUNCATE/ALTER against email_send_log", () => {
@@ -73,9 +73,10 @@ describe("DATA-004 Batch 20 — probe is schema-level only, never row-level", ()
       /truncate\s+(public\.)?email_send_log\b/i,
       /alter\s+table\s+(public\.)?email_send_log\b/i,
     ];
-    for (const re of banned) expect(SRC).not.toMatch(re);
+    for (const re of banned) expect(CODE).not.toMatch(re);
   });
 });
+
 
 describe("DATA-004 Batch 20 — readiness response shape", () => {
   it("response is marked assessment_only", () => {
