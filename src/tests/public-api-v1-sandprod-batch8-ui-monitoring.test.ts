@@ -117,9 +117,15 @@ describe("Public API V1 — Sand/Prod Batch 8 · UI monitoring surfaces", () => 
       "paystack.charge",
     ];
     for (const f of files) {
-      const blob = read(f).toLowerCase();
+      // Strip block + line comments so the doc-string exclusions list
+      // doesn't trigger the forbidden-token guard.
+      const raw = read(f);
+      const stripped = raw
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/.*$/gm, "")
+        .toLowerCase();
       for (const t of forbidden) {
-        expect(blob, `${f} must not contain "${t}"`).not.toContain(t);
+        expect(stripped, `${f} must not contain "${t}"`).not.toContain(t);
       }
     }
   });
