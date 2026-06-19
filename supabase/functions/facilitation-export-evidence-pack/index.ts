@@ -17,6 +17,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { z } from "npm:zod@3.23.8";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { sealEvidencePack } from "../_shared/evidence-pack-seal.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -256,24 +258,47 @@ Deno.serve(async (req) => {
       : null,
   };
 
-  // Audit (best-effort).
+  // Batch 10 — SHA-256 seal the pack body. The pack object is unchanged; the
+  // digest is computed over its canonical JSON serialisation so it can be
+  // independently verified after download.
+  const sealed = await sealEvidencePack(pack);
+
+  // Audit (best-effort). Two append-only rows:
+  //   1. legacy management audit (already pinned by check-facilitation-management-audit-names check)
+  //   2. Batch 10 canonical facilitation_case.evidence_pack_sealed
   try {
     const { data: prof } = await admin.from("profiles").select("org_id").eq("id", userId).maybeSingle();
-    await admin.from("audit_logs").insert({
+    const baseRow = {
       org_id: (prof?.org_id as string | null) ?? null,
       actor_user_id: userId,
-      action: "facilitation.management.evidence_pack_exported",
       entity_type: "facilitation_case",
       entity_id: caseId,
-      metadata: { case_number: kase.case_number },
-    });
+    } as const;
+    await admin.from("audit_logs").insert([
+      {
+        ...baseRow,
+        action: "facilitation.management.evidence_pack_exported",
+        metadata: { case_number: kase.case_number },
+      },
+      {
+        ...baseRow,
+        action: "facilitation_case.evidence_pack_sealed",
+        metadata: {
+          case_number: kase.case_number,
+          seal: sealed.seal,
+        },
+      },
+    ]);
   } catch (e) {
     console.error("[facilitation-export-evidence-pack] audit insert failed", e);
   }
 
   const filename = `evidence-pack-${kase.case_number ?? caseId}-${new Date().toISOString().slice(0, 10)}.json`;
-  return json(req, pack, 200, {
+  return json(req, sealed, 200, {
     "Content-Disposition": `attachment; filename="${filename}"`,
     "Cache-Control": "no-store",
+    "X-Evidence-Pack-Digest": sealed.seal.digest_hex,
+    "X-Evidence-Pack-Algo": sealed.seal.algo,
   });
 });
+

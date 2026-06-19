@@ -48,7 +48,10 @@ const REQUIRED = [
   "facilitation_case.next_step_completed",
   // Batch 9C — requester-facing in-app notifications.
   "facilitation_case.requester_notification_emitted",
+  // Batch 10 — tamper-evident SHA-256 sealing of exported evidence packs.
+  "facilitation_case.evidence_pack_sealed",
 ];
+
 
 const SSOT_FILES = [
   "supabase/functions/_shared/facilitation-case-state.ts",

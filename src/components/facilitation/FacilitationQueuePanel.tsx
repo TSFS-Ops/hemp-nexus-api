@@ -126,6 +126,17 @@ export const FacilitationQueuePanel: React.FC = () => {
   const [openCaseId, setOpenCaseId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [packDownloadingId, setPackDownloadingId] = useState<string | null>(null);
+  // Batch 10 — last sealed evidence pack info (read-only display).
+  const [lastSeal, setLastSeal] = useState<{
+    case_number: string;
+    algo: string;
+    digest_hex: string;
+    canonical_bytes: number;
+    sealed_at: string;
+    function_version: string;
+  } | null>(null);
+
+
 
   const buildBody = useCallback(() => ({
     status: filters.status || null,
@@ -205,14 +216,25 @@ export const FacilitationQueuePanel: React.FC = () => {
       });
       if (resp.status === 403) { toast.error("You don't have permission to export the evidence pack."); return; }
       if (!resp.ok) { toast.error("Could not generate the evidence pack. Please try again."); return; }
-      const blob = await resp.blob();
+      // Batch 10 — response is now `{ pack, seal }`. Parse the envelope so we
+      // can both download the sealed JSON and surface the digest in the UI.
+      const envelope = await resp.json() as {
+        pack: unknown;
+        seal: { algo: string; digest_hex: string; canonical_bytes: number; sealed_at: string; function_version: string };
+      };
+      if (!envelope?.seal?.digest_hex) {
+        toast.error("Evidence pack returned without a seal. Please contact the platform team.");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `evidence-pack-${caseNumber}-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
-      toast.success("Evidence pack downloaded.");
+      setLastSeal({ case_number: caseNumber, ...envelope.seal });
+      toast.success(`Evidence pack downloaded · SHA-256 ${envelope.seal.digest_hex.slice(0, 12)}…`);
     } catch (err: unknown) {
       toast.error(await friendlyFacilitationError(err, "Could not generate the evidence pack. Please try again."));
     } finally {
@@ -220,9 +242,38 @@ export const FacilitationQueuePanel: React.FC = () => {
     }
   }, []);
 
+
   return (
     <>
       <FacilitationManagementMetrics />
+      {lastSeal ? (
+        <Card className="border-emerald-200 bg-emerald-50/40">
+          <CardContent className="py-3 px-4 text-xs text-slate-700">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="font-medium text-slate-900">Last evidence pack hash</span>
+              <span className="text-slate-500">Case</span>
+              <span className="font-mono">{lastSeal.case_number}</span>
+              <span className="text-slate-500">Algorithm</span>
+              <span className="font-mono uppercase">{lastSeal.algo}</span>
+              <span className="text-slate-500">SHA-256 digest</span>
+              <span className="font-mono break-all">{lastSeal.digest_hex}</span>
+              <span className="text-slate-500">Canonical bytes</span>
+              <span className="font-mono">{lastSeal.canonical_bytes.toLocaleString()}</span>
+              <span className="text-slate-500">Sealed at</span>
+              <span className="font-mono">{lastSeal.sealed_at}</span>
+              <span className="text-slate-500">Producer</span>
+              <span className="font-mono">{lastSeal.function_version}</span>
+            </div>
+            <p className="mt-2 text-[11px] text-slate-500 leading-snug">
+              Verify locally: the digest is computed over a canonical-JSON serialisation
+              of the <code>pack</code> object (deterministic key ordering, UTF-8, no
+              whitespace) — NOT the surrounding envelope. To verify a downloaded file,
+              extract its <code>pack</code> field, re-serialise with sorted keys, and
+              compute SHA-256. The resulting digest must equal the value shown above.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
       <FiltersBar
         filters={filters}
         setFilters={setFilters}
@@ -230,6 +281,7 @@ export const FacilitationQueuePanel: React.FC = () => {
         onExportCsv={exportCsv}
         exporting={exporting}
       />
+
       {rows.length === 0 && !loading ? (
         <Card><CardContent className="py-12 text-center text-sm text-slate-500">
           No facilitation cases match the current filters.
