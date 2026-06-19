@@ -8,6 +8,13 @@ import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { fetchWithTimeout, ProviderTimeoutError, isProviderFailureStatus } from "../_shared/fetch-with-timeout.ts";
 import { checkProviderCooldown, recordProviderFailure, cooldownResponseEnvelope } from "../_shared/provider-retry.ts";
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
+import {
+  isStubProvider,
+  STUB_PROVIDER_AUDIT,
+  STUB_PROVIDER_STATUS,
+  STUB_PROVIDER_LABEL_LONG,
+  STUB_PROVIDER_ERROR_CODE,
+} from "../_shared/stub-providers.ts";
 
 /** Batch F: thrown by provider helpers when the provider is unreachable/degraded. */
 class IdvProviderError extends Error {
@@ -282,6 +289,37 @@ Deno.serve(async (req: Request) => {
       const resolvedProvider = isCompany
         ? (providerConfig.company_provider || "stub")
         : (providerConfig.individual_provider || "stub");
+
+      // ── P010: stub providers (CIPC, Onfido, Dow Jones, Refinitiv) must never run. ──
+      // Audit-only event; entity is NOT promoted; no verification result is created.
+      if (isStubProvider(resolvedProvider)) {
+        await admin.from("audit_logs").insert({
+          org_id: orgId,
+          actor_user_id: actorUserId,
+          action: STUB_PROVIDER_AUDIT.NOT_LIVE,
+          entity_type: "entity",
+          entity_id,
+          metadata: {
+            provider: resolvedProvider,
+            status: STUB_PROVIDER_STATUS.STUB_NOT_LIVE,
+            verification_type: isCompany ? "company" : "individual",
+            request_id: requestId,
+            reason: "stub_provider_not_live",
+          },
+        });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: STUB_PROVIDER_ERROR_CODE,
+            provider: resolvedProvider,
+            status: STUB_PROVIDER_STATUS.STUB_NOT_LIVE,
+            message: STUB_PROVIDER_LABEL_LONG,
+            entity_id,
+            requestId,
+          }),
+          { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+        );
+      }
 
       // ── Batch I Fix 6: provider retry cooldown ──
       const cooldownScope = {

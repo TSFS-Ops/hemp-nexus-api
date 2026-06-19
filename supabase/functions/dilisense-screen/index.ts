@@ -7,6 +7,13 @@ import { deriveActorIds } from "../_shared/actor-context.ts";
 import { isBypassEnabled, recordBypassUsage } from "../_shared/test-mode-bypass.ts";
 import { fetchWithTimeout, ProviderTimeoutError, isProviderFailureStatus } from "../_shared/fetch-with-timeout.ts";
 import { checkProviderCooldown, recordProviderFailure, cooldownResponseEnvelope } from "../_shared/provider-retry.ts";
+import {
+  isStubProvider,
+  STUB_PROVIDER_AUDIT,
+  STUB_PROVIDER_STATUS,
+  STUB_PROVIDER_LABEL_LONG,
+  STUB_PROVIDER_ERROR_CODE,
+} from "../_shared/stub-providers.ts";
 
 /** Batch F: typed error for provider-down / malformed paths. */
 class ScreeningProviderError extends Error {
@@ -444,6 +451,37 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     const providerName = (providerSetting?.value as any)?.provider || "dilisense";
+
+    // ── P010: stub providers (Dow Jones, Refinitiv, CIPC, Onfido) must never run. ──
+    // Audit-only event; no screening_results row is written; no "clear" result is produced.
+    if (isStubProvider(providerName)) {
+      await adminClient.from("audit_logs").insert({
+        org_id,
+        actor_user_id: actorUserId || null,
+        action: STUB_PROVIDER_AUDIT.NOT_LIVE,
+        entity_type: "screening",
+        entity_id: entity_id || null,
+        metadata: {
+          provider: providerName,
+          status: STUB_PROVIDER_STATUS.STUB_NOT_LIVE,
+          screen_type: type,
+          request_id: requestId,
+          reason: "stub_provider_not_live",
+        },
+      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: STUB_PROVIDER_ERROR_CODE,
+          provider: providerName,
+          status: STUB_PROVIDER_STATUS.STUB_NOT_LIVE,
+          message: STUB_PROVIDER_LABEL_LONG,
+          requestId,
+        }),
+        { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+      );
+    }
+
     const screenFn = PROVIDERS[providerName];
     if (!screenFn) {
       throw new ApiException("CONFIGURATION_ERROR", `Unknown screening provider: ${providerName}. Valid: ${Object.keys(PROVIDERS).join(", ")}`, 500);
