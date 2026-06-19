@@ -2,7 +2,7 @@
 
 ## Status
 
-`BATCH_16_CONTROLLED_POI_CONVERSION_READY_FOR_OPERATOR_VERIFY`
+`BATCH_16_CONTROLLED_POI_CONVERSION_ACCEPTED`
 
 Live Registry/KYB and Sanctions/PEP provider integrations remain deferred:
 
