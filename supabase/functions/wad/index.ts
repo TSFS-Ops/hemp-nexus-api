@@ -1104,7 +1104,7 @@ Deno.serve(async (req) => {
       //   best-effort writer. This is intentionally NOT fail-closed:
       //   the wads UPDATE above is the legal seal commit and must not be
       //   reversed by a governance-write failure. Full fail-closed seal
-      //   enforcement is deferred to a future `atomic_wad_seal` batch.
+      //   enforcement is deferred to a future atomic seal batch.
       try {
         await writeGovernanceEventBestEffort(supabase, {
           event_type: "wad.passed",
