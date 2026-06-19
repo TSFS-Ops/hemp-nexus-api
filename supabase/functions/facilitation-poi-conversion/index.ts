@@ -254,8 +254,7 @@ Deno.serve(async (req) => {
     manual_sanctions_pep_status: lastS?.result ?? "not_recorded",
     sanctions_compliance_decision: lastS?.compliance_decision ?? null,
     dnc_active: blockers.includes("active_do_not_contact_block"),
-    duplicate_conflict_open:
-      (kase as { duplicate_review_open?: boolean | null }).duplicate_review_open === true,
+    duplicate_conflict_open: status === "duplicate_review",
     already_converted: blockers.includes("already_converted"),
     internal_status: status,
   };
