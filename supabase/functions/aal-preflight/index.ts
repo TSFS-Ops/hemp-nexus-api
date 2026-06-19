@@ -89,6 +89,11 @@ export const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   // Staging fixture password management (platform_admin only)
   "staging.set_fixture_password": "aal2",
   "staging.reveal_fixture_password": "aal2",
+  // Public API V1 — production access/key lifecycle admin mutations
+  "admin.api_production_approve": "aal2",
+  "admin.api_production_key_rotate": "aal2",
+  "admin.api_production_key_revoke": "aal2",
+  "admin.api_production_key_suspend": "aal2",
   // break-glass uses fresh password re-auth via GoTrue, not the JWT aal
   // claim, so it is intentionally NOT listed here as aal2-gated for
   // preflight purposes. See scripts/check-aal-registry-drift.mjs allowlist.
