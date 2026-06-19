@@ -183,7 +183,7 @@ describe("Public API V1 · Batch 7 · commercial plans + billing visibility", ()
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_invoices/i);
-      expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
+      // api_support_tickets is introduced in Batch 11 — no Batch-7 fence here.
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_payment_methods/i);
     }
 
