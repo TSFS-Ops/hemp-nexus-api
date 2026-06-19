@@ -347,7 +347,20 @@ describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path",
     expect(src).not.toMatch(/get_effective_retention_days/);
   });
 
-  it("no migration schedules cold-storage-archive via pg_cron", () => {
+  it("only the canonical Batch-19 cold-storage-archive cron schedules are present (dryrun + live)", () => {
+    // DATA-004 Batch 21 stale re-pin (2026-06-19):
+    //   Previous stale Batch-7-era pin asserted that NO migration may
+    //   schedule cold-storage-archive via pg_cron at all
+    //   (`cron.schedule(... cold-storage-archive ...)` was forbidden
+    //   outright). That assumption was superseded by the accepted
+    //   DATA-004 Batch 19 / Final Enterprise Status Pack cron posture,
+    //   which makes exactly two cold-storage-archive jobnames canonical:
+    //     - cold-storage-archive-dryrun  (jobid 40, active, non-destructive)
+    //     - cold-storage-archive-live    (jobid 41, non-destructive archival)
+    //   Re-pinned here as an allow-list against the canonical migration
+    //   files; any other cold-storage-archive* jobname (e.g. the legacy
+    //   'cold-storage-archive-weekly') remains forbidden. No migration
+    //   or cron entry is modified by this re-pin.
     const fs = require("node:fs") as typeof import("node:fs");
     const path = require("node:path") as typeof import("node:path");
     const migDir = resolve(ROOT, "supabase/migrations");
@@ -369,17 +382,47 @@ describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path",
           return i === -1 ? l : l.slice(0, i);
         })
         .join("\n");
+
+    const ALLOWED = new Set([
+      "cold-storage-archive-dryrun",
+      "cold-storage-archive-live",
+    ]);
+    const CANONICAL_FILES: Record<string, string> = {
+      "cold-storage-archive-dryrun":
+        "supabase/migrations/20260529194355_a2e79a7b-207a-410e-adf0-304a00c3e69a.sql",
+      "cold-storage-archive-live":
+        "supabase/migrations/20260530053747_1f35242b-8074-459c-9c57-fbf6fb953793.sql",
+    };
+
+    const scheduleRe =
+      /cron\.schedule\s*\(\s*['"](cold-storage-archive[A-Za-z0-9_-]*)['"]/g;
+    // Note: net.http_post URLs reference the edge-function name
+    // ('cold-storage-archive'), not the cron jobname, so they are not a
+    // reliable source of jobnames; only cron.schedule(...) calls are
+    // pinned here.
+
+    const seen: Record<string, Set<string>> = {};
     for (const file of walk(migDir)) {
       const code = strip(fs.readFileSync(file, "utf8"));
       if (!code.includes("cold-storage-archive")) continue;
+      const names = new Set<string>();
+      for (const m of code.matchAll(scheduleRe)) names.add(m[1]);
+      
+      for (const n of names) {
+        expect(
+          ALLOWED.has(n),
+          `${file} schedules forbidden cold-storage-archive jobname '${n}' (only 'cold-storage-archive-dryrun' and 'cold-storage-archive-live' are allowed under Batch 19 posture)`,
+        ).toBe(true);
+        (seen[n] ??= new Set<string>()).add(file);
+      }
+    }
+
+    // Each allowed jobname must be scheduled by its canonical migration.
+    for (const [name, canonical] of Object.entries(CANONICAL_FILES)) {
       expect(
-        /cron\.schedule\s*\([^)]*cold-storage-archive/.test(code),
-        `${file} schedules cold-storage-archive via cron.schedule — forbidden in Batch 7`,
-      ).toBe(false);
-      expect(
-        /net\.http_post[\s\S]*cold-storage-archive/.test(code),
-        `${file} schedules cold-storage-archive via net.http_post — forbidden in Batch 7`,
-      ).toBe(false);
+        seen[name] && [...seen[name]].some((f) => f.endsWith(path.basename(canonical))),
+        `expected canonical migration ${canonical} to schedule '${name}'`,
+      ).toBe(true);
     }
   });
 
