@@ -1728,6 +1728,9 @@ export type Database = {
           alert_type: string
           api_client_id: string | null
           api_key_id: string | null
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to: string | null
           created_at: string
           dedupe_key: string
           details: Json
@@ -1748,6 +1751,9 @@ export type Database = {
           alert_type: string
           api_client_id?: string | null
           api_key_id?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
           created_at?: string
           dedupe_key: string
           details?: Json
@@ -1768,6 +1774,9 @@ export type Database = {
           alert_type?: string
           api_client_id?: string | null
           api_key_id?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
           created_at?: string
           dedupe_key?: string
           details?: Json
@@ -12482,6 +12491,10 @@ export type Database = {
         }
         Returns: Json
       }
+      assign_api_usage_alert: {
+        Args: { p_alert_id: string; p_assignee?: string; p_note?: string }
+        Returns: Json
+      }
       assign_match_named_contact: {
         Args: {
           p_assigned_by_role: string
@@ -13248,16 +13261,28 @@ export type Database = {
         }
         Returns: Json[]
       }
-      list_api_usage_alerts: {
-        Args: {
-          p_api_client_id?: string
-          p_environment?: string
-          p_limit?: number
-          p_severity?: string
-          p_status?: string
-        }
-        Returns: Json[]
-      }
+      list_api_usage_alerts:
+        | {
+            Args: {
+              p_api_client_id?: string
+              p_environment?: string
+              p_limit?: number
+              p_severity?: string
+              p_status?: string
+            }
+            Returns: Json[]
+          }
+        | {
+            Args: {
+              p_api_client_id?: string
+              p_assigned_to?: string
+              p_environment?: string
+              p_limit?: number
+              p_severity?: string
+              p_status?: string
+            }
+            Returns: Json[]
+          }
       log_api_client_usage_csv_export: {
         Args: {
           p_api_client_id: string
