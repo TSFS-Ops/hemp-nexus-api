@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { KeyRound, Radio, Database, BookOpen, Terminal, Settings, LogOut } from "lucide-react";
+import { KeyRound, Radio, Database, BookOpen, Terminal, Settings, LogOut, BarChart3 } from "lucide-react";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
@@ -17,6 +17,10 @@ const NAV = [{
   label: "API Keys",
   icon: KeyRound
 }, {
+  to: "/developer/usage",
+  label: "API Usage",
+  icon: BarChart3
+}, {
   to: "/developer/webhooks",
   label: "Webhook Logs",
   icon: Radio
@@ -29,6 +33,7 @@ const NAV = [{
   label: "Integration Docs",
   icon: BookOpen
 }];
+
 export function DeveloperShell({
   children
 }: {

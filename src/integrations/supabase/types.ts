@@ -12453,6 +12453,10 @@ export type Database = {
         Args: { _object_name: string; _owner_id?: string; _user_id: string }
         Returns: boolean
       }
+      can_view_api_client_usage: {
+        Args: { _api_client_id: string; _user_id: string }
+        Returns: boolean
+      }
       change_org_member_role: {
         Args: {
           p_new_role: string
@@ -12660,6 +12664,35 @@ export type Database = {
         Args: { event_data: Json; event_type: string; previous_hash: string }
         Returns: string
       }
+      get_api_client_usage_csv_rows: {
+        Args: {
+          p_api_client_id: string
+          p_billable?: string
+          p_endpoint?: string
+          p_environment?: string
+          p_period_end: string
+          p_period_start: string
+          p_status?: string
+        }
+        Returns: {
+          billable: boolean
+          billing_period_end: string
+          billing_period_start: string
+          endpoint: string
+          environment: string
+          error_code: string
+          external_reference: string
+          method: string
+          request_id: string
+          request_timestamp: string
+          response_time_ms: number
+          status_code: number
+        }[]
+      }
+      get_api_client_usage_summary: {
+        Args: { p_api_client_id: string; p_period_start?: string }
+        Returns: Json
+      }
       get_billing_availability: { Args: never; Returns: Json }
       get_cold_storage_archive_cron_jobs: {
         Args: never
@@ -12795,6 +12828,15 @@ export type Database = {
         Returns: boolean
       }
       is_test_mode_bypass_enabled: { Args: { _gate: string }; Returns: boolean }
+      log_api_client_usage_csv_export: {
+        Args: {
+          p_api_client_id: string
+          p_period_end: string
+          p_period_start: string
+          p_row_count: number
+        }
+        Returns: undefined
+      }
       mark_export_file_destroyed: {
         Args: { p_file_id: string; p_reason: string }
         Returns: {
