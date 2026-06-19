@@ -137,6 +137,19 @@ function DocsView() {
   );
 }
 
+function UsageView() {
+  return (
+    <>
+      <DeveloperHeader section="API Usage" />
+      <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
+        <DevPageHeader audience="Authorised client admins and platform operators reviewing API client usage, allowance consumption, and estimated charges." />
+        <ClientUsageDashboard />
+      </div>
+    </>
+  );
+}
+
 export default function DeveloperCenter() {
   return (
     <EnvProvider>
@@ -144,6 +157,7 @@ export default function DeveloperCenter() {
         <Routes>
           <Route index element={<Navigate to="keys" replace />} />
           <Route path="keys" element={<KeysView />} />
+          <Route path="usage" element={<UsageView />} />
           <Route path="webhooks" element={<WebhooksView />} />
           <Route path="schema" element={<SchemaView />} />
           <Route path="docs" element={<DocsView />} />
