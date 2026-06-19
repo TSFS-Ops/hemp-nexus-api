@@ -44,7 +44,10 @@ describe("Public API V1 · Batch 6 · usage limits + threshold notifications", (
     expect(src).toMatch(/V1_DEFAULT_RPM\s*=\s*60/);
     expect(src).toMatch(/V1_DEFAULT_CONCURRENCY\s*=\s*3/);
     expect(src).toMatch(/V1_DEFAULT_MONTHLY_PROD\s*=\s*5[_]?000/);
-    expect(src).toMatch(/V1_DEFAULT_MONTHLY_SANDBOX\s*=\s*10[_]?000/);
+    // Sand/Prod Batch 6 redefined the sandbox monthly default to 1,000
+    // (down from the original 10,000) — keep this assertion aligned with
+    // the new spec so the contract stays consistent across batches.
+    expect(src).toMatch(/V1_DEFAULT_MONTHLY_SANDBOX\s*=\s*1[_]?000\b/);
   });
 
   it("Batch-3 60 rpm rate-limit remains active — no Batch 6 override of checkRateLimit", () => {
