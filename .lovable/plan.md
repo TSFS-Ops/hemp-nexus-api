@@ -1,139 +1,199 @@
-## Unknown-Counterparty SLA Hardening — Gap Analysis & Scoping
+# Role-Negative & E2E Test Coverage Expansion
 
-Before implementing anything, you should know: **most of Batches 1–8 of your master spec already exist in this codebase and have been formally accepted by the client (per memory: "Facilitation Batch 8 — Management View & Exports — ACCEPTED 2026-06-16. Batch 9 held.").** Re-building them would duplicate live tables, edge functions, audits and UI and risk regressing accepted UAT evidence.
+A testing/release-gate hardening package on top of the existing `e2e/` Playwright suite (currently only Smoke A–D). No new product functionality. Implements Daniel's approved questionnaire as a hard release gate.
 
-This plan maps your master spec to what is live, and identifies the genuine remaining gaps so you can decide what to actually build.
+## Scope
 
-### What is already live (do NOT rebuild)
+- New Playwright suites under `e2e/role-negative/` and `e2e/journeys/`
+- Reusable helpers under `e2e/helpers/`
+- Seeded TEST/UAT fixtures via a new `seed-role-negative-e2e` edge function (idempotent, mirrors `seed-smoke-a-d`)
+- Evidence report under `/test-evidence/role-negative-e2e/<run_id>/`
+- CI scripts wired into `package.json`
+- Hard build guard: a new `scripts/check-role-negative-e2e-coverage.mjs` ensures every role × route in the matrix has a test
 
-Tables present and in use:
+No product permission code is changed. If a test reveals a permission gap, it is reported as a failure, not silently patched.
 
-- `facilitation_cases` (81 cols — covers intake, dual statuses, owner, SLA due_at fields, overdue flag/reasons, closing_reason, final_outcome, linked_organization_*, ready_for_poi_*, poi_conversion_*)
-- `facilitation_case_events`, `facilitation_case_evidence`, `facilitation_case_contact_attempts`, `facilitation_case_sla_reminders`, `facilitation_case_registry_checks`, `facilitation_case_sanctions_checks`
-- `facilitation_outreach_templates`, `facilitation_outreach_candidates`, `facilitation_outreach_sends`, `facilitation_do_not_contact_rules`, `facilitation_compliance_escalations`
+## Roles, orgs, records (TEST/UAT only)
 
-Edge functions present:
+Roles (exact labels): `platform_admin`, `compliance_analyst`, `requester_trader`, `counterparty_user`, `api_client_admin`, `normal_non_admin_user`, `other_tenant_user`, `logged_out_user`.
 
-- `create-facilitation-case`, `get-facilitation-case`, `list-facilitation-cases`
-- `facilitation-case-admin-action`, `facilitation-case-eligible-owners`, `facilitation-case-search-organisations`
-- `facilitation-case-sla-evaluate` (SAST + ZA holidays, near-breach + overdue)
-- `facilitation-management-metrics`, `facilitation-export-csv`, `facilitation-export-evidence-pack`
-- `register-facilitation-case-evidence`
-- `facilitation-outreach-*` family (template status, candidate add, DNC add/revoke, send, escalate, escalation resolve)
+Orgs: "Organisation A TEST/UAT" (`is_demo=true`), "Organisation B TEST/UAT" (`is_demo=true`).
 
-UI present:
+Per-org seeded records (all names prefixed `TEST-` or `UAT-`): 1 trade request, 1 match, 1 POI, 1 WaD, 1 protected document, 1 refund/dispute, 1 governance export candidate, 1 API key + usage log row.
 
-- `FacilitationCaseIntakeForm`, `FacilitationCaseDrawer`, `FacilitationCaseSlaPanel`, `FacilitationCaseProfileLinkPanel`, `FacilitationCaseMilestoneView`, `FacilitationCaseManualChecksPanel`, `FacilitationQueuePanel`, `FacilitationManagementMetrics`, `AdminFacilitationQueueBadges`, `FacilitationOutreachTab`, `FacilitationOutreachTemplatePanel`, `FacilitationDncRulePanel`
+Credentials supplied via env (`E2E_RN_*`); password from `SMOKE_PASSWORD`-style env, never committed.
 
-Cross-cutting:
+## Files to add
 
-- Dual status model with safe requester labels (`facilitation-labels.ts`, `facilitation-case-state.ts`)
-- SLA timer engine (`facilitation-sla.ts` + tested)
-- POI verification gate respected (manual `ready_for_poi` + `poi_conversion_*` fields, no auto-mint)
-- Audit via `audit_logs` + `facilitation_case_events`; CSV + evidence pack exports gated to `platform_admin` / `compliance_analyst`
+```
+supabase/functions/seed-role-negative-e2e/index.ts          # idempotent fixture provisioner
+scripts/seed-role-negative-e2e.sh                            # one-shot wrapper → .env.role-negative
+scripts/check-role-negative-e2e-coverage.mjs                 # matrix completeness guard
+scripts/pack-role-negative-evidence.mjs                      # zip evidence per run_id
 
-### Mapping your spec → current state
+e2e/helpers/
+  roles.ts            # ROLES, ORGS, ROUTE_MATRIX, expected landing per role
+  auth-roles.ts       # loginAsPlatformAdmin / ...AsComplianceAnalyst / ... / logout
+  seeded-data.ts      # resolves seeded IDs from env (set by seeder)
+  route-access.ts     # assertRouteAccess(role, route, expected)
+  assertions.ts       # expectAllowed/Forbidden/RedirectToLogin/NoProtectedData{Visible,InNetwork}/NoMutation/SafeDenied/EvidenceWritten
+  direct-actions.ts   # invokes RPC / REST directly with role JWT (proves backend gate, not just UI)
+  state.ts            # captureBeforeState / captureAfterState / compareNoMutation
+  evidence.ts         # extends existing evidence fixture; writeEvidenceResult/saveEvidenceSummary/attachScreenshotOrTrace
 
+e2e/fixtures/
+  users.ts            # env-driven role → credentials map
+  organisations.ts    # ORG_A_ID / ORG_B_ID
+  routes.ts           # full direct-link matrix (§7)
+  records.ts          # seeded record IDs (trade/match/poi/wad/doc/refund/export/apiKey) per org
+  permissions.ts      # action → allowed roles map (used by wrong-actions.spec)
 
-| Your batch                                                                                                                | Status                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 Data model + intake validation                                                                                          | LIVE                                                                                                                                                                                                                                                                                                                                   |
-| 2 Roles / RLS (Trade Ops, platform_admin, compliance, requester)                                                          | LIVE                                                                                                                                                                                                                                                                                                                                   |
-| 3 17 internal statuses → 8 requester labels                                                                               | LIVE (with minor naming deltas, see gaps)                                                                                                                                                                                                                                                                                              |
-| 4 SAST business-hour SLA, weekends, ZA holidays, near-breach, overdue, exact missed deadline                              | LIVE                                                                                                                                                                                                                                                                                                                                   |
-| 5 Manual ownership, shared unassigned queue, SLA continues unassigned                                                     | LIVE                                                                                                                                                                                                                                                                                                                                   |
-| 6 Reminders + near-breach + breach notifications, requester-safe wording                                                  | LIVE (reminder dispatch path = email; in-app reminder UI is partial)                                                                                                                                                                                                                                                                   |
-| 7 Approved templates, manual contact only, approval required, no auto-send/WhatsApp/SMS                                   | LIVE                                                                                                                                                                                                                                                                                                                                   |
-| 8 Hard vs warning blocks; compliance-only clearance; owner cannot clear own compliance block                              | LIVE (DB-enforced via `facilitation_compliance_escalations`)                                                                                                                                                                                                                                                                           |
-| 9 Closure final outcomes + required evidence + positive-response next-step task                                           | PARTIAL — `final_outcome` enum exists but does **not** include your exact set (`no_response`, `invalid_details`, `duplicate_merged`, `closed_by_admin` — current enum uses `more_information_not_provided`, `outside_supported_scope`, `closed_by_admin_decision`, `duplicate_case`); positive-response admin task is not auto-created |
-| 10 Audit trail                                                                                                            | LIVE (canonical `facilitation.*` audit names enforced by prebuild script)                                                                                                                                                                                                                                                              |
-| 11 Notifications                                                                                                          | PARTIAL — admin/management notifications via email exist; requester-facing in-app notification cards for "Response received" / "Ready for next step" / "Unable to proceed" not yet wired                                                                                                                                               |
-| 12 Management dashboard incl. exact breached deadline type, conversion rate, avg time-to-first-contact, avg time-to-close | PARTIAL — `facilitation-management-metrics` exposes core counts + age; the three time-based KPIs (avg first-review / first-contact / close) and the conversion-rate tile are not all surfaced                                                                                                                                          |
-| 13 POI verification gate cannot be bypassed via facilitation lane                                                         | LIVE (no facilitation path mints POI; `ready_for_poi` is a marker only)                                                                                                                                                                                                                                                                |
-| 14 Manual link-to-existing-org / create-new-org with duplicate check                                                      | LIVE (`facilitation-case-search-organisations` + `FacilitationCaseProfileLinkPanel`)                                                                                                                                                                                                                                                   |
-| 15 Test plan                                                                                                              | PARTIAL — Vitest covers SLA, gate, role-negatives, deeplinks; full role-matrix + closure-evidence + positive-response tests pending                                                                                                                                                                                                    |
+e2e/role-negative/
+  route-access.spec.ts            # role × route matrix
+  direct-links.spec.ts            # deep-link → blocked / redirected
+  tenant-isolation.spec.ts        # Org A user vs Org B records
+  wrong-actions.spec.ts           # mutation attempts → before==after, no side effects
+  protected-documents.spec.ts     # /documents/:id/download per role/tenant
+  governance-export-access.spec.ts
+  api-key-access.spec.ts
 
+e2e/journeys/
+  auth-role-landing.spec.ts
+  trade-match.spec.ts
+  poi-lifecycle.spec.ts
+  wad-lifecycle.spec.ts
+  refund-dispute.spec.ts
+  governance-export.spec.ts
+  api-developer-access.spec.ts
 
-### Genuine remaining gaps (candidates for new work)
+test-evidence/role-negative-e2e/.gitkeep
+docs/role-negative-e2e-coverage.md   # matrix, deferral register, release-gate rules
+```
 
-A. **Closure vocabulary alignment** — extend `facilitation_cases.final_outcome` CHECK constraint to add `no_response` and explicit `closed_by_admin` aliases, plus require evidence/notes for `blocked_by_compliance`, `invalid_details`, `duplicate_merged`, `unable_to_contact`, `no_response` (enforced server-side in `facilitation-case-admin-action`).
+## Helper contracts
 
-B. **Positive-response next-step task** — on `counterparty_responded` → admin action that creates a structured "next-step" task (verify details / create or update org / invite / notify requester / prepare POI step). New table `facilitation_case_next_steps` or reuse `facilitation_case_events` with a typed `next_step` payload. No auto-POI.
+```ts
+// e2e/helpers/auth-roles.ts
+export async function loginAs(page: Page, role: Role): Promise<void>
+export const loginAsPlatformAdmin       = (p: Page) => loginAs(p, 'platform_admin')
+// ...one per role; logged_out_user is a no-op + clear storage
 
-C. **Requester-facing in-app notifications** — emit `notifications` rows on the four safe transitions (response_received, ready_for_next_step, unable_to_proceed, closed) using the existing `facilitation-labels.ts` mapping.
+// e2e/helpers/assertions.ts
+export async function expectAllowed(page, route): Promise<void>
+export async function expectForbidden(page, route): Promise<void>            // 403 OR safe-denied UI, never protected data
+export async function expectRedirectToLogin(page, route): Promise<void>      // lands on /auth?returnTo=...
+export async function expectNoProtectedDataVisible(page, needles: string[])
+export async function expectNoProtectedDataInNetwork(page, needles: string[])// scans response bodies recorded since nav
+export async function expectNoMutation(before, after)
+export async function expectSafeDeniedResponse(response)                     // status 401/403/404, body has no PII/keys/IDs
+export async function expectEvidenceWritten(testInfo)
 
-D. **Management dashboard KPI tiles** — add to `facilitation-management-metrics`:
+// e2e/helpers/direct-actions.ts — invoke RPC/edge fn with role JWT, assert deny
+export async function callRpcAs(role, fn, args): Promise<{status, body}>
+export async function callEdgeAs(role, fn, body): Promise<{status, body}>
+```
 
-- avg time to first review
-- avg time to first contact
-- avg time to close
-- conversion rate (cases ending in `converted_to_known_counterparty_poi` / total closed)
-- exact-breached-deadline-type breakdown
-   Surface in `FacilitationManagementMetrics`.
+Direct-action helpers prove the *backend* denies (not just hidden UI) — required for all wrong-action tests.
 
-E. **Test pack completion** — add Vitest specs for (i) closure-evidence enforcement, (ii) positive-response next-step creation, (iii) requester-visibility role matrix on the new notification rows, (iv) compliance-owner-self-clear block.
+## Route matrix (§7)
 
-These five items are the only places where your master spec exceeds what is already accepted.
+Encoded once in `e2e/fixtures/routes.ts` as `{ path, allowedRoles, tenantScoped, recordKey?, kind: 'page'|'download'|'api' }`. The matrix drives both `route-access.spec.ts` and the `check-role-negative-e2e-coverage.mjs` guard, so adding a route without a test fails CI.
 
-### Why I am NOT auto-building the full 15 batches
+Routes covered: `/hq`, `/hq/audit`, `/hq/compliance`, `/hq/governance-export`, `/hq/refunds`, `/hq/api-clients`, `/developer`, `/developer/api-keys`, `/developer/usage`, `/governance`, `/governance/export/:id`, `/trades/:id`, `/matches/:id`, `/poi/:id`, `/wad/:id`, `/refunds/:id`, `/documents/:id/download`, `/exports/:id/download`, `/api/keys/:id`, `/api/usage`. Routes not present in this build are skipped with `test.skip` + reason recorded in the evidence row (not a deferral).
 
-1. Memory record (`features/facilitation-batch-8-management-exports`) shows Batches 1–8 ACCEPTED 2026-06-16 and **"Batch 9 held"** pending explicit approval — re-implementing the existing batches would breach that hold and could invalidate the accepted UAT evidence pack already delivered to Izenzo.
-2. The current schema, edge functions, audit names and exports are referenced by live prebuild guards (`check-data-002-audit-names.mjs`, facilitation audit guard, identity/tenant-boundary guards). Rebuilding them risks CI failure and regressions.
-3. Several spec items contradict current accepted decisions (e.g. closure-reason vocabulary, the canonical audit name set). These need an explicit "supersede" instruction, not a silent rewrite.
+## Wrong-action matrix (§9)
 
-### Recommended next step (please pick one)
+`e2e/fixtures/permissions.ts` lists each sensitive action with `{ allowedRoles, rpc, args, recordKey, sideEffectChecks: ['status','owner','tenant','ledger','seal','quota','docFields','notifications','providerCalls'] }`. `wrong-actions.spec.ts` iterates: for each action × each disallowed role → capture before → call via `direct-actions` → expect deny → capture after → `compareNoMutation` → assert no rows in `notification_dispatches`, `webhook_deliveries`, `email_send_log`, `fund_flows` for that record since the start marker.
 
-**Option 1 — Build only the five gaps (A–E) as "Batch 9".** Smallest, safest, keeps accepted UAT intact. Estimated: 1 migration (closure enum + evidence enforcement), ~3 edge function edits, ~2 UI edits, ~4 new tests.
+## Safety rails (§4) — enforced in seeder + test setup
 
-**Option 2 — Treat your master spec as a formal supersede of Batches 1–8.** Requires re-running the full UAT evidence pack with Izenzo, replacing the audit-name canon, and migrating existing facilitation rows to new vocabulary. Multi-day effort and re-opens accepted scope.
+- Seeder marks org `is_demo=true` (lifecycle/billing crons already skip).
+- `playwright.config.ts` sets env `E2E_RN_SAFE_MODE=1`; a tiny test-only edge-function side-effect guard refuses to send mail / call providers when this header/flag is present. Where guards don't exist yet, tests use `direct-actions` against RPCs that already short-circuit on `is_demo`.
+- No real keys, no real money, no real notifications. CI scripts assert `process.env.E2E_RN_ENV ∈ {staging,test}` before running, mirroring the TOTP rule already in `e2e/helpers/totp.ts`.
 
-**Option 3 — Discovery only.** I produce a written delta document mapping every line of your 15-batch spec to a file/line/table reference in the current build, with no code changes, for Izenzo sign-off before any build.
+## Evidence (§11–12)
 
-Please confirm Option 1, 2 or 3 before I touch code.  
+Extends existing `e2e/helpers/evidence.ts`. Per-row `summary.json` is supplemented by a run-level `evidence.json` with the §11 schema (run_id, role_used, organisation_used, route_or_action_tested, before/after_state, etc.). HTML report grouped by: positive-path | role-negative | wrong-tenant | logged-out | direct-link | direct-backend. Scrubber strips: full keys (`sk_*` → `sk_***`), JWTs, emails-of-real-users, document bytes. `scripts/pack-role-negative-evidence.mjs` produces `/mnt/documents/role-negative-e2e-<ts>.zip`.
+
+## CI / scripts (§13)
+
+Add to `package.json`:
+
+```json
+"test:e2e": "playwright test",
+"test:e2e:roles": "playwright test e2e/role-negative",
+"test:e2e:critical": "playwright test e2e/journeys/auth-role-landing.spec.ts e2e/journeys/trade-match.spec.ts e2e/journeys/poi-lifecycle.spec.ts e2e/journeys/wad-lifecycle.spec.ts e2e/journeys/refund-dispute.spec.ts e2e/role-negative",
+"test:evidence": "playwright test --reporter=list,junit,html",
+"test:e2e:coverage-guard": "node scripts/check-role-negative-e2e-coverage.mjs",
+"test:e2e:evidence-pack": "node scripts/pack-role-negative-evidence.mjs"
+```
+
+Release gate: the coverage-guard + the critical suite must both pass. Failures in: route-access, direct-link, tenant-isolation, wrong-actions, protected-documents, governance-export, refund/dispute, POI/WaD, api-key — block release. Deferrals only allowed for non-critical and only via entry in `docs/role-negative-e2e-coverage.md` deferral register (reason/route/risk/owner/follow-up date).
+
+## Out of scope (§14 defers, restated)
+
+Load/perf, mobile, visual regression, non-Chromium, live providers, real email/SMS/WhatsApp, real Payfast/Paystack, pen-testing, client UAT pack, AI anomaly detection, reporting dashboards.
+
+## Acceptance check (§16)
+
+Verified by:
+
+1. `bash scripts/seed-role-negative-e2e.sh` → both orgs + all roles + all records present (idempotent re-run is a no-op).
+2. `npm run test:e2e:coverage-guard` → green (matrix complete).
+3. `npm run test:e2e:critical` → green in Chromium against staging preview.
+4. Evidence zip generated; spot-check 3 rows (one positive, one role-negative, one direct-backend) contain before/after, request IDs, no PII.
+5. Existing `e2e/smoke-a-d` suite still passes.
+6. Build guard fails CI when a route is added to `e2e/fixtures/routes.ts` without a matching test (proven by a temporary unit test on the guard script).
+
+## Delivery order
+
+1. Seeder edge function + shell wrapper + env contract.
+2. Fixtures (`users/organisations/routes/records/permissions`).
+3. Helpers (`auth-roles/assertions/direct-actions/state/evidence`).
+4. `role-negative/` suites (route-access → direct-links → tenant → wrong-actions → docs → export → api-key).
+5. `journeys/` suites in the §10 order.
+6. Coverage guard + evidence packer + `package.json` scripts.
+7. `docs/role-negative-e2e-coverage.md` (matrix + deferral register + release-gate rules).
+8. Internal dry-run on staging; attach evidence zip path; mark "internally tested and build-complete" only after green.
+
+Confirm to proceed and I'll implement in this order.  
   
-Yes — choose **Option 1**.
+Confirmed — proceed with implementation in the delivery order stated.
 
-Do **not** rebuild Batches 1–8. If they are already live and accepted, rebuilding them would create unnecessary risk. The correct instruction is to treat this as **Facilitation Batch 9: Close the remaining gaps only**.
+One addition: before starting, please treat Daniel’s completed questionnaire as the controlling build authority. Do not broaden the work beyond the approved Role-Negative and E2E test package.
 
-You can send this:
+Key constraints remain:
 
-Proceed with **Option 1 — Build only the five confirmed gaps as Facilitation Batch 9**.
+```text
+Proceed.
 
-Do not rebuild or alter the accepted Batches 1–8. Preserve the existing tables, edge functions, audit names, UI components, RLS patterns, exports and accepted evidence.
+Implement this as a testing/release-gate hardening package only.
 
-The scope for Batch 9 is limited to the following:
+Do not add new product functionality.
+Do not change product permission logic unless a failing test proves the current implementation does not match the approved role matrix.
+Do not silently patch permission gaps during the test build. Report them as test failures.
+Do not use real client data.
+Do not call live payment, notification, KYB, KYC, sanctions, registry, bank or provider systems.
+Do not create production API keys.
+Do not grant production access.
+Do not send real emails, SMS, WhatsApp messages or webhooks.
 
-1. Closure vocabulary alignment  
-Extend the existing `facilitation_cases.final_outcome` handling only where needed. Add support for the missing outcomes/aliases identified in the gap analysis, including `no_response` and explicit `closed_by_admin` handling, without breaking existing accepted values. Enforce server-side closure evidence/notes for sensitive outcomes such as blocked by compliance, invalid details, duplicate, unable to contact and no response.
-2. Positive-response next-step task  
-When a case reaches `counterparty_responded` with a positive response, create a structured internal next-step task or typed event. The task should cover: verify details, create or update organisation, invite counterparty where appropriate, link to trade/match, notify requester using safe wording, and prepare the next POI-related step. This must not create a POI, WaD, verification status, compliance clearance or binding commercial state automatically.
-3. Requester-facing in-app notifications  
-Wire requester-safe in-app notifications for the safe transitions only: response received, ready for next step, unable to proceed and closed. Use the existing requester-safe label mapping. Do not expose internal notes, breach wording, compliance details, escalation details or risk comments.
-4. Management dashboard KPI tiles  
-Extend `facilitation-management-metrics` and the management UI to surface: average time to first review, average time to first contact, average time to close, conversion rate, and exact breached-deadline-type breakdown.
-5. Test pack completion  
-Add tests for closure-evidence enforcement, positive-response next-step creation, requester notification visibility/role matrix, and compliance-owner-self-clear blocking.
+Use TEST/UAT seeded data only.
+Use Organisation A TEST/UAT and Organisation B TEST/UAT.
+Use the approved role labels exactly.
+Generate evidence under /test-evidence/role-negative-e2e/<run_id>/.
+Wire the coverage guard and critical suite into the release gate.
 
-Important constraints:
+Delivery order approved:
+1. Seeder edge function + shell wrapper + env contract.
+2. Fixtures.
+3. Helpers.
+4. Role-negative suites.
+5. Journey suites.
+6. Coverage guard + evidence packer + package scripts.
+7. Coverage documentation and deferral register.
+8. Internal dry-run on staging.
+9. Mark build-complete only after green tests and evidence zip are available.
+```
 
-- Do not supersede or rewrite Batches 1–8.
-- Do not change canonical audit names unless strictly necessary and guarded.
-- Do not migrate accepted live vocabulary unless backwards-compatible.
-- Do not create duplicate tables or duplicate workflow logic.
-- Do not introduce automatic sending, WhatsApp, SMS, automatic assignment, automatic verification, automatic compliance clearance, automatic POI creation or automatic WaD creation.
-- Preserve the POI verification gate.
-- Preserve requester-safe visibility.
-- Preserve existing exports and management access rules.
-- Build against the live accepted facilitation architecture.
-
-Please implement Batch 9 in small, reviewable commits or changesets:
-
-Batch 9A — closure vocabulary and closure-evidence enforcement  
-Batch 9B — positive-response next-step task/event  
-Batch 9C — requester-safe in-app notifications  
-Batch 9D — management KPI tiles  
-Batch 9E — test pack completion
-
-After each sub-batch, provide a concise summary of files changed, database changes, edge function changes, UI changes, and tests added or updated.
-
-The important point is: **this is no longer a 15-batch build**. It is a **targeted Batch 9 completion** on top of accepted work.
+Please proceed and return the build summary, changed files, test results, evidence path, and any failed permission gaps found during implementation.

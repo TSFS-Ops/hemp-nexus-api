@@ -1,0 +1,3 @@
+# Run evidence for the Role-Negative & E2E pack lands here.
+# Per-run directory: <run_id>/<test-slug>/{summary.json,final.png}
+# Aggregated:        <run_id>/evidence.jsonl
