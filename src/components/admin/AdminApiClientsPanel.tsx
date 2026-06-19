@@ -55,6 +55,7 @@ type ApiClient = {
   ip_details: string | null;
   sandbox_terms_accepted: boolean;
   sandbox_approved: boolean;
+  sandbox_approved_by: string | null;
   sandbox_approved_at: string | null;
   production_requested: boolean;
   signed_api_agreement_confirmed: boolean;
@@ -67,10 +68,13 @@ type ApiClient = {
   security_contact_confirmed: boolean;
   ip_allowlist_or_exception_confirmed: boolean;
   production_approved: boolean;
+  production_approved_by: string | null;
   production_approved_at: string | null;
   suspended_at: string | null;
+  suspended_by: string | null;
   suspended_reason: string | null;
   revoked_at: string | null;
+  revoked_by: string | null;
   revoked_reason: string | null;
   notes: string | null;
   created_at: string;
