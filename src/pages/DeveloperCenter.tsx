@@ -141,15 +141,36 @@ function DocsView() {
 function UsageView() {
   return (
     <>
-      <DeveloperHeader section="API Usage" />
+      <DeveloperHeader section="Your organisation's API usage" />
       <div className="px-12 py-10 space-y-10">
         <EnvModeBanner />
-        <DevPageHeader audience="Authorised client admins and platform operators reviewing API client usage, allowance consumption, and estimated charges." />
+        <DevPageHeader audience="Authorised client admins reviewing your organisation's API client usage, allowance consumption, and estimated charges. Tenant-isolated: you only see API clients linked to your organisation." />
+        <section
+          className="rounded-sm border border-slate-800 bg-slate-900/40 px-5 py-4"
+          data-testid="client-usage-org-header"
+        >
+          <div className="flex items-start gap-3">
+            <Info className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" strokeWidth={1.75} />
+            <div style={{ fontFamily: "Inter, sans-serif" }}>
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-400">
+                Your organisation's API usage
+              </div>
+              <p className="mt-1 text-[13px] text-slate-200 leading-relaxed">
+                This dashboard shows API client usage scoped to your organisation only.
+                Sandbox calls are clearly labelled as test / non-billable. Production calls
+                are live and potentially billable. API keys are shown in masked form. We do
+                not display request payloads, response payloads, secrets, bearer tokens or
+                internal operational notes.
+              </p>
+            </div>
+          </div>
+        </section>
         <ClientUsageDashboard />
       </div>
     </>
   );
 }
+
 
 function SupportView() {
   return (
