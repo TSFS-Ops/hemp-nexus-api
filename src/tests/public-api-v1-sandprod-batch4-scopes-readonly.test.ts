@@ -288,10 +288,9 @@ describe("Public API V1 · sandbox/production separation · Batch 4 scopes + rea
     expect(src).toContain("export function isSandboxTestErrorCode");
   });
 
-  it("Batch 4 stays scoped: no webhook dispatcher, dashboard, alert catalogue, or OpenAPI changes", () => {
+  it("Batch 4 stays scoped: no dashboard or alert catalogue shipped (webhook dispatcher arrives in Batch 7)", () => {
     const files = readdirSync(join(ROOT, "supabase/functions"));
-    expect(files).not.toContain("public-api-webhooks-dispatch");
-    expect(files).not.toContain("public-api-webhooks-events");
     expect(files).not.toContain("public-api-alerts-catalogue");
+    expect(files).not.toContain("public-api-usage-dashboard");
   });
 });
