@@ -276,9 +276,12 @@ describe("Public API V1 · Batch 8 · client usage dashboard + CSV export", () =
   });
 
   it("dashboard does not expose raw api_keys or key hashes", () => {
-    const code = codeOnly(read(DASHBOARD)).toLowerCase();
+    // Strip the FORBIDDEN_CSV_TOKENS array literal first — those entries
+    // are the defensive blocklist, not exposed fields.
+    const raw = codeOnly(read(DASHBOARD));
+    const stripped = raw.replace(/FORBIDDEN_CSV_TOKENS\s*=\s*\[[\s\S]*?\];/, "").toLowerCase();
     for (const banned of ["key_hash", "secret_hash", "raw_key", "bearer_token", "private_key"]) {
-      expect(code, `dashboard must not reference ${banned}`).not.toContain(banned);
+      expect(stripped, `dashboard must not reference ${banned}`).not.toContain(banned);
     }
   });
 
