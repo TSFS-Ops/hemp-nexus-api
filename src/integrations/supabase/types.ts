@@ -12996,6 +12996,10 @@ export type Database = {
         }
         Returns: Json[]
       }
+      get_api_usage_dashboard_summary: {
+        Args: { p_now?: string }
+        Returns: Json
+      }
       get_billing_availability: { Args: never; Returns: Json }
       get_cold_storage_archive_cron_jobs: {
         Args: never
