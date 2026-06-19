@@ -858,6 +858,7 @@ function HQLayout({ restrictedToFacilitation = false }: { restrictedToFacilitati
                   <div className="border border-border rounded-sm p-3"><FacilitationOutreachTemplatePanel /></div>
                   <div className="border border-border rounded-sm p-3"><FacilitationDncRulePanel /></div>
                 </div>
+                <div className="border border-border rounded-sm p-3"><FacilitationTemplateEditorPanel /></div>
               </div>
             </section>
           </TabsContent>
