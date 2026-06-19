@@ -16,8 +16,10 @@ export interface ParsedEdgeError {
   code: string | null;
   message: string;
   requestId: string | null;
+  functionName: string | null;
   details?: unknown;
 }
+
 
 
 const FRIENDLY: Record<string, string> = {
