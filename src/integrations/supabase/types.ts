@@ -12449,6 +12449,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      can_access_api_monitoring: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       can_delete_match_document_object: {
         Args: { _object_name: string; _owner_id?: string; _user_id: string }
         Returns: boolean
@@ -12693,6 +12697,18 @@ export type Database = {
         Args: { p_api_client_id: string; p_period_start?: string }
         Returns: Json
       }
+      get_api_monitoring_overview: {
+        Args: {
+          p_api_client_id?: string
+          p_environment?: string
+          p_errors_only?: boolean
+          p_min_usage_pct?: number
+          p_period_start?: string
+          p_plan_id?: string
+          p_status_label?: string
+        }
+        Returns: Json[]
+      }
       get_billing_availability: { Args: never; Returns: Json }
       get_cold_storage_archive_cron_jobs: {
         Args: never
@@ -12831,6 +12847,15 @@ export type Database = {
       log_api_client_usage_csv_export: {
         Args: {
           p_api_client_id: string
+          p_period_end: string
+          p_period_start: string
+          p_row_count: number
+        }
+        Returns: undefined
+      }
+      log_api_monitoring_csv_export: {
+        Args: {
+          p_filters: Json
           p_period_end: string
           p_period_start: string
           p_row_count: number

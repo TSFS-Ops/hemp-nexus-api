@@ -35,6 +35,7 @@ import UsersManagement from "@/components/admin/UsersManagement";
 import OrgsManagement from "@/components/admin/OrgsManagement";
 import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
 import { AdminApiClientsPanel } from "@/components/admin/AdminApiClientsPanel";
+import { AdminApiMonitoringPanel } from "@/components/admin/AdminApiMonitoringPanel";
 import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
 import { AdminChallengeQueuePanel } from "@/components/admin/AdminChallengeQueuePanel";
@@ -444,7 +445,7 @@ function OrganisationsTab() {
   // Sub-tabs: Orgs (token balances + suspension) · Legal Entities · KYB Docs · API Clients
   // Sub-tab state lives in ?sub= so legacy redirects (e.g. /admin/entities) and
   // bookmarks land on the right surface.
-  const [sub, setSub] = useUrlTab("sub", "orgs", ["orgs", "entities", "kyb", "api-clients"]);
+  const [sub, setSub] = useUrlTab("sub", "orgs", ["orgs", "entities", "kyb", "api-clients", "api-monitoring"]);
   return <>
       <TabHeader id="organisations" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -453,6 +454,7 @@ function OrganisationsTab() {
           <TabsTrigger value="entities">Legal Entities</TabsTrigger>
           <TabsTrigger value="kyb">KYB Documents</TabsTrigger>
           <TabsTrigger value="api-clients">API Clients</TabsTrigger>
+          <TabsTrigger value="api-monitoring">API Monitoring</TabsTrigger>
         </TabsList>
         <TabsContent value="orgs">
           <Surface label="Registered organisations · public.organisations">
@@ -472,6 +474,11 @@ function OrganisationsTab() {
         <TabsContent value="api-clients">
           <Surface label="Institutional API client onboarding · public.api_clients">
             <AdminApiClientsPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="api-monitoring">
+          <Surface label="Internal Public API V1 monitoring · platform_admin / api_admin / auditor only">
+            <AdminApiMonitoringPanel />
           </Surface>
         </TabsContent>
       </Tabs>
