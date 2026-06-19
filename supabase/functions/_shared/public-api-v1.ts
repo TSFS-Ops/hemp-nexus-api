@@ -52,6 +52,13 @@ export const V1_ERROR_CODES = [
   "provider_unavailable",
   "timeout",
   "internal_error",
+  // Sandbox / Production Separation · Batch 4 additions.
+  "sandbox_endpoint_required",
+  "production_endpoint_required",
+  "unknown_scope",
+  "forbidden_scope",
+  "api_key_environment_mismatch",
+  "internal_error_simulated",
 ] as const;
 export type V1ErrorCode = typeof V1_ERROR_CODES[number];
 
@@ -74,6 +81,13 @@ const ERROR_HTTP_STATUS: Record<V1ErrorCode, number> = {
   provider_unavailable: 502,
   timeout: 504,
   internal_error: 500,
+  // Batch 4 additions.
+  sandbox_endpoint_required: 403,
+  production_endpoint_required: 403,
+  unknown_scope: 403,
+  forbidden_scope: 403,
+  api_key_environment_mismatch: 403,
+  internal_error_simulated: 500,
 };
 
 // Public-safe messages — never embed internal exception text.
@@ -96,6 +110,13 @@ const ERROR_PUBLIC_MESSAGE: Record<V1ErrorCode, string> = {
   provider_unavailable: "A downstream provider is temporarily unavailable.",
   timeout: "The request timed out.",
   internal_error: "An internal error occurred.",
+  // Batch 4 additions.
+  sandbox_endpoint_required: "This endpoint is only available in the sandbox environment.",
+  production_endpoint_required: "This endpoint is only available in the production environment.",
+  unknown_scope: "The API key carries a scope that is not recognised.",
+  forbidden_scope: "The API key carries a scope that is not permitted on the public API.",
+  api_key_environment_mismatch: "The API key cannot be used in this environment.",
+  internal_error_simulated: "Simulated internal error (sandbox).",
 };
 
 // ─── Standard V1 response envelopes ──────────────────────────────────────
