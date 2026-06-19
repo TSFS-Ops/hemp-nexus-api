@@ -175,11 +175,13 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
     // No support-intake tables introduced anywhere. Commercial plans are
     // intentionally scoped to Batch 7 — excluded here only from Batch-3-
     // tagged migrations.
+    // Batch 11 now legitimately introduces api_support_tickets; this fence
+    // only blocks Batch-3-tagged migrations from doing so.
     const migDir = path.join(ROOT, "supabase/migrations");
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
-      expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
       if (/Batch 3/i.test(body)) {
+        expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
         expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
       }
     }

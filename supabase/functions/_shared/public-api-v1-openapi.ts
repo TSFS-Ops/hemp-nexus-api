@@ -37,9 +37,15 @@ export const V1_API_VERSION = "1.0.0";
 export const V1_LEGAL_WARNING = "API responses provide Izenzo status and risk signals based on available records at the time of the request. They are not legal advice, not a bank-payment guarantee, not a compliance clearance, not a credit decision, and not a substitute for the client’s own approval process unless expressly agreed in writing. No API response creates a POI, WaD, verified status, or binding transaction approval by itself.";
 
 export const V1_SUPPORT_TEXT =
-  "Until an in-product support-ticket intake is published, the supported " +
-  "route is to contact your Izenzo account owner or Izenzo support. Do not " +
-  "assume a programmatic /v1/support endpoint exists yet.";
+  "Support for API issues is available via the in-product API Support tab " +
+  "in the Developer Centre. Authorised client admins can raise tickets for " +
+  "authentication, sandbox, production, rate-limit, monthly-limit, " +
+  "unexpected-response, outage, billing-visibility, documentation or other " +
+  "API issues. Tickets are visible only to your own API client and to " +
+  "authorised Izenzo internal staff; internal notes are never shown to " +
+  "client users. There is no public /v1/support endpoint and there is no " +
+  "live chat or 24/7 human support guarantee. You may also contact your " +
+  "Izenzo account owner or Izenzo support outside the app.";
 
 // Canonical scope catalogue — kept aligned with _shared/api-scopes.ts.
 export const V1_SCOPE_CATALOGUE: Array<{ scope: string; description: string }> = [

@@ -36,6 +36,7 @@ import OrgsManagement from "@/components/admin/OrgsManagement";
 import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
 import { AdminApiClientsPanel } from "@/components/admin/AdminApiClientsPanel";
 import { AdminApiMonitoringPanel } from "@/components/admin/AdminApiMonitoringPanel";
+import { AdminApiSupportTicketsPanel } from "@/components/admin/AdminApiSupportTicketsPanel";
 import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
 import { AdminChallengeQueuePanel } from "@/components/admin/AdminChallengeQueuePanel";
@@ -445,7 +446,7 @@ function OrganisationsTab() {
   // Sub-tabs: Orgs (token balances + suspension) · Legal Entities · KYB Docs · API Clients
   // Sub-tab state lives in ?sub= so legacy redirects (e.g. /admin/entities) and
   // bookmarks land on the right surface.
-  const [sub, setSub] = useUrlTab("sub", "orgs", ["orgs", "entities", "kyb", "api-clients", "api-monitoring"]);
+  const [sub, setSub] = useUrlTab("sub", "orgs", ["orgs", "entities", "kyb", "api-clients", "api-monitoring", "api-support"]);
   return <>
       <TabHeader id="organisations" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -455,6 +456,7 @@ function OrganisationsTab() {
           <TabsTrigger value="kyb">KYB Documents</TabsTrigger>
           <TabsTrigger value="api-clients">API Clients</TabsTrigger>
           <TabsTrigger value="api-monitoring">API Monitoring</TabsTrigger>
+          <TabsTrigger value="api-support">API Support</TabsTrigger>
         </TabsList>
         <TabsContent value="orgs">
           <Surface label="Registered organisations · public.organisations">
@@ -479,6 +481,11 @@ function OrganisationsTab() {
         <TabsContent value="api-monitoring">
           <Surface label="Internal Public API V1 monitoring · platform_admin / api_admin / auditor only">
             <AdminApiMonitoringPanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="api-support">
+          <Surface label="Internal Public API V1 support tickets · public.api_support_tickets · platform_admin / api_admin / auditor only · internal notes never exposed to client users">
+            <AdminApiSupportTicketsPanel />
           </Surface>
         </TabsContent>
       </Tabs>

@@ -13,6 +13,7 @@ import { PlainEnglishWalkthrough } from "@/components/developer/PlainEnglishWalk
 import { DevPageHeader } from "@/components/developer/DevPageHeader";
 import { OnboardingChecklist } from "@/components/developer/OnboardingChecklist";
 import { ClientUsageDashboard } from "@/components/developer/ClientUsageDashboard";
+import { ClientSupportPanel } from "@/components/developer/ClientSupportPanel";
 import { Info } from "lucide-react";
 
 function DeveloperHeader({ section, badge }: { section: string; badge?: string }) {
@@ -150,6 +151,19 @@ function UsageView() {
   );
 }
 
+function SupportView() {
+  return (
+    <>
+      <DeveloperHeader section="API Support" />
+      <div className="px-12 py-10 space-y-10">
+        <EnvModeBanner />
+        <DevPageHeader audience="Authorised client admins raising API support tickets and tracking their status. Support intake only — not live chat, not a 24/7 human support guarantee." />
+        <ClientSupportPanel />
+      </div>
+    </>
+  );
+}
+
 export default function DeveloperCenter() {
   return (
     <EnvProvider>
@@ -158,6 +172,7 @@ export default function DeveloperCenter() {
           <Route index element={<Navigate to="keys" replace />} />
           <Route path="keys" element={<KeysView />} />
           <Route path="usage" element={<UsageView />} />
+          <Route path="support" element={<SupportView />} />
           <Route path="webhooks" element={<WebhooksView />} />
           <Route path="schema" element={<SchemaView />} />
           <Route path="docs" element={<DocsView />} />

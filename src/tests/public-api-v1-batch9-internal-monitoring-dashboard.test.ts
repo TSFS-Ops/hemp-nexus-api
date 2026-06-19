@@ -39,15 +39,24 @@ const HQ = "src/pages/HQ.tsx";
 const GATEWAY = "supabase/functions/public-api/index.ts";
 
 function findBatch9Migration(): string {
+  // Return ONLY the migration file that introduces can_access_api_monitoring
+  // — i.e. Batch 9 itself. Later batches (e.g. Batch 11) may recreate
+  // get_api_monitoring_overview to wire new fields; we don't want their
+  // text bleeding into Batch-9-specific exclusion checks.
+  const dir = path.join(ROOT, "supabase/migrations");
+  for (const f of fs.readdirSync(dir)) {
+    const body = fs.readFileSync(path.join(dir, f), "utf-8");
+    if (/can_access_api_monitoring/.test(body)) return body;
+  }
+  return "";
+}
+
+function findMonitoringOverviewMigrations(): string {
   const dir = path.join(ROOT, "supabase/migrations");
   let combined = "";
   for (const f of fs.readdirSync(dir)) {
     const body = fs.readFileSync(path.join(dir, f), "utf-8");
-    if (
-      /get_api_monitoring_overview/.test(body) ||
-      /can_access_api_monitoring/.test(body) ||
-      /log_api_monitoring_csv_export/.test(body)
-    ) {
+    if (/get_api_monitoring_overview/.test(body) || /log_api_monitoring_csv_export/.test(body)) {
       combined += "\n" + body;
     }
   }
@@ -152,10 +161,14 @@ describe("Public API V1 · Batch 9 · internal monitoring dashboard", () => {
     expect(mig).toMatch(/AVG\(l\.response_time_ms\)/i);
   });
 
-  it("support-ticket field is deferred (no support intake)", () => {
-    const mig = findBatch9Migration();
-    expect(mig).toMatch(/'open_support_tickets',\s*NULL/);
-    expect(mig).toMatch(/deferred_no_support_ticket_table/);
+  it("support-ticket field is now wired (Batch 11) — field still emitted", () => {
+    const combined = findMonitoringOverviewMigrations();
+    expect(combined.includes("'open_support_tickets'")).toBe(true);
+    // Batch 11 wires real counts; either Batch 9's deferred placeholder OR
+    // Batch 11's live wiring is acceptable on the combined RPC text.
+    const wired = /live_from_api_support_tickets/.test(combined);
+    const deferred = /deferred_no_support_ticket_table/.test(combined);
+    expect(wired || deferred).toBe(true);
   });
 
   // ─── Status label semantics ────────────────────────────────────────
