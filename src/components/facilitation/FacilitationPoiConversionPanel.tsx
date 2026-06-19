@@ -90,7 +90,7 @@ export const FacilitationPoiConversionPanel: React.FC<Props> = ({ caseId, canCon
       setReport(r);
       if (!r) toast.error("Eligibility check returned no report");
     } catch (e) {
-      toast.error(friendlyFacilitationError(e, "facilitation-poi-conversion"));
+      toast.error(await friendlyFacilitationError(e, "facilitation-poi-conversion"));
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ export const FacilitationPoiConversionPanel: React.FC<Props> = ({ caseId, canCon
       setPoiId(""); setReason(""); setAcknowledge(false);
       await onChanged();
     } catch (e) {
-      toast.error(friendlyFacilitationError(e, "facilitation-poi-conversion"));
+      toast.error(await friendlyFacilitationError(e, "facilitation-poi-conversion"));
     } finally {
       setSubmitting(false);
     }
@@ -145,7 +145,7 @@ export const FacilitationPoiConversionPanel: React.FC<Props> = ({ caseId, canCon
       setPoiReference(""); setReason(""); setEvidence(""); setAcknowledge(false);
       await onChanged();
     } catch (e) {
-      toast.error(friendlyFacilitationError(e, "facilitation-poi-conversion"));
+      toast.error(await friendlyFacilitationError(e, "facilitation-poi-conversion"));
     } finally {
       setSubmitting(false);
     }
