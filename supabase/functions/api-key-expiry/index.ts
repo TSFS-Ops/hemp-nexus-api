@@ -3,16 +3,17 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { ApiException, errorResponse } from "../_shared/errors.ts";
 
 /**
- * API Key Expiry Automation
- * 
- * This edge function handles API key expiration:
- * 1. Sends warning emails 7 days before expiry
- * 2. Disables keys that have expired
- * 
- * SECURITY: This endpoint requires internal authentication via INTERNAL_CRON_KEY
- * to prevent unauthorised triggering.
+ * API Key Expiry Automation — Public API V1 · Sandprod Batch 3
+ *
+ *  1. Disables expired keys (status='expired').
+ *  2. Production keys: three distinct warning windows at 30 / 14 / 3 days
+ *     before expiry, each gated by its own column so each window emits
+ *     exactly once per key.
+ *  3. Sandbox keys: single warning window (≤ 7 days) using a distinct
+ *     column so it cannot collide with production warning state.
+ *
+ * Auth: INTERNAL_CRON_KEY required (no service-role fallback).
  */
-
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
@@ -23,12 +24,10 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    // SECURITY: Internal cron auth — INTERNAL_CRON_KEY must be set in production.
-    // No fallback to SERVICE_ROLE_KEY (which would invite accidental exposure).
     const internalKey = req.headers.get("x-internal-key") || req.headers.get("authorization")?.replace("Bearer ", "");
     const expectedKey = Deno.env.get("INTERNAL_CRON_KEY");
     if (!expectedKey) {
-      console.error("[api-key-expiry] INTERNAL_CRON_KEY is not configured — refusing to run.");
+      console.error("[api-key-expiry] INTERNAL_CRON_KEY not configured — refusing to run.");
       throw new ApiException("SERVER_NOT_CONFIGURED", "Server not configured", 503);
     }
     if (!internalKey || internalKey !== expectedKey) {
@@ -40,118 +39,108 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const now = new Date();
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    const addDays = (d: number) => new Date(now.getTime() + d * 24 * 60 * 60 * 1000);
 
     let expiredCount = 0;
-    let warningCount = 0;
+    const warnCounts: Record<string, number> = { sandbox: 0, prod_30d: 0, prod_14d: 0, prod_3d: 0 };
 
-    // Find and disable expired keys
+    // 1. Disable expired keys
     const { data: expiredKeys, error: expiredError } = await supabase
       .from("api_keys")
-      .select("*")
+      .select("id, org_id, name, environment, expires_at")
       .eq("status", "active")
       .not("expires_at", "is", null)
       .lte("expires_at", now.toISOString());
-
     if (expiredError) throw expiredError;
 
     if (expiredKeys && expiredKeys.length > 0) {
-      const keyIds = expiredKeys.map(k => k.id);
-      
+      const keyIds = expiredKeys.map((k) => k.id);
       const { error: updateError } = await supabase
         .from("api_keys")
-        .update({ 
-          status: "expired",
-          revoked_at: now.toISOString() 
-        })
+        .update({ status: "expired", revoked_at: now.toISOString(), revoked_reason: "auto: expiry sweeper" })
         .in("id", keyIds);
-
       if (updateError) throw updateError;
-
       expiredCount = expiredKeys.length;
-      console.log(`Expired ${expiredCount} API keys`);
 
-      // Log expiry events
       for (const key of expiredKeys) {
         await supabase.from("audit_logs").insert({
           org_id: key.org_id,
-          actor_user_id: null,
-          actor_api_key_id: null,
           action: "apikey.expired",
           entity_type: "api_key",
           entity_id: key.id,
-          metadata: {
-            name: key.name,
-            expires_at: key.expires_at,
-            automated: true,
-          },
+          metadata: { name: key.name, environment: key.environment, expires_at: key.expires_at, automated: true },
         });
       }
     }
 
-    // Find keys expiring in 7 days (send warning)
-    const { data: expiringKeys, error: expiringError } = await supabase
-      .from("api_keys")
-      .select(`
-        *,
-        organisations!inner(id, name),
-        profiles!inner(id, email)
-      `)
-      .eq("status", "active")
-      .eq("expiry_warning_sent", false)
-      .not("expires_at", "is", null)
-      .lte("expires_at", sevenDaysFromNow.toISOString())
-      .gt("expires_at", now.toISOString());
-
-    if (expiringError) throw expiringError;
-
-    if (expiringKeys && expiringKeys.length > 0) {
-      // In a real implementation, you would send emails here
-      // For now, just mark warnings as sent and log
-      
-      const keyIds = expiringKeys.map(k => k.id);
-      
-      const { error: warningError } = await supabase
+    // 2. Production expiry warnings at 30 / 14 / 3 days
+    const prodWindows: Array<{ days: number; column: string; audit: string; label: "prod_30d" | "prod_14d" | "prod_3d" }> = [
+      { days: 30, column: "expiry_warning_30d_sent_at", audit: "api.production_key.expiry_warning_30d", label: "prod_30d" },
+      { days: 14, column: "expiry_warning_14d_sent_at", audit: "api.production_key.expiry_warning_14d", label: "prod_14d" },
+      { days: 3,  column: "expiry_warning_3d_sent_at",  audit: "api.production_key.expiry_warning_3d",  label: "prod_3d"  },
+    ];
+    for (const w of prodWindows) {
+      const cutoff = addDays(w.days);
+      const { data: rows, error } = await supabase
         .from("api_keys")
-        .update({ expiry_warning_sent: true })
-        .in("id", keyIds);
+        .select("id, org_id, name, expires_at")
+        .eq("status", "active")
+        .eq("environment", "production")
+        .is(w.column, null)
+        .not("expires_at", "is", null)
+        .lte("expires_at", cutoff.toISOString())
+        .gt("expires_at", now.toISOString());
+      if (error) throw error;
+      if (!rows || rows.length === 0) continue;
 
-      if (warningError) throw warningError;
+      const ids = rows.map((r) => r.id);
+      const { error: stampErr } = await supabase
+        .from("api_keys").update({ [w.column]: now.toISOString() }).in("id", ids);
+      if (stampErr) throw stampErr;
+      warnCounts[w.label] = rows.length;
 
-      warningCount = expiringKeys.length;
-      console.log(`Sent ${warningCount} expiry warnings`);
-
-      // Log warning events
-      for (const key of expiringKeys) {
-        console.log(`Warning: API key "${key.name}" expires on ${key.expires_at}`);
-        
+      for (const r of rows) {
         await supabase.from("audit_logs").insert({
-          org_id: key.org_id,
-          actor_user_id: null,
-          actor_api_key_id: null,
-          action: "apikey.expiry_warning",
+          org_id: r.org_id,
+          action: w.audit,
           entity_type: "api_key",
-          entity_id: key.id,
-          metadata: {
-            name: key.name,
-            expires_at: key.expires_at,
-            days_until_expiry: Math.ceil(
-              (new Date(key.expires_at).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-            ),
-            automated: true,
-          },
+          entity_id: r.id,
+          metadata: { name: r.name, environment: "production", expires_at: r.expires_at, window_days: w.days, automated: true },
+        });
+      }
+    }
+
+    // 3. Sandbox single-warning window (≤ 7 days)
+    const sandboxCutoff = addDays(7);
+    const { data: sboxRows, error: sboxErr } = await supabase
+      .from("api_keys")
+      .select("id, org_id, name, expires_at")
+      .eq("status", "active")
+      .eq("environment", "sandbox")
+      .is("sandbox_expiry_warning_sent_at", null)
+      .not("expires_at", "is", null)
+      .lte("expires_at", sandboxCutoff.toISOString())
+      .gt("expires_at", now.toISOString());
+    if (sboxErr) throw sboxErr;
+
+    if (sboxRows && sboxRows.length > 0) {
+      const ids = sboxRows.map((r) => r.id);
+      await supabase.from("api_keys").update({ sandbox_expiry_warning_sent_at: now.toISOString() }).in("id", ids);
+      warnCounts.sandbox = sboxRows.length;
+      for (const r of sboxRows) {
+        await supabase.from("audit_logs").insert({
+          org_id: r.org_id,
+          action: "api.sandbox_key.expiry_warning",
+          entity_type: "api_key",
+          entity_id: r.id,
+          metadata: { name: r.name, environment: "sandbox", expires_at: r.expires_at, automated: true },
         });
       }
     }
 
     return new Response(
-      JSON.stringify({
-        message: "API key expiry automation complete",
-        expired: expiredCount,
-        warnings_sent: warningCount,
-      }),
-      { status: 200, headers: { "Content-Type": "application/json", ...headers } }
+      JSON.stringify({ message: "API key expiry automation complete", expired: expiredCount, warnings: warnCounts }),
+      { status: 200, headers: { "Content-Type": "application/json", ...headers } },
     );
   } catch (error) {
     console.error(`[${requestId}] API key expiry job error:`, error);
