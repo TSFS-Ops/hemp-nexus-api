@@ -116,6 +116,10 @@ export interface V1RequestCtx {
   // represents a billable production call. Health/status/sandbox/validation/
   // auth/scope/system errors must leave this false.
   billable: boolean;
+  // Sandbox/Production Separation · Batch 2 trace columns.
+  requestPayloadHash: string | null;
+  rateLimitDecision: "allowed" | "minute_block" | "monthly_block" | "overage_billable" | null;
+  billableOverage: boolean;
   responseHeaders: Record<string, string>;
 }
 
@@ -134,6 +138,9 @@ export function newCtx(req: Request, endpointTag: string): V1RequestCtx {
     orgId: null,
     apiClientId: null,
     billable: false,
+    requestPayloadHash: null,
+    rateLimitDecision: null,
+    billableOverage: false,
     responseHeaders: {},
   };
 }
@@ -162,12 +169,53 @@ export class V1Error extends Error {
 }
 
 // ─── Environment detection ───────────────────────────────────────────────
-// Header `X-Izenzo-Environment: sandbox|production` is the V1 contract.
-// Missing header → null (later mapped to insufficient_scope/invalid).
-export function detectEnvironment(req: Request): "sandbox" | "production" | null {
-  const raw = (req.headers.get("x-izenzo-environment") || "").trim().toLowerCase();
-  if (raw === "sandbox" || raw === "production") return raw;
+//
+// Sandbox/Production Separation · Batch 2 (Decision #1):
+//   Host-derived environment WINS over any submitted X-Izenzo-Environment
+//   header. The header remains accepted for backward compatibility and for
+//   local/dev contexts where the public hostname is not in play, but it
+//   is never trusted over the hostname.
+//
+//     api-sandbox.trade.izenzo.co.za → environment=sandbox
+//     api.trade.izenzo.co.za         → environment=production
+//
+const SANDBOX_HOSTNAMES = new Set([
+  "api-sandbox.trade.izenzo.co.za",
+]);
+const PRODUCTION_HOSTNAMES = new Set([
+  "api.trade.izenzo.co.za",
+]);
+
+function deriveHostEnvironment(req: Request): "sandbox" | "production" | null {
+  const fwd = (req.headers.get("x-forwarded-host") || "").split(",")[0]?.trim().toLowerCase();
+  const host = (fwd || req.headers.get("host") || "").trim().toLowerCase();
+  if (!host) return null;
+  const bare = host.split(":")[0];
+  if (SANDBOX_HOSTNAMES.has(bare)) return "sandbox";
+  if (PRODUCTION_HOSTNAMES.has(bare)) return "production";
   return null;
+}
+
+export interface DetectedEnvironment {
+  env: "sandbox" | "production" | null;
+  hostEnv: "sandbox" | "production" | null;
+  headerEnv: "sandbox" | "production" | null;
+  mismatch: boolean;
+}
+
+export function detectEnvironmentDetailed(req: Request): DetectedEnvironment {
+  const raw = (req.headers.get("x-izenzo-environment") || "").trim().toLowerCase();
+  const headerEnv = raw === "sandbox" || raw === "production" ? (raw as "sandbox" | "production") : null;
+  const hostEnv = deriveHostEnvironment(req);
+  if (hostEnv) {
+    return { env: hostEnv, hostEnv, headerEnv, mismatch: headerEnv !== null && headerEnv !== hostEnv };
+  }
+  return { env: headerEnv, hostEnv: null, headerEnv, mismatch: false };
+}
+
+// Back-compat shim — existing callers receive the final env decision only.
+export function detectEnvironment(req: Request): "sandbox" | "production" | null {
+  return detectEnvironmentDetailed(req).env;
 }
 
 // ─── API key lookup (same hashing rules as _shared/auth.ts) ──────────────
