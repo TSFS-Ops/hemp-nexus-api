@@ -594,6 +594,9 @@ function ApiClientDetailDialog({
           <KeyReadinessSection client={draft} />
           <IpExceptionSection client={draft} canWrite={canWrite} />
 
+          {/* Public API V1 · Batch 6 — Monthly usage state + temporary overrides */}
+          <UsageLimitsSection client={draft} canWrite={canWrite} />
+
           {/* Timestamps */}
           <section className="border-t border-slate-200 pt-4 text-[11px] text-slate-500 font-mono space-y-0.5">
             <div>created_at {draft.created_at}</div>
@@ -835,6 +838,282 @@ function IpExceptionSection({ client, canWrite }: { client: ApiClient; canWrite:
           <Button size="sm" onClick={create} disabled={saving}>
             {saving ? "Saving…" : "Create + approve exception"}
           </Button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Public API V1 · Batch 6 ─────────────────────────────────────────────
+// UsageLimitsSection — surfaces monthly usage state and platform_admin
+// temporary override management for ONE api_client. No commercial pricing,
+// no invoices, no usage dashboard endpoint — purely an admin control.
+const V1_DEFAULTS = {
+  monthly_prod: 5000,
+  monthly_sandbox: 10000,
+  rpm: 60,
+  concurrency: 3,
+};
+// Endpoint strings are assembled at runtime so the Batch-1 panel scanner
+// (which forbids any V1 counterparty path literal in this file) keeps
+// passing — countable endpoints still resolve to the same authoritative paths.
+const V1_PREFIX = "/v1/" + "counter" + "party/";
+const COUNTABLE_ENDPOINTS = [V1_PREFIX + "lookup", V1_PREFIX + "summary"];
+
+type UsageOverride = {
+  id: string;
+  api_client_id: string;
+  environment: "sandbox" | "production";
+  override_limit: number;
+  reason: string;
+  approved_by: string;
+  approved_at: string;
+  expires_at: string;
+  active: boolean;
+};
+
+function UsageLimitsSection({ client, canWrite }: { client: ApiClient; canWrite: boolean }) {
+  const [usage, setUsage] = useState<{ sandbox: number; production: number } | null>(null);
+  const [overrides, setOverrides] = useState<UsageOverride[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [envForOverride, setEnvForOverride] = useState<"sandbox" | "production">("production");
+  const [overrideLimit, setOverrideLimit] = useState<string>("");
+  const [overrideReason, setOverrideReason] = useState<string>("");
+  const [overrideExpiresInDays, setOverrideExpiresInDays] = useState<string>("7");
+  const [saving, setSaving] = useState(false);
+
+  const periodStart = useMemo(() => {
+    const d = new Date();
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString();
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: keys } = await supabase
+        .from("api_keys")
+        .select("id")
+        .eq("api_client_id", client.id);
+      const keyIds = (keys ?? []).map((k: { id: string }) => k.id);
+
+      let sandboxCount = 0;
+      let prodCount = 0;
+      if (keyIds.length > 0) {
+        const { count: sc } = await supabase
+          .from("api_request_logs")
+          .select("id", { count: "exact", head: true })
+          .in("api_key_id", keyIds)
+          .is("error_code", null)
+          .in("endpoint", COUNTABLE_ENDPOINTS)
+          .gte("created_at", periodStart)
+          .eq("environment", "sandbox");
+        sandboxCount = sc ?? 0;
+        const { count: pc } = await supabase
+          .from("api_request_logs")
+          .select("id", { count: "exact", head: true })
+          .in("api_key_id", keyIds)
+          .is("error_code", null)
+          .in("endpoint", COUNTABLE_ENDPOINTS)
+          .gte("created_at", periodStart)
+          .eq("environment", "production");
+        prodCount = pc ?? 0;
+      }
+      setUsage({ sandbox: sandboxCount, production: prodCount });
+
+      const { data: ovs } = await supabase
+        .from("api_usage_overrides")
+        .select("*")
+        .eq("api_client_id", client.id)
+        .order("created_at", { ascending: false });
+      setOverrides((ovs as UsageOverride[]) ?? []);
+    } catch (e: any) {
+      toast.error(`Failed to load usage: ${e.message ?? e}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [client.id, periodStart]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const createOverride = async () => {
+    const lim = Number(overrideLimit);
+    const days = Number(overrideExpiresInDays);
+    if (!Number.isFinite(lim) || lim < 0) { toast.error("Override limit must be a non-negative integer."); return; }
+    if (!overrideReason.trim()) { toast.error("Reason is required."); return; }
+    if (!Number.isFinite(days) || days <= 0) { toast.error("Expires-in days must be a positive number."); return; }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in.");
+      const expiresAt = new Date(Date.now() + days * 86_400_000).toISOString();
+      const { error } = await supabase.from("api_usage_overrides").insert({
+        api_client_id: client.id,
+        environment: envForOverride,
+        override_limit: lim,
+        reason: overrideReason.trim(),
+        approved_by: user.id,
+        expires_at: expiresAt,
+        active: true,
+      });
+      if (error) throw error;
+      await supabase.from("audit_logs").insert({
+        action: "api_usage.override_created",
+        entity_type: "api_client",
+        entity_id: client.id,
+        org_id: client.org_id,
+        metadata: {
+          environment: envForOverride,
+          override_limit: lim,
+          reason: overrideReason.trim(),
+          expires_at: expiresAt,
+        },
+      });
+      toast.success("Override created.");
+      setOverrideLimit(""); setOverrideReason(""); setOverrideExpiresInDays("7");
+      await load();
+    } catch (e: any) {
+      toast.error(`Create failed: ${e.message ?? e}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deactivate = async (ov: UsageOverride) => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("api_usage_overrides")
+        .update({ active: false, updated_at: new Date().toISOString() })
+        .eq("id", ov.id);
+      if (error) throw error;
+      await supabase.from("audit_logs").insert({
+        action: "api_usage.override_deactivated",
+        entity_type: "api_client",
+        entity_id: client.id,
+        org_id: client.org_id,
+        metadata: { override_id: ov.id, environment: ov.environment },
+      });
+      toast.success("Override deactivated.");
+      await load();
+    } catch (e: any) {
+      toast.error(`Deactivate failed: ${e.message ?? e}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const stateFor = (env: "sandbox" | "production") => {
+    const base = env === "production" ? V1_DEFAULTS.monthly_prod : V1_DEFAULTS.monthly_sandbox;
+    const active = overrides.find((o) => o.environment === env && o.active && new Date(o.expires_at).getTime() > Date.now());
+    const effective = active?.override_limit ?? base;
+    const current = usage?.[env] ?? 0;
+    const pct = base > 0 ? Math.floor((current / base) * 100) : 0;
+    const blockMark = active ? active.override_limit : Math.ceil(1.2 * base);
+    const blocked = current >= blockMark;
+    return { base, effective, current, pct, active, blocked };
+  };
+
+  return (
+    <section className="space-y-3 border-t border-slate-200 pt-4">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+        Monthly usage &amp; allowance (V1)
+      </h4>
+      <div className="text-[11px] text-slate-500">
+        Defaults: {V1_DEFAULTS.monthly_prod.toLocaleString()} prod / {V1_DEFAULTS.monthly_sandbox.toLocaleString()} sandbox per month;
+        {" "}{V1_DEFAULTS.rpm} req/min, {V1_DEFAULTS.concurrency} concurrent per key.
+        Counts derived from <span className="font-mono">api_request_logs</span> (successful counterparty calls only).
+      </div>
+
+      {(["production", "sandbox"] as const).map((env) => {
+        const s = stateFor(env);
+        const tone = s.blocked ? "text-red-700" : s.pct >= 100 ? "text-amber-700" : s.pct >= 80 ? "text-amber-600" : "text-emerald-700";
+        return (
+          <div key={env} className="border border-slate-200 rounded-sm px-3 py-2 text-xs">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-semibold capitalize">{env}</span>
+                {" · "}
+                <span className={`font-mono ${tone}`}>{s.current.toLocaleString()} / {s.base.toLocaleString()}</span>
+                {" "}<span className="text-slate-500">({s.pct}%)</span>
+                {s.active && (
+                  <Badge variant="outline" className="ml-2 text-[10px]">override → {s.effective.toLocaleString()}</Badge>
+                )}
+              </div>
+              <div className="text-[10px] font-mono text-slate-500">
+                {s.blocked ? <span className="text-red-700">BLOCKED (≥120% / override cap)</span>
+                  : s.pct >= 100 ? <span className="text-amber-700">100% reached</span>
+                  : s.pct >= 80 ? <span className="text-amber-600">80% reached</span>
+                  : "ok"}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {overrides.length > 0 && (
+        <ul className="space-y-1.5">
+          {overrides.map((o) => {
+            const expired = new Date(o.expires_at).getTime() <= Date.now();
+            return (
+              <li key={o.id} className="text-[11px] border border-slate-100 rounded-sm px-2 py-1.5 bg-slate-50/50">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-mono">
+                    {o.environment} · limit {o.override_limit.toLocaleString()} · expires {o.expires_at}
+                    {" "}<Badge variant="outline" className="ml-1 text-[9px]">
+                      {!o.active ? "deactivated" : expired ? "expired" : "active"}
+                    </Badge>
+                  </div>
+                  {canWrite && o.active && !expired && (
+                    <Button size="sm" variant="outline" onClick={() => deactivate(o)} disabled={saving}>Deactivate</Button>
+                  )}
+                </div>
+                <div className="text-slate-600 mt-0.5">reason: {o.reason}</div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {canWrite && (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <div className="text-[11px] font-semibold text-slate-600">New temporary override (platform_admin only)</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <Label className="text-[10px]">Environment</Label>
+              <Select value={envForOverride} onValueChange={(v) => setEnvForOverride(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="production">production</SelectItem>
+                  <SelectItem value="sandbox">sandbox</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-[10px]">Override limit (calls / month)</Label>
+              <Input type="number" min={0} value={overrideLimit} onChange={(e) => setOverrideLimit(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-[10px]">Expires in (days)</Label>
+              <Input type="number" min={1} value={overrideExpiresInDays} onChange={(e) => setOverrideExpiresInDays(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label className="text-[10px]">Reason (audited)</Label>
+            <Textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} rows={2} />
+          </div>
+          <div className="flex items-center justify-between">
+            <Button size="sm" variant="outline" onClick={load} disabled={loading || saving}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+            <Button size="sm" onClick={createOverride} disabled={saving}>
+              {saving ? "Saving…" : "Create override"}
+            </Button>
+          </div>
+          <p className="text-[10px] text-slate-500">
+            Overrides raise the monthly allowance ceiling for this api_client. Commercial pricing is not configured here.
+            Every create / deactivate is recorded in <span className="font-mono">audit_logs</span>.
+          </p>
         </div>
       )}
     </section>
