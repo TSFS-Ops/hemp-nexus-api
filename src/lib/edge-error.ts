@@ -40,15 +40,24 @@ const FRIENDLY: Record<string, string> = {
 
 export async function parseEdgeError(error: unknown): Promise<ParsedEdgeError> {
   let status: number | null = null;
-  let body: { code?: string; error?: string; message?: string; details?: unknown } | null = null;
+  let requestId: string | null = null;
+  let body: { code?: string; error?: string; message?: string; details?: unknown; request_id?: string; requestId?: string } | null = null;
 
-  const ctx = (error as { context?: Response | { status?: number; json?: () => Promise<unknown> } })?.context;
+  const ctx = (error as { context?: Response | { status?: number; headers?: Headers; json?: () => Promise<unknown> } })?.context;
   if (ctx && typeof ctx === "object") {
     if ("status" in ctx && typeof (ctx as { status?: number }).status === "number") {
       status = (ctx as { status: number }).status;
     }
+    const hdrs = (ctx as { headers?: Headers }).headers;
+    if (hdrs && typeof hdrs.get === "function") {
+      requestId =
+        hdrs.get("x-request-id") ||
+        hdrs.get("x-supabase-request-id") ||
+        hdrs.get("sb-request-id") ||
+        hdrs.get("cf-ray") ||
+        null;
+    }
     try {
-      // Response can only be read once; clone if available.
       const r = ctx as Response;
       const reader = typeof r.clone === "function" ? r.clone() : r;
       if (typeof (reader as Response).json === "function") {
@@ -59,6 +68,10 @@ export async function parseEdgeError(error: unknown): Promise<ParsedEdgeError> {
     }
   }
 
+  if (!requestId && body) {
+    requestId = body.request_id ?? body.requestId ?? null;
+  }
+
   const code = body?.code ?? null;
   const friendly = code && FRIENDLY[code];
   const fallback =
@@ -67,5 +80,6 @@ export async function parseEdgeError(error: unknown): Promise<ParsedEdgeError> {
     (error instanceof Error ? error.message : "Unexpected error");
   const message = friendly ?? fallback;
 
-  return { status, code, message, details: body?.details };
+  return { status, code, message, requestId, details: body?.details };
 }
+
