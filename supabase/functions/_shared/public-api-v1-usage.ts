@@ -350,6 +350,7 @@ export async function beginApiActiveRequest(
   apiClientId: string | null,
   environment: string | null,
   requestId: string,
+  concurrencyLimit?: number,
 ): Promise<{ ok: true } | { ok: false; active: number }> {
   // Opportunistic cleanup — keep table small.
   await supabase
@@ -358,13 +359,16 @@ export async function beginApiActiveRequest(
     .lt("expires_at", new Date().toISOString())
     .then(() => {}, () => {});
 
+  const limit = concurrencyLimit ??
+    (environment === "sandbox" ? V1_DEFAULT_CONCURRENCY_SANDBOX : V1_DEFAULT_CONCURRENCY_PRODUCTION);
+
   const { count } = await supabase
     .from("api_active_requests")
     .select("request_id", { count: "exact", head: true })
     .eq("api_key_id", apiKeyId)
     .gt("expires_at", new Date().toISOString());
 
-  if ((count ?? 0) >= V1_DEFAULT_CONCURRENCY) {
+  if ((count ?? 0) >= limit) {
     return { ok: false, active: count ?? 0 };
   }
 
