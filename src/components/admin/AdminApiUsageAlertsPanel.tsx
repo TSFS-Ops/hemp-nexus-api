@@ -44,9 +44,14 @@ type AlertRow = {
   acknowledged_at: string | null;
   resolved_by: string | null;
   resolved_at: string | null;
+  assigned_to: string | null;
+  assigned_at: string | null;
+  assigned_by: string | null;
   created_at: string;
   updated_at: string;
 };
+
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 
 const SEVERITY_TONE: Record<string, string> = {
   critical: "bg-red-50 text-red-800 border-red-300",
