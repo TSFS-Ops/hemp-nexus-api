@@ -86,9 +86,9 @@ describe("Public API V1 · Batch 1 · api_clients onboarding record", () => {
     expect(sql).toMatch(/Platform admins manage api_clients[\s\S]*FOR ALL[\s\S]*is_admin\(auth\.uid\(\)\)/);
     expect(sql).toMatch(/API admins read api_clients[\s\S]*FOR SELECT[\s\S]*has_role\(auth\.uid\(\), 'api_admin'\)/);
     expect(sql).toMatch(/Auditors read api_clients[\s\S]*FOR SELECT[\s\S]*has_role\(auth\.uid\(\), 'auditor'\)/);
-    // No INSERT/UPDATE/DELETE policy for api_admin or auditor.
-    const apiAdminWritePolicy = /API admins[\s\S]*?(INSERT|UPDATE|DELETE)/i;
-    expect(apiAdminWritePolicy.test(sql.replace(/API admins read api_clients[\s\S]*?USING[\s\S]*?\);/, ""))).toBe(false);
+    // Neither api_admin nor auditor may have a FOR ALL / INSERT / UPDATE / DELETE policy.
+    expect(sql).not.toMatch(/POLICY[^;]*api_admin[\s\S]*?FOR (ALL|INSERT|UPDATE|DELETE)/i);
+    expect(sql).not.toMatch(/POLICY[^;]*auditor[\s\S]*?FOR (ALL|INSERT|UPDATE|DELETE)/i);
   });
 
   it("status CHECK constraint covers the seven lifecycle values", () => {
