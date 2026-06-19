@@ -48,38 +48,91 @@ Deno.serve(async (req) => {
         throw new ApiException('VALIDATION_ERROR', error instanceof Error ? error.message : 'Invalid input', 400);
       }
 
-      const { name, scopes, expires_at, allowed_ips, allowed_origins } = validatedData;
+      const { name, scopes, expires_at, allowed_ips, allowed_origins, api_client_id, environment } = validatedData;
 
       const apiKey = `sk_${crypto.randomUUID().replace(/-/g, '')}`;
       const keyHash = await hashApiKey(apiKey);
 
+      // Public API V1 · Batch 2 — DB trigger api_keys_v1_client_gate enforces:
+      //  • api_client must exist and not be suspended/revoked,
+      //  • sandbox keys require sandbox_approved,
+      //  • production keys require production_approved + full checklist +
+      //    (allowed_ips OR an active approved IP allowlist exception).
+      // We map those DB exceptions to clean 4xx responses + targeted audits.
+      const insertPayload: Record<string, unknown> = {
+        org_id: authCtx.orgId,
+        name,
+        key_hash: keyHash,
+        scopes: scopes || [],
+        created_by: actorUserId,
+        expires_at: expires_at || null,
+        allowed_ips: allowed_ips ?? null,
+        allowed_origins: allowed_origins ?? null,
+      };
+      if (api_client_id) insertPayload.api_client_id = api_client_id;
+      if (environment) insertPayload.environment = environment;
+
       const { data, error } = await supabase
         .from('api_keys')
-        .insert({
-          org_id: authCtx.orgId,
-          name,
-          key_hash: keyHash,
-          scopes: scopes || [],
-          created_by: actorUserId,
-          expires_at: expires_at || null,
-          allowed_ips: allowed_ips ?? null,
-          allowed_origins: allowed_origins ?? null,
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
-      if (error) handleDatabaseError(error, requestId);
+      if (error) {
+        const msg = error.message || '';
+        // Map known trigger gate failures to audited blocks
+        const gateCodes = [
+          'API_CLIENT_NOT_FOUND',
+          'API_CLIENT_BLOCKED_STATUS_suspended',
+          'API_CLIENT_BLOCKED_STATUS_revoked',
+          'API_CLIENT_PRODUCTION_NOT_APPROVED',
+          'API_CLIENT_PRODUCTION_CHECKLIST_INCOMPLETE',
+          'API_KEY_PRODUCTION_REQUIRES_IP_ALLOWLIST_OR_EXCEPTION',
+          'API_CLIENT_SANDBOX_NOT_APPROVED',
+        ];
+        const matchedCode = gateCodes.find((c) => msg.includes(c));
+        if (matchedCode) {
+          await supabase.from('audit_logs').insert({
+            org_id: authCtx.orgId,
+            actor_user_id: actorUserId,
+            actor_api_key_id: actorApiKeyId,
+            action: matchedCode.startsWith('API_KEY_PRODUCTION_REQUIRES_IP')
+              ? 'api_key.blocked.production_ip_required'
+              : matchedCode.startsWith('API_CLIENT_PRODUCTION')
+                ? 'api_key.blocked.production_not_approved'
+                : matchedCode.startsWith('API_CLIENT_SANDBOX')
+                  ? 'api_key.blocked.sandbox_not_approved'
+                  : 'api_key.blocked.client_status',
+            entity_type: 'api_client',
+            entity_id: api_client_id,
+            metadata: {
+              gate_code: matchedCode,
+              environment: environment ?? null,
+              request_id: requestId,
+              actor_ip: authCtx.actorIp ?? null,
+            },
+          });
+          throw new ApiException('FORBIDDEN', `API key issuance blocked: ${matchedCode}`, 403);
+        }
+        handleDatabaseError(error, requestId);
+      }
 
       await supabase.from('audit_logs').insert({
         org_id: authCtx.orgId,
         actor_user_id: actorUserId,
         actor_api_key_id: actorApiKeyId,
-        action: 'api_key.created',
+        action: environment === 'production'
+          ? 'api_key.created.production'
+          : environment === 'sandbox'
+            ? 'api_key.created.sandbox'
+            : 'api_key.created',
         entity_type: 'api_key',
         entity_id: data.id,
         metadata: {
           name,
           scopes,
+          environment: environment ?? null,
+          api_client_id: api_client_id ?? null,
           allowed_ips: allowed_ips ?? null,
           allowed_origins: allowed_origins ?? null,
           request_id: requestId,
