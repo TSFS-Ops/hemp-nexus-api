@@ -321,6 +321,9 @@ export async function auditConcurrencyBlock(
   apiKeyId: string,
   active: number,
 ): Promise<void> {
+  const env = (ctx.environment === "sandbox" || ctx.environment === "production")
+    ? ctx.environment
+    : "production";
   await supabase.from("audit_logs").insert({
     action: "api_usage.concurrency_limit_exceeded",
     entity_type: "api_key",
@@ -328,7 +331,7 @@ export async function auditConcurrencyBlock(
     org_id: ctx.orgId,
     metadata: {
       active,
-      limit: V1_DEFAULT_CONCURRENCY,
+      limit: defaultConcurrency(env),
       environment: ctx.environment,
       request_id: ctx.requestId,
       endpoint: ctx.endpointTag,
