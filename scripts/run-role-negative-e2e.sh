@@ -21,7 +21,11 @@ usage() {
 run-role-negative-e2e.sh — single end-to-end runner for the Role-Negative & E2E suite.
 
 USAGE
-  bash scripts/run-role-negative-e2e.sh [--help]
+  bash scripts/run-role-negative-e2e.sh [--help|--show-env]
+
+  --help       Show this help.
+  --show-env   Print which required env vars are set (values are never printed)
+               and confirm the expected evidence zip / run-summary paths.
 
 REQUIRED ENV (export before running)
   SUPABASE_URL                 Project URL (e.g. https://<ref>.supabase.co)
