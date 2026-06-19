@@ -422,10 +422,23 @@ export async function handleV1<T>(
     }
     concurrencyHeld = true;
 
-    // Batch 6 — monthly allowance gate (countable endpoints only).
+    // Batch 6/7 — monthly allowance gate (countable endpoints only). The
+    // production allowance is derived from the active commercial plan when
+    // present (Batch 7); temporary api_usage_overrides still take precedence.
     let preState: Awaited<ReturnType<typeof evaluateMonthlyAllowance>> | null = null;
     if (countable && ctx.apiClientId && (ctx.environment === "sandbox" || ctx.environment === "production")) {
-      preState = await evaluateMonthlyAllowance(supabase, ctx.apiClientId, ctx.environment);
+      let baseOverride: number | undefined;
+      let strictAtAllowance = false;
+      if (ctx.environment === "production") {
+        const resolved = await getActivePlanForClient(supabase, ctx.apiClientId);
+        if (resolved) {
+          baseOverride = resolved.plan.included_lookup_allowance;
+          strictAtAllowance = !resolved.plan.overage_allowed;
+        }
+      }
+      preState = await evaluateMonthlyAllowance(
+        supabase, ctx.apiClientId, ctx.environment, { baseOverride, strictAtAllowance },
+      );
       if (preState.blocked) {
         await auditMonthlyBlock(supabase, ctx, ctx.apiClientId, ctx.environment, preState);
         throw new V1Error("monthly_limit_reached");
