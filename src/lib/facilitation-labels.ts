@@ -238,23 +238,44 @@ export function rolesLabel(tokens: readonly string[] | null | undefined): string
 /**
  * Wraps `parseEdgeError` with a Phase-2-specific fallback so toasts never
  * leak the generic "Edge Function returned a non-2xx status code".
+ *
+ * When the underlying error came from `supabase.functions.invoke()`, the
+ * resulting toast automatically gains a diagnostic trailer of the form:
+ *   "<message> [fn: <name> · 500 · CODE · req: <id>]"
+ * The function name is derived from the failing Response URL — no call-site
+ * changes required. Pass `functionName` to override (useful for callers
+ * that bubble up an error without context).
  */
 import { parseEdgeError } from "@/lib/edge-error";
 
 export async function friendlyFacilitationError(
   err: unknown,
   fallback: string,
+  functionName?: string,
 ): Promise<string> {
+  let base = fallback;
+  let parsed: Awaited<ReturnType<typeof parseEdgeError>> | null = null;
   try {
-    const parsed = await parseEdgeError(err);
+    parsed = await parseEdgeError(err);
     const raw = parsed.message?.trim();
-    if (!raw || /non-2xx status code/i.test(raw)) return fallback;
-    // If the server returned a code we have a friendlier label for, prefer it.
-    if (parsed.code && GATE_REASON_LABEL[parsed.code]) {
-      return GATE_REASON_LABEL[parsed.code];
+    if (raw && !/non-2xx status code/i.test(raw)) {
+      base =
+        parsed.code && GATE_REASON_LABEL[parsed.code]
+          ? GATE_REASON_LABEL[parsed.code]
+          : raw;
     }
-    return raw;
   } catch {
-    return fallback;
+    // fall through with `base = fallback`
   }
+
+  const fn = functionName ?? parsed?.functionName ?? null;
+  const bits: string[] = [];
+  if (fn) bits.push(`fn: ${fn}`);
+  if (parsed?.status != null) bits.push(String(parsed.status));
+  if (parsed?.code) bits.push(parsed.code);
+  if (parsed?.requestId) bits.push(`req: ${parsed.requestId}`);
+  if (bits.length === 0) return base;
+  return `${base} [${bits.join(" · ")}]`;
 }
+
+
