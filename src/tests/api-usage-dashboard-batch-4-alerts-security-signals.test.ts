@@ -98,13 +98,16 @@ describe("API Usage Dashboard V1 · Batch 4 · Alerts & Suspicious Activity", ()
       "acknowledge_api_usage_alert",
       "resolve_api_usage_alert",
       "add_api_usage_alert_note",
+      "assign_api_usage_alert",
     ]) {
+      // Match the LAST occurrence so re-defined functions are tested.
       const re = new RegExp(
         `CREATE OR REPLACE FUNCTION public\\.${name}[\\s\\S]*?\\$\\$;`,
+        "g",
       );
-      const m = MIG.match(re);
-      expect(m, `${name} not found`).not.toBeNull();
-      const body = m![0];
+      const matches = MIG.match(re);
+      expect(matches, `${name} not found`).not.toBeNull();
+      const body = matches![matches!.length - 1];
       expect(body, `${name} must require platform_admin`).toMatch(
         /has_role\([^,]+,\s*'platform_admin'::public\.app_role\)/,
       );
@@ -114,6 +117,22 @@ describe("API Usage Dashboard V1 · Batch 4 · Alerts & Suspicious Activity", ()
       expect(body).toMatch(/SECURITY DEFINER/);
       expect(body).toMatch(/SET search_path = public/);
     }
+  });
+
+  it("assignment fields are added to api_usage_alerts and surfaced via list RPC", () => {
+    expect(MIG).toMatch(/ADD COLUMN IF NOT EXISTS assigned_to uuid/i);
+    expect(MIG).toMatch(/ADD COLUMN IF NOT EXISTS assigned_at timestamptz/i);
+    expect(MIG).toMatch(/ADD COLUMN IF NOT EXISTS assigned_by uuid/i);
+    // list_api_usage_alerts must include assignment fields in latest definition
+    const fns = MIG.match(/CREATE OR REPLACE FUNCTION public\.list_api_usage_alerts[\s\S]*?\$\$;/g);
+    expect(fns, "list_api_usage_alerts not found").not.toBeNull();
+    const latest = fns![fns!.length - 1];
+    expect(latest).toMatch(/'assigned_to'/);
+    expect(latest).toMatch(/'assigned_at'/);
+    expect(latest).toMatch(/p_assigned_to/);
+    // Audit emissions for assign/unassign
+    expect(MIG).toMatch(/api_usage_alert\.assigned/);
+    expect(MIG).toMatch(/api_usage_alert\.unassigned/);
   });
 
   it("panel never references payload/secret/IP/user-agent fields", () => {
