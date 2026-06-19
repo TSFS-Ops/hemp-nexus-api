@@ -31,6 +31,7 @@ export const LOOKUP_ALLOWED_FIELDS = [
   "request_id",
   "environment",
   "match_status",
+  "lookup_status",
   "confidence_band",
   "verification_status",
   "risk_signal_summary",
@@ -52,6 +53,9 @@ export const LOOKUP_ALLOWED_FIELDS = [
   "trading_name",
   "country",
   "website_domain",
+  // sandbox-only markers (never present in production responses)
+  "test_record",
+  "sandbox_case_id",
 ] as const;
 
 export const SUMMARY_ALLOWED_FIELDS = [
@@ -63,6 +67,7 @@ export const SUMMARY_ALLOWED_FIELDS = [
   "country",
   "website_domain",
   "match_status",
+  "lookup_status",
   "confidence_band",
   "verification_status",
   "risk_signal_summary",
@@ -72,6 +77,8 @@ export const SUMMARY_ALLOWED_FIELDS = [
   "billable",
   "timestamp",
   "external_reference",
+  "test_record",
+  "sandbox_case_id",
 ] as const;
 
 // ─── Forbidden field guard ───────────────────────────────────────────────
