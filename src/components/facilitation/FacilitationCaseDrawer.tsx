@@ -291,6 +291,11 @@ export const FacilitationCaseDrawer: React.FC<{
               />
             ) : null}
 
+            {/* Batch 16 — controlled POI conversion (human-confirmed) */}
+            {caseId ? (
+              <FacilitationPoiConversionPanel caseId={caseId} onChanged={load} />
+            ) : null}
+
 
             <section>
               <h3 className="font-medium mb-2">Intake</h3>
