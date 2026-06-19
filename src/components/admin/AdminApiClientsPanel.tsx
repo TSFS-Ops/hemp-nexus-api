@@ -590,6 +590,10 @@ function ApiClientDetailDialog({
             </section>
           )}
 
+          {/* Public API V1 · Batch 2 — Key readiness & IP allowlist exceptions */}
+          <KeyReadinessSection client={draft} />
+          <IpExceptionSection client={draft} canWrite={canWrite} />
+
           {/* Timestamps */}
           <section className="border-t border-slate-200 pt-4 text-[11px] text-slate-500 font-mono space-y-0.5">
             <div>created_at {draft.created_at}</div>
@@ -615,5 +619,224 @@ function Field({ label, value, onChange, disabled, type = "text" }: { label: str
       <Label className="text-[11px]">{label}</Label>
       <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} />
     </div>
+  );
+}
+
+// ─── Public API V1 · Batch 2 ─────────────────────────────────────────────
+// Read-only "Key readiness" panel — surfaces the exact prerequisites the
+// DB trigger api_keys_v1_client_gate will enforce at key issuance. No keys
+// are minted here; this only tells the platform_admin whether a key COULD
+// be issued for this api_client today.
+function KeyReadinessSection({ client }: { client: ApiClient }) {
+  const sandboxReady =
+    client.status !== "suspended" &&
+    client.status !== "revoked" &&
+    client.sandbox_approved;
+
+  const productionMissing: string[] = [];
+  if (client.status === "suspended") productionMissing.push("client suspended");
+  if (client.status === "revoked") productionMissing.push("client revoked");
+  if (!client.production_approved) productionMissing.push("production not approved");
+  for (const f of PRODUCTION_CHECKLIST_FIELDS) {
+    if (!client[f.key]) productionMissing.push(`checklist · ${f.label}`);
+  }
+  const productionReady = productionMissing.length === 0;
+
+  return (
+    <section className="space-y-2 border-t border-slate-200 pt-4">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+        Key issuance readiness (V1)
+      </h4>
+      <div className="text-xs text-slate-700">
+        Sandbox keys may be issued:{" "}
+        <strong className={sandboxReady ? "text-emerald-700" : "text-slate-500"}>
+          {sandboxReady ? "yes" : "no"}
+        </strong>
+      </div>
+      <div className="text-xs text-slate-700">
+        Production keys may be issued (without IP/exception still required at create-time):{" "}
+        <strong className={productionReady ? "text-emerald-700" : "text-slate-500"}>
+          {productionReady ? "yes" : "no"}
+        </strong>
+      </div>
+      {!productionReady && (
+        <ul className="text-[11px] text-slate-600 list-disc pl-5 space-y-0.5">
+          {productionMissing.map((m, i) => <li key={i}>{m}</li>)}
+        </ul>
+      )}
+      <p className="text-[11px] text-slate-500">
+        Note: production-key issuance also requires either an IP allowlist on the
+        key itself, or an active approved IP allowlist exception (below).
+        Enforced server-side by the api_keys_v1_client_gate trigger.
+      </p>
+    </section>
+  );
+}
+
+type IpException = {
+  id: string;
+  api_client_id: string;
+  reason: string;
+  compensating_controls: string | null;
+  active: boolean;
+  approved_by: string | null;
+  approved_at: string | null;
+  deactivated_by: string | null;
+  deactivated_at: string | null;
+  deactivated_reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function IpExceptionSection({ client, canWrite }: { client: ApiClient; canWrite: boolean }) {
+  const [exceptions, setExceptions] = useState<IpException[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [reason, setReason] = useState("");
+  const [controls, setControls] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("api_ip_allowlist_exceptions")
+        .select("*")
+        .eq("api_client_id", client.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setExceptions((data as IpException[]) ?? []);
+    } catch (e: any) {
+      toast.error(`Failed to load IP exceptions: ${e.message ?? e}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [client.id]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const create = async () => {
+    if (!reason.trim()) { toast.error("Reason required."); return; }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("api_ip_allowlist_exceptions")
+        .insert({
+          api_client_id: client.id,
+          reason,
+          compensating_controls: controls || null,
+          active: true,
+          approved_by: user?.id ?? null,
+          approved_at: new Date().toISOString(),
+          created_by: user?.id ?? null,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      await supabase.from("audit_logs").insert({
+        org_id: client.org_id,
+        actor_user_id: user?.id ?? null,
+        action: "api_ip_exception.created",
+        entity_type: "api_ip_allowlist_exception",
+        entity_id: (data as IpException).id,
+        metadata: { api_client_id: client.id, reason, compensating_controls: controls || null },
+      });
+      toast.success("IP allowlist exception created and approved.");
+      setReason(""); setControls("");
+      void load();
+    } catch (e: any) {
+      toast.error(`Create failed: ${e.message ?? e}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deactivate = async (ex: IpException) => {
+    const why = window.prompt("Reason for deactivating this exception?");
+    if (!why || !why.trim()) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("api_ip_allowlist_exceptions")
+        .update({
+          active: false,
+          deactivated_at: new Date().toISOString(),
+          deactivated_by: user?.id ?? null,
+          deactivated_reason: why,
+        })
+        .eq("id", ex.id);
+      if (error) throw error;
+      await supabase.from("audit_logs").insert({
+        org_id: client.org_id,
+        actor_user_id: user?.id ?? null,
+        action: "api_ip_exception.deactivated",
+        entity_type: "api_ip_allowlist_exception",
+        entity_id: ex.id,
+        metadata: { api_client_id: client.id, reason: why },
+      });
+      toast.success("Exception deactivated.");
+      void load();
+    } catch (e: any) {
+      toast.error(`Deactivate failed: ${e.message ?? e}`);
+    }
+  };
+
+  return (
+    <section className="space-y-3 border-t border-slate-200 pt-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+          IP allowlist exceptions
+        </h4>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+        </Button>
+      </div>
+      <p className="text-[11px] text-slate-500">
+        Required when a production key cannot supply a fixed allowlist. Each
+        exception records reason, compensating controls, approver, timestamps,
+        and active state. Only platform_admin may create or deactivate.
+      </p>
+
+      {exceptions.length === 0 ? (
+        <div className="text-xs text-slate-500">No exceptions on record.</div>
+      ) : (
+        <ul className="space-y-2">
+          {exceptions.map((ex) => (
+            <li key={ex.id} className="border border-slate-200 rounded-sm p-2 text-xs">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className={ex.active ? "bg-emerald-50 text-emerald-800 border-emerald-300" : "bg-slate-100 text-slate-600 border-slate-300"}>
+                  {ex.active ? "active" : "inactive"}
+                </Badge>
+                {canWrite && ex.active && (
+                  <Button size="sm" variant="ghost" onClick={() => deactivate(ex)}>Deactivate</Button>
+                )}
+              </div>
+              <div className="mt-1"><strong>Reason:</strong> {ex.reason}</div>
+              {ex.compensating_controls && <div><strong>Controls:</strong> {ex.compensating_controls}</div>}
+              <div className="font-mono text-[10px] text-slate-500 mt-1">
+                approved_at {ex.approved_at ?? "—"} · approved_by {ex.approved_by ?? "—"}
+                {ex.deactivated_at && <> · deactivated_at {ex.deactivated_at} — {ex.deactivated_reason}</>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {canWrite && (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <div>
+            <Label className="text-[11px]">New exception · reason</Label>
+            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why a fixed IP allowlist is not feasible" />
+          </div>
+          <div>
+            <Label className="text-[11px]">Compensating controls</Label>
+            <Textarea value={controls} onChange={(e) => setControls(e.target.value)} rows={2} placeholder="Mutual TLS, signed requests, scoped key, monitoring, etc." />
+          </div>
+          <Button size="sm" onClick={create} disabled={saving}>
+            {saving ? "Saving…" : "Create + approve exception"}
+          </Button>
+        </div>
+      )}
+    </section>
   );
 }

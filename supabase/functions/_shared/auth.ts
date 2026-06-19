@@ -226,7 +226,7 @@ const authenticateApiKey = async (
   // use attempts and audit them. Active-only filter happens AFTER match.
   const { data: allKeys, error: fetchError } = await supabase
     .from('api_keys')
-    .select('id, org_id, scopes, status, key_hash, expires_at, allowed_ips, allowed_origins, name');
+    .select('id, org_id, scopes, status, key_hash, expires_at, allowed_ips, allowed_origins, name, api_client_id, environment');
 
   if (fetchError) {
     GENERIC_UNAUTHORIZED();
@@ -290,6 +290,33 @@ const authenticateApiKey = async (
 
   if (matchedKey.status !== 'active') {
     GENERIC_UNAUTHORIZED();
+  }
+
+  // Public API V1 · Batch 2 — if the key is linked to an api_client
+  // onboarding record, that record's status governs the key. A suspended or
+  // revoked client makes every otherwise-active key unusable.
+  if (matchedKey.api_client_id) {
+    const { data: client } = await supabase
+      .from('api_clients')
+      .select('status')
+      .eq('id', matchedKey.api_client_id)
+      .maybeSingle();
+    if (!client || client.status === 'suspended' || client.status === 'revoked') {
+      await writeSecurityAudit({
+        action: 'api_key.blocked.client_status_use_attempt',
+        orgId: matchedKey.org_id,
+        apiKeyId: matchedKey.id,
+        actorIp: meta.actorIp,
+        userAgent: meta.userAgent,
+        requestId: meta.requestId,
+        extra: {
+          api_client_id: matchedKey.api_client_id,
+          client_status: client?.status ?? 'missing',
+          environment: matchedKey.environment ?? null,
+        },
+      }, supabase);
+      GENERIC_UNAUTHORIZED();
+    }
   }
 
   // Batch N — IP allowlist (null/empty = unrestricted).

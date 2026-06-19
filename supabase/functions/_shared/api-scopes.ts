@@ -64,6 +64,14 @@ export const VALID_SCOPES = [
   "admin:tests",
   "admin:engagements",
   "wad",
+  // Public API V1 — read-only institutional surface (Batch 2). Forbidden
+  // scopes (`*`, `admin`, empty) remain rejected. None of these grant
+  // write access, admin access, evidence/document export, POI/WaD actions,
+  // governance record access, or internal notes access.
+  "api:status_read",
+  "counterparty:lookup",
+  "profile:summary_read",
+  "usage:read",
 ] as const;
 
 export type ApiScope = typeof VALID_SCOPES[number];
