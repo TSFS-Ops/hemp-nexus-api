@@ -64,14 +64,19 @@ export const VALID_SCOPES = [
   "admin:tests",
   "admin:engagements",
   "wad",
-  // Public API V1 — read-only institutional surface (Batch 2). Forbidden
+  // Public API V1 — read-only institutional surface (Batches 2-4). Forbidden
   // scopes (`*`, `admin`, empty) remain rejected. None of these grant
   // write access, admin access, evidence/document export, POI/WaD actions,
-  // governance record access, or internal notes access.
+  // governance record access, or internal notes access. Environment
+  // classification lives in _shared/public-api-v1-scopes.ts (the canonical
+  // V1 catalogue) — this list keeps the legacy scope validator honest.
   "api:status_read",
   "counterparty:lookup",
-  "profile:summary_read",
+  "counterparty:summary_read",
+  "profile:summary_read", // legacy alias of counterparty:summary_read
   "usage:read",
+  "webhook:test",        // sandbox-only (enforced in V1 catalogue)
+  "webhook:events_read", // production-only (enforced in V1 catalogue)
 ] as const;
 
 export type ApiScope = typeof VALID_SCOPES[number];
