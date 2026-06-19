@@ -40,6 +40,8 @@ export const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   "admin.credit_org": "aal2",
   "admin.org_retention": "aal2",
   "admin.email_anonymisation_readiness_probe": "aal2",
+  // Governance Record Batch 1 — read-only critical-event coverage probe.
+  "governance.event_store.coverage_probe": "aal2",
   // Lifecycle / state overrides
   "admin.lifecycle_scheduler.invoke": "aal2",
   "admin.match_legacy_repair": "aal2",
