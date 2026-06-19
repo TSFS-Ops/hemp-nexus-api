@@ -54,7 +54,9 @@ function walk(dir) {
 const files = walk(FN_DIR);
 const corpus = files.map((f) => readFileSync(f, "utf8")).join("\n\n");
 
-const missing = REQUIRED.filter((name) => !corpus.includes(`"${name}"`));
+const missing = REQUIRED.filter((name) =>
+  !corpus.includes(`"${name}"`) && !corpus.includes(`'${name}'`)
+);
 
 if (missing.length > 0) {
   console.error("FAIL — Public API V1 canonical audit names missing from edge functions:");
