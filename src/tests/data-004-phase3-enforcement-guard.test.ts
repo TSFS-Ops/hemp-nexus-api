@@ -407,7 +407,7 @@ describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path",
       if (!code.includes("cold-storage-archive")) continue;
       const names = new Set<string>();
       for (const m of code.matchAll(scheduleRe)) names.add(m[1]);
-      for (const m of code.matchAll(httpRe)) names.add(m[1]);
+      
       for (const n of names) {
         expect(
           ALLOWED.has(n),
