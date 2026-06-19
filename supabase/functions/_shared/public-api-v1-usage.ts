@@ -128,10 +128,10 @@ export function thresholdsCrossed(prev: number, current: number, limit: number):
 
 export interface MonthlyAllowanceState {
   current: number;
-  limit: number;
-  effectiveLimit: number;   // includes override if any
+  limit: number;            // base default for the environment
+  effectiveLimit: number;   // includes override if any (override raises the ceiling)
   override: ActiveOverride | null;
-  blocked: boolean;         // true when current >= 120% effective limit AND no override
+  blocked: boolean;         // true when current >= 120% of base AND no override; or >= override cap
 }
 
 export async function evaluateMonthlyAllowance(
@@ -145,12 +145,8 @@ export async function evaluateMonthlyAllowance(
   ]);
   const baseLimit = defaultMonthlyLimit(env);
   const effectiveLimit = override?.override_limit ?? baseLimit;
-  const blockMark = Math.ceil((120 / 100) * baseLimit);
-  // Override raises the ceiling: when override is active, the 120% block is
-  // measured against the override_limit instead.
-  const effectiveBlockMark = override
-    ? override.override_limit
-    : blockMark;
+  const defaultBlockMark = Math.ceil((120 / 100) * baseLimit);
+  const effectiveBlockMark = override ? override.override_limit : defaultBlockMark;
   const blocked = current >= effectiveBlockMark;
   return { current, limit: baseLimit, effectiveLimit, override, blocked };
 }
@@ -183,7 +179,7 @@ export async function recordThresholdOnce(
   // Fetch client identity for the notification payload. No raw keys.
   const { data: client } = await supabase
     .from("api_clients")
-    .select("id, org_id, legal_entity_name, authorised_commercial_contact_email, billing_contact_email")
+    .select("id, org_id, legal_entity_name")
     .eq("id", apiClientId)
     .maybeSingle();
   const clientName = client?.legal_entity_name ?? "API client";
@@ -196,19 +192,17 @@ export async function recordThresholdOnce(
       ? "Production lookup/summary requests are now blocked unless an override is approved."
       : threshold === 100
         ? "Monthly allowance reached. Block at 120% unless an override is approved."
-        : "Approaching monthly allowance.");
+        : "Approaching monthly allowance — review and request override if needed.");
 
-  // In-app notification to the api_client's org (best-effort).
+  // In-app notification to the api_client's org admins (best-effort).
   if (client?.org_id) {
     try {
-      // Find an org member to notify (first admin we can find for that org).
       const { data: targets } = await supabase
         .from("user_roles")
         .select("user_id")
         .eq("role", "org_admin")
         .limit(5);
-      const orgMembers = (targets ?? []) as Array<{ user_id: string }>;
-      for (const t of orgMembers) {
+      for (const t of (targets ?? []) as Array<{ user_id: string }>) {
         await supabase.from("notifications").insert({
           user_id: t.user_id,
           org_id: client.org_id,
@@ -240,7 +234,7 @@ export async function recordThresholdOnce(
     }
   } catch (_e) { /* best-effort */ }
 
-  // Canonical audit. Action names are Batch-6-scoped.
+  // Canonical audit (Batch-6-scoped action name).
   await supabase.from("audit_logs").insert({
     action: `api_usage.threshold_${threshold}_reached`,
     entity_type: "api_client",
@@ -283,10 +277,31 @@ export async function auditMonthlyBlock(
   }).then(() => {}, () => {});
 }
 
+export async function auditConcurrencyBlock(
+  supabase: SupabaseClient,
+  ctx: V1RequestCtx,
+  apiKeyId: string,
+  active: number,
+): Promise<void> {
+  await supabase.from("audit_logs").insert({
+    action: "api_usage.concurrency_limit_exceeded",
+    entity_type: "api_key",
+    entity_id: apiKeyId,
+    org_id: ctx.orgId,
+    metadata: {
+      active,
+      limit: V1_DEFAULT_CONCURRENCY,
+      environment: ctx.environment,
+      request_id: ctx.requestId,
+      endpoint: ctx.endpointTag,
+    },
+  }).then(() => {}, () => {});
+}
+
 // ─── Concurrency guard (best-effort, conservative) ────────────────────────
 // Limitation: this is a database-backed counter with a 30s TTL, NOT a true
 // distributed semaphore. Two requests arriving within the same millisecond
-// can both read count < limit before either inserts. We accept that limited
+// can both read count < limit before either inserts. We accept that small
 // race window as the conservative trade-off documented in Batch 6 scope —
 // the alternative (advisory locks per key) would impose unreliable cross-
 // region behaviour. The TTL guarantees forward progress even if a request
