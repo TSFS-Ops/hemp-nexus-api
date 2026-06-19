@@ -145,9 +145,13 @@ describe("API Usage Dashboard V1 · Batch 3 · Client Own-Usage Dashboard", () =
 
   it("dashboard never references payload / secret / operational tokens", () => {
     const raw = read(DASHBOARD);
+    // Strip comments AND the FORBIDDEN_CSV_TOKENS defensive allowlist — that
+    // array names the very tokens we want to keep out of live data paths,
+    // so its own contents must not trip the guard.
     const code = raw
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/(^|[^:])\/\/[^\n]*/g, "$1")
+      .replace(/FORBIDDEN_CSV_TOKENS\s*=\s*\[[\s\S]*?\];/g, "")
       .toLowerCase();
     for (const tok of [
       "request_body",
@@ -161,6 +165,7 @@ describe("API Usage Dashboard V1 · Batch 3 · Client Own-Usage Dashboard", () =
       expect(code, `client dashboard must not reference ${tok}`).not.toContain(tok);
     }
   });
+
 
   it("CSV export column list excludes forbidden fields", () => {
     const src = read(DASHBOARD);
