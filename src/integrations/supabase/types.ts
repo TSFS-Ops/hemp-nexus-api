@@ -1469,7 +1469,9 @@ export type Database = {
           idempotency_key: string | null
           ip_address: string | null
           method: string
+          non_billable_reason: string | null
           org_id: string
+          quota_position_after: number | null
           rate_limit_decision: string | null
           request_body: Json | null
           request_id: string | null
@@ -1478,6 +1480,7 @@ export type Database = {
           response_time_ms: number
           scope_used: string | null
           status_code: number
+          token_cost_units: number | null
           user_agent: string | null
         }
         Insert: {
@@ -1494,7 +1497,9 @@ export type Database = {
           idempotency_key?: string | null
           ip_address?: string | null
           method: string
+          non_billable_reason?: string | null
           org_id: string
+          quota_position_after?: number | null
           rate_limit_decision?: string | null
           request_body?: Json | null
           request_id?: string | null
@@ -1503,6 +1508,7 @@ export type Database = {
           response_time_ms: number
           scope_used?: string | null
           status_code: number
+          token_cost_units?: number | null
           user_agent?: string | null
         }
         Update: {
@@ -1519,7 +1525,9 @@ export type Database = {
           idempotency_key?: string | null
           ip_address?: string | null
           method?: string
+          non_billable_reason?: string | null
           org_id?: string
+          quota_position_after?: number | null
           rate_limit_decision?: string | null
           request_body?: Json | null
           request_id?: string | null
@@ -1528,6 +1536,7 @@ export type Database = {
           response_time_ms?: number
           scope_used?: string | null
           status_code?: number
+          token_cost_units?: number | null
           user_agent?: string | null
         }
         Relationships: [
