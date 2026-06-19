@@ -517,10 +517,16 @@ export async function handleV1<T>(
     // Batch 6 — concurrency guard (3 per api_key, best-effort, 30s TTL).
     // Applied to ALL V1 endpoints after auth so unauthenticated traffic
     // cannot starve the table.
+    // Sand/Prod Batch 6 — concurrency guard, env-specific cap
+    //   • Sandbox: 10 concurrent   • Production: 3 concurrent
+    const envForConc: "sandbox" | "production" =
+      ctx.environment === "sandbox" ? "sandbox" : "production";
+    const concCap = defaultConcurrency(envForConc);
     const begun = await beginApiActiveRequest(
-      supabase, gw.apiKey.id, ctx.apiClientId, ctx.environment, ctx.requestId,
+      supabase, gw.apiKey.id, ctx.apiClientId, ctx.environment, ctx.requestId, concCap,
     );
     if (!begun.ok) {
+      ctx.rateLimitDecision = "concurrency_block";
       await auditConcurrencyBlock(supabase, ctx, gw.apiKey.id, begun.active);
       throw new V1Error("rate_limit_exceeded", 1);
     }
