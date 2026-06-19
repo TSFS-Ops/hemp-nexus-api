@@ -180,9 +180,10 @@ Deno.serve(async (req) => {
   if (!(kase as { ready_for_poi_authority_summary?: string | null }).ready_for_poi_authority_summary) {
     blockers.push("missing_authority_evidence");
   }
-  // Required identity fields
+  // Required identity fields (counterparty_country is mandatory in the schema;
+  // we treat it as the jurisdiction signal for POI eligibility).
   const legalName = (kase as { counterparty_legal_name?: string | null }).counterparty_legal_name?.trim();
-  const jurisdiction = (kase as { counterparty_jurisdiction?: string | null }).counterparty_jurisdiction?.trim();
+  const jurisdiction = (kase as { counterparty_country?: string | null }).counterparty_country?.trim();
   if (!legalName || !jurisdiction) blockers.push("missing_counterparty_identity");
 
   // Manual registry/KYB & sanctions/PEP records (deferred Batches 14/15 — manual only)
