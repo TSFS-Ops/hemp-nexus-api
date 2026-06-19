@@ -178,6 +178,20 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.invite_unopened_flagged",
 ] as const;
 
+// ─── Batch 16 — Controlled POI conversion audit names ───────────────────
+// Distinct namespace (`facilitation.poi_conversion.*`) to clearly separate
+// the human-confirmed conversion workflow from generic case events.
+// Pinned by scripts/check-facilitation-poi-conversion-audit-names.mjs.
+export const FACILITATION_POI_CONVERSION_AUDIT_NAMES = [
+  "facilitation.poi_conversion.eligibility_checked",
+  "facilitation.poi_conversion.blocked",
+  "facilitation.poi_conversion.confirmed",
+  "facilitation.poi_conversion.created",
+  "facilitation.poi_conversion.linked_existing",
+] as const;
+export type FacilitationPoiConversionAuditName =
+  (typeof FACILITATION_POI_CONVERSION_AUDIT_NAMES)[number];
+
 // Batch 11 — internal-only next-step kind emitted by the
 // invite-unopened auto-detector. Pure constant — pinned by
 // scripts/check-invite-unopened-detector-contract.mjs.
