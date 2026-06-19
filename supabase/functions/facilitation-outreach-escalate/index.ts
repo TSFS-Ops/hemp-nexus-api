@@ -10,6 +10,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { z } from "npm:zod@3.23.8";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { handleHealthProbe } from "../_shared/health.ts";
 import { EscalationCreateSchema } from "../_shared/facilitation-outreach-schemas.ts";
 import { writeOutreachAudit } from "../_shared/facilitation-outreach-context.ts";
 
@@ -26,6 +27,8 @@ const StrictEscalationSchema = EscalationCreateSchema.extend({
 Deno.serve(async (req) => {
   const pf = handleCorsPreflight(req);
   if (pf) return pf;
+  const __hp = handleHealthProbe(req, "facilitation-outreach-escalate");
+  if (__hp) return __hp;
   if (req.method !== "POST") return j(req, { error: "Method not allowed" }, 405);
 
   const url = Deno.env.get("SUPABASE_URL")!;

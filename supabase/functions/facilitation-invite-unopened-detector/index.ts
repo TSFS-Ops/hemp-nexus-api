@@ -32,6 +32,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { corsHeaders as baseCors } from "npm:@supabase/supabase-js@2/cors";
 import {
+import { handleHealthProbe } from "../_shared/health.ts";
   decideFlag,
   buildNextStepRow,
   INVITE_UNOPENED_NEXT_STEP_KIND,
@@ -71,6 +72,7 @@ function gateInternalCronKey(req: Request, bodyKey: unknown): boolean {
 const TERMINAL_SET: ReadonlySet<string> = TERMINAL_STATUSES as unknown as ReadonlySet<string>;
 
 Deno.serve(async (req) => {
+  { const __hp = handleHealthProbe(req, \"facilitation-invite-unopened-detector\"); if (__hp) return __hp; }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 

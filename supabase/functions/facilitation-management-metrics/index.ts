@@ -11,6 +11,7 @@
  */
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { handleHealthProbe } from "../_shared/health.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -44,6 +45,8 @@ function pct(numerator: number, denominator: number): number | null {
 Deno.serve(async (req) => {
   const pf = handleCorsPreflight(req);
   if (pf) return pf;
+  const __hp = handleHealthProbe(req, "facilitation-management-metrics");
+  if (__hp) return __hp;
   if (req.method !== "POST" && req.method !== "GET") {
     return json(req, { error: "Method not allowed" }, 405);
   }
