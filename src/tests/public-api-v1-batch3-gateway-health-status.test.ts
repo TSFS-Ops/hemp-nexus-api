@@ -73,7 +73,9 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
 
   it("gateway enforces env header, key, status, expiry, env match, client status, IP allowlist, scope, rate limit", () => {
     const src = codeOnly(read(GATEWAY));
-    expect(src).toMatch(/detectEnvironment\(req\)/);
+    // Accept both the legacy `detectEnvironment(req)` helper and the
+    // current `detectEnvironmentDetailed(req)` form that supersedes it.
+    expect(src).toMatch(/detectEnvironment(Detailed)?\(req\)/);
     expect(src).toMatch(/x-api-key/i);
     expect(src).toMatch(/V1Error\("revoked_key"\)/);
     expect(src).toMatch(/V1Error\("suspended_key"\)/);
@@ -140,9 +142,15 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
     expect(src).toMatch(/key_status:/);
     expect(src).toMatch(/scopes:/);
     expect(src).toMatch(/expires_at,/);
-    // Forbidden fields never appear
-    for (const forbidden of ["key_hash", "documents", "governance", "poi", "wad", "bank", "internal_notes", "notes:"]) {
-      expect(src.toLowerCase()).not.toContain(forbidden.toLowerCase());
+    // Forbidden response fields never appear as response-object keys.
+    // Use field-key shapes (`foo:` / `"foo"`) so benign identifier
+    // substrings (e.g. "endpoint" contains "poi") don't false-positive.
+    const lower = src.toLowerCase();
+    for (const forbidden of ["key_hash", "documents", "governance", "poi", "wad", "bank", "internal_notes", "notes"]) {
+      const keyColon = new RegExp(`\\b${forbidden}\\s*:`);
+      const quoted = new RegExp(`"${forbidden}"\\s*:`);
+      expect(keyColon.test(lower)).toBe(false);
+      expect(quoted.test(lower)).toBe(false);
     }
   });
 
