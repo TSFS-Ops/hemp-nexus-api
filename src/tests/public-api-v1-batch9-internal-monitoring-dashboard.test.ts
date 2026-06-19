@@ -152,10 +152,14 @@ describe("Public API V1 · Batch 9 · internal monitoring dashboard", () => {
     expect(mig).toMatch(/AVG\(l\.response_time_ms\)/i);
   });
 
-  it("support-ticket field is deferred (no support intake)", () => {
+  it("support-ticket field is now wired (Batch 11) — field still emitted", () => {
     const mig = findBatch9Migration();
-    expect(mig).toMatch(/'open_support_tickets',\s*NULL/);
-    expect(mig).toMatch(/deferred_no_support_ticket_table/);
+    expect(mig.includes("'open_support_tickets'")).toBe(true);
+    // Batch 11 wires real counts; either Batch 9's deferred placeholder OR
+    // Batch 11's live wiring is acceptable on this combined migration text.
+    const wired = /live_from_api_support_tickets/.test(mig);
+    const deferred = /deferred_no_support_ticket_table/.test(mig);
+    expect(wired || deferred).toBe(true);
   });
 
   // ─── Status label semantics ────────────────────────────────────────
