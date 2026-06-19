@@ -93,7 +93,21 @@ function RequestsTable({
               {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
             </div>
             <div className={methodColor(r.method)}>{r.method}</div>
-            <div className="text-slate-100 truncate">{r.endpoint}</div>
+            <div className="text-slate-100 truncate">
+              {r.environment && (
+                <span
+                  className={[
+                    "mr-2 px-1 py-0.5 text-[9px] uppercase tracking-[0.16em] border rounded-sm",
+                    r.environment === "sandbox"
+                      ? "text-amber-300 border-amber-500/40"
+                      : "text-emerald-300 border-emerald-500/40",
+                  ].join(" ")}
+                >
+                  {r.environment === "sandbox" ? "sbx" : "prd"}
+                </span>
+              )}
+              {r.endpoint}
+            </div>
             <div className="text-right">
               <span className={`text-[10px] uppercase tracking-[0.16em] px-1.5 py-0.5 border rounded-sm ${statusColor(r.status_code)}`}>
                 {r.status_code}
