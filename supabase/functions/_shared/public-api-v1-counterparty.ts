@@ -137,9 +137,13 @@ const DOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])
 
 export interface LookupInput {
   legal_name?: string | null;
+  /** Sandbox / industry alias for legal_name. Normalised into legal_name. */
+  company_name?: string | null;
   trading_name?: string | null;
   registration_number?: string | null;
   country?: string | null;
+  /** Sandbox / industry alias for country. Normalised into country. */
+  country_code?: string | null;
   website_domain?: string | null;
   email_domain?: string | null;
   tax_number?: string | null;
@@ -149,13 +153,19 @@ export interface LookupInput {
 /**
  * Throws V1Error on bad input. Returns a normalised copy. Minimum valid
  * request: (legal_name + country) OR (registration_number + country).
+ *
+ * Aliases accepted: `company_name` → legal_name, `country_code` → country.
+ * Matching is case-insensitive (country uppercased, the rest lowered by
+ * resolveSandboxRow).
  */
 export function validateLookupInput(input: LookupInput): Required<Pick<LookupInput, "country">> & LookupInput {
+  const legal = (input.legal_name ?? input.company_name)?.trim() || null;
+  const country = (input.country ?? input.country_code)?.trim().toUpperCase() || null;
   const norm: LookupInput = {
-    legal_name: input.legal_name?.trim() || null,
+    legal_name: legal,
     trading_name: input.trading_name?.trim() || null,
     registration_number: input.registration_number?.trim() || null,
-    country: input.country?.trim().toUpperCase() || null,
+    country,
     website_domain: input.website_domain?.trim().toLowerCase() || null,
     email_domain: input.email_domain?.trim().toLowerCase() || null,
     tax_number: input.tax_number?.trim() || null,
