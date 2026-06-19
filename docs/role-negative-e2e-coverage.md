@@ -1,8 +1,9 @@
 # Role-Negative & E2E Test Coverage — Release Gate
 
-**Status:** Build-complete (Phase 1). Internal dry-run pending (needs
-operator to run the seeder + suite on staging — sandbox cannot reach
-staging credentials).
+**Status:** Phase 1 + Phase 2 fixture seeding build-complete.
+Runtime proof is operator-run (requires `SUPABASE_SERVICE_ROLE_KEY` and
+`E2E_RN_PASSWORD`); staging is **not** a precondition — the suite is
+designed to run safely against the current build using TEST/UAT data.
 
 **Authority:** Daniel's approved Role-Negative & E2E Test Coverage
 questionnaire. This document is the controlling release-gate reference.
@@ -19,7 +20,10 @@ Drift is blocked by `scripts/check-role-negative-e2e-coverage.mjs`.
 
 ## 2. Seeded TEST/UAT data
 
-Phase 1 (this build, idempotent via `seed-role-negative-e2e-fixtures`):
+Idempotent via `seed-role-negative-e2e-fixtures` (default `phase=2` seeds
+everything below; `phase=1` seeds only orgs/users/roles).
+
+**Phase 1**
 
 | Asset | Count | Naming |
 |---|---|---|
@@ -27,16 +31,25 @@ Phase 1 (this build, idempotent via `seed-role-negative-e2e-fixtures`):
 | Users (`@test.izenzo.co.za`, email_confirm=true) | 10 | "RN <role> (TEST/UAT)" |
 | `user_roles` rows | 10 | match approved labels |
 
-Phase 2 (deferred — see deferral register §6):
+**Phase 2 (per org, `is_demo=true` where supported; `rn_seeder` marker otherwise)**
 
-- 1 trade request per org
-- 1 match per org
-- 1 POI per org
-- 1 WaD per org
-- 1 protected document per org
-- 1 refund / dispute record per org
-- 1 governance export candidate per org
-- 1 API key + usage-log row per org
+| Asset | Per-org count | Notes |
+|---|---|---|
+| `entities` (COMPANY, VERIFIED) | 1 | `legal_name = "RN-TEST Org <X> Entity"` |
+| `trade_requests` | 1 | `metadata.rn_marker`, `is_demo=true` |
+| `matches` | 1 | `is_demo=true`, cross-tenant pair (A↔B) |
+| `pois` (bilateral DRAFT) | 1 | `industry_code = "RN-TEST-<X>"`, `is_demo=true` |
+| `match_documents` | 1 | deterministic sha256, `notes='rn_seeder'` |
+| `api_clients` (sandbox_active) | 1 | `legal_entity_name` prefix `RN-TEST` |
+| `api_keys` (sandbox, scope `read:usage`) | 1 | `key_hash` prefix `rn_test_` |
+| `export_requests` (status `pending`) | 1 | `reason = "RN-TEST-<X>-export"`, never approved |
+
+**Phase 2b — deferred, by design**
+
+| Item | Why not synthesised |
+|---|---|
+| `wads` | Requires a sealed canonical payload, attestations, and an unbroken ledger hash chain. Must be created via the `issue_wad` RPC against a real POI lifecycle — a raw insert would corrupt the ledger chain. Specs that target WaD skip cleanly with this reason. |
+| `refund_requests` | Requires a paid `token_purchase` row. Synthesising one bypasses Paystack/Payfast reconciliation and would surface in revenue reports. Specs that target refund skip cleanly with this reason. |
 
 ## 3. Direct-link route matrix
 
@@ -63,29 +76,34 @@ dependency, and side-effect checks. Iterated by
 
 - All seeded orgs `is_demo=true` — lifecycle/billing crons skip.
 - Test client sends `X-E2E-Safe-Mode: 1` header on every backend call.
-- `e2e/helpers/state.ts` refuses to run unless `E2E_RN_ENV ∈ {staging,test}`.
-- `scripts/seed-role-negative-e2e.sh` requires `SUPABASE_SERVICE_ROLE_KEY`
-  + `E2E_RN_PASSWORD (≥12)` and writes ONLY to `@test.izenzo.co.za`
-  accounts.
+- `e2e/helpers/state.ts` accepts `E2E_RN_ENV ∈ {staging, test, live-demo}`.
+  In `live-demo`, every snapshot read is gated: `trade_requests`,
+  `matches`, `pois`, `wads` must be `is_demo=true`; `match_documents`,
+  `refund_requests`, `export_requests`, `api_keys` must carry the
+  `rn_seeder` / `rn_test` fingerprint. Any row that fails this check
+  is refused — making it impossible for the suite to touch real
+  tenant data even when running against the live DB.
+- Seeder requires `SUPABASE_SERVICE_ROLE_KEY` + `E2E_RN_PASSWORD (≥12)`
+  and writes only to `@test.izenzo.co.za` accounts and `RN-TEST` rows.
 - No real email, SMS, WhatsApp, webhook, Payfast, Paystack, KYB, KYC,
-  sanctions or registry call permitted. Edge functions that don't yet
-  honour `X-E2E-Safe-Mode` are flagged in the Phase-2 deferral list.
+  sanctions, registry or bank call is made by the suite.
 
 ## 6. Deferral register
 
 | ID | Item | Reason | Owner | Target |
 |---|---|---|---|---|
-| RN-DEF-01 | Phase-2 seeded records (trade/match/POI/WaD/document/refund/export/api_key) | Each requires per-table column knowledge + non-trivial state setup; doing it blind risks the very mutations §4 forbids. | platform_admin | Next batch |
-| RN-DEF-02 | `notification_dispatches` / `webhook_deliveries` / `email_send_log` / `fund_flows` automated diff in wrong-actions | Needs per-action filters Phase-2 seeder will emit | platform_admin | Next batch, paired with RN-DEF-01 |
-| RN-DEF-03 | Cross-direction Org B → Org A wrong-tenant spec | Symmetric by RLS; one direction proves the gate. Add explicit reverse coverage when Org-B requester login helper is needed elsewhere. | platform_admin | When Org B suites grow |
-| RN-DEF-04 | `X-E2E-Safe-Mode` honoured by every mutating edge function | Some functions need a small code change to short-circuit notifications when the header is present. | platform_admin | Phase 2 |
-| RN-DEF-05 | Internal dry-run on staging | Requires staging service-role key + password; cannot run from sandbox. | platform_admin | Before sending to Daniel |
+| RN-DEF-01 | Phase 2 record seeding | **Resolved** — `seed-role-negative-e2e-fixtures` now seeds entities, trade_requests, matches, pois, match_documents, api_clients, api_keys, export_requests. | platform_admin | Done |
+| RN-DEF-02 | `notification_dispatches` / `webhook_deliveries` / `email_send_log` / `fund_flows` automated diff in wrong-actions | Needs per-action filters; covered today by `X-E2E-Safe-Mode` + no-mutation snapshot of the target row | platform_admin | Phase 3 |
+| RN-DEF-03 | Cross-direction Org B → Org A wrong-tenant spec | Symmetric by RLS; A→B proves the gate. Add explicit reverse coverage if Org B suites grow. | platform_admin | When Org B suites grow |
+| RN-DEF-04 | `X-E2E-Safe-Mode` honoured by every mutating edge function | Some functions need a small code change to short-circuit notifications when the header is present. | platform_admin | Phase 3 |
+| RN-DEF-05 | Operator-run close-out | Operator must supply `SUPABASE_SERVICE_ROLE_KEY` + `E2E_RN_PASSWORD` (no staging required) and return run result + evidence zip. | platform_admin | Per release |
+| RN-DEF-06 | `wads` and `refund_requests` seeding | Cannot be synthesised by a seeder without corrupting the ledger chain (WaD) or bypassing payment reconciliation (refund). Specs `test.skip` with a clear reason; close-out evidence reports the skip count for visibility. | platform_admin | Build via real RPC fixtures in Phase 3 |
 
-**Hard non-deferrable items** (per §1 of brief — must not be deferred):
-production access, tenant isolation, protected documents, governance
-exports, POI/WaD sealing, refunds, compliance clearing, API key
-controls. These are all structurally covered by the matrix today; full
-proof depends on RN-DEF-01 landing.
+**Hard non-deferrable items** (per §1 of brief): production access,
+tenant isolation, protected documents, governance exports, POI sealing,
+refunds, compliance clearing, API key controls — all structurally
+covered by the matrix and (except WaD/refund seal-state) fully runnable
+against the seeded fixtures.
 
 ## 7. CI scripts
 
@@ -99,8 +117,8 @@ npm run test:e2e:evidence-pack    # zips latest run to /mnt/documents/
 ```
 
 Release-gate definition: `test:e2e:coverage-guard` must pass, and
-`test:e2e:critical` must pass in Chromium against staging with seeded
-TEST/UAT data.
+`test:e2e:critical` must pass in Chromium against the current build
+with seeded TEST/UAT data (`E2E_RN_ENV=live-demo` is supported).
 
 ## 8. Evidence schema
 
