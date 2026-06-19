@@ -203,12 +203,12 @@ describe("Public API V1 · Batch 6 · usage limits + threshold notifications", (
     expect(batch6).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
     expect(batch6).not.toMatch(/CREATE TABLE[^;]*api_invoices/i);
     expect(batch6).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
-    // Invoices/payment/support intake must not exist in ANY migration.
+    // Invoices must not exist in ANY migration. Support intake is now
+    // introduced in Batch 11 — exclude it from this Batch-6 fence.
     const migDir = path.join(ROOT, "supabase/migrations");
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_invoices/i);
-      expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
     }
   });
 
