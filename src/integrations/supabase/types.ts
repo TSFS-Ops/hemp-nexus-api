@@ -12833,8 +12833,16 @@ export type Database = {
         Args: { _api_client_id: string; _user_id: string }
         Returns: boolean
       }
+      can_manage_api_usage_alerts: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       can_view_api_client_usage: {
         Args: { _api_client_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_api_usage_alerts: {
+        Args: { _user_id: string }
         Returns: boolean
       }
       change_org_member_role: {
