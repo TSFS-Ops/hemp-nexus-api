@@ -132,7 +132,7 @@ describe("Public API V1 · Batch 7 · commercial plans + billing visibility", ()
     expect(usage).toMatch(/baseOverride/);
     const gw = read(GATEWAY);
     expect(gw).toMatch(/getActivePlanForClient/);
-    expect(gw).toMatch(/strictAtAllowance:\s*!resolved\.plan\.overage_allowed/);
+    expect(gw).toMatch(/strictAtAllowance\s*=\s*!resolved\.plan\.overage_allowed/);
     expect(gw).toMatch(/baseOverride\s*=\s*resolved\.plan\.included_lookup_allowance/);
     // Temporary override still takes precedence — evaluateMonthlyAllowance
     // continues to consult api_usage_overrides and prefers override_limit.
