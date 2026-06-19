@@ -461,7 +461,7 @@ export const hashApiKey = async (key: string): Promise<string> => {
 };
 
 // Verify API key against scrypt hash
-const verifyScrypt = async (key: string, storedHash: string): Promise<boolean> => {
+export const verifyScrypt = async (key: string, storedHash: string): Promise<boolean> => {
   try {
     const [saltHex, hashHex] = storedHash.split('$');
     if (!saltHex || !hashHex) return false;
@@ -508,7 +508,7 @@ const verifyScrypt = async (key: string, storedHash: string): Promise<boolean> =
 };
 
 // Legacy SHA-256 hash (only for backward compatibility during migration)
-const hashApiKeySHA256 = async (key: string): Promise<string> => {
+export const hashApiKeySHA256 = async (key: string): Promise<string> => {
   const encoder = new TextEncoder();
   const data = encoder.encode(key);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
