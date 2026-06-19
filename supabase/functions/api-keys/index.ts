@@ -175,10 +175,10 @@ Deno.serve(async (req) => {
     if (req.method === 'POST' && parts.length === 2 && parts[1] === 'rotate') {
       const keyId = parts[0];
 
-      // Fetch existing key config
+      // Fetch existing key config — Batch 2: preserve api_client_id, environment, allowed_ips, allowed_origins
       const { data: existingKey, error: fetchErr } = await supabase
         .from('api_keys')
-        .select('id, name, scopes, expires_at, org_id, key_history')
+        .select('id, name, scopes, expires_at, org_id, key_history, api_client_id, environment, allowed_ips, allowed_origins')
         .eq('id', keyId)
         .eq('org_id', authCtx.orgId)
         .eq('status', 'active')
@@ -226,6 +226,11 @@ Deno.serve(async (req) => {
           created_by: actorUserId,
           expires_at: newExpiresAt,
           key_history: [{ rotated_from: keyId, rotated_at: new Date().toISOString() }],
+          // Batch 2 — preserve linkage, environment, and IP/origin allowlists across rotation
+          api_client_id: (existingKey as Record<string, unknown>).api_client_id ?? null,
+          environment: (existingKey as Record<string, unknown>).environment ?? null,
+          allowed_ips: (existingKey as Record<string, unknown>).allowed_ips ?? null,
+          allowed_origins: (existingKey as Record<string, unknown>).allowed_origins ?? null,
         })
         .select()
         .single();
