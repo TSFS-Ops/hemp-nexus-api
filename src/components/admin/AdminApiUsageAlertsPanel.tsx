@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, ShieldAlert, Lock, ShieldCheck, BellRing } from "lucide-react";
+import { RefreshCw, ShieldAlert, Lock, ShieldCheck, BellRing, UserCheck, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 
 type AlertRow = {
@@ -44,9 +44,14 @@ type AlertRow = {
   acknowledged_at: string | null;
   resolved_by: string | null;
   resolved_at: string | null;
+  assigned_to: string | null;
+  assigned_at: string | null;
+  assigned_by: string | null;
   created_at: string;
   updated_at: string;
 };
+
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 
 const SEVERITY_TONE: Record<string, string> = {
   critical: "bg-red-50 text-red-800 border-red-300",
@@ -85,10 +90,16 @@ export function AdminApiUsageAlertsPanel() {
   const [severity, setSeverity] = useState<string>("any");
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
+  const [assignment, setAssignment] = useState<string>("any"); // any | mine | unassigned
+
   const load = useCallback(async () => {
     if (!user || !hasAccess) return;
     setLoading(true);
     try {
+      const p_assigned_to =
+        assignment === "mine" ? user.id
+        : assignment === "unassigned" ? NIL_UUID
+        : null;
       const { data, error } = await supabase.rpc(
         "list_api_usage_alerts" as never,
         {
@@ -97,6 +108,7 @@ export function AdminApiUsageAlertsPanel() {
           p_severity: severity === "any" ? null : severity,
           p_api_client_id: null,
           p_limit: 200,
+          p_assigned_to,
         } as never,
       );
       if (error) throw error;
@@ -107,7 +119,7 @@ export function AdminApiUsageAlertsPanel() {
     } finally {
       setLoading(false);
     }
-  }, [user, hasAccess, status, environment, severity]);
+  }, [user, hasAccess, status, environment, severity, assignment]);
 
   useEffect(() => {
     void load();
@@ -180,6 +192,27 @@ export function AdminApiUsageAlertsPanel() {
         await load();
       } catch (e: any) {
         toast.error(`Add note failed: ${e?.message ?? e}`);
+      }
+    },
+    [noteDrafts, load],
+  );
+
+  const assign = useCallback(
+    async (id: string, assignee: string | null) => {
+      try {
+        const { error } = await supabase.rpc(
+          "assign_api_usage_alert" as never,
+          {
+            p_alert_id: id,
+            p_assignee: assignee,
+            p_note: noteDrafts[id] || null,
+          } as never,
+        );
+        if (error) throw error;
+        toast.success(assignee ? "Alert assigned" : "Alert unassigned");
+        await load();
+      } catch (e: any) {
+        toast.error(`Assign failed: ${e?.message ?? e}`);
       }
     },
     [noteDrafts, load],
@@ -261,6 +294,17 @@ export function AdminApiUsageAlertsPanel() {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label className="text-xs">Assignment</Label>
+            <Select value={assignment} onValueChange={setAssignment}>
+              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                <SelectItem value="mine">Assigned to me</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button variant="outline" size="sm" onClick={() => load()} disabled={loading}>
             <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -299,16 +343,17 @@ export function AdminApiUsageAlertsPanel() {
               <th className="p-2 text-right">Trigger</th>
               <th className="p-2 text-right">Threshold</th>
               <th className="p-2">Status</th>
+              <th className="p-2">Owner</th>
               <th className="p-2">Created</th>
               <th className="p-2">Note / actions</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={10} className="p-4 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Loading…</td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={10} className="p-4 text-center text-muted-foreground">No alerts for the selected filters.</td></tr>
+              <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">No alerts for the selected filters.</td></tr>
             )}
             {!loading && rows.map((r) => (
               <tr key={r.id} className="border-t border-border align-top">
@@ -329,6 +374,22 @@ export function AdminApiUsageAlertsPanel() {
                 <td className="p-2">
                   <Badge variant="outline" className={STATUS_TONE[r.status]}>{r.status}</Badge>
                 </td>
+                <td className="p-2 text-[11px]">
+                  {r.assigned_to ? (
+                    <div>
+                      <div className="font-mono">
+                        {r.assigned_to === user!.id ? "you" : r.assigned_to.slice(0, 8) + "…"}
+                      </div>
+                      {r.assigned_at && (
+                        <div className="text-muted-foreground font-mono text-[10px]">
+                          {fmtDate(r.assigned_at)}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
                 <td className="p-2 font-mono">{fmtDate(r.created_at)}</td>
                 <td className="p-2">
                   {r.latest_note && (
@@ -346,7 +407,7 @@ export function AdminApiUsageAlertsPanel() {
                           setNoteDrafts((d) => ({ ...d, [r.id]: e.target.value }))
                         }
                       />
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap gap-1">
                         {r.status === "open" && (
                           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => acknowledge(r.id)}>
                             Acknowledge
@@ -358,6 +419,29 @@ export function AdminApiUsageAlertsPanel() {
                         <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => addNote(r.id)}>
                           Add note
                         </Button>
+                        {r.assigned_to !== user!.id ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px]"
+                            onClick={() => assign(r.id, user!.id)}
+                            data-testid={`api-usage-alert-claim-${r.id}`}
+                          >
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            {r.assigned_to ? "Reassign to me" : "Claim"}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-[11px]"
+                            onClick={() => assign(r.id, null)}
+                            data-testid={`api-usage-alert-unassign-${r.id}`}
+                          >
+                            <UserMinus className="h-3 w-3 mr-1" />
+                            Unassign
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}
