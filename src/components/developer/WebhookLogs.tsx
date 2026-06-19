@@ -13,6 +13,7 @@ interface ApiRequestLog {
   ip_address: string | null;
   request_id: string | null;
   error_message: string | null;
+  environment: "sandbox" | "production" | null;
 }
 
 interface AuditLog {
@@ -92,7 +93,21 @@ function RequestsTable({
               {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
             </div>
             <div className={methodColor(r.method)}>{r.method}</div>
-            <div className="text-slate-100 truncate">{r.endpoint}</div>
+            <div className="text-slate-100 truncate">
+              {r.environment && (
+                <span
+                  className={[
+                    "mr-2 px-1 py-0.5 text-[9px] uppercase tracking-[0.16em] border rounded-sm",
+                    r.environment === "sandbox"
+                      ? "text-amber-300 border-amber-500/40"
+                      : "text-emerald-300 border-emerald-500/40",
+                  ].join(" ")}
+                >
+                  {r.environment === "sandbox" ? "sbx" : "prd"}
+                </span>
+              )}
+              {r.endpoint}
+            </div>
             <div className="text-right">
               <span className={`text-[10px] uppercase tracking-[0.16em] px-1.5 py-0.5 border rounded-sm ${statusColor(r.status_code)}`}>
                 {r.status_code}
@@ -211,18 +226,21 @@ export default function WebhookLogs() {
   const AUDIT_LIMIT = 100;
   const [tab, setTab] = useState<Tab>("requests");
   const [selected, setSelected] = useState<ApiRequestLog | null>(null);
+  const [envFilter, setEnvFilter] = useState<"all" | "sandbox" | "production">("all");
 
   const requests = useQuery({
-    queryKey: ["developer-api-request-logs"],
+    queryKey: ["developer-api-request-logs", envFilter],
     queryFn: async () => {
-      const { data, error, count } = await supabase
+      let q = supabase
         .from("api_request_logs")
         .select(
-          "id, endpoint, method, status_code, response_time_ms, created_at, ip_address, request_id, error_message",
+          "id, endpoint, method, status_code, response_time_ms, created_at, ip_address, request_id, error_message, environment",
           { count: "exact" },
         )
         .order("created_at", { ascending: false })
         .limit(REQ_LIMIT);
+      if (envFilter !== "all") q = q.eq("environment", envFilter);
+      const { data, error, count } = await q;
       if (error) throw error;
       return { rows: (data || []) as ApiRequestLog[], totalCount: count ?? data?.length ?? 0 };
     },
@@ -299,13 +317,31 @@ export default function WebhookLogs() {
                 </div>
                 <h2 className="mt-1 text-lg text-slate-100 tracking-tight">API Request Stream</h2>
               </div>
-              {!requests.isLoading && reqRows.length > 0 && (
-                <div className="font-mono text-[11px] text-slate-400">
-                  <span className="text-green-400">●</span> {counts.success} ok &nbsp;
-                  <span className="text-amber-400">●</span> {counts.client} 4xx &nbsp;
-                  <span className="text-rose-400">●</span> {counts.server} 5xx
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.18em]" data-testid="env-filter">
+                  {(["all", "sandbox", "production"] as const).map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => setEnvFilter(e)}
+                      className={[
+                        "px-2 py-1 border rounded-sm transition-colors",
+                        envFilter === e
+                          ? "text-green-300 border-green-500/50 bg-green-500/10"
+                          : "text-slate-400 border-slate-700 hover:text-slate-200",
+                      ].join(" ")}
+                    >
+                      {e}
+                    </button>
+                  ))}
                 </div>
-              )}
+                {!requests.isLoading && reqRows.length > 0 && (
+                  <div className="font-mono text-[11px] text-slate-400">
+                    <span className="text-green-400">●</span> {counts.success} ok &nbsp;
+                    <span className="text-amber-400">●</span> {counts.client} 4xx &nbsp;
+                    <span className="text-rose-400">●</span> {counts.server} 5xx
+                  </div>
+                )}
+              </div>
             </div>
 
             {requests.isLoading && (
