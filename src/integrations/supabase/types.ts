@@ -1534,6 +1534,92 @@ export type Database = {
         }
         Relationships: []
       }
+      api_support_tickets: {
+        Row: {
+          api_client_id: string
+          approximate_time: string | null
+          category: string
+          client_visible_response: string | null
+          closed_at: string | null
+          contact_email: string
+          contact_name: string
+          created_at: string
+          created_by: string
+          description: string
+          endpoint: string | null
+          environment: string
+          external_reference: string | null
+          id: string
+          internal_notes: string | null
+          internal_owner: string | null
+          org_id: string
+          request_id: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          api_client_id: string
+          approximate_time?: string | null
+          category: string
+          client_visible_response?: string | null
+          closed_at?: string | null
+          contact_email: string
+          contact_name: string
+          created_at?: string
+          created_by: string
+          description: string
+          endpoint?: string | null
+          environment: string
+          external_reference?: string | null
+          id?: string
+          internal_notes?: string | null
+          internal_owner?: string | null
+          org_id: string
+          request_id?: string | null
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          api_client_id?: string
+          approximate_time?: string | null
+          category?: string
+          client_visible_response?: string | null
+          closed_at?: string | null
+          contact_email?: string
+          contact_name?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          endpoint?: string | null
+          environment?: string
+          external_reference?: string | null
+          id?: string
+          internal_notes?: string | null
+          internal_owner?: string | null
+          org_id?: string
+          request_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_support_tickets_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_usage_notifications_state: {
         Row: {
           api_client_id: string
@@ -12457,6 +12543,10 @@ export type Database = {
         Args: { _object_name: string; _owner_id?: string; _user_id: string }
         Returns: boolean
       }
+      can_manage_api_client_support: {
+        Args: { _api_client_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_view_api_client_usage: {
         Args: { _api_client_id: string; _user_id: string }
         Returns: boolean
@@ -12586,6 +12676,23 @@ export type Database = {
       compute_match_terms_hash: {
         Args: { p_match_id: string }
         Returns: string
+      }
+      create_api_support_ticket: {
+        Args: {
+          p_api_client_id: string
+          p_approximate_time?: string
+          p_category: string
+          p_contact_email: string
+          p_contact_name: string
+          p_description: string
+          p_endpoint?: string
+          p_environment: string
+          p_external_reference?: string
+          p_request_id?: string
+          p_severity: string
+          p_subject: string
+        }
+        Returns: Json
       }
       create_demo_workspace: {
         Args: { p_admin_user_id: string; p_org_name: string; p_reason: string }
@@ -12844,6 +12951,20 @@ export type Database = {
         Returns: boolean
       }
       is_test_mode_bypass_enabled: { Args: { _gate: string }; Returns: boolean }
+      list_api_support_tickets_for_client: {
+        Args: { p_api_client_id: string; p_limit?: number; p_status?: string }
+        Returns: Json[]
+      }
+      list_api_support_tickets_internal: {
+        Args: {
+          p_api_client_id?: string
+          p_environment?: string
+          p_limit?: number
+          p_severity?: string
+          p_status?: string
+        }
+        Returns: Json[]
+      }
       log_api_client_usage_csv_export: {
         Args: {
           p_api_client_id: string
@@ -12972,6 +13093,14 @@ export type Database = {
             }
           }
       prune_webhook_replay_guard: { Args: never; Returns: number }
+      public_api_support_ticket_client_shape: {
+        Args: { t: Database["public"]["Tables"]["api_support_tickets"]["Row"] }
+        Returns: Json
+      }
+      public_api_support_ticket_internal_shape: {
+        Args: { t: Database["public"]["Tables"]["api_support_tickets"]["Row"] }
+        Returns: Json
+      }
       purge_old_email_send_log: { Args: never; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
@@ -13229,6 +13358,16 @@ export type Database = {
         Returns: Json
       }
       try_lifecycle_lock: { Args: never; Returns: boolean }
+      update_api_support_ticket_internal: {
+        Args: {
+          p_client_visible_response?: string
+          p_id: string
+          p_internal_note_append?: string
+          p_internal_owner?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       verify_acceptance_receipt: {
         Args: { p_receipt_id: string }
         Returns: Json
