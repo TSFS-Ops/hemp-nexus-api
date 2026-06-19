@@ -219,8 +219,10 @@ Deno.serve(async (req) => {
     if (dnc && dnc.length > 0) blockers.push("active_do_not_contact_block");
   }
 
-  // Unresolved duplicate-org conflict marker
-  if ((kase as { duplicate_review_open?: boolean | null }).duplicate_review_open === true) {
+  // Unresolved duplicate-org conflict marker — represented in this schema by
+  // the internal_status remaining in `duplicate_review`. We treat any case
+  // still in that status as an unresolved duplicate conflict.
+  if (status === "duplicate_review") {
     blockers.push("duplicate_organisation_conflict");
   }
 
