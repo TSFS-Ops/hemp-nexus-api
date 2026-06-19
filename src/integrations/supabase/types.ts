@@ -1042,7 +1042,11 @@ export type Database = {
           billing_contact_name: string | null
           billing_details_confirmed: boolean
           callback_url: string | null
+          commercial_owner_sign_off_at: string | null
+          commercial_owner_sign_off_by: string | null
           commercial_plan_approved: boolean
+          compliance_owner_sign_off_at: string | null
+          compliance_owner_sign_off_by: string | null
           country: string
           created_at: string
           created_by: string | null
@@ -1091,7 +1095,11 @@ export type Database = {
           billing_contact_name?: string | null
           billing_details_confirmed?: boolean
           callback_url?: string | null
+          commercial_owner_sign_off_at?: string | null
+          commercial_owner_sign_off_by?: string | null
           commercial_plan_approved?: boolean
+          compliance_owner_sign_off_at?: string | null
+          compliance_owner_sign_off_by?: string | null
           country: string
           created_at?: string
           created_by?: string | null
@@ -1140,7 +1148,11 @@ export type Database = {
           billing_contact_name?: string | null
           billing_details_confirmed?: boolean
           callback_url?: string | null
+          commercial_owner_sign_off_at?: string | null
+          commercial_owner_sign_off_by?: string | null
           commercial_plan_approved?: boolean
+          compliance_owner_sign_off_at?: string | null
+          compliance_owner_sign_off_by?: string | null
           country?: string
           created_at?: string
           created_by?: string | null
@@ -1313,8 +1325,13 @@ export type Database = {
           name: string
           org_id: string
           revoked_at: string | null
+          revoked_reason: string | null
+          rotated_at: string | null
           scopes: string[]
           status: string
+          suspended_at: string | null
+          suspended_by: string | null
+          suspended_reason: string | null
         }
         Insert: {
           allowed_ips?: string[] | null
@@ -1332,8 +1349,13 @@ export type Database = {
           name: string
           org_id: string
           revoked_at?: string | null
+          revoked_reason?: string | null
+          rotated_at?: string | null
           scopes?: string[]
           status?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
         }
         Update: {
           allowed_ips?: string[] | null
@@ -1351,8 +1373,13 @@ export type Database = {
           name?: string
           org_id?: string
           revoked_at?: string | null
+          revoked_reason?: string | null
+          rotated_at?: string | null
           scopes?: string[]
           status?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
         }
         Relationships: [
           {
@@ -1371,10 +1398,55 @@ export type Database = {
           },
         ]
       }
+      api_production_approvals: {
+        Row: {
+          actor_user_id: string | null
+          api_client_id: string
+          approval_event: string
+          approved_role: string
+          approved_scopes: string[] | null
+          created_at: string
+          id: string
+          metadata: Json
+          notes: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          api_client_id: string
+          approval_event: string
+          approved_role: string
+          approved_scopes?: string[] | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          notes?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          api_client_id?: string
+          approval_event?: string
+          approved_role?: string
+          approved_scopes?: string[] | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_production_approvals_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_request_logs: {
         Row: {
           api_key_id: string | null
           billable: boolean
+          billable_overage: boolean
           created_at: string
           endpoint: string
           environment: string | null
@@ -1386,8 +1458,10 @@ export type Database = {
           ip_address: string | null
           method: string
           org_id: string
+          rate_limit_decision: string | null
           request_body: Json | null
           request_id: string | null
+          request_payload_hash: string | null
           response_body: Json | null
           response_time_ms: number
           scope_used: string | null
@@ -1397,6 +1471,7 @@ export type Database = {
         Insert: {
           api_key_id?: string | null
           billable?: boolean
+          billable_overage?: boolean
           created_at?: string
           endpoint: string
           environment?: string | null
@@ -1408,8 +1483,10 @@ export type Database = {
           ip_address?: string | null
           method: string
           org_id: string
+          rate_limit_decision?: string | null
           request_body?: Json | null
           request_id?: string | null
+          request_payload_hash?: string | null
           response_body?: Json | null
           response_time_ms: number
           scope_used?: string | null
@@ -1419,6 +1496,7 @@ export type Database = {
         Update: {
           api_key_id?: string | null
           billable?: boolean
+          billable_overage?: boolean
           created_at?: string
           endpoint?: string
           environment?: string | null
@@ -1430,8 +1508,10 @@ export type Database = {
           ip_address?: string | null
           method?: string
           org_id?: string
+          rate_limit_decision?: string | null
           request_body?: Json | null
           request_id?: string | null
+          request_payload_hash?: string | null
           response_body?: Json | null
           response_time_ms?: number
           scope_used?: string | null
@@ -1704,6 +1784,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      api_v1_exceptions: {
+        Row: {
+          active: boolean
+          approved_at: string
+          approved_by: string | null
+          compensating_controls: string
+          created_at: string
+          exception_code: string
+          expires_at: string | null
+          expires_when: string | null
+          id: string
+          metadata: Json
+          rationale: string
+        }
+        Insert: {
+          active?: boolean
+          approved_at?: string
+          approved_by?: string | null
+          compensating_controls: string
+          created_at?: string
+          exception_code: string
+          expires_at?: string | null
+          expires_when?: string | null
+          id?: string
+          metadata?: Json
+          rationale: string
+        }
+        Update: {
+          active?: boolean
+          approved_at?: string
+          approved_by?: string | null
+          compensating_controls?: string
+          created_at?: string
+          exception_code?: string
+          expires_at?: string | null
+          expires_when?: string | null
+          id?: string
+          metadata?: Json
+          rationale?: string
+        }
+        Relationships: []
       }
       approval_thresholds: {
         Row: {
@@ -13407,6 +13529,8 @@ export type Database = {
         | "compliance_analyst"
         | "legal_reviewer"
         | "director"
+        | "commercial_owner"
+        | "compliance_owner"
       counterparty_type: "known" | "unknown"
       engagement_status:
         | "pending"
@@ -13572,6 +13696,8 @@ export const Constants = {
         "compliance_analyst",
         "legal_reviewer",
         "director",
+        "commercial_owner",
+        "compliance_owner",
       ],
       counterparty_type: ["known", "unknown"],
       engagement_status: [

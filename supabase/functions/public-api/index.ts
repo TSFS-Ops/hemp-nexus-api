@@ -25,7 +25,7 @@
  * decisions.
  */
 
-import { handleV1, jsonResponse, errorBody, V1Error } from "../_shared/public-api-v1.ts";
+import { handleV1, jsonResponse, errorBody, V1Error, detectEnvironmentDetailed } from "../_shared/public-api-v1.ts";
 import { corsHeaders as buildCorsHeaders } from "../_shared/cors.ts";
 import {
   validateLookupInput,
@@ -221,9 +221,15 @@ Deno.serve(async (req) => {
 
   // Unknown V1 path — return canonical 404 envelope, never leak internals.
   const requestId = crypto.randomUUID();
+  const fallbackEnv = detectEnvironmentDetailed(req).env ?? "unknown";
   return jsonResponse(
     errorBody("no_match", requestId, null),
     404,
-    { ...headers, "X-Request-Id": requestId },
+    {
+      ...headers,
+      "X-Request-Id": requestId,
+      "X-Izenzo-Request-Id": requestId,
+      "X-Izenzo-Environment": fallbackEnv,
+    },
   );
 });

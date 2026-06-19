@@ -116,6 +116,10 @@ export interface V1RequestCtx {
   // represents a billable production call. Health/status/sandbox/validation/
   // auth/scope/system errors must leave this false.
   billable: boolean;
+  // Sandbox/Production Separation · Batch 2 trace columns.
+  requestPayloadHash: string | null;
+  rateLimitDecision: "allowed" | "minute_block" | "monthly_block" | "overage_billable" | null;
+  billableOverage: boolean;
   responseHeaders: Record<string, string>;
 }
 
@@ -134,6 +138,9 @@ export function newCtx(req: Request, endpointTag: string): V1RequestCtx {
     orgId: null,
     apiClientId: null,
     billable: false,
+    requestPayloadHash: null,
+    rateLimitDecision: null,
+    billableOverage: false,
     responseHeaders: {},
   };
 }
@@ -162,12 +169,53 @@ export class V1Error extends Error {
 }
 
 // ─── Environment detection ───────────────────────────────────────────────
-// Header `X-Izenzo-Environment: sandbox|production` is the V1 contract.
-// Missing header → null (later mapped to insufficient_scope/invalid).
-export function detectEnvironment(req: Request): "sandbox" | "production" | null {
-  const raw = (req.headers.get("x-izenzo-environment") || "").trim().toLowerCase();
-  if (raw === "sandbox" || raw === "production") return raw;
+//
+// Sandbox/Production Separation · Batch 2 (Decision #1):
+//   Host-derived environment WINS over any submitted X-Izenzo-Environment
+//   header. The header remains accepted for backward compatibility and for
+//   local/dev contexts where the public hostname is not in play, but it
+//   is never trusted over the hostname.
+//
+//     api-sandbox.trade.izenzo.co.za → environment=sandbox
+//     api.trade.izenzo.co.za         → environment=production
+//
+const SANDBOX_HOSTNAMES = new Set([
+  "api-sandbox.trade.izenzo.co.za",
+]);
+const PRODUCTION_HOSTNAMES = new Set([
+  "api.trade.izenzo.co.za",
+]);
+
+function deriveHostEnvironment(req: Request): "sandbox" | "production" | null {
+  const fwd = (req.headers.get("x-forwarded-host") || "").split(",")[0]?.trim().toLowerCase();
+  const host = (fwd || req.headers.get("host") || "").trim().toLowerCase();
+  if (!host) return null;
+  const bare = host.split(":")[0];
+  if (SANDBOX_HOSTNAMES.has(bare)) return "sandbox";
+  if (PRODUCTION_HOSTNAMES.has(bare)) return "production";
   return null;
+}
+
+export interface DetectedEnvironment {
+  env: "sandbox" | "production" | null;
+  hostEnv: "sandbox" | "production" | null;
+  headerEnv: "sandbox" | "production" | null;
+  mismatch: boolean;
+}
+
+export function detectEnvironmentDetailed(req: Request): DetectedEnvironment {
+  const raw = (req.headers.get("x-izenzo-environment") || "").trim().toLowerCase();
+  const headerEnv = raw === "sandbox" || raw === "production" ? (raw as "sandbox" | "production") : null;
+  const hostEnv = deriveHostEnvironment(req);
+  if (hostEnv) {
+    return { env: hostEnv, hostEnv, headerEnv, mismatch: headerEnv !== null && headerEnv !== hostEnv };
+  }
+  return { env: headerEnv, hostEnv: null, headerEnv, mismatch: false };
+}
+
+// Back-compat shim — existing callers receive the final env decision only.
+export function detectEnvironment(req: Request): "sandbox" | "production" | null {
+  return detectEnvironmentDetailed(req).env;
 }
 
 // ─── API key lookup (same hashing rules as _shared/auth.ts) ──────────────
@@ -225,6 +273,10 @@ export async function logV1Request(
       environment: ctx.environment,
       external_reference: ctx.externalReference,
       error_code: errorCode,
+      // Sandbox/Production Separation · Batch 2 trace columns.
+      request_payload_hash: ctx.requestPayloadHash,
+      rate_limit_decision: ctx.rateLimitDecision,
+      billable_overage: ctx.billableOverage,
     });
   } catch (e) {
     // Logging must never break the response.
@@ -266,12 +318,20 @@ export async function runGateway(
   ctx: V1RequestCtx,
   requiredScope: string,
 ): Promise<GatewayResult> {
-  // 1. Environment header
-  const env = detectEnvironment(req);
-  if (!env) {
+  // 1. Environment (host-derived wins; header is back-compat only)
+  const detected = detectEnvironmentDetailed(req);
+  if (!detected.env) {
     throw new V1Error("missing_required_field");
   }
-  ctx.environment = env;
+  ctx.environment = detected.env;
+  if (detected.mismatch) {
+    // Host-derived env wins, but the header/host disagreement is recorded
+    // so it can be triaged by ops. Never blocks the request.
+    await audit(supabase, "api_key.v1.environment_header_mismatch", ctx, {
+      host_env: detected.hostEnv,
+      header_env: detected.headerEnv,
+    });
+  }
 
   // 2. X-API-Key
   const presented = req.headers.get("x-api-key");
@@ -314,8 +374,8 @@ export async function runGateway(
   }
 
   // 6. Environment match (sandbox key may not access production, vice versa)
-  if (key.environment && key.environment !== env) {
-    if (env === "production") {
+  if (key.environment && key.environment !== ctx.environment) {
+    if (ctx.environment === "production") {
       await audit(supabase, "api_key.v1.environment_mismatch", ctx, { key_env: key.environment });
       throw new V1Error("production_access_required");
     }
@@ -370,10 +430,12 @@ export async function runGateway(
       undefined,
       { actorIp: ctx.actorIp, userAgent: ctx.userAgent, requestId: ctx.requestId },
     );
+    ctx.rateLimitDecision = "allowed";
   } catch (e) {
     const anyE = e as { code?: string; status?: number; details?: { retryAfter?: number } };
     if (anyE?.status === 429) {
       const retry = anyE.details?.retryAfter ?? null;
+      ctx.rateLimitDecision = "minute_block";
       throw new V1Error("rate_limit_exceeded", retry ?? null);
     }
     throw new V1Error("internal_error");
@@ -440,6 +502,7 @@ export async function handleV1<T>(
         supabase, ctx.apiClientId, ctx.environment, { baseOverride, strictAtAllowance },
       );
       if (preState.blocked) {
+        ctx.rateLimitDecision = "monthly_block";
         await auditMonthlyBlock(supabase, ctx, ctx.apiClientId, ctx.environment, preState);
         throw new V1Error("monthly_limit_reached");
       }
@@ -461,18 +524,30 @@ export async function handleV1<T>(
       }
     }
 
+    const envHeaderValue = ctx.environment ?? "unknown";
+    const izenzoHeaders: Record<string, string> = {
+      "X-Request-Id": ctx.requestId,
+      "X-Izenzo-Request-Id": ctx.requestId,
+      "X-Izenzo-Environment": envHeaderValue,
+    };
     if (result.contentType && typeof result.rawBody === "string") {
       return new Response(result.rawBody, {
         status,
-        headers: { ...headers, "Content-Type": result.contentType, "X-Request-Id": ctx.requestId },
+        headers: { ...headers, "Content-Type": result.contentType, ...izenzoHeaders },
       });
     }
-    return jsonResponse(result.body, status, { ...headers, "X-Request-Id": ctx.requestId });
+    return jsonResponse(result.body, status, { ...headers, ...izenzoHeaders });
   } catch (e) {
     const v1err = e instanceof V1Error ? e : new V1Error("internal_error");
     const status = ERROR_HTTP_STATUS[v1err.code];
     const body = errorBody(v1err.code, ctx.requestId, v1err.retryAfter);
-    const extraHeaders: Record<string, string> = { ...headers, "X-Request-Id": ctx.requestId };
+    const envHeaderValue = ctx.environment ?? "unknown";
+    const extraHeaders: Record<string, string> = {
+      ...headers,
+      "X-Request-Id": ctx.requestId,
+      "X-Izenzo-Request-Id": ctx.requestId,
+      "X-Izenzo-Environment": envHeaderValue,
+    };
     if (v1err.retryAfter && Number.isFinite(v1err.retryAfter)) {
       extraHeaders["Retry-After"] = String(v1err.retryAfter);
     }
