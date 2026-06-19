@@ -90,6 +90,11 @@ export const apiKeyCreateSchema = z
     expires_at: z.string().datetime().nullish(),
     allowed_ips: z.array(ipOrCidr).max(100).nullish(),
     allowed_origins: z.array(originString).max(100).nullish(),
+    // Public API V1 · Batch 2 — optional linkage to api_clients onboarding
+    // record + explicit environment selection. DB trigger enforces approval
+    // gates on issuance; auth.ts enforces api_client status at runtime.
+    api_client_id: z.string().uuid().nullish(),
+    environment: z.enum(["sandbox", "production"]).nullish(),
   })
   .transform((raw) => {
     const normalisedScopes = raw.scopes
@@ -101,6 +106,8 @@ export const apiKeyCreateSchema = z
       expires_at: raw.expires_at ?? null,
       allowed_ips: raw.allowed_ips && raw.allowed_ips.length > 0 ? raw.allowed_ips : null,
       allowed_origins: raw.allowed_origins && raw.allowed_origins.length > 0 ? raw.allowed_origins : null,
+      api_client_id: raw.api_client_id ?? null,
+      environment: raw.environment ?? null,
     };
   });
 
