@@ -12,6 +12,7 @@ import { QuickSchema } from "@/components/developer/QuickSchema";
 import { PlainEnglishWalkthrough } from "@/components/developer/PlainEnglishWalkthrough";
 import { DevPageHeader } from "@/components/developer/DevPageHeader";
 import { OnboardingChecklist } from "@/components/developer/OnboardingChecklist";
+import { ClientUsageDashboard } from "@/components/developer/ClientUsageDashboard";
 import { Info } from "lucide-react";
 
 function DeveloperHeader({ section, badge }: { section: string; badge?: string }) {
