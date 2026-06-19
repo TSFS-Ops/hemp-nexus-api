@@ -248,7 +248,7 @@ export async function recordThresholdOnce(
       override_id: state.override?.id ?? null,
       request_id: ctx.requestId,
       endpoint: ctx.endpointTag,
-      // NEVER include raw key / secret / other-client usage.
+      // NEVER include raw key / credential / other-client usage.
     },
   }).then(() => {}, () => {});
 }
