@@ -950,6 +950,33 @@ export type Database = {
         }
         Relationships: []
       }
+      api_active_requests: {
+        Row: {
+          api_client_id: string | null
+          api_key_id: string
+          environment: string | null
+          expires_at: string
+          request_id: string
+          started_at: string
+        }
+        Insert: {
+          api_client_id?: string | null
+          api_key_id: string
+          environment?: string | null
+          expires_at?: string
+          request_id: string
+          started_at?: string
+        }
+        Update: {
+          api_client_id?: string | null
+          api_key_id?: string
+          environment?: string | null
+          expires_at?: string
+          request_id?: string
+          started_at?: string
+        }
+        Relationships: []
+      }
       api_clients: {
         Row: {
           authorised_commercial_contact_email: string | null
@@ -1401,6 +1428,91 @@ export type Database = {
           website_domain?: string | null
         }
         Relationships: []
+      }
+      api_usage_notifications_state: {
+        Row: {
+          api_client_id: string
+          environment: string
+          id: string
+          notified_at: string
+          period_start: string
+          threshold: number
+        }
+        Insert: {
+          api_client_id: string
+          environment: string
+          id?: string
+          notified_at?: string
+          period_start: string
+          threshold: number
+        }
+        Update: {
+          api_client_id?: string
+          environment?: string
+          id?: string
+          notified_at?: string
+          period_start?: string
+          threshold?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_notifications_state_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_usage_overrides: {
+        Row: {
+          active: boolean
+          api_client_id: string
+          approved_at: string
+          approved_by: string
+          created_at: string
+          environment: string
+          expires_at: string
+          id: string
+          override_limit: number
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          api_client_id: string
+          approved_at?: string
+          approved_by: string
+          created_at?: string
+          environment: string
+          expires_at: string
+          id?: string
+          override_limit: number
+          reason: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          api_client_id?: string
+          approved_at?: string
+          approved_by?: string
+          created_at?: string
+          environment?: string
+          expires_at?: string
+          id?: string
+          override_limit?: number
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_overrides_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       approval_thresholds: {
         Row: {
