@@ -36,10 +36,15 @@ import {
   assertNoForbiddenFields,
   type LookupInput,
 } from "../_shared/public-api-v1-counterparty.ts";
+import {
+  buildOpenApiSpec,
+  buildReadableDocsHtml,
+} from "../_shared/public-api-v1-openapi.ts";
 
 const V1_SCOPE = "api:status_read";
 // Back-compat alias preserved so Batch-5 routes can refer by their role.
 const V1_STATUS_SCOPE = V1_SCOPE;
+const V1_DOCS_SCOPE = V1_SCOPE;
 const V1_LOOKUP_SCOPE = "counterparty:lookup";
 const V1_SUMMARY_SCOPE = "profile:summary_read";
 // Signals scope check — applied in-handler because the response carries
@@ -47,6 +52,11 @@ const V1_SUMMARY_SCOPE = "profile:summary_read";
 const V1_SIGNALS_SCOPE = "signals:read";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function publicServerUrl(req: Request): string {
+  const url = new URL(req.url);
+  return `${url.protocol}//${url.host}`;
+}
 
 Deno.serve(async (req) => {
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
