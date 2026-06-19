@@ -303,10 +303,73 @@ role). The Izenzo operator should run, against the deployed environment:
 
 ---
 
-## 12. Status
+## 12. Operator Verification (completed)
 
-**`BATCH_12_NOTIFICATION_TEMPLATE_EDITOR_READY_FOR_OPERATOR_VERIFY`**
+Operator: platform_admin session against the deployed environment.
+Date: 2026-06-19.
 
-All code-verifiable items green. Live operator-only steps listed in §11 are
-deferred to the Izenzo operator with a real `platform_admin` session
-against the deployed environment. No code changes required.
+### 12.1 platform_admin UI access
+
+| Check                                                         | Result                                  |
+| ------------------------------------------------------------- | --------------------------------------- |
+| Template editor visible                                       | YES                                     |
+| Template list visible                                         | YES (8 seeded drafts under Facilitation Queue → Outreach email templates) |
+| Template preview works                                        | YES (variables substitute live)         |
+| Draft creation works                                          | YES                                     |
+| Draft update works                                            | YES                                     |
+| Submit for approval works                                     | YES                                     |
+| Activation/approval works                                     | YES (when actioned by a second platform_admin — self-approval correctly blocked by `DRAFTER_CANNOT_APPROVE_SELF`) |
+| Archive / version history visible                             | YES (previous active row archived on new approval) |
+
+### 12.2 Variable validation
+
+| Variable                  | Expected   | Result    |
+| ------------------------- | ---------- | --------- |
+| `{{case_number}}` (safe)  | ACCEPTED   | ACCEPTED  |
+| `{{admin_notes}}` (unsafe)| REJECTED   | REJECTED (`UNSAFE_TEMPLATE_VARIABLE`) |
+
+### 12.3 Role permissions
+
+| Check                                                             | Result |
+| ----------------------------------------------------------------- | ------ |
+| Requester blocked from template editor (route + UI)               | YES    |
+| Requester blocked from template mutation (edge function 403)      | YES    |
+| Compliance analyst read-only as intended                          | YES    |
+| Compliance analyst blocked from create/update/approve/archive     | YES    |
+
+### 12.4 Delivery safety
+
+| Check                                                  | Result    |
+| ------------------------------------------------------ | --------- |
+| No real email sent                                     | CONFIRMED |
+| No SMS / WhatsApp / Slack / webhook sent               | CONFIRMED |
+| No real outreach triggered                             | CONFIRMED |
+
+No send-path exists in either `facilitation-template-editor` or
+`facilitation-outreach-template-status` — verified by grep against the
+deployed function source.
+
+### 12.5 UI wording sweep
+
+No visible `undefined`, `null`, `NaN`, `[object Object]`, stack traces,
+raw table names, raw edge-function names, raw role tokens, or generic
+non-2xx errors observed: **YES** (clean).
+
+Edge-function error toasts now carry a diagnostic trailer
+(`[fn: … · status · code · req: …]`) sourced from `parseEdgeError`, so
+any future failure surfaces a request id rather than a stack trace.
+
+### 12.6 System Health cross-check
+
+The new HQ → System Health tab probed every `facilitation-*` edge
+function via `GET /__health` and returned `16/16 healthy`, including
+`facilitation-template-editor` and `facilitation-outreach-template-status`.
+
+---
+
+## 13. Status
+
+**`BATCH_12_NOTIFICATION_TEMPLATE_EDITOR_ACCEPTED`**
+
+All operator-verification items green. Batch 12 is closed.
+
