@@ -16,6 +16,10 @@ import * as path from "path";
 const ROOT = path.resolve(__dirname, "../..");
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), "utf-8");
 const exists = (p: string) => fs.existsSync(path.join(ROOT, p));
+// Strip /* … */ block comments and // … line comments so prose like
+// "no counterparty endpoint" in a header doesn't trip exclusion regexes.
+const codeOnly = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
 
 const GATEWAY = "supabase/functions/_shared/public-api-v1.ts";
 const ENTRY = "supabase/functions/public-api/index.ts";
