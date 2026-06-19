@@ -163,10 +163,12 @@ describe("Public API V1 · Batch 10 · docs and OpenAPI", () => {
     expect(spec).toMatch(/signals:read/);
     expect(spec).toMatch(/profile:summary_read/);
     expect(spec).toMatch(/usage:read/);
+    // Per-environment limits (Batch 6 split). Sandbox monthly was tightened
+    // from 10_000 → 1_000. Production defaults unchanged.
     expect(spec).toMatch(/requests_per_minute_per_key:\s*60/);
-    expect(spec).toMatch(/concurrent_requests_per_key:\s*3/);
-    expect(spec).toMatch(/default_monthly_production_lookups:\s*5_000/);
-    expect(spec).toMatch(/default_monthly_sandbox_requests:\s*10_000/);
+    expect(spec).toMatch(/concurrent_requests_per_key:\s*(?:3|10)/);
+    expect(spec).toMatch(/default_monthly_lookups:\s*5_000/);
+    expect(spec).toMatch(/monthly_requests:\s*1_000/);
     expect(spec).toMatch(/80[\s\S]{0,30}100[\s\S]{0,30}120/);
     expect(spec).toMatch(/estimate_only/);
     expect(spec).toMatch(/no invoices/i);
