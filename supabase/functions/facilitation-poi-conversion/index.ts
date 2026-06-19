@@ -231,10 +231,10 @@ Deno.serve(async (req) => {
     blockers.push("requester_org_not_eligible");
   } else {
     const { data: org } = await admin
-      .from("organizations").select("id,status,suspended_at")
+      .from("organizations").select("id,status")
       .eq("id", requesterOrgId).maybeSingle();
-    const o = org as { status?: string | null; suspended_at?: string | null } | null;
-    if (!o || (o.status && ["suspended", "closed", "archived"].includes(o.status)) || o.suspended_at) {
+    const o = org as { status?: string | null } | null;
+    if (!o || (o.status && ["suspended", "closed", "archived", "deactivated"].includes(o.status))) {
       blockers.push("requester_org_not_eligible");
     }
   }
