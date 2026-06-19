@@ -194,20 +194,18 @@ describe("Public API V1 · Batch 6 · usage limits + threshold notifications", (
     expect(entryCode).not.toMatch(/openapi/i);
 
     // No commercial-plan / invoice / payment / support-intake tables in any
-    // Batch-6-tagged migration. Webhook tables also forbidden in Batch 6.
+    // Batch-6 migration. Webhook tables also forbidden in Batch 6.
+    const batch6 = findBatch6Migration();
+    expect(batch6).not.toMatch(/CREATE TABLE[^;]*webhook_/i);
+    expect(batch6).not.toMatch(/CREATE TABLE[^;]*pois\b/i);
+    expect(batch6).not.toMatch(/CREATE TABLE[^;]*wads\b/i);
+    expect(batch6).not.toMatch(/CREATE TABLE[^;]*payment_/i);
     const migDir = path.join(ROOT, "supabase/migrations");
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_invoices/i);
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
-      if (/batch6/i.test(f) || /usage_limits/i.test(f)) {
-        expect(body).not.toMatch(/CREATE TABLE[^;]*webhook_/i);
-        // No POI/WaD/payment/compliance/verification decision tables
-        expect(body).not.toMatch(/CREATE TABLE[^;]*pois\b/i);
-        expect(body).not.toMatch(/CREATE TABLE[^;]*wads\b/i);
-        expect(body).not.toMatch(/CREATE TABLE[^;]*payment_/i);
-      }
     }
   });
 
