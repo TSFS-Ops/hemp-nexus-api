@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, ShieldAlert, Lock, ShieldCheck, BellRing } from "lucide-react";
+import { RefreshCw, ShieldAlert, Lock, ShieldCheck, BellRing, UserCheck, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 
 type AlertRow = {
