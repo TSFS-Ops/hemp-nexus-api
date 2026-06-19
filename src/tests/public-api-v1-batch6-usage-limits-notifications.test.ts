@@ -41,8 +41,10 @@ describe("Public API V1 · Batch 6 · usage limits + threshold notifications", (
   it("usage helper module exists with documented defaults", () => {
     expect(exists(USAGE)).toBe(true);
     const src = read(USAGE);
-    expect(src).toMatch(/V1_DEFAULT_RPM\s*=\s*60/);
-    expect(src).toMatch(/V1_DEFAULT_CONCURRENCY\s*=\s*3/);
+    // Sand/Prod Batch 6 split the per-env RPM out; the production
+    // alias keeps the original 60 rpm value.
+    expect(src).toMatch(/V1_DEFAULT_RPM_PRODUCTION\s*=\s*60\b/);
+    expect(src).toMatch(/V1_DEFAULT_CONCURRENCY_PRODUCTION\s*=\s*3\b/);
     expect(src).toMatch(/V1_DEFAULT_MONTHLY_PROD\s*=\s*5[_]?000/);
     // Sand/Prod Batch 6 redefined the sandbox monthly default to 1,000
     // (down from the original 10,000) — keep this assertion aligned with
