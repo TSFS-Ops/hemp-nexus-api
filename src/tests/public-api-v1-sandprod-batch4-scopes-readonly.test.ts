@@ -226,13 +226,15 @@ describe("Public API V1 · sandbox/production separation · Batch 4 scopes + rea
     const gw = read(GATEWAY);
     // Production branch of /v1/counterparty/lookup explicitly returns
     // buildNoMatchEnvelope and never queries api_sandbox_records.
-    const prodLookup = gw.split("Production path — CONSERVATIVE")[1] ?? "";
-    expect(prodLookup, "production lookup branch not found").not.toBe("");
+    const lookupStart = gw.indexOf("Production path — CONSERVATIVE");
+    expect(lookupStart, "production lookup branch not found").toBeGreaterThan(-1);
+    const prodLookup = gw.slice(lookupStart, lookupStart + 1200);
     expect(prodLookup).not.toContain("api_sandbox_records");
     expect(prodLookup).toContain("buildNoMatchEnvelope");
     // Production summary branch also throws no_match and never reads sandbox.
-    const prodSummary = gw.split("Production path — conservative; no internal tables exposed")[1] ?? "";
-    expect(prodSummary, "production summary branch not found").not.toBe("");
+    const summaryStart = gw.indexOf("Production path — conservative; no internal tables exposed");
+    expect(summaryStart, "production summary branch not found").toBeGreaterThan(-1);
+    const prodSummary = gw.slice(summaryStart, summaryStart + 800);
     expect(prodSummary).not.toContain("api_sandbox_records");
     expect(prodSummary).toMatch(/throw new V1Error\("no_match"\)/);
 
