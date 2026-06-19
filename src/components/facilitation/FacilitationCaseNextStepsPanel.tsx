@@ -124,7 +124,14 @@ export const FacilitationCaseNextStepsPanel: React.FC<{
         {rows.map((r) => (
           <li key={r.id} className="rounded border border-slate-200 bg-white p-3 text-sm">
             <div className="flex items-center justify-between gap-2">
-              <div className="font-medium text-slate-900">{r.title}</div>
+              <div className="font-medium text-slate-900 flex items-center gap-2">
+                {r.title}
+                {r.next_step_type === INVITE_UNOPENED_NEXT_STEP_KIND ? (
+                  <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-900 text-[10px] uppercase tracking-wide">
+                    Invite unopened ≥3 business days
+                  </Badge>
+                ) : null}
+              </div>
               <Badge variant={r.status === "completed" ? "secondary" : r.status === "cancelled" ? "outline" : "default"}>
                 {NEXT_STEP_STATUS_LABELS[r.status]}
               </Badge>
@@ -134,7 +141,7 @@ export const FacilitationCaseNextStepsPanel: React.FC<{
               <div className="mt-2">
                 <div className="text-xs text-slate-500">Required actions</div>
                 <ul className="list-disc pl-5 mt-1 text-slate-800">
-                  {r.required_actions.map((a, i) => <li key={i}>{a}</li>)}
+                  {(r.required_actions as string[]).map((a, i) => <li key={i}>{a}</li>)}
                 </ul>
               </div>
             ) : null}
