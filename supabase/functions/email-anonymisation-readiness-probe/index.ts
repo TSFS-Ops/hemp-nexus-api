@@ -94,7 +94,7 @@ const READINESS_VERDICT = {
   recommendation_if_pursued: [
     "Introduce anonymise_old_email_send_log(p_days, p_dry_run) SECURITY DEFINER fn",
     "Schedule as dry-run-only first (no live cron insert)",
-    "Add per-org policy interaction via get_effective_retention_days(record_class)",
+    "Add per-org policy interaction via the existing effective-retention-days helper (record_class)",
     "Require fresh legal-hold gate on the email_send_log_anonymise record_group",
     "Add separate audit family data.email_anonymise.* with pinned names",
   ],
