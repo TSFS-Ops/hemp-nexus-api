@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
   // ─── Build eligibility report ─────────────────────────────────────────
   const blockers: Blocker[] = [];
   const status = String(kase.internal_status ?? "");
-  const requesterOrgId = (kase as { requesting_organization_id?: string | null }).requesting_organization_id ?? null;
+  const requesterOrgId = (kase as { requesting_org_id?: string | null }).requesting_org_id ?? null;
 
   if (status === "closed") blockers.push("case_closed");
   if (status === "cancelled_by_requester") blockers.push("case_cancelled");
