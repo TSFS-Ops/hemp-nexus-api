@@ -158,17 +158,19 @@ describe("Public API V1 · Batch 4 · sandbox seed records", () => {
   it("seed never references real internal tables", () => {
     const insertMatch = mig.match(/INSERT INTO public\.api_sandbox_records[\s\S]*?ON CONFLICT/);
     const body = insertMatch![0];
+    // Whole-word checks so column names like match_status / multiple_matches don't trip us.
     for (const forbidden of [
-      "organizations",
-      "matches",
-      "pois",
-      "wads",
-      "match_documents",
-      "governance_doc_registry",
-      "governance_documents",
-      "vault_documents",
+      /\borganizations\b/,
+      /\bpublic\.matches\b/,
+      /\bpublic\.pois\b/,
+      /\bpublic\.wads\b/,
+      /\bmatch_documents\b/,
+      /\bgovernance_doc_registry\b/,
+      /\bgovernance_documents\b/,
+      /\bvault_documents\b/,
+      /REFERENCES\s+\w/i,
     ]) {
-      expect(body).not.toContain(forbidden);
+      expect(body).not.toMatch(forbidden);
     }
   });
 
