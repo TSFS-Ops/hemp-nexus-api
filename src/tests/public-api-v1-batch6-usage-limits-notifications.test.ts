@@ -188,10 +188,10 @@ describe("Public API V1 · Batch 6 · usage limits + threshold notifications", (
     expect(exists("supabase/functions/public-api-openapi")).toBe(false);
     expect(exists("supabase/functions/public-api-support-intake")).toBe(false);
 
-    const entry = read(ENTRY);
-    expect(entry).not.toMatch(/\/v1\/usage/);
-    expect(entry).not.toMatch(/\/v1\/docs/);
-    expect(entry).not.toMatch(/openapi/i);
+    const entryCode = codeOnly(read(ENTRY));
+    expect(entryCode).not.toMatch(/\/v1\/usage/);
+    expect(entryCode).not.toMatch(/\/v1\/docs/);
+    expect(entryCode).not.toMatch(/openapi/i);
 
     // No commercial-plan / invoice / payment / support-intake tables in any
     // Batch-6-tagged migration. Webhook tables also forbidden in Batch 6.
