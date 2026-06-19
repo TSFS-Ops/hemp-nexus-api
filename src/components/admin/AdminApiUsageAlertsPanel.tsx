@@ -343,6 +343,7 @@ export function AdminApiUsageAlertsPanel() {
               <th className="p-2 text-right">Trigger</th>
               <th className="p-2 text-right">Threshold</th>
               <th className="p-2">Status</th>
+              <th className="p-2">Owner</th>
               <th className="p-2">Created</th>
               <th className="p-2">Note / actions</th>
             </tr>
