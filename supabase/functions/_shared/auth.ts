@@ -226,7 +226,7 @@ const authenticateApiKey = async (
   // use attempts and audit them. Active-only filter happens AFTER match.
   const { data: allKeys, error: fetchError } = await supabase
     .from('api_keys')
-    .select('id, org_id, scopes, status, key_hash, expires_at, allowed_ips, allowed_origins, name');
+    .select('id, org_id, scopes, status, key_hash, expires_at, allowed_ips, allowed_origins, name, api_client_id, environment');
 
   if (fetchError) {
     GENERIC_UNAUTHORIZED();
