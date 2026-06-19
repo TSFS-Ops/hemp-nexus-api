@@ -193,17 +193,21 @@ describe("Public API V1 · Batch 6 · usage limits + threshold notifications", (
     expect(entryCode).not.toMatch(/\/v1\/docs/);
     expect(entryCode).not.toMatch(/openapi/i);
 
-    // No commercial-plan / invoice / payment / support-intake tables in any
-    // Batch-6 migration. Webhook tables also forbidden in Batch 6.
+    // No commercial-plan / invoice / payment / support-intake tables in the
+    // Batch-6 migration itself. (Commercial plans are scoped to Batch 7;
+    // invoices/payment/support intake remain out of scope for V1.)
     const batch6 = findBatch6Migration();
     expect(batch6).not.toMatch(/CREATE TABLE[^;]*webhook_/i);
     expect(batch6).not.toMatch(/CREATE TABLE[^;]*pois\b/i);
     expect(batch6).not.toMatch(/CREATE TABLE[^;]*wads\b/i);
     expect(batch6).not.toMatch(/CREATE TABLE[^;]*payment_/i);
+    expect(batch6).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
+    expect(batch6).not.toMatch(/CREATE TABLE[^;]*api_invoices/i);
+    expect(batch6).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
+    // Invoices/payment/support intake must not exist in ANY migration.
     const migDir = path.join(ROOT, "supabase/migrations");
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
-      expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_invoices/i);
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
     }
