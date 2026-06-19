@@ -40,6 +40,14 @@ const REQUIRED = [
   "facilitation_case.overdue_marked",
   "facilitation_case.overdue_cleared",
   "facilitation_case.reminder_sent",
+  // Batch 9B — positive-response next-step tasks.
+  "facilitation_case.positive_response_recorded",
+  "facilitation_case.next_step_created",
+  "facilitation_case.next_step_assigned",
+  "facilitation_case.next_step_status_changed",
+  "facilitation_case.next_step_completed",
+  // Batch 9C — requester-facing in-app notifications.
+  "facilitation_case.requester_notification_emitted",
 ];
 
 const SSOT_FILES = [
