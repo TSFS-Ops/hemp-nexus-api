@@ -26,6 +26,11 @@ import {
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
 import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
+import {
+  buildPostureSnapshot,
+  writeGovernanceEventBestEffort,
+} from "../_shared/governance-audit-integration.ts";
+import { WAD_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -1093,6 +1098,59 @@ Deno.serve(async (req) => {
       if (sealError) handleDatabaseError(sealError, requestId);
 
       await writeAuditLog("wad.sealed", wadId, { seal_hash: sealHash });
+
+      // ── Governance Record Batch 2: canonical event_store visibility ──
+      //   Emit `wad.passed` to event_store via the controlled-taxonomy
+      //   best-effort writer. This is intentionally NOT fail-closed:
+      //   the wads UPDATE above is the legal seal commit and must not be
+      //   reversed by a governance-write failure. Full fail-closed seal
+      //   enforcement is deferred to a future atomic seal batch.
+      try {
+        await writeGovernanceEventBestEffort(supabase, {
+          event_type: "wad.passed",
+          org_id: (sealedWad?.buyer_org_id ?? sealedWad?.seller_org_id
+            ?? wad.buyer_org_id ?? wad.seller_org_id ?? authCtx.orgId) as string,
+          aggregate_type: "wad",
+          aggregate_id: wadId,
+          actor_user_id: authCtx.isApiKey ? null : (authCtx.userId ?? null),
+          actor_role: authCtx.roles?.[0] ?? null,
+          system_actor: authCtx.isApiKey ? "api_key" : null,
+          source_function: "wad",
+          request_id: requestId,
+          correlation_id: requestId,
+          idempotency_key: `${wadId}|wad.passed|seal`,
+          wad_id: wadId,
+          poi_id: wad.poi_id ?? null,
+          match_id: (wad as { match_id?: string | null }).match_id ?? wad.poi_id ?? null,
+          new_state: "sealed",
+          allowed_or_blocked: "allowed",
+          posture_snapshot: buildPostureSnapshot("Standard", {
+            policy_version: WAD_POLICY_VERSION,
+            check_status: {
+              attestation_count: attestations.length,
+              document_count: documents.length,
+            },
+          }),
+          metadata: {
+            policy_version: WAD_POLICY_VERSION,
+            poi_id: wad.poi_id ?? null,
+            match_id: (wad as { match_id?: string | null }).match_id ?? wad.poi_id ?? null,
+            buyer_org_id: wad.buyer_org_id ?? null,
+            seller_org_id: wad.seller_org_id ?? null,
+            seal_hash: sealHash,
+            sealed_at: sealedWad?.sealed_at ?? null,
+            attestation_count: attestations.length,
+            document_count: documents.length,
+          },
+        });
+      } catch (e) {
+        // Defence-in-depth: best-effort writer already logs + resolves.
+        // Never let an unexpected error reverse the committed seal.
+        console.warn(
+          `[${requestId}] governance wad.passed emission threw (fail-open):`,
+          e instanceof Error ? e.message : "exception",
+        );
+      }
 
       // ── Basic Memory v1: best-effort retained-outcome record.
       //    Fail-OPEN — a Memory write failure must NOT reverse the
