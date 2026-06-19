@@ -291,8 +291,10 @@ describe("Public API V1 · Sand/Prod Batch 6 · production protection", () => {
     expect(hasException).toBe(true);
   });
 
-  it("counterparty helper has not added a production data source in Batch 6", () => {
-    expect(COUNTERPARTY).not.toMatch(/companies_house|cipc|onfido|provider_/i);
+  it("counterparty helper has not added a real production data source in Batch 6", () => {
+    // (provider_unavailable is a sandbox ERROR SCENARIO marker, not an
+    // integration — match real provider client identifiers instead.)
+    expect(COUNTERPARTY).not.toMatch(/companies_house|companiesHouseClient|cipcClient|onfidoClient|productionLookupProvider/i);
   });
 });
 
