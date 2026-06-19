@@ -950,6 +950,164 @@ export type Database = {
         }
         Relationships: []
       }
+      api_clients: {
+        Row: {
+          authorised_commercial_contact_email: string | null
+          authorised_commercial_contact_name: string | null
+          billing_contact_email: string | null
+          billing_contact_name: string | null
+          billing_details_confirmed: boolean
+          callback_url: string | null
+          commercial_plan_approved: boolean
+          country: string
+          created_at: string
+          created_by: string | null
+          expected_monthly_volume: number | null
+          id: string
+          intended_use_case: string | null
+          ip_allowlist_or_exception_confirmed: boolean
+          ip_details: string | null
+          legal_entity_name: string
+          notes: string | null
+          org_id: string
+          production_approved: boolean
+          production_approved_at: string | null
+          production_approved_by: string | null
+          production_requested: boolean
+          production_scopes_approved: boolean
+          production_technical_contact_confirmed: boolean
+          proposed_integration_system: string | null
+          registration_number: string | null
+          requested_scopes: string[]
+          retention_rules_confirmed: boolean
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          sandbox_approved: boolean
+          sandbox_approved_at: string | null
+          sandbox_approved_by: string | null
+          sandbox_checklist_completed: boolean
+          sandbox_terms_accepted: boolean
+          security_contact_confirmed: boolean
+          signed_api_agreement_confirmed: boolean
+          status: string
+          support_contact_email: string | null
+          support_contact_name: string | null
+          suspended_at: string | null
+          suspended_by: string | null
+          suspended_reason: string | null
+          technical_contact_email: string | null
+          technical_contact_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          authorised_commercial_contact_email?: string | null
+          authorised_commercial_contact_name?: string | null
+          billing_contact_email?: string | null
+          billing_contact_name?: string | null
+          billing_details_confirmed?: boolean
+          callback_url?: string | null
+          commercial_plan_approved?: boolean
+          country: string
+          created_at?: string
+          created_by?: string | null
+          expected_monthly_volume?: number | null
+          id?: string
+          intended_use_case?: string | null
+          ip_allowlist_or_exception_confirmed?: boolean
+          ip_details?: string | null
+          legal_entity_name: string
+          notes?: string | null
+          org_id: string
+          production_approved?: boolean
+          production_approved_at?: string | null
+          production_approved_by?: string | null
+          production_requested?: boolean
+          production_scopes_approved?: boolean
+          production_technical_contact_confirmed?: boolean
+          proposed_integration_system?: string | null
+          registration_number?: string | null
+          requested_scopes?: string[]
+          retention_rules_confirmed?: boolean
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          sandbox_approved?: boolean
+          sandbox_approved_at?: string | null
+          sandbox_approved_by?: string | null
+          sandbox_checklist_completed?: boolean
+          sandbox_terms_accepted?: boolean
+          security_contact_confirmed?: boolean
+          signed_api_agreement_confirmed?: boolean
+          status?: string
+          support_contact_email?: string | null
+          support_contact_name?: string | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
+          technical_contact_email?: string | null
+          technical_contact_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authorised_commercial_contact_email?: string | null
+          authorised_commercial_contact_name?: string | null
+          billing_contact_email?: string | null
+          billing_contact_name?: string | null
+          billing_details_confirmed?: boolean
+          callback_url?: string | null
+          commercial_plan_approved?: boolean
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          expected_monthly_volume?: number | null
+          id?: string
+          intended_use_case?: string | null
+          ip_allowlist_or_exception_confirmed?: boolean
+          ip_details?: string | null
+          legal_entity_name?: string
+          notes?: string | null
+          org_id?: string
+          production_approved?: boolean
+          production_approved_at?: string | null
+          production_approved_by?: string | null
+          production_requested?: boolean
+          production_scopes_approved?: boolean
+          production_technical_contact_confirmed?: boolean
+          proposed_integration_system?: string | null
+          registration_number?: string | null
+          requested_scopes?: string[]
+          retention_rules_confirmed?: boolean
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          sandbox_approved?: boolean
+          sandbox_approved_at?: string | null
+          sandbox_approved_by?: string | null
+          sandbox_checklist_completed?: boolean
+          sandbox_terms_accepted?: boolean
+          security_contact_confirmed?: boolean
+          signed_api_agreement_confirmed?: boolean
+          status?: string
+          support_contact_email?: string | null
+          support_contact_name?: string | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
+          technical_contact_email?: string | null
+          technical_contact_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_clients_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           allowed_ips: string[] | null
