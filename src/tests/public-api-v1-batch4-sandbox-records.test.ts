@@ -184,7 +184,11 @@ describe("Public API V1 · Batch 4 · sandbox seed records", () => {
     expect(exists("supabase/functions/public-api-support-intake")).toBe(false);
 
     // The existing public-api entry was NOT extended with these routes
-    const entry = read("supabase/functions/public-api/index.ts");
+    // (strip comments so banner prose like "no counterparty" doesn't trip us).
+    const entryRaw = read("supabase/functions/public-api/index.ts");
+    const entry = entryRaw
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
     expect(entry).not.toMatch(/counterparty/i);
     expect(entry).not.toMatch(/\/v1\/usage/);
     expect(entry).not.toMatch(/\/v1\/docs/);
