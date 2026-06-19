@@ -18,6 +18,21 @@ const PROBE_PATH = resolve(
 );
 const SRC = readFileSync(PROBE_PATH, "utf8");
 
+/** Mirrors the prebuild guard: strip comments + string literals so
+ *  documentation/recommendation text cannot trigger forbidden-pattern
+ *  checks. We assert against executable code only. */
+function stripCommentsAndStrings(s: string): string {
+  return s
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/^\s*\/\/.*$/gm, " ")
+    .replace(/\/\/[^\n]*$/gm, " ")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+    .replace(/`(?:\\.|[^`\\])*`/g, "``");
+}
+const CODE = stripCommentsAndStrings(SRC);
+
+
 function run(script: string) {
   execFileSync("node", [`scripts/${script}`], { cwd: ROOT, stdio: "pipe" });
 }
