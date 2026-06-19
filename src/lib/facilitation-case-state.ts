@@ -293,7 +293,10 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.next_step_completed",
   // Batch 9C — requester-facing in-app notifications.
   "facilitation_case.requester_notification_emitted",
+  // Batch 10 — tamper-evident SHA-256 sealing of exported evidence packs.
+  "facilitation_case.evidence_pack_sealed",
 ] as const;
+
 export type FacilitationAuditName = (typeof FACILITATION_AUDIT_NAMES)[number];
 
 // ─── Batch 9B — positive-response next-step tasks ────────────────────────
