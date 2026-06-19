@@ -98,7 +98,7 @@ export default function IntegrationDocs() {
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-400">// production warning</div>
           <p className="mt-1 text-[13px] text-slate-200 leading-snug">
-            Production API responses provide Izenzo status and risk signals based on available records and approved response fields. They are not legal advice, not a payment guarantee, not a compliance clearance, not a bank-account verification guarantee and not a substitute for the client's own approval process unless separately agreed in writing. No API response automatically creates a POI, issues a WaD, clears a compliance block or approves a transaction.
+            Production API responses provide Izenzo status and risk signals based on available records and approved response fields. They are not legal advice, not a payment guarantee, not a compliance clearance, not a bank-account verification guarantee and not a substitute for the client’s own approval process unless separately agreed in writing. No API response automatically creates a POI, issues a WaD, clears a compliance block or approves a transaction.
           </p>
         </div>
       </section>
