@@ -239,11 +239,12 @@ export function rolesLabel(tokens: readonly string[] | null | undefined): string
  * Wraps `parseEdgeError` with a Phase-2-specific fallback so toasts never
  * leak the generic "Edge Function returned a non-2xx status code".
  *
- * Pass `functionName` to append a diagnostic trailer of the form:
- *   "<message> [fn: <name> · 500 · req: <id>]"
- * This makes it possible to correlate a failed toast with the exact edge
- * function + Supabase request id without exposing internals when the call
- * succeeds.
+ * When the underlying error came from `supabase.functions.invoke()`, the
+ * resulting toast automatically gains a diagnostic trailer of the form:
+ *   "<message> [fn: <name> · 500 · CODE · req: <id>]"
+ * The function name is derived from the failing Response URL — no call-site
+ * changes required. Pass `functionName` to override (useful for callers
+ * that bubble up an error without context).
  */
 import { parseEdgeError } from "@/lib/edge-error";
 
@@ -267,12 +268,14 @@ export async function friendlyFacilitationError(
     // fall through with `base = fallback`
   }
 
-  if (!functionName) return base;
-
-  const bits: string[] = [`fn: ${functionName}`];
+  const fn = functionName ?? parsed?.functionName ?? null;
+  const bits: string[] = [];
+  if (fn) bits.push(`fn: ${fn}`);
   if (parsed?.status != null) bits.push(String(parsed.status));
   if (parsed?.code) bits.push(parsed.code);
   if (parsed?.requestId) bits.push(`req: ${parsed.requestId}`);
+  if (bits.length === 0) return base;
   return `${base} [${bits.join(" · ")}]`;
 }
+
 
