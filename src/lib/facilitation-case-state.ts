@@ -299,6 +299,17 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.invite_unopened_flagged",
 ] as const;
 
+// ─── Batch 16 — Controlled POI conversion audit names (browser mirror) ──
+export const FACILITATION_POI_CONVERSION_AUDIT_NAMES = [
+  "facilitation.poi_conversion.eligibility_checked",
+  "facilitation.poi_conversion.blocked",
+  "facilitation.poi_conversion.confirmed",
+  "facilitation.poi_conversion.created",
+  "facilitation.poi_conversion.linked_existing",
+] as const;
+export type FacilitationPoiConversionAuditName =
+  (typeof FACILITATION_POI_CONVERSION_AUDIT_NAMES)[number];
+
 // Batch 11 — internal-only next-step kind emitted by the
 // invite-unopened auto-detector. Mirror of the Deno SSOT.
 export const INVITE_UNOPENED_NEXT_STEP_KIND = "invite_unopened_3bd" as const;
