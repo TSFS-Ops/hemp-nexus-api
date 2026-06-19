@@ -16,7 +16,8 @@
  */
 
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound, MoreHorizontal, Sparkles, LifeBuoy } from "lucide-react";
+import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound, MoreHorizontal, Sparkles, LifeBuoy, HeartPulse } from "lucide-react";
+import { SystemHealthPanel } from "@/components/admin/SystemHealthPanel";
 import { FacilitationQueuePanel } from "@/components/facilitation/FacilitationQueuePanel";
 import { FacilitationOutreachTemplatePanel } from "@/components/facilitation-outreach/FacilitationOutreachTemplatePanel";
 import { FacilitationTemplateEditorPanel } from "@/components/facilitation-outreach/FacilitationTemplateEditorPanel";
@@ -95,7 +96,7 @@ import { AiReviewWorkspace } from "@/components/admin/ai-review/AiReviewWorkspac
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab registry, single source of truth. Order matters; first entry is default.
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "facilitation" | "ai-suggestions" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "settings";
+type TabId = "spine" | "users" | "organisations" | "identity" | "engagements" | "facilitation" | "ai-suggestions" | "disputes" | "revenue" | "legacy-repair" | "legal-holds" | "governance-records" | "audit" | "system-health" | "settings";
 const TABS: {
   id: TabId;
   label: string;
@@ -166,6 +167,11 @@ const TABS: {
   label: "Audit & Health",
   icon: Activity,
   blurb: "Tamper-evident audit trail, event store, system health monitoring, and platform analytics."
+}, {
+  id: "system-health",
+  label: "System Health",
+  icon: HeartPulse,
+  blurb: "Live deployment + liveness probes for every facilitation-* edge function. Reachability, latency, request-id, last error. No mutations."
 }, {
   id: "settings",
   label: "Platform Settings",
@@ -926,6 +932,16 @@ function HQLayout({ restrictedToFacilitation = false }: { restrictedToFacilitati
           <TabsContent value="legal-holds" className="mt-0 animate-section-enter"><LegalHoldsTab /></TabsContent>
           <TabsContent value="governance-records" className="mt-0 animate-section-enter"><GovernanceRecordsTab /></TabsContent>
           <TabsContent value="audit" className="mt-0 animate-section-enter"><AuditTab /></TabsContent>
+          <TabsContent value="system-health" className="mt-0 animate-section-enter">
+            <section className="bg-card border border-border rounded-sm overflow-hidden">
+              <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50">
+                <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+                  System Health · facilitation-* edge functions · GET /__health probe · platform_admin only · no mutations
+                </p>
+              </header>
+              <div className="p-3 sm:p-5"><SystemHealthPanel /></div>
+            </section>
+          </TabsContent>
           <TabsContent value="settings" className="mt-0 animate-section-enter"><SettingsTab /></TabsContent>
         </main>
       </Tabs>

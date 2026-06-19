@@ -41,6 +41,7 @@ import {
   type DetectorSendInput,
 } from "../_shared/facilitation-invite-unopened.ts";
 import { TERMINAL_STATUSES } from "../_shared/facilitation-case-state.ts";
+import { handleHealthProbe } from "../_shared/health.ts";
 
 const corsHeaders = {
   ...baseCors,
@@ -71,6 +72,7 @@ function gateInternalCronKey(req: Request, bodyKey: unknown): boolean {
 const TERMINAL_SET: ReadonlySet<string> = TERMINAL_STATUSES as unknown as ReadonlySet<string>;
 
 Deno.serve(async (req) => {
+  { const __hp = handleHealthProbe(req, "facilitation-invite-unopened-detector"); if (__hp) return __hp; }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 

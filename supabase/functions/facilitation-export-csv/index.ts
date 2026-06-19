@@ -14,6 +14,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { z } from "npm:zod@3.23.8";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import { handleHealthProbe } from "../_shared/health.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -82,6 +83,8 @@ function fmtDate(iso: string | null | undefined): string {
 Deno.serve(async (req) => {
   const pf = handleCorsPreflight(req);
   if (pf) return pf;
+  const __hp = handleHealthProbe(req, "facilitation-export-csv");
+  if (__hp) return __hp;
   if (req.method !== "POST") return json(req, { error: "Method not allowed" }, 405);
 
   const url = Deno.env.get("SUPABASE_URL")!;
