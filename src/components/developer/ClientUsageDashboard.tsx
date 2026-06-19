@@ -32,7 +32,7 @@ interface ApiClientOption {
 
 interface UsageSummary {
   api_client_id: string;
-  api_legal_entity_name: string;
+  api_client_name: string;
   plan_id: string | null;
   plan_name: string | null;
   currency: string | null;
@@ -225,7 +225,7 @@ export function ClientUsageDashboard() {
       const a = document.createElement("a");
       a.href = url;
       const periodLabel = summary.billing_period_start.slice(0, 7);
-      a.download = `api-usage-${summary.api_legal_entity_name.replace(/\W+/g, "-")}-${periodLabel}.csv`;
+      a.download = `api-usage-${summary.api_client_name.replace(/\W+/g, "-")}-${periodLabel}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -359,7 +359,7 @@ export function ClientUsageDashboard() {
       {/* Summary */}
       {summary && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" data-testid="usage-summary">
-          <StatBlock label="API client" value={summary.api_legal_entity_name} mono={false} />
+          <StatBlock label="API client" value={summary.api_client_name} mono={false} />
           <StatBlock label="Current plan" value={summary.plan_name ?? "— (default allowance)"} mono={false} />
           <StatBlock label="Billing period" value={`${summary.billing_period_start.slice(0, 10)} → ${summary.billing_period_end.slice(0, 10)}`} />
           <StatBlock label="Overage allowed" value={summary.overage_allowed ? "Yes" : "No"} />
