@@ -1484,7 +1484,7 @@ export function CommercialPlanCataloguePanel() {
         active: true,
       }).select("id").maybeSingle();
       if (error) throw error;
-      await supabase.from("audit_logs").insert({
+      await (supabase.from("audit_logs") as any).insert({
         action: "api_commercial_plan.created",
         entity_type: "api_commercial_plan",
         entity_id: (inserted as { id: string } | null)?.id ?? null,
