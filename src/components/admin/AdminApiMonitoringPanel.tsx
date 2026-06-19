@@ -536,7 +536,7 @@ export function AdminApiMonitoringPanel() {
                 <td className="p-2">{fmtDate(r.last_successful_call)}</td>
                 <td className="p-2">{fmtDate(r.last_failed_call)}</td>
                 <td className="p-2 text-muted-foreground">
-                  {r.open_support_tickets === null ? "deferred" : r.open_support_tickets}
+                  {r.open_support_tickets === null ? "—" : r.open_support_tickets}
                 </td>
               </tr>
             ))}
