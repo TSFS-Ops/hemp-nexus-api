@@ -5412,6 +5412,82 @@ export type Database = {
         }
         Relationships: []
       }
+      facilitation_organisation_merges: {
+        Row: {
+          blockers: Json
+          completed_at: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          eligibility_payload: Json
+          facilitation_case_id: string | null
+          field_handling: Json
+          id: string
+          reason: string | null
+          requested_by: string | null
+          source_org_id: string
+          status: Database["public"]["Enums"]["facilitation_org_merge_status"]
+          target_org_id: string
+          updated_at: string
+        }
+        Insert: {
+          blockers?: Json
+          completed_at?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          eligibility_payload?: Json
+          facilitation_case_id?: string | null
+          field_handling?: Json
+          id?: string
+          reason?: string | null
+          requested_by?: string | null
+          source_org_id: string
+          status: Database["public"]["Enums"]["facilitation_org_merge_status"]
+          target_org_id: string
+          updated_at?: string
+        }
+        Update: {
+          blockers?: Json
+          completed_at?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          eligibility_payload?: Json
+          facilitation_case_id?: string | null
+          field_handling?: Json
+          id?: string
+          reason?: string | null
+          requested_by?: string | null
+          source_org_id?: string
+          status?: Database["public"]["Enums"]["facilitation_org_merge_status"]
+          target_org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_organisation_merges_facilitation_case_id_fkey"
+            columns: ["facilitation_case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilitation_organisation_merges_source_org_id_fkey"
+            columns: ["source_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilitation_organisation_merges_target_org_id_fkey"
+            columns: ["target_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facilitation_outreach_candidates: {
         Row: {
           contact_email: string
@@ -7975,6 +8051,9 @@ export type Database = {
           jurisdictions: string[] | null
           legal_name: string | null
           logo_url: string | null
+          merged_at: string | null
+          merged_by_merge_id: string | null
+          merged_into_org_id: string | null
           name: string
           onboarding_hold_reason: string | null
           onboarding_hold_review_id: string | null
@@ -8012,6 +8091,9 @@ export type Database = {
           jurisdictions?: string[] | null
           legal_name?: string | null
           logo_url?: string | null
+          merged_at?: string | null
+          merged_by_merge_id?: string | null
+          merged_into_org_id?: string | null
           name: string
           onboarding_hold_reason?: string | null
           onboarding_hold_review_id?: string | null
@@ -8049,6 +8131,9 @@ export type Database = {
           jurisdictions?: string[] | null
           legal_name?: string | null
           logo_url?: string | null
+          merged_at?: string | null
+          merged_by_merge_id?: string | null
+          merged_into_org_id?: string | null
           name?: string
           onboarding_hold_reason?: string | null
           onboarding_hold_review_id?: string | null
@@ -8063,6 +8148,20 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "organizations_merged_by_merge_id_fkey"
+            columns: ["merged_by_merge_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_organisation_merges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_merged_into_org_id_fkey"
+            columns: ["merged_into_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "organizations_onboarding_hold_review_fk"
             columns: ["onboarding_hold_review_id"]
@@ -13776,6 +13875,12 @@ export type Database = {
         | "cancelled_email_change"
         | "disputed_being_named"
         | "cancelled_by_initiator"
+      facilitation_org_merge_status:
+        | "eligibility_checked"
+        | "blocked"
+        | "confirmed"
+        | "completed"
+        | "cancelled"
       gate_position: "entry" | "poi_mint" | "wad_only"
       org_retention_record_class:
         | "matches"
@@ -13944,6 +14049,13 @@ export const Constants = {
         "cancelled_email_change",
         "disputed_being_named",
         "cancelled_by_initiator",
+      ],
+      facilitation_org_merge_status: [
+        "eligibility_checked",
+        "blocked",
+        "confirmed",
+        "completed",
+        "cancelled",
       ],
       gate_position: ["entry", "poi_mint", "wad_only"],
       org_retention_record_class: [
