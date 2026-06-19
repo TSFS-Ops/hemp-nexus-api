@@ -126,6 +126,17 @@ export const FacilitationQueuePanel: React.FC = () => {
   const [openCaseId, setOpenCaseId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [packDownloadingId, setPackDownloadingId] = useState<string | null>(null);
+  // Batch 10 — last sealed evidence pack info (read-only display).
+  const [lastSeal, setLastSeal] = useState<{
+    case_number: string;
+    algo: string;
+    digest_hex: string;
+    canonical_bytes: number;
+    sealed_at: string;
+    function_version: string;
+  } | null>(null);
+
+
 
   const buildBody = useCallback(() => ({
     status: filters.status || null,
@@ -205,20 +216,32 @@ export const FacilitationQueuePanel: React.FC = () => {
       });
       if (resp.status === 403) { toast.error("You don't have permission to export the evidence pack."); return; }
       if (!resp.ok) { toast.error("Could not generate the evidence pack. Please try again."); return; }
-      const blob = await resp.blob();
+      // Batch 10 — response is now `{ pack, seal }`. Parse the envelope so we
+      // can both download the sealed JSON and surface the digest in the UI.
+      const envelope = await resp.json() as {
+        pack: unknown;
+        seal: { algo: string; digest_hex: string; canonical_bytes: number; sealed_at: string; function_version: string };
+      };
+      if (!envelope?.seal?.digest_hex) {
+        toast.error("Evidence pack returned without a seal. Please contact the platform team.");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `evidence-pack-${caseNumber}-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
-      toast.success("Evidence pack downloaded.");
+      setLastSeal({ case_number: caseNumber, ...envelope.seal });
+      toast.success(`Evidence pack downloaded · SHA-256 ${envelope.seal.digest_hex.slice(0, 12)}…`);
     } catch (err: unknown) {
       toast.error(await friendlyFacilitationError(err, "Could not generate the evidence pack. Please try again."));
     } finally {
       setPackDownloadingId(null);
     }
   }, []);
+
 
   return (
     <>
