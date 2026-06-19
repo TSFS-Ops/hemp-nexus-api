@@ -21,7 +21,11 @@ usage() {
 run-role-negative-e2e.sh — single end-to-end runner for the Role-Negative & E2E suite.
 
 USAGE
-  bash scripts/run-role-negative-e2e.sh [--help]
+  bash scripts/run-role-negative-e2e.sh [--help|--show-env]
+
+  --help       Show this help.
+  --show-env   Print which required env vars are set (values are never printed)
+               and confirm the expected evidence zip / run-summary paths.
 
 REQUIRED ENV (export before running)
   SUPABASE_URL                 Project URL (e.g. https://<ref>.supabase.co)
@@ -54,14 +58,52 @@ SAFETY
 EOF
 }
 
+EVIDENCE_OUT_DIR_DEFAULT="${EVIDENCE_OUT_DIR:-/mnt/documents}"
+ZIP_FORMAT="${EVIDENCE_OUT_DIR_DEFAULT}/role-negative-e2e-<run-id>.zip"
+SUMMARY_FORMAT="${EVIDENCE_OUT_DIR_DEFAULT}/role-negative-e2e-<run-id>.run-summary.json"
+
+show_env() {
+  mask_len() { local v="${1:-}"; if [ -z "$v" ]; then echo "<unset>"; else echo "set (${#v} chars)"; fi; }
+  echo "Required env (values not printed):"
+  printf "  %-28s %s\n" "SUPABASE_URL"              "${SUPABASE_URL:-<unset>}"
+  printf "  %-28s %s\n" "SUPABASE_SERVICE_ROLE_KEY" "$(mask_len "${SUPABASE_SERVICE_ROLE_KEY:-}")"
+  printf "  %-28s %s\n" "E2E_RN_PASSWORD"           "$(mask_len "${E2E_RN_PASSWORD:-}")"
+  echo
+  echo "Optional env:"
+  printf "  %-28s %s\n" "WRITE_RUN_SUMMARY" "${WRITE_RUN_SUMMARY:-1 (default)}"
+  printf "  %-28s %s\n" "EVIDENCE_OUT_DIR"  "${EVIDENCE_OUT_DIR:-/mnt/documents (default)}"
+  echo
+  echo "Expected output paths:"
+  echo "  evidence zip : ${ZIP_FORMAT}"
+  echo "  run summary  : ${SUMMARY_FORMAT}"
+}
+
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   usage
   exit 0
 fi
+if [ "${1:-}" = "--show-env" ]; then
+  show_env
+  exit 0
+fi
 
-: "${SUPABASE_URL:?SUPABASE_URL required (run with --help for details)}"
-: "${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY required (run with --help)}"
-: "${E2E_RN_PASSWORD:?E2E_RN_PASSWORD (≥12 chars) required (run with --help)}"
+# Upfront validation — collect all missing/invalid vars before failing.
+MISSING=()
+[ -z "${SUPABASE_URL:-}" ] && MISSING+=("SUPABASE_URL (e.g. https://<ref>.supabase.co)")
+[ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] && MISSING+=("SUPABASE_SERVICE_ROLE_KEY (admin service-role key)")
+if [ -z "${E2E_RN_PASSWORD:-}" ]; then
+  MISSING+=("E2E_RN_PASSWORD (≥12 chars, password for seeded TEST/UAT users)")
+elif [ "${#E2E_RN_PASSWORD}" -lt 12 ]; then
+  MISSING+=("E2E_RN_PASSWORD is set but only ${#E2E_RN_PASSWORD} chars — needs ≥12")
+fi
+if [ "${#MISSING[@]}" -gt 0 ]; then
+  echo "ERROR: required env vars missing or invalid:" >&2
+  for m in "${MISSING[@]}"; do echo "  - $m" >&2; done
+  echo >&2
+  echo "Export them in your shell, then re-run. See: bash scripts/run-role-negative-e2e.sh --help" >&2
+  echo "To inspect what is currently set:  bash scripts/run-role-negative-e2e.sh --show-env" >&2
+  exit 2
+fi
 WRITE_RUN_SUMMARY="${WRITE_RUN_SUMMARY:-1}"
 
 echo "==> Seeding Phase 1 + Phase 2 fixtures"
