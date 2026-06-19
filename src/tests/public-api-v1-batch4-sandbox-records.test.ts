@@ -183,14 +183,13 @@ describe("Public API V1 · Batch 4 · sandbox seed records", () => {
     expect(exists("supabase/functions/public-api-openapi")).toBe(false);
     expect(exists("supabase/functions/public-api-support-intake")).toBe(false);
 
-    // The shared public-api entry must still NOT dispatch usage/docs/openapi.
+    // The shared public-api entry must still NOT dispatch a public usage
+    // route. (/v1/docs and /v1/docs/openapi.json became in-scope in Batch 10.)
     const entryRaw = read("supabase/functions/public-api/index.ts");
     const entry = entryRaw
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
     expect(entry).not.toMatch(/\/v1\/usage/);
-    expect(entry).not.toMatch(/\/v1\/docs/);
-    expect(entry).not.toMatch(/openapi/i);
 
     // No Batch 4 migration introduces commercial plans / support intake / webhook changes
     expect(mig).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);

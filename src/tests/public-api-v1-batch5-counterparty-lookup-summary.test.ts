@@ -201,11 +201,10 @@ describe("Public API V1 · Batch 5 · counterparty lookup + summary", () => {
     expect(exists("supabase/functions/public-api-openapi")).toBe(false);
     expect(exists("supabase/functions/public-api-support-intake")).toBe(false);
 
-    // Entry must not dispatch usage / docs / openapi
+    // Entry must not dispatch a public usage route.
+    // (/v1/docs and /v1/docs/openapi.json became in-scope in Batch 10.)
     const entry = codeOnly(read(ENTRY));
     expect(entry).not.toMatch(/\/v1\/usage/);
-    expect(entry).not.toMatch(/\/v1\/docs/);
-    expect(entry).not.toMatch(/openapi/i);
 
     // No support-intake / webhook tables introduced. Commercial plans are
     // intentionally scoped to Batch 7 — excluded here only from Batch 5's

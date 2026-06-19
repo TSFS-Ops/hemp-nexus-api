@@ -190,8 +190,7 @@ describe("Public API V1 · Batch 6 · usage limits + threshold notifications", (
 
     const entryCode = codeOnly(read(ENTRY));
     expect(entryCode).not.toMatch(/\/v1\/usage/);
-    expect(entryCode).not.toMatch(/\/v1\/docs/);
-    expect(entryCode).not.toMatch(/openapi/i);
+    // /v1/docs and /v1/docs/openapi.json became in-scope in Batch 10.
 
     // No commercial-plan / invoice / payment / support-intake tables in the
     // Batch-6 migration itself. (Commercial plans are scoped to Batch 7;

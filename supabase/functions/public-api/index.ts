@@ -36,10 +36,15 @@ import {
   assertNoForbiddenFields,
   type LookupInput,
 } from "../_shared/public-api-v1-counterparty.ts";
+import {
+  buildOpenApiSpec,
+  buildReadableDocsHtml,
+} from "../_shared/public-api-v1-openapi.ts";
 
 const V1_SCOPE = "api:status_read";
 // Back-compat alias preserved so Batch-5 routes can refer by their role.
 const V1_STATUS_SCOPE = V1_SCOPE;
+const V1_DOCS_SCOPE = V1_SCOPE;
 const V1_LOOKUP_SCOPE = "counterparty:lookup";
 const V1_SUMMARY_SCOPE = "profile:summary_read";
 // Signals scope check — applied in-handler because the response carries
@@ -47,6 +52,11 @@ const V1_SUMMARY_SCOPE = "profile:summary_read";
 const V1_SIGNALS_SCOPE = "signals:read";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function publicServerUrl(req: Request): string {
+  const url = new URL(req.url);
+  return `${url.protocol}//${url.host}`;
+}
 
 Deno.serve(async (req) => {
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
@@ -89,6 +99,32 @@ Deno.serve(async (req) => {
           timestamp: new Date().toISOString(),
         },
       };
+    });
+  }
+
+  // GET /v1/docs/openapi.json — single source-of-truth machine-readable spec.
+  // Non-billable; logged; requires valid API key + api:status_read.
+  if (
+    req.method === "GET" &&
+    parts[0] === "v1" && parts[1] === "docs" && parts[2] === "openapi.json" && parts.length === 3
+  ) {
+    return handleV1(req, "v1.docs.openapi", "/v1/docs/openapi.json", V1_DOCS_SCOPE, async (ctx) => {
+      ctx.billable = false;
+      const spec = buildOpenApiSpec(publicServerUrl(req));
+      return { body: spec };
+    });
+  }
+
+  // GET /v1/docs — readable HTML documentation, served from the SAME
+  // source-of-truth module as the OpenAPI spec. Non-billable; logged.
+  if (
+    req.method === "GET" &&
+    parts[0] === "v1" && parts[1] === "docs" && parts.length === 2
+  ) {
+    return handleV1(req, "v1.docs.readable", "/v1/docs", V1_DOCS_SCOPE, async (ctx) => {
+      ctx.billable = false;
+      const html = buildReadableDocsHtml(publicServerUrl(req));
+      return { body: { ok: true }, contentType: "text/html; charset=utf-8", rawBody: html };
     });
   }
 

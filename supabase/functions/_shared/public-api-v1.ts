@@ -391,7 +391,7 @@ export async function handleV1<T>(
   endpointTag: string,
   endpointPath: string,
   requiredScope: string,
-  exec: (ctx: V1RequestCtx, supabase: SupabaseClient, gw: GatewayResult) => Promise<{ body: T; status?: number }>,
+  exec: (ctx: V1RequestCtx, supabase: SupabaseClient, gw: GatewayResult) => Promise<{ body: T; status?: number; contentType?: string; rawBody?: string }>,
 ): Promise<Response> {
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
   const headers = buildCorsHeaders(allowedOrigins, req.headers.get("origin"));
@@ -461,6 +461,12 @@ export async function handleV1<T>(
       }
     }
 
+    if (result.contentType && typeof result.rawBody === "string") {
+      return new Response(result.rawBody, {
+        status,
+        headers: { ...headers, "Content-Type": result.contentType, "X-Request-Id": ctx.requestId },
+      });
+    }
     return jsonResponse(result.body, status, { ...headers, "X-Request-Id": ctx.requestId });
   } catch (e) {
     const v1err = e instanceof V1Error ? e : new V1Error("internal_error");
