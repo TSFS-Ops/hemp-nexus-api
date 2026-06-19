@@ -167,11 +167,10 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
     expect(exists("supabase/functions/public-api-docs")).toBe(false);
     expect(exists("supabase/functions/public-api-openapi")).toBe(false);
 
-    // Entry file still does not dispatch usage / docs / openapi routes.
+    // Entry file still does not dispatch a public /v1/usage route.
+    // (/v1/docs and /v1/docs/openapi.json became in-scope in Batch 10.)
     const src = codeOnly(read(ENTRY));
     expect(src).not.toMatch(/\/v1\/usage/);
-    expect(src).not.toMatch(/\/v1\/docs/);
-    expect(src).not.toMatch(/openapi/i);
 
     // No support-intake tables introduced anywhere. Commercial plans are
     // intentionally scoped to Batch 7 — excluded here only from Batch-3-
