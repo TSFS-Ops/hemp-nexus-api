@@ -157,6 +157,6 @@ describe("Batch 9D — prior batches remain intact", () => {
     expect(POSITIVE_RESPONSE_REQUIRED_ACTIONS.length).toBeGreaterThan(0);
   });
   it("Batch 9C requester-safe notification triggers still present", () => {
-    expect(REQUESTER_SAFE_NOTIFICATION_TRIGGERS.length).toBeGreaterThan(0);
+    expect(Object.keys(REQUESTER_SAFE_NOTIFICATION_TRIGGERS).length).toBeGreaterThan(0);
   });
 });
