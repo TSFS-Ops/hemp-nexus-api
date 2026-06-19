@@ -597,6 +597,11 @@ function ApiClientDetailDialog({
           {/* Public API V1 · Batch 6 — Monthly usage state + temporary overrides */}
           <UsageLimitsSection client={draft} canWrite={canWrite} />
 
+          {/* Public API V1 · Batch 7 — Commercial plan assignment + billing visibility */}
+          <CommercialPlanSection client={draft} canWrite={canWrite} />
+          <BillingVisibilitySection client={draft} />
+
+
           {/* Timestamps */}
           <section className="border-t border-slate-200 pt-4 text-[11px] text-slate-500 font-mono space-y-0.5">
             <div>created_at {draft.created_at}</div>
