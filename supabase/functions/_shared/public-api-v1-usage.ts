@@ -19,11 +19,36 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import type { V1RequestCtx } from "./public-api-v1.ts";
 
-// ─── Defaults ─────────────────────────────────────────────────────────────
-export const V1_DEFAULT_RPM = 60;                  // confirmed: reuses Batch-3 gateway 60 rpm
-export const V1_DEFAULT_CONCURRENCY = 3;           // per API key
-export const V1_DEFAULT_MONTHLY_PROD = 5_000;      // per api_client / month
-export const V1_DEFAULT_MONTHLY_SANDBOX = 10_000;  // per api_client / month
+// ─── Defaults (Sand/Prod Batch 6 — environment-specific) ─────────────────
+//
+// The Public API V1 commercial packaging requires distinct per-environment
+// defaults for institutional traffic shaping:
+//   • Sandbox  — 30 rpm, 1,000 calls/month, 10 concurrent (predictable
+//     for developer integration; capped to prevent abuse of free
+//     deterministic test data).
+//   • Production — 60 rpm, 5,000 calls/month (hard default when no
+//     commercial plan is assigned), 3 concurrent (conservative until
+//     contracted overrides are issued by platform_admin).
+//
+// `V1_DEFAULT_RPM` / `V1_DEFAULT_CONCURRENCY` / `V1_DEFAULT_MONTHLY_PROD`
+// are retained for backwards compatibility with Batch 6 callers and are
+// pinned to the PRODUCTION defaults.
+export const V1_DEFAULT_RPM_SANDBOX = 30;
+export const V1_DEFAULT_RPM_PRODUCTION = 60;
+export const V1_DEFAULT_RPM = V1_DEFAULT_RPM_PRODUCTION; // legacy alias
+export const V1_DEFAULT_CONCURRENCY_SANDBOX = 10;
+export const V1_DEFAULT_CONCURRENCY_PRODUCTION = 3;
+export const V1_DEFAULT_CONCURRENCY = V1_DEFAULT_CONCURRENCY_PRODUCTION; // legacy alias
+export const V1_DEFAULT_MONTHLY_PROD = 5_000;
+export const V1_DEFAULT_MONTHLY_SANDBOX = 1_000;
+
+export function defaultRpm(env: "sandbox" | "production"): number {
+  return env === "sandbox" ? V1_DEFAULT_RPM_SANDBOX : V1_DEFAULT_RPM_PRODUCTION;
+}
+
+export function defaultConcurrency(env: "sandbox" | "production"): number {
+  return env === "sandbox" ? V1_DEFAULT_CONCURRENCY_SANDBOX : V1_DEFAULT_CONCURRENCY_PRODUCTION;
+}
 
 // Endpoints that COUNT toward the monthly allowance. Health/status/docs-type
 // calls deliberately omitted — they never consume the monthly allowance.
