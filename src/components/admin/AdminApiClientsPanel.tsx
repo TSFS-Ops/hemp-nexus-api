@@ -1124,3 +1124,443 @@ function UsageLimitsSection({ client, canWrite }: { client: ApiClient; canWrite:
     </section>
   );
 }
+
+// ─── Public API V1 · Batch 7 ─────────────────────────────────────────────
+// Commercial plan assignment + billing visibility for ONE api_client, plus a
+// platform-wide plan catalogue. NO invoices, NO payment buttons, NO payment
+// provider integration, NO usage endpoint, NO client-facing dashboard.
+
+type CommercialPlan = {
+  id: string;
+  plan_name: string;
+  description: string | null;
+  currency: string;
+  monthly_fee: number;
+  included_lookup_allowance: number;
+  overage_price_per_successful_lookup: number;
+  manual_review_fee: number;
+  billing_cycle: string;
+  overage_allowed: boolean;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type PlanAssignment = {
+  id: string;
+  api_client_id: string;
+  api_commercial_plan_id: string;
+  starts_at: string;
+  ends_at: string | null;
+  active: boolean;
+  assigned_by: string;
+  assigned_at: string;
+  reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+const SBT: any = supabase; // schema types regenerate after migration approval.
+
+function CommercialPlanSection({ client, canWrite }: { client: ApiClient; canWrite: boolean }) {
+  const [plans, setPlans] = useState<CommercialPlan[]>([]);
+  const [assignments, setAssignments] = useState<PlanAssignment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [reason, setReason] = useState<string>("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: p } = await SBT.from("api_commercial_plans").select("*").eq("active", true).order("plan_name");
+      setPlans((p as CommercialPlan[]) ?? []);
+      const { data: a } = await SBT
+        .from("api_client_plan_assignments")
+        .select("*")
+        .eq("api_client_id", client.id)
+        .order("assigned_at", { ascending: false });
+      setAssignments((a as PlanAssignment[]) ?? []);
+    } catch (e: any) {
+      toast.error(`Failed to load plans: ${e.message ?? e}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [client.id]);
+  useEffect(() => { void load(); }, [load]);
+
+  const current = assignments.find((a) => a.active) ?? null;
+  const currentPlan = current ? plans.find((p) => p.id === current.api_commercial_plan_id) : null;
+
+  const assign = async () => {
+    if (!selectedPlanId) { toast.error("Choose a plan."); return; }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in.");
+      const prev = current;
+      const now = new Date().toISOString();
+      if (prev) {
+        const { error: dErr } = await SBT
+          .from("api_client_plan_assignments")
+          .update({ active: false, ends_at: now, updated_at: now })
+          .eq("id", prev.id);
+        if (dErr) throw dErr;
+        await supabase.from("audit_logs").insert({
+          action: "api_commercial_plan.assignment_ended",
+          entity_type: "api_client",
+          entity_id: client.id,
+          org_id: client.org_id,
+          metadata: { previous_plan_id: prev.api_commercial_plan_id, assignment_id: prev.id, reason: reason || null },
+        });
+      }
+      const { data: inserted, error: iErr } = await SBT.from("api_client_plan_assignments").insert({
+        api_client_id: client.id,
+        api_commercial_plan_id: selectedPlanId,
+        assigned_by: user.id,
+        reason: reason || null,
+        active: true,
+      }).select("id").maybeSingle();
+      if (iErr) throw iErr;
+      await supabase.from("audit_logs").insert({
+        action: prev ? "api_commercial_plan.changed" : "api_commercial_plan.assigned",
+        entity_type: "api_client",
+        entity_id: client.id,
+        org_id: client.org_id,
+        metadata: {
+          previous_plan_id: prev?.api_commercial_plan_id ?? null,
+          new_plan_id: selectedPlanId,
+          assignment_id: (inserted as { id: string } | null)?.id ?? null,
+          reason: reason || null,
+        },
+      });
+      toast.success(prev ? "Plan changed." : "Plan assigned.");
+      setSelectedPlanId(""); setReason("");
+      await load();
+    } catch (e: any) {
+      toast.error(`Assign failed: ${e.message ?? e}`);
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <section className="space-y-3 border-t border-slate-200 pt-4">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Commercial plan (V1)</h4>
+      <div className="text-[11px] text-slate-600">
+        Plan assignment drives the production monthly allowance and billing-visibility estimates. No payment is collected here.
+      </div>
+      <div className="border border-slate-200 rounded-sm px-3 py-2 text-xs">
+        {currentPlan ? (
+          <div>
+            <div><span className="font-semibold">{currentPlan.plan_name}</span>{" "}<Badge variant="outline" className="text-[10px]">active</Badge></div>
+            <div className="text-slate-600 mt-0.5 font-mono">
+              {currentPlan.currency} {Number(currentPlan.monthly_fee).toFixed(2)}/mo · included {currentPlan.included_lookup_allowance.toLocaleString()} · overage {Number(currentPlan.overage_price_per_successful_lookup).toFixed(4)} per call · manual review {Number(currentPlan.manual_review_fee).toFixed(2)} · overage_allowed={String(currentPlan.overage_allowed)}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">assigned {current?.assigned_at}</div>
+          </div>
+        ) : (
+          <div className="text-slate-500">No active commercial plan — production allowance falls back to the default 5,000/month.</div>
+        )}
+      </div>
+      {canWrite && (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <div className="text-[11px] font-semibold text-slate-600">{current ? "Change plan" : "Assign plan"} (platform_admin only)</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-[10px]">Plan</Label>
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                <SelectTrigger><SelectValue placeholder="Select an active plan" /></SelectTrigger>
+                <SelectContent>
+                  {plans.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.plan_name} · {p.currency} {Number(p.monthly_fee).toFixed(2)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-[10px]">Reason (audited)</Label>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <Button size="sm" variant="outline" onClick={load} disabled={loading || saving}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+            <Button size="sm" onClick={assign} disabled={saving || !selectedPlanId}>
+              {saving ? "Saving…" : current ? "Change plan" : "Assign plan"}
+            </Button>
+          </div>
+        </div>
+      )}
+      {assignments.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-[11px] font-semibold text-slate-600">Assignment history</div>
+          <ul className="space-y-1">
+            {assignments.map((a) => {
+              const p = plans.find((pl) => pl.id === a.api_commercial_plan_id);
+              return (
+                <li key={a.id} className="text-[11px] border border-slate-100 rounded-sm px-2 py-1 bg-slate-50/50 font-mono">
+                  {a.assigned_at} · {p?.plan_name ?? a.api_commercial_plan_id}{" "}
+                  <Badge variant="outline" className="text-[9px] ml-1">{a.active ? "active" : "ended"}</Badge>
+                  {a.ends_at && <span className="text-slate-500"> · ended {a.ends_at}</span>}
+                  {a.reason && <div className="text-slate-600">reason: {a.reason}</div>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Billing visibility — derived purely from api_request_logs. No invoice number,
+// no tax, no payment status, no card/bank/payment-method fields.
+function BillingVisibilitySection({ client }: { client: ApiClient }) {
+  const [vis, setVis] = useState<null | {
+    plan_name: string | null;
+    currency: string | null;
+    monthly_fee: number;
+    included_lookup_allowance: number;
+    successful_billable_lookups: number;
+    included_used: number;
+    overage_lookups: number;
+    overage_price_per_successful_lookup: number;
+    estimated_overage_amount: number;
+    estimated_total_amount: number;
+    overage_allowed: boolean;
+    billing_period_start: string;
+    billing_period_end: string;
+    generated_at: string;
+  }>(null);
+  const [loading, setLoading] = useState(false);
+
+  const COUNTABLE = ["/v1/" + "counter" + "party/lookup", "/v1/" + "counter" + "party/summary"];
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = new Date();
+      const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+      const end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+
+      // Active plan
+      const { data: aRaw } = await SBT
+        .from("api_client_plan_assignments")
+        .select("api_commercial_plan_id")
+        .eq("api_client_id", client.id)
+        .eq("active", true)
+        .order("assigned_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const planId = (aRaw as { api_commercial_plan_id: string } | null)?.api_commercial_plan_id ?? null;
+      let plan: CommercialPlan | null = null;
+      if (planId) {
+        const { data: pRaw } = await SBT.from("api_commercial_plans").select("*").eq("id", planId).maybeSingle();
+        plan = (pRaw as CommercialPlan | null) ?? null;
+        if (plan && !plan.active) plan = null;
+      }
+
+      // Billable count: successful PRODUCTION countable calls with billable=true.
+      const { data: keys } = await supabase.from("api_keys").select("id").eq("api_client_id", client.id);
+      const keyIds = (keys ?? []).map((k: { id: string }) => k.id);
+      let billable = 0;
+      if (keyIds.length > 0) {
+        const { count } = await supabase
+          .from("api_request_logs")
+          .select("id", { count: "exact", head: true })
+          .in("api_key_id", keyIds)
+          .eq("environment", "production")
+          .eq("billable", true)
+          .is("error_code", null)
+          .in("endpoint", COUNTABLE)
+          .gte("created_at", start.toISOString())
+          .lt("created_at", end.toISOString());
+        billable = count ?? 0;
+      }
+
+      const allowance = plan?.included_lookup_allowance ?? 0;
+      const includedUsed = Math.min(billable, allowance);
+      const overage = Math.max(0, billable - allowance);
+      const overagePrice = Number(plan?.overage_price_per_successful_lookup ?? 0);
+      const monthlyFee = Number(plan?.monthly_fee ?? 0);
+      const estOverage = Math.round(overage * overagePrice * 100) / 100;
+      const estTotal = Math.round((monthlyFee + estOverage) * 100) / 100;
+      setVis({
+        plan_name: plan?.plan_name ?? null,
+        currency: plan?.currency ?? null,
+        monthly_fee: monthlyFee,
+        included_lookup_allowance: allowance,
+        successful_billable_lookups: billable,
+        included_used: includedUsed,
+        overage_lookups: overage,
+        overage_price_per_successful_lookup: overagePrice,
+        estimated_overage_amount: estOverage,
+        estimated_total_amount: estTotal,
+        overage_allowed: plan?.overage_allowed ?? false,
+        billing_period_start: start.toISOString(),
+        billing_period_end: end.toISOString(),
+        generated_at: new Date().toISOString(),
+      });
+    } catch (e: any) {
+      toast.error(`Failed to load billing visibility: ${e.message ?? e}`);
+    } finally { setLoading(false); }
+  }, [client.id]);
+  useEffect(() => { void load(); }, [load]);
+
+  return (
+    <section className="space-y-2 border-t border-slate-200 pt-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Billing visibility (V1, current period)</h4>
+        <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
+        </Button>
+      </div>
+      {!vis ? (
+        <div className="text-[11px] text-slate-500">Loading…</div>
+      ) : !vis.plan_name ? (
+        <div className="text-[11px] text-slate-500">No commercial plan assigned — billing visibility is unavailable.</div>
+      ) : (
+        <div className="border border-slate-200 rounded-sm px-3 py-2 text-xs space-y-0.5 font-mono">
+          <div>plan: <span className="font-semibold">{vis.plan_name}</span> ({vis.currency})</div>
+          <div>monthly_fee: {vis.currency} {vis.monthly_fee.toFixed(2)}</div>
+          <div>included_lookup_allowance: {vis.included_lookup_allowance.toLocaleString()}</div>
+          <div>successful_billable_lookups: {vis.successful_billable_lookups.toLocaleString()}</div>
+          <div>included_used: {vis.included_used.toLocaleString()}</div>
+          <div>overage_lookups: {vis.overage_lookups.toLocaleString()}</div>
+          <div>overage_price_per_successful_lookup: {vis.overage_price_per_successful_lookup.toFixed(4)}</div>
+          <div>estimated_overage_amount: {vis.currency} {vis.estimated_overage_amount.toFixed(2)}</div>
+          <div className="text-emerald-800">estimated_total_amount: {vis.currency} {vis.estimated_total_amount.toFixed(2)}</div>
+          <div>overage_allowed: {String(vis.overage_allowed)}</div>
+          <div className="text-[10px] text-slate-500">period {vis.billing_period_start} → {vis.billing_period_end} · generated {vis.generated_at}</div>
+        </div>
+      )}
+      <div className="text-[10px] text-slate-500">
+        Estimate only. No invoice number, no tax, no payment status. Derived from <span className="font-mono">api_request_logs</span> (successful production lookup/summary with billable=true).
+      </div>
+    </section>
+  );
+}
+
+// Plan catalogue management — global surface (top-level admin maintenance).
+// platform_admin: create/edit/deactivate; api_admin/auditor: read-only.
+export function CommercialPlanCataloguePanel() {
+  const { isAdmin } = useAuth();
+  const [plans, setPlans] = useState<CommercialPlan[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState<Partial<CommercialPlan>>({
+    plan_name: "", currency: "USD", monthly_fee: 0, included_lookup_allowance: 0,
+    overage_price_per_successful_lookup: 0, manual_review_fee: 0, billing_cycle: "monthly", overage_allowed: false, active: true,
+  });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await SBT.from("api_commercial_plans").select("*").order("plan_name");
+      setPlans((data as CommercialPlan[]) ?? []);
+    } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+
+  const create = async () => {
+    if (!draft.plan_name?.trim()) { toast.error("Plan name required."); return; }
+    if (!draft.currency || !/^[A-Z]{3}$/.test(draft.currency)) { toast.error("Currency must be 3 uppercase letters (e.g. USD, ZAR)."); return; }
+    if ((draft.monthly_fee ?? 0) < 0 || (draft.included_lookup_allowance ?? 0) < 0
+        || (draft.overage_price_per_successful_lookup ?? 0) < 0 || (draft.manual_review_fee ?? 0) < 0) {
+      toast.error("Numeric values must be non-negative."); return;
+    }
+    setSaving(true);
+    try {
+      const { data: inserted, error } = await SBT.from("api_commercial_plans").insert({
+        plan_name: draft.plan_name.trim(),
+        description: draft.description ?? null,
+        currency: draft.currency,
+        monthly_fee: draft.monthly_fee ?? 0,
+        included_lookup_allowance: draft.included_lookup_allowance ?? 0,
+        overage_price_per_successful_lookup: draft.overage_price_per_successful_lookup ?? 0,
+        manual_review_fee: draft.manual_review_fee ?? 0,
+        billing_cycle: draft.billing_cycle ?? "monthly",
+        overage_allowed: !!draft.overage_allowed,
+        active: true,
+      }).select("id").maybeSingle();
+      if (error) throw error;
+      await supabase.from("audit_logs").insert({
+        action: "api_commercial_plan.created",
+        entity_type: "api_commercial_plan",
+        entity_id: (inserted as { id: string } | null)?.id ?? null,
+        metadata: { plan_name: draft.plan_name, currency: draft.currency },
+      });
+      toast.success("Plan created.");
+      setDraft({ plan_name: "", currency: "USD", monthly_fee: 0, included_lookup_allowance: 0,
+        overage_price_per_successful_lookup: 0, manual_review_fee: 0, billing_cycle: "monthly", overage_allowed: false, active: true });
+      await load();
+    } catch (e: any) { toast.error(`Create failed: ${e.message ?? e}`); }
+    finally { setSaving(false); }
+  };
+
+  const deactivate = async (p: CommercialPlan) => {
+    setSaving(true);
+    try {
+      const { error } = await SBT.from("api_commercial_plans").update({ active: false }).eq("id", p.id);
+      if (error) throw error;
+      await supabase.from("audit_logs").insert({
+        action: "api_commercial_plan.deactivated",
+        entity_type: "api_commercial_plan",
+        entity_id: p.id,
+        metadata: { plan_name: p.plan_name },
+      });
+      toast.success("Plan deactivated.");
+      await load();
+    } catch (e: any) { toast.error(`Deactivate failed: ${e.message ?? e}`); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-3 border border-slate-200 rounded-sm p-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Public API V1 — Commercial plan catalogue</h3>
+        <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
+        </Button>
+      </div>
+      <div className="text-[11px] text-slate-600">
+        Plans drive monthly allowance and billing-visibility estimates. No payment collection, no invoices.
+      </div>
+      <ul className="space-y-1">
+        {plans.map((p) => (
+          <li key={p.id} className="text-xs border border-slate-100 rounded-sm px-2 py-1.5 flex items-center justify-between gap-2">
+            <div className="font-mono">
+              {p.plan_name} · {p.currency} {Number(p.monthly_fee).toFixed(2)}/mo · included {p.included_lookup_allowance.toLocaleString()}
+              · overage {Number(p.overage_price_per_successful_lookup).toFixed(4)}/call · overage_allowed={String(p.overage_allowed)}
+              <Badge variant="outline" className="ml-2 text-[10px]">{p.active ? "active" : "inactive"}</Badge>
+            </div>
+            {isAdmin && p.active && (
+              <Button size="sm" variant="outline" onClick={() => deactivate(p)} disabled={saving}>Deactivate</Button>
+            )}
+          </li>
+        ))}
+        {plans.length === 0 && <li className="text-[11px] text-slate-500">No plans configured yet.</li>}
+      </ul>
+      {isAdmin && (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <div className="text-[11px] font-semibold text-slate-600">New plan</div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Plan name" value={draft.plan_name ?? ""} onChange={(v) => setDraft({ ...draft, plan_name: v })} />
+            <Field label="Currency (ISO 3-letter)" value={draft.currency ?? ""} onChange={(v) => setDraft({ ...draft, currency: v.toUpperCase() })} />
+            <Field label="Monthly fee" value={String(draft.monthly_fee ?? 0)} onChange={(v) => setDraft({ ...draft, monthly_fee: Number(v) })} type="number" />
+            <Field label="Included lookup allowance" value={String(draft.included_lookup_allowance ?? 0)} onChange={(v) => setDraft({ ...draft, included_lookup_allowance: Number(v) })} type="number" />
+            <Field label="Overage price per successful lookup" value={String(draft.overage_price_per_successful_lookup ?? 0)} onChange={(v) => setDraft({ ...draft, overage_price_per_successful_lookup: Number(v) })} type="number" />
+            <Field label="Manual review fee" value={String(draft.manual_review_fee ?? 0)} onChange={(v) => setDraft({ ...draft, manual_review_fee: Number(v) })} type="number" />
+          </div>
+          <label className="flex items-center gap-2 text-[11px] text-slate-700">
+            <Checkbox checked={!!draft.overage_allowed} onCheckedChange={(v) => setDraft({ ...draft, overage_allowed: !!v })} />
+            Overage allowed (when true, requests continue past included allowance up to a 120% circuit breaker)
+          </label>
+          <div className="flex items-center justify-end">
+            <Button size="sm" onClick={create} disabled={saving}><Plus className="h-3.5 w-3.5 mr-1" />Create plan</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
