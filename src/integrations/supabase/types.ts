@@ -13006,6 +13006,12 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      detect_api_token_balance_alerts: {
+        Args: never
+        Returns: {
+          inserted: number
+        }[]
+      }
       detect_api_usage_alerts: {
         Args: never
         Returns: {

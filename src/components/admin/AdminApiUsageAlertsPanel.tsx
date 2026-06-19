@@ -131,6 +131,10 @@ export function AdminApiUsageAlertsPanel() {
     try {
       const { error } = await supabase.rpc("detect_api_usage_alerts" as never);
       if (error) throw error;
+      const { error: balErr } = await supabase.rpc(
+        "detect_api_token_balance_alerts" as never,
+      );
+      if (balErr) throw balErr;
       toast.success("Detection sweep complete");
       await load();
     } catch (e: any) {
