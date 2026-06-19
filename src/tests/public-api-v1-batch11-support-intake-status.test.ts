@@ -143,7 +143,8 @@ describe("Public API V1 · Batch 11 · support ticket intake & status visibility
 
   it("client-shape RPC NEVER returns internal_notes or internal_owner", () => {
     const mig = findBatch11Migration();
-    const shape = (mig.match(/public_api_support_ticket_client_shape[\s\S]*?\$\$/) || [""])[0];
+    const m = mig.match(/CREATE OR REPLACE FUNCTION public\.public_api_support_ticket_client_shape[\s\S]*?\$\$;/);
+    const shape = m ? m[0] : "";
     expect(shape.length).toBeGreaterThan(0);
     expect(/'internal_notes'/i.test(shape)).toBe(false);
     expect(/'internal_owner'/i.test(shape)).toBe(false);
