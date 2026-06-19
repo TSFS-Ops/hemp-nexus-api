@@ -30,6 +30,7 @@ import {
   isCountableEndpoint,
   V1_DEFAULT_CONCURRENCY,
 } from "./public-api-v1-usage.ts";
+import { getActivePlanForClient } from "./public-api-v1-billing.ts";
 
 // ─── Canonical V1 error catalogue ────────────────────────────────────────
 export const V1_ERROR_CODES = [
