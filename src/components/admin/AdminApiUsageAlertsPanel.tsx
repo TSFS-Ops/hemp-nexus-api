@@ -90,10 +90,16 @@ export function AdminApiUsageAlertsPanel() {
   const [severity, setSeverity] = useState<string>("any");
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
+  const [assignment, setAssignment] = useState<string>("any"); // any | mine | unassigned
+
   const load = useCallback(async () => {
     if (!user || !hasAccess) return;
     setLoading(true);
     try {
+      const p_assigned_to =
+        assignment === "mine" ? user.id
+        : assignment === "unassigned" ? NIL_UUID
+        : null;
       const { data, error } = await supabase.rpc(
         "list_api_usage_alerts" as never,
         {
