@@ -100,6 +100,10 @@ export interface V1RequestCtx {
   apiKeyId: string | null;
   orgId: string | null;
   apiClientId: string | null;
+  // Batch 5 — set by the endpoint executor when a successful response
+  // represents a billable production call. Health/status/sandbox/validation/
+  // auth/scope/system errors must leave this false.
+  billable: boolean;
   responseHeaders: Record<string, string>;
 }
 
@@ -117,6 +121,7 @@ export function newCtx(req: Request, endpointTag: string): V1RequestCtx {
     apiKeyId: null,
     orgId: null,
     apiClientId: null,
+    billable: false,
     responseHeaders: {},
   };
 }
