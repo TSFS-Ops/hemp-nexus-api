@@ -220,14 +220,12 @@ describe("Public API V1 · Sand/Prod Batch 5 · sandbox accounting", () => {
 // ─── Hard exclusions — Batch 5 must not introduce out-of-scope surfaces ─
 
 describe("Public API V1 · Sand/Prod Batch 5 · hard exclusions", () => {
-  it("no webhook dispatcher / retry changes shipped in this batch", () => {
-    // The Batch 5 test file itself must not reference webhook delivery.
-    const self = read("src/tests/public-api-v1-sandprod-batch5-sandbox-records.test.ts");
-    expect(self).not.toMatch(/webhook_delivery|webhook_dispatch/i);
+  it("no webhook dispatcher added to gateway in this batch", () => {
+    // Gateway must not start dispatching live webhooks here.
+    expect(GATEWAY).not.toMatch(/webhook_deliveries.*insert|dispatchWebhook\(/i);
   });
 
-  it("no admin dashboard / OpenAPI / docs changes shipped in this batch", () => {
-    const self = read("src/tests/public-api-v1-sandprod-batch5-sandbox-records.test.ts");
-    expect(self).not.toMatch(/IntegrationDocs|OpenAPI|usage_dashboard/i);
+  it("no usage dashboard mutations added to counterparty helper in this batch", () => {
+    expect(COUNTERPARTY).not.toMatch(/usage_dashboard|admin_dashboard/i);
   });
 });
