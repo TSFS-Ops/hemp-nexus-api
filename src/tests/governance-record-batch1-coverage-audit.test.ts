@@ -146,9 +146,16 @@ describe("Governance Record Batch 1 — canonical audit", () => {
   });
 
   it("does not introduce any other governance.event_store.* audit name", () => {
+    // Two legitimate identifiers exist in the probe:
+    //   - canonical audit name           : "governance.event_store.coverage_probed"
+    //   - AAL2 action key (aal-preflight): "governance.event_store.coverage_probe"
+    // Any third governance.event_store.* literal would be drift.
     const matches = SRC.match(/"governance\.event_store\.[a-z_.]+"/g) ?? [];
-    const unique = Array.from(new Set(matches));
-    expect(unique).toEqual(['"governance.event_store.coverage_probed"']);
+    const unique = Array.from(new Set(matches)).sort();
+    expect(unique).toEqual([
+      '"governance.event_store.coverage_probe"',
+      '"governance.event_store.coverage_probed"',
+    ]);
   });
 });
 
