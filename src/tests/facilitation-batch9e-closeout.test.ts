@@ -273,7 +273,7 @@ describe("Batch 9E — management KPI correctness", () => {
   it("breakdown returns [] when no breached cases (honest 'not available')", () => {
     expect(computeBreachedDeadlineBreakdown([])).toEqual([]);
     expect(
-      computeBreachedDeadlineBreakdown([{ is_overdue: false, overdue_reasons: ["first_review"] }]),
+      computeBreachedDeadlineBreakdown([{ is_overdue: false, overdue_reasons: ["initial_triage_overdue"] }]),
     ).toEqual([]);
   });
 });
