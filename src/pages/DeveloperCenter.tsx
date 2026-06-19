@@ -193,6 +193,9 @@ export default function DeveloperCenter() {
           <Route index element={<Navigate to="keys" replace />} />
           <Route path="keys" element={<KeysView />} />
           <Route path="usage" element={<UsageView />} />
+          {/* Stable client-facing alias for Batch 3 — keeps the documented
+              /developer/api/usage URL working without duplicating the view. */}
+          <Route path="api/usage" element={<Navigate to="/developer/usage" replace />} />
           <Route path="support" element={<SupportView />} />
           <Route path="webhooks" element={<WebhooksView />} />
           <Route path="schema" element={<SchemaView />} />
@@ -202,3 +205,4 @@ export default function DeveloperCenter() {
     </EnvProvider>
   );
 }
+
