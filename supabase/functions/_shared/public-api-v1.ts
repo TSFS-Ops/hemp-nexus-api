@@ -273,6 +273,10 @@ export async function logV1Request(
       environment: ctx.environment,
       external_reference: ctx.externalReference,
       error_code: errorCode,
+      // Sandbox/Production Separation · Batch 2 trace columns.
+      request_payload_hash: ctx.requestPayloadHash,
+      rate_limit_decision: ctx.rateLimitDecision,
+      billable_overage: ctx.billableOverage,
     });
   } catch (e) {
     // Logging must never break the response.
@@ -314,12 +318,20 @@ export async function runGateway(
   ctx: V1RequestCtx,
   requiredScope: string,
 ): Promise<GatewayResult> {
-  // 1. Environment header
-  const env = detectEnvironment(req);
-  if (!env) {
+  // 1. Environment (host-derived wins; header is back-compat only)
+  const detected = detectEnvironmentDetailed(req);
+  if (!detected.env) {
     throw new V1Error("missing_required_field");
   }
-  ctx.environment = env;
+  ctx.environment = detected.env;
+  if (detected.mismatch) {
+    // Host-derived env wins, but the header/host disagreement is recorded
+    // so it can be triaged by ops. Never blocks the request.
+    await audit(supabase, "api_key.v1.environment_header_mismatch", ctx, {
+      host_env: detected.hostEnv,
+      header_env: detected.headerEnv,
+    });
+  }
 
   // 2. X-API-Key
   const presented = req.headers.get("x-api-key");
