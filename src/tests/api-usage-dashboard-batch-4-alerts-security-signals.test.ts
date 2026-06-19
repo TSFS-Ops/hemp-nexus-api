@@ -156,6 +156,7 @@ describe("API Usage Dashboard V1 · Batch 4 · Alerts & Suspicious Activity", ()
     expect(panel).toMatch(/acknowledge_api_usage_alert/);
     expect(panel).toMatch(/resolve_api_usage_alert/);
     expect(panel).toMatch(/add_api_usage_alert_note/);
+    expect(panel).toMatch(/assign_api_usage_alert/);
   });
 
   it("no client-facing developer/usage surface references alerts table or RPCs", () => {
