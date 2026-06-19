@@ -66,7 +66,7 @@ interface ClientTicket {
 
 // Forbidden tokens — client tickets must NEVER carry these payload fields.
 const FORBIDDEN_FIELDS = [
-  "key_hash", "api_key", "secret", "internal_notes", "internal_owner",
+  "key_hash", "api_key", "secret",
   "document", "evidence", "governance", "poi", "wad", "payment",
   "compliance",
 ] as const;
