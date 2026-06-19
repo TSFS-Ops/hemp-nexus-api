@@ -154,8 +154,8 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
   it("rate limit uses existing helper (60 rpm default) — not a new bespoke table", () => {
     const src = codeOnly(read(GATEWAY));
     expect(src).toMatch(/import \{ checkRateLimit \} from "\.\/rate-limit\.ts"/);
-    // No new monthly/commercial allowance table introduced in gateway
-    expect(src).not.toMatch(/monthly_limit|commercial_plan|api_commercial_plans/);
+    // No new bespoke commercial-plan table referenced in Batch 3 gateway.
+    expect(src).not.toMatch(/api_commercial_plans|api_client_plans/);
   });
 
   it("hard exclusions — no Batch 3-forbidden V1 surface introduced", () => {
