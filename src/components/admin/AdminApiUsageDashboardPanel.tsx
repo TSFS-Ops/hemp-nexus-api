@@ -36,6 +36,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RefreshCw, ShieldAlert, Lock, AlertTriangle } from "lucide-react";
 import { AdminApiMonitoringPanel } from "@/components/admin/AdminApiMonitoringPanel";
 import { AdminApiSecuritySignalsPanel } from "@/components/admin/AdminApiSecuritySignalsPanel";
+import { AdminApiUsageAlertsPanel } from "@/components/admin/AdminApiUsageAlertsPanel";
 
 type Summary = {
   generated_at: string;
