@@ -977,6 +977,63 @@ export type Database = {
         }
         Relationships: []
       }
+      api_client_plan_assignments: {
+        Row: {
+          active: boolean
+          api_client_id: string
+          api_commercial_plan_id: string
+          assigned_at: string
+          assigned_by: string
+          created_at: string
+          ends_at: string | null
+          id: string
+          reason: string | null
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          api_client_id: string
+          api_commercial_plan_id: string
+          assigned_at?: string
+          assigned_by: string
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          reason?: string | null
+          starts_at?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          api_client_id?: string
+          api_commercial_plan_id?: string
+          assigned_at?: string
+          assigned_by?: string
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          reason?: string | null
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_client_plan_assignments_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_client_plan_assignments_api_commercial_plan_id_fkey"
+            columns: ["api_commercial_plan_id"]
+            isOneToOne: false
+            referencedRelation: "api_commercial_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_clients: {
         Row: {
           authorised_commercial_contact_email: string | null
@@ -1134,6 +1191,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      api_commercial_plans: {
+        Row: {
+          active: boolean
+          billing_cycle: string
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          included_lookup_allowance: number
+          manual_review_fee: number
+          monthly_fee: number
+          overage_allowed: boolean
+          overage_price_per_successful_lookup: number
+          plan_name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          billing_cycle?: string
+          created_at?: string
+          currency: string
+          description?: string | null
+          id?: string
+          included_lookup_allowance?: number
+          manual_review_fee?: number
+          monthly_fee?: number
+          overage_allowed?: boolean
+          overage_price_per_successful_lookup?: number
+          plan_name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          billing_cycle?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          included_lookup_allowance?: number
+          manual_review_fee?: number
+          monthly_fee?: number
+          overage_allowed?: boolean
+          overage_price_per_successful_lookup?: number
+          plan_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       api_ip_allowlist_exceptions: {
         Row: {

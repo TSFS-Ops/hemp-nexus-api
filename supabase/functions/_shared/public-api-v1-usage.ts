@@ -128,24 +128,37 @@ export function thresholdsCrossed(prev: number, current: number, limit: number):
 
 export interface MonthlyAllowanceState {
   current: number;
-  limit: number;            // base default for the environment
+  limit: number;            // base default for the environment (or plan-derived base, if provided)
   effectiveLimit: number;   // includes override if any (override raises the ceiling)
   override: ActiveOverride | null;
-  blocked: boolean;         // true when current >= 120% of base AND no override; or >= override cap
+  blocked: boolean;         // true when current >= effective block mark
 }
 
+/**
+ * Batch 7 extension: optional `options.baseOverride` lets a commercial plan
+ * supply the production monthly allowance (the plan's
+ * included_lookup_allowance). `options.strictAtAllowance` switches the
+ * default-block from 120% to 100% (used when an active plan has
+ * overage_allowed=false). Temporary api_usage_overrides still take
+ * precedence over both.
+ */
 export async function evaluateMonthlyAllowance(
   supabase: SupabaseClient,
   apiClientId: string,
   env: "sandbox" | "production",
+  options?: { baseOverride?: number; strictAtAllowance?: boolean },
 ): Promise<MonthlyAllowanceState> {
   const [current, override] = await Promise.all([
     getMonthlyUsage(supabase, apiClientId, env),
     getActiveOverride(supabase, apiClientId, env),
   ]);
-  const baseLimit = defaultMonthlyLimit(env);
+  const baseLimit = options?.baseOverride != null && options.baseOverride >= 0
+    ? options.baseOverride
+    : defaultMonthlyLimit(env);
   const effectiveLimit = override?.override_limit ?? baseLimit;
-  const defaultBlockMark = Math.ceil((120 / 100) * baseLimit);
+  const defaultBlockMark = options?.strictAtAllowance
+    ? baseLimit
+    : Math.ceil((120 / 100) * baseLimit);
   const effectiveBlockMark = override ? override.override_limit : defaultBlockMark;
   const blocked = current >= effectiveBlockMark;
   return { current, limit: baseLimit, effectiveLimit, override, blocked };
