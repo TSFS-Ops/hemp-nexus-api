@@ -15,9 +15,53 @@
 #   WRITE_RUN_SUMMARY=1   (default 1) write run-summary.json next to the zip
 #   WRITE_RUN_SUMMARY=0   to disable
 set -euo pipefail
-: "${SUPABASE_URL:?SUPABASE_URL required}"
-: "${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY required}"
-: "${E2E_RN_PASSWORD:?E2E_RN_PASSWORD (≥12 chars) required}"
+
+usage() {
+  cat <<'EOF'
+run-role-negative-e2e.sh — single end-to-end runner for the Role-Negative & E2E suite.
+
+USAGE
+  bash scripts/run-role-negative-e2e.sh [--help]
+
+REQUIRED ENV (export before running)
+  SUPABASE_URL                 Project URL (e.g. https://<ref>.supabase.co)
+  SUPABASE_SERVICE_ROLE_KEY    Service-role key (admin; not exposed by Lovable Cloud)
+  E2E_RN_PASSWORD              Password for seeded TEST/UAT users (≥12 chars)
+
+OPTIONAL ENV
+  WRITE_RUN_SUMMARY=1|0        Write run-summary.json next to the zip (default 1)
+  EVIDENCE_OUT_DIR             Override output dir for the zip (default /mnt/documents)
+
+WHAT IT DOES
+  1. Seeds Phase 1 + Phase 2 fixtures → .env.role-negative
+  2. Sources that env (orgs, users, record IDs, E2E_RN_ENV=live-demo)
+  3. Runs the matrix coverage guard (static release gate)
+  4. Runs the critical Playwright suite (role-negative + critical journeys)
+  5. Packs the evidence zip
+  6. Prints the skipped-test summary (incl. RN-DEF-06)
+  7. Writes run-summary.json (counts + touched-real-data flags) next to the zip
+
+OUTPUT
+  Final two lines:
+    ==> EVIDENCE ZIP: /mnt/documents/<run>.zip
+    ==> RUN SUMMARY: /mnt/documents/<run>.run-summary.json
+  Exit code mirrors the Playwright run (0 = green).
+
+SAFETY
+  Constrained to E2E_RN_ENV=live-demo with seeded/fingerprinted TEST/UAT rows and
+  sandbox API keys. No real tenant data, payments, notifications, live providers,
+  production API keys or compliance decisions are touched.
+EOF
+}
+
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+  usage
+  exit 0
+fi
+
+: "${SUPABASE_URL:?SUPABASE_URL required (run with --help for details)}"
+: "${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY required (run with --help)}"
+: "${E2E_RN_PASSWORD:?E2E_RN_PASSWORD (≥12 chars) required (run with --help)}"
 WRITE_RUN_SUMMARY="${WRITE_RUN_SUMMARY:-1}"
 
 echo "==> Seeding Phase 1 + Phase 2 fixtures"
