@@ -26,6 +26,11 @@ import {
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 import { residencyGateForMatchRequest } from "../_shared/residency-entry.ts";
 import { checkResidencyHoldAny, residencyBlockResponse } from "../_shared/residency-claim-guard.ts";
+import {
+  buildPostureSnapshot,
+  writeGovernanceEventBestEffort,
+} from "../_shared/governance-audit-integration.ts";
+import { WAD_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
