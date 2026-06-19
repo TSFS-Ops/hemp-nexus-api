@@ -26,13 +26,13 @@ import { Download, Info, Loader2, RefreshCw } from "lucide-react";
 
 interface ApiClientOption {
   id: string;
-  client_name: string;
+  legal_entity_name: string;
   org_id: string;
 }
 
 interface UsageSummary {
   api_client_id: string;
-  api_client_name: string;
+  api_legal_entity_name: string;
   plan_id: string | null;
   plan_name: string | null;
   currency: string | null;
@@ -142,8 +142,8 @@ export function ClientUsageDashboard() {
       try {
         const { data, error } = await supabase
           .from("api_clients")
-          .select("id, client_name, org_id")
-          .order("client_name", { ascending: true });
+          .select("id, legal_entity_name, org_id")
+          .order("legal_entity_name", { ascending: true });
         if (cancelled) return;
         if (error) {
           toast.error("Unable to load API clients", { description: error.message });
@@ -225,7 +225,7 @@ export function ClientUsageDashboard() {
       const a = document.createElement("a");
       a.href = url;
       const periodLabel = summary.billing_period_start.slice(0, 7);
-      a.download = `api-usage-${summary.api_client_name.replace(/\W+/g, "-")}-${periodLabel}.csv`;
+      a.download = `api-usage-${summary.api_legal_entity_name.replace(/\W+/g, "-")}-${periodLabel}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -272,7 +272,7 @@ export function ClientUsageDashboard() {
             </SelectTrigger>
             <SelectContent>
               {clients.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.client_name}</SelectItem>
+                <SelectItem key={c.id} value={c.id}>{c.legal_entity_name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -359,7 +359,7 @@ export function ClientUsageDashboard() {
       {/* Summary */}
       {summary && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" data-testid="usage-summary">
-          <StatBlock label="API client" value={summary.api_client_name} mono={false} />
+          <StatBlock label="API client" value={summary.api_legal_entity_name} mono={false} />
           <StatBlock label="Current plan" value={summary.plan_name ?? "— (default allowance)"} mono={false} />
           <StatBlock label="Billing period" value={`${summary.billing_period_start.slice(0, 10)} → ${summary.billing_period_end.slice(0, 10)}`} />
           <StatBlock label="Overage allowed" value={summary.overage_allowed ? "Yes" : "No"} />
