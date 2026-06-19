@@ -186,14 +186,13 @@ describe("API Usage Dashboard V1 · Batch 1 · data model & aggregation", () => 
 
   // ─── 7. Scope control: no new tables / no UI in Batch 1 ────────────────
   it("Batch 1 migration does not create new tables", () => {
-    const m = read(
-      "supabase/migrations/" +
-        fs
-          .readdirSync(path.join(ROOT, "supabase/migrations"))
-          .filter((f) => /\.sql$/.test(f))
-          .sort()
-          .pop()!,
-    );
-    expect(m).not.toMatch(/CREATE TABLE/i);
+    // Pin to the Batch 1 migration by its unique signature.
+    const dir = path.join(ROOT, "supabase/migrations");
+    const files = fs.readdirSync(dir).filter((f) => /\.sql$/.test(f));
+    const batch1 = files
+      .map((f) => ({ f, body: fs.readFileSync(path.join(dir, f), "utf-8") }))
+      .find((x) => x.body.includes("trg_api_request_logs_strip_payloads"));
+    expect(batch1, "Batch 1 migration not found by signature").toBeTruthy();
+    expect(batch1!.body).not.toMatch(/CREATE TABLE/i);
   });
 });

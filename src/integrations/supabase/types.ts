@@ -1721,6 +1721,91 @@ export type Database = {
           },
         ]
       }
+      api_usage_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          api_client_id: string | null
+          api_key_id: string | null
+          created_at: string
+          dedupe_key: string
+          details: Json
+          environment: string | null
+          id: string
+          latest_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          threshold_value: number | null
+          trigger_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          api_client_id?: string | null
+          api_key_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          details?: Json
+          environment?: string | null
+          id?: string
+          latest_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          status?: string
+          threshold_value?: number | null
+          trigger_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          api_client_id?: string | null
+          api_key_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          details?: Json
+          environment?: string | null
+          id?: string
+          latest_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          threshold_value?: number | null
+          trigger_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_alerts_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_usage_alerts_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_usage_alerts_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_usage_notifications_state: {
         Row: {
           api_client_id: string
@@ -11945,6 +12030,14 @@ export type Database = {
         }
         Returns: Json
       }
+      acknowledge_api_usage_alert: {
+        Args: { p_alert_id: string; p_note?: string }
+        Returns: Json
+      }
+      add_api_usage_alert_note: {
+        Args: { p_alert_id: string; p_note: string }
+        Returns: Json
+      }
       admin_archive_duplicate_match: {
         Args: {
           p_admin_user_id: string
@@ -12900,6 +12993,12 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      detect_api_usage_alerts: {
+        Args: never
+        Returns: {
+          inserted: number
+        }[]
+      }
       detect_match_quality_warnings: {
         Args: { p_match_id: string }
         Returns: Json
@@ -13140,6 +13239,16 @@ export type Database = {
         Returns: Json[]
       }
       list_api_support_tickets_internal: {
+        Args: {
+          p_api_client_id?: string
+          p_environment?: string
+          p_limit?: number
+          p_severity?: string
+          p_status?: string
+        }
+        Returns: Json[]
+      }
+      list_api_usage_alerts: {
         Args: {
           p_api_client_id?: string
           p_environment?: string
@@ -13471,6 +13580,10 @@ export type Database = {
           p_risk_item_id: string
           p_user_agent?: string
         }
+        Returns: Json
+      }
+      resolve_api_usage_alert: {
+        Args: { p_alert_id: string; p_note?: string }
         Returns: Json
       }
       resolve_notifications_for: {

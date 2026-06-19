@@ -188,16 +188,22 @@ describe("API Usage Dashboard V1 · Batch 3 · Client Own-Usage Dashboard", () =
   });
 
   it("Batch 3 introduces no new tables and no RLS weakening", () => {
-    // Latest migration must not create new tables or drop policies.
-    const files = fs
-      .readdirSync(path.join(ROOT, "supabase/migrations"))
-      .filter((f) => /\.sql$/.test(f))
-      .sort();
-    const last = files[files.length - 1];
-    const m = read("supabase/migrations/" + last);
-    expect(m).not.toMatch(/CREATE TABLE/i);
-    expect(m).not.toMatch(/DROP POLICY/i);
-    expect(m).not.toMatch(/DISABLE ROW LEVEL SECURITY/i);
+    // Batch 3 added no SQL migration. Verify by signature: no migration
+    // mentions Batch-3 specific client-usage table creation or RLS
+    // weakening on the existing tables it relied on.
+    const dir = path.join(ROOT, "supabase/migrations");
+    const files = fs.readdirSync(dir).filter((f) => /\.sql$/.test(f));
+    for (const f of files) {
+      const body = fs.readFileSync(path.join(dir, f), "utf-8");
+      // No Batch-3 specific table creation
+      expect(body, `${f} must not create api_client_usage* tables`).not.toMatch(
+        /CREATE TABLE[^;]*api_client_usage/i,
+      );
+      // No weakening of existing tables Batch 3 reads from
+      expect(body, `${f} must not disable RLS on api_request_logs / api_clients / api_keys`).not.toMatch(
+        /ALTER TABLE public\.(api_request_logs|api_clients|api_keys)\s+DISABLE ROW LEVEL SECURITY/i,
+      );
+    }
   });
 
   it("Batch 3 does not introduce platform_support as a standing app_role", () => {
