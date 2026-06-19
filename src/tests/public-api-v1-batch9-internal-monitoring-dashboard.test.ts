@@ -239,11 +239,13 @@ describe("Public API V1 · Batch 9 · internal monitoring dashboard", () => {
   });
 
   // ─── Hard exclusions ───────────────────────────────────────────────
-  it("no /v1/docs or /v1/docs/openapi.json gateway endpoint introduced", () => {
-    if (!exists(GATEWAY)) return;
-    const gw = codeOnly(read(GATEWAY));
-    expect(/\/v1\/docs/.test(gw)).toBe(false);
-    expect(/openapi\.json/.test(gw)).toBe(false);
+  it("internal monitoring panel does not reference /v1/docs or openapi", () => {
+    // /v1/docs and /v1/docs/openapi.json became in-scope in Batch 10 in the
+    // PUBLIC gateway; the INTERNAL monitoring panel must still not embed or
+    // call them.
+    const src = codeOnly(read(PANEL));
+    expect(/\/v1\/docs/.test(src)).toBe(false);
+    expect(/openapi\.json/i.test(src)).toBe(false);
   });
 
   it("no support ticket intake table/route introduced in Batch 9", () => {
