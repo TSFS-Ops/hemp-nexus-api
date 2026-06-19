@@ -79,7 +79,7 @@ export default function DocsCounterparties() {
             { name: "entity_type",        type: "enum",   required: true, desc: "INDIVIDUAL | COMPANY." },
             { name: "legal_name",         type: "string", required: true, desc: "2–256 chars. Stored verbatim." },
             { name: "jurisdiction_code",  type: "ISO-3166", required: true, desc: "Two-letter country code." },
-            { name: "registration_number",type: "string", desc: "Registry number; used by KYB providers (CIPC, Companies House, etc.)." },
+            { name: "registration_number",type: "string", desc: "Registry number; used by KYB providers (Companies House, etc.)." },
             { name: "tax_number",         type: "string", desc: "VAT or tax registration number." },
           ]}
         />

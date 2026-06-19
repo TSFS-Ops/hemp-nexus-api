@@ -122,7 +122,7 @@ const RegistrySection: React.FC<{ caseId: string; items: RegistryCheck[]; onChan
               <DialogDescription>Manual result capture only. No live registry connection is performed.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
-              <Field label="Provider / source"><Input value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="e.g. Companies House, CIPC" /></Field>
+              <Field label="Provider / source"><Input value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="e.g. Companies House, regulator portal" /></Field>
               <Field label="Lookup date"><Input type="date" value={lookupDate} onChange={(e) => setLookupDate(e.target.value)} /></Field>
               <Field label="Result">
                 <Select value={result} onValueChange={setResult}>
@@ -240,7 +240,7 @@ const SanctionsSection: React.FC<{ caseId: string; items: SanctionsCheck[]; onCh
             </DialogHeader>
             <div className="space-y-3">
               <Field label="Screening date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-              <Field label="Screening source / provider"><Input value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. Dilisense, OFAC lookup" /></Field>
+              <Field label="Screening source / provider"><Input value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. OFAC lookup, official sanctions list" /></Field>
               <Field label="Result">
                 <Select value={result} onValueChange={setResult}>
                   <SelectTrigger><SelectValue placeholder="Pick a result" /></SelectTrigger>
