@@ -1317,6 +1317,9 @@ export type Database = {
           created_by: string | null
           environment: string | null
           expires_at: string | null
+          expiry_warning_14d_sent_at: string | null
+          expiry_warning_30d_sent_at: string | null
+          expiry_warning_3d_sent_at: string | null
           expiry_warning_sent: boolean | null
           id: string
           key_hash: string
@@ -1327,6 +1330,7 @@ export type Database = {
           revoked_at: string | null
           revoked_reason: string | null
           rotated_at: string | null
+          sandbox_expiry_warning_sent_at: string | null
           scopes: string[]
           status: string
           suspended_at: string | null
@@ -1341,6 +1345,9 @@ export type Database = {
           created_by?: string | null
           environment?: string | null
           expires_at?: string | null
+          expiry_warning_14d_sent_at?: string | null
+          expiry_warning_30d_sent_at?: string | null
+          expiry_warning_3d_sent_at?: string | null
           expiry_warning_sent?: boolean | null
           id?: string
           key_hash: string
@@ -1351,6 +1358,7 @@ export type Database = {
           revoked_at?: string | null
           revoked_reason?: string | null
           rotated_at?: string | null
+          sandbox_expiry_warning_sent_at?: string | null
           scopes?: string[]
           status?: string
           suspended_at?: string | null
@@ -1365,6 +1373,9 @@ export type Database = {
           created_by?: string | null
           environment?: string | null
           expires_at?: string | null
+          expiry_warning_14d_sent_at?: string | null
+          expiry_warning_30d_sent_at?: string | null
+          expiry_warning_3d_sent_at?: string | null
           expiry_warning_sent?: boolean | null
           id?: string
           key_hash?: string
@@ -1375,6 +1386,7 @@ export type Database = {
           revoked_at?: string | null
           revoked_reason?: string | null
           rotated_at?: string | null
+          sandbox_expiry_warning_sent_at?: string | null
           scopes?: string[]
           status?: string
           suspended_at?: string | null
