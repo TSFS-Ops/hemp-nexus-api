@@ -374,6 +374,22 @@ export function AdminApiUsageAlertsPanel() {
                 <td className="p-2">
                   <Badge variant="outline" className={STATUS_TONE[r.status]}>{r.status}</Badge>
                 </td>
+                <td className="p-2 text-[11px]">
+                  {r.assigned_to ? (
+                    <div>
+                      <div className="font-mono">
+                        {r.assigned_to === user!.id ? "you" : r.assigned_to.slice(0, 8) + "…"}
+                      </div>
+                      {r.assigned_at && (
+                        <div className="text-muted-foreground font-mono text-[10px]">
+                          {fmtDate(r.assigned_at)}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
                 <td className="p-2 font-mono">{fmtDate(r.created_at)}</td>
                 <td className="p-2">
                   {r.latest_note && (
@@ -391,7 +407,7 @@ export function AdminApiUsageAlertsPanel() {
                           setNoteDrafts((d) => ({ ...d, [r.id]: e.target.value }))
                         }
                       />
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap gap-1">
                         {r.status === "open" && (
                           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => acknowledge(r.id)}>
                             Acknowledge
@@ -403,6 +419,29 @@ export function AdminApiUsageAlertsPanel() {
                         <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => addNote(r.id)}>
                           Add note
                         </Button>
+                        {r.assigned_to !== user!.id ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px]"
+                            onClick={() => assign(r.id, user!.id)}
+                            data-testid={`api-usage-alert-claim-${r.id}`}
+                          >
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            {r.assigned_to ? "Reassign to me" : "Claim"}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-[11px]"
+                            onClick={() => assign(r.id, null)}
+                            data-testid={`api-usage-alert-unassign-${r.id}`}
+                          >
+                            <UserMinus className="h-3 w-3 mr-1" />
+                            Unassign
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}
