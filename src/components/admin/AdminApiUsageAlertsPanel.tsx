@@ -5,8 +5,8 @@
  * Read-gated by `can_access_api_monitoring` (platform_admin / api_admin /
  * auditor). Mutations (acknowledge/resolve/note) require platform_admin.
  *
- * Never displays request_body, response_body, full keys, secrets, IPs,
- * user agents or stack traces — alert metadata is server-side stripped.
+ * Never displays payload bodies, full keys, secrets, client IPs,
+ * user-agent strings or stack traces — alert metadata is server-side stripped.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
