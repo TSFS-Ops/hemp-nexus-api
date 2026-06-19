@@ -197,6 +197,27 @@ export function AdminApiUsageAlertsPanel() {
     [noteDrafts, load],
   );
 
+  const assign = useCallback(
+    async (id: string, assignee: string | null) => {
+      try {
+        const { error } = await supabase.rpc(
+          "assign_api_usage_alert" as never,
+          {
+            p_alert_id: id,
+            p_assignee: assignee,
+            p_note: noteDrafts[id] || null,
+          } as never,
+        );
+        if (error) throw error;
+        toast.success(assignee ? "Alert assigned" : "Alert unassigned");
+        await load();
+      } catch (e: any) {
+        toast.error(`Assign failed: ${e?.message ?? e}`);
+      }
+    },
+    [noteDrafts, load],
+  );
+
   const totals = useMemo(
     () => ({
       total: rows.length,
