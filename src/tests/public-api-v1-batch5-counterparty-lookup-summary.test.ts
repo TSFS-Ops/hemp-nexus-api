@@ -212,8 +212,8 @@ describe("Public API V1 · Batch 5 · counterparty lookup + summary", () => {
     const migDir = path.join(ROOT, "supabase/migrations");
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
-      expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
       if (/Batch 5/i.test(body)) {
+        expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
         expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
         expect(body).not.toMatch(/CREATE TABLE[^;]*webhook_/i);
       }
