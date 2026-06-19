@@ -101,7 +101,7 @@ describe("Public API V1 · Batch 5 · counterparty lookup + summary", () => {
   });
 
   it("no-match envelope never returns verified=false (no_match ≠ failed verification)", () => {
-    const src = read(MAPPER);
+    const src = codeOnly(read(MAPPER));
     const fn = src.match(/buildNoMatchEnvelope[\s\S]*?return body;\s*\}/);
     expect(fn).toBeTruthy();
     expect(fn![0]).not.toMatch(/verified\s*:\s*false/);
