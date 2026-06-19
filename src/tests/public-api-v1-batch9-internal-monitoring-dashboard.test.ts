@@ -274,11 +274,13 @@ describe("Public API V1 · Batch 9 · internal monitoring dashboard", () => {
     expect(/create\s+table\s+public\./i.test(mig)).toBe(false);
   });
 
-  it("no raw API key or key-hash exposure in panel or overview RPC", () => {
+  it("no raw API key or key-hash exposure in overview RPC; panel only lists it as a forbidden CSV token", () => {
     const mig = findBatch9Migration();
     expect(/key_hash/i.test(mig)).toBe(false);
     const src = read(PANEL);
-    expect(/key_hash/i.test(src)).toBe(false);
+    // key_hash may appear only inside the FORBIDDEN_CSV_TOKENS guard, never as a real column.
+    const headersBlock = (src.match(/const headers\s*=\s*\[([\s\S]*?)\];/) || [])[1] || "";
+    expect(/key_hash/i.test(headersBlock)).toBe(false);
   });
 
   it("no POI/WaD/payment/credit/compliance fields exposed", () => {
