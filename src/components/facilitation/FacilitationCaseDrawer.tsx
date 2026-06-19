@@ -27,6 +27,7 @@ import {
 import { FacilitationOutreachTab } from "@/components/facilitation-outreach/FacilitationOutreachTab";
 import { FacilitationCaseManualChecksPanel } from "@/components/facilitation/FacilitationCaseManualChecksPanel";
 import { FacilitationCaseProfileLinkPanel } from "@/components/facilitation/FacilitationCaseProfileLinkPanel";
+import { FacilitationPoiConversionPanel } from "@/components/facilitation/FacilitationPoiConversionPanel";
 import { FacilitationCaseSlaPanel } from "@/components/facilitation/FacilitationCaseSlaPanel";
 import { FacilitationCaseNextStepsPanel } from "@/components/facilitation/FacilitationCaseNextStepsPanel";
 import {
@@ -288,6 +289,11 @@ export const FacilitationCaseDrawer: React.FC<{
                 linkedOrganisation={data.linked_organisation ?? null}
                 onChanged={load}
               />
+            ) : null}
+
+            {/* Batch 16 — controlled POI conversion (human-confirmed) */}
+            {caseId ? (
+              <FacilitationPoiConversionPanel caseId={caseId} onChanged={load} />
             ) : null}
 
 

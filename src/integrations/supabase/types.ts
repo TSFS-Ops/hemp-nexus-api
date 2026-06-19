@@ -5035,13 +5035,17 @@ export type Database = {
           linked_organization_linked_at: string | null
           linked_organization_linked_by: string | null
           linked_organization_reason: string | null
+          linked_poi_id: string | null
           more_info_response_due_at: string | null
           next_action_due_at: string | null
           overdue_reasons: string[]
           owner_assignment_due_at: string | null
           permission_to_contact: boolean
           physical_address: string | null
+          poi_conversion_confirmed_by: string | null
+          poi_conversion_eligibility_payload: Json | null
           poi_conversion_evidence_summary: string | null
+          poi_conversion_method: string | null
           poi_conversion_reason: string | null
           poi_conversion_recorded_at: string | null
           poi_conversion_recorded_by: string | null
@@ -5118,13 +5122,17 @@ export type Database = {
           linked_organization_linked_at?: string | null
           linked_organization_linked_by?: string | null
           linked_organization_reason?: string | null
+          linked_poi_id?: string | null
           more_info_response_due_at?: string | null
           next_action_due_at?: string | null
           overdue_reasons?: string[]
           owner_assignment_due_at?: string | null
           permission_to_contact: boolean
           physical_address?: string | null
+          poi_conversion_confirmed_by?: string | null
+          poi_conversion_eligibility_payload?: Json | null
           poi_conversion_evidence_summary?: string | null
+          poi_conversion_method?: string | null
           poi_conversion_reason?: string | null
           poi_conversion_recorded_at?: string | null
           poi_conversion_recorded_by?: string | null
@@ -5201,13 +5209,17 @@ export type Database = {
           linked_organization_linked_at?: string | null
           linked_organization_linked_by?: string | null
           linked_organization_reason?: string | null
+          linked_poi_id?: string | null
           more_info_response_due_at?: string | null
           next_action_due_at?: string | null
           overdue_reasons?: string[]
           owner_assignment_due_at?: string | null
           permission_to_contact?: boolean
           physical_address?: string | null
+          poi_conversion_confirmed_by?: string | null
+          poi_conversion_eligibility_payload?: Json | null
           poi_conversion_evidence_summary?: string | null
+          poi_conversion_method?: string | null
           poi_conversion_reason?: string | null
           poi_conversion_recorded_at?: string | null
           poi_conversion_recorded_by?: string | null
@@ -5247,6 +5259,13 @@ export type Database = {
             columns: ["linked_organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilitation_cases_linked_poi_id_fkey"
+            columns: ["linked_poi_id"]
+            isOneToOne: false
+            referencedRelation: "pois"
             referencedColumns: ["id"]
           },
           {
