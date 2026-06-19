@@ -590,6 +590,10 @@ function ApiClientDetailDialog({
             </section>
           )}
 
+          {/* Public API V1 · Batch 2 — Key readiness & IP allowlist exceptions */}
+          <KeyReadinessSection client={draft} />
+          <IpExceptionSection client={draft} canWrite={canWrite} />
+
           {/* Timestamps */}
           <section className="border-t border-slate-200 pt-4 text-[11px] text-slate-500 font-mono space-y-0.5">
             <div>created_at {draft.created_at}</div>
