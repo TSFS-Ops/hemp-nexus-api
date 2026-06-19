@@ -450,7 +450,13 @@ export async function runGateway(
   }
   ctx.scopeUsed = requiredScope;
 
-  // 10. Rate limit (60 rpm default via existing helper)
+  // 10. Rate limit — environment-specific (Sand/Prod Batch 6):
+  //   • Sandbox: 30 rpm   • Production: 60 rpm
+  // ctx.environment is always set by the host-derived detector by this
+  // point; fall back to production limits if it somehow isn't (fail safe).
+  const envForRpm: "sandbox" | "production" =
+    ctx.environment === "sandbox" ? "sandbox" : "production";
+  const rpm = defaultRpm(envForRpm);
   try {
     await checkRateLimit(
       supabase,
@@ -458,7 +464,12 @@ export async function runGateway(
       key.id,
       ctx.endpointTag,
       undefined,
-      { actorIp: ctx.actorIp, userAgent: ctx.userAgent, requestId: ctx.requestId },
+      {
+        actorIp: ctx.actorIp,
+        userAgent: ctx.userAgent,
+        requestId: ctx.requestId,
+        limitsOverride: { requestsPerMinute: rpm },
+      },
     );
     ctx.rateLimitDecision = "allowed";
   } catch (e) {
@@ -468,6 +479,7 @@ export async function runGateway(
       ctx.rateLimitDecision = "minute_block";
       throw new V1Error("rate_limit_exceeded", retry ?? null);
     }
+    ctx.rateLimitDecision = "not_evaluated";
     throw new V1Error("internal_error");
   }
 
