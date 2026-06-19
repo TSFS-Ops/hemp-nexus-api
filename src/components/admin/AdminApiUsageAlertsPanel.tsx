@@ -350,10 +350,10 @@ export function AdminApiUsageAlertsPanel() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={10} className="p-4 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">Loading…</td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={10} className="p-4 text-center text-muted-foreground">No alerts for the selected filters.</td></tr>
+              <tr><td colSpan={11} className="p-4 text-center text-muted-foreground">No alerts for the selected filters.</td></tr>
             )}
             {!loading && rows.map((r) => (
               <tr key={r.id} className="border-t border-border align-top">
