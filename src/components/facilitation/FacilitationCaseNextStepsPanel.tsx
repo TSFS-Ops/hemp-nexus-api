@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { NEXT_STEP_STATUS_LABELS, type FacilitationNextStepStatus } from "@/lib/facilitation-case-state";
+import { NEXT_STEP_STATUS_LABELS, INVITE_UNOPENED_NEXT_STEP_KIND, type FacilitationNextStepStatus } from "@/lib/facilitation-case-state";
 import { friendlyFacilitationError } from "@/lib/facilitation-labels";
 
 type NextStepRow = {
@@ -26,7 +26,7 @@ type NextStepRow = {
   next_step_type: string;
   title: string;
   description: string;
-  required_actions: string[] | null;
+  required_actions: unknown;
   assigned_to: string | null;
   created_at: string;
   completed_at: string | null;
