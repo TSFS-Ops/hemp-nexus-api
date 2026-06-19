@@ -39,15 +39,24 @@ const HQ = "src/pages/HQ.tsx";
 const GATEWAY = "supabase/functions/public-api/index.ts";
 
 function findBatch9Migration(): string {
+  // Return ONLY the migration file that introduces can_access_api_monitoring
+  // — i.e. Batch 9 itself. Later batches (e.g. Batch 11) may recreate
+  // get_api_monitoring_overview to wire new fields; we don't want their
+  // text bleeding into Batch-9-specific exclusion checks.
+  const dir = path.join(ROOT, "supabase/migrations");
+  for (const f of fs.readdirSync(dir)) {
+    const body = fs.readFileSync(path.join(dir, f), "utf-8");
+    if (/can_access_api_monitoring/.test(body)) return body;
+  }
+  return "";
+}
+
+function findMonitoringOverviewMigrations(): string {
   const dir = path.join(ROOT, "supabase/migrations");
   let combined = "";
   for (const f of fs.readdirSync(dir)) {
     const body = fs.readFileSync(path.join(dir, f), "utf-8");
-    if (
-      /get_api_monitoring_overview/.test(body) ||
-      /can_access_api_monitoring/.test(body) ||
-      /log_api_monitoring_csv_export/.test(body)
-    ) {
+    if (/get_api_monitoring_overview/.test(body) || /log_api_monitoring_csv_export/.test(body)) {
       combined += "\n" + body;
     }
   }
