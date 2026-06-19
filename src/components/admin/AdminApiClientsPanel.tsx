@@ -1503,7 +1503,7 @@ export function CommercialPlanCataloguePanel() {
     try {
       const { error } = await SBT.from("api_commercial_plans").update({ active: false }).eq("id", p.id);
       if (error) throw error;
-      await supabase.from("audit_logs").insert({
+      await (supabase.from("audit_logs") as any).insert({
         action: "api_commercial_plan.deactivated",
         entity_type: "api_commercial_plan",
         entity_id: p.id,
