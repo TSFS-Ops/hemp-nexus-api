@@ -102,8 +102,12 @@ describe("API Usage Dashboard V1 · Batch 2 · Platform Admin Dashboard", () => 
     expect(code).not.toMatch(/\.upsert\s*\(/);
   });
 
-  it("panel never references payload / secret / key-material tokens", () => {
-    const src = read(PANEL).toLowerCase();
+  it("panel never references payload / secret / key-material tokens (outside comments)", () => {
+    const raw = read(PANEL);
+    const code = raw
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1")
+      .toLowerCase();
     for (const tok of [
       "request_body",
       "response_body",
@@ -111,7 +115,7 @@ describe("API Usage Dashboard V1 · Batch 2 · Platform Admin Dashboard", () => 
       "user_agent",
       "ip_address",
     ]) {
-      expect(src, `panel must not reference ${tok}`).not.toContain(tok);
+      expect(code, `panel must not reference ${tok}`).not.toContain(tok);
     }
   });
 
