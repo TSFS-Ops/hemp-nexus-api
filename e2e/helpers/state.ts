@@ -1,13 +1,21 @@
 /**
  * Before/after state capture for wrong-action tests.
  *
- * Uses the service-role key (CI-only) to read a stable snapshot of a
- * record so the "no mutation" assertion is authoritative — RLS-scoped
- * reads from a denied user would themselves return nothing, making
- * "no mutation" trivially true. Service-role read is required to prove
- * the row really did not change.
+ * Uses the service-role key to read an authoritative snapshot of a
+ * record so the "no mutation" assertion is real — an RLS-scoped read
+ * by a denied user would trivially return nothing.
  *
- * Refuses to run in production: requires E2E_RN_ENV ∈ {staging,test}.
+ * Environments permitted:
+ *   - staging  | test       — unrestricted snapshot of any seeded row
+ *   - live-demo             — current/production DB, but every record
+ *                             read MUST resolve to a row flagged
+ *                             is_demo=true (or, for tables without
+ *                             is_demo, must carry the rn_seeder marker
+ *                             in metadata / reason / notes). This makes
+ *                             it safe to run the runtime suite against
+ *                             the current build without a separate
+ *                             staging stack, while guaranteeing the
+ *                             suite cannot touch real client data.
  */
 import { createClient } from "@supabase/supabase-js";
 import type { RecordKey } from "../fixtures/records";
@@ -20,8 +28,10 @@ function envOrThrow(name: string): string {
 
 function adminClient() {
   const env = process.env.E2E_RN_ENV;
-  if (env !== "staging" && env !== "test") {
-    throw new Error(`state.ts: refuses to run with E2E_RN_ENV=${env}. Must be staging|test.`);
+  if (env !== "staging" && env !== "test" && env !== "live-demo") {
+    throw new Error(
+      `state.ts: refuses to run with E2E_RN_ENV=${env}. Must be staging | test | live-demo.`,
+    );
   }
   return createClient(
     envOrThrow("SUPABASE_URL"),
@@ -41,10 +51,38 @@ const TABLE: Record<RecordKey, string> = {
   apiKeyId: "api_keys",
 };
 
+/** Tables on which we enforce an is_demo=true guard in live-demo mode. */
+const DEMO_FLAGGED: Partial<Record<RecordKey, true>> = {
+  tradeRequestId: true, matchId: true, poiId: true, wadId: true,
+};
+
+function assertDemoSafe(key: RecordKey, row: Record<string, unknown> | null) {
+  if (process.env.E2E_RN_ENV !== "live-demo" || row == null) return;
+  if (DEMO_FLAGGED[key]) {
+    if (row["is_demo"] !== true) {
+      throw new Error(
+        `state.ts: live-demo refusal — ${TABLE[key]} row ${String(row["id"])} is not is_demo=true. ` +
+          `The Role-Negative suite must never touch real client data.`,
+      );
+    }
+    return;
+  }
+  // match_documents / refund_requests / export_requests / api_keys have
+  // no is_demo column; require an RN-seeder fingerprint.
+  const fingerprint = JSON.stringify(row).toLowerCase();
+  if (!/rn[-_ ]?test|rn_seeder/.test(fingerprint)) {
+    throw new Error(
+      `state.ts: live-demo refusal — ${TABLE[key]} row ${String(row["id"])} lacks the rn_seeder fingerprint. ` +
+        `Refusing to operate on a row that may belong to a real tenant.`,
+    );
+  }
+}
+
 export async function captureState(key: RecordKey, id: string): Promise<unknown> {
   const c = adminClient();
   const { data, error } = await c.from(TABLE[key]).select("*").eq("id", id).maybeSingle();
   if (error) throw new Error(`captureState(${key}, ${id}): ${error.message}`);
+  assertDemoSafe(key, data as Record<string, unknown> | null);
   return data;
 }
 
