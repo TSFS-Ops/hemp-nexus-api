@@ -1108,10 +1108,67 @@ export type Database = {
           },
         ]
       }
+      api_ip_allowlist_exceptions: {
+        Row: {
+          active: boolean
+          api_client_id: string
+          approved_at: string | null
+          approved_by: string | null
+          compensating_controls: string | null
+          created_at: string
+          created_by: string | null
+          deactivated_at: string | null
+          deactivated_by: string | null
+          deactivated_reason: string | null
+          id: string
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          api_client_id: string
+          approved_at?: string | null
+          approved_by?: string | null
+          compensating_controls?: string | null
+          created_at?: string
+          created_by?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivated_reason?: string | null
+          id?: string
+          reason: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          api_client_id?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          compensating_controls?: string | null
+          created_at?: string
+          created_by?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivated_reason?: string | null
+          id?: string
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_ip_allowlist_exceptions_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           allowed_ips: string[] | null
           allowed_origins: string[] | null
+          api_client_id: string | null
           created_at: string
           created_by: string | null
           environment: string | null
@@ -1130,6 +1187,7 @@ export type Database = {
         Insert: {
           allowed_ips?: string[] | null
           allowed_origins?: string[] | null
+          api_client_id?: string | null
           created_at?: string
           created_by?: string | null
           environment?: string | null
@@ -1148,6 +1206,7 @@ export type Database = {
         Update: {
           allowed_ips?: string[] | null
           allowed_origins?: string[] | null
+          api_client_id?: string | null
           created_at?: string
           created_by?: string | null
           environment?: string | null
@@ -1165,6 +1224,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "api_keys_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "api_keys_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -1176,9 +1242,13 @@ export type Database = {
       api_request_logs: {
         Row: {
           api_key_id: string | null
+          billable: boolean
           created_at: string
           endpoint: string
+          environment: string | null
+          error_code: string | null
           error_message: string | null
+          external_reference: string | null
           id: string
           idempotency_key: string | null
           ip_address: string | null
@@ -1188,14 +1258,19 @@ export type Database = {
           request_id: string | null
           response_body: Json | null
           response_time_ms: number
+          scope_used: string | null
           status_code: number
           user_agent: string | null
         }
         Insert: {
           api_key_id?: string | null
+          billable?: boolean
           created_at?: string
           endpoint: string
+          environment?: string | null
+          error_code?: string | null
           error_message?: string | null
+          external_reference?: string | null
           id?: string
           idempotency_key?: string | null
           ip_address?: string | null
@@ -1205,14 +1280,19 @@ export type Database = {
           request_id?: string | null
           response_body?: Json | null
           response_time_ms: number
+          scope_used?: string | null
           status_code: number
           user_agent?: string | null
         }
         Update: {
           api_key_id?: string | null
+          billable?: boolean
           created_at?: string
           endpoint?: string
+          environment?: string | null
+          error_code?: string | null
           error_message?: string | null
+          external_reference?: string | null
           id?: string
           idempotency_key?: string | null
           ip_address?: string | null
@@ -1222,6 +1302,7 @@ export type Database = {
           request_id?: string | null
           response_body?: Json | null
           response_time_ms?: number
+          scope_used?: string | null
           status_code?: number
           user_agent?: string | null
         }
