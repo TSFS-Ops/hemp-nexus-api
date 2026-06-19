@@ -89,29 +89,40 @@ Deno.serve(async (req) => {
           'API_CLIENT_PRODUCTION_CHECKLIST_INCOMPLETE',
           'API_KEY_PRODUCTION_REQUIRES_IP_ALLOWLIST_OR_EXCEPTION',
           'API_CLIENT_SANDBOX_NOT_APPROVED',
+          'API_CLIENT_COMMERCIAL_OWNER_SIGN_OFF_REQUIRED',
+          'API_CLIENT_COMPLIANCE_OWNER_SIGN_OFF_REQUIRED',
+          'API_KEY_PRODUCTION_EXPIRY_EXCEEDS_12_MONTHS',
+          'API_KEY_SANDBOX_EXPIRY_EXCEEDS_90_DAYS',
         ];
         const matchedCode = gateCodes.find((c) => msg.includes(c));
         if (matchedCode) {
-          await supabase.from('audit_logs').insert({
-            org_id: authCtx.orgId,
-            actor_user_id: actorUserId,
-            actor_api_key_id: actorApiKeyId,
-            action: matchedCode.startsWith('API_KEY_PRODUCTION_REQUIRES_IP')
-              ? 'api_key.blocked.production_ip_required'
-              : matchedCode.startsWith('API_CLIENT_PRODUCTION')
-                ? 'api_key.blocked.production_not_approved'
-                : matchedCode.startsWith('API_CLIENT_SANDBOX')
-                  ? 'api_key.blocked.sandbox_not_approved'
-                  : 'api_key.blocked.client_status',
-            entity_type: 'api_client',
-            entity_id: api_client_id,
-            metadata: {
-              gate_code: matchedCode,
-              environment: environment ?? null,
-              request_id: requestId,
-              actor_ip: authCtx.actorIp ?? null,
-            },
-          });
+          // Sandprod Batch-3 canonical block audit for production-key
+          // attempts. Legacy audit kept alongside for back-compat.
+          const isProdAttempt = environment === 'production';
+          const canonicalBlock = isProdAttempt
+            ? (matchedCode === 'API_CLIENT_PRODUCTION_CHECKLIST_INCOMPLETE'
+               ? 'api.production_access.checklist_failed'
+               : 'api.production_key.creation_blocked')
+            : 'api_key.blocked.client_status';
+          const legacyBlock = matchedCode.startsWith('API_KEY_PRODUCTION_REQUIRES_IP')
+            ? 'api_key.blocked.production_ip_required'
+            : matchedCode.startsWith('API_CLIENT_PRODUCTION')
+              ? 'api_key.blocked.production_not_approved'
+              : matchedCode.startsWith('API_CLIENT_SANDBOX')
+                ? 'api_key.blocked.sandbox_not_approved'
+                : 'api_key.blocked.client_status';
+          const blockMeta = {
+            gate_code: matchedCode,
+            environment: environment ?? null,
+            request_id: requestId,
+            actor_ip: authCtx.actorIp ?? null,
+          };
+          await supabase.from('audit_logs').insert([
+            { org_id: authCtx.orgId, actor_user_id: actorUserId, actor_api_key_id: actorApiKeyId,
+              action: canonicalBlock, entity_type: 'api_client', entity_id: api_client_id, metadata: blockMeta },
+            { org_id: authCtx.orgId, actor_user_id: actorUserId, actor_api_key_id: actorApiKeyId,
+              action: legacyBlock, entity_type: 'api_client', entity_id: api_client_id, metadata: blockMeta },
+          ]);
           throw new ApiException('FORBIDDEN', `API key issuance blocked: ${matchedCode}`, 403);
         }
         handleDatabaseError(error, requestId);
