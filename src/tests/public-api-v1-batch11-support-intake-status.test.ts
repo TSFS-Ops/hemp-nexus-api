@@ -290,7 +290,12 @@ describe("Public API V1 · Batch 11 · support ticket intake & status visibility
 
   // ─── Hard exclusions ──────────────────────────────────────────────
   it("no payment / invoice / webhook / write-API / file-upload logic in Batch 11", () => {
-    const mig = findBatch11Migration();
+    // Strip SQL comments so the migration's "no payment / no webhook" header
+    // does not trip the banned-token grep.
+    const raw = findBatch11Migration();
+    const mig = raw
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/--[^\n]*/g, "");
     const banned = [
       /payment_intent/i,
       /\binvoice\b/i,
