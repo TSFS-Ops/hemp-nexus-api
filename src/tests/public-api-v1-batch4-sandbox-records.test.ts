@@ -174,8 +174,8 @@ describe("Public API V1 · Batch 4 · sandbox seed records", () => {
     }
   });
 
-  it("hard exclusions — no Batch-4-forbidden V1 surface introduced", () => {
-    // No new edge functions for counterparty / usage / docs / openapi / billing / support / webhooks
+  it("hard exclusions — Batch-4-forbidden surfaces remain absent (counterparty is in-scope from Batch 5)", () => {
+    // No standalone per-endpoint edge functions.
     expect(exists("supabase/functions/public-api-counterparty-lookup")).toBe(false);
     expect(exists("supabase/functions/public-api-counterparty-summary")).toBe(false);
     expect(exists("supabase/functions/public-api-usage-current")).toBe(false);
@@ -183,17 +183,14 @@ describe("Public API V1 · Batch 4 · sandbox seed records", () => {
     expect(exists("supabase/functions/public-api-openapi")).toBe(false);
     expect(exists("supabase/functions/public-api-support-intake")).toBe(false);
 
-    // The existing public-api entry was NOT extended with these routes
-    // (strip comments so banner prose like "no counterparty" doesn't trip us).
+    // The shared public-api entry must still NOT dispatch usage/docs/openapi.
     const entryRaw = read("supabase/functions/public-api/index.ts");
     const entry = entryRaw
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-    expect(entry).not.toMatch(/counterparty/i);
     expect(entry).not.toMatch(/\/v1\/usage/);
     expect(entry).not.toMatch(/\/v1\/docs/);
     expect(entry).not.toMatch(/openapi/i);
-    expect(entry).not.toMatch(/sandbox_record|api_sandbox_records/);
 
     // No Batch 4 migration introduces commercial plans / support intake / webhook changes
     expect(mig).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);

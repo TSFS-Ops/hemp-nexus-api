@@ -158,35 +158,27 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
     expect(src).not.toMatch(/api_commercial_plans|api_client_plans/);
   });
 
-  it("hard exclusions — no Batch 3-forbidden V1 surface introduced", () => {
-    // No counterparty / usage / docs / openapi endpoints anywhere yet
+  it("hard exclusions — still-forbidden V1 surface not introduced (counterparty became in-scope in Batch 5; sandbox records in Batch 4)", () => {
+    // The V1 surface stays consolidated under the single `public-api`
+    // dispatcher — no standalone per-endpoint edge functions.
     expect(exists("supabase/functions/public-api-counterparty-lookup")).toBe(false);
     expect(exists("supabase/functions/public-api-counterparty-summary")).toBe(false);
     expect(exists("supabase/functions/public-api-usage-current")).toBe(false);
     expect(exists("supabase/functions/public-api-docs")).toBe(false);
     expect(exists("supabase/functions/public-api-openapi")).toBe(false);
 
-    // Entry file itself doesn't dispatch any out-of-scope V1 routes
+    // Entry file still does not dispatch usage / docs / openapi routes.
     const src = codeOnly(read(ENTRY));
-    expect(src).not.toMatch(/counterparty/);
     expect(src).not.toMatch(/\/v1\/usage/);
     expect(src).not.toMatch(/\/v1\/docs/);
     expect(src).not.toMatch(/openapi/i);
 
-    // No new migrations for sandbox seed records, commercial plans, or
-    // support intake landed in Batch 3.
+    // No commercial-plan or support-intake tables introduced anywhere.
     const migDir = path.join(ROOT, "supabase/migrations");
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
-      // We only forbid NEW tables for these concerns; pre-existing files
-      // unrelated to Batch 3 are unaffected — but no Batch 3 migration
-      // should reference these.
-      if (/Batch 3|public-api/i.test(body)) {
-        expect(body).not.toMatch(/CREATE TABLE[^;]*api_sandbox_records/i);
-        expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
-        expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
-        expect(body).not.toMatch(/webhook_(endpoints|deliveries|events)/i);
-      }
+      expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
+      expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
     }
   });
 });

@@ -1,28 +1,52 @@
 /**
- * Public API V1 · Batch 3 — Gateway entrypoint.
+ * Public API V1 — Gateway entrypoint.
  *
- * Implements only the safe read-only foundation:
- *   GET /v1/health   → liveness probe (requires api:status_read)
- *   GET /v1/status   → key/client status echo (requires api:status_read)
+ * Batch 3 routes:
+ *   GET  /v1/health                    → api:status_read
+ *   GET  /v1/status                    → api:status_read
  *
- * All requests go through runGateway() in _shared/public-api-v1.ts which
- * enforces: env header, X-API-Key, key status/expiry, environment match,
- * linked api_client status, IP allowlist, required scope, rate limit.
- * Each request writes exactly one row into api_request_logs with the
- * Batch 2 columns populated (billable=false, scope_used, environment,
- * external_reference, error_code).
+ * Batch 5 routes (read-only institutional signal layer):
+ *   POST /v1/counterparty/lookup       → counterparty:lookup (+ signals:read)
+ *   GET  /v1/counterparty/{id}/summary → profile:summary_read (+ signals:read)
  *
- * Hard exclusions for Batch 3 — no counterparty lookup, no counterparty
- * summary, no usage/current, no /v1/docs, no OpenAPI, no sandbox seed
- * records, no billing, no dashboards, no support intake, no webhook
- * changes, no write paths, no POI/WaD/payment/credit/compliance/
- * verification decisions, no document/evidence exposure.
+ * Every request flows through runGateway() in _shared/public-api-v1.ts
+ * which enforces env header, X-API-Key, key status/expiry, environment
+ * match, linked api_client status, IP allowlist, required scope and rate
+ * limit. Every request body flows through the Batch 5 allowlist mapper
+ * (_shared/public-api-v1-counterparty.ts) so only approved fields can
+ * leave the surface. Sandbox calls read ONLY from api_sandbox_records;
+ * production calls remain conservative (no_match) until a safe approved
+ * production source is wired in a later batch.
+ *
+ * Hard exclusions still in force: no /v1/usage/current, no /v1/docs, no
+ * OpenAPI, no billing, no dashboards, no support intake, no webhook
+ * changes, no write paths, no document/evidence exposure, no internal
+ * tables touched, no POI/WaD/payment/credit/compliance/verification
+ * decisions.
  */
 
-import { handleV1, jsonResponse, errorBody } from "../_shared/public-api-v1.ts";
+import { handleV1, jsonResponse, errorBody, V1Error } from "../_shared/public-api-v1.ts";
 import { corsHeaders as buildCorsHeaders } from "../_shared/cors.ts";
+import {
+  validateLookupInput,
+  resolveSandboxRow,
+  dispatchSandboxRow,
+  buildNoMatchEnvelope,
+  buildSummaryEnvelope,
+  assertNoForbiddenFields,
+  type LookupInput,
+} from "../_shared/public-api-v1-counterparty.ts";
 
 const V1_SCOPE = "api:status_read";
+// Back-compat alias preserved so Batch-5 routes can refer by their role.
+const V1_STATUS_SCOPE = V1_SCOPE;
+const V1_LOOKUP_SCOPE = "counterparty:lookup";
+const V1_SUMMARY_SCOPE = "profile:summary_read";
+// Signals scope check — applied in-handler because the response carries
+// risk_signal_summary / verification_status (signal-bearing fields).
+const V1_SIGNALS_SCOPE = "signals:read";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
@@ -33,13 +57,12 @@ Deno.serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  // Strip /functions/v1/public-api prefix; what remains is the V1 path.
   const parts = url.pathname.split("/").filter(Boolean);
   while (parts.length && parts[0] !== "v1") parts.shift();
 
   // GET /v1/health
   if (req.method === "GET" && parts[0] === "v1" && parts[1] === "health" && parts.length === 2) {
-    return handleV1(req, "v1.health", "/v1/health", V1_SCOPE, async (ctx) => ({
+    return handleV1(req, "v1.health", "/v1/health", V1_STATUS_SCOPE, async (ctx) => ({
       body: {
         request_id: ctx.requestId,
         environment: ctx.environment,
@@ -52,7 +75,7 @@ Deno.serve(async (req) => {
 
   // GET /v1/status
   if (req.method === "GET" && parts[0] === "v1" && parts[1] === "status" && parts.length === 2) {
-    return handleV1(req, "v1.status", "/v1/status", V1_SCOPE, async (ctx, _supabase, gw) => {
+    return handleV1(req, "v1.status", "/v1/status", V1_STATUS_SCOPE, async (ctx, _supabase, gw) => {
       const expires_at = gw.apiKey.expires_at ?? null;
       const expired = expires_at ? new Date(expires_at).getTime() <= Date.now() : false;
       return {
@@ -69,8 +92,98 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Unknown V1 path — return canonical 404 envelope, but do NOT leak
-  // implementation details or table names.
+  // POST /v1/counterparty/lookup
+  if (
+    req.method === "POST" &&
+    parts[0] === "v1" && parts[1] === "counterparty" && parts[2] === "lookup" && parts.length === 3
+  ) {
+    return handleV1(req, "v1.counterparty.lookup", "/v1/counterparty/lookup", V1_LOOKUP_SCOPE, async (ctx, supabase, gw) => {
+      // Signal-bearing response → require signals:read in addition.
+      const held: string[] = Array.isArray(gw.apiKey.scopes) ? gw.apiKey.scopes : [];
+      if (!held.includes(V1_SIGNALS_SCOPE) && !held.includes("signals:*")) {
+        throw new V1Error("insufficient_scope");
+      }
+
+      // Parse + validate body
+      let payload: LookupInput;
+      try {
+        payload = (await req.json()) as LookupInput;
+        if (!payload || typeof payload !== "object") throw new Error("bad");
+      } catch {
+        throw new V1Error("missing_required_field");
+      }
+      const input = validateLookupInput(payload);
+      // External reference may also be supplied in the body.
+      if (!ctx.externalReference && input.external_reference) {
+        ctx.externalReference = input.external_reference;
+      }
+
+      if (ctx.environment === "sandbox") {
+        // Sandbox calls are NEVER billable.
+        ctx.billable = false;
+        const { row } = await resolveSandboxRow(supabase, input);
+        if (!row) {
+          return { body: buildNoMatchEnvelope(ctx) };
+        }
+        const body = dispatchSandboxRow(ctx, row);
+        assertNoForbiddenFields(body);
+        return { body };
+      }
+
+      // Production path — CONSERVATIVE.
+      // No safe approved production source for public API lookup exists
+      // yet; we return a no_match envelope rather than expose internal
+      // tables. If a successful production match becomes available in a
+      // later batch, mark `ctx.billable = true` ONLY then.
+      ctx.billable = false; // no successful production data returned yet
+      const body = buildNoMatchEnvelope(ctx);
+      // Sentinel: production successful lookups WILL set billable=true.
+      // (This branch is currently unreachable; left here as a binding
+      // contract for the later production-source batch.)
+      // if (productionMatchFound) { ctx.billable = true; }
+      assertNoForbiddenFields(body);
+      return { body };
+    });
+  }
+
+  // GET /v1/counterparty/{id}/summary
+  if (
+    req.method === "GET" &&
+    parts[0] === "v1" && parts[1] === "counterparty" && parts[3] === "summary" && parts.length === 4
+  ) {
+    return handleV1(req, "v1.counterparty.summary", "/v1/counterparty/summary", V1_SUMMARY_SCOPE, async (ctx, supabase, gw) => {
+      const held: string[] = Array.isArray(gw.apiKey.scopes) ? gw.apiKey.scopes : [];
+      if (!held.includes(V1_SIGNALS_SCOPE) && !held.includes("signals:*")) {
+        throw new V1Error("insufficient_scope");
+      }
+      const id = parts[2];
+      if (!id || !UUID_RE.test(id)) throw new V1Error("invalid_identifier_format");
+
+      if (ctx.environment === "sandbox") {
+        ctx.billable = false;
+        const { data: row, error } = await supabase
+          .from("api_sandbox_records")
+          .select("*")
+          .eq("id", id)
+          .eq("active", true)
+          .maybeSingle();
+        if (error || !row) throw new V1Error("no_match");
+        // Marker-only scenarios should never be returned as a summary —
+        // they have no real legal entity fields.
+        if (!row.legal_name) throw new V1Error("no_match");
+        const body = buildSummaryEnvelope(ctx, row);
+        assertNoForbiddenFields(body);
+        return { body };
+      }
+
+      // Production path — conservative; no internal tables exposed.
+      // Sandbox-only records must never be returned to production keys.
+      ctx.billable = false;
+      throw new V1Error("no_match");
+    });
+  }
+
+  // Unknown V1 path — return canonical 404 envelope, never leak internals.
   const requestId = crypto.randomUUID();
   return jsonResponse(
     errorBody("no_match", requestId, null),

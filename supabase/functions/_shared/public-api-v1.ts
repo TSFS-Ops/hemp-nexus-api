@@ -100,6 +100,10 @@ export interface V1RequestCtx {
   apiKeyId: string | null;
   orgId: string | null;
   apiClientId: string | null;
+  // Batch 5 — set by the endpoint executor when a successful response
+  // represents a billable production call. Health/status/sandbox/validation/
+  // auth/scope/system errors must leave this false.
+  billable: boolean;
   responseHeaders: Record<string, string>;
 }
 
@@ -117,6 +121,7 @@ export function newCtx(req: Request, endpointTag: string): V1RequestCtx {
     apiKeyId: null,
     orgId: null,
     apiClientId: null,
+    billable: false,
     responseHeaders: {},
   };
 }
@@ -200,8 +205,10 @@ export async function logV1Request(
       ip_address: ctx.actorIp,
       user_agent: ctx.userAgent,
       request_id: ctx.requestId,
-      // Batch 2 additive columns
-      billable: false,                // health/status are never billable
+      // Batch 2 additive columns; billable comes from ctx (Batch 5).
+      // Health/status/sandbox/validation/auth/scope/system-error paths
+      // never set ctx.billable, so the default is false here.
+      billable: errorCode === null ? ctx.billable : false,
       scope_used: ctx.scopeUsed,
       environment: ctx.environment,
       external_reference: ctx.externalReference,
