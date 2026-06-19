@@ -38,6 +38,17 @@ const REQUIRED = [
   "api.production_access.rejected",
   "api.production_access.reset",
   "api.production_access.approved",
+  // ─── Sand/Prod Batch 7 — public-API webhook taxonomy ───────────────
+  "api.webhook.endpoint.created",
+  "api.webhook.endpoint.updated",
+  "api.webhook.endpoint.enabled",
+  "api.webhook.endpoint.disabled",
+  "api.webhook.test.sent",
+  "api.webhook.delivery.succeeded",
+  "api.webhook.delivery.failed",
+  "api.webhook.delivery.retry_scheduled",
+  "api.webhook.production.enabled",
+  "api.webhook.production.blocked_until_sandbox_tested",
 ];
 
 function walk(dir) {

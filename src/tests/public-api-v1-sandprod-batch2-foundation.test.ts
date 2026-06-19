@@ -155,12 +155,9 @@ describe("Public API V1 · sandbox/production separation · Batch 2 foundation",
     expect(mig, "api_keys lifecycle columns migration not found").not.toBeNull();
   });
 
-  it("Batch 2 stays scoped: no webhook dispatcher, dashboard, or alert catalogue introduced", () => {
-    // Negative guard — webhook dispatcher / dashboard / alert catalogue
-    // remain out of scope through Batch 3. The four admin key-lifecycle
-    // functions were introduced in Batch 3 and are intentionally NOT
-    // asserted here any more.
+  it("Batch 2 stays scoped: no dashboard or alert catalogue introduced (webhook dispatcher arrives in Batch 7)", () => {
     const files = readdirSync(join(ROOT, "supabase/functions"));
-    expect(files).not.toContain("public-api-webhooks-dispatch");
+    expect(files).not.toContain("public-api-alerts-catalogue");
+    expect(files).not.toContain("public-api-usage-dashboard");
   });
 });
