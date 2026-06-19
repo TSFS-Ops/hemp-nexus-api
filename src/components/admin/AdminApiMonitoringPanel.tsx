@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { auditedDownloadCSVRaw } from "@/lib/download-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { RefreshCw, Download, ShieldAlert, Lock } from "lucide-react";
 
@@ -276,22 +277,27 @@ export function AdminApiMonitoringPanel() {
           .join(","),
       )
       .join("\n");
-    const csv = headers.join(",") + "\n" + body;
+    const csvBody = headers.join(",") + "\n" + body;
 
+    const filters = {
+      environment: environment === "any" ? null : environment,
+      status_label: statusLabel === "any" ? null : statusLabel,
+      api_client_id: apiClientId || null,
+      plan_id: planId || null,
+      min_usage_pct: minUsagePct === "" ? null : Number(minUsagePct),
+      errors_only: errorsOnly,
+      period_start: periodStart,
+      period_end: periodEnd,
+    };
+
+    // Batch 9 contract: domain-specific audit row via SECURITY DEFINER RPC.
     try {
       const { error } = await supabase.rpc(
         "log_api_monitoring_csv_export" as never,
         {
           p_period_start: periodStart,
           p_period_end: periodEnd,
-          p_filters: {
-            environment: environment === "any" ? null : environment,
-            status_label: statusLabel === "any" ? null : statusLabel,
-            api_client_id: apiClientId || null,
-            plan_id: planId || null,
-            min_usage_pct: minUsagePct === "" ? null : Number(minUsagePct),
-            errors_only: errorsOnly,
-          },
+          p_filters: filters,
           p_row_count: rows.length,
         } as never,
       );
@@ -301,13 +307,23 @@ export function AdminApiMonitoringPanel() {
       return;
     }
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `api-monitoring-${periodStart.slice(0, 7)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // AUD-017 / AUD-012: route the actual byte delivery through the
+    // audited download helper so an `audit_logs` row is written before
+    // the file leaves the browser.
+    const result = await auditedDownloadCSVRaw(csvBody, {
+      filename: `api-monitoring-${periodStart.slice(0, 7)}.csv`,
+      target_type: "api_monitoring_overview",
+      reportName: "Public API V1 — Internal Monitoring",
+      rowCount: rows.length,
+      filters,
+      sensitive: false,
+      purpose: "internal_api_monitoring_export",
+      data_categories: ["api_monitoring"],
+    });
+    if (!result.ok) {
+      toast.error(`Export blocked: ${result.error ?? "audit rejected"}`);
+      return;
+    }
     toast.success(`Exported ${rows.length} rows (audit logged).`);
   }, [
     isPlatformAdmin,
