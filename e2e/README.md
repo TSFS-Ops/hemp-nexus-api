@@ -105,3 +105,38 @@ The zip contains `evidence/index.html` (per-row pass/fail table with
 request IDs to follow into edge-function logs) and the full Playwright
 HTML report. No request bodies, auth headers, or TOTP codes are ever
 captured — only response trace headers from a fixed allowlist.
+
+---
+
+## Role-Negative & E2E suite (one command)
+
+End-to-end runner: seed → coverage guard → critical Playwright suite → evidence zip → run summary.
+
+```bash
+export SUPABASE_URL="https://<ref>.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="..."          # admin service-role key
+export E2E_RN_PASSWORD="ChangeMe-RoleNeg-2026"  # ≥12 chars
+
+# Inspect what's set (values never printed) and confirm output paths:
+bash scripts/run-role-negative-e2e.sh --show-env
+
+# Run the full suite:
+bash scripts/run-role-negative-e2e.sh
+```
+
+Help: `bash scripts/run-role-negative-e2e.sh --help`
+
+Outputs (final two lines of the run):
+
+```
+==> EVIDENCE ZIP: /mnt/documents/role-negative-e2e-<run-id>.zip
+==> RUN SUMMARY: /mnt/documents/role-negative-e2e-<run-id>.run-summary.json
+```
+
+- `*.zip` — per-test artefacts, evidence.jsonl, Playwright HTML report.
+- `*.run-summary.json` — pass/fail/skip counts, skipped-test list (incl. RN-DEF-06),
+  exit status, and `touched_real_data` flags (all `false` by construction: suite is
+  pinned to `E2E_RN_ENV=live-demo`, seeded TEST/UAT rows, sandbox API keys).
+
+Override the output directory with `EVIDENCE_OUT_DIR=/path`. Disable the summary
+file with `WRITE_RUN_SUMMARY=0`.
