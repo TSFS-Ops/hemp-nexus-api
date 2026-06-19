@@ -70,7 +70,15 @@ describe("DATA-004 Phase 3 — single-sweeper enforcement guard", () => {
       resolve(ROOT, "src/components/admin/OrgRetentionHealthPanel.tsx"),
       "utf8",
     );
-    expect(panel).toMatch(/PARTIAL — only email_send_log is wired/);
+    // DATA-004 Batch 21 stale re-pin (2026-06-19):
+    //   Previous stale pin used an em-dash:
+    //     /PARTIAL — only email_send_log is wired/
+    //   The canonical OrgRetentionHealthPanel banner uses an ASCII
+    //   hyphen ("PARTIAL - only email_send_log is wired") and that is
+    //   the stable surface marker proving the panel still reflects
+    //   email_send_log enforcement posture. Re-pinned to the live
+    //   string; component intentionally not modified.
+    expect(panel).toMatch(/PARTIAL - only email_send_log is wired/);
     expect(panel).toMatch(/enforcement_wired/);
   });
 });
