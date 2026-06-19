@@ -444,6 +444,19 @@ export function AdminApiUsageDashboardPanel() {
           <AdminApiSecuritySignalsPanel />
         </CardContent>
       </Card>
+
+      <SectionHeader
+        title="Alerts & suspicious activity (Batch 4)"
+        subtitle="Internal-only alerts generated from existing logs and key lifecycle. Flags do not auto-clear."
+      />
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">API Usage Alerts · internal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AdminApiUsageAlertsPanel />
+        </CardContent>
+      </Card>
     </div>
   );
 }
