@@ -196,17 +196,24 @@ ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================================
 -- 6. FACILITATION CASE EVENTS  (positive response on F3 only)
--- Action label must match an existing audit name (see check-facilitation-case-audit-names.mjs).
--- Confirm pinned audit name before apply.
+-- Audit names reconfirmed against scripts/check-facilitation-case-audit-names.mjs
+-- (canonical namespace is `facilitation_case.*` with an underscore).
+--   * facilitation_case.status_changed              — admin_reviewing → counterparty_responded
+--   * facilitation_case.positive_response_recorded  — Batch 9B positive response
+--   * facilitation_case.next_step_created           — emitted in §7 row's audit trail
 -- =====================================================================
 INSERT INTO public.facilitation_case_events (id, case_id, actor_user_id, action, from_status, to_status, payload)
 VALUES
   (gen_random_uuid(), 'b9f30000-0000-0000-0000-000000000003', :'evidence_case_owner_uid',
-   'facilitation.case.counterparty_responded', 'admin_reviewing', 'counterparty_responded',
+   'facilitation_case.status_changed', 'admin_reviewing', 'counterparty_responded',
+   jsonb_build_object('evidence_fixture', true)),
+  (gen_random_uuid(), 'b9f30000-0000-0000-0000-000000000003', :'evidence_case_owner_uid',
+   'facilitation_case.positive_response_recorded', 'counterparty_responded', 'counterparty_responded',
    jsonb_build_object('evidence_fixture', true, 'sentiment', 'positive'));
 
 -- =====================================================================
 -- 7. NEXT STEPS  (positive-response task on F3)
+-- Paired event `facilitation_case.next_step_created` is recorded for audit parity.
 -- =====================================================================
 INSERT INTO public.facilitation_case_next_steps (
     id, case_id, created_by, assigned_to, status, next_step_type, title, description, required_actions
@@ -217,6 +224,14 @@ VALUES
    'Evidence 9F — positive response follow-up',
    'Evidence fixture: confirm contact details and arrange next conversation.',
    ARRAY['Confirm contact details', 'Schedule follow-up call']);
+
+INSERT INTO public.facilitation_case_events (id, case_id, actor_user_id, action, from_status, to_status, payload)
+VALUES
+  (gen_random_uuid(), 'b9f30000-0000-0000-0000-000000000003', :'evidence_case_owner_uid',
+   'facilitation_case.next_step_created', 'counterparty_responded', 'counterparty_responded',
+   jsonb_build_object('evidence_fixture', true, 'next_step_type', 'positive_response_followup'));
+
+
 
 -- =====================================================================
 -- 8. REQUESTER-SAFE NOTIFICATION  (F4)
