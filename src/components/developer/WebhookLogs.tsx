@@ -303,13 +303,31 @@ export default function WebhookLogs() {
                 </div>
                 <h2 className="mt-1 text-lg text-slate-100 tracking-tight">API Request Stream</h2>
               </div>
-              {!requests.isLoading && reqRows.length > 0 && (
-                <div className="font-mono text-[11px] text-slate-400">
-                  <span className="text-green-400">●</span> {counts.success} ok &nbsp;
-                  <span className="text-amber-400">●</span> {counts.client} 4xx &nbsp;
-                  <span className="text-rose-400">●</span> {counts.server} 5xx
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.18em]" data-testid="env-filter">
+                  {(["all", "sandbox", "production"] as const).map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => setEnvFilter(e)}
+                      className={[
+                        "px-2 py-1 border rounded-sm transition-colors",
+                        envFilter === e
+                          ? "text-green-300 border-green-500/50 bg-green-500/10"
+                          : "text-slate-400 border-slate-700 hover:text-slate-200",
+                      ].join(" ")}
+                    >
+                      {e}
+                    </button>
+                  ))}
                 </div>
-              )}
+                {!requests.isLoading && reqRows.length > 0 && (
+                  <div className="font-mono text-[11px] text-slate-400">
+                    <span className="text-green-400">●</span> {counts.success} ok &nbsp;
+                    <span className="text-amber-400">●</span> {counts.client} 4xx &nbsp;
+                    <span className="text-rose-400">●</span> {counts.server} 5xx
+                  </div>
+                )}
+              </div>
             </div>
 
             {requests.isLoading && (
