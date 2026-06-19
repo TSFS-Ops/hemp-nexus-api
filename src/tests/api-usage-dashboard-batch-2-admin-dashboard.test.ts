@@ -212,14 +212,14 @@ describe("API Usage Dashboard V1 · Batch 2 · Platform Admin Dashboard", () => 
   });
 
   it("Batch 2 migration does not create new tables", () => {
-    // Pull the most recent migration only.
-    const last = fs
-      .readdirSync(path.join(ROOT, "supabase/migrations"))
-      .filter((f) => /\.sql$/.test(f))
-      .sort()
-      .pop()!;
-    const m = read("supabase/migrations/" + last);
-    expect(m).not.toMatch(/CREATE TABLE/i);
+    // Pin to the Batch 2 migration by its unique signature.
+    const dir = path.join(ROOT, "supabase/migrations");
+    const files = fs.readdirSync(dir).filter((f) => /\.sql$/.test(f));
+    const batch2 = files
+      .map((f) => ({ f, body: fs.readFileSync(path.join(dir, f), "utf-8") }))
+      .find((x) => x.body.includes("get_api_usage_dashboard_summary"));
+    expect(batch2, "Batch 2 migration not found by signature").toBeTruthy();
+    expect(batch2!.body).not.toMatch(/CREATE TABLE/i);
   });
 
   it("Batch 2 deferrals are surfaced in the UI (no silent scope creep)", () => {
