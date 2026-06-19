@@ -80,6 +80,7 @@ Deno.serve(async (req) => {
         "created_at",
         "closed_at",
         "is_overdue",
+        "overdue_reasons",
         "counterparty_country",
         "sector",
         "final_outcome",
@@ -133,6 +134,22 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Batch 9D — first actual contact attempt timestamp per case (from
+  // facilitation_case_contact_attempts.contact_at, earliest per case).
+  const firstContactAttemptById = new Map<string, string>();
+  if (caseIds.length > 0) {
+    const { data: attempts } = await admin
+      .from("facilitation_case_contact_attempts")
+      .select("case_id, contact_at")
+      .in("case_id", caseIds)
+      .order("contact_at", { ascending: true })
+      .limit(10000);
+    for (const a of (attempts ?? []) as { case_id: string; contact_at: string | null }[]) {
+      if (!a.contact_at) continue;
+      if (!firstContactAttemptById.has(a.case_id)) firstContactAttemptById.set(a.case_id, a.contact_at);
+    }
+  }
+
   const avgToAssign = avgHours(
     list.map((c) => ({ a: (c.created_at as string) ?? null, b: firstOwnerAssignedById.get(c.id as string) ?? null })),
   );
@@ -141,6 +158,14 @@ Deno.serve(async (req) => {
   );
   const avgToFirstOutreach = avgHours(
     list.map((c) => ({ a: (c.created_at as string) ?? null, b: firstOutreachReadyById.get(c.id as string) ?? null })),
+  );
+  // Batch 9D — first review = first admin status_changed event (same anchor
+  // as triage, kept under its own label for the management spec).
+  const avgToFirstReview = avgToTriage;
+  // Batch 9D — first contact = earliest logged contact_attempt.contact_at,
+  // anchored from case creation (existing accepted anchor).
+  const avgToFirstContact = avgHours(
+    list.map((c) => ({ a: (c.created_at as string) ?? null, b: firstContactAttemptById.get(c.id as string) ?? null })),
   );
   const avgToClose = avgHours(
     list.map((c) => ({ a: (c.created_at as string) ?? null, b: (c.closed_at as string) ?? null })),
@@ -158,6 +183,55 @@ Deno.serve(async (req) => {
   ).length;
   const complianceBlocked = closed.filter((c) => c.internal_status === "blocked_by_compliance").length;
   const duplicateRate = closed.filter((c) => c.internal_status === "duplicate_review").length;
+
+  // Batch 9D — overall conversion rate (successful closures / closed).
+  const SUCCESSFUL_FINAL_OUTCOMES = new Set([
+    "converted_to_known_counterparty_poi",
+    "linked_to_existing_organisation",
+    "new_counterparty_profile_created",
+  ]);
+  const SUCCESSFUL_INTERNAL_STATUSES = new Set([
+    "converted_to_known_counterparty_poi",
+    "ready_for_known_counterparty_poi",
+  ]);
+  const conversionNumerator = closed.filter(
+    (c) =>
+      (typeof c.final_outcome === "string" && SUCCESSFUL_FINAL_OUTCOMES.has(c.final_outcome)) ||
+      (typeof c.internal_status === "string" && SUCCESSFUL_INTERNAL_STATUSES.has(c.internal_status)),
+  ).length;
+
+  // Batch 9D — breached-deadline-type breakdown (group by exact
+  // overdue_reasons[] code; counts each reason once per breached case).
+  const OVERDUE_REASON_CODES = [
+    "owner_assignment_overdue",
+    "initial_triage_overdue",
+    "more_information_response_overdue",
+    "first_outreach_overdue",
+    "follow_up_outreach_overdue",
+    "compliance_review_overdue",
+    "next_action_overdue",
+    "stale_no_activity",
+  ] as const;
+  const breachedCases = list.filter((c) => c.is_overdue === true);
+  const breachedCount = breachedCases.length;
+  const breachedCounts = new Map<string, number>();
+  for (const c of breachedCases) {
+    const reasons = Array.isArray((c as { overdue_reasons?: string[] }).overdue_reasons)
+      ? (c as { overdue_reasons: string[] }).overdue_reasons
+      : [];
+    for (const r of reasons) {
+      if ((OVERDUE_REASON_CODES as readonly string[]).includes(r)) {
+        breachedCounts.set(r, (breachedCounts.get(r) ?? 0) + 1);
+      }
+    }
+  }
+  const breachedBreakdown = [...breachedCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([deadline_type, count]) => ({
+      deadline_type,
+      count,
+      pct_of_breached: pct(count, breachedCount),
+    }));
 
   // ── Grouping.
   const groupBy = (key: "counterparty_country" | "sector") => {
@@ -189,7 +263,9 @@ Deno.serve(async (req) => {
     averages_hours: {
       time_to_owner_assignment: avgToAssign,
       time_to_triage: avgToTriage,
+      time_to_first_review: avgToFirstReview,
       time_to_first_outreach: avgToFirstOutreach,
+      time_to_first_contact: avgToFirstContact,
       time_to_close: avgToClose,
     },
     outcome_rates_pct: {
@@ -198,6 +274,15 @@ Deno.serve(async (req) => {
       counterparty_declined: pct(counterpartyDeclined, denom),
       compliance_block: pct(complianceBlocked, denom),
       duplicate: pct(duplicateRate, denom),
+    },
+    conversion_rate: {
+      numerator: conversionNumerator,
+      denominator: denom,
+      rate_pct: pct(conversionNumerator, denom),
+    },
+    breached_deadline_breakdown: {
+      total_breached: breachedCount,
+      items: breachedBreakdown,
     },
     grouping: {
       by_country: groupBy("counterparty_country"),

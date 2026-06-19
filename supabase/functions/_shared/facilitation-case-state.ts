@@ -61,6 +61,20 @@ export const SENSITIVE_OUTCOMES_REQUIRING_REASON: ReadonlySet<FacilitationOutcom
 ]);
 export const CLOSURE_REASON_MIN_LENGTH = 10;
 
+// Batch 9D — outcomes/statuses that count as a successful conversion for the
+// management conversion-rate KPI. Master-spec asks for converted_to_known
+// _counterparty_poi, converted_to_known_counterparty, ready_for_next_step and
+// ready_for_poi_review; we map those to the existing accepted vocabulary.
+export const SUCCESSFUL_FINAL_OUTCOMES: ReadonlySet<FacilitationOutcome> = new Set<FacilitationOutcome>([
+  "converted_to_known_counterparty_poi",
+  "linked_to_existing_organisation",
+  "new_counterparty_profile_created",
+]);
+export const SUCCESSFUL_INTERNAL_STATUSES: ReadonlySet<FacilitationInternalStatus> = new Set<FacilitationInternalStatus>([
+  "converted_to_known_counterparty_poi",
+  "ready_for_known_counterparty_poi",
+]);
+
 export const ROLES = ["buyer", "seller", "service_provider", "funder", "other"] as const;
 export type FacilitationRole = (typeof ROLES)[number];
 

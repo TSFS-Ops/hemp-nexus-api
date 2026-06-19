@@ -25,7 +25,9 @@ type Metrics = {
   averages_hours: {
     time_to_owner_assignment: number | null;
     time_to_triage: number | null;
+    time_to_first_review: number | null;
     time_to_first_outreach: number | null;
+    time_to_first_contact: number | null;
     time_to_close: number | null;
   };
   outcome_rates_pct: {
@@ -35,6 +37,15 @@ type Metrics = {
     compliance_block: number | null;
     duplicate: number | null;
   };
+  conversion_rate?: {
+    numerator: number;
+    denominator: number;
+    rate_pct: number | null;
+  };
+  breached_deadline_breakdown?: {
+    total_breached: number;
+    items: { deadline_type: string; count: number; pct_of_breached: number | null }[];
+  };
   grouping: {
     by_country: { label: string; count: number }[];
     by_sector: { label: string; count: number }[];
@@ -43,9 +54,34 @@ type Metrics = {
 };
 
 const NA = "Not available yet";
+const NOT_ENOUGH = "Not enough data";
 
-const fmtHours = (h: number | null): string => (h == null ? NA : h < 24 ? `${h} h` : `${Math.round((h / 24) * 10) / 10} d`);
+const fmtHours = (h: number | null): string => {
+  if (h == null) return NOT_ENOUGH;
+  if (h < 1) {
+    const m = Math.max(1, Math.round(h * 60));
+    return `${m}m`;
+  }
+  if (h < 24) {
+    const whole = Math.floor(h);
+    const mins = Math.round((h - whole) * 60);
+    return mins > 0 ? `${whole}h ${mins}m` : `${whole}h`;
+  }
+  const days = Math.round((h / 24) * 10) / 10;
+  return `${days} d`;
+};
 const fmtPct = (p: number | null): string => (p == null ? NA : `${p}%`);
+
+const DEADLINE_LABELS: Record<string, string> = {
+  owner_assignment_overdue: "Owner assignment missed",
+  initial_triage_overdue: "First review missed",
+  more_information_response_overdue: "Requester-response review missed",
+  first_outreach_overdue: "First contact missed",
+  follow_up_outreach_overdue: "Follow-up missed",
+  compliance_review_overdue: "Contact approval missed",
+  next_action_overdue: "Next-action missed",
+  stale_no_activity: "Closure review missed",
+};
 
 export const FacilitationManagementMetrics: React.FC = () => {
   const [data, setData] = useState<Metrics | null>(null);
@@ -107,9 +143,9 @@ export const FacilitationManagementMetrics: React.FC = () => {
         <div>
           <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">Average times</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Tile label="To first review" value={fmtHours(data.averages_hours.time_to_first_review ?? data.averages_hours.time_to_triage)} />
+            <Tile label="To first contact" value={fmtHours(data.averages_hours.time_to_first_contact ?? null)} />
             <Tile label="To owner assignment" value={fmtHours(data.averages_hours.time_to_owner_assignment)} />
-            <Tile label="To triage" value={fmtHours(data.averages_hours.time_to_triage)} />
-            <Tile label="To first outreach" value={fmtHours(data.averages_hours.time_to_first_outreach)} />
             <Tile label="To close" value={fmtHours(data.averages_hours.time_to_close)} />
           </div>
         </div>
@@ -121,6 +157,39 @@ export const FacilitationManagementMetrics: React.FC = () => {
             <Tile label="Counterparty declined" value={fmtPct(data.outcome_rates_pct.counterparty_declined)} />
             <Tile label="Compliance block" value={fmtPct(data.outcome_rates_pct.compliance_block)} />
             <Tile label="Duplicate" value={fmtPct(data.outcome_rates_pct.duplicate)} />
+          </div>
+        </div>
+        <div>
+          <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">Conversion & breached deadlines</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Tile
+              label="Conversion rate (closed cases)"
+              value={
+                data.conversion_rate
+                  ? `${fmtPct(data.conversion_rate.rate_pct)} (${data.conversion_rate.numerator}/${data.conversion_rate.denominator})`
+                  : NA
+              }
+            />
+            <div className="md:col-span-2 px-3 py-2 border border-slate-200 rounded-md bg-white">
+              <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1">
+                Breached by deadline type
+                {data.breached_deadline_breakdown ? ` · ${data.breached_deadline_breakdown.total_breached} breached` : ""}
+              </div>
+              {!data.breached_deadline_breakdown || data.breached_deadline_breakdown.items.length === 0 ? (
+                <div className="text-sm text-slate-500">No breached deadlines in this period</div>
+              ) : (
+                <ul className="text-sm text-slate-700 space-y-0.5 max-h-40 overflow-auto">
+                  {data.breached_deadline_breakdown.items.map((i) => (
+                    <li key={i.deadline_type} className="flex justify-between gap-2">
+                      <span className="truncate pr-2">{DEADLINE_LABELS[i.deadline_type] ?? i.deadline_type}</span>
+                      <span className="text-slate-500 whitespace-nowrap">
+                        {i.count}{i.pct_of_breached != null ? ` · ${i.pct_of_breached}%` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
