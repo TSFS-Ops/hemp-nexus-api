@@ -50,6 +50,8 @@ const REQUIRED = [
   "facilitation_case.requester_notification_emitted",
   // Batch 10 — tamper-evident SHA-256 sealing of exported evidence packs.
   "facilitation_case.evidence_pack_sealed",
+  // Batch 11 — invite-unopened auto-detector (internal-only flag).
+  "facilitation_case.invite_unopened_flagged",
 ];
 
 
