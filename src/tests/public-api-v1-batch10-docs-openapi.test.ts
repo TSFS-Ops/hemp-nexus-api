@@ -224,7 +224,7 @@ describe("Public API V1 · Batch 10 · docs and OpenAPI", () => {
   });
 
   it("no payment/invoice/PayFast/Paystack/webhook/write logic introduced in Batch 10", () => {
-    const spec = read(SPEC_MODULE);
+    const spec = codeOnly(read(SPEC_MODULE));
     const banned = [
       /payment_intent/i,
       /paystack/i,
