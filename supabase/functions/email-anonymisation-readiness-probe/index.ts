@@ -10,7 +10,7 @@
  *   - mutate email_send_log
  *   - schedule any cron entry
  *   - touch purge-email-send-log-daily{,-live} or its dry-run twin
- *   - touch org_retention_policies / get_effective_retention_days / admin-org-retention
+ *   - touch the per-org retention policy table / effective-days helper / admin-org-retention
  *
  * Security model (mirrors admin-org-retention):
  *   1. Valid Bearer token
