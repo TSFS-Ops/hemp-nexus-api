@@ -66,9 +66,10 @@ const SUMMARY_LABELS: Record<string, string> = {
   internal_status: "Current status",
 };
 
-export const FacilitationPoiConversionPanel: React.FC<Props> = ({ caseId, canConfirm, onChanged }) => {
+export const FacilitationPoiConversionPanel: React.FC<Props> = ({ caseId, onChanged }) => {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
+  const [canConfirm, setCanConfirm] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [refOpen, setRefOpen] = useState(false);
   const [poiId, setPoiId] = useState("");
@@ -77,6 +78,21 @@ export const FacilitationPoiConversionPanel: React.FC<Props> = ({ caseId, canCon
   const [evidence, setEvidence] = useState("");
   const [acknowledge, setAcknowledge] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        const uid = u?.user?.id;
+        if (!uid) return;
+        const { data } = await supabase
+          .from("user_roles").select("role").eq("user_id", uid).eq("role", "platform_admin").maybeSingle();
+        if (!cancelled) setCanConfirm(!!data);
+      } catch { /* ignore — defaults to read-only */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   async function runCheck() {
     setLoading(true);
