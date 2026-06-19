@@ -205,8 +205,10 @@ export async function logV1Request(
       ip_address: ctx.actorIp,
       user_agent: ctx.userAgent,
       request_id: ctx.requestId,
-      // Batch 2 additive columns
-      billable: false,                // health/status are never billable
+      // Batch 2 additive columns; billable comes from ctx (Batch 5).
+      // Health/status/sandbox/validation/auth/scope/system-error paths
+      // never set ctx.billable, so the default is false here.
+      billable: errorCode === null ? ctx.billable : false,
       scope_used: ctx.scopeUsed,
       environment: ctx.environment,
       external_reference: ctx.externalReference,
