@@ -258,15 +258,16 @@ describe("Batch 9E — management KPI correctness", () => {
 
   it("breached-deadline breakdown groups by exact deadline-type code", () => {
     const items = computeBreachedDeadlineBreakdown([
-      { is_overdue: true, overdue_reasons: ["first_review"] },
-      { is_overdue: true, overdue_reasons: ["first_review", "first_contact"] },
-      { is_overdue: false, overdue_reasons: ["first_review"] }, // not breached → excluded
-      { is_overdue: true, overdue_reasons: [] },                 // breached but no reason → no bucket
+      { is_overdue: true, overdue_reasons: ["initial_triage_overdue"] },
+      { is_overdue: true, overdue_reasons: ["initial_triage_overdue", "first_outreach_overdue"] },
+      { is_overdue: false, overdue_reasons: ["initial_triage_overdue"] }, // not breached → excluded
+      { is_overdue: true, overdue_reasons: [] },                          // breached but no reason → no bucket
+      { is_overdue: true, overdue_reasons: ["unknown_code_should_be_ignored"] },
     ]);
-    const fr = items.find((i) => i.deadline_type === "first_review");
-    const fc = items.find((i) => i.deadline_type === "first_contact");
-    expect(fr?.count).toBe(2);
-    expect(fc?.count).toBe(1);
+    const triage = items.find((i) => i.deadline_type === "initial_triage_overdue");
+    const outreach = items.find((i) => i.deadline_type === "first_outreach_overdue");
+    expect(triage?.count).toBe(2);
+    expect(outreach?.count).toBe(1);
   });
 
   it("breakdown returns [] when no breached cases (honest 'not available')", () => {
