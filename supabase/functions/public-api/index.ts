@@ -37,16 +37,14 @@ import {
   type LookupInput,
 } from "../_shared/public-api-v1-counterparty.ts";
 
-const V1_STATUS_SCOPE = "api:status_read";
-// Back-compat alias preserved so Batch-3 contract guards still pass.
-const V1_SCOPE = V1_STATUS_SCOPE;
+const V1_SCOPE = "api:status_read";
+// Back-compat alias preserved so Batch-5 routes can refer by their role.
+const V1_STATUS_SCOPE = V1_SCOPE;
 const V1_LOOKUP_SCOPE = "counterparty:lookup";
 const V1_SUMMARY_SCOPE = "profile:summary_read";
 // Signals scope check — applied in-handler because the response carries
 // risk_signal_summary / verification_status (signal-bearing fields).
 const V1_SIGNALS_SCOPE = "signals:read";
-// Touch unused alias so the bundler doesn't strip it.
-void V1_SCOPE;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
