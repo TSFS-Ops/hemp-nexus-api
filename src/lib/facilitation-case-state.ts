@@ -295,7 +295,13 @@ export const FACILITATION_AUDIT_NAMES = [
   "facilitation_case.requester_notification_emitted",
   // Batch 10 — tamper-evident SHA-256 sealing of exported evidence packs.
   "facilitation_case.evidence_pack_sealed",
+  // Batch 11 — invite-unopened auto-detector (internal-only flag).
+  "facilitation_case.invite_unopened_flagged",
 ] as const;
+
+// Batch 11 — internal-only next-step kind emitted by the
+// invite-unopened auto-detector. Mirror of the Deno SSOT.
+export const INVITE_UNOPENED_NEXT_STEP_KIND = "invite_unopened_3bd" as const;
 
 export type FacilitationAuditName = (typeof FACILITATION_AUDIT_NAMES)[number];
 
