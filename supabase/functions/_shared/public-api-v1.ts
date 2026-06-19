@@ -374,8 +374,8 @@ export async function runGateway(
   }
 
   // 6. Environment match (sandbox key may not access production, vice versa)
-  if (key.environment && key.environment !== env) {
-    if (env === "production") {
+  if (key.environment && key.environment !== ctx.environment) {
+    if (ctx.environment === "production") {
       await audit(supabase, "api_key.v1.environment_mismatch", ctx, { key_env: key.environment });
       throw new V1Error("production_access_required");
     }
@@ -430,10 +430,12 @@ export async function runGateway(
       undefined,
       { actorIp: ctx.actorIp, userAgent: ctx.userAgent, requestId: ctx.requestId },
     );
+    ctx.rateLimitDecision = "allowed";
   } catch (e) {
     const anyE = e as { code?: string; status?: number; details?: { retryAfter?: number } };
     if (anyE?.status === 429) {
       const retry = anyE.details?.retryAfter ?? null;
+      ctx.rateLimitDecision = "minute_block";
       throw new V1Error("rate_limit_exceeded", retry ?? null);
     }
     throw new V1Error("internal_error");
