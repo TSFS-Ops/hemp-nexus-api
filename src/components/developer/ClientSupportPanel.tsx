@@ -7,7 +7,7 @@
  *   • create_api_support_ticket
  *   • list_api_support_tickets_for_client
  *
- * The client surface NEVER returns internal_notes or internal_owner.
+ * The client surface NEVER returns Izenzo's private triage fields.
  * The server's RPC returns the client-shape JSON only.
  *
  * Hard exclusions: no payment, no invoice, no webhook config, no write
