@@ -502,6 +502,7 @@ export async function handleV1<T>(
         supabase, ctx.apiClientId, ctx.environment, { baseOverride, strictAtAllowance },
       );
       if (preState.blocked) {
+        ctx.rateLimitDecision = "monthly_block";
         await auditMonthlyBlock(supabase, ctx, ctx.apiClientId, ctx.environment, preState);
         throw new V1Error("monthly_limit_reached");
       }
@@ -523,18 +524,30 @@ export async function handleV1<T>(
       }
     }
 
+    const envHeaderValue = ctx.environment ?? "unknown";
+    const izenzoHeaders: Record<string, string> = {
+      "X-Request-Id": ctx.requestId,
+      "X-Izenzo-Request-Id": ctx.requestId,
+      "X-Izenzo-Environment": envHeaderValue,
+    };
     if (result.contentType && typeof result.rawBody === "string") {
       return new Response(result.rawBody, {
         status,
-        headers: { ...headers, "Content-Type": result.contentType, "X-Request-Id": ctx.requestId },
+        headers: { ...headers, "Content-Type": result.contentType, ...izenzoHeaders },
       });
     }
-    return jsonResponse(result.body, status, { ...headers, "X-Request-Id": ctx.requestId });
+    return jsonResponse(result.body, status, { ...headers, ...izenzoHeaders });
   } catch (e) {
     const v1err = e instanceof V1Error ? e : new V1Error("internal_error");
     const status = ERROR_HTTP_STATUS[v1err.code];
     const body = errorBody(v1err.code, ctx.requestId, v1err.retryAfter);
-    const extraHeaders: Record<string, string> = { ...headers, "X-Request-Id": ctx.requestId };
+    const envHeaderValue = ctx.environment ?? "unknown";
+    const extraHeaders: Record<string, string> = {
+      ...headers,
+      "X-Request-Id": ctx.requestId,
+      "X-Izenzo-Request-Id": ctx.requestId,
+      "X-Izenzo-Environment": envHeaderValue,
+    };
     if (v1err.retryAfter && Number.isFinite(v1err.retryAfter)) {
       extraHeaders["Retry-After"] = String(v1err.retryAfter);
     }
