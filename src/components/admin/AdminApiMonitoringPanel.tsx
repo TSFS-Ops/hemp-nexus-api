@@ -141,11 +141,12 @@ function fmtNumber(n: number | null | undefined, digits = 0) {
 
 export function AdminApiMonitoringPanel() {
   const { user, roles } = useAuth();
-  const isPlatformAdmin = roles?.includes("platform_admin");
+  const roleStrings = (roles ?? []) as readonly string[];
+  const isPlatformAdmin = roleStrings.includes("platform_admin");
   const hasAccess =
     isPlatformAdmin ||
-    roles?.includes("api_admin") ||
-    roles?.includes("auditor");
+    roleStrings.includes("api_admin") ||
+    roleStrings.includes("auditor");
 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
