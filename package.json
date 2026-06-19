@@ -38,7 +38,14 @@
     "smoke:run:record": "node scripts/run-smoke-a-d.mjs --record",
     "smoke:run:verify": "node scripts/run-smoke-a-d.mjs --verify-only",
     "check:smoke-evidence": "node scripts/check-smoke-evidence-bundle.mjs",
-    "smoke:admin-export-controls": "node scripts/admin-export-controls-batch-7-smoke.mjs"
+    "smoke:admin-export-controls": "node scripts/admin-export-controls-batch-7-smoke.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:roles": "playwright test e2e/role-negative",
+    "test:e2e:critical": "playwright test e2e/journeys/auth-role-landing.spec.ts e2e/journeys/trade-match.spec.ts e2e/journeys/poi-lifecycle.spec.ts e2e/journeys/wad-lifecycle.spec.ts e2e/journeys/refund-dispute.spec.ts e2e/role-negative",
+    "test:evidence": "playwright test --reporter=list,junit,html",
+    "test:e2e:coverage-guard": "node scripts/check-role-negative-e2e-coverage.mjs",
+    "test:e2e:evidence-pack": "node scripts/pack-role-negative-evidence.mjs",
+    "seed:role-negative": "bash scripts/seed-role-negative-e2e.sh"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",
