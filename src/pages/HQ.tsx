@@ -35,6 +35,7 @@ import UsersManagement from "@/components/admin/UsersManagement";
 import OrgsManagement from "@/components/admin/OrgsManagement";
 import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
 import { AdminApiClientsPanel } from "@/components/admin/AdminApiClientsPanel";
+import { AdminApiMonitoringPanel } from "@/components/admin/AdminApiMonitoringPanel";
 import { AdminKycDocsPanel } from "@/components/admin/AdminKycDocsPanel";
 import { AdminDisputesPanel } from "@/components/admin/AdminDisputesPanel";
 import { AdminChallengeQueuePanel } from "@/components/admin/AdminChallengeQueuePanel";
