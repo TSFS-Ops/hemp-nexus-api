@@ -173,11 +173,10 @@ describe("Public API V1 · Batch 7 · commercial plans + billing visibility", ()
     expect(exists("supabase/functions/public-api-support-intake")).toBe(false);
     expect(exists("supabase/functions/public-api-invoices")).toBe(false);
 
-    // No /v1/usage, /v1/docs, openapi paths in the public-api entry
+    // No /v1/usage path in the public-api entry.
+    // (/v1/docs and /v1/docs/openapi.json became in-scope in Batch 10.)
     const entry = codeOnly(read(ENTRY));
     expect(entry).not.toMatch(/\/v1\/usage/);
-    expect(entry).not.toMatch(/\/v1\/docs/);
-    expect(entry).not.toMatch(/openapi/i);
 
     // No invoice / payment-method tables in any migration
     const migDir = path.join(ROOT, "supabase/migrations");
