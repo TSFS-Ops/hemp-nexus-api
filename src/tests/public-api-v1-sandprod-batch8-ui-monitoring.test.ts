@@ -60,9 +60,13 @@ describe("Public API V1 — Sand/Prod Batch 8 · UI monitoring surfaces", () => 
     expect(src).toMatch(/ip_allowlist_exception_active/);
     // No CSV export from the security signals triage view.
     expect(src).not.toMatch(/auditedDownloadCSV|Blob\(|csvBody/);
-    // No forbidden fields.
+    // No forbidden fields (strip doc comments first — they enumerate the exclusions list).
+    const stripped = src
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "")
+      .toLowerCase();
     for (const t of ["key_hash", "api_key", "secret", "document", "evidence", "governance", "poi", "wad", "payment", "compliance_note"]) {
-      expect(src.toLowerCase()).not.toContain(t);
+      expect(stripped).not.toContain(t);
     }
     const hq = read("src/pages/HQ.tsx");
     expect(hq).toMatch(/<AdminApiSecuritySignalsPanel\s*\/>/);
