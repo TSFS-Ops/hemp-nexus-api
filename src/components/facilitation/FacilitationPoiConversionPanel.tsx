@@ -9,7 +9,7 @@
  * panel only triggers the dedicated `facilitation-poi-conversion`
  * edge function which records a safe linkage on the facilitation case.
  */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,6 @@ import { friendlyFacilitationError } from "@/lib/facilitation-labels";
 
 type Props = {
   caseId: string;
-  canConfirm: boolean; // true only for platform_admin
   onChanged: () => void | Promise<void>;
 };
 
