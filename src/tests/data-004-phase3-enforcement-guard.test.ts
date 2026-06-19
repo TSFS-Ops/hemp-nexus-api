@@ -396,8 +396,10 @@ describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path",
 
     const scheduleRe =
       /cron\.schedule\s*\(\s*['"](cold-storage-archive[A-Za-z0-9_-]*)['"]/g;
-    const httpRe =
-      /net\.http_post[\s\S]{0,400}?functions\/v1\/(cold-storage-archive[A-Za-z0-9_-]*)/g;
+    // Note: net.http_post URLs reference the edge-function name
+    // ('cold-storage-archive'), not the cron jobname, so they are not a
+    // reliable source of jobnames; only cron.schedule(...) calls are
+    // pinned here.
 
     const seen: Record<string, Set<string>> = {};
     for (const file of walk(migDir)) {
