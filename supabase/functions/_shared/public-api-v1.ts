@@ -139,7 +139,14 @@ export interface V1RequestCtx {
   billable: boolean;
   // Sandbox/Production Separation · Batch 2 trace columns.
   requestPayloadHash: string | null;
-  rateLimitDecision: "allowed" | "minute_block" | "monthly_block" | "overage_billable" | null;
+  rateLimitDecision:
+    | "allowed"
+    | "minute_block"
+    | "monthly_block"
+    | "concurrency_block"
+    | "overage_billable"
+    | "not_evaluated"
+    | null;
   billableOverage: boolean;
   responseHeaders: Record<string, string>;
 }
