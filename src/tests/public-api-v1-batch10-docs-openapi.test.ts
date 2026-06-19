@@ -215,12 +215,19 @@ describe("Public API V1 · Batch 10 · docs and OpenAPI", () => {
   });
 
   // ─── Hard exclusions ──────────────────────────────────────────────────
-  it("no support ticket intake introduced in Batch 10", () => {
+  it("no programmatic support endpoint on the public API (in-product intake only)", () => {
     const spec = read(SPEC_MODULE);
     expect(/create\s+table[^;]*support_tickets/i.test(spec)).toBe(false);
     expect(exists("supabase/functions/public-api-support-intake")).toBe(false);
-    // Support text must explicitly say no programmatic intake exists yet.
-    expect(spec).toMatch(/contact your Izenzo account owner or Izenzo support/i);
+    // Either the original "contact your Izenzo account owner" phrasing or
+    // the Batch 11 in-product API Support tab must be present in Support
+    // section text — but a programmatic /v1/support endpoint must NOT be
+    // claimed.
+    expect(
+      /contact your Izenzo account owner or Izenzo support/i.test(spec) ||
+      /in-product API Support tab/i.test(spec)
+    ).toBe(true);
+    expect(/no public \/v1\/support endpoint/i.test(spec)).toBe(true);
   });
 
   it("no payment/invoice/PayFast/Paystack/webhook/write logic introduced in Batch 10", () => {
