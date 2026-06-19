@@ -61,6 +61,15 @@ Deno.serve(async (req) => {
     return j(req, { error: "Illegal status transition", from: tpl.status, to: next_status }, 409);
   }
 
+  // Batch 12 — separation of duties: the drafter cannot approve their own
+  // template version. Archival is exempt (already-approved template).
+  if (next_status === "approved" && tpl.created_by && tpl.created_by === userId) {
+    return j(req, {
+      error: "Drafter cannot approve their own template version",
+      code: "DRAFTER_CANNOT_APPROVE_SELF",
+    }, 403);
+  }
+
   const now = new Date().toISOString();
   const patch: Record<string, unknown> = { status: next_status, updated_at: now };
   if (next_status === "approved") { patch.approved_by = userId; patch.approved_at = now; }

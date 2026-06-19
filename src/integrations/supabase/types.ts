@@ -4676,9 +4676,12 @@ export type Database = {
           created_by: string | null
           id: string
           name: string
+          previous_template_id: string | null
           slug: string
           status: string
           subject: string
+          submitted_for_approval_at: string | null
+          submitted_for_approval_by: string | null
           updated_at: string
           version: number
         }
@@ -4693,9 +4696,12 @@ export type Database = {
           created_by?: string | null
           id?: string
           name: string
+          previous_template_id?: string | null
           slug: string
           status?: string
           subject: string
+          submitted_for_approval_at?: string | null
+          submitted_for_approval_by?: string | null
           updated_at?: string
           version?: number
         }
@@ -4710,13 +4716,24 @@ export type Database = {
           created_by?: string | null
           id?: string
           name?: string
+          previous_template_id?: string | null
           slug?: string
           status?: string
           subject?: string
+          submitted_for_approval_at?: string | null
+          submitted_for_approval_by?: string | null
           updated_at?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "facilitation_outreach_templates_previous_template_id_fkey"
+            columns: ["previous_template_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_outreach_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fund_flows: {
         Row: {

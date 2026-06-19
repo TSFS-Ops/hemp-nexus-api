@@ -19,6 +19,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { LogOut, Shield, Users, Building2, AlertTriangle, Settings as SettingsIcon, Activity, ExternalLink, Inbox, TrendingUp, GitBranch, Wrench, Lock, FileSearch, KeyRound, MoreHorizontal, Sparkles, LifeBuoy } from "lucide-react";
 import { FacilitationQueuePanel } from "@/components/facilitation/FacilitationQueuePanel";
 import { FacilitationOutreachTemplatePanel } from "@/components/facilitation-outreach/FacilitationOutreachTemplatePanel";
+import { FacilitationTemplateEditorPanel } from "@/components/facilitation-outreach/FacilitationTemplateEditorPanel";
 import { FacilitationDncRulePanel } from "@/components/facilitation-outreach/FacilitationDncRulePanel";
 import { useLayoutEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -857,6 +858,7 @@ function HQLayout({ restrictedToFacilitation = false }: { restrictedToFacilitati
                   <div className="border border-border rounded-sm p-3"><FacilitationOutreachTemplatePanel /></div>
                   <div className="border border-border rounded-sm p-3"><FacilitationDncRulePanel /></div>
                 </div>
+                <div className="border border-border rounded-sm p-3"><FacilitationTemplateEditorPanel /></div>
               </div>
             </section>
           </TabsContent>
