@@ -207,14 +207,15 @@ describe("Public API V1 · Batch 5 · counterparty lookup + summary", () => {
     expect(entry).not.toMatch(/\/v1\/docs/);
     expect(entry).not.toMatch(/openapi/i);
 
-    // No commercial-plan / support-intake / webhook tables introduced
+    // No support-intake / webhook tables introduced. Commercial plans are
+    // intentionally scoped to Batch 7 — excluded here only from Batch 5's
+    // own migrations (Batch-5-tagged), not globally.
     const migDir = path.join(ROOT, "supabase/migrations");
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
-      expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
-      // No new webhook tables in any Batch-5-tagged migration
       if (/Batch 5/i.test(body)) {
+        expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
         expect(body).not.toMatch(/CREATE TABLE[^;]*webhook_/i);
       }
     }
