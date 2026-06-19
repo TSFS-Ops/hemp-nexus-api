@@ -43,12 +43,19 @@ const FRIENDLY: Record<string, string> = {
 export async function parseEdgeError(error: unknown): Promise<ParsedEdgeError> {
   let status: number | null = null;
   let requestId: string | null = null;
+  let functionName: string | null = null;
   let body: { code?: string; error?: string; message?: string; details?: unknown; request_id?: string; requestId?: string } | null = null;
 
-  const ctx = (error as { context?: Response | { status?: number; headers?: Headers; json?: () => Promise<unknown> } })?.context;
+  const ctx = (error as { context?: Response | { status?: number; url?: string; headers?: Headers; json?: () => Promise<unknown> } })?.context;
   if (ctx && typeof ctx === "object") {
     if ("status" in ctx && typeof (ctx as { status?: number }).status === "number") {
       status = (ctx as { status: number }).status;
+    }
+    const url = (ctx as { url?: string }).url;
+    if (typeof url === "string") {
+      // Supabase function URLs look like: https://<ref>.supabase.co/functions/v1/<name>[?...]
+      const m = url.match(/\/functions\/v1\/([^/?#]+)/);
+      if (m) functionName = m[1];
     }
     const hdrs = (ctx as { headers?: Headers }).headers;
     if (hdrs && typeof hdrs.get === "function") {
@@ -82,6 +89,7 @@ export async function parseEdgeError(error: unknown): Promise<ParsedEdgeError> {
     (error instanceof Error ? error.message : "Unexpected error");
   const message = friendly ?? fallback;
 
-  return { status, code, message, requestId, details: body?.details };
+  return { status, code, message, requestId, functionName, details: body?.details };
 }
+
 
