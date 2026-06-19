@@ -2,8 +2,9 @@
  * AdminApiUsageAlertsPanel — API Usage Dashboard V1 · Batch 4
  *
  * Internal-only alerts & suspicious-activity flags surface.
- * Read-gated by `can_access_api_monitoring` (platform_admin / api_admin /
- * auditor). Mutations (acknowledge/resolve/note) require platform_admin.
+ * Read-gated by `can_view_api_usage_alerts` (platform_admin / api_admin).
+ * Mutations (acknowledge/resolve/note/assign) require platform_admin.
+ * Auditor and all other roles have no visibility on this surface.
  *
  * Never displays payload bodies, full keys, secrets, client IPs,
  * user-agent strings or stack traces — alert metadata is server-side stripped.
@@ -77,10 +78,9 @@ export function AdminApiUsageAlertsPanel() {
   const { user, roles } = useAuth();
   const roleStrings = (roles ?? []) as readonly string[];
   const isPlatformAdmin = roleStrings.includes("platform_admin");
-  const hasAccess =
-    isPlatformAdmin ||
-    roleStrings.includes("api_admin") ||
-    roleStrings.includes("auditor");
+  const isApiAdmin = roleStrings.includes("api_admin");
+  // View: platform_admin + api_admin only. Auditor and others are denied.
+  const hasAccess = isPlatformAdmin || isApiAdmin;
 
   const [rows, setRows] = useState<AlertRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -243,7 +243,8 @@ export function AdminApiUsageAlertsPanel() {
     return (
       <div className="text-sm text-muted-foreground p-4">
         <ShieldAlert className="inline h-4 w-4 mr-1" /> Internal API alerts are
-        restricted to platform_admin, api_admin and auditor.
+        restricted to platform_admin and api_admin. Auditors should review
+        the canonical audit stream in admin_audit_logs.
       </div>
     );
   }
