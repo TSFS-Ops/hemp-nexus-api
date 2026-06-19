@@ -17,11 +17,25 @@ import * as path from "path";
 const ROOT = path.resolve(__dirname, "../..");
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), "utf-8");
 const exists = (p: string) => fs.existsSync(path.join(ROOT, p));
+const codeOnly = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
 
 const USAGE = "supabase/functions/_shared/public-api-v1-usage.ts";
 const GATEWAY = "supabase/functions/_shared/public-api-v1.ts";
 const ENTRY = "supabase/functions/public-api/index.ts";
 const PANEL = "src/components/admin/AdminApiClientsPanel.tsx";
+
+// Locate Batch-6 migration by content (filename is a hash).
+function findBatch6Migration(): string {
+  const migDir = path.join(ROOT, "supabase/migrations");
+  for (const f of fs.readdirSync(migDir)) {
+    const body = fs.readFileSync(path.join(migDir, f), "utf-8");
+    if (/api_usage_overrides/.test(body) && /api_usage_notifications_state/.test(body)) {
+      return body;
+    }
+  }
+  return "";
+}
 
 describe("Public API V1 · Batch 6 · usage limits + threshold notifications", () => {
   it("usage helper module exists with documented defaults", () => {
