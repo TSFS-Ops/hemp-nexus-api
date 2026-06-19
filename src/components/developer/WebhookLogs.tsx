@@ -13,6 +13,7 @@ interface ApiRequestLog {
   ip_address: string | null;
   request_id: string | null;
   error_message: string | null;
+  environment: "sandbox" | "production" | null;
 }
 
 interface AuditLog {
@@ -211,18 +212,21 @@ export default function WebhookLogs() {
   const AUDIT_LIMIT = 100;
   const [tab, setTab] = useState<Tab>("requests");
   const [selected, setSelected] = useState<ApiRequestLog | null>(null);
+  const [envFilter, setEnvFilter] = useState<"all" | "sandbox" | "production">("all");
 
   const requests = useQuery({
-    queryKey: ["developer-api-request-logs"],
+    queryKey: ["developer-api-request-logs", envFilter],
     queryFn: async () => {
-      const { data, error, count } = await supabase
+      let q = supabase
         .from("api_request_logs")
         .select(
-          "id, endpoint, method, status_code, response_time_ms, created_at, ip_address, request_id, error_message",
+          "id, endpoint, method, status_code, response_time_ms, created_at, ip_address, request_id, error_message, environment",
           { count: "exact" },
         )
         .order("created_at", { ascending: false })
         .limit(REQ_LIMIT);
+      if (envFilter !== "all") q = q.eq("environment", envFilter);
+      const { data, error, count } = await q;
       if (error) throw error;
       return { rows: (data || []) as ApiRequestLog[], totalCount: count ?? data?.length ?? 0 };
     },
