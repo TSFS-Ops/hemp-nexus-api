@@ -1330,6 +1330,78 @@ export type Database = {
           },
         ]
       }
+      api_sandbox_records: {
+        Row: {
+          active: boolean
+          candidates: Json
+          confidence_band: string | null
+          country: string | null
+          created_at: string
+          data_freshness_date: string | null
+          email_domain: string | null
+          id: string
+          legal_name: string | null
+          match_status: string | null
+          next_action: string | null
+          record_scope: string
+          registration_number: string | null
+          risk_signal_summary: string | null
+          scenario_code: string
+          scenario_notes: string | null
+          test_data: boolean
+          trading_name: string | null
+          updated_at: string
+          verification_status: string | null
+          website_domain: string | null
+        }
+        Insert: {
+          active?: boolean
+          candidates?: Json
+          confidence_band?: string | null
+          country?: string | null
+          created_at?: string
+          data_freshness_date?: string | null
+          email_domain?: string | null
+          id?: string
+          legal_name?: string | null
+          match_status?: string | null
+          next_action?: string | null
+          record_scope?: string
+          registration_number?: string | null
+          risk_signal_summary?: string | null
+          scenario_code: string
+          scenario_notes?: string | null
+          test_data?: boolean
+          trading_name?: string | null
+          updated_at?: string
+          verification_status?: string | null
+          website_domain?: string | null
+        }
+        Update: {
+          active?: boolean
+          candidates?: Json
+          confidence_band?: string | null
+          country?: string | null
+          created_at?: string
+          data_freshness_date?: string | null
+          email_domain?: string | null
+          id?: string
+          legal_name?: string | null
+          match_status?: string | null
+          next_action?: string | null
+          record_scope?: string
+          registration_number?: string | null
+          risk_signal_summary?: string | null
+          scenario_code?: string
+          scenario_notes?: string | null
+          test_data?: boolean
+          trading_name?: string | null
+          updated_at?: string
+          verification_status?: string | null
+          website_domain?: string | null
+        }
+        Relationships: []
+      }
       approval_thresholds: {
         Row: {
           created_at: string
