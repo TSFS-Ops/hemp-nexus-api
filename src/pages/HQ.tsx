@@ -36,6 +36,7 @@ import OrgsManagement from "@/components/admin/OrgsManagement";
 import { AdminEntitiesPanel } from "@/components/admin/AdminEntitiesPanel";
 import { AdminApiClientsPanel, CommercialPlanCataloguePanel } from "@/components/admin/AdminApiClientsPanel";
 import { AdminApiMonitoringPanel } from "@/components/admin/AdminApiMonitoringPanel";
+import { AdminApiUsageDashboardPanel } from "@/components/admin/AdminApiUsageDashboardPanel";
 import { AdminApiSecuritySignalsPanel } from "@/components/admin/AdminApiSecuritySignalsPanel";
 import { SandboxScenarioViewer } from "@/components/admin/SandboxScenarioViewer";
 import { AdminApiSupportTicketsPanel } from "@/components/admin/AdminApiSupportTicketsPanel";
@@ -448,7 +449,7 @@ function OrganisationsTab() {
   // Sub-tabs: Orgs (token balances + suspension) · Legal Entities · KYB Docs · API Clients
   // Sub-tab state lives in ?sub= so legacy redirects (e.g. /admin/entities) and
   // bookmarks land on the right surface.
-  const [sub, setSub] = useUrlTab("sub", "orgs", ["orgs", "entities", "kyb", "api-clients", "api-monitoring", "api-support"]);
+  const [sub, setSub] = useUrlTab("sub", "orgs", ["orgs", "entities", "kyb", "api-clients", "api-plans", "api-usage", "api-monitoring", "api-security", "api-sandbox", "api-support"]);
   return <>
       <TabHeader id="organisations" />
       <Tabs value={sub} onValueChange={setSub} className="space-y-5">
@@ -458,6 +459,7 @@ function OrganisationsTab() {
           <TabsTrigger value="kyb">KYB Documents</TabsTrigger>
           <TabsTrigger value="api-clients">API Clients</TabsTrigger>
           <TabsTrigger value="api-plans">API Plans</TabsTrigger>
+          <TabsTrigger value="api-usage">API Usage</TabsTrigger>
           <TabsTrigger value="api-monitoring">API Monitoring</TabsTrigger>
           <TabsTrigger value="api-security">API Security</TabsTrigger>
           <TabsTrigger value="api-sandbox">Sandbox Scenarios</TabsTrigger>
@@ -486,6 +488,11 @@ function OrganisationsTab() {
         <TabsContent value="api-plans">
           <Surface label="Public API V1 commercial plan catalogue · public.api_commercial_plans · platform_admin manages, api_admin/auditor read-only">
             <CommercialPlanCataloguePanel />
+          </Surface>
+        </TabsContent>
+        <TabsContent value="api-usage">
+          <Surface label="Platform Admin API Usage Dashboard · public.get_api_usage_dashboard_summary · platform_admin / api_admin / auditor only · no payloads, no key material">
+            <AdminApiUsageDashboardPanel />
           </Surface>
         </TabsContent>
         <TabsContent value="api-monitoring">
