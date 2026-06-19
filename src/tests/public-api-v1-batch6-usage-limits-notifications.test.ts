@@ -150,11 +150,8 @@ describe("Public API V1 · Batch 6 · usage limits + threshold notifications", (
   });
 
   it("temporary override table is platform_admin-only for writes (RLS)", () => {
-    const migDir = path.join(ROOT, "supabase/migrations");
-    const files = fs.readdirSync(migDir).filter((f) => /batch6/i.test(f) || /usage_limits/i.test(f));
-    expect(files.length).toBeGreaterThan(0);
-    const body = files.map((f) => fs.readFileSync(path.join(migDir, f), "utf-8")).join("\n");
-    expect(body).toMatch(/create table[\s\S]+api_usage_overrides/i);
+    const body = findBatch6Migration();
+    expect(body.length).toBeGreaterThan(0);
     expect(body).toMatch(/api_client_id/);
     expect(body).toMatch(/environment/);
     expect(body).toMatch(/override_limit/);
