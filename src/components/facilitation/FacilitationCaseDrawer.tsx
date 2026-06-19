@@ -28,6 +28,7 @@ import { FacilitationOutreachTab } from "@/components/facilitation-outreach/Faci
 import { FacilitationCaseManualChecksPanel } from "@/components/facilitation/FacilitationCaseManualChecksPanel";
 import { FacilitationCaseProfileLinkPanel } from "@/components/facilitation/FacilitationCaseProfileLinkPanel";
 import { FacilitationPoiConversionPanel } from "@/components/facilitation/FacilitationPoiConversionPanel";
+import { FacilitationOrganisationMergePanel } from "@/components/facilitation/FacilitationOrganisationMergePanel";
 import { FacilitationCaseSlaPanel } from "@/components/facilitation/FacilitationCaseSlaPanel";
 import { FacilitationCaseNextStepsPanel } from "@/components/facilitation/FacilitationCaseNextStepsPanel";
 import {
@@ -294,6 +295,15 @@ export const FacilitationCaseDrawer: React.FC<{
             {/* Batch 16 — controlled POI conversion (human-confirmed) */}
             {caseId ? (
               <FacilitationPoiConversionPanel caseId={caseId} onChanged={load} />
+            ) : null}
+
+            {/* Batch 17 — controlled duplicate organisation merge (human-confirmed) */}
+            {caseId ? (
+              <FacilitationOrganisationMergePanel
+                caseId={caseId}
+                sourceOrgId={(data.linked_organisation as { id?: string } | null)?.id ?? null}
+                onChanged={load}
+              />
             ) : null}
 
 
