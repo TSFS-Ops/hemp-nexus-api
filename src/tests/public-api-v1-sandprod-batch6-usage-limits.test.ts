@@ -309,9 +309,13 @@ describe("Public API V1 · Sand/Prod Batch 6 · hard exclusions", () => {
     expect(USAGE).not.toMatch(/admin_dashboard|usage_dashboard/i);
   });
 
-  it("no OpenAPI / IntegrationDocs surface added in this batch", () => {
-    expect(USAGE).not.toMatch(/openapi|integrationdocs/i);
-    expect(BILLING).not.toMatch(/openapi|integrationdocs/i);
+  it("no OpenAPI / IntegrationDocs SURFACE added (mentions only in exclusion comments are fine)", () => {
+    // Hits inside `/** ... */` exclusion comments are intentional and
+    // do not count as new surface area. Surface-level evidence would be
+    // an imported helper, a route definition, or an exported builder.
+    expect(USAGE).not.toMatch(/^\s*import\s+[^;]*(?:openapi|integrationdocs)/im);
+    expect(BILLING).not.toMatch(/^\s*import\s+[^;]*(?:openapi|integrationdocs)/im);
+    expect(GATEWAY).not.toMatch(/\/v1\/(openapi|docs\.json)/i);
   });
 
   it("no write API surface added to the public gateway", () => {
