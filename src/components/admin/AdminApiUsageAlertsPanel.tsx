@@ -294,6 +294,17 @@ export function AdminApiUsageAlertsPanel() {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label className="text-xs">Assignment</Label>
+            <Select value={assignment} onValueChange={setAssignment}>
+              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                <SelectItem value="mine">Assigned to me</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button variant="outline" size="sm" onClick={() => load()} disabled={loading}>
             <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
             Refresh
