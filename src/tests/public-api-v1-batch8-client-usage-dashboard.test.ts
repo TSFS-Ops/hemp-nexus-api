@@ -242,11 +242,9 @@ describe("Public API V1 · Batch 8 · client usage dashboard + CSV export", () =
   });
 
   // ─── Hard exclusions ───────────────────────────────────────────────────
-  it("does not introduce /v1/usage/current or /v1/docs endpoints", () => {
+  it("does not introduce /v1/usage/current endpoint (docs/openapi became in-scope in Batch 10)", () => {
     const gw = read(GATEWAY);
     expect(gw).not.toMatch(/['"`]\/v1\/usage\/current['"`]/);
-    expect(gw).not.toMatch(/['"`]\/v1\/docs['"`]/);
-    expect(gw).not.toMatch(/['"`]\/v1\/docs\/openapi\.json['"`]/);
   });
 
   it("dashboard does not call any /v1/* public endpoint or write API", () => {
