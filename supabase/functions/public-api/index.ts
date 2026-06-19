@@ -40,6 +40,11 @@ import {
   buildOpenApiSpec,
   buildReadableDocsHtml,
 } from "../_shared/public-api-v1-openapi.ts";
+import {
+  isSandboxTestErrorCode,
+  SANDBOX_TEST_ERROR_HTTP,
+  type SandboxTestErrorCode,
+} from "../_shared/public-api-v1-scopes.ts";
 
 const V1_SCOPE = "api:status_read";
 // Back-compat alias preserved so Batch-5 routes can refer by their role.
