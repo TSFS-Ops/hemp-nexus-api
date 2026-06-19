@@ -310,6 +310,16 @@ export const FACILITATION_POI_CONVERSION_AUDIT_NAMES = [
 export type FacilitationPoiConversionAuditName =
   (typeof FACILITATION_POI_CONVERSION_AUDIT_NAMES)[number];
 
+// ─── Batch 17 — Controlled organisation merge audit names (browser mirror) ──
+export const FACILITATION_ORGANISATION_MERGE_AUDIT_NAMES = [
+  "facilitation.organisation_merge.eligibility_checked",
+  "facilitation.organisation_merge.blocked",
+  "facilitation.organisation_merge.confirmed",
+  "facilitation.organisation_merge.completed",
+] as const;
+export type FacilitationOrganisationMergeAuditName =
+  (typeof FACILITATION_ORGANISATION_MERGE_AUDIT_NAMES)[number];
+
 // Batch 11 — internal-only next-step kind emitted by the
 // invite-unopened auto-detector. Mirror of the Deno SSOT.
 export const INVITE_UNOPENED_NEXT_STEP_KIND = "invite_unopened_3bd" as const;
