@@ -27,6 +27,7 @@ const FUNCTIONS: readonly string[] = [
   "facilitation-outreach-template-status",
   "facilitation-template-editor",
   "facilitation-poi-conversion",
+  "facilitation-organisation-merge",
 ];
 
 const TIMEOUT_MS = 5000;
