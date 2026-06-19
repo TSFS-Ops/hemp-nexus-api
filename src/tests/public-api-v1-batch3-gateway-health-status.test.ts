@@ -31,7 +31,7 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
 
   it("public-api edge function exists with /v1/health and /v1/status", () => {
     expect(exists(ENTRY)).toBe(true);
-    const src = read(ENTRY);
+    const src = codeOnly(read(ENTRY));
     expect(src).toMatch(/parts\[0\] === "v1" && parts\[1\] === "health"/);
     expect(src).toMatch(/parts\[0\] === "v1" && parts\[1\] === "status"/);
     // Both require api:status_read
@@ -41,7 +41,7 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
   });
 
   it("canonical V1 error catalogue contains every required code", () => {
-    const src = read(GATEWAY);
+    const src = codeOnly(read(GATEWAY));
     for (const c of [
       "invalid_api_key",
       "expired_api_key",
@@ -67,12 +67,12 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
   });
 
   it("standard error envelope shape is request_id / error_code / message / timestamp / retry_after", () => {
-    const src = read(GATEWAY);
+    const src = codeOnly(read(GATEWAY));
     expect(src).toMatch(/request_id:\s*requestId,\s*\n\s*error_code:\s*code,\s*\n\s*message:\s*ERROR_PUBLIC_MESSAGE\[code\],\s*\n\s*timestamp:[\s\S]*retry_after:\s*retryAfter/);
   });
 
   it("gateway enforces env header, key, status, expiry, env match, client status, IP allowlist, scope, rate limit", () => {
-    const src = read(GATEWAY);
+    const src = codeOnly(read(GATEWAY));
     expect(src).toMatch(/detectEnvironment\(req\)/);
     expect(src).toMatch(/x-api-key/i);
     expect(src).toMatch(/V1Error\("revoked_key"\)/);
@@ -87,13 +87,13 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
   });
 
   it("environment is read from X-Izenzo-Environment header", () => {
-    const src = read(GATEWAY);
+    const src = codeOnly(read(GATEWAY));
     expect(src).toMatch(/x-izenzo-environment/);
     expect(src).toMatch(/raw === "sandbox" \|\| raw === "production"/);
   });
 
   it("request logger populates Batch 2 columns and never logs raw API key", () => {
-    const src = read(GATEWAY);
+    const src = codeOnly(read(GATEWAY));
     expect(src).toMatch(/from\("api_request_logs"\)\s*\.insert\(\{/);
     expect(src).toMatch(/billable:\s*false/);
     expect(src).toMatch(/scope_used:\s*ctx\.scopeUsed/);
@@ -112,7 +112,7 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
   });
 
   it("audit events for invalid/expired/suspended/revoked/insufficient scope/IP blocked/env mismatch are emitted", () => {
-    const src = read(GATEWAY);
+    const src = codeOnly(read(GATEWAY));
     expect(src).toContain("api_key.v1.invalid_key_attempt");
     expect(src).toContain("api_key.v1.expired_use_attempt");
     expect(src).toContain("api_key.v1.suspended_use_attempt");
@@ -125,7 +125,7 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
   });
 
   it("/v1/health response is minimal (no internal service details, no secrets)", () => {
-    const src = read(ENTRY);
+    const src = codeOnly(read(ENTRY));
     // Body shape — request_id, environment, status:"ok", service, timestamp
     expect(src).toMatch(/status:\s*"ok"/);
     expect(src).toMatch(/service:\s*"public_api"/);
@@ -135,7 +135,7 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
   });
 
   it("/v1/status response exposes only key/client/environment status — no secrets, no documents, no POI/WaD/notes/governance/bank", () => {
-    const src = read(ENTRY);
+    const src = codeOnly(read(ENTRY));
     expect(src).toMatch(/api_client_status:/);
     expect(src).toMatch(/key_status:/);
     expect(src).toMatch(/scopes:/);
@@ -152,7 +152,7 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
   });
 
   it("rate limit uses existing helper (60 rpm default) — not a new bespoke table", () => {
-    const src = read(GATEWAY);
+    const src = codeOnly(read(GATEWAY));
     expect(src).toMatch(/import \{ checkRateLimit \} from "\.\/rate-limit\.ts"/);
     // No new monthly/commercial allowance table introduced in gateway
     expect(src).not.toMatch(/monthly_limit|commercial_plan|api_commercial_plans/);
@@ -167,7 +167,7 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
     expect(exists("supabase/functions/public-api-openapi")).toBe(false);
 
     // Entry file itself doesn't dispatch any out-of-scope V1 routes
-    const src = read(ENTRY);
+    const src = codeOnly(read(ENTRY));
     expect(src).not.toMatch(/counterparty/);
     expect(src).not.toMatch(/\/v1\/usage/);
     expect(src).not.toMatch(/\/v1\/docs/);
