@@ -259,3 +259,110 @@ Operator can verify by:
 
 _Evidence captured against the live working tree; contract guard and vitest
 suite both green at capture time._
+
+---
+
+# Batch 11 Operator Verification Log
+
+Captured against the live working tree on 2026-06-19.
+
+## A. Build checks — VERIFIED ✓
+
+| Check | Result |
+|---|---|
+| `node scripts/check-evidence-pack-seal-contract.mjs` | `[check-evidence-pack-seal-contract] OK` |
+| `bunx vitest run src/tests/facilitation-batch10-evidence-pack-seal.test.ts` | **13/13 passed** |
+| `bun run prebuild` (full chain, ~80 guards) | All green — final guards `check-evidence-pack-seal-contract OK`, `check-invite-unopened-detector-contract OK`, `check-facilitation-template-editor-contract OK`, `check-evidence-secret-leaks: clean`, `UI surface coverage OK`, `Route-level UI surface coverage OK`, `check-api-request-logs-no-payloads: no payload writes detected` |
+| `bunx tsc --noEmit` | No errors |
+
+## B. Deterministic hash — VERIFIED ✓
+
+Ran the seal algorithm (canonical-JSON + SHA-256) against a representative
+pack body in two passes with shuffled key ordering:
+
+```
+BYTES:            1404
+DIGEST_1:         b444de5437f13648621344fe40c16eb150042cd6d6144fd03d6f64e513bba563
+DIGEST_2:         b444de5437f13648621344fe40c16eb150042cd6d6144fd03d6f64e513bba563
+DETERMINISTIC:    true
+```
+
+The digest does not depend on key insertion order. The same digest is produced
+by the Web Crypto path in the edge function and the Node `crypto` mirror.
+
+## C. Tamper check — VERIFIED ✓
+
+Copied the local pack, flipped one intake field
+(`intake.estimated_value: 1250000 → 1250001`), re-canonicalised and re-hashed:
+
+```
+DIGEST_ORIGINAL:  b444de5437f13648621344fe40c16eb150042cd6d6144fd03d6f64e513bba563
+DIGEST_TAMPERED:  175b7e326946e4f6aff6394a3072a000b80d1d5227309c957863ec1e08cbc671
+TAMPER_DETECTED:  true
+```
+
+A single-field change produces a different digest, as expected for SHA-256.
+
+## D. Permission gate — VERIFIED BY CODE REVIEW ✓
+
+`supabase/functions/facilitation-export-evidence-pack/index.ts` lines 61–67:
+hard `platform_admin`-only role check via `user_roles`; non-admins receive
+`{ "error": "Forbidden" }` with status `403` — plain English, no stack trace,
+no edge-function name leak. Confirmed by re-reading the function.
+
+## E. Negative controls — VERIFIED BY CODE REVIEW + GUARD ✓
+
+Re-read the function diff for the sealing change (lines 261–303). The only new
+write is the append-only audit row `facilitation_case.evidence_pack_sealed`.
+No `.update(`/`.insert(` against case data, evidence records, POIs,
+organisations, outreach, emails, payments, tokens, WaDs, matches, or refunds.
+No new outbound HTTP. The full prebuild's `check-facilitation-no-send-path`
+and `check-evidence-pack-seal-contract` guards both green.
+
+---
+
+## F. Live operator-only steps — DEFERRED (cannot execute from sandbox)
+
+The following Batch 11 checklist items require a real `platform_admin` session
+against the deployed environment. The sandbox has **no `platform_admin`
+credential** — the UAT seeder (`seed-uat-facilitation-accounts`) explicitly
+**does not grant `platform_admin`** to either UAT account by design
+(`platform_admin_granted: false`, line 261). These items must be executed by
+the Izenzo operator.
+
+| # | Step | Why deferred |
+|---|---|---|
+| F1 | Log in as `platform_admin`, open a seeded/UAT facilitation case, export the evidence pack via the admin UI | Requires real platform_admin session; UAT seeder does not grant the role |
+| F2 | Confirm downloaded JSON has top-level `seal { algo:"sha-256", digest_hex, sealed_at, canonical_bytes, function_version }` and `X-Evidence-Pack-Digest` response header | Requires F1 |
+| F3 | Inspect `audit_logs` for both `facilitation.management.evidence_pack_exported` and `facilitation_case.evidence_pack_sealed` rows, confirm `metadata.seal.digest_hex` matches the downloaded pack's `seal.digest_hex` | Requires F1 + DB access as operator |
+| F4 | Export the same case twice and confirm the `pack` body digest behaviour matches §3 trade-off (different `generated_at` → different digest; case content stable across exports) | Requires F1 |
+| F5 | As a non-admin (requester / compliance_analyst), attempt export and confirm `403 Forbidden` with plain wording | Requires non-admin sessions |
+| F6 | Confirm no visible raw enum codes / table names / edge-function names / `undefined` / `null` / `NaN` / `[object Object]` in the rendered admin UI surface after export | Requires F1 |
+
+Operator can run F1–F6 directly using the existing admin evidence-pack export
+action; no new code or seeds are required.
+
+---
+
+## Status
+
+**`BATCH_11_PARTIAL — NOT READY`**
+
+- **Failed check:** none.
+- **Deferred checks:** F1–F6 (live `platform_admin` export, audit-row
+  inspection, non-admin denial, UI wording).
+- **Role required:** `platform_admin` (and one non-admin for F5).
+- **Screen / function:** admin facilitation-case drawer → "Export evidence
+  pack" action, backed by edge function
+  `facilitation-export-evidence-pack`.
+- **Likely cause of deferral:** sandbox has no `platform_admin` credential;
+  the UAT seeder explicitly does not grant `platform_admin` to either UAT
+  account (`seed-uat-facilitation-accounts/index.ts:137,261`).
+- **Smallest safe fix:** human operator (with `platform_admin`) runs F1–F6
+  against the deployed environment using the existing admin UI; record
+  digest, audit-row screenshot, and non-admin denial response in this
+  evidence file. No code change required.
+
+All code-verifiable items (build, contract guard, vitest, deterministic hash,
+tamper check, permission gate by review, negative controls by review + guard)
+are green.
