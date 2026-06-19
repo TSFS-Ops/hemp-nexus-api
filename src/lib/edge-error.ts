@@ -15,8 +15,10 @@ export interface ParsedEdgeError {
   status: number | null;
   code: string | null;
   message: string;
+  requestId: string | null;
   details?: unknown;
 }
+
 
 const FRIENDLY: Record<string, string> = {
   MFA_REQUIRED:
