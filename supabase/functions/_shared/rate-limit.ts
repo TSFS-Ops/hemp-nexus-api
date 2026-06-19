@@ -145,6 +145,13 @@ interface RateLimitMeta {
   actorIp?: string | null;
   userAgent?: string | null;
   requestId?: string | null;
+  /**
+   * Explicit per-call limits override. Public API V1 uses this to apply
+   * environment-specific limits (sandbox 30 rpm, production 60 rpm)
+   * without polluting the global SCOPE_LIMITS table. When set, the
+   * override completely replaces the default/scope limits for this call.
+   */
+  limitsOverride?: RateLimitConfig;
 }
 
 export async function checkRateLimit(
@@ -155,7 +162,9 @@ export async function checkRateLimit(
   scope?: string,
   meta: RateLimitMeta = {},
 ): Promise<void> {
-  const limits = scope && SCOPE_LIMITS[scope] ? SCOPE_LIMITS[scope] : DEFAULT_LIMITS;
+  const limits = meta.limitsOverride
+    ? meta.limitsOverride
+    : (scope && SCOPE_LIMITS[scope] ? SCOPE_LIMITS[scope] : DEFAULT_LIMITS);
   const auditAction = rateLimitAuditAction(endpoint);
 
   const auditTrip = (window: "minute" | "hour" | "day", limit: number, retryAfter: number) => {

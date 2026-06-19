@@ -29,6 +29,8 @@ import {
   auditConcurrencyBlock,
   isCountableEndpoint,
   V1_DEFAULT_CONCURRENCY,
+  defaultRpm,
+  defaultConcurrency,
 } from "./public-api-v1-usage.ts";
 import { getActivePlanForClient } from "./public-api-v1-billing.ts";
 
@@ -139,7 +141,14 @@ export interface V1RequestCtx {
   billable: boolean;
   // Sandbox/Production Separation · Batch 2 trace columns.
   requestPayloadHash: string | null;
-  rateLimitDecision: "allowed" | "minute_block" | "monthly_block" | "overage_billable" | null;
+  rateLimitDecision:
+    | "allowed"
+    | "minute_block"
+    | "monthly_block"
+    | "concurrency_block"
+    | "overage_billable"
+    | "not_evaluated"
+    | null;
   billableOverage: boolean;
   responseHeaders: Record<string, string>;
 }
@@ -441,7 +450,13 @@ export async function runGateway(
   }
   ctx.scopeUsed = requiredScope;
 
-  // 10. Rate limit (60 rpm default via existing helper)
+  // 10. Rate limit — environment-specific (Sand/Prod Batch 6):
+  //   • Sandbox: 30 rpm   • Production: 60 rpm
+  // ctx.environment is always set by the host-derived detector by this
+  // point; fall back to production limits if it somehow isn't (fail safe).
+  const envForRpm: "sandbox" | "production" =
+    ctx.environment === "sandbox" ? "sandbox" : "production";
+  const rpm = defaultRpm(envForRpm);
   try {
     await checkRateLimit(
       supabase,
@@ -449,7 +464,12 @@ export async function runGateway(
       key.id,
       ctx.endpointTag,
       undefined,
-      { actorIp: ctx.actorIp, userAgent: ctx.userAgent, requestId: ctx.requestId },
+      {
+        actorIp: ctx.actorIp,
+        userAgent: ctx.userAgent,
+        requestId: ctx.requestId,
+        limitsOverride: { requestsPerMinute: rpm },
+      },
     );
     ctx.rateLimitDecision = "allowed";
   } catch (e) {
@@ -459,6 +479,7 @@ export async function runGateway(
       ctx.rateLimitDecision = "minute_block";
       throw new V1Error("rate_limit_exceeded", retry ?? null);
     }
+    ctx.rateLimitDecision = "not_evaluated";
     throw new V1Error("internal_error");
   }
 
@@ -496,10 +517,16 @@ export async function handleV1<T>(
     // Batch 6 — concurrency guard (3 per api_key, best-effort, 30s TTL).
     // Applied to ALL V1 endpoints after auth so unauthenticated traffic
     // cannot starve the table.
+    // Sand/Prod Batch 6 — concurrency guard, env-specific cap
+    //   • Sandbox: 10 concurrent   • Production: 3 concurrent
+    const envForConc: "sandbox" | "production" =
+      ctx.environment === "sandbox" ? "sandbox" : "production";
+    const concCap = defaultConcurrency(envForConc);
     const begun = await beginApiActiveRequest(
-      supabase, gw.apiKey.id, ctx.apiClientId, ctx.environment, ctx.requestId,
+      supabase, gw.apiKey.id, ctx.apiClientId, ctx.environment, ctx.requestId, concCap,
     );
     if (!begun.ok) {
+      ctx.rateLimitDecision = "concurrency_block";
       await auditConcurrencyBlock(supabase, ctx, gw.apiKey.id, begun.active);
       throw new V1Error("rate_limit_exceeded", 1);
     }

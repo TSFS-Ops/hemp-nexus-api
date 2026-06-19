@@ -19,11 +19,36 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import type { V1RequestCtx } from "./public-api-v1.ts";
 
-// ─── Defaults ─────────────────────────────────────────────────────────────
-export const V1_DEFAULT_RPM = 60;                  // confirmed: reuses Batch-3 gateway 60 rpm
-export const V1_DEFAULT_CONCURRENCY = 3;           // per API key
-export const V1_DEFAULT_MONTHLY_PROD = 5_000;      // per api_client / month
-export const V1_DEFAULT_MONTHLY_SANDBOX = 10_000;  // per api_client / month
+// ─── Defaults (Sand/Prod Batch 6 — environment-specific) ─────────────────
+//
+// The Public API V1 commercial packaging requires distinct per-environment
+// defaults for institutional traffic shaping:
+//   • Sandbox  — 30 rpm, 1,000 calls/month, 10 concurrent (predictable
+//     for developer integration; capped to prevent abuse of free
+//     deterministic test data).
+//   • Production — 60 rpm, 5,000 calls/month (hard default when no
+//     commercial plan is assigned), 3 concurrent (conservative until
+//     contracted overrides are issued by platform_admin).
+//
+// `V1_DEFAULT_RPM` / `V1_DEFAULT_CONCURRENCY` / `V1_DEFAULT_MONTHLY_PROD`
+// are retained for backwards compatibility with Batch 6 callers and are
+// pinned to the PRODUCTION defaults.
+export const V1_DEFAULT_RPM_SANDBOX = 30;
+export const V1_DEFAULT_RPM_PRODUCTION = 60;
+export const V1_DEFAULT_RPM = V1_DEFAULT_RPM_PRODUCTION; // legacy alias
+export const V1_DEFAULT_CONCURRENCY_SANDBOX = 10;
+export const V1_DEFAULT_CONCURRENCY_PRODUCTION = 3;
+export const V1_DEFAULT_CONCURRENCY = V1_DEFAULT_CONCURRENCY_PRODUCTION; // legacy alias
+export const V1_DEFAULT_MONTHLY_PROD = 5_000;
+export const V1_DEFAULT_MONTHLY_SANDBOX = 1_000;
+
+export function defaultRpm(env: "sandbox" | "production"): number {
+  return env === "sandbox" ? V1_DEFAULT_RPM_SANDBOX : V1_DEFAULT_RPM_PRODUCTION;
+}
+
+export function defaultConcurrency(env: "sandbox" | "production"): number {
+  return env === "sandbox" ? V1_DEFAULT_CONCURRENCY_SANDBOX : V1_DEFAULT_CONCURRENCY_PRODUCTION;
+}
 
 // Endpoints that COUNT toward the monthly allowance. Health/status/docs-type
 // calls deliberately omitted — they never consume the monthly allowance.
@@ -296,6 +321,9 @@ export async function auditConcurrencyBlock(
   apiKeyId: string,
   active: number,
 ): Promise<void> {
+  const env = (ctx.environment === "sandbox" || ctx.environment === "production")
+    ? ctx.environment
+    : "production";
   await supabase.from("audit_logs").insert({
     action: "api_usage.concurrency_limit_exceeded",
     entity_type: "api_key",
@@ -303,7 +331,7 @@ export async function auditConcurrencyBlock(
     org_id: ctx.orgId,
     metadata: {
       active,
-      limit: V1_DEFAULT_CONCURRENCY,
+      limit: defaultConcurrency(env),
       environment: ctx.environment,
       request_id: ctx.requestId,
       endpoint: ctx.endpointTag,
@@ -325,6 +353,7 @@ export async function beginApiActiveRequest(
   apiClientId: string | null,
   environment: string | null,
   requestId: string,
+  concurrencyLimit?: number,
 ): Promise<{ ok: true } | { ok: false; active: number }> {
   // Opportunistic cleanup — keep table small.
   await supabase
@@ -333,13 +362,16 @@ export async function beginApiActiveRequest(
     .lt("expires_at", new Date().toISOString())
     .then(() => {}, () => {});
 
+  const limit = concurrencyLimit ??
+    (environment === "sandbox" ? V1_DEFAULT_CONCURRENCY_SANDBOX : V1_DEFAULT_CONCURRENCY_PRODUCTION);
+
   const { count } = await supabase
     .from("api_active_requests")
     .select("request_id", { count: "exact", head: true })
     .eq("api_key_id", apiKeyId)
     .gt("expires_at", new Date().toISOString());
 
-  if ((count ?? 0) >= V1_DEFAULT_CONCURRENCY) {
+  if ((count ?? 0) >= limit) {
     return { ok: false, active: count ?? 0 };
   }
 
