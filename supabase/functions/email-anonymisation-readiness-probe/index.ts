@@ -236,11 +236,11 @@ Deno.serve(async (req) => {
         behaviour: "any active hold short-circuits before inspection",
       },
       per_org_policy_interaction: {
-        source: "org_retention_policies.record_class = 'email_send_log'",
+        source: "per-org retention policy table, record_class = 'email_send_log'",
         floor_days: 90,
         note:
-          "If anonymisation is ever introduced, retention_days for the " +
-          "anonymisation window MUST resolve via get_effective_retention_days " +
+          "If anonymisation is ever introduced, the retention window MUST " +
+          "resolve via the existing effective-retention-days helper " +
           "and MUST NOT be earlier than the platform floor.",
       },
       readiness_verdict: READINESS_VERDICT,
