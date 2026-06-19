@@ -162,12 +162,12 @@ describe("Public API V1 · Batch 9 · internal monitoring dashboard", () => {
   });
 
   it("support-ticket field is now wired (Batch 11) — field still emitted", () => {
-    const mig = findBatch9Migration();
-    expect(mig.includes("'open_support_tickets'")).toBe(true);
+    const combined = findMonitoringOverviewMigrations();
+    expect(combined.includes("'open_support_tickets'")).toBe(true);
     // Batch 11 wires real counts; either Batch 9's deferred placeholder OR
-    // Batch 11's live wiring is acceptable on this combined migration text.
-    const wired = /live_from_api_support_tickets/.test(mig);
-    const deferred = /deferred_no_support_ticket_table/.test(mig);
+    // Batch 11's live wiring is acceptable on the combined RPC text.
+    const wired = /live_from_api_support_tickets/.test(combined);
+    const deferred = /deferred_no_support_ticket_table/.test(combined);
     expect(wired || deferred).toBe(true);
   });
 
