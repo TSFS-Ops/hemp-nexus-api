@@ -40,6 +40,11 @@ import {
   buildOpenApiSpec,
   buildReadableDocsHtml,
 } from "../_shared/public-api-v1-openapi.ts";
+import {
+  isSandboxTestErrorCode,
+  SANDBOX_TEST_ERROR_HTTP,
+  type SandboxTestErrorCode,
+} from "../_shared/public-api-v1-scopes.ts";
 
 const V1_SCOPE = "api:status_read";
 // Back-compat alias preserved so Batch-5 routes can refer by their role.
@@ -218,6 +223,68 @@ Deno.serve(async (req) => {
       throw new V1Error("no_match");
     });
   }
+
+  // GET /v1/test/error/{code} — Sandbox / Production Separation · Batch 4.
+  //
+  // Deterministic sandbox-only error route. Production hostnames must
+  // reject this route BEFORE any simulation runs so production keys can
+  // never produce a forged error envelope. Sandbox calls are always
+  // non-billable (ctx.billable=false) and log token_cost-equivalent=0.
+  if (
+    req.method === "GET" &&
+    parts[0] === "v1" && parts[1] === "test" && parts[2] === "error" && parts.length === 4
+  ) {
+    // Host-derived environment must be sandbox. We check this BEFORE
+    // invoking handleV1 so the route literally does not exist in
+    // production: production hosts return sandbox_endpoint_required and
+    // never enter the simulation branch.
+    const detected = detectEnvironmentDetailed(req);
+    if (detected.env === "production") {
+      const requestId = crypto.randomUUID();
+      return jsonResponse(
+        errorBody("sandbox_endpoint_required", requestId, null),
+        403,
+        {
+          ...headers,
+          "X-Request-Id": requestId,
+          "X-Izenzo-Request-Id": requestId,
+          "X-Izenzo-Environment": "production",
+        },
+      );
+    }
+
+    const code = parts[3];
+    if (!isSandboxTestErrorCode(code)) {
+      const requestId = crypto.randomUUID();
+      return jsonResponse(
+        errorBody("missing_required_field", requestId, null),
+        400,
+        {
+          ...headers,
+          "X-Request-Id": requestId,
+          "X-Izenzo-Request-Id": requestId,
+          "X-Izenzo-Environment": detected.env ?? "unknown",
+        },
+      );
+    }
+
+    return handleV1(req, "v1.test.error", `/v1/test/error/${code}`, V1_STATUS_SCOPE, async (ctx) => {
+      // Sandbox error simulations are NEVER billable. Defence-in-depth:
+      // also reject any non-sandbox env that slipped through (host-derived
+      // env is authoritative — see runGateway env match check).
+      ctx.billable = false;
+      if (ctx.environment !== "sandbox") {
+        throw new V1Error("sandbox_endpoint_required");
+      }
+      const c = code as SandboxTestErrorCode;
+      const retry = c === "rate_limit_exceeded" ? 60 : null;
+      // Throw via V1Error so the canonical envelope + HTTP status comes
+      // from the central error table — proves response shape parity with
+      // real production errors.
+      throw new V1Error(c, retry);
+    });
+  }
+
 
   // Unknown V1 path — return canonical 404 envelope, never leak internals.
   const requestId = crypto.randomUUID();
