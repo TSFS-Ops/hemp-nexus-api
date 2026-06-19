@@ -22,7 +22,7 @@ import {
 
 describe("P010 stub provider SSOT", () => {
   it("covers the four agreed stub providers", () => {
-    expect(STUB_PROVIDER_KEYS.sort()).toEqual(["cipc", "dow_jones", "onfido", "refinitiv"]);
+    expect([...STUB_PROVIDER_KEYS].sort()).toEqual(["cipc", "dow_jones", "onfido", "refinitiv"]);
   });
 
   it("classifies each stub provider correctly", () => {
