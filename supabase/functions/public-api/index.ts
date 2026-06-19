@@ -102,6 +102,32 @@ Deno.serve(async (req) => {
     });
   }
 
+  // GET /v1/docs/openapi.json — single source-of-truth machine-readable spec.
+  // Non-billable; logged; requires valid API key + api:status_read.
+  if (
+    req.method === "GET" &&
+    parts[0] === "v1" && parts[1] === "docs" && parts[2] === "openapi.json" && parts.length === 3
+  ) {
+    return handleV1(req, "v1.docs.openapi", "/v1/docs/openapi.json", V1_DOCS_SCOPE, async (ctx) => {
+      ctx.billable = false;
+      const spec = buildOpenApiSpec(publicServerUrl(req));
+      return { body: spec };
+    });
+  }
+
+  // GET /v1/docs — readable HTML documentation, served from the SAME
+  // source-of-truth module as the OpenAPI spec. Non-billable; logged.
+  if (
+    req.method === "GET" &&
+    parts[0] === "v1" && parts[1] === "docs" && parts.length === 2
+  ) {
+    return handleV1(req, "v1.docs.readable", "/v1/docs", V1_DOCS_SCOPE, async (ctx) => {
+      ctx.billable = false;
+      const html = buildReadableDocsHtml(publicServerUrl(req));
+      return { body: { ok: true }, contentType: "text/html; charset=utf-8", rawBody: html };
+    });
+  }
+
   // POST /v1/counterparty/lookup
   if (
     req.method === "POST" &&
