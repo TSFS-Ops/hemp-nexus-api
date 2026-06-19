@@ -29,6 +29,8 @@ import {
   auditConcurrencyBlock,
   isCountableEndpoint,
   V1_DEFAULT_CONCURRENCY,
+  defaultRpm,
+  defaultConcurrency,
 } from "./public-api-v1-usage.ts";
 import { getActivePlanForClient } from "./public-api-v1-billing.ts";
 
