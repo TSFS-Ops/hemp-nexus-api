@@ -19,6 +19,17 @@ import { hashApiKey, hashApiKeySHA256, verifyScrypt } from "./auth.ts";
 import { scopeSatisfies } from "./api-scopes.ts";
 import { writeSecurityAudit } from "./security-audit.ts";
 import { checkRateLimit } from "./rate-limit.ts";
+import {
+  beginApiActiveRequest,
+  finishApiActiveRequest,
+  evaluateMonthlyAllowance,
+  thresholdsCrossed,
+  recordThresholdOnce,
+  auditMonthlyBlock,
+  auditConcurrencyBlock,
+  isCountableEndpoint,
+  V1_DEFAULT_CONCURRENCY,
+} from "./public-api-v1-usage.ts";
 
 // ─── Canonical V1 error catalogue ────────────────────────────────────────
 export const V1_ERROR_CODES = [
