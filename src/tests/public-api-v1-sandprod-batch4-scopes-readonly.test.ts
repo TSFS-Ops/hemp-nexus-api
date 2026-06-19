@@ -238,11 +238,19 @@ describe("Public API V1 · sandbox/production separation · Batch 4 scopes + rea
     expect(prodSummary).not.toContain("api_sandbox_records");
     expect(prodSummary).toMatch(/throw new V1Error\("no_match"\)/);
 
-    // Sandbox-only marker fields must never be produced by the public envelope builder.
+    // Sandbox-only marker fields are permitted in Batch 5 but MUST be
+    // gated behind the sandbox-only `withSandboxMarkers` helper, which
+    // short-circuits when the environment is anything other than sandbox.
     const cp = read(COUNTERPARTY);
     expect(cp).not.toContain("simulated_provider");
-    expect(cp).not.toContain("sandbox_case_id");
-    expect(cp).not.toContain("test_record");
+    const gate = cp.match(/function\s+withSandboxMarkers[\s\S]*?\n\}/);
+    expect(gate, "withSandboxMarkers helper missing").not.toBeNull();
+    expect(gate![0]).toMatch(/ctx\.environment\s*!==\s*"sandbox"/);
+    // Outside that helper, no envelope builder may directly assign
+    // sandbox markers without going through the gate.
+    const stripped = cp.replace(/function\s+withSandboxMarkers[\s\S]*?\n\}/, "");
+    expect(stripped).not.toMatch(/body\.test_record\s*=\s*true/);
+    expect(stripped).not.toMatch(/body\.sandbox_case_id\s*=/);
   });
 
   it("Batch 2 schema-level separation exception remains live (not yet retired)", () => {

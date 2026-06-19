@@ -31,6 +31,7 @@ export const LOOKUP_ALLOWED_FIELDS = [
   "request_id",
   "environment",
   "match_status",
+  "lookup_status",
   "confidence_band",
   "verification_status",
   "risk_signal_summary",
@@ -52,6 +53,9 @@ export const LOOKUP_ALLOWED_FIELDS = [
   "trading_name",
   "country",
   "website_domain",
+  // sandbox-only markers (never present in production responses)
+  "test_record",
+  "sandbox_case_id",
 ] as const;
 
 export const SUMMARY_ALLOWED_FIELDS = [
@@ -63,6 +67,7 @@ export const SUMMARY_ALLOWED_FIELDS = [
   "country",
   "website_domain",
   "match_status",
+  "lookup_status",
   "confidence_band",
   "verification_status",
   "risk_signal_summary",
@@ -72,6 +77,8 @@ export const SUMMARY_ALLOWED_FIELDS = [
   "billable",
   "timestamp",
   "external_reference",
+  "test_record",
+  "sandbox_case_id",
 ] as const;
 
 // ─── Forbidden field guard ───────────────────────────────────────────────
@@ -137,9 +144,13 @@ const DOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])
 
 export interface LookupInput {
   legal_name?: string | null;
+  /** Sandbox / industry alias for legal_name. Normalised into legal_name. */
+  company_name?: string | null;
   trading_name?: string | null;
   registration_number?: string | null;
   country?: string | null;
+  /** Sandbox / industry alias for country. Normalised into country. */
+  country_code?: string | null;
   website_domain?: string | null;
   email_domain?: string | null;
   tax_number?: string | null;
@@ -149,13 +160,19 @@ export interface LookupInput {
 /**
  * Throws V1Error on bad input. Returns a normalised copy. Minimum valid
  * request: (legal_name + country) OR (registration_number + country).
+ *
+ * Aliases accepted: `company_name` → legal_name, `country_code` → country.
+ * Matching is case-insensitive (country uppercased, the rest lowered by
+ * resolveSandboxRow).
  */
 export function validateLookupInput(input: LookupInput): Required<Pick<LookupInput, "country">> & LookupInput {
+  const legal = (input.legal_name ?? input.company_name)?.trim() || null;
+  const country = (input.country ?? input.country_code)?.trim().toUpperCase() || null;
   const norm: LookupInput = {
-    legal_name: input.legal_name?.trim() || null,
+    legal_name: legal,
     trading_name: input.trading_name?.trim() || null,
     registration_number: input.registration_number?.trim() || null,
-    country: input.country?.trim().toUpperCase() || null,
+    country,
     website_domain: input.website_domain?.trim().toLowerCase() || null,
     email_domain: input.email_domain?.trim().toLowerCase() || null,
     tax_number: input.tax_number?.trim() || null,
@@ -273,16 +290,25 @@ function base(ctx: V1RequestCtx): BaseEnvelope {
   return out;
 }
 
-export function buildNoMatchEnvelope(ctx: V1RequestCtx) {
+function withSandboxMarkers(ctx: V1RequestCtx, body: Record<string, unknown>, row?: any) {
+  if (ctx.environment !== "sandbox") return body;
+  body.test_record = true;
+  if (row && row.scenario_code) body.sandbox_case_id = row.scenario_code;
+  return body;
+}
+
+export function buildNoMatchEnvelope(ctx: V1RequestCtx, row?: any) {
   // IMPORTANT: never include verification_status="failed" or verified=false
   // here — no_match is NOT failed verification.
-  const body = {
+  const body: Record<string, unknown> = {
     ...base(ctx),
-    match_status: "no_match" as const,
-    confidence_band: "none" as const,
+    match_status: "no_match",
+    lookup_status: "no_match",
+    confidence_band: "none",
     message: "No matching record found",
     next_action: "Submit additional identifiers or request manual review.",
   };
+  withSandboxMarkers(ctx, body, row);
   assertNoForbiddenFields(body);
   return body;
 }
@@ -296,36 +322,45 @@ export function buildMultiMatchEnvelope(ctx: V1RequestCtx, row: any) {
     country: c.country ?? null,
     confidence_band: c.confidence_band ?? "low",
   }));
-  const body = {
+  const body: Record<string, unknown> = {
     ...base(ctx),
-    match_status: "multiple_possible_matches" as const,
+    match_status: "multiple_possible_matches",
+    lookup_status: "multiple_possible_matches",
     candidates,
     match_reason: row.risk_signal_summary || "Multiple candidate records share similar identifiers.",
     confidence_band: row.confidence_band ?? "low",
     required_next_identifier: "registration_number",
     next_action: row.next_action ?? "Disambiguate using registration number or country.",
   };
+  withSandboxMarkers(ctx, body, row);
   assertNoForbiddenFields(body);
   return body;
 }
 
 export function buildLookupEnvelope(ctx: V1RequestCtx, row: any) {
-  const body = {
+  const ms = row.match_status ?? "match";
+  // For blocked/stale rows, omit reviewer-level detail and never imply
+  // current verification.
+  const isBlocked = ms === "blocked_record" || ms === "blocked";
+  const isStale = ms === "stale_record" || row.verification_status === "stale";
+  const body: Record<string, unknown> = {
     ...base(ctx),
-    match_status: row.match_status ?? "match",
+    match_status: ms,
+    lookup_status: ms,
     confidence_band: row.confidence_band ?? "low",
-    verification_status: row.verification_status ?? "unverified",
-    risk_signal_summary: row.risk_signal_summary ?? null,
+    verification_status: isStale ? "stale" : (isBlocked ? "blocked" : (row.verification_status ?? "unverified")),
+    risk_signal_summary: isBlocked ? null : (row.risk_signal_summary ?? null),
     data_freshness_date: row.data_freshness_date ?? null,
     record_scope: row.record_scope ?? "sandbox_only",
-    next_action: row.next_action ?? null,
+    next_action: row.next_action ?? (isBlocked ? "Manual review required." : null),
   };
+  withSandboxMarkers(ctx, body, row);
   assertNoForbiddenFields(body);
   return body;
 }
 
 export function buildSummaryEnvelope(ctx: V1RequestCtx, row: any) {
-  const body = {
+  const body: Record<string, unknown> = {
     ...base(ctx),
     record_id: row.id,
     legal_name: row.legal_name ?? null,
@@ -333,6 +368,7 @@ export function buildSummaryEnvelope(ctx: V1RequestCtx, row: any) {
     country: row.country ?? null,
     website_domain: row.website_domain ?? null,
     match_status: row.match_status ?? "match",
+    lookup_status: row.match_status ?? "match",
     confidence_band: row.confidence_band ?? "low",
     verification_status: row.verification_status ?? "unverified",
     risk_signal_summary: row.risk_signal_summary ?? null,
@@ -340,6 +376,7 @@ export function buildSummaryEnvelope(ctx: V1RequestCtx, row: any) {
     record_scope: row.record_scope ?? "sandbox_only",
     next_action: row.next_action ?? null,
   };
+  withSandboxMarkers(ctx, body, row);
   assertNoForbiddenFields(body);
   return body;
 }
@@ -352,15 +389,20 @@ export function buildSummaryEnvelope(ctx: V1RequestCtx, row: any) {
  */
 export function dispatchSandboxRow(ctx: V1RequestCtx, row: any) {
   const code = row.scenario_code as string;
+  const ms = row.match_status as string | null;
   // Error-marker scenarios — throw V1Error so the gateway returns the
   // canonical error envelope instead of a success body.
   const errMapped = ERROR_SCENARIO_MAP[code];
   if (errMapped) throw new V1Error(errMapped);
 
-  if (code === "no_match") {
-    return buildNoMatchEnvelope(ctx);
+  if (code === "no_match" || ms === "no_match") {
+    return buildNoMatchEnvelope(ctx, row);
   }
-  if (code === "multiple_possible_matches" || row.match_status === "multiple_matches") {
+  if (
+    code === "multiple_possible_matches" ||
+    ms === "multiple_matches" ||
+    ms === "multiple_possible_matches"
+  ) {
     return buildMultiMatchEnvelope(ctx, row);
   }
   return buildLookupEnvelope(ctx, row);
