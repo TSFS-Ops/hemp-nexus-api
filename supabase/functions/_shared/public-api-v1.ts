@@ -403,12 +403,50 @@ export async function handleV1<T>(
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   const ctx = newCtx(req, endpointTag);
+  let concurrencyHeld = false;
+  const countable = isCountableEndpoint(endpointPath);
 
   try {
     const gw = await runGateway(req, supabase, ctx, requiredScope);
+
+    // Batch 6 — concurrency guard (3 per api_key, best-effort, 30s TTL).
+    // Applied to ALL V1 endpoints after auth so unauthenticated traffic
+    // cannot starve the table.
+    const begun = await beginApiActiveRequest(
+      supabase, gw.apiKey.id, ctx.apiClientId, ctx.environment, ctx.requestId,
+    );
+    if (!begun.ok) {
+      await auditConcurrencyBlock(supabase, ctx, gw.apiKey.id, begun.active);
+      throw new V1Error("rate_limit_exceeded", 1);
+    }
+    concurrencyHeld = true;
+
+    // Batch 6 — monthly allowance gate (countable endpoints only).
+    let preState: Awaited<ReturnType<typeof evaluateMonthlyAllowance>> | null = null;
+    if (countable && ctx.apiClientId && (ctx.environment === "sandbox" || ctx.environment === "production")) {
+      preState = await evaluateMonthlyAllowance(supabase, ctx.apiClientId, ctx.environment);
+      if (preState.blocked) {
+        await auditMonthlyBlock(supabase, ctx, ctx.apiClientId, ctx.environment, preState);
+        throw new V1Error("monthly_limit_reached");
+      }
+    }
+
     const result = await exec(ctx, supabase, gw);
     const status = result.status ?? 200;
     await logV1Request(supabase, ctx, endpointPath, req.method, status, null);
+
+    // Batch 6 — post-success threshold detection (countable endpoints only).
+    if (countable && preState && ctx.apiClientId && (ctx.environment === "sandbox" || ctx.environment === "production")) {
+      const postCurrent = preState.current + 1;
+      const crossed = thresholdsCrossed(preState.current, postCurrent, preState.limit);
+      for (const t of crossed) {
+        await recordThresholdOnce(
+          supabase, ctx, ctx.apiClientId, ctx.environment, t,
+          { ...preState, current: postCurrent },
+        );
+      }
+    }
+
     return jsonResponse(result.body, status, { ...headers, "X-Request-Id": ctx.requestId });
   } catch (e) {
     const v1err = e instanceof V1Error ? e : new V1Error("internal_error");
@@ -420,5 +458,12 @@ export async function handleV1<T>(
     }
     await logV1Request(supabase, ctx, endpointPath, req.method, status, v1err.code);
     return jsonResponse(body, status, extraHeaders);
+  } finally {
+    if (concurrencyHeld) {
+      await finishApiActiveRequest(supabase, ctx.requestId);
+    }
   }
 }
+
+// Re-export for external static introspection (tests / panels).
+export { V1_DEFAULT_CONCURRENCY };
