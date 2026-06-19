@@ -241,7 +241,7 @@ describe("Public API V1 · Batch 9 · internal monitoring dashboard", () => {
   // ─── Hard exclusions ───────────────────────────────────────────────
   it("no /v1/docs or /v1/docs/openapi.json gateway endpoint introduced", () => {
     if (!exists(GATEWAY)) return;
-    const gw = read(GATEWAY);
+    const gw = codeOnly(read(GATEWAY));
     expect(/\/v1\/docs/.test(gw)).toBe(false);
     expect(/openapi\.json/.test(gw)).toBe(false);
   });
