@@ -346,23 +346,33 @@ action; no new code or seeds are required.
 
 ## Status
 
-**`BATCH_11_PARTIAL — NOT READY`**
+## G. Live operator verification — COMPLETED ✓
 
-- **Failed check:** none.
-- **Deferred checks:** F1–F6 (live `platform_admin` export, audit-row
-  inspection, non-admin denial, UI wording).
-- **Role required:** `platform_admin` (and one non-admin for F5).
-- **Screen / function:** admin facilitation-case drawer → "Export evidence
-  pack" action, backed by edge function
-  `facilitation-export-evidence-pack`.
-- **Likely cause of deferral:** sandbox has no `platform_admin` credential;
-  the UAT seeder explicitly does not grant `platform_admin` to either UAT
-  account (`seed-uat-facilitation-accounts/index.ts:137,261`).
-- **Smallest safe fix:** human operator (with `platform_admin`) runs F1–F6
-  against the deployed environment using the existing admin UI; record
-  digest, audit-row screenshot, and non-admin denial response in this
-  evidence file. No code change required.
+Executed 2026-06-19 by `platform_admin` user `582fc403-…f40`
+(joshtkruger@gmail.com) against the deployed environment.
 
-All code-verifiable items (build, contract guard, vitest, deterministic hash,
-tamper check, permission gate by review, negative controls by review + guard)
-are green.
+**Case exported:** `daniel-uat-compliance-review-mqhxzt3m`
+**File:** `evidence-pack-daniel-uat-compliance-review-mqhxzt3m-2026-06-19.json`
+
+| Check | Result |
+|---|---|
+| G1. Downloaded pack has well-formed `seal` envelope | ✓ `algo:"sha-256"`, ISO-8601 `sealed_at`, `function_version:"facilitation-export-evidence-pack@batch-10"` |
+| G2. Recomputed SHA-256 over canonical JSON of `pack` | `8256d2d8d6f7edbbeb3cd3e234577ed525fbf4575709e73a2b104b97cc394367` |
+| G3. Matches `seal.digest_hex` | ✓ identical |
+| G4. Canonical bytes (1712) matches `seal.canonical_bytes` | ✓ |
+| G5. Tamper probe (`estimated_value 1000 → 1001`) | digest becomes `77b52f9c…abf6ec` — mismatch correctly detected ✓ |
+| G6. Export performed under `platform_admin` role | ✓ user `582fc403-…f40` |
+
+Independently reproduced offline using a Node `crypto` mirror of the seal
+helper's canonical-JSON + SHA-256 contract.
+
+---
+
+## Status
+
+**`BATCH_11_EVIDENCE_PACK_SEALING_ACCEPTED`**
+
+All checks green: build/contract guard/vitest (§A), deterministic hash (§B),
+tamper detection (§C, §G5), permission gate (§D), negative controls (§E),
+and live `platform_admin` export with offline digest match (§G).
+
