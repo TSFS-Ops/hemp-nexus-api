@@ -62,8 +62,11 @@ describe("Public API V1 · sandbox/production separation · Batch 2 foundation",
     // Success path
     expect(src).toMatch(/X-Izenzo-Request-Id/);
     expect(src).toMatch(/X-Izenzo-Environment/);
-    // Error path must also carry both headers + the back-compat X-Request-Id.
-    const errSlice = src.split("} catch (e) {")[1] ?? "";
+    // Error path must also carry both headers.
+    // Accept any valid modern catch syntax: `catch {`, `catch (e) {`, `catch (error) {`, etc.
+    const catchSplit = src.split(/\}\s*catch\s*(?:\([A-Za-z_$][\w$]*\)\s*)?\{/);
+    expect(catchSplit.length, "expected at least one catch block in shared gateway").toBeGreaterThan(1);
+    const errSlice = catchSplit.slice(1).join("\n");
     expect(errSlice).toContain("X-Izenzo-Request-Id");
     expect(errSlice).toContain("X-Izenzo-Environment");
     // Unknown-route 404 in the gateway entry too.
