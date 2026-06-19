@@ -213,6 +213,17 @@ export function AdminApiMonitoringPanel() {
       toast.info("Nothing to export.");
       return;
     }
+    // DATA-010 Phase 1: prompt for a non-empty reason (≥10 chars).
+    const reason = (typeof window !== "undefined"
+      ? window.prompt(
+          "Reason for exporting the internal API monitoring CSV (min 10 characters):",
+          "",
+        )
+      : "") ?? "";
+    if (reason.trim().length < 10) {
+      toast.error("Export cancelled — a reason of at least 10 characters is required.");
+      return;
+    }
     const headers = [
       "period_start",
       "period_end",
@@ -312,12 +323,13 @@ export function AdminApiMonitoringPanel() {
     // the file leaves the browser.
     const result = await auditedDownloadCSVRaw(csvBody, {
       filename: `api-monitoring-${periodStart.slice(0, 7)}.csv`,
-      target_type: "api_monitoring_overview",
+      target_type: "other",
       reportName: "Public API V1 — Internal Monitoring",
       rowCount: rows.length,
       filters,
       sensitive: false,
-      purpose: "internal_api_monitoring_export",
+      purpose: "audit_or_regulatory_review",
+      reason: reason.trim(),
       data_categories: ["api_monitoring"],
     });
     if (!result.ok) {
