@@ -11321,54 +11321,91 @@ export type Database = {
       }
       webhook_endpoints: {
         Row: {
+          api_client_id: string | null
           consecutive_failures: number
           created_at: string
+          created_by: string | null
           disabled_at: string | null
+          environment: string | null
           events: string[]
+          failure_count: number
           id: string
           is_primary: boolean
           last_delivery_at: string | null
+          last_failure_at: string | null
+          last_success_at: string | null
           org_id: string
           previous_secret_expires_at: string | null
           previous_secret_hash: string | null
+          sandbox_test_event_id: string | null
+          sandbox_test_passed_at: string | null
           secret_hash: string
           status: string
           updated_at: string
+          updated_by: string | null
           url: string
+          verified: boolean
         }
         Insert: {
+          api_client_id?: string | null
           consecutive_failures?: number
           created_at?: string
+          created_by?: string | null
           disabled_at?: string | null
+          environment?: string | null
           events?: string[]
+          failure_count?: number
           id?: string
           is_primary?: boolean
           last_delivery_at?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
           org_id: string
           previous_secret_expires_at?: string | null
           previous_secret_hash?: string | null
+          sandbox_test_event_id?: string | null
+          sandbox_test_passed_at?: string | null
           secret_hash: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
           url: string
+          verified?: boolean
         }
         Update: {
+          api_client_id?: string | null
           consecutive_failures?: number
           created_at?: string
+          created_by?: string | null
           disabled_at?: string | null
+          environment?: string | null
           events?: string[]
+          failure_count?: number
           id?: string
           is_primary?: boolean
           last_delivery_at?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
           org_id?: string
           previous_secret_expires_at?: string | null
           previous_secret_hash?: string | null
+          sandbox_test_event_id?: string | null
+          sandbox_test_passed_at?: string | null
           secret_hash?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
           url?: string
+          verified?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "webhook_endpoints_org_id_fkey"
             columns: ["org_id"]
