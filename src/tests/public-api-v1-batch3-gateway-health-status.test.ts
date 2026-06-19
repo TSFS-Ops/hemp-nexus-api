@@ -173,12 +173,16 @@ describe("Public API V1 · Batch 3 · gateway + health + status", () => {
     expect(src).not.toMatch(/\/v1\/docs/);
     expect(src).not.toMatch(/openapi/i);
 
-    // No commercial-plan or support-intake tables introduced anywhere.
+    // No support-intake tables introduced anywhere. Commercial plans are
+    // intentionally scoped to Batch 7 — excluded here only from Batch-3-
+    // tagged migrations.
     const migDir = path.join(ROOT, "supabase/migrations");
     for (const f of fs.readdirSync(migDir)) {
       const body = fs.readFileSync(path.join(migDir, f), "utf-8");
-      expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
       expect(body).not.toMatch(/CREATE TABLE[^;]*api_support_tickets/i);
+      if (/Batch 3/i.test(body)) {
+        expect(body).not.toMatch(/CREATE TABLE[^;]*api_commercial_plans/i);
+      }
     }
   });
 });
