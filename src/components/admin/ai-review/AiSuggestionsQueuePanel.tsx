@@ -934,7 +934,44 @@ const SAFE_EDIT_FIELDS = [
 
 function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => void }) {
   const qc = useQueryClient();
+
+  // Pull the full row so we have original_payload + edited_payload columns
+  // (they are intentionally not on the list-view select). Baselines are derived
+  // from original_payload (if a snapshot exists) else the live row values.
+  const fullRowQ = useQuery({
+    queryKey: ["ai-proposed-match-full", row.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_proposed_matches")
+        .select(
+          SAFE_EDIT_FIELDS.join(", ") + ", original_payload, edited_payload, status, client_visible",
+        )
+        .eq("id", row.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as unknown) as Record<string, unknown> | null;
+    },
+  });
+
+  const baselineFor = (f: string): string => {
+    const full = (fullRowQ.data ?? {}) as Record<string, unknown>;
+    const orig = full.original_payload as Record<string, unknown> | null | undefined;
+    if (orig && typeof orig[f] === "string") return orig[f] as string;
+    const liveFull = typeof full[f] === "string" ? (full[f] as string) : "";
+    if (liveFull) return liveFull;
+    const liveListed = (row as unknown as Record<string, unknown>)[f];
+    return typeof liveListed === "string" ? liveListed : "";
+  };
+
+  const seededFor = (f: string): string => {
+    const full = (fullRowQ.data ?? {}) as Record<string, unknown>;
+    const edited = full.edited_payload as Record<string, unknown> | null | undefined;
+    if (edited && typeof edited[f] === "string") return edited[f] as string;
+    return baselineFor(f);
+  };
+
   const [draft, setDraft] = useState<Record<string, string>>(() => {
+    // Initial seed from the list-view row; refined once the full row resolves.
     const out: Record<string, string> = {};
     for (const f of SAFE_EDIT_FIELDS) {
       const v = (row as unknown as Record<string, unknown>)[f];
@@ -942,15 +979,32 @@ function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => 
     }
     return out;
   });
+  const [seeded, setSeeded] = useState(false);
   const [reason, setReason] = useState("");
+
+  // Re-seed once the full row (with edited_payload + original_payload) arrives.
+  if (fullRowQ.data && !seeded) {
+    const next: Record<string, string> = {};
+    for (const f of SAFE_EDIT_FIELDS) next[f] = seededFor(f);
+    // setState in render is fine here because it's guarded by `seeded`.
+    setDraft(next);
+    setSeeded(true);
+  }
+
+  const changedFields = SAFE_EDIT_FIELDS.filter((f) => (draft[f] ?? "") !== baselineFor(f));
+  const hasChanges = changedFields.length > 0;
 
   const mut = useMutation({
     mutationFn: async () => {
+      // Only send fields that actually differ from the original baseline; keeps
+      // the audit/diff narrow and avoids re-stamping unchanged fields.
+      const patch: Record<string, string> = {};
+      for (const f of changedFields) patch[f] = draft[f] ?? "";
       const { data, error } = await supabase.functions.invoke("ai-proposed-match-decision", {
         body: {
           proposed_match_id: row.id,
           action: "edit_payload",
-          edited_payload: draft,
+          edited_payload: patch,
           reason: reason.trim() || undefined,
         },
       });
@@ -962,6 +1016,8 @@ function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => 
       toast.success("Edit recorded. Not yet approved - separate approval required.");
       qc.invalidateQueries({ queryKey: ["ai-proposed-matches"] });
       qc.invalidateQueries({ queryKey: ["ai-proposed-match-audit", row.id] });
+      qc.invalidateQueries({ queryKey: ["ai-proposed-match-full", row.id] });
+      qc.invalidateQueries({ queryKey: ["ai-proposed-match-versions", row.id] });
       onClose();
     },
     onError: (err: Error) => toast.error(`Edit failed: ${err.message}`),
@@ -979,29 +1035,105 @@ function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => 
             approval action is still required before any client-visible or outreach step.
           </DialogDescription>
         </DialogHeader>
+
+        {fullRowQ.isLoading ? (
+          <p className="text-[12px] text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading current payload…
+          </p>
+        ) : null}
+
         <div className="space-y-3">
-          {SAFE_EDIT_FIELDS.map((f) => (
-            <div key={f} className="space-y-1.5">
-              <Label htmlFor={`edit-${f}`} className="font-mono text-[11px] tracking-[0.1em] uppercase">{f}</Label>
-              <Textarea
-                id={`edit-${f}`}
-                value={draft[f] ?? ""}
-                onChange={(e) => setDraft((d) => ({ ...d, [f]: e.target.value }))}
-                rows={2}
-                maxLength={4000}
-              />
-            </div>
-          ))}
+          {SAFE_EDIT_FIELDS.map((f) => {
+            const baseline = baselineFor(f);
+            const current = draft[f] ?? "";
+            const changed = current !== baseline;
+            return (
+              <div key={f} className="space-y-1.5 border border-border/60 rounded-sm p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor={`edit-${f}`} className="font-mono text-[11px] tracking-[0.1em] uppercase">
+                    {f}
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {changed ? (
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-wide border-amber-400 text-amber-700">
+                        Changed
+                      </Badge>
+                    ) : null}
+                    {changed ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-[11px]"
+                        onClick={() => setDraft((d) => ({ ...d, [f]: baseline }))}
+                      >
+                        Reset to original
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+                <Textarea
+                  id={`edit-${f}`}
+                  value={current}
+                  onChange={(e) => setDraft((d) => ({ ...d, [f]: e.target.value }))}
+                  rows={2}
+                  maxLength={4000}
+                />
+                <p className="text-[10.5px] text-muted-foreground">
+                  <span className="font-mono uppercase tracking-wide mr-1">Original AI:</span>
+                  {baseline ? baseline : <span className="italic">(empty)</span>}
+                </p>
+              </div>
+            );
+          })}
+
           <div className="space-y-1.5">
-            <Label htmlFor="edit-reason">Reason (optional)</Label>
+            <Label htmlFor="edit-reason">Reason (optional, recorded in audit trail)</Label>
             <Textarea id="edit-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} rows={2} />
+          </div>
+
+          <div className="border border-border/60 bg-muted/30 rounded-sm p-2.5 space-y-1.5">
+            <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
+              Changes preview · {changedFields.length} field{changedFields.length === 1 ? "" : "s"}
+            </p>
+            {!hasChanges ? (
+              <p className="text-[12px] text-muted-foreground">
+                No changes yet. Edit any field above to see a diff preview here before saving.
+              </p>
+            ) : (
+              <ul className="space-y-1.5">
+                {changedFields.map((f) => (
+                  <li key={f} className="text-[11.5px] leading-snug">
+                    <span className="font-mono uppercase tracking-wide text-muted-foreground">{f}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-0.5">
+                      <div className="bg-rose-50 border border-rose-200 rounded-sm p-1.5">
+                        <p className="font-mono text-[9.5px] uppercase text-rose-700">Before</p>
+                        <p className="whitespace-pre-wrap break-words">
+                          {baselineFor(f) || <span className="italic text-muted-foreground">(empty)</span>}
+                        </p>
+                      </div>
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-sm p-1.5">
+                        <p className="font-mono text-[9.5px] uppercase text-emerald-700">After</p>
+                        <p className="whitespace-pre-wrap break-words">
+                          {(draft[f] ?? "") || <span className="italic text-muted-foreground">(empty)</span>}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={mut.isPending}>Cancel</Button>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending}>
+          <Button
+            onClick={() => mut.mutate()}
+            disabled={mut.isPending || !hasChanges || fullRowQ.isLoading}
+            title={!hasChanges ? "No changes to save" : undefined}
+          >
             {mut.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null}
-            Save edit (not approved)
+            Save {changedFields.length} change{changedFields.length === 1 ? "" : "s"} (not approved)
           </Button>
         </DialogFooter>
       </DialogContent>
