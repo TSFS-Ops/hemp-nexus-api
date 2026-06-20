@@ -341,9 +341,9 @@ function RequestRerunButton({
 
   const mut = useMutation({
     mutationFn: async () => {
-      if (!proposedMatchId) throw new Error("No proposed_match_id on this row");
+      if (!proposedMatchId) throw new (globalThis.Error)("No proposed_match_id on this row");
       const trimmed = reason.trim();
-      if (!trimmed) throw new Error("Reason is required");
+      if (!trimmed) throw new (globalThis.Error)("Reason is required");
       const { data, error } = await supabase.functions.invoke("ai-proposed-match-decision", {
         body: {
           proposed_match_id: proposedMatchId,
@@ -351,8 +351,8 @@ function RequestRerunButton({
           reason: trimmed,
         },
       });
-      if (error) throw new Error(error.message || "Edge function error");
-      if ((data as { error?: string })?.error) throw new Error((data as { error?: string }).error!);
+      if (error) throw new (globalThis.Error)(error.message || "Edge function error");
+      if ((data as { error?: string })?.error) throw new (globalThis.Error)((data as { error?: string }).error!);
       return data;
     },
     onSuccess: () => {
@@ -360,7 +360,7 @@ function RequestRerunButton({
       for (const k of invalidateKeys) qc.invalidateQueries({ queryKey: k });
       setOpen(false);
     },
-    onError: (err: Error) => toast.error(`Rerun failed: ${err.message}`),
+    onError: (err: globalThis.Error) => toast.error(`Rerun failed: ${err.message}`),
   });
 
   if (!proposedMatchId) {
