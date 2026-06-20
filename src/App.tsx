@@ -90,6 +90,8 @@ const RegistryAuthority = lazy(() => import("@/pages/registry/Authority"));
 const RegistryBankDetails = lazy(() => import("@/pages/registry/BankDetails"));
 const AdminRegistryAuthority = lazy(() => import("@/pages/admin/registry/Authority"));
 const AdminRegistryBankDetails = lazy(() => import("@/pages/admin/registry/BankDetails"));
+// Batch 5 — M008 / M009 / M016 institutional API management
+const AdminRegistryApi = lazy(() => import("@/pages/admin/registry/Api"));
 
 /**
  * Root element that renders based on host type:
