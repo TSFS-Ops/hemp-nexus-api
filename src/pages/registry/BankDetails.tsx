@@ -2,10 +2,8 @@
  * Batch 4 — M006 / M007 Bank-detail capture and status page (user-facing).
  * Route: /registry/company/:id/bank-details
  *
- * Mandatory user-facing copy (pinned by check-registry-batch4-wording.mjs):
- *   "Captured bank details are not verified bank details. They must not be treated
- *   as verified unless the status is explicitly marked verified with a valid audit
- *   trail and expiry."
+ * Mandatory user-facing copy (pinned verbatim by check-registry-batch4-wording.mjs):
+ * "Captured bank details are not verified bank details. They must not be treated as verified unless the status is explicitly marked verified with a valid audit trail and expiry."
  */
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
