@@ -159,6 +159,10 @@ live in the production runtime before publishing.
 - `registry-company-search` — Batch 3 (M002) public registry search shell (returns no production rows; gates on country coverage; emits `registry_company_search_performed`)
 - `registry-company-profile` — Batch 3 (M003) public registry profile shell (safe envelope only; bank-detail STATUS LABEL only; emits `registry_company_profile_viewed`)
 - `registry-company-claim` — Batch 3 (M004) Claim Your Company writer (start / submit / add_evidence / review; admin review requires `acknowledged_not_verification: true`; emits 7 claim audit names)
+- `registry-institutional-profile-status` — Batch 5 (M008) institutional verified-profile status facade (safe status only; consults Business Decision Register + `isProfileInstitutionallyUsable`; emits `registry_api_profile_status_requested` / `registry_api_response_returned` / `registry_api_scope_denied` / `registry_api_request_blocked`)
+- `registry-institutional-payment-status` — Batch 5 (M009) institutional payment-detail status facade (safe payment-status flag only; raw bank details never returned; `verified` requires `verification_method` + `verified_at` + expiry + approved Business Decision; emits `registry_api_payment_status_requested` / `registry_api_response_returned`)
+- `registry-api-client-manage` — Batch 5 (M016) admin client/key lifecycle writer (`create_client` / `update_client` / `suspend_client` / `reactivate_client` / `create_key` / `revoke_key`; role-gated to `platform_admin` / `compliance_owner`; emits `registry_api_client_created|updated|suspended` and `registry_api_key_created|revoked`)
+- `registry-api-usage-log` — Batch 5 (M016) internal usage / rate-limit writer (`INTERNAL_CRON_KEY`-gated; emits `registry_api_rate_limit_hit` when applicable)
 
 
 
