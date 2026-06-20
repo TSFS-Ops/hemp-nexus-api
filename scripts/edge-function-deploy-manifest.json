@@ -27,7 +27,9 @@
     "refund-request",
     "list-org-purchases",
     "basic-memory-record-write",
-    "provider-stub-simulate"
+    "provider-stub-simulate",
+    "compute-evidence-rating",
+    "evidence-rating-override"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
@@ -41,6 +43,8 @@
     "admin-payment-dispute-resolve-lost",
     "admin-legal-hold",
     "export-download",
-    "basic-memory-record-write"
+    "basic-memory-record-write",
+    "compute-evidence-rating",
+    "evidence-rating-override"
   ]
 }
