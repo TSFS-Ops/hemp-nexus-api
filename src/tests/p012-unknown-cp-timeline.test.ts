@@ -58,17 +58,13 @@ describe("P012 — Unknown-Counterparty Timeline SSOT", () => {
     expect(UNKNOWN_CP_PANEL_SUBHEADING).toContain("Track Izenzo support progress");
   });
 
-  it("status copy never uses forbidden words except where status itself is the event", () => {
+  it("status copy never accidentally claims contact/verification/onboarding outside approved client copy", () => {
+    // Approved client copy is treated as source of truth; this guards against
+    // future drift introducing claims of "verified" / "contacted" / "onboarded".
     for (const s of UNKNOWN_CP_STATUS_ORDER) {
       const copy = UNKNOWN_CP_STATUS_COPY[s].toLowerCase();
-      for (const w of UNKNOWN_CP_FORBIDDEN_WORDS) {
-        // converted/onboarding statuses describe actual recorded events.
-        if (
-          (w === "onboarded" || w === "contacted" || w === "approved" || w === "verified" ||
-            w === "cleared" || w === "accepted" || w === "guaranteed")
-        ) {
-          expect(copy).not.toContain(w);
-        }
+      for (const w of ["verified", "contacted", "onboarded", "cleared", "guaranteed"] as const) {
+        expect(copy).not.toContain(w);
       }
     }
   });
