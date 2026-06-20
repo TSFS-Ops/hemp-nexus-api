@@ -122,6 +122,10 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.unknown-cp-user-action]
     verify_jwt = false
+  [functions.registry-readiness-transition]
+    verify_jwt = false
+  [functions.business-decision-record]
+    verify_jwt = false
 
 [storage]
   enabled = true
