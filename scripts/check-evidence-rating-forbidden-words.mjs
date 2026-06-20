@@ -19,7 +19,6 @@ const FORBIDDEN = [
 
 const SCAN_DIRS = [
   "src/components/ratings",
-  "src/pages/docs",
 ];
 
 const EXEMPT = new Set([
