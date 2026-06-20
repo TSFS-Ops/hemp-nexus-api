@@ -1,406 +1,122 @@
-## POI Verification Guardrails / Draft-Only Mode
+## P010 — Status before this batch
 
-Most of the architecture already exists: `_shared/legitimacy.ts` (org gate), `_shared/poi-authority.ts` (user gate), `useOrgLegitimacy` + `VerificationRequiredBanner` + `DraftPoiBadge` UI, and gate wiring in `pois`, `poi-transition`, `poi-engagements`, `match`. This plan closes the remaining gaps the client's binding list demands.
+P010 was already shipped as `P010_STUB_PROVIDER_LABELLING_READY_FOR_OPERATOR_VERIFY` on 2026-06-19. The following is **already in place** and will be reused, not rebuilt:
 
-### Gaps to close (backend)
+- Central SSOT: `src/lib/stub-providers.ts` + `supabase/functions/_shared/stub-providers.ts` (parity-enforced by `scripts/check-stub-providers-parity.mjs`, wired into `prebuild`).
+- Edge gates: `idv-verify` and `dilisense-screen` short-circuit any stub provider with HTTP 503 `STUB_PROVIDER_NOT_LIVE`, audit-only `stub_provider.not_live`, and never advance entity / screening state.
+- UI copy: `TestModeBypassPanel` IDV + Sanctions rows already say *"(Onfido / CIPC are not live yet…)"* and *"(Dow Jones / Refinitiv are not live yet…)"*; `FacilitationCaseManualChecksPanel` and `docs/Counterparties` no longer name the four providers.
+- Unit pins: `src/tests/p010-stub-provider-labelling.test.ts` covers the four keys, forbidden words, statuses, audit names, verbatim labels and error code.
 
-1. **WaD progression gate** — `supabase/functions/wad/index.ts` and `supabase/functions/p3-wad/index.ts` currently do not call the legitimacy + authority gate. Add the same `checkUserPoiAuthority` → `checkOrgLegitimacy` pair (callsite `poi_mint`) around every WaD progression entrypoint (start, attest, finalise). Return 403 + `POI_ORG_VERIFICATION_REQUIRED` + `legitimacy.gate_blocked` audit row.
-2. **Formal POI export gate** — `export-prepare` and `export-download` accept POI export jobs without the legitimacy gate. Add gate on POI-typed export requests; block download/preparation when the issuing org is not verified. Permit "draft" export only when the request is explicitly tagged `kind: "internal_draft"` (new flag) and watermark output.
-3. **Facilitation / unknown-counterparty POI mint gate** — `facilitation-poi-conversion` issues formal POIs from admin-facilitated cases. Add legitimacy + authority gate against the *requesting* org so an unverified org cannot reach formal POI even via the facilitated route.
-4. **Canonical reason code** — client requires `POI_ORG_VERIFICATION_REQUIRED`. Today we use `ORG_NOT_VERIFIED`. Add `POI_ORG_VERIFICATION_REQUIRED` as the public-facing alias exported from `_shared/legitimacy.ts`; emit it as `reason_code` in every gate-blocked audit row alongside the existing internal code (back-compat).
-5. **Notification suppression on block** — wrap notification dispatch (`poi-engagements` outreach send, engagement reminders) so that when the gate denies, no email/in-app notification fires. Audit-only.
+## What the new prompt adds on top
 
-### Gaps to close (frontend)
+The new prompt tightens four things that are not yet captured. This batch only fills those gaps; no rework of the existing gate.
 
-6. **DraftPoiBadge coverage** — currently only on `MatchHeroCard`. Mount on POI list cards (`src/components/match/*` POI rows) and on the WaD progression card so the "Internal draft only / Not issued" label is visible everywhere a POI is shown.
-7. **Action disabling** — audit POI action buttons (Send, Share, Export, Notify, Progress to WaD, Create engagement). Where they don't already check `useOrgLegitimacy`, disable + tooltip with the canonical blocked message.
-8. **Draft export watermark** — when a draft preview is generated (new path), stamp every page with "INTERNAL DRAFT ONLY · NOT ISSUED · NOT COUNTERPARTY-FACING · SUBJECT TO ORGANISATION VERIFICATION".
+### 1. Enrich the SSOT with policy metadata
 
-### Tests
+Add metadata to each entry (no behaviour change to existing call sites):
 
-Add `src/tests/poi-verification-gate-coverage.test.ts` pinning:
+```text
+provider_id, provider_category (KYB | Identity | Sanctions/PEP),
+is_live: false, client_visible: false, admin_visible: true,
+requires_test_mode: true, approved_warning_label, allowed_statuses
+```
 
-- gate wired in: pois, poi-transition, poi-engagements, match, wad, p3-wad, export-prepare, export-download, facilitation-poi-conversion
-- `POI_ORG_VERIFICATION_REQUIRED` exported and referenced
-- forbidden-action allowlist (issue/send/share/notify/expose/export/engage/wad) — every name maps to a gated entrypoint
+Add forbidden-word coverage for the longer list from the new prompt
+(`provider-confirmed`, `provider_confirmed`, `provider-approved`,
+`provider_approved`, `provider_matched`, `live_check_complete`,
+plus phrase scans for `verification complete`, `screening complete`,
+`provider check passed`, `provider match found`, `external check complete`).
+Mirror to the edge SSOT and extend the parity checker pins.
 
-Add `scripts/check-poi-verification-gate-wiring.mjs` prebuild guard (added to RELEASE_GATE.md + package.json `prebuild`) that fails the build if any of the gated edge functions loses its `checkOrgLegitimacy` / `checkUserPoiAuthority` import.
+### 2. Add an explicit Test-Mode simulation path (audit-only)
 
-### Audit
+New edge function `provider-stub-simulate` (admin/developer only, requires Test Mode active):
 
-All blocked attempts already write `admin_audit_logs` with `action: "legitimacy.gate_blocked"`. Extend the metadata payload with `reason_code: "POI_ORG_VERIFICATION_REQUIRED"`, `attempted_action`, `org_verification_status`, `next_required_action`.
+- Validates JWT + `has_role(platform_admin | developer)`.
+- Requires `admin_settings.test_mode_active = true`; otherwise returns the standard stub-not-live envelope and writes `stub_provider.blocked`.
+- When allowed: writes `stub_provider.test_mode_simulated` (audit-only) and returns:
+`{ ok: true, status: "test_mode_bypass", external_provider_called: false, message: <verbatim label> }`.
+- Never writes to `screening_results`, `kyc_status`, `entities`, `dd_*`, `pois`, `wads`, `matches`, `token_*`, `notifications`.
 
-### No admin override
+No new tables. No new scopes (re-uses existing `platform_admin` / `developer` roles and the existing `admin_settings.test_mode_active` flag if present, otherwise the existing Test Mode mechanism used by `TestModeBypassPanel`).
 
-Explicit: no override path is added. The existing `platform_admin` role does not bypass the legitimacy check inside `checkOrgLegitimacy` — confirmed by reading the helper. We add a comment pinning that contract and a test asserting `platform_admin` calling against an unverified org still receives `POI_ORG_VERIFICATION_REQUIRED`.
+### 3. Admin-only "Simulate in Test Mode" UI control
 
-### Files
+Inside the existing admin diagnostic panel (`TestModeBypassPanel` area), add a small "Stub provider simulation" card listing the 4 providers with:
 
-**Edit**
+- generic category label + verbatim warning,
+- per-provider **Simulate in Test Mode** button (disabled when Test Mode off, with the agreed tooltip),
+- on click → invokes `provider-stub-simulate`, surfaces audit-only result, never displays "verified/passed/cleared/etc".
 
-- `supabase/functions/_shared/legitimacy.ts` (export `POI_ORG_VERIFICATION_REQUIRED_CODE`)
-- `supabase/functions/wad/index.ts`, `supabase/functions/p3-wad/index.ts` (gate)
-- `supabase/functions/export-prepare/index.ts`, `supabase/functions/export-download/index.ts` (gate + draft tag)
-- `supabase/functions/facilitation-poi-conversion/index.ts` (gate against requester org)
-- `supabase/functions/poi-engagements/index.ts` (notification suppression confirmation)
-- `src/components/match/*` (mount DraftPoiBadge + disable buttons on blocked)
-- `RELEASE_GATE.md`, `package.json` (new prebuild guard)
+Gated by `useUserRole()` so only `platform_admin` / `developer` see it.
 
-**Create**
+### 4. Build-time guards + expanded tests
 
-- `scripts/check-poi-verification-gate-wiring.mjs`
-- `src/tests/poi-verification-gate-coverage.test.ts`
-- `evidence/poi-verification-gate-guardrails/README.md`
+- Extend `scripts/check-stub-providers-parity.mjs` for the new metadata + extended forbidden list.
+- New script `scripts/check-stub-provider-copy-drift.mjs` (wired into `prebuild`): greps the repo for the forbidden phrases co-occurring with any of the 4 provider names in user-facing files (`src/components/**`, `src/pages/**`, `docs/**`, exports), excluding the SSOT and tests. Fails the build on a match.
+- Extend `src/tests/p010-stub-provider-labelling.test.ts` with:
+  - role × provider matrix (requester, counterparty, compliance_analyst, platform_admin, developer) — using the policy helper, asserting `client_visible=false` blocks all four for non-admin roles and `admin_visible=true` + Test Mode gate for the two admin roles.
+  - extended forbidden-words list pinned.
+  - envelope helpers produce no forbidden word and `external_provider_called=false`.
+- New Deno test `supabase/functions/provider-stub-simulate/index.test.ts` covering: unauth → 401, non-admin → 403, admin + Test Mode off → blocked envelope + `stub_provider.blocked` audit, admin + Test Mode on → `test_mode_bypass` envelope + `stub_provider.test_mode_simulated` audit, never writes to screening/kyc tables.
 
-Acceptance: every gated entrypoint blocks unverified orgs at the server, the UI reflects draft-only status, blocked attempts are audited with `POI_ORG_VERIFICATION_REQUIRED`, no notifications fire on block, and the wiring guard prevents regression.  
+## Out of scope (explicit)
+
+- No real provider integration for CIPC / Onfido / Dow Jones / Refinitiv.
+- No new tables, no new scopes, no schema changes.
+- No client-facing surface gains a stub provider control.
+- No changes to `companies_house` / `dilisense` (those are live).
+
+## Deliverable
+
+After implementation:
+
+- Run `bunx vitest run src/tests/p010-stub-provider-labelling.test.ts` and the new Deno test.
+- Update `evidence/p010-stub-provider-labelling/README.md` with: files changed, provider × role visibility matrix, audit event names, test output, and the new acceptance status:
+`P010_STUB_PROVIDER_LABELLING_HARDENED_INTERNAL_ACCEPTANCE_PASSED`.
+
+Confirm to proceed and I will implement exactly the above — nothing else.  
   
-Proceed with **POI Verification Guardrails / Draft-Only Mode**.
+Proceed.
 
-Do not require staging.  
-Do not prepare client UAT.  
-Build the full feature now.  
-We will test internally after build completion.
+Implement **exactly** the batch described above and nothing outside scope.
 
-Most of the architecture already exists:
+Use this acceptance line after evidence is complete:
 
-- `_shared/legitimacy.ts` for the organisation gate
-- `_shared/poi-authority.ts` for the user authority gate
-- `useOrgLegitimacy`
-- `VerificationRequiredBanner`
-- `DraftPoiBadge`
-- existing gate wiring in `pois`, `poi-transition`, `poi-engagements`, and `match`
-
-This batch closes the remaining gaps required by the client-approved rule:
-
-**Unverified organisations may prepare internal POI drafts, but they may not issue, send, notify, expose, export formal POIs, create formal engagements, or progress a POI into WaD until the organisation is verified and the issuing user is authorised.**
-
-## **Backend gaps to close**
-
-### **1. WaD progression gate**
-
-Add the legitimacy and authority gate to:
-
-- `supabase/functions/wad/index.ts`
-- `supabase/functions/p3-wad/index.ts`
-
-Apply the same gate pair:
-
-- `checkUserPoiAuthority`
-- `checkOrgLegitimacy`
-
-Use callsite:
-
-- `poi_mint`
-
-The gate must run around every WaD progression entrypoint, including:
-
-- start
-- attest
-- finalise
-
-If blocked, return:
-
-- HTTP 403
-- `POI_ORG_VERIFICATION_REQUIRED`
-- `legitimacy.gate_blocked` audit row
-
-### **2. Formal POI export gate**
-
-Add the legitimacy gate to:
-
-- `supabase/functions/export-prepare/index.ts`
-- `supabase/functions/export-download/index.ts`
-
-For POI-typed export requests:
-
-- block export preparation where the issuing organisation is not verified;
-- block export download where the issuing organisation is not verified.
-
-Permit draft export only where the request is explicitly tagged:
-
-```ts
-kind: "internal_draft"
+```text
+P010_STUB_PROVIDER_LABELLING_HARDENED_INTERNAL_ACCEPTANCE_PASSED
 ```
 
-Draft export must be watermarked and must not look like a formal platform-backed POI.
+Key constraints to preserve:
 
-### **3. Facilitation / unknown-counterparty POI mint gate**
+- Reuse the existing P010 SSOT and gates.
+- Do not rebuild what already shipped.
+- No real provider integration.
+- No new tables.
+- No new scopes.
+- No client-facing stub controls.
+- No changes to live `companies_house` or `dilisense`.
+- Simulation is **platform_admin/developer only**, **Test Mode only**, and **audit-only**.
+- Stub simulation must never write verification, screening, POI, WaD, match, token, notification, or compliance state.
+- Forbidden wording guard must be build-time enforced.
+- Evidence README must include files changed, role/provider matrix, audit names, test output, and final status.
 
-Add the legitimacy and authority gate to:
+After implementation, run:
 
-- `supabase/functions/facilitation-poi-conversion/index.ts`
-
-The gate must check the **requesting organisation**, not the admin/facilitator organisation.
-
-An unverified requesting organisation must not be able to reach formal POI issuance through the facilitated route.
-
-### **4. Canonical reason code**
-
-The client-required public reason code is:
-
-```txt
-POI_ORG_VERIFICATION_REQUIRED
+```bash
+bunx vitest run src/tests/p010-stub-provider-labelling.test.ts
 ```
 
-Today the internal code may use:
+and the new Deno test:
 
-```txt
-ORG_NOT_VERIFIED
+```bash
+deno test supabase/functions/provider-stub-simulate/index.test.ts
 ```
 
-Add this as the public-facing alias exported from:
+Then update:
 
-- `supabase/functions/_shared/legitimacy.ts`
-
-Export:
-
-```ts
-POI_ORG_VERIFICATION_REQUIRED_CODE
+```text
+evidence/p010-stub-provider-labelling/README.md
 ```
 
-All gate-blocked audit rows must emit:
-
-```ts
-reason_code: "POI_ORG_VERIFICATION_REQUIRED"
-```
-
-Keep the existing internal code for backwards compatibility if needed, but the public/client-facing and audit-facing reason code must be:
-
-```txt
-POI_ORG_VERIFICATION_REQUIRED
-```
-
-### **5. Notification suppression on block**
-
-Confirm and enforce notification suppression in:
-
-- `supabase/functions/poi-engagements/index.ts`
-
-When the gate denies a formal POI action:
-
-- no email notification must fire;
-- no in-app notification must fire;
-- no engagement reminder must fire;
-- only the audit row should be written.
-
-This must cover outreach send and engagement reminders.
-
-## **Frontend gaps to close**
-
-### **6. DraftPoiBadge coverage**
-
-`DraftPoiBadge` is currently mounted only on `MatchHeroCard`.
-
-Mount it anywhere a POI can be viewed or acted on, including:
-
-- POI list cards;
-- POI rows under `src/components/match/*`;
-- WaD progression card;
-- any engagement/progression panel where the POI state is visible.
-
-Labels must make the position clear:
-
-- “Internal draft only”
-- “Not issued”
-- “Organisation verification required before issuance”
-
-### **7. Action disabling**
-
-Audit all POI action buttons and controls.
-
-This includes:
-
-- Send
-- Share
-- Export
-- Notify
-- Progress to WaD
-- Create engagement
-- Any formal issue/mint action
-
-Where any control does not already check `useOrgLegitimacy`, add the check.
-
-When blocked:
-
-- disable or hide the action;
-- show the canonical blocked message as helper text or tooltip.
-
-Use this exact message:
-
-```txt
-Verification required before issuing POI. You can continue preparing this POI as an internal draft, but your organisation must be verified before it can be issued, shared, sent to a counterparty, exported as a formal POI, or progressed into formal engagement.
-```
-
-### **8. Draft export watermark**
-
-Where a draft preview/export path is generated using:
-
-```ts
-kind: "internal_draft"
-```
-
-stamp every page with:
-
-```txt
-INTERNAL DRAFT ONLY · NOT ISSUED · NOT COUNTERPARTY-FACING · SUBJECT TO ORGANISATION VERIFICATION
-```
-
-The watermark must be unavoidable and visible.
-
-Do not allow unverified organisations to generate any POI document that looks formal, issued, counterparty-facing, or platform-backed.
-
-## **Tests to add**
-
-Create:
-
-- `src/tests/poi-verification-gate-coverage.test.ts`
-
-This test must pin that the gate is wired into:
-
-- `pois`
-- `poi-transition`
-- `poi-engagements`
-- `match`
-- `wad`
-- `p3-wad`
-- `export-prepare`
-- `export-download`
-- `facilitation-poi-conversion`
-
-The test must also confirm:
-
-- `POI_ORG_VERIFICATION_REQUIRED` is exported;
-- `POI_ORG_VERIFICATION_REQUIRED` is referenced by every blocked formal POI path;
-- the forbidden-action allowlist is complete.
-
-Forbidden actions must include:
-
-- issue
-- send
-- share
-- notify
-- expose
-- export
-- engage
-- progress to WaD
-
-Every forbidden action must map to a gated backend entrypoint.
-
-## **Regression guard**
-
-Create:
-
-- `scripts/check-poi-verification-gate-wiring.mjs`
-
-Add it to:
-
-- `RELEASE_GATE.md`
-- `package.json` `prebuild`
-
-The guard must fail the build if any gated edge function loses either of these imports:
-
-- `checkOrgLegitimacy`
-- `checkUserPoiAuthority`
-
-The guarded functions are:
-
-- `pois`
-- `poi-transition`
-- `poi-engagements`
-- `match`
-- `wad`
-- `p3-wad`
-- `export-prepare`
-- `export-download`
-- `facilitation-poi-conversion`
-
-## **Audit requirements**
-
-All blocked attempts must continue writing:
-
-```txt
-admin_audit_logs
-```
-
-with:
-
-```txt
-action: "legitimacy.gate_blocked"
-```
-
-Extend the metadata payload with:
-
-```ts
-reason_code: "POI_ORG_VERIFICATION_REQUIRED",
-attempted_action,
-org_verification_status,
-next_required_action
-```
-
-At minimum, the audit record must identify:
-
-- organisation;
-- user;
-- POI or trade request reference;
-- attempted action;
-- current verification status;
-- reason code;
-- timestamp;
-- next required action.
-
-Counterparties must not see:
-
-- the draft POI;
-- the blocked attempt;
-- any related notification.
-
-## **No admin override**
-
-Do not add an admin override path.
-
-The existing `platform_admin` role must not bypass the legitimacy check inside `checkOrgLegitimacy`.
-
-Add a comment pinning this contract.
-
-Add a test asserting that a `platform_admin` calling against an unverified organisation still receives:
-
-```txt
-POI_ORG_VERIFICATION_REQUIRED
-```
-
-## **Files to edit**
-
-- `supabase/functions/_shared/legitimacy.ts`
-- `supabase/functions/wad/index.ts`
-- `supabase/functions/p3-wad/index.ts`
-- `supabase/functions/export-prepare/index.ts`
-- `supabase/functions/export-download/index.ts`
-- `supabase/functions/facilitation-poi-conversion/index.ts`
-- `supabase/functions/poi-engagements/index.ts`
-- `src/components/match/*`
-- `RELEASE_GATE.md`
-- `package.json`
-
-## **Files to create**
-
-- `scripts/check-poi-verification-gate-wiring.mjs`
-- `src/tests/poi-verification-gate-coverage.test.ts`
-- `evidence/poi-verification-gate-guardrails/README.md`
-
-## **Acceptance criteria**
-
-This batch is complete only when:
-
-1. Every formal POI entrypoint blocks unverified organisations at the server.
-2. The UI reflects draft-only status everywhere POIs are shown.
-3. Blocked attempts are audited with `POI_ORG_VERIFICATION_REQUIRED`.
-4. No notification fires when a POI action is blocked.
-5. Formal export is blocked for unverified organisations.
-6. Draft export, if allowed, is explicitly tagged `kind: "internal_draft"` and visibly watermarked.
-7. WaD progression is blocked at `wad` and `p3-wad`.
-8. Unknown-counterparty/facilitation conversion is blocked for unverified requesting organisations.
-9. `platform_admin` cannot override the gate.
-10. The new wiring guard prevents regression.
-11. All relevant tests pass.
-
-Server-side enforcement is mandatory. UI disabling alone is not sufficient.
+with the final evidence and status.
