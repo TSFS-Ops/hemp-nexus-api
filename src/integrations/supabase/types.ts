@@ -11112,6 +11112,195 @@ export type Database = {
           },
         ]
       }
+      unknown_cp_case_overlays: {
+        Row: {
+          closure_reason_code: string | null
+          created_at: string
+          facilitation_case_id: string
+          id: string
+          is_escalated_internal: boolean
+          is_overdue_outreach: boolean
+          is_overdue_review: boolean
+          known_counterparty_id: string | null
+          outcome_reason_code: string | null
+          poi_id: string | null
+          reopen_allowed: boolean
+          reopened_at: string | null
+          reopened_by: string | null
+          status_group: string
+          updated_at: string
+          user_facing_status: string
+          visibility_version: number
+        }
+        Insert: {
+          closure_reason_code?: string | null
+          created_at?: string
+          facilitation_case_id: string
+          id?: string
+          is_escalated_internal?: boolean
+          is_overdue_outreach?: boolean
+          is_overdue_review?: boolean
+          known_counterparty_id?: string | null
+          outcome_reason_code?: string | null
+          poi_id?: string | null
+          reopen_allowed?: boolean
+          reopened_at?: string | null
+          reopened_by?: string | null
+          status_group?: string
+          updated_at?: string
+          user_facing_status?: string
+          visibility_version?: number
+        }
+        Update: {
+          closure_reason_code?: string | null
+          created_at?: string
+          facilitation_case_id?: string
+          id?: string
+          is_escalated_internal?: boolean
+          is_overdue_outreach?: boolean
+          is_overdue_review?: boolean
+          known_counterparty_id?: string | null
+          outcome_reason_code?: string | null
+          poi_id?: string | null
+          reopen_allowed?: boolean
+          reopened_at?: string | null
+          reopened_by?: string | null
+          status_group?: string
+          updated_at?: string
+          user_facing_status?: string
+          visibility_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unknown_cp_case_overlays_facilitation_case_id_fkey"
+            columns: ["facilitation_case_id"]
+            isOneToOne: true
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unknown_cp_timeline_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          actor_type: string
+          audit_event_name: string
+          created_at: string
+          facilitation_case_id: string
+          id: string
+          internal_note: string | null
+          metadata: Json
+          new_status: string
+          poi_id: string | null
+          previous_status: string | null
+          reason_code: string | null
+          source: string
+          status_label: string
+          timestamp_utc: string
+          user_facing_copy: string
+          user_visible: boolean
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          actor_type: string
+          audit_event_name: string
+          created_at?: string
+          facilitation_case_id: string
+          id?: string
+          internal_note?: string | null
+          metadata?: Json
+          new_status: string
+          poi_id?: string | null
+          previous_status?: string | null
+          reason_code?: string | null
+          source: string
+          status_label: string
+          timestamp_utc?: string
+          user_facing_copy: string
+          user_visible?: boolean
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          actor_type?: string
+          audit_event_name?: string
+          created_at?: string
+          facilitation_case_id?: string
+          id?: string
+          internal_note?: string | null
+          metadata?: Json
+          new_status?: string
+          poi_id?: string | null
+          previous_status?: string | null
+          reason_code?: string | null
+          source?: string
+          status_label?: string
+          timestamp_utc?: string
+          user_facing_copy?: string
+          user_visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unknown_cp_timeline_events_facilitation_case_id_fkey"
+            columns: ["facilitation_case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unknown_cp_user_messages: {
+        Row: {
+          attachment_ids: Json
+          created_at: string
+          facilitation_case_id: string
+          id: string
+          message_body: string
+          message_category: string
+          poi_id: string | null
+          requester_user_id: string
+          sent_to_support: boolean
+          support_email_delivery_id: string | null
+          visibility: string
+        }
+        Insert: {
+          attachment_ids?: Json
+          created_at?: string
+          facilitation_case_id: string
+          id?: string
+          message_body: string
+          message_category: string
+          poi_id?: string | null
+          requester_user_id: string
+          sent_to_support?: boolean
+          support_email_delivery_id?: string | null
+          visibility?: string
+        }
+        Update: {
+          attachment_ids?: Json
+          created_at?: string
+          facilitation_case_id?: string
+          id?: string
+          message_body?: string
+          message_category?: string
+          poi_id?: string | null
+          requester_user_id?: string
+          sent_to_support?: boolean
+          support_email_delivery_id?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unknown_cp_user_messages_facilitation_case_id_fkey"
+            columns: ["facilitation_case_id"]
+            isOneToOne: false
+            referencedRelation: "facilitation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_export_requests: {
         Row: {
           block_reason: string | null

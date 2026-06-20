@@ -92,6 +92,9 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-evidence-rating-parity.mjs` — P011 Counterparty Rating SSOT parity guard: pins the 5 evidence-confidence bands, the 9 forbidden user-facing words, the 8 approved override reason codes, the freshness windows (30 / 7 / 365 / 90 days), the 12 canonical `counterparty_rating.*` audit names, the non-live provider list (CIPC / Onfido / Dow Jones / Refinitiv), and the `COUNTERPARTY_RATING_METHODOLOGY_VERSION = "1.0"` constant across the browser SSOT (`src/lib/evidence-rating.ts`) and the edge mirror (`supabase/functions/_shared/evidence-rating.ts`).
 - `check-counterparty-rating-audit-names.mjs` — P011 Counterparty Rating audit-name drift guard: pins the 12 canonical `counterparty_rating.*` actions to the SSOT and forbids any drifted `counterparty_rating.<other>` literal inside the `compute-evidence-rating` and `evidence-rating-override` edge functions.
 - `check-evidence-rating-forbidden-words.mjs` — P011 user-facing rating wording guard: scans `src/components/ratings` and `src/pages/docs` for the 9 forbidden words (`safe`, `trusted`, `approved`, `compliant`, `low risk`, `high risk`, `guaranteed`, `cleared`, `bank verified`) appearing in any file that also mentions `rating` / `counterparty`. Exempts the SSOT, the P011 test suite, the P011 evidence README, and the guard scripts themselves.
+- `check-unknown-cp-audit-names.mjs` — P012 Unknown-Counterparty Timeline SSOT parity guard: asserts `UNKNOWN_CP_STATUS_ORDER` and `UNKNOWN_CP_AUDIT_EVENT_NAMES` stay byte-aligned between `src/lib/unknown-cp-timeline.ts` and `supabase/functions/_shared/unknown-cp-timeline.ts`.
+- `check-unknown-cp-status-parity.mjs` — P012 status enum drift guard: pins the 17-value `user_facing_status` enum in the TS SSOT to the `CHECK (user_facing_status IN (...))` constraint on `public.unknown_cp_case_overlays`.
+- `check-unknown-cp-copy-drift.mjs` — P012 requester-surface copy-drift guard: scans `src/components/unknown-cp` for any leak of the internal-only `outreach_prepared` status and for the 7 forbidden user-facing words (`guaranteed`, `verified`, `approved`, `cleared`, `accepted`, `contacted`, `onboarded`) outside the SSOT, and enforces that `UnknownCpTimelinePanel.tsx` imports from `@/lib/unknown-cp-timeline`.
 
 
 
@@ -128,6 +131,9 @@ live in the production runtime before publishing.
 - `provider-stub-simulate` — P010 admin/developer Test-Mode-only audit-only stub-provider simulation (no external provider call; emits `stub_provider.blocked` / `stub_provider.test_mode_simulated`)
 - `compute-evidence-rating` — P011 event-driven counterparty evidence-confidence rating recalculation (role-gated to `platform_admin` / `compliance_owner`; writes `counterparty_evidence_ratings` snapshot + `counterparty_rating.*` audit events; preserves last rating on failure)
 - `evidence-rating-override` — P011 admin override apply / change / remove for counterparty evidence-confidence ratings (role-gated to `platform_admin` / `compliance_owner`; reason text ≥30 chars; expiry ≤90 days except `admin_block`; never permits `verification_complete`)
+- `unknown-cp-case-bootstrap` — P012 idempotent overlay + initial `poi_created` / `facilitation_case_opened` timeline events for unknown-counterparty facilitation cases
+- `unknown-cp-status-transition` — P012 admin/platform_admin structured status transitions (13 typed actions; `reopen_case` requires `platform_admin`; writes user-safe timeline events + canonical `unknown_cp_*` audit names)
+- `unknown-cp-user-action` — P012 requester-driven Add more information / Contact support / Cancel request router (min 20-char message; routes cancellations into `cancelled_by_requester`)
 
 
 

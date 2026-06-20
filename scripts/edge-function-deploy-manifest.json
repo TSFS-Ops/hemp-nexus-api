@@ -29,7 +29,10 @@
     "basic-memory-record-write",
     "provider-stub-simulate",
     "compute-evidence-rating",
-    "evidence-rating-override"
+    "evidence-rating-override",
+    "unknown-cp-case-bootstrap",
+    "unknown-cp-status-transition",
+    "unknown-cp-user-action"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
