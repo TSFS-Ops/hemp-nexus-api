@@ -26,6 +26,8 @@ const EXEMPT_PATH_PARTS = [
   "src/components/admin/StubProviderSimulationPanel.tsx",
   // Evidence + governance docs documenting the policy itself
   "docs/p010-stub-provider-labelling",
+  // Internal infrastructure spec — names future-integration providers in planning context
+  "docs/infrastructure-requirements.md",
 ];
 
 const PROVIDER_NAME_REGEXES = [
