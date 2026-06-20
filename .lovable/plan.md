@@ -1,122 +1,142 @@
-## P010 — Status before this batch
+## P011 — Counterparty Rating Methodology Visibility
 
-P010 was already shipped as `P010_STUB_PROVIDER_LABELLING_READY_FOR_OPERATOR_VERIFY` on 2026-06-19. The following is **already in place** and will be reused, not rebuilt:
+This is a large enterprise build. Before I start, I need confirmation on **one structural decision** that determines the whole shape of the batch.
 
-- Central SSOT: `src/lib/stub-providers.ts` + `supabase/functions/_shared/stub-providers.ts` (parity-enforced by `scripts/check-stub-providers-parity.mjs`, wired into `prebuild`).
-- Edge gates: `idv-verify` and `dilisense-screen` short-circuit any stub provider with HTTP 503 `STUB_PROVIDER_NOT_LIVE`, audit-only `stub_provider.not_live`, and never advance entity / screening state.
-- UI copy: `TestModeBypassPanel` IDV + Sanctions rows already say *"(Onfido / CIPC are not live yet…)"* and *"(Dow Jones / Refinitiv are not live yet…)"*; `FacilitationCaseManualChecksPanel` and `docs/Counterparties` no longer name the four providers.
-- Unit pins: `src/tests/p010-stub-provider-labelling.test.ts` covers the four keys, forbidden words, statuses, audit names, verbatim labels and error code.
+## Critical context: there is already a "counterparty rating" in the codebase
 
-## What the new prompt adds on top
+`counterparty_ratings` already exists as a **four-pillar deal-history reputation score** (platinum / gold / silver / bronze / new / insufficient_history), surfaced via `CounterpartyRatingBadge` on `MatchHeroCard`. It is derived from settled-deal performance, not from KYB/sanctions/UBO/evidence.
 
-The new prompt tightens four things that are not yet captured. This batch only fills those gaps; no rework of the existing gate.
+P011 specifies a **different concept**: an *evidence-confidence* signal (Limited Information / Public-Source Supported / Admin-Reviewed / Verification Complete / Flagged) derived from public-source signals, live KYB/sanctions/UBO, evidence completeness, admin review, and flags. It explicitly forbids "Trusted" / "Safe" wording — which clashes with the existing reputation bands' implicit framing.
 
-### 1. Enrich the SSOT with policy metadata
+**Decision needed:** I will build P011 as a **separate, parallel rating** ("Evidence Confidence") rather than renaming or repurposing the existing reputation product. The existing four-pillar rating remains untouched. The new P011 surface is the one referenced in the questionnaire. If you prefer to retire the existing reputation badge, that is a separate batch.
 
-Add metadata to each entry (no behaviour change to existing call sites):
+If that decision is not what you want, stop me here. Otherwise, I will execute the plan below in full and only return `P011_COUNTERPARTY_RATING_METHODOLOGY_VISIBILITY_COMPLETE` once every item is green.
 
-```text
-provider_id, provider_category (KYB | Identity | Sanctions/PEP),
-is_live: false, client_visible: false, admin_visible: true,
-requires_test_mode: true, approved_warning_label, allowed_statuses
-```
+## Scope (single batch)
 
-Add forbidden-word coverage for the longer list from the new prompt
-(`provider-confirmed`, `provider_confirmed`, `provider-approved`,
-`provider_approved`, `provider_matched`, `live_check_complete`,
-plus phrase scans for `verification complete`, `screening complete`,
-`provider check passed`, `provider match found`, `external check complete`).
-Mirror to the edge SSOT and extend the parity checker pins.
+### A. Schema (one migration)
 
-### 2. Add an explicit Test-Mode simulation path (audit-only)
+Two new public-schema tables, with GRANTs + RLS + policies:
 
-New edge function `provider-stub-simulate` (admin/developer only, requires Test Mode active):
+- `counterparty_evidence_ratings` — durable current rating snapshot per (org_id, counterparty_id). Columns: rating_band (enum), methodology_version, calculated_at, calculation_trigger, freshness_state, supporting_factors_json, input_summary_json, missing_inputs_json, stale_inputs_json, workflow_effect_json, has_admin_override, override_id, audit refs, std timestamps.
+- `counterparty_rating_overrides` — controlled admin overrides. Columns: old_rating, override_rating, reason_code (enum: 8 approved codes), reason_text (≥30 chars enforced by trigger), evidence_document_id, expires_at (≤90 days unless admin_block, enforced by trigger), created_by/at, updated_by/at, removed_by/at, removal_reason.
+- Postgres enums: `evidence_rating_band`, `evidence_rating_freshness`, `evidence_rating_override_reason`.
+- RLS: tenant isolation via org_id, requester/trader/compliance/admin read via existing role helpers, override write only by `platform_admin` / `compliance_owner`, no anon, no counterparty-user read (enforced via `has_role` checks excluding counterparty role).
+- Triggers validate reason_text length, expiry window, and prevent override→`verification_complete` unless input_summary shows all live required checks complete + fresh.
 
-- Validates JWT + `has_role(platform_admin | developer)`.
-- Requires `admin_settings.test_mode_active = true`; otherwise returns the standard stub-not-live envelope and writes `stub_provider.blocked`.
-- When allowed: writes `stub_provider.test_mode_simulated` (audit-only) and returns:
-`{ ok: true, status: "test_mode_bypass", external_provider_called: false, message: <verbatim label> }`.
-- Never writes to `screening_results`, `kyc_status`, `entities`, `dd_*`, `pois`, `wads`, `matches`, `token_*`, `notifications`.
+### B. SSOT module (`src/lib/evidence-rating.ts` + edge mirror `supabase/functions/_shared/evidence-rating.ts`, parity-checked)
 
-No new tables. No new scopes (re-uses existing `platform_admin` / `developer` roles and the existing `admin_settings.test_mode_active` flag if present, otherwise the existing Test Mode mechanism used by `TestModeBypassPanel`).
+Pins:
+- 5 bands (exact strings), user wording, internal rule strings.
+- Disclaimer wording (verbatim).
+- Allowed/excluded input keys.
+- Freshness windows (30d / 7d / 12m / 90d).
+- Forbidden UI words (`safe`, `trusted`, `approved`, `compliant`, `low risk`, `high risk`, `guaranteed`, `cleared`, `bank verified`).
+- 8 approved override reason codes.
+- 12 canonical audit event names (`counterparty_rating.*`).
+- Methodology version constant (`COUNTERPARTY_RATING_METHODOLOGY_VERSION = "1.0"`).
+- Pure `computeEvidenceRating(inputs)` function — deterministic, used by edge function and by tests.
 
-### 3. Admin-only "Simulate in Test Mode" UI control
+### C. Edge function `compute-evidence-rating`
 
-Inside the existing admin diagnostic panel (`TestModeBypassPanel` area), add a small "Stub provider simulation" card listing the 4 providers with:
+- Server-side computation triggered by the 11 declared events (POI state changes, KYB completion, sanctions result, document upload/expiry, admin review change, override change, methodology change, scheduled stale-check).
+- Reads inputs from existing tables: `screening_results`, `kyc_status`, `entities`, `dd_risk_scores`, `match_documents`/`match_counterparty_intel`, `disputes`, `pois`, `wads`, `counterparty_rating_overrides`.
+- Excludes stub providers (uses existing P010 `isStubProvider`) — they cannot support `verification_complete`.
+- Writes one row to `counterparty_evidence_ratings` (upsert by (org_id, counterparty_id)) + audit events `counterparty_rating.rating_calculated` / `rating_refreshed` / `rating_changed` / `rating_marked_stale` / `rating_recalculation_failed`.
+- On failure: keeps previous row, sets `freshness_state = error`, emits `rating_recalculation_failed`. Never throws to caller.
 
-- generic category label + verbatim warning,
-- per-provider **Simulate in Test Mode** button (disabled when Test Mode off, with the agreed tooltip),
-- on click → invokes `provider-stub-simulate`, surfaces audit-only result, never displays "verified/passed/cleared/etc".
+### D. Edge functions for overrides
 
-Gated by `useUserRole()` so only `platform_admin` / `developer` see it.
+`evidence-rating-override-apply` / `-change` / `-remove`:
+- JWT + `has_role('platform_admin')` OR `has_role('compliance_owner')`.
+- Validates reason code (one of 8), reason text ≥30 chars, expires_at ≤ now+90d (unless `admin_block`), block on `verification_complete` upgrade when live inputs not satisfied, block on hiding active critical sanctions/PEP.
+- Emits `counterparty_rating.rating_override_applied` / `_changed` / `_removed`.
+- Triggers a recalc.
 
-### 4. Build-time guards + expanded tests
+### E. UI: reusable "Why this rating?" drawer
 
-- Extend `scripts/check-stub-providers-parity.mjs` for the new metadata + extended forbidden list.
-- New script `scripts/check-stub-provider-copy-drift.mjs` (wired into `prebuild`): greps the repo for the forbidden phrases co-occurring with any of the 4 provider names in user-facing files (`src/components/**`, `src/pages/**`, `docs/**`, exports), excluding the SSOT and tests. Fails the build on a match.
-- Extend `src/tests/p010-stub-provider-labelling.test.ts` with:
-  - role × provider matrix (requester, counterparty, compliance_analyst, platform_admin, developer) — using the policy helper, asserting `client_visible=false` blocks all four for non-admin roles and `admin_visible=true` + Test Mode gate for the two admin roles.
-  - extended forbidden-words list pinned.
-  - envelope helpers produce no forbidden word and `external_provider_called=false`.
-- New Deno test `supabase/functions/provider-stub-simulate/index.test.ts` covering: unauth → 401, non-admin → 403, admin + Test Mode off → blocked envelope + `stub_provider.blocked` audit, admin + Test Mode on → `test_mode_bypass` envelope + `stub_provider.test_mode_simulated` audit, never writes to screening/kyc tables.
+`src/components/ratings/EvidenceRatingDrawer.tsx`:
+- Reads from `counterparty_evidence_ratings` for given (org_id, counterparty_id).
+- Renders: band label, plain-English meaning, methodology version + link, last calculated, top 3 supporting factors, all checks with status chips (Completed / Not Run / Pending / Failed / Expired / Stale / Not Applicable), missing inputs for next band, admin review state (safe wording), workflow effect, next required action, verbatim disclaimer.
+- Admin-only block (gated via `useUserRole` + RLS): full input breakdown, override reason, admin notes, audit event IDs, internal flags.
+- Counterparty-user role: drawer not opened; badge hidden.
 
-## Out of scope (explicit)
+`src/components/ratings/EvidenceRatingBadge.tsx`:
+- 5-band badge using semantic tokens (no hardcoded colors).
+- Forbidden-word guard at render time (dev-only assertion).
+- Click → opens drawer.
 
-- No real provider integration for CIPC / Onfido / Dow Jones / Refinitiv.
-- No new tables, no new scopes, no schema changes.
-- No client-facing surface gains a stub provider control.
-- No changes to `companies_house` / `dilisense` (those are live).
+### F. Surface integration (consistent badge+drawer everywhere)
 
-## Deliverable
+Add `EvidenceRatingBadge` on:
+- counterparty search results, counterparty profile (`/counterparties/:id`), trade request pages, match pages (alongside but distinct from existing reputation badge), POI pre-gate, WaD readiness/pre-gate, admin counterparty review, compliance review surface.
 
-After implementation:
+Role visibility enforced via existing `useUserRole` hook + RLS.
 
-- Run `bunx vitest run src/tests/p010-stub-provider-labelling.test.ts` and the new Deno test.
-- Update `evidence/p010-stub-provider-labelling/README.md` with: files changed, provider × role visibility matrix, audit event names, test output, and the new acceptance status:
-`P010_STUB_PROVIDER_LABELLING_HARDENED_INTERNAL_ACCEPTANCE_PASSED`.
+### G. Methodology docs page
 
-Confirm to proceed and I will implement exactly the above — nothing else.  
-  
-Proceed.
+`src/pages/docs/CounterpartyRatingMethodology.tsx` + route added in `App.tsx` and `docs/Index`:
+- Title: "Counterparty Rating Methodology v1.0".
+- Sections: 5 bands, allowed inputs, excluded inputs, missing/stale rules, freshness table, workflow impact, disclaimer, why ratings are not guarantees.
+- Linked from the drawer.
 
-Implement **exactly** the batch described above and nothing outside scope.
+### H. Audit-name guard
 
-Use this acceptance line after evidence is complete:
+Extend `scripts/check-ai-review-audit-names.mjs` pattern → new script `scripts/check-counterparty-rating-audit-names.mjs`:
+- Pins the 12 canonical event names; fails build if the SSOT drifts or any new emit-site uses an off-spec name.
+- Add to `prebuild` and to `RELEASE_GATE.md`.
 
-```text
-P010_STUB_PROVIDER_LABELLING_HARDENED_INTERNAL_ACCEPTANCE_PASSED
-```
+New script `scripts/check-evidence-rating-forbidden-words.mjs`:
+- Scans `src/components/ratings/**`, `src/pages/**` (rating surfaces), `docs/**` for the 9 forbidden words near "rating" context. Wired into `prebuild` + `RELEASE_GATE.md`.
 
-Key constraints to preserve:
+Extend the existing `scripts/check-stub-providers-parity.mjs`-style parity guard with `scripts/check-evidence-rating-parity.mjs` for the new SSOT mirror.
 
-- Reuse the existing P010 SSOT and gates.
-- Do not rebuild what already shipped.
-- No real provider integration.
-- No new tables.
-- No new scopes.
-- No client-facing stub controls.
-- No changes to live `companies_house` or `dilisense`.
-- Simulation is **platform_admin/developer only**, **Test Mode only**, and **audit-only**.
-- Stub simulation must never write verification, screening, POI, WaD, match, token, notification, or compliance state.
-- Forbidden wording guard must be build-time enforced.
-- Evidence README must include files changed, role/provider matrix, audit names, test output, and final status.
+### I. Tests (vitest)
 
-After implementation, run:
+`src/tests/p011-counterparty-rating-methodology.test.ts`:
+- 5 fixture examples (TEST Alpha / Beta / Gamma / Delta / Echo) → exact band + correct check chips + disclaimer present.
+- Forbidden wording never appears in band labels, drawer copy, methodology page constants.
+- Missing data → `limited_information`.
+- Negative signal → `flagged`.
+- Stale input cannot support `verification_complete`.
+- Stub providers (CIPC/Onfido/Dow Jones/Refinitiv) cannot support `verification_complete`.
+- Public-source band requires ≥2 approved signals + 1 matched identifier.
+- Override: reason text length, expiry window, admin_block allowed >90d, cannot upgrade to `verification_complete` without live inputs, cannot hide active critical sanctions.
+- Recalculation does not run on render (component never calls compute function directly; only reads).
+- Recalc failure preserves last rating + sets freshness=error.
+- Role visibility: requester/trader/compliance/admin/counterparty/anon matrix.
+- 12 audit event names pinned.
+- Methodology version pinned at "1.0" and preserved on historical rows (snapshot insert never updates the version column of a prior row).
+- Cross-tenant isolation (RLS): query with org_a token returns no rows for org_b.
 
-```bash
-bunx vitest run src/tests/p010-stub-provider-labelling.test.ts
-```
+`supabase/functions/compute-evidence-rating/index.test.ts`: 401/403/400 negative paths; idempotent recalc; failure path writes `rating_recalculation_failed`.
 
-and the new Deno test:
+`supabase/functions/evidence-rating-override-apply/index.test.ts`: 401/403/400/reason-too-short/expiry-too-far/cannot-hide-sanctions.
 
-```bash
-deno test supabase/functions/provider-stub-simulate/index.test.ts
-```
+### J. Evidence + governance docs
 
-Then update:
+- `evidence/p011-counterparty-rating-methodology/README.md` with the standard structure (files changed, band × role matrix, audit names, test output, final status).
+- Update `RELEASE_GATE.md` "Edge functions requiring deploy" with the 4 new functions and the 3 new prebuild scripts under their documentation section.
+- Update `mem://index.md` if a new persistent rule is needed (likely yes — to prevent the existing four-pillar badge from being confused with the new evidence rating).
 
-```text
-evidence/p010-stub-provider-labelling/README.md
-```
+### Constraints I will hold
 
-with the final evidence and status.
+- No new scopes / roles created; only existing `platform_admin`, `compliance_owner`, `requester`, `trader`, `counterparty`, `compliance_analyst`, `developer` roles used.
+- Existing four-pillar `counterparty_ratings` table untouched.
+- No stub provider (P010) can support `verification_complete`.
+- Ratings never auto-progress POI/WaD; only `flagged` *blocks* WaD progression pending admin/compliance review (gate enforced in WaD function, not in rating function).
+- No real provider integrations added.
+- No counterparty-user can read either table (RLS).
+- All audit writes are append-only; no payload-level secrets stored.
+
+### Out of scope (explicit)
+
+- Live CIPC/Onfido/Dow Jones/Refinitiv integrations (P010 covers their non-live status).
+- Retiring / restyling the existing four-pillar reputation badge.
+- Building a Playwright role-negative E2E spec (will add only if the area already has one; otherwise vitest matrix is the V1 coverage).
+- Real-time recalc subscriptions; recalc is event-driven via the trigger list.
+
+## Confirm with one word
+
+- **proceed** → I implement A-J in full, run all guards + tests, and report final status.
+- Anything else → I adjust the plan before any file changes.
