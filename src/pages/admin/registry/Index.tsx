@@ -30,6 +30,9 @@ export default function AdminRegistryIndex() {
         <Link to="/admin/registry/imports" className={tabClass(loc.pathname.includes("imports"))}>
           Import batches
         </Link>
+        <Link to="/admin/registry/claims" className={tabClass(loc.pathname.includes("claims"))}>
+          Claims
+        </Link>
       </div>
       <Card>
         <CardHeader><CardTitle className="text-base">Other tabs</CardTitle></CardHeader>

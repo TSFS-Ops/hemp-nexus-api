@@ -83,6 +83,8 @@ const AdminRegistryDecisions = lazy(() => import("@/pages/admin/registry/Decisio
 const AdminRegistryProvenance = lazy(() => import("@/pages/admin/registry/Provenance"));
 const AdminRegistryCoverage = lazy(() => import("@/pages/admin/registry/Coverage"));
 const AdminRegistryImports = lazy(() => import("@/pages/admin/registry/Imports"));
+// Batch 3 — M004 admin claims queue
+const AdminRegistryClaims = lazy(() => import("@/pages/admin/registry/Claims"));
 
 /**
  * Root element that renders based on host type:
@@ -167,6 +169,7 @@ function App() {
                   <Route path="/registry/search" element={<RegistrySearch />} />
                   <Route path="/registry/company/:id" element={<RegistryCompanyProfile />} />
                   <Route path="/registry/claim" element={<RegistryClaim />} />
+                  <Route path="/registry/company/:id/claim" element={<RegistryClaim />} />
                   <Route path="/registry/readiness" element={<RegistryReadiness />} />
                   {/* Batch 1 — Admin registry area (M015 shell, M018 decisions, M019 readiness) */}
                   <Route path="/admin/registry" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryIndex /></RequireAuth>} />
@@ -176,6 +179,8 @@ function App() {
                   <Route path="/admin/registry/provenance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryProvenance /></RequireAuth>} />
                   <Route path="/admin/registry/coverage" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryCoverage /></RequireAuth>} />
                   <Route path="/admin/registry/imports" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryImports /></RequireAuth>} />
+                  {/* Batch 3 — Claims queue */}
+                  <Route path="/admin/registry/claims" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaims /></RequireAuth>} />
 
                   {/* Legacy /admin/*, every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old
