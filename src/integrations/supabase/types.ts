@@ -2574,6 +2574,124 @@ export type Database = {
           },
         ]
       }
+      business_decision_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          created_at: string
+          decision_id: string
+          id: string
+          new_status: Database["public"]["Enums"]["business_decision_status"]
+          previous_status:
+            | Database["public"]["Enums"]["business_decision_status"]
+            | null
+          reason: string
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          created_at?: string
+          decision_id: string
+          id?: string
+          new_status: Database["public"]["Enums"]["business_decision_status"]
+          previous_status?:
+            | Database["public"]["Enums"]["business_decision_status"]
+            | null
+          reason: string
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          created_at?: string
+          decision_id?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["business_decision_status"]
+          previous_status?:
+            | Database["public"]["Enums"]["business_decision_status"]
+            | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_decision_events_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "business_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_decisions: {
+        Row: {
+          approved_by: string | null
+          category: Database["public"]["Enums"]["business_decision_category"]
+          created_at: string
+          created_by: string
+          decision_key: string
+          effective_at: string | null
+          evidence_url: string | null
+          expiry_at: string | null
+          id: string
+          is_public: boolean
+          owner_role: string | null
+          rationale: string
+          review_at: string | null
+          scope_org_id: string | null
+          status: Database["public"]["Enums"]["business_decision_status"]
+          superseded_by: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          category: Database["public"]["Enums"]["business_decision_category"]
+          created_at?: string
+          created_by: string
+          decision_key: string
+          effective_at?: string | null
+          evidence_url?: string | null
+          expiry_at?: string | null
+          id?: string
+          is_public?: boolean
+          owner_role?: string | null
+          rationale: string
+          review_at?: string | null
+          scope_org_id?: string | null
+          status?: Database["public"]["Enums"]["business_decision_status"]
+          superseded_by?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          category?: Database["public"]["Enums"]["business_decision_category"]
+          created_at?: string
+          created_by?: string
+          decision_key?: string
+          effective_at?: string | null
+          evidence_url?: string | null
+          expiry_at?: string | null
+          id?: string
+          is_public?: boolean
+          owner_role?: string | null
+          rationale?: string
+          review_at?: string | null
+          scope_org_id?: string | null
+          status?: Database["public"]["Enums"]["business_decision_status"]
+          superseded_by?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_decisions_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "business_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clip_on_billing_failures: {
         Row: {
           created_at: string
@@ -9671,6 +9789,101 @@ export type Database = {
           },
         ]
       }
+      registry_modules: {
+        Row: {
+          category: string
+          created_at: string
+          current_state: Database["public"]["Enums"]["registry_readiness_state"]
+          id: string
+          module_code: string
+          module_name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          current_state?: Database["public"]["Enums"]["registry_readiness_state"]
+          id?: string
+          module_code: string
+          module_name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          current_state?: Database["public"]["Enums"]["registry_readiness_state"]
+          id?: string
+          module_code?: string
+          module_name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registry_readiness_states: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          country_code: string | null
+          created_at: string
+          effective_at: string
+          evidence_url: string | null
+          id: string
+          module_code: string
+          new_state: Database["public"]["Enums"]["registry_readiness_state"]
+          previous_state:
+            | Database["public"]["Enums"]["registry_readiness_state"]
+            | null
+          provider: string | null
+          reason: string
+          surface: string
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name?: string
+          country_code?: string | null
+          created_at?: string
+          effective_at?: string
+          evidence_url?: string | null
+          id?: string
+          module_code: string
+          new_state: Database["public"]["Enums"]["registry_readiness_state"]
+          previous_state?:
+            | Database["public"]["Enums"]["registry_readiness_state"]
+            | null
+          provider?: string | null
+          reason: string
+          surface?: string
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          country_code?: string | null
+          created_at?: string
+          effective_at?: string
+          evidence_url?: string | null
+          id?: string
+          module_code?: string
+          new_state?: Database["public"]["Enums"]["registry_readiness_state"]
+          previous_state?:
+            | Database["public"]["Enums"]["registry_readiness_state"]
+            | null
+          provider?: string | null
+          reason?: string
+          surface?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_readiness_states_module_code_fkey"
+            columns: ["module_code"]
+            isOneToOne: false
+            referencedRelation: "registry_modules"
+            referencedColumns: ["module_code"]
+          },
+        ]
+      }
       reputation_scores: {
         Row: {
           avg_response_time_seconds: number | null
@@ -14188,6 +14401,23 @@ export type Database = {
         | "director"
         | "commercial_owner"
         | "compliance_owner"
+      business_decision_category:
+        | "country"
+        | "data_source"
+        | "provider"
+        | "public_display"
+        | "api_output"
+        | "outreach_use"
+        | "commercial_use"
+        | "institutional_demo"
+        | "wording"
+      business_decision_status:
+        | "proposed"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "expired"
+        | "superseded"
       counterparty_type: "known" | "unknown"
       engagement_status:
         | "pending"
@@ -14236,6 +14466,17 @@ export type Database = {
         | "audit_logs"
         | "email_send_log"
         | "governance_records"
+      registry_readiness_state:
+        | "not_started"
+        | "shell_ready"
+        | "test_data_ready"
+        | "provider_pending"
+        | "data_pending"
+        | "licence_pending"
+        | "admin_only"
+        | "client_demo_ready"
+        | "production_ready"
+        | "disabled"
       revenue_notification_status: "sent" | "failed" | "skipped"
       signal_type: "buyer" | "seller"
     }
@@ -14382,6 +14623,25 @@ export const Constants = {
         "commercial_owner",
         "compliance_owner",
       ],
+      business_decision_category: [
+        "country",
+        "data_source",
+        "provider",
+        "public_display",
+        "api_output",
+        "outreach_use",
+        "commercial_use",
+        "institutional_demo",
+        "wording",
+      ],
+      business_decision_status: [
+        "proposed",
+        "under_review",
+        "approved",
+        "rejected",
+        "expired",
+        "superseded",
+      ],
       counterparty_type: ["known", "unknown"],
       engagement_status: [
         "pending",
@@ -14435,6 +14695,18 @@ export const Constants = {
         "audit_logs",
         "email_send_log",
         "governance_records",
+      ],
+      registry_readiness_state: [
+        "not_started",
+        "shell_ready",
+        "test_data_ready",
+        "provider_pending",
+        "data_pending",
+        "licence_pending",
+        "admin_only",
+        "client_demo_ready",
+        "production_ready",
+        "disabled",
       ],
       revenue_notification_status: ["sent", "failed", "skipped"],
       signal_type: ["buyer", "seller"],

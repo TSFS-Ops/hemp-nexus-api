@@ -1,173 +1,124 @@
-# P012 — User-facing Unknown-Counterparty Status Timeline
+## Batch 1 — Business Registry Foundation (M001, M018, M019)
 
-A large, multi-surface build. Before implementing I want to confirm scope/approach so we don't conflict with the existing facilitation_cases system already in the schema.
+Scope strictly limited to Batch 1 as instructed. No real registry data ingested. No bank capture, no API facade, no outreach, no claim/authority logic — those are explicitly reserved for Batches 2–6.
 
-## Key observation — reuse vs. parallel
+### Deliverables
 
-The DB already has a mature facilitation stack:
+**M001 — Business Registry Shell**
 
-- `facilitation_cases` (85 cols)
-- `facilitation_case_events`
-- `facilitation_case_contact_attempts`
-- `facilitation_case_next_steps`
-- `facilitation_outreach_*` (templates, candidates, sends)
-- `facilitation_compliance_escalations`
-- `facilitation_do_not_contact_rules`
-- `engagement_outreach_*`
+- New module under `/registry` with role-safe routes:
+  - `/registry` — module landing (explains scope, links to search/claim/admin where applicable)
+  - `/registry/search` — public company search shell (empty-state only, no data)
+  - `/registry/company/:id` — company profile shell (empty-state, "no record loaded")
+  - `/registry/claim` — claim placeholder ("Coming in Batch 3")
+  - `/admin/registry` — admin registry area (tabs: Readiness, Decisions; other tabs marked "Coming in later batch")
+  - `/admin/registry/readiness` — Product Truth dashboard (M019)
+  - `/admin/registry/decisions` — Business Decision Register (M018)
+  - `/registry/readiness` — client-safe readiness summary placeholder (full M017 in Batch 6)
+- All routes guarded; no misleading "live" wording. Every shell page carries a `<ReadinessBanner state="shell_ready" />` so nothing can be mistaken for production.
 
-P012 describes essentially the same domain (unknown-counterparty facilitation with admin outreach, SLA, escalation, audit) but with a **finite, user-facing, safe-copy timeline** layered on top. Building a **second parallel system** (`unknown_counterparty_cases`, `unknown_counterparty_outreach_logs`, etc.) would duplicate the existing facilitation pipeline, fork SLA/audit logic, and conflict with the Facilitation SLA SSOT and Batch 7–12 closeout work in memory.
+**M019 — Module Readiness / Product Truth Layer**
 
-**Proposed approach (recommended):** implement P012 as a **user-facing projection layer** over the existing `facilitation_cases` system, not as a duplicate.
+- DB tables (RLS-scoped, `service_role` + `platform_admin` write, `authenticated` read on non-sensitive views):
+  - `registry_modules` — module code (M001…M019), name, category, current readiness state
+  - `registry_readiness_states` — append-only history of state transitions per (module, country, provider, surface) with reason, actor, evidence link, effective_at
+- Readiness enum (exact): `not_started`, `shell_ready`, `test_data_ready`, `provider_pending`, `data_pending`, `licence_pending`, `admin_only`, `client_demo_ready`, `production_ready`, `disabled`.
+- SSOT in `src/lib/registry-readiness.ts` + Deno mirror in `supabase/functions/_shared/registry-readiness.ts`. Parity guard `scripts/check-registry-readiness-parity.mjs`.
+- `<ReadinessBanner />` + `<ReadinessBadge />` components read state and render copy from SSOT. Hard rule: surfaces that aren't `production_ready` cannot render verified/live wording (enforced by `scripts/check-registry-readiness-forbidden-words.mjs`).
+- Admin dashboard `/admin/registry/readiness`: matrix of modules × surfaces with current state, last change, link to history. `platform_admin` and `compliance_owner` can transition states via edge function `registry-readiness-transition` (writes audit event `registry_readiness_state_changed`).
+- Seed every M001–M019 module at `not_started` except M001/M018/M019 set to `shell_ready` after this batch.
 
-## Plan
+**M018 — Business Decision Register**
 
-### 1. Schema (additive, minimal)
+- DB table `business_decisions` (RLS: read = authenticated within org for non-confidential; full read + write = `platform_admin`/`compliance_owner`). Columns: title, category (country | data_source | provider | public_display | api_output | outreach_use | commercial_use | institutional_demo | wording), status (`proposed`, `approved`, `rejected`, `expired`, `superseded`, `under_review`), rationale, effective_at, review_at, expiry_at, owner_role, approved_by, superseded_by, evidence_url.
+- `business_decision_events` append-only audit table; every status change emits audit name `business_decision_recorded` / `business_decision_status_changed`.
+- Edge function `business-decision-record` (POST create / update / supersede; enforces role + 30-char rationale).
+- Admin UI `/admin/registry/decisions`: list with filter by category/status, detail drawer with full history, "Record decision" form (admin-only).
+- Public-safe getter helper `getActiveDecision(category, key)` for later batches to consult before showing any country/provider as live.
 
-- New column `facilitation_cases.user_facing_status` (enum-as-text, 16 visible + 1 internal status from the P012 list).
-- New column `facilitation_cases.status_group` ('open' | 'awaiting' | 'outcome' | 'closed').
-- New column `facilitation_cases.reopen_allowed boolean`.
-- New table `unknown_cp_timeline_events` — projected, user-safe events with `user_visible`, `user_facing_copy`, `reason_code`, `previous_status`, `new_status`, `actor_role`, `source`, `audit_event_name`. Populated by triggers/RPC from real `facilitation_case_events` and admin actions. Requester-readable via RLS (only rows where `user_visible = true` AND requester owns the linked POI).
-- New table `unknown_cp_user_messages` — requester-submitted "Add more information" / "Contact support" messages with attachments, category, visibility, support delivery ref.
-- Reuse `facilitation_case_contact_attempts` for outreach logs (admin-only, already exists). No new outreach table.
-- All new tables: GRANT + RLS + service_role.
+### Guards & Tests
 
-### 2. SSOT module `src/lib/unknown-cp-timeline.ts` (mirrored to `supabase/functions/_shared/`)
+- Prebuild scripts:
+  - `check-registry-readiness-parity.mjs` (TS ↔ Deno mirror)
+  - `check-registry-readiness-forbidden-words.mjs` (blocks "verified", "live", "production", "guaranteed" in non-production-ready shell copy)
+  - `check-business-decision-audit-names.mjs`
+- Vitest suite `src/tests/batch-1-registry-foundation.test.ts` (~25 cases): route guards, readiness state transitions, decision lifecycle, forbidden-word enforcement, RLS isolation across two orgs, audit emission for each transition.
+- RELEASE_GATE.md + edge-function-deploy-manifest.json updated for the two new edge functions and three new prebuild scripts.
+- Evidence pack: `evidence/batch-1-registry-foundation/README.md` with seeded readiness matrix snapshot, decision register screenshot list, audit-event coverage.
 
-- 17 canonical statuses with order, visibility, status_group, exact approved user-facing copy (verbatim).
-- 11 canonical audit event names (`unknown_cp_case_created`, etc.).
-- Forbidden user-facing words list (`guaranteed`, `verified`, `approved`, `cleared`, `accepted`, `contacted`, `onboarded`) when not status-backed.
-- Block-matrix function: `getAllowedActions(status)` → { addMoreInfo, contactSupport, cancel, progressToWad } + disabled message.
-- SLA wording constant + business-hours rules (reuse `facilitation-sla.ts`).
+### Out of scope (deferred to later batches, will be rejected if attempted here)
 
-### 3. Edge functions
+- Real or seed company records, search results, profile data
+- Claim / authority / bank capture / API facade / outreach / human approval queue
+- Country coverage table (M011), provenance model (M010), import batches (M012) — Batch 2
+- Provider integrations (CIPC, Onfido, bank verification, etc.)
 
-- `unknown-cp-case-bootstrap` — fires when an unknown-counterparty POI is created; opens facilitation case, sets `user_facing_status = 'poi_created'`, emits both timeline events.
-- `unknown-cp-status-transition` — admin-driven structured status changes (Start review, Request more info, Log outreach, Send invite, Mark onboarding, Confirm linked, Record declined / no-response / unreachable / invalid, Close, Reopen). Validates source rules, role gates (platform_admin for reopen), writes timeline event + `event_store` audit row + dispatches notifications.
-- `unknown-cp-user-action` — requester-driven: Add more information (min 20 chars, attachment validation), Contact support, Cancel request. Routes to [support@izenzo.co.za](mailto:support@izenzo.co.za) via existing transactional email pipeline.
-- `unknown-cp-sla-sweep` — cron, marks `is_overdue_review` / `is_overdue_outreach` / `is_escalated_internal` per thresholds.
+### Files to create
 
-### 4. WaD/POI progression guard
+- `supabase/migrations/<ts>_batch_1_registry_foundation.sql`
+- `src/lib/registry-readiness.ts`, `src/lib/business-decisions.ts`
+- `supabase/functions/_shared/registry-readiness.ts`
+- `supabase/functions/registry-readiness-transition/index.ts`
+- `supabase/functions/business-decision-record/index.ts`
+- `src/pages/registry/{Landing,Search,CompanyProfile,Claim,Readiness}.tsx`
+- `src/pages/admin/registry/{Index,Readiness,Decisions}.tsx`
+- `src/components/registry/{ReadinessBanner,ReadinessBadge,ReadinessMatrix,DecisionForm,DecisionList}.tsx`
+- `scripts/check-registry-readiness-parity.mjs`
+- `scripts/check-registry-readiness-forbidden-words.mjs`
+- `scripts/check-business-decision-audit-names.mjs`
+- `src/tests/batch-1-registry-foundation.test.ts`
+- `evidence/batch-1-registry-foundation/README.md`
 
-Extend existing POI/WaD progression gates (`poi-verification-gate-wiring`, `compliance-freshness-guard`) so that when a POI has an unknown-counterparty facilitation case, progression requires `user_facing_status = 'converted_to_known_counterparty'` AND existing gates still pass. No bypass.
+### Acceptance for Batch 1
 
-### 5. UI
+- All routes render shell-only with readiness banner
+- Readiness matrix shows all 19 modules with correct seeded states
+- Decision register CRUD works for `platform_admin`; non-admins read-only or blocked
+- All audit events emit; RLS blocks cross-org reads
+- Prebuild guards + tests pass
+- No "verified"/"live"/"production" wording anywhere in shell copy
 
-- `src/components/unknown-cp/UnknownCpTimelinePanel.tsx` — heading "Unknown-counterparty facilitation", subheading, status badge (reuse `StatusBadge`), ordered visible events with timestamps, neutral SLA badge, blocked-progression message.
-- `src/components/unknown-cp/AddMoreInformationDialog.tsx` — message (≥20 chars), reason dropdown, attachment (PDF/DOCX/PNG/JPG, ≤10MB, mime allowlist, banking-doc warning).
-- `src/components/unknown-cp/ContactSupportDialog.tsx`.
-- `src/components/unknown-cp/CancelRequestDialog.tsx` — confirmation gate.
-- Mount panel on POI detail / trade-request pages where unknown-counterparty case exists; hide otherwise.
-- `src/components/admin/UnknownCpAdminPanel.tsx` — structured admin actions (no free-text status changes); each action is a typed form mapping 1:1 to `unknown-cp-status-transition`.
-
-### 6. Notifications
-
-Wire material status changes (per table) into existing `notification_dispatches` + transactional email templates. Internal-only events (Outreach prepared, owner assignment, internal escalation) never notify requester.
-
-### 7. Build guards (prebuild)
-
-- `scripts/check-unknown-cp-copy-drift.mjs` — verifies UI/admin components import approved copy from SSOT only; scans for forbidden words outside SSOT/tests; ensures `outreach_prepared` never appears in any requester-facing component or route.
-- `scripts/check-unknown-cp-audit-names.mjs` — parity between TS SSOT and Deno SSOT and edge-function emissions.
-- `scripts/check-unknown-cp-status-parity.mjs` — TS enum ↔ DB CHECK constraint parity.
-- Add to RELEASE_GATE.md + edge-function deploy manifest.
-
-### 8. Tests
-
-`src/tests/p012-unknown-cp-timeline.test.ts` — covers every backend, UI, RLS, notification, and gate test listed in the spec (≥40 cases).
-
-### 9. Evidence
-
-`evidence/p012-user-facing-unknown-counterparty-status-timeline/README.md` per spec.
-
-### 10. Memory
-
-Add `mem://features/unknown-cp-timeline` describing the projection-layer architecture, finite status list, and SSOT location. Update index.
-
-## What I need from you before building
-
-**Question:** Do you want me to (A) build P012 as a projection layer over the existing `facilitation_cases` system (recommended — no duplication, single SLA, single audit trail), or (B) build the standalone `unknown_counterparty_*` tables exactly as the spec literally lists them (parallel system, larger surface, will require ongoing sync with facilitation pipeline)?
-
-If you don't reply, I will proceed with **(A) projection layer** since it preserves the existing SLA/audit SSOT and avoids breaking Batch 7–12 facilitation work already in production memory.  
+Approve to proceed, or tell me to adjust scope (e.g., split M018 into its own batch, or skip the readiness banner component).  
   
-Proceed with **A — projection layer over the existing** `facilitation_cases` **system**.
+Approved — proceed with **Batch 1 exactly as scoped**.
 
-That is the correct enterprise approach.
+One small adjustment before build: keep **M018 inside Batch 1**. Do **not** split it out. The Business Decision Register is needed from day one because the readiness layer must have a formal place to record what can and cannot be said about countries, providers, public display, API output and institutional demos.
 
-Do **not** build a second parallel `unknown_counterparty_*` case/outreach system where it duplicates the existing facilitation stack. The goal of P012 is not to replace the facilitation pipeline; it is to add a **finite, safe, user-facing timeline projection** on top of the already-existing admin-led facilitation system.
+Send this instruction:
 
-Send this instruction back:
+Proceed with Batch 1 — Business Registry Foundation exactly as specified.
 
----
+Scope is approved and remains strictly limited to M001, M018 and M019.
 
-## **Approved approach for P012**
+Do not ingest any real or seed registry data. Do not build company records, real search results, claim logic, authority logic, bank-detail capture, API facades, outreach, provider integrations, provenance, country coverage or import batches. Those are deferred to later batches.
 
-Proceed with **Option A: projection layer over the existing** `facilitation_cases` **system**.
+Key approval points:
 
-Do not create a duplicate facilitation pipeline.
+1. M001 Business Registry Shell is approved.
+2. M019 Product Truth / Module Readiness Layer is approved.
+3. M018 Business Decision Register is approved and should remain in Batch 1.
+4. Readiness banners must appear on every registry shell route.
+5. No shell page may use “verified”, “live”, “production” or “guaranteed” wording unless the relevant surface is `production_ready`.
+6. All readiness transitions and business decision changes must emit audit events.
+7. RLS must block cross-org access.
+8. Platform admins and compliance owners may transition readiness and record decisions.
+9. Other users must only have safe read access where allowed.
+10. The evidence pack, RELEASE_GATE update, deploy manifest update, guards and tests are mandatory acceptance items.
 
-The existing stack already covers the operational domain:
+Acceptance remains:
 
-- `facilitation_cases`
-- `facilitation_case_events`
-- `facilitation_case_contact_attempts`
-- `facilitation_case_next_steps`
-- `facilitation_outreach_*`
-- `facilitation_compliance_escalations`
-- `facilitation_do_not_contact_rules`
-- `engagement_outreach_*`
+- all shell routes render correctly;
+- readiness matrix shows all M001–M019 modules;
+- M001, M018 and M019 are seeded as `shell_ready`;
+- all other modules are seeded as `not_started`;
+- decision register works for authorised admins;
+- non-admins are read-only or blocked as designed;
+- audit events emit correctly;
+- RLS isolation is proven;
+- all prebuild guards pass;
+- all tests pass;
+- no misleading wording appears anywhere in the shell copy.
 
-P012 should sit on top of this as the **user-facing safe timeline layer**, not fork the domain.
+Proceed with Batch 1 only.
 
-## **Binding build decision**
-
-Use the existing facilitation case as the source of operational truth.
-
-Add only what is needed to safely expose a requester-facing timeline:
-
-- finite `user_facing_status`
-- status group
-- reopen flag
-- safe projected timeline events
-- requester messages / support actions
-- SSOT copy/status mapping
-- admin structured transitions
-- requester-safe RLS
-- WaD/POI progression guard
-- notifications
-- audit events
-- tests
-- build guards
-- evidence README
-
-## **Important rules**
-
-1. **No duplicated outreach system**  
-Reuse `facilitation_case_contact_attempts` and existing outreach structures.
-2. **No duplicated SLA engine**  
-Reuse the existing facilitation SLA SSOT where possible.
-3. **No duplicated audit model**  
-Timeline events should project from or align with existing facilitation events and canonical audit/event-store patterns.
-4. **No weakening existing gates**  
-Unknown-counterparty POIs must remain blocked from WaD or counterparty-dependent progression until converted to a known counterparty and all normal POI/WaD gates pass.
-5. **Requester sees only safe projection**  
-The requester must never see internal notes, raw outreach logs, staff names, compliance notes, risk notes, private counterparty contact details, or internal escalation details.
-6. `Outreach prepared` **remains internal-only**  
-It must never appear in requester-facing UI, requester routes, evidence packs, or notifications.
-7. **Build guards are mandatory**  
-Add guards for copy drift, status parity, audit-name parity, forbidden wording, internal-status leakage, and requester-facing exposure of outreach/contact internals.
-
-## **Scope clarification**
-
-The literal table names in the earlier P012 spec were intended to describe the required capabilities. They are **not** an instruction to fork the already-built facilitation system.
-
-The correct architecture is:
-
-Existing facilitation system = operational source of truth  
-P012 = controlled user-facing status projection + requester actions + gates + notifications + audit-safe evidence
-
-## **Proceed**
-
-Build P012 using the projection-layer approach, then test internally thoroughly. Client does not want UAT, so self-test backend, UI, RLS, notifications, route guards, build guards, and evidence output before marking complete.
-
-Final completion phrase remains:
-
-`P012_USER_FACING_UNKNOWN_COUNTERPARTY_STATUS_TIMELINE_COMPLETE`
+&nbsp;

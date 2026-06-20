@@ -70,6 +70,16 @@ const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
 const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/CounterpartyRatingMethodology"));
 const Status = lazy(() => import("@/pages/Status"));
 
+// Batch 1 — Business Registry shell (M001) + admin readiness (M019) + decisions (M018)
+const RegistryLanding = lazy(() => import("@/pages/registry/Landing"));
+const RegistrySearch = lazy(() => import("@/pages/registry/Search"));
+const RegistryCompanyProfile = lazy(() => import("@/pages/registry/CompanyProfile"));
+const RegistryClaim = lazy(() => import("@/pages/registry/Claim"));
+const RegistryReadiness = lazy(() => import("@/pages/registry/Readiness"));
+const AdminRegistryIndex = lazy(() => import("@/pages/admin/registry/Index"));
+const AdminRegistryReadiness = lazy(() => import("@/pages/admin/registry/Readiness"));
+const AdminRegistryDecisions = lazy(() => import("@/pages/admin/registry/Decisions"));
+
 /**
  * Root element that renders based on host type:
  * - Public domain: Landing page
