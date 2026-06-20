@@ -56,6 +56,17 @@ for (const d of shellDirs) {
         if (line.includes("not_verified") || line.includes("not verified")) return false;
         if (line.includes("not verify")) return false;
         if (line.includes("_not_provided")) return false;
+        // Batch 4 — captured/verified bank-detail status labels and copy are allowed.
+        if (line.includes("captured_unverified")) return false;
+        if (line.includes("bank_details_verified")) return false;
+        if (line.includes("Captured does not mean verified")) return false;
+        if (line.includes("are not verified bank details")) return false;
+        if (line.includes("marked verified")) return false;
+        if (line.includes("treated as verified")) return false;
+        if (line.includes("explicitly marked verified")) return false;
+        if (line.includes("REGISTRY_BANK_DETAIL_VERIFIED_STATE")) return false;
+        if (line.includes("isBankDetailVerified")) return false;
+        if (line.includes("Verified") && line.includes("Label")) return false;
         return true;
       });
       if (offending.length) {
