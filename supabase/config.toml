@@ -148,6 +148,14 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-bank-detail-access]
     verify_jwt = false
+  [functions.registry-institutional-profile-status]
+    verify_jwt = false
+  [functions.registry-institutional-payment-status]
+    verify_jwt = false
+  [functions.registry-api-client-manage]
+    verify_jwt = false
+  [functions.registry-api-usage-log]
+    verify_jwt = false
 
 
 

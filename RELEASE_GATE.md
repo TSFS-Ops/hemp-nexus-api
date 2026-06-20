@@ -107,6 +107,11 @@ Prebuild guards enforced automatically by `npm run build`:
  - `check-registry-claim-audit-names.mjs` — Batch 3 audit-name coverage: every name in `REGISTRY_CLAIM_AUDIT_EVENT_NAMES` must be referenced by at least one `registry-company-*` edge function.
  - `check-registry-claim-approval-wording.mjs` — Batch 3 approval-copy SSOT guard: pins the verbatim non-verification approval copy across SSOT, Deno mirror, claim edge function, and admin Claims page; blocks `verified`/`live`/`guaranteed`/`production-ready` on registry shell surfaces (with allow-listed `not_verified`/`not_provided` exceptions).
  - `check-registry-public-bank-leakage.mjs` — Batch 3 public-surface hygiene: blocks raw bank-detail tokens (`account_number`, `sort_code`, `iban`, `swift_bic`, `routing_number`, `bank_account`) on the public search, profile, claim pages and the `registry-company-search` / `registry-company-profile` edge functions.
+ - `check-registry-api-scope-parity.mjs` — Batch 5 (M008/M009/M016) institutional API SSOT parity guard: pins 8 arrays (`REGISTRY_API_ENVIRONMENTS`, `REGISTRY_API_CLIENT_STATUSES`, `REGISTRY_API_KEY_STATUSES`, `REGISTRY_API_SCOPES`, `REGISTRY_API_RESULT_STATES`, `REGISTRY_API_AUDIT_EVENT_NAMES`, `REGISTRY_API_PAYMENT_STATUS_FLAGS`, `REGISTRY_API_FORBIDDEN_RAW_BANK_FIELDS`) between `src/lib/registry-institutional-api.ts` and the Deno mirror.
+ - `check-registry-api-audit-names.mjs` — Batch 5 audit-name coverage: every name in `REGISTRY_API_AUDIT_EVENT_NAMES` must be referenced by at least one Batch 5 edge function (`registry-institutional-profile-status`, `registry-institutional-payment-status`, `registry-api-client-manage`, `registry-api-usage-log`).
+ - `check-registry-api-no-raw-bank.mjs` — Batch 5 raw-bank-field guard: blocks `account_number`, `sort_code`, `iban`, `swift_bic`, `routing_number`, `bank_account`, `account_holder` from both institutional facades and the admin API surface.
+ - `check-registry-api-state-rules.mjs` — Batch 5 verified-gate guard: the verified-profile API consults `business_decisions` + `isProfileInstitutionallyUsable`; the payment-status API uses `mapBankStateToApiFlag`, requires `verification_method` AND `verified_at` for the verified branch, and the SSOT default branch returns `not_verified`. Captured-unverified, pending, failed, not_provided, cancelled all map to `not_verified`.
+ - `check-registry-batch5-no-provider.mjs` — Batch 5 no-provider / no-AI / no-outreach guard: forbids CIPC / Onfido / GlobalDatabase / B2BHint / Dow Jones / Refinitiv / PayFast / Paystack / OpenAI / Anthropic / Lovable AI / Gemini / outreach / Resend / send-email references inside any Batch 5 edge function.
 
 
 
@@ -154,6 +159,10 @@ live in the production runtime before publishing.
 - `registry-company-search` — Batch 3 (M002) public registry search shell (returns no production rows; gates on country coverage; emits `registry_company_search_performed`)
 - `registry-company-profile` — Batch 3 (M003) public registry profile shell (safe envelope only; bank-detail STATUS LABEL only; emits `registry_company_profile_viewed`)
 - `registry-company-claim` — Batch 3 (M004) Claim Your Company writer (start / submit / add_evidence / review; admin review requires `acknowledged_not_verification: true`; emits 7 claim audit names)
+- `registry-institutional-profile-status` — Batch 5 (M008) institutional verified-profile status facade (safe status only; consults Business Decision Register + `isProfileInstitutionallyUsable`; emits `registry_api_profile_status_requested` / `registry_api_response_returned` / `registry_api_scope_denied` / `registry_api_request_blocked`)
+- `registry-institutional-payment-status` — Batch 5 (M009) institutional payment-detail status facade (safe payment-status flag only; raw bank details never returned; `verified` requires `verification_method` + `verified_at` + expiry + approved Business Decision; emits `registry_api_payment_status_requested` / `registry_api_response_returned`)
+- `registry-api-client-manage` — Batch 5 (M016) admin client/key lifecycle writer (`create_client` / `update_client` / `suspend_client` / `reactivate_client` / `create_key` / `revoke_key`; role-gated to `platform_admin` / `compliance_owner`; emits `registry_api_client_created|updated|suspended` and `registry_api_key_created|revoked`)
+- `registry-api-usage-log` — Batch 5 (M016) internal usage / rate-limit writer (`INTERNAL_CRON_KEY`-gated; emits `registry_api_rate_limit_hit` when applicable)
 
 
 

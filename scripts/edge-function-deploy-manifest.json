@@ -45,7 +45,11 @@
     "registry-authority-review",
     "registry-bank-detail-submit",
     "registry-bank-detail-status-transition",
-    "registry-bank-detail-access"
+    "registry-bank-detail-access",
+    "registry-institutional-profile-status",
+    "registry-institutional-payment-status",
+    "registry-api-client-manage",
+    "registry-api-usage-log"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
