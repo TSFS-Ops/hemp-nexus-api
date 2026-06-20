@@ -463,6 +463,160 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <p className="text-[12.5px] text-muted-foreground italic">{children}</p>;
 }
 
+// ─── Auto-trigger status tile ─────────────────────────────────────────────
+function AutoTriggerStatusTile({
+  providers,
+  loading,
+}: {
+  providers: ProviderStateRow[];
+  loading: boolean;
+}) {
+  const now = Date.now();
+
+  const onCooldown = providers.filter(
+    (p) => p.cooldown_until && new Date(p.cooldown_until).getTime() > now,
+  );
+  const errored = providers.filter(
+    (p) =>
+      (p.last_status_code ?? 0) >= 400 ||
+      (p.last_status && /error|fail|down/i.test(p.last_status)),
+  );
+  const healthy = providers.filter(
+    (p) => !onCooldown.includes(p) && !errored.includes(p),
+  );
+
+  const isOn =
+    providers.length > 0 && healthy.length > 0 && onCooldown.length < providers.length;
+  const allDown =
+    providers.length > 0 && (healthy.length === 0 || onCooldown.length === providers.length);
+
+  const lastRunMs = providers
+    .map((p) => new Date(p.updated_at).getTime())
+    .filter((n) => !Number.isNaN(n))
+    .reduce((a, b) => (b > a ? b : a), 0);
+  const lastRun = lastRunMs > 0 ? new Date(lastRunMs) : null;
+
+  const nextDueMs = onCooldown
+    .map((p) => new Date(p.cooldown_until as string).getTime())
+    .filter((n) => !Number.isNaN(n))
+    .reduce((a, b) => (a === 0 || b < a ? b : a), 0);
+  const nextDue = nextDueMs > 0 ? new Date(nextDueMs) : null;
+
+  const statusLabel = loading
+    ? "Loading…"
+    : providers.length === 0
+      ? "No provider state"
+      : allDown
+        ? "Off / degraded"
+        : isOn
+          ? "On"
+          : "Idle";
+  const statusTone = loading
+    ? "bg-slate-100 text-slate-700 border-slate-200"
+    : providers.length === 0
+      ? "bg-slate-100 text-slate-700 border-slate-200"
+      : allDown
+        ? "bg-rose-50 text-rose-800 border-rose-200"
+        : isOn
+          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+          : "bg-amber-50 text-amber-800 border-amber-200";
+
+  return (
+    <section
+      className="bg-card border border-border rounded-sm overflow-hidden"
+      data-testid="ai-auto-trigger-status"
+    >
+      <header className="px-4 sm:px-5 py-3 border-b border-border bg-muted/50 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[13px] font-medium text-foreground">Auto-trigger status</p>
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground mt-0.5">
+            ai_provider_state · derived
+          </p>
+        </div>
+        <span
+          className={`px-2 py-0.5 rounded-sm border text-[11px] font-medium uppercase tracking-wide ${statusTone}`}
+          data-testid="ai-auto-trigger-state"
+        >
+          {statusLabel}
+        </span>
+      </header>
+      <div className="p-4 sm:p-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <SummaryCard
+          label="Last run"
+          value={lastRun ? lastRun.toLocaleString() : "—"}
+          hint={lastRun ? relativeFrom(lastRun, now) : "No provider activity recorded"}
+        />
+        <SummaryCard
+          label="Next due"
+          value={nextDue ? nextDue.toLocaleString() : "—"}
+          hint={
+            nextDue
+              ? `Next provider available ${relativeTo(nextDue, now)}`
+              : "No provider on cooldown"
+          }
+        />
+        <SummaryCard
+          label="Providers healthy"
+          value={`${healthy.length} / ${providers.length}`}
+          hint={
+            onCooldown.length > 0
+              ? `${onCooldown.length} on cooldown`
+              : errored.length > 0
+                ? `${errored.length} reporting errors`
+                : providers.length === 0
+                  ? "No provider state recorded"
+                  : "All clear"
+          }
+        />
+        <SummaryCard
+          label="Provider health"
+          value={
+            providers.length === 0
+              ? "—"
+              : allDown
+                ? "Degraded"
+                : errored.length > 0
+                  ? "Partial"
+                  : "OK"
+          }
+          hint={
+            errored.length > 0
+              ? errored
+                  .slice(0, 2)
+                  .map((p) => `${p.provider}: ${p.last_status ?? p.last_status_code ?? "error"}`)
+                  .join(" · ")
+              : "Based on last_status / last_status_code"
+          }
+        />
+      </div>
+      {providers.length === 0 ? null : (
+        <p className="px-4 sm:px-5 pb-3 text-[11px] text-muted-foreground">
+          On/off is derived: at least one healthy provider and not all providers on cooldown.
+          Operational signal only — not a compliance status.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function relativeFrom(d: Date, now: number): string {
+  return `${formatDuration(Math.max(0, now - d.getTime()))} ago`;
+}
+function relativeTo(d: Date, now: number): string {
+  return `in ${formatDuration(Math.max(0, d.getTime() - now))}`;
+}
+function formatDuration(ms: number): string {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 48) return `${h}h`;
+  const days = Math.round(h / 24);
+  return `${days}d`;
+}
+
+
 function SimpleTable({ headers, rows }: { headers: string[]; rows: React.ReactNode[][] }) {
   return (
     <div className="border border-border rounded-sm overflow-hidden">
