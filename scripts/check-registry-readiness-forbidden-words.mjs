@@ -11,6 +11,10 @@ const EXEMPT = new Set([
   "src/lib/registry-readiness.ts",
   "src/lib/business-decisions.ts",
   "src/tests/batch-1-registry-foundation.test.ts",
+  // Batch 4 — the bank-detail state machine legitimately uses "verified" as
+  // an explicit status label (with "captured does not mean verified" copy).
+  "src/pages/registry/BankDetails.tsx",
+  "src/pages/admin/registry/BankDetails.tsx",
 ]);
 
 const FORBIDDEN = ["verified", "live", "guaranteed", "production-ready"];
