@@ -86,6 +86,8 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = true
   [functions.provision-test-user]
     verify_jwt = false
+  [functions.provider-stub-simulate]
+    verify_jwt = false
   [functions.run-tests]
     verify_jwt = false
   [functions.seed-uat-facilitation-accounts]

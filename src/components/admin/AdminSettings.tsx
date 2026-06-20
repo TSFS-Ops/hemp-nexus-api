@@ -11,6 +11,7 @@ import { Loader2, Save, Settings, Bell, Key, AlertTriangle } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Json } from "@/integrations/supabase/types";
 import { TestModeBypassPanel } from "@/components/admin/TestModeBypassPanel";
+import { StubProviderSimulationPanel } from "@/components/admin/StubProviderSimulationPanel";
 
 interface GeneralSettings {
   siteName: string;
@@ -380,8 +381,9 @@ export function AdminSettings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="test-mode">
+        <TabsContent value="test-mode" className="space-y-4">
           <TestModeBypassPanel />
+          <StubProviderSimulationPanel />
         </TabsContent>
       </Tabs>
     </div>

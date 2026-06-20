@@ -14,21 +14,42 @@ const edgePath = resolve("supabase/functions/_shared/stub-providers.ts");
 const PINS = [
   // provider set
   /key:\s*"cipc"/, /key:\s*"onfido"/, /key:\s*"dow_jones"/, /key:\s*"refinitiv"/,
+  // policy metadata (P010 hardening)
+  /category:\s*"KYB"/, /category:\s*"Identity"/, /category:\s*"Sanctions\/PEP"/,
+  /is_live:\s*false/,
+  /client_visible:\s*false/,
+  /admin_visible:\s*true/,
+  /requires_test_mode:\s*true/,
   // status values
   /STUB_NOT_LIVE:\s*"stub_not_live"/,
   /NO_EXTERNAL_CHECK:\s*"no_external_check"/,
   /PROVIDER_NOT_CONNECTED:\s*"provider_not_connected"/,
-  // forbidden words
+  /TEST_MODE_BYPASS:\s*"test_mode_bypass"/,
+  // forbidden single words
   /"verified"/, /"cleared"/, /"passed"/, /"approved"/, /"screened"/, /"complete"/,
+  /"provider-confirmed"/, /"provider_confirmed"/,
+  /"provider-approved"/, /"provider_approved"/,
+  /"provider_matched"/, /"live_check_complete"/,
+  // forbidden phrases
+  /"verification complete"/,
+  /"screening complete"/,
+  /"provider check passed"/,
+  /"provider match found"/,
+  /"external check complete"/,
   // audit names
   /NOT_LIVE:\s*"stub_provider\.not_live"/,
   /BLOCKED:\s*"stub_provider\.blocked"/,
   /NO_EXTERNAL_CHECK:\s*"stub_provider\.no_external_check"/,
+  /TEST_MODE_SIMULATED:\s*"stub_provider\.test_mode_simulated"/,
+  /VISIBILITY_SUPPRESSED:\s*"stub_provider\.visibility_suppressed"/,
   // labels
   /Not live yet — no external provider check is performed\./,
   /This provider is not connected yet\. No real external verification, screening, or clearance is performed\./,
   // error code
   /STUB_PROVIDER_ERROR_CODE\s*=\s*"STUB_PROVIDER_NOT_LIVE"/,
+  // helpers
+  /stubProviderVisibleToRole/,
+  /stubProviderSimulationAllowed/,
 ];
 
 const errors = [];
