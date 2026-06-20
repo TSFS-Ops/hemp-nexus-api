@@ -64,7 +64,7 @@ export default function AdminRegistryClaims() {
 
   useEffect(() => { load(); }, []);
 
-  async function openDrawer(row: ClaimRow) {
+  async function openSheet(row: ClaimRow) {
     setSelected(row);
     setRationale("");
     setAcknowledged(false);
@@ -121,7 +121,7 @@ export default function AdminRegistryClaims() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">{REGISTRY_CLAIM_STATE_LABEL[r.status]}</Badge>
-                  <Button size="sm" variant="outline" onClick={() => openDrawer(r)} data-testid="admin-claim-review-open">Review</Button>
+                  <Button size="sm" variant="outline" onClick={() => openSheet(r)} data-testid="admin-claim-review-open">Review</Button>
                 </div>
               </li>
             ))}
@@ -129,14 +129,14 @@ export default function AdminRegistryClaims() {
         </CardContent>
       </Card>
 
-      <Drawer open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
-        <DrawerContent>
-          <DrawerHeader className="flex items-start justify-between">
-            <DrawerTitle>Review claim — {selected?.company_name}</DrawerTitle>
-            <DrawerClose asChild>
+      <Sheet open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
+        <SheetContent>
+          <SheetHeader className="flex items-start justify-between">
+            <SheetTitle>Review claim — {selected?.company_name}</SheetTitle>
+            <SheetClose asChild>
               <Button variant="ghost" size="icon" aria-label="Close"><X className="h-4 w-4" /></Button>
-            </DrawerClose>
-          </DrawerHeader>
+            </SheetClose>
+          </SheetHeader>
           {selected && (
             <div className="px-4 pb-6 space-y-4 max-w-2xl mx-auto w-full">
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -183,8 +183,8 @@ export default function AdminRegistryClaims() {
               </div>
             </div>
           )}
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
     </main>
   );
 }
