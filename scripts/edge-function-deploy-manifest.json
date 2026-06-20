@@ -26,7 +26,8 @@
     "admin-trade-request-archive-override",
     "refund-request",
     "list-org-purchases",
-    "basic-memory-record-write"
+    "basic-memory-record-write",
+    "provider-stub-simulate"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
