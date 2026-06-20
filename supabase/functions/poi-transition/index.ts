@@ -253,7 +253,8 @@ async function _serve(req: Request): Promise<Response> {
                 trade_approval_status: legitimacy.status,
                 valid_until: legitimacy.validUntil,
                 gate_position: legitimacy.gatePosition,
-                reason_code: ORG_NOT_VERIFIED_CODE,
+                reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+                legacy_reason_code: ORG_NOT_VERIFIED_CODE,
               },
             });
           } catch (auditErr) {

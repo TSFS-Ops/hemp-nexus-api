@@ -361,6 +361,7 @@ Deno.serve(async (req) => {
               metadata: {
                 request_id: requestId,
                 reason: "org_not_verified",
+                reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
                 legitimacy_reason: legitimacy.reason,
                 trade_approval_status: legitimacy.status,
                 valid_until: legitimacy.validUntil,

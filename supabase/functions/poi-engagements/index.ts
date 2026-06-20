@@ -1460,6 +1460,7 @@ Deno.serve(async (req) => {
             actorUserId: authCtx.userId ?? null,
             orgId: authCtx.orgId ?? null,
             reason: `org_not_verified:${outreachLegitimacy.reason}`,
+            reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
             details: {
               engagement_id: engagementId,
               initiator_org_id: initiatorOrgIdForGate,
