@@ -284,7 +284,7 @@ function StaleIntelTab() {
         <Empty>No stale AI intel.</Empty>
       ) : (
         <SimpleTable
-          headers={["Counterparty", "Status", "Discovery Confidence", "Age"]}
+          headers={["Counterparty", "Status", "Discovery Confidence", "Age", "Action"]}
           rows={(q.data ?? []).map((r) => {
             const expired = r.expires_at && new Date(r.expires_at).getTime() < Date.now();
             return [
@@ -298,6 +298,16 @@ function StaleIntelTab() {
                 <Clock className="h-3 w-3" strokeWidth={1.75} />
                 {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
               </span>,
+              <RequestRerunButton
+                proposedMatchId={r.id}
+                context={`Stale intel · ${r.suggested_counterparty_name}`}
+                defaultReason={
+                  expired
+                    ? "Re-run requested from Stale Intel: proposal expired, refresh discovery."
+                    : "Re-run requested from Stale Intel: proposal older than 30 days, refresh discovery."
+                }
+                invalidateKeys={[["ai-proposed-matches-stale"], ["ai-proposed-matches"]]}
+              />,
             ];
           })}
         />
