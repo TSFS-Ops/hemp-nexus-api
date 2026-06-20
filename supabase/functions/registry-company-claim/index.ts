@@ -3,6 +3,10 @@
 // admin review (approve/reject/request_evidence/revoke).
 // All status transitions flow through this function — the table trigger blocks
 // direct status mutations from non-service_role callers.
+//
+// Canonical non-verification approval copy (pinned by
+// scripts/check-registry-claim-approval-wording.mjs):
+//   "Approving this claim confirms only that the claim record has passed review. It does not verify authority-to-act, company profile accuracy or bank details."
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
