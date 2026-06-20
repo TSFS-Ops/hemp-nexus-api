@@ -1,6 +1,22 @@
 # POI Verification Guardrails / Draft-Only Mode
 
-Status: `POI_VERIFICATION_GUARDRAILS_READY_FOR_OPERATOR_VERIFY`
+Status: `POI_VERIFICATION_GUARDRAILS_ACCEPTED`
+
+Acceptance basis:
+
+- all 25 automated tests pass (`src/tests/poi-verification-gate-coverage.test.ts`)
+- wiring guard green across all 9 gated entrypoints (`scripts/check-poi-verification-gate-wiring.mjs`)
+- prebuild guard wired in `package.json`
+- `RELEASE_GATE.md` documents the guard
+- evidence README present (this file)
+- unverified organisations can still prepare internal POI drafts
+- unverified organisations are blocked from every formal POI / counterparty-facing route
+- blocked attempts return `POI_ORG_VERIFICATION_REQUIRED` and are audited with `legitimacy.gate_blocked`
+- no notification fires on blocked POI actions
+- no admin override exists
+- verified organisations remain unaffected
+- UI shows draft-only status and the approved verification-required message
+- draft export is restricted to `internal_draft` and watermarked
 
 ## Binding rule
 
