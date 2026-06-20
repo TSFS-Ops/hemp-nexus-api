@@ -40,7 +40,12 @@
     "registry-import-batch-manage",
     "registry-company-search",
     "registry-company-profile",
-    "registry-company-claim"
+    "registry-company-claim",
+    "registry-authority-request",
+    "registry-authority-review",
+    "registry-bank-detail-submit",
+    "registry-bank-detail-status-transition",
+    "registry-bank-detail-access"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
