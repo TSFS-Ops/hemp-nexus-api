@@ -186,6 +186,12 @@ function App() {
                   <Route path="/admin/registry/imports" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryImports /></RequireAuth>} />
                   {/* Batch 3 — Claims queue */}
                   <Route path="/admin/registry/claims" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaims /></RequireAuth>} />
+                  {/* Batch 4 — Authority + Bank Details */}
+                  <Route path="/registry/company/:id/authority" element={<RegistryAuthority />} />
+                  <Route path="/registry/company/:id/bank-details" element={<RegistryBankDetails />} />
+                  <Route path="/admin/registry/authority" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryAuthority /></RequireAuth>} />
+                  <Route path="/admin/registry/bank-details" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryBankDetails /></RequireAuth>} />
+
 
                   {/* Legacy /admin/*, every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old
