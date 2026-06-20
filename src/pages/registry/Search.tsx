@@ -75,7 +75,7 @@ export default function RegistrySearch() {
           <CardContent className="space-y-2">
             {warning === "country_not_production_ready" && (
               <p className="text-xs text-amber-700" data-testid="country-coverage-warning">
-                Coverage for this country is below production-ready status. No records will be returned until coverage is approved through a recorded business decision.
+                Coverage for this country has not been approved for operational use. No records will be returned until coverage is approved through a recorded business decision.
               </p>
             )}
             <p className="text-sm text-muted-foreground" data-testid="search-empty-state">
