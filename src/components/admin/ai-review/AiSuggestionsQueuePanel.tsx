@@ -949,7 +949,7 @@ function EditPayloadDialog({ row, onClose }: { row: ProposedRow; onClose: () => 
         .eq("id", row.id)
         .maybeSingle();
       if (error) throw error;
-      return data as Record<string, unknown> | null;
+      return (data as unknown) as Record<string, unknown> | null;
     },
   });
 
