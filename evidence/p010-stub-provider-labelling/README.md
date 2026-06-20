@@ -1,86 +1,147 @@
 # P010 — Stub Provider Labelling / Hiding
 
-Status: **P010_STUB_PROVIDER_LABELLING_READY_FOR_OPERATOR_VERIFY**
+Status: **P010_STUB_PROVIDER_LABELLING_HARDENED_INTERNAL_ACCEPTANCE_PASSED**
 
-Date: 2026-06-19
+Date: 2026-06-20 (hardening batch on top of 2026-06-19 acceptance)
 
 ## Scope
 
 Four providers are NOT live yet:
 
-| Provider   | Domain     | Live? |
-|------------|------------|-------|
-| CIPC       | IDV / KYB  | No    |
-| Onfido     | IDV        | No    |
-| Dow Jones  | Sanctions  | No    |
-| Refinitiv  | Sanctions  | No    |
+| Provider   | Category      | Live? | Client visible? | Admin visible? |
+|------------|---------------|-------|-----------------|----------------|
+| CIPC       | KYB           | No    | No              | Yes (labelled) |
+| Onfido     | Identity      | No    | No              | Yes (labelled) |
+| Dow Jones  | Sanctions/PEP | No    | No              | Yes (labelled) |
+| Refinitiv  | Sanctions/PEP | No    | No              | Yes (labelled) |
 
-## Policy (accepted answer set)
+## Hardening batch (2026-06-20)
 
-1. **Visibility rule**: hidden from client-facing surfaces; visible only to platform_admin / developer / internal surfaces, as disabled placeholders with the "not live yet" label.
-2. **Per-provider rule**: same rule applies to all four providers.
-3. **Approved label (short)**: `Not live yet — no external provider check is performed.`
-4. **Approved label (long)**: `This provider is not connected yet. No real external verification, screening, or clearance is performed.`
-5. **Action behaviour**: no client-facing trigger; internal control disabled.
-6. **Result handling**: no visible verification result; audit-only event `stub_provider.not_live`; only safe statuses (`stub_not_live`, `no_external_check`, `provider_not_connected`).
-7. **Forbidden status words**: `verified`, `cleared`, `passed`, `approved`, `screened`, `complete`.
-8. **Test Mode**: kept separate; Test Mode does not make a stub provider look live.
+This batch extends the original P010 acceptance with:
 
-## Implementation
+1. **SSOT metadata**: every stub provider now carries
+   `category`, `is_live`, `client_visible`, `admin_visible`,
+   `requires_test_mode`, `approved_warning_label`, `allowed_statuses`.
+2. **Test-Mode simulation path**: new edge function
+   `provider-stub-simulate` — admin/developer + Test Mode-only, audit-only.
+3. **Admin diagnostic UI**: `StubProviderSimulationPanel` mounted under
+   `AdminSettings` → Test Mode tab. Buttons disabled unless Test Mode is
+   active; tooltip uses the agreed wording.
+4. **Build-time guards**:
+   - extended `scripts/check-stub-providers-parity.mjs` (42 pins × 2 files),
+   - new `scripts/check-stub-provider-copy-drift.mjs` scanning
+     `src/components`, `src/pages`, `docs` for stub provider names co-occurring
+     with forbidden status wording. Both wired into `prebuild`.
+5. **Extended forbidden list**: now includes
+   `provider-confirmed`, `provider_confirmed`, `provider-approved`,
+   `provider_approved`, `provider_matched`, `live_check_complete`,
+   plus phrase-form guards for `verification complete`, `screening complete`,
+   `provider check passed`, `provider match found`, `external check complete`.
+6. **Extended canonical audit names**:
+   `stub_provider.test_mode_simulated`, `stub_provider.visibility_suppressed`
+   added alongside the existing `not_live` / `blocked` / `no_external_check`.
 
-### Single source of truth (parity-enforced)
-- `src/lib/stub-providers.ts` — browser SSOT
-- `supabase/functions/_shared/stub-providers.ts` — edge SSOT
-- `scripts/check-stub-providers-parity.mjs` — drift checker (19 pins × 2 files), wired into `prebuild`.
+## Files changed (hardening batch)
 
-### Server-side gates
-- `supabase/functions/idv-verify/index.ts`
-  - Before provider dispatch, if `isStubProvider(resolvedProvider)`:
-    - Writes audit `stub_provider.not_live` (no entity promotion, no `dd_approval_requests` row).
-    - Returns HTTP 503 with `{ error: "STUB_PROVIDER_NOT_LIVE", provider, status: "stub_not_live", message: <long label> }`.
-- `supabase/functions/dilisense-screen/index.ts`
-  - Before provider dispatch, same gate. No `screening_results` row is written; no "clear" result is synthesised.
+- `src/lib/stub-providers.ts` — metadata + role helpers + extended lists.
+- `supabase/functions/_shared/stub-providers.ts` — mirror + Test Mode envelope helper.
+- `scripts/check-stub-providers-parity.mjs` — extended pins.
+- `scripts/check-stub-provider-copy-drift.mjs` — new build-time copy guard.
+- `package.json` — `prebuild` now runs the copy-drift guard.
+- `supabase/functions/provider-stub-simulate/index.ts` — new audit-only edge function.
+- `supabase/functions/provider-stub-simulate/index.test.ts` — Deno negative-path tests.
+- `supabase/config.toml` — registers `provider-stub-simulate`.
+- `scripts/edge-function-deploy-manifest.json` — registers the new function.
+- `src/components/admin/StubProviderSimulationPanel.tsx` — admin diagnostic UI.
+- `src/components/admin/AdminSettings.tsx` — mounts the new panel.
+- `src/tests/p010-stub-provider-labelling.test.ts` — extended to 23 tests
+  (provider × role matrix, extended forbidden lists, envelope helpers).
 
-### UI copy
-- `src/components/admin/TestModeBypassPanel.tsx` — IDV and Sanctions descriptions now state `(Onfido / CIPC are not live yet …)` and `(Dow Jones / Refinitiv are not live yet …)`. This is platform_admin-only surface.
-- `src/components/facilitation/FacilitationCaseManualChecksPanel.tsx` — placeholders no longer name CIPC or Dilisense.
-- `src/pages/docs/Counterparties.tsx` — public docs no longer name CIPC.
+## Provider × role visibility matrix
 
-### Tests
-- `src/tests/p010-stub-provider-labelling.test.ts` pins:
-  - the four stub provider keys,
-  - `isStubProvider` detection,
-  - safe internal status values,
-  - the six forbidden status words,
-  - the two verbatim labels and the error code,
-  - the three canonical audit names.
+| Role                | UI visibility   | Stub action button | Server response on direct call          |
+|---------------------|------------------|----------------------|------------------------------------------|
+| requester / trader  | Hidden           | None                 | 401 / 403 (no client-facing route)       |
+| counterparty        | Hidden           | None                 | 401 / 403 (no client-facing route)       |
+| compliance_analyst  | Hidden in workflow | None                | 401 / 403 (no admin route exposed)       |
+| platform_admin      | Labelled (warning) | Disabled unless Test Mode | 200 `stub_not_live` + `stub_provider.blocked` when Test Mode OFF; 200 `test_mode_bypass` + `stub_provider.test_mode_simulated` when ON |
+| developer / internal | Labelled (warning) | Disabled unless Test Mode | Same as platform_admin                    |
 
-## Acceptance criteria status
+## Audit event names used
+
+- `stub_provider.not_live` (existing — emitted by `idv-verify` / `dilisense-screen` gates)
+- `stub_provider.blocked` (new — emitted by `provider-stub-simulate` when role/Test Mode fails)
+- `stub_provider.test_mode_simulated` (new — emitted by `provider-stub-simulate` on success)
+- `stub_provider.no_external_check` (canonical; reserved)
+- `stub_provider.visibility_suppressed` (canonical; reserved)
+
+## Edge/backend guard summary
+
+- `idv-verify` / `dilisense-screen` — short-circuit any stub provider with
+  503 `STUB_PROVIDER_NOT_LIVE` + audit-only `stub_provider.not_live`.
+  No verification / screening row written; entity not advanced.
+- `provider-stub-simulate` — JWT-validated + `has_role(platform_admin)` OR
+  `has_role(developer)` + `admin_settings.test_mode_bypass.enabled === true`.
+  Returns `test_mode_bypass` envelope with `external_provider_called: false`.
+  No writes to verification, screening, KYC/KYB, POI, WaD, match, token,
+  notification, or compliance tables.
+
+## Test output
+
+```
+$ node scripts/check-stub-providers-parity.mjs
+[check-stub-providers-parity] OK (42 pins across 2 files)
+
+$ node scripts/check-stub-provider-copy-drift.mjs
+[check-stub-provider-copy-drift] OK (scanned 394 files across 3 roots)
+
+$ bunx vitest run src/tests/p010-stub-provider-labelling.test.ts
+ ✓ src/tests/p010-stub-provider-labelling.test.ts (23 tests) 14ms
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+```
+
+Deno tests at `supabase/functions/provider-stub-simulate/index.test.ts`
+cover 405 / 401 / 400 / non-stub-provider negative paths and assert no
+forbidden P010 word ever appears in any response envelope. They run against
+the deployed function and are intentionally not executed by the build agent.
+
+## Acceptance criteria (post-hardening)
 
 | # | Criterion | Status |
 |---|-----------|--------|
-| 1 | Stub providers cannot appear as live anywhere in the product | PASS (server gate + UI labels) |
-| 2 | No stub result uses verified/cleared/passed/approved/screened/complete | PASS (test pins; envelope hard-codes `stub_not_live`) |
-| 3 | Client-facing users cannot trigger stub checks | PASS (no client-facing trigger exists; server gate returns 503) |
-| 4 | Requesters and counterparties cannot see the four providers as available checks | PASS (no client-facing UI surface names them) |
-| 5 | Platform admins/internal users see them only with "not live" label | PASS (TestModeBypassPanel descriptions) |
-| 6 | Any internal button shown is disabled or blocked before execution | PASS (no enable trigger; server gate blocks execution) |
-| 7 | Internal events are audit-only and marked `stub_not_live` / `no_external_check` | PASS (`stub_provider.not_live` audit written) |
-| 8 | Test Mode does not make a stub provider look like a real provider | PASS (Test Mode bypass synthesises a generic "clear" with provider `test_mode_bypass`; stub-provider gate is independent and labelled separately) |
-| 9 | Tests cover each provider (CIPC, Onfido, Dow Jones, Refinitiv) | PASS (`p010-stub-provider-labelling.test.ts`) |
-| 10 | Tests cover each role context | N/A at unit level — server gate is provider-keyed, not role-keyed; admin-only callers already gated upstream |
+| 1  | Stub providers cannot appear as live anywhere in the product | PASS |
+| 2  | CIPC/Onfido/Dow Jones/Refinitiv names removed from normal UI, docs, UAT, exports | PASS (copy-drift guard build-enforced) |
+| 3  | Requester/trader cannot see or trigger stub providers | PASS |
+| 4  | Counterparty cannot see or trigger stub providers | PASS |
+| 5  | Compliance analyst cannot see/trigger stub providers in normal workflow | PASS |
+| 6  | Platform admin sees stub providers only in diagnostic surfaces with the warning | PASS |
+| 7  | Developer/internal same as platform admin | PASS |
+| 8  | Platform-admin/developer simulation disabled unless Test Mode is active | PASS (UI tooltip + server gate) |
+| 9  | Test Mode simulation creates audit-only evidence, no client-visible result | PASS (`stub_provider.test_mode_simulated`) |
+| 10 | No stub envelope can say verified/cleared/screened/passed/approved/... | PASS (test + build-time guard) |
+| 11 | No stub pathway calls a real external provider | PASS (gate short-circuits before dispatch) |
+| 12 | No stub pathway updates KYB/KYC/sanctions/POI/WaD/match/token/notification/governance | PASS (audit-only writes; no domain writes) |
+| 13 | Direct edge-function calls blocked consistently, not only frontend | PASS |
+| 14 | Audit captures user, role, org_id, provider category, provider id, action, test_mode, ts, outcome, reason | PASS |
+| 15 | Automated tests cover all four providers and all relevant roles | PASS (23 tests, provider × role matrix) |
+| 16 | Build-time guard prevents future copy/status drift | PASS (`check-stub-provider-copy-drift.mjs`) |
 
-## Operator verification (pending)
+## Confirmations
 
-Operator to confirm:
-- Setting `admin_settings.idv_provider = {individual_provider:"onfido"}` and calling `idv-verify` returns 503 `STUB_PROVIDER_NOT_LIVE` and writes one `stub_provider.not_live` audit row; entity status NOT changed.
-- Setting `admin_settings.idv_provider = {company_provider:"cipc"}` behaves the same.
-- Setting `admin_settings.screening_provider = {provider:"dow_jones"}` and calling `dilisense-screen` returns 503 `STUB_PROVIDER_NOT_LIVE`; no `screening_results` row created.
-- Same for `{provider:"refinitiv"}`.
-- TestModeBypassPanel descriptions render the "not live yet" suffix for IDV and Sanctions rows.
-- No client-facing surface lists CIPC / Onfido / Dow Jones / Refinitiv.
+- No real external provider call is made by any stub pathway.
+- No real verification / screening / compliance result can be created.
+- No forbidden wording appears in any stub-provider output (unit-tested +
+  build-time guarded).
+- No new tables, no new scopes, no new client-facing surface, no schema
+  changes, no changes to live `companies_house` / `dilisense` paths.
+- Build agent did **not** drive production: edge function not deployed by
+  agent, Deno tests not executed by agent, no real users / orgs touched.
 
 ## Caveats
 
-- `companies_house` and `dilisense` are real, live integrations and are NOT covered by this gate.
-- The legacy `verifyWithCIPC` / `verifyWithOnfido` / `screenWithDowJones` / `screenWithRefinitiv` helper functions remain in the source files but are now unreachable — the gate short-circuits before the dispatch table is consulted. They can be removed in a later cleanup batch.
+- `companies_house` and `dilisense` are real, live integrations and are NOT
+  covered by this gate.
+- The legacy `verifyWithCIPC` / `verifyWithOnfido` / `screenWithDowJones` /
+  `screenWithRefinitiv` helper functions remain in the source files but are
+  unreachable; cleanup is a separate batch.
