@@ -148,6 +148,12 @@ live in the production runtime before publishing.
 - `unknown-cp-user-action` — P012 requester-driven Add more information / Contact support / Cancel request router (min 20-char message; routes cancellations into `cancelled_by_requester`)
 - `registry-readiness-transition` — Batch 1 (M019) admin-only readiness state transition (role-gated to `platform_admin` / `compliance_owner`; reason ≥20 chars; writes `registry_readiness_states` history + `registry_readiness_state_changed` audit)
 - `business-decision-record` — Batch 1 (M018) Business Decision Register create / update_status / supersede writer (role-gated to `platform_admin` / `compliance_owner`; rationale ≥30 chars; writes `business_decision_events` history + `business_decision_recorded` / `business_decision_status_changed` / `business_decision_superseded` audit events)
+- `registry-provenance-record` — Batch 2 (M010) provenance writer (sources / licences / field provenance audit events)
+- `registry-country-coverage-update` — Batch 2 (M011) country coverage state transitions (seed → production_ready requires approved business_decision + evidence URL)
+- `registry-import-batch-manage` — Batch 2 (M012) 12-state import batch lifecycle writer (publish blocked without approved business decision)
+- `registry-company-search` — Batch 3 (M002) public registry search shell (returns no production rows; gates on country coverage; emits `registry_company_search_performed`)
+- `registry-company-profile` — Batch 3 (M003) public registry profile shell (safe envelope only; bank-detail STATUS LABEL only; emits `registry_company_profile_viewed`)
+- `registry-company-claim` — Batch 3 (M004) Claim Your Company writer (start / submit / add_evidence / review; admin review requires `acknowledged_not_verification: true`; emits 7 claim audit names)
 
 
 
