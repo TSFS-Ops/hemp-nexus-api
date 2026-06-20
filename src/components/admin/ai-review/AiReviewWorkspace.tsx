@@ -226,7 +226,7 @@ function FailedSearchesTab() {
         <Empty>No failed AI searches recorded.</Empty>
       ) : (
         <SimpleTable
-          headers={["Title", "Status", "Trade request", "Opened"]}
+          headers={["Title", "Status", "Trade request", "Opened", "Action"]}
           rows={(q.data ?? []).map((t) => [
             <div>
               <div className="font-medium">Provider failure review</div>
@@ -241,6 +241,12 @@ function FailedSearchesTab() {
             <span className="text-muted-foreground">
               {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
             </span>,
+            <RequestRerunButton
+              proposedMatchId={t.proposed_match_id}
+              context={`Failed search · ${t.description?.slice(0, 80) ?? "provider_failure_review"}`}
+              defaultReason="Re-run requested from Failed Searches: prior provider call failed."
+              invalidateKeys={[["ai-intel-tasks-failed"], ["ai-proposed-matches"]]}
+            />,
           ])}
         />
       )}
