@@ -32,7 +32,9 @@
     "evidence-rating-override",
     "unknown-cp-case-bootstrap",
     "unknown-cp-status-transition",
-    "unknown-cp-user-action"
+    "unknown-cp-user-action",
+    "registry-readiness-transition",
+    "business-decision-record"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",

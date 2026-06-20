@@ -94,7 +94,10 @@ Prebuild guards enforced automatically by `npm run build`:
 - `check-evidence-rating-forbidden-words.mjs` — P011 user-facing rating wording guard: scans `src/components/ratings` and `src/pages/docs` for the 9 forbidden words (`safe`, `trusted`, `approved`, `compliant`, `low risk`, `high risk`, `guaranteed`, `cleared`, `bank verified`) appearing in any file that also mentions `rating` / `counterparty`. Exempts the SSOT, the P011 test suite, the P011 evidence README, and the guard scripts themselves.
 - `check-unknown-cp-audit-names.mjs` — P012 Unknown-Counterparty Timeline SSOT parity guard: asserts `UNKNOWN_CP_STATUS_ORDER` and `UNKNOWN_CP_AUDIT_EVENT_NAMES` stay byte-aligned between `src/lib/unknown-cp-timeline.ts` and `supabase/functions/_shared/unknown-cp-timeline.ts`.
 - `check-unknown-cp-status-parity.mjs` — P012 status enum drift guard: pins the 17-value `user_facing_status` enum in the TS SSOT to the `CHECK (user_facing_status IN (...))` constraint on `public.unknown_cp_case_overlays`.
-- `check-unknown-cp-copy-drift.mjs` — P012 requester-surface copy-drift guard: scans `src/components/unknown-cp` for any leak of the internal-only `outreach_prepared` status and for the 7 forbidden user-facing words (`guaranteed`, `verified`, `approved`, `cleared`, `accepted`, `contacted`, `onboarded`) outside the SSOT, and enforces that `UnknownCpTimelinePanel.tsx` imports from `@/lib/unknown-cp-timeline`.
+ - `check-unknown-cp-copy-drift.mjs` — P012 requester-surface copy-drift guard: scans `src/components/unknown-cp` for any leak of the internal-only `outreach_prepared` status and for the 7 forbidden user-facing words (`guaranteed`, `verified`, `approved`, `cleared`, `accepted`, `contacted`, `onboarded`) outside the SSOT, and enforces that `UnknownCpTimelinePanel.tsx` imports from `@/lib/unknown-cp-timeline`.
+ - `check-registry-readiness-parity.mjs` — Batch 1 (M019) Module Readiness SSOT parity guard: asserts `REGISTRY_READINESS_STATES` and `REGISTRY_READINESS_AUDIT_EVENT_NAMES` stay byte-aligned between `src/lib/registry-readiness.ts` and `supabase/functions/_shared/registry-readiness.ts`.
+ - `check-registry-readiness-forbidden-words.mjs` — Batch 1 Business Registry shell wording guard: blocks `verified`, `live`, `guaranteed`, `production-ready` across `src/components/registry`, `src/pages/registry`, `src/pages/admin/registry` (SSOT and test files exempt) so no shell surface can be mistaken for an operational record of truth.
+ - `check-business-decision-audit-names.mjs` — Batch 1 (M018) Business Decision Register audit-name SSOT parity guard: pins `BUSINESS_DECISION_CATEGORIES`, `BUSINESS_DECISION_STATUSES`, `BUSINESS_DECISION_AUDIT_EVENT_NAMES` between TS / Deno and asserts the `business-decision-record` edge function references all three canonical audit names (`business_decision_recorded`, `business_decision_status_changed`, `business_decision_superseded`).
 
 
 
@@ -134,6 +137,8 @@ live in the production runtime before publishing.
 - `unknown-cp-case-bootstrap` — P012 idempotent overlay + initial `poi_created` / `facilitation_case_opened` timeline events for unknown-counterparty facilitation cases
 - `unknown-cp-status-transition` — P012 admin/platform_admin structured status transitions (13 typed actions; `reopen_case` requires `platform_admin`; writes user-safe timeline events + canonical `unknown_cp_*` audit names)
 - `unknown-cp-user-action` — P012 requester-driven Add more information / Contact support / Cancel request router (min 20-char message; routes cancellations into `cancelled_by_requester`)
+- `registry-readiness-transition` — Batch 1 (M019) admin-only readiness state transition (role-gated to `platform_admin` / `compliance_owner`; reason ≥20 chars; writes `registry_readiness_states` history + `registry_readiness_state_changed` audit)
+- `business-decision-record` — Batch 1 (M018) Business Decision Register create / update_status / supersede writer (role-gated to `platform_admin` / `compliance_owner`; rationale ≥30 chars; writes `business_decision_events` history + `business_decision_recorded` / `business_decision_status_changed` / `business_decision_superseded` audit events)
 
 
 

@@ -70,6 +70,16 @@ const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
 const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/CounterpartyRatingMethodology"));
 const Status = lazy(() => import("@/pages/Status"));
 
+// Batch 1 — Business Registry shell (M001) + admin readiness (M019) + decisions (M018)
+const RegistryLanding = lazy(() => import("@/pages/registry/Landing"));
+const RegistrySearch = lazy(() => import("@/pages/registry/Search"));
+const RegistryCompanyProfile = lazy(() => import("@/pages/registry/CompanyProfile"));
+const RegistryClaim = lazy(() => import("@/pages/registry/Claim"));
+const RegistryReadiness = lazy(() => import("@/pages/registry/Readiness"));
+const AdminRegistryIndex = lazy(() => import("@/pages/admin/registry/Index"));
+const AdminRegistryReadiness = lazy(() => import("@/pages/admin/registry/Readiness"));
+const AdminRegistryDecisions = lazy(() => import("@/pages/admin/registry/Decisions"));
+
 /**
  * Root element that renders based on host type:
  * - Public domain: Landing page
@@ -148,6 +158,17 @@ function App() {
                   <Route path="/dashboard/*" element={<LegacyRedirect to="/desk" label="Dashboard" />} />
 
                   <Route path="/desk/*" element={<Desk />} />
+                  {/* Batch 1 — Business Registry shell (M001) */}
+                  <Route path="/registry" element={<RegistryLanding />} />
+                  <Route path="/registry/search" element={<RegistrySearch />} />
+                  <Route path="/registry/company/:id" element={<RegistryCompanyProfile />} />
+                  <Route path="/registry/claim" element={<RegistryClaim />} />
+                  <Route path="/registry/readiness" element={<RegistryReadiness />} />
+                  {/* Batch 1 — Admin registry area (M015 shell, M018 decisions, M019 readiness) */}
+                  <Route path="/admin/registry" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryIndex /></RequireAuth>} />
+                  <Route path="/admin/registry/readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryReadiness /></RequireAuth>} />
+                  <Route path="/admin/registry/decisions" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryDecisions /></RequireAuth>} />
+
                   {/* Legacy /admin/*, every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old
                       bookmarks, audit logs, and outbound links keep working.
