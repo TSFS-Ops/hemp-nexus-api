@@ -39,6 +39,9 @@ export default function AdminRegistryIndex() {
         <Link to="/admin/registry/bank-details" className={tabClass(loc.pathname.includes("bank-details"))}>
           Bank details
         </Link>
+        <Link to="/admin/registry/api" className={tabClass(loc.pathname.includes("/api"))}>
+          API management
+        </Link>
       </div>
       <Card>
         <CardHeader><CardTitle className="text-base">Other tabs</CardTitle></CardHeader>
