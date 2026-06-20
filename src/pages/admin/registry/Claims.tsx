@@ -1,6 +1,10 @@
 /**
  * Batch 3 — M004 Admin claims queue. Review, approve, reject, request evidence
  * or revoke claims. Approval copy explicitly states it is NOT verification.
+ *
+ * Canonical non-verification approval copy (rendered verbatim below and pinned
+ * by scripts/check-registry-claim-approval-wording.mjs):
+ *   "Approving this claim confirms only that the claim record has passed review. It does not verify authority-to-act, company profile accuracy or bank details."
  */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
