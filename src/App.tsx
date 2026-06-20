@@ -79,6 +79,10 @@ const RegistryReadiness = lazy(() => import("@/pages/registry/Readiness"));
 const AdminRegistryIndex = lazy(() => import("@/pages/admin/registry/Index"));
 const AdminRegistryReadiness = lazy(() => import("@/pages/admin/registry/Readiness"));
 const AdminRegistryDecisions = lazy(() => import("@/pages/admin/registry/Decisions"));
+// Batch 2 — M010 provenance / M011 country coverage / M012 import batches
+const AdminRegistryProvenance = lazy(() => import("@/pages/admin/registry/Provenance"));
+const AdminRegistryCoverage = lazy(() => import("@/pages/admin/registry/Coverage"));
+const AdminRegistryImports = lazy(() => import("@/pages/admin/registry/Imports"));
 
 /**
  * Root element that renders based on host type:
@@ -168,6 +172,10 @@ function App() {
                   <Route path="/admin/registry" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryIndex /></RequireAuth>} />
                   <Route path="/admin/registry/readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryReadiness /></RequireAuth>} />
                   <Route path="/admin/registry/decisions" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryDecisions /></RequireAuth>} />
+                  {/* Batch 2 — Provenance / Country Coverage / Import Batches */}
+                  <Route path="/admin/registry/provenance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryProvenance /></RequireAuth>} />
+                  <Route path="/admin/registry/coverage" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryCoverage /></RequireAuth>} />
+                  <Route path="/admin/registry/imports" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryImports /></RequireAuth>} />
 
                   {/* Legacy /admin/*, every section now lives under /hq.
                       We map sub-routes to their HQ tab equivalent so old

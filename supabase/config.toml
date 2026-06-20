@@ -126,6 +126,12 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.business-decision-record]
     verify_jwt = false
+  [functions.registry-provenance-record]
+    verify_jwt = false
+  [functions.registry-country-coverage-update]
+    verify_jwt = false
+  [functions.registry-import-batch-manage]
+    verify_jwt = false
 
 [storage]
   enabled = true

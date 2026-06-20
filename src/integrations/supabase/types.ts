@@ -9789,6 +9789,409 @@ export type Database = {
           },
         ]
       }
+      registry_country_coverage: {
+        Row: {
+          api_output_state: string
+          authority_verification_state: string
+          bank_detail_verification_state: string
+          claim_company_state: string
+          country_code: string
+          country_name: string
+          coverage_state: string
+          created_at: string
+          demo_readiness_state: string
+          evidence_url: string | null
+          id: string
+          internal_notes: string | null
+          last_reviewed_at: string | null
+          next_action: string | null
+          outreach_state: string
+          public_wording_allowed: boolean
+          registry_data_state: string
+          review_due_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_output_state?: string
+          authority_verification_state?: string
+          bank_detail_verification_state?: string
+          claim_company_state?: string
+          country_code: string
+          country_name: string
+          coverage_state?: string
+          created_at?: string
+          demo_readiness_state?: string
+          evidence_url?: string | null
+          id?: string
+          internal_notes?: string | null
+          last_reviewed_at?: string | null
+          next_action?: string | null
+          outreach_state?: string
+          public_wording_allowed?: boolean
+          registry_data_state?: string
+          review_due_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_output_state?: string
+          authority_verification_state?: string
+          bank_detail_verification_state?: string
+          claim_company_state?: string
+          country_code?: string
+          country_name?: string
+          coverage_state?: string
+          created_at?: string
+          demo_readiness_state?: string
+          evidence_url?: string | null
+          id?: string
+          internal_notes?: string | null
+          last_reviewed_at?: string | null
+          next_action?: string | null
+          outreach_state?: string
+          public_wording_allowed?: boolean
+          registry_data_state?: string
+          review_due_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registry_country_coverage_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          business_decision_id: string | null
+          country_code: string
+          created_at: string
+          evidence_url: string | null
+          id: string
+          new_state: string
+          previous_state: string | null
+          reason: string
+          surface: string
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          business_decision_id?: string | null
+          country_code: string
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          new_state: string
+          previous_state?: string | null
+          reason: string
+          surface?: string
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          business_decision_id?: string | null
+          country_code?: string
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          new_state?: string
+          previous_state?: string | null
+          reason?: string
+          surface?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_country_coverage_events_business_decision_id_fkey"
+            columns: ["business_decision_id"]
+            isOneToOne: false
+            referencedRelation: "business_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_data_sources: {
+        Row: {
+          api_output_allowed: boolean
+          commercial_use_allowed: boolean
+          countries: string[]
+          created_at: string
+          created_by: string | null
+          evidence_url: string | null
+          id: string
+          imported_at: string | null
+          institutional_demo_allowed: boolean
+          internal_notes: string | null
+          licence_status: string
+          outreach_allowed: boolean
+          owner_role: string | null
+          public_display_allowed: boolean
+          refreshed_at: string | null
+          resale_restrictions: string | null
+          source_name: string
+          source_reference_url: string | null
+          source_type: string
+          stale_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_output_allowed?: boolean
+          commercial_use_allowed?: boolean
+          countries?: string[]
+          created_at?: string
+          created_by?: string | null
+          evidence_url?: string | null
+          id?: string
+          imported_at?: string | null
+          institutional_demo_allowed?: boolean
+          internal_notes?: string | null
+          licence_status?: string
+          outreach_allowed?: boolean
+          owner_role?: string | null
+          public_display_allowed?: boolean
+          refreshed_at?: string | null
+          resale_restrictions?: string | null
+          source_name: string
+          source_reference_url?: string | null
+          source_type: string
+          stale_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_output_allowed?: boolean
+          commercial_use_allowed?: boolean
+          countries?: string[]
+          created_at?: string
+          created_by?: string | null
+          evidence_url?: string | null
+          id?: string
+          imported_at?: string | null
+          institutional_demo_allowed?: boolean
+          internal_notes?: string | null
+          licence_status?: string
+          outreach_allowed?: boolean
+          owner_role?: string | null
+          public_display_allowed?: boolean
+          refreshed_at?: string | null
+          resale_restrictions?: string | null
+          source_name?: string
+          source_reference_url?: string | null
+          source_type?: string
+          stale_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registry_field_provenance: {
+        Row: {
+          confidence_band: string
+          created_at: string
+          created_by: string | null
+          evidence_url: string | null
+          field_name: string
+          id: string
+          observed_at: string
+          raw_value: string | null
+          source_id: string
+          subject_id: string
+          subject_type: string
+          verification_level: string
+        }
+        Insert: {
+          confidence_band?: string
+          created_at?: string
+          created_by?: string | null
+          evidence_url?: string | null
+          field_name: string
+          id?: string
+          observed_at?: string
+          raw_value?: string | null
+          source_id: string
+          subject_id: string
+          subject_type: string
+          verification_level?: string
+        }
+        Update: {
+          confidence_band?: string
+          created_at?: string
+          created_by?: string | null
+          evidence_url?: string | null
+          field_name?: string
+          id?: string
+          observed_at?: string
+          raw_value?: string | null
+          source_id?: string
+          subject_id?: string
+          subject_type?: string
+          verification_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_field_provenance_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "registry_data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_batch_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          batch_id: string
+          created_at: string
+          evidence_url: string | null
+          id: string
+          new_state: string
+          payload: Json
+          previous_state: string | null
+          reason: string
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          batch_id: string
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          new_state: string
+          payload?: Json
+          previous_state?: string | null
+          reason: string
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          batch_id?: string
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          new_state?: string
+          payload?: Json
+          previous_state?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_batch_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_batch_rows: {
+        Row: {
+          batch_id: string
+          created_at: string
+          duplicate_of_subject_id: string | null
+          id: string
+          raw_payload: Json
+          row_number: number
+          validation_errors: Json
+          validation_state: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          duplicate_of_subject_id?: string | null
+          id?: string
+          raw_payload?: Json
+          row_number: number
+          validation_errors?: Json
+          validation_state?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          duplicate_of_subject_id?: string | null
+          id?: string
+          raw_payload?: Json
+          row_number?: number
+          validation_errors?: Json
+          validation_state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_batch_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_batches: {
+        Row: {
+          approved_at: string | null
+          approver_id: string | null
+          batch_reference: string
+          country_code: string | null
+          created_at: string
+          evidence_url: string | null
+          id: string
+          internal_notes: string | null
+          licence_reference: string | null
+          permitted_uses: string[]
+          published_at: string | null
+          reviewer_id: string | null
+          rolled_back_at: string | null
+          schema_version: string
+          source_id: string | null
+          state: string
+          updated_at: string
+          uploaded_by: string | null
+          validation_summary: Json
+        }
+        Insert: {
+          approved_at?: string | null
+          approver_id?: string | null
+          batch_reference: string
+          country_code?: string | null
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          internal_notes?: string | null
+          licence_reference?: string | null
+          permitted_uses?: string[]
+          published_at?: string | null
+          reviewer_id?: string | null
+          rolled_back_at?: string | null
+          schema_version?: string
+          source_id?: string | null
+          state?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          validation_summary?: Json
+        }
+        Update: {
+          approved_at?: string | null
+          approver_id?: string | null
+          batch_reference?: string
+          country_code?: string | null
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          internal_notes?: string | null
+          licence_reference?: string | null
+          permitted_uses?: string[]
+          published_at?: string | null
+          reviewer_id?: string | null
+          rolled_back_at?: string | null
+          schema_version?: string
+          source_id?: string | null
+          state?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          validation_summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_batches_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "registry_data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_modules: {
         Row: {
           category: string
@@ -9821,6 +10224,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      registry_provenance_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          created_at: string
+          id: string
+          payload: Json
+          provenance_id: string | null
+          source_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          provenance_id?: string | null
+          source_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          provenance_id?: string | null
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_provenance_events_provenance_id_fkey"
+            columns: ["provenance_id"]
+            isOneToOne: false
+            referencedRelation: "registry_field_provenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_provenance_events_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "registry_data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       registry_readiness_states: {
         Row: {
@@ -9881,6 +10329,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "registry_modules"
             referencedColumns: ["module_code"]
+          },
+        ]
+      }
+      registry_source_licences: {
+        Row: {
+          created_at: string
+          effective_from: string | null
+          effective_to: string | null
+          evidence_url: string | null
+          id: string
+          licence_reference: string
+          permitted_uses: string[]
+          recorded_by: string | null
+          source_id: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          evidence_url?: string | null
+          id?: string
+          licence_reference: string
+          permitted_uses?: string[]
+          recorded_by?: string | null
+          source_id: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          evidence_url?: string | null
+          id?: string
+          licence_reference?: string
+          permitted_uses?: string[]
+          recorded_by?: string | null
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_source_licences_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "registry_data_sources"
+            referencedColumns: ["id"]
           },
         ]
       }
