@@ -193,6 +193,7 @@ function App() {
                   <Route path="/registry/company/:id/bank-details" element={<RegistryBankDetails />} />
                   <Route path="/admin/registry/authority" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryAuthority /></RequireAuth>} />
                   <Route path="/admin/registry/bank-details" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryBankDetails /></RequireAuth>} />
+                  <Route path="/admin/registry/api" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryApi /></RequireAuth>} />
 
 
                   {/* Legacy /admin/*, every section now lives under /hq.
