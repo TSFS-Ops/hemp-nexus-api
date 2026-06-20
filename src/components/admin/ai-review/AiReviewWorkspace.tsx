@@ -16,12 +16,18 @@
  *   - Confidence is labelled "Discovery Confidence" / "AI Intel Confidence" -
  *     never "Verified".
  */
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Info, Clock, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Info, Clock, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import {
   AiSuggestionsQueuePanel,
   DoNotContactPanel,
@@ -220,7 +226,7 @@ function FailedSearchesTab() {
         <Empty>No failed AI searches recorded.</Empty>
       ) : (
         <SimpleTable
-          headers={["Title", "Status", "Trade request", "Opened"]}
+          headers={["Title", "Status", "Trade request", "Opened", "Action"]}
           rows={(q.data ?? []).map((t) => [
             <div>
               <div className="font-medium">Provider failure review</div>
@@ -235,6 +241,12 @@ function FailedSearchesTab() {
             <span className="text-muted-foreground">
               {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
             </span>,
+            <RequestRerunButton
+              proposedMatchId={t.proposed_match_id}
+              context={`Failed search · ${t.description?.slice(0, 80) ?? "provider_failure_review"}`}
+              defaultReason="Re-run requested from Failed Searches: prior provider call failed."
+              invalidateKeys={[["ai-intel-tasks-failed"], ["ai-proposed-matches"]]}
+            />,
           ])}
         />
       )}
@@ -272,7 +284,7 @@ function StaleIntelTab() {
         <Empty>No stale AI intel.</Empty>
       ) : (
         <SimpleTable
-          headers={["Counterparty", "Status", "Discovery Confidence", "Age"]}
+          headers={["Counterparty", "Status", "Discovery Confidence", "Age", "Action"]}
           rows={(q.data ?? []).map((r) => {
             const expired = r.expires_at && new Date(r.expires_at).getTime() < Date.now();
             return [
@@ -286,6 +298,16 @@ function StaleIntelTab() {
                 <Clock className="h-3 w-3" strokeWidth={1.75} />
                 {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
               </span>,
+              <RequestRerunButton
+                proposedMatchId={r.id}
+                context={`Stale intel · ${r.suggested_counterparty_name}`}
+                defaultReason={
+                  expired
+                    ? "Re-run requested from Stale Intel: proposal expired, refresh discovery."
+                    : "Re-run requested from Stale Intel: proposal older than 30 days, refresh discovery."
+                }
+                invalidateKeys={[["ai-proposed-matches-stale"], ["ai-proposed-matches"]]}
+              />,
             ];
           })}
         />
@@ -295,6 +317,128 @@ function StaleIntelTab() {
 }
 
 // Phase 6: AnalyticsPlaceholder replaced by `AiAnalyticsTab`.
+
+// ─── Request rerun button ─────────────────────────────────────────────────
+// Surfaces the existing `ai-proposed-match-decision` action="request_rerun"
+// path for admins reviewing stale or failed AI intel. For Failed Searches
+// rows that lack a `proposed_match_id`, the button degrades to a disabled
+// state with an explanatory tooltip — those tasks must be reopened from the
+// originating proposed match.
+function RequestRerunButton({
+  proposedMatchId,
+  context,
+  defaultReason,
+  invalidateKeys,
+}: {
+  proposedMatchId: string | null;
+  context: string;
+  defaultReason: string;
+  invalidateKeys: (string | number)[][];
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState(defaultReason);
+  const qc = useQueryClient();
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      if (!proposedMatchId) throw new (globalThis.Error)("No proposed_match_id on this row");
+      const trimmed = reason.trim();
+      if (!trimmed) throw new (globalThis.Error)("Reason is required");
+      const { data, error } = await supabase.functions.invoke("ai-proposed-match-decision", {
+        body: {
+          proposed_match_id: proposedMatchId,
+          action: "request_rerun",
+          reason: trimmed,
+        },
+      });
+      if (error) throw new (globalThis.Error)(error.message || "Edge function error");
+      if ((data as { error?: string })?.error) throw new (globalThis.Error)((data as { error?: string }).error!);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Rerun requested. Audited as ai_review.proposed_match_request_rerun.");
+      for (const k of invalidateKeys) qc.invalidateQueries({ queryKey: k });
+      setOpen(false);
+    },
+    onError: (err: globalThis.Error) => toast.error(`Rerun failed: ${err.message}`),
+  });
+
+  if (!proposedMatchId) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        disabled
+        title="This task has no linked proposed match. Reopen from the originating proposal."
+        className="h-7 px-2 text-[11.5px]"
+      >
+        <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.75} />
+        Request rerun
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className="h-7 px-2 text-[11.5px]"
+      >
+        <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.75} />
+        Request rerun
+      </Button>
+      {open ? (
+        <Dialog open onOpenChange={(o) => { if (!o) setOpen(false); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Request rerun</DialogTitle>
+              <DialogDescription>
+                Routes to the existing <span className="font-mono">request_rerun</span> action on
+                <span className="font-mono"> ai-proposed-match-decision</span>. The proposal status is
+                set to <span className="font-mono">needs_more_research</span> and the reason is recorded
+                in the audit trail. Nothing contacts a counterparty.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-[11.5px] text-muted-foreground">
+                Context: <span className="font-mono">{context}</span>
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="rerun-reason">
+                  Reason <span className="text-rose-600">*</span>
+                </Label>
+                <Textarea
+                  id="rerun-reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Short, factual reason recorded in the audit trail."
+                />
+                <p className="text-[10.5px] font-mono text-muted-foreground">{reason.length}/500</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={mut.isPending}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => mut.mutate()}
+                disabled={mut.isPending || reason.trim().length === 0}
+              >
+                {mut.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null}
+                Request rerun
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+    </>
+  );
+}
+
 
 // ─── tiny shared primitives ────────────────────────────────────────────────
 function Panel({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
