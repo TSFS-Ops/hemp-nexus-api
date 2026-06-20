@@ -9789,6 +9789,529 @@ export type Database = {
           },
         ]
       }
+      registry_authority_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          authority_request_id: string
+          created_at: string
+          id: string
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          authority_request_id: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          authority_request_id?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_events_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_authority_evidence: {
+        Row: {
+          authority_request_id: string
+          created_at: string
+          description: string
+          evidence_kind: string
+          external_reference: string | null
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          uploaded_by: string
+        }
+        Insert: {
+          authority_request_id: string
+          created_at?: string
+          description: string
+          evidence_kind: string
+          external_reference?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by: string
+        }
+        Update: {
+          authority_request_id?: string
+          created_at?: string
+          description?: string
+          evidence_kind?: string
+          external_reference?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_evidence_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_authority_requests: {
+        Row: {
+          approved_scope: string | null
+          authority_basis: string
+          claim_id: string | null
+          company_email_domain: string | null
+          company_name: string
+          company_reference: string
+          conditions: string | null
+          consent_to_contact: boolean
+          consent_to_process_evidence: boolean
+          country_code: string
+          created_at: string
+          declaration_acknowledged: boolean
+          dispute_reason: string | null
+          disputed_at: string | null
+          expiry_at: string | null
+          id: string
+          internal_notes: string | null
+          representative_email: string
+          representative_name: string
+          representative_role: string
+          requester_user_id: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          revocation_reason: string | null
+          revoked_at: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_scope?: string | null
+          authority_basis: string
+          claim_id?: string | null
+          company_email_domain?: string | null
+          company_name: string
+          company_reference: string
+          conditions?: string | null
+          consent_to_contact?: boolean
+          consent_to_process_evidence?: boolean
+          country_code: string
+          created_at?: string
+          declaration_acknowledged?: boolean
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          expiry_at?: string | null
+          id?: string
+          internal_notes?: string | null
+          representative_email: string
+          representative_name: string
+          representative_role: string
+          requester_user_id: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_scope?: string | null
+          authority_basis?: string
+          claim_id?: string | null
+          company_email_domain?: string | null
+          company_name?: string
+          company_reference?: string
+          conditions?: string | null
+          consent_to_contact?: boolean
+          consent_to_process_evidence?: boolean
+          country_code?: string
+          created_at?: string
+          declaration_acknowledged?: boolean
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          expiry_at?: string | null
+          id?: string
+          internal_notes?: string | null
+          representative_email?: string
+          representative_name?: string
+          representative_role?: string
+          requester_user_id?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_requests_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_authority_reviews: {
+        Row: {
+          acknowledged_not_bank_verification: boolean
+          acknowledged_not_company_verification: boolean
+          authority_request_id: string
+          conditions: string | null
+          created_at: string
+          decision: string
+          expiry_at: string | null
+          id: string
+          rationale: string
+          reviewer_id: string
+        }
+        Insert: {
+          acknowledged_not_bank_verification?: boolean
+          acknowledged_not_company_verification?: boolean
+          authority_request_id: string
+          conditions?: string | null
+          created_at?: string
+          decision: string
+          expiry_at?: string | null
+          id?: string
+          rationale: string
+          reviewer_id: string
+        }
+        Update: {
+          acknowledged_not_bank_verification?: boolean
+          acknowledged_not_company_verification?: boolean
+          authority_request_id?: string
+          conditions?: string | null
+          created_at?: string
+          decision?: string
+          expiry_at?: string | null
+          id?: string
+          rationale?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_reviews_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_access_log: {
+        Row: {
+          access_type: string
+          actor_id: string
+          approved: boolean
+          created_at: string
+          id: string
+          reason: string | null
+          submission_id: string
+        }
+        Insert: {
+          access_type: string
+          actor_id: string
+          approved?: boolean
+          created_at?: string
+          id?: string
+          reason?: string | null
+          submission_id: string
+        }
+        Update: {
+          access_type?: string
+          actor_id?: string
+          approved?: boolean
+          created_at?: string
+          id?: string
+          reason?: string | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_access_log_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_consent_receipts: {
+        Row: {
+          consent_granted: boolean
+          consent_scope: string
+          consent_text: string
+          granted_at: string
+          granted_by: string
+          id: string
+          submission_id: string
+        }
+        Insert: {
+          consent_granted: boolean
+          consent_scope: string
+          consent_text: string
+          granted_at?: string
+          granted_by: string
+          id?: string
+          submission_id: string
+        }
+        Update: {
+          consent_granted?: boolean
+          consent_scope?: string
+          consent_text?: string
+          granted_at?: string
+          granted_by?: string
+          id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_consent_receipts_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          created_at: string
+          id: string
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          reason: string | null
+          submission_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+          submission_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_events_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_evidence: {
+        Row: {
+          created_at: string
+          description: string
+          evidence_kind: string
+          external_reference: string | null
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          submission_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          evidence_kind: string
+          external_reference?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          submission_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          evidence_kind?: string
+          external_reference?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          submission_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_evidence_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_submissions: {
+        Row: {
+          account_type: string | null
+          authority_request_id: string | null
+          claim_id: string | null
+          company_name: string
+          company_reference: string
+          country_code: string
+          created_at: string
+          currency_code: string
+          dispute_reason: string | null
+          disputed_at: string | null
+          enc_account_holder_name: string | null
+          enc_account_number: string | null
+          enc_bank_name: string | null
+          enc_branch_code: string | null
+          enc_iban: string | null
+          enc_swift_bic: string | null
+          expiry_at: string | null
+          failure_reason: string | null
+          id: string
+          masked_account_holder: string | null
+          masked_account_number: string | null
+          masked_bank_name: string | null
+          masked_branch_code: string | null
+          masked_iban: string | null
+          masked_swift_bic: string | null
+          revocation_reason: string | null
+          revoked_at: string | null
+          status: string
+          submitter_user_id: string
+          updated_at: string
+          verification_method: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          account_type?: string | null
+          authority_request_id?: string | null
+          claim_id?: string | null
+          company_name: string
+          company_reference: string
+          country_code: string
+          created_at?: string
+          currency_code: string
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          enc_account_holder_name?: string | null
+          enc_account_number?: string | null
+          enc_bank_name?: string | null
+          enc_branch_code?: string | null
+          enc_iban?: string | null
+          enc_swift_bic?: string | null
+          expiry_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          masked_account_holder?: string | null
+          masked_account_number?: string | null
+          masked_bank_name?: string | null
+          masked_branch_code?: string | null
+          masked_iban?: string | null
+          masked_swift_bic?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          status?: string
+          submitter_user_id: string
+          updated_at?: string
+          verification_method?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          account_type?: string | null
+          authority_request_id?: string | null
+          claim_id?: string | null
+          company_name?: string
+          company_reference?: string
+          country_code?: string
+          created_at?: string
+          currency_code?: string
+          dispute_reason?: string | null
+          disputed_at?: string | null
+          enc_account_holder_name?: string | null
+          enc_account_number?: string | null
+          enc_bank_name?: string | null
+          enc_branch_code?: string | null
+          enc_iban?: string | null
+          enc_swift_bic?: string | null
+          expiry_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          masked_account_holder?: string | null
+          masked_account_number?: string | null
+          masked_bank_name?: string | null
+          masked_branch_code?: string | null
+          masked_iban?: string | null
+          masked_swift_bic?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          status?: string
+          submitter_user_id?: string
+          updated_at?: string
+          verification_method?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_submissions_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_submissions_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_company_claim_events: {
         Row: {
           actor_id: string | null

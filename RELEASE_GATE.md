@@ -820,3 +820,32 @@ Known Phase 1 UX gap (non-blocking): **Assign owner** field is freehand UUID inp
 Phase 2 (approved-email outreach + duplicate checks + do-not-contact checks + compliance escalation; still no SLA / reporting dashboard) is **NOT STARTED** and is gated on this closeout.
 
 Evidence: `evidence/facilitation-phase-1-operator-verification/` (README.md, summary.json, platform-admin-manual-checklist.md, platform-admin/attestation.md, run-4-headless-after-restrictive-fix.json).
+
+## Batch 4 — Authority-to-Act, Consent-Based Bank Detail Capture, Verified Bank Detail Status Model
+
+Status: **complete (shell-grade governance layer; no provider integration)**.
+Scope: **M005 / M006 / M007**.
+
+New edge functions (`verify_jwt = false`, in-code auth validation; deploy manifest updated):
+- `registry-authority-request` — start / submit / add_evidence / cancel; emits `registry_authority_request_started`, `registry_authority_request_submitted`, `registry_authority_status_changed`, `registry_authority_evidence_added`.
+- `registry-authority-review` — admin/compliance only; requires both `acknowledged_not_company_verification` and `acknowledged_not_bank_verification`; emits `registry_authority_reviewed`, `registry_authority_status_changed`, plus `registry_authority_revoked` / `registry_authority_disputed` where applicable.
+- `registry-bank-detail-submit` — gates on `approved` / `conditionally_approved` authority; lands every capture in `captured_unverified`; records one consent receipt per selected scope; emits `registry_bank_detail_capture_started`, `registry_bank_detail_submitted`, `registry_bank_detail_consent_recorded`, `registry_bank_detail_status_changed`.
+- `registry-bank-detail-status-transition` — admin/compliance only; refuses to move into `verified` without `verification_method` and `expiry_at`, and stamps `verified_at` + `verified_by`; emits `registry_bank_detail_status_changed`, plus `registry_bank_detail_revoked` / `registry_bank_detail_disputed`.
+- `registry-bank-detail-access` — masked-view audit, unmasked-access *request* (≥20 char reason), and admin/compliance-only unmasked *read* (≥20 char reason, fully audited); emits `registry_bank_detail_masked_viewed`, `registry_bank_detail_unmasked_access_requested`, `registry_bank_detail_unmasked_viewed`.
+
+Storage hardening: the sensitive `enc_*` columns on `registry_bank_detail_submissions` (`enc_account_holder_name`, `enc_bank_name`, `enc_account_number`, `enc_branch_code`, `enc_swift_bic`, `enc_iban`) have `SELECT` REVOKED from `authenticated`, so PostgREST queries from the browser never return them — only `masked_*` columns and metadata can be read directly. Status transitions are blocked at the table level by `trg_ra_requests_block_status` and `trg_rbd_block_status` triggers; the only writer is service-role from inside the edge functions.
+
+Guards wired into `prebuild`:
+- `check-registry-authority-state-parity.mjs` — TS ↔ Deno parity of `REGISTRY_AUTHORITY_STATES`, `REGISTRY_AUTHORITY_BASES`, `REGISTRY_AUTHORITY_AUDIT_EVENT_NAMES`.
+- `check-registry-bank-detail-state-parity.mjs` — TS ↔ Deno parity of `REGISTRY_BANK_DETAIL_STATES`, `REGISTRY_BANK_DETAIL_CONSENT_SCOPES`, `REGISTRY_BANK_DETAIL_AUDIT_EVENT_NAMES`.
+- `check-registry-batch4-audit-names.mjs` — every authority/bank audit-event name is emitted by at least one Batch 4 edge function.
+- `check-registry-batch4-wording.mjs` — pins the two mandatory copies verbatim across SSOT, Deno mirror, edge function, and admin/user surfaces:
+  - "Approving authority confirms only that this person may act for the company within the recorded scope. It does not verify the company profile or any bank details."
+  - "Captured bank details are not verified bank details. They must not be treated as verified unless the status is explicitly marked verified with a valid audit trail and expiry."
+- `check-registry-batch4-no-provider-integration.mjs` — blocks references to CIPC, Onfido, GlobalDatabase, B2BHint, Refinitiv, Dow Jones, PayFast, Yodlee, Plaid, Tink, Trulioo in any Batch 4 file, and blocks `/v1/institutional/` or `institutional_api_v1` references (M008/M009 stay out of scope).
+
+Tests: `src/tests/batch-4-authority-bank-detail-status.test.ts`. Evidence: `evidence/batch-4-authority-bank-detail-status/README.md`.
+
+Out of scope (explicitly NOT in Batch 4): registry data ingestion, institutional API facades, AI outreach, human outreach approval queue, CIPC / Onfido / GlobalDatabase / B2BHint / Dow Jones / Refinitiv / PayFast / any bank verification provider, auto-verification of bank details.
+
+Completion phrase: `BATCH_4_AUTHORITY_BANK_DETAIL_STATUS_COMPLETE`.

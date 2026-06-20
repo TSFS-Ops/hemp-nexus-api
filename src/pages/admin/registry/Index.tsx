@@ -33,6 +33,12 @@ export default function AdminRegistryIndex() {
         <Link to="/admin/registry/claims" className={tabClass(loc.pathname.includes("claims"))}>
           Claims
         </Link>
+        <Link to="/admin/registry/authority" className={tabClass(loc.pathname.includes("authority"))}>
+          Authority
+        </Link>
+        <Link to="/admin/registry/bank-details" className={tabClass(loc.pathname.includes("bank-details"))}>
+          Bank details
+        </Link>
       </div>
       <Card>
         <CardHeader><CardTitle className="text-base">Other tabs</CardTitle></CardHeader>

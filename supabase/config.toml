@@ -138,6 +138,18 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-company-claim]
     verify_jwt = false
+  [functions.registry-authority-request]
+    verify_jwt = false
+  [functions.registry-authority-review]
+    verify_jwt = false
+  [functions.registry-bank-detail-submit]
+    verify_jwt = false
+  [functions.registry-bank-detail-status-transition]
+    verify_jwt = false
+  [functions.registry-bank-detail-access]
+    verify_jwt = false
+
+
 
 [storage]
   enabled = true
