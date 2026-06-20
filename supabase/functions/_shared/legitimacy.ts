@@ -243,3 +243,52 @@ export async function getActiveGovernanceProfile(
  * (deep-link to Settings → Company Identity) without parsing the message.
  */
 export const ORG_NOT_VERIFIED_CODE = "ORG_NOT_VERIFIED";
+
+/**
+ * Client-facing reason code required by the POI Verification Guardrails /
+ * Draft-Only Mode contract. Emitted into every gate-blocked audit row as
+ * `reason_code` and returned to the client alongside `ORG_NOT_VERIFIED_CODE`.
+ *
+ * Hard rule: there is NO admin override of this gate. `platform_admin` and
+ * any other role still receives `POI_ORG_VERIFICATION_REQUIRED` when the
+ * org legitimacy check denies — `checkOrgLegitimacy` above does not branch
+ * on caller role. Override, if ever needed, will be added as a separately
+ * controlled feature behind its own audit trail.
+ */
+export const POI_ORG_VERIFICATION_REQUIRED_CODE = "POI_ORG_VERIFICATION_REQUIRED";
+
+/**
+ * Canonical user-facing block message for the POI verification gate. Mirrors
+ * the wording on the client `VerificationRequiredBanner` so server and UI
+ * never drift.
+ */
+export const POI_ORG_VERIFICATION_REQUIRED_MESSAGE =
+  "Verification required before issuing POI. You can continue preparing this POI as an internal draft, but your organisation must be verified before it can be issued, shared, sent to a counterparty, exported as a formal POI, or progressed into formal engagement.";
+
+/**
+ * Canonical metadata payload for every gate-blocked audit row. Use under
+ * `metadata` on `audit_logs` / `admin_audit_logs` so the admin audit panel
+ * can render blocked attempts through a single query.
+ */
+export function poiGateBlockedAuditMetadata(
+  decision: Extract<LegitimacyDecision, { allowed: false }>,
+  extras: {
+    attempted_action: string;
+    next_required_action?: string;
+    correlation_id?: string;
+    endpoint?: string;
+    [k: string]: unknown;
+  },
+) {
+  return {
+    reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+    legitimacy_reason: decision.reason,
+    org_verification_status: decision.status,
+    valid_until: decision.validUntil,
+    gate_position: decision.gatePosition,
+    next_required_action:
+      extras.next_required_action ??
+      "Complete organisation verification in Settings → Company Identity.",
+    ...extras,
+  };
+}
