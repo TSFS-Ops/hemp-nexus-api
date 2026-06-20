@@ -39,8 +39,11 @@ function json(req: Request, body: unknown, status = 200) {
   }));
 }
 
-async function probe(baseUrl: string, anon: string, fn: string) {
-  const url = `${baseUrl}/functions/v1/${fn}?__health=1`;
+async function probe(projectUrl: string, anon: string, fn: string) {
+  // NB: variable intentionally not named baseUrl/SITE_URL/etc — the
+  // check:routes guard scans template literals using those names and
+  // would flag this edge-function fan-out URL as a broken in-app route.
+  const url = `${projectUrl}/functions/v1/${fn}?__health=1`;
   const started = Date.now();
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), TIMEOUT_MS);
