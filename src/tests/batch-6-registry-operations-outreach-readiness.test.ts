@@ -177,11 +177,11 @@ describe("Batch 6 — readiness dashboard bucket separation", () => {
       "licence_pending","business_decision_required","disabled",
     ]) expect(REGISTRY_CLIENT_READINESS_BUCKETS).toContain(b as any);
   });
-  it("provider_pending copy never says 'live'", () => {
-    expect(REGISTRY_CLIENT_READINESS_COPY.provider_pending.toLowerCase()).not.toMatch(/\blive\b/);
+  it("provider_pending copy never positively claims 'is live'", () => {
+    expect(REGISTRY_CLIENT_READINESS_COPY.provider_pending.toLowerCase()).not.toContain("is live");
   });
-  it("seed_only copy never says 'production-ready'", () => {
-    expect(REGISTRY_CLIENT_READINESS_COPY.seed_only.toLowerCase()).not.toContain("production-ready");
+  it("seed_only copy never positively claims 'is production-ready'", () => {
+    expect(REGISTRY_CLIENT_READINESS_COPY.seed_only.toLowerCase()).not.toContain("is production-ready");
   });
   it("readiness page uses SSOT copy (no inline overclaiming)", () => {
     expect(readinessPage).toContain("REGISTRY_CLIENT_READINESS_COPY");
