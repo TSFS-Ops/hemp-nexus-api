@@ -116,6 +116,12 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.webhooks]
     verify_jwt = false
+  [functions.unknown-cp-case-bootstrap]
+    verify_jwt = false
+  [functions.unknown-cp-status-transition]
+    verify_jwt = false
+  [functions.unknown-cp-user-action]
+    verify_jwt = false
 
 [storage]
   enabled = true
