@@ -137,6 +137,8 @@ live in the production runtime before publishing.
 - `unknown-cp-case-bootstrap` — P012 idempotent overlay + initial `poi_created` / `facilitation_case_opened` timeline events for unknown-counterparty facilitation cases
 - `unknown-cp-status-transition` — P012 admin/platform_admin structured status transitions (13 typed actions; `reopen_case` requires `platform_admin`; writes user-safe timeline events + canonical `unknown_cp_*` audit names)
 - `unknown-cp-user-action` — P012 requester-driven Add more information / Contact support / Cancel request router (min 20-char message; routes cancellations into `cancelled_by_requester`)
+- `registry-readiness-transition` — Batch 1 (M019) admin-only readiness state transition (role-gated to `platform_admin` / `compliance_owner`; reason ≥20 chars; writes `registry_readiness_states` history + `registry_readiness_state_changed` audit)
+- `business-decision-record` — Batch 1 (M018) Business Decision Register create / update_status / supersede writer (role-gated to `platform_admin` / `compliance_owner`; rationale ≥30 chars; writes `business_decision_events` history + `business_decision_recorded` / `business_decision_status_changed` / `business_decision_superseded` audit events)
 
 
 
