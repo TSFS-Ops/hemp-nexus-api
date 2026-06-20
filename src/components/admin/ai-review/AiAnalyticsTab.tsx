@@ -268,6 +268,10 @@ export function AiAnalyticsTab() {
         {loading ? <span className="text-[11px] text-muted-foreground pb-2">Loading…</span> : null}
       </div>
 
+      {/* Auto-trigger status — derived from ai_provider_state */}
+      <AutoTriggerStatusTile providers={providers} loading={providerQ.isLoading} />
+
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="ai-analytics-summary">
         <SummaryCard label="Searches run" value={searchesRun} />
