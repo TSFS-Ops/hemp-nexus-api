@@ -42,6 +42,18 @@ export default function AdminRegistryIndex() {
         <Link to="/admin/registry/api" className={tabClass(loc.pathname.includes("/api"))}>
           API management
         </Link>
+        <Link to="/admin/registry/operations" className={tabClass(loc.pathname.includes("operations"))}>
+          Operations
+        </Link>
+        <Link to="/admin/registry/outreach-drafts" className={tabClass(loc.pathname.includes("outreach-drafts"))}>
+          Outreach drafts
+        </Link>
+        <Link to="/admin/registry/outreach-approvals" className={tabClass(loc.pathname.includes("outreach-approvals"))}>
+          Outreach approvals
+        </Link>
+        <Link to="/admin/registry/do-not-contact" className={tabClass(loc.pathname.includes("do-not-contact"))}>
+          Do not contact
+        </Link>
       </div>
       <Card>
         <CardHeader><CardTitle className="text-base">Other tabs</CardTitle></CardHeader>

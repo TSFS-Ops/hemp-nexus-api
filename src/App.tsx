@@ -92,6 +92,11 @@ const AdminRegistryAuthority = lazy(() => import("@/pages/admin/registry/Authori
 const AdminRegistryBankDetails = lazy(() => import("@/pages/admin/registry/BankDetails"));
 // Batch 5 — M008 / M009 / M016 institutional API management
 const AdminRegistryApi = lazy(() => import("@/pages/admin/registry/Api"));
+// Batch 6 — M013 / M014 / M015 / M017 operations + outreach + readiness
+const AdminRegistryOperations = lazy(() => import("@/pages/admin/registry/Operations"));
+const AdminRegistryOutreachDrafts = lazy(() => import("@/pages/admin/registry/OutreachDrafts"));
+const AdminRegistryOutreachApprovals = lazy(() => import("@/pages/admin/registry/OutreachApprovals"));
+const AdminRegistryDoNotContact = lazy(() => import("@/pages/admin/registry/DoNotContact"));
 
 /**
  * Root element that renders based on host type:
@@ -194,6 +199,11 @@ function App() {
                   <Route path="/admin/registry/authority" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryAuthority /></RequireAuth>} />
                   <Route path="/admin/registry/bank-details" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryBankDetails /></RequireAuth>} />
                   <Route path="/admin/registry/api" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryApi /></RequireAuth>} />
+                  {/* Batch 6 — Operations, Outreach, DNC */}
+                  <Route path="/admin/registry/operations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOperations /></RequireAuth>} />
+                  <Route path="/admin/registry/outreach-drafts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachDrafts /></RequireAuth>} />
+                  <Route path="/admin/registry/outreach-approvals" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachApprovals /></RequireAuth>} />
+                  <Route path="/admin/registry/do-not-contact" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryDoNotContact /></RequireAuth>} />
 
 
                   {/* Legacy /admin/*, every section now lives under /hq.

@@ -11193,6 +11193,397 @@ export type Database = {
         }
         Relationships: []
       }
+      registry_outreach_approvals: {
+        Row: {
+          acknowledged_no_auto_send: boolean
+          created_at: string
+          decision: string | null
+          draft_id: string
+          id: string
+          rationale: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_no_auto_send?: boolean
+          created_at?: string
+          decision?: string | null
+          draft_id: string
+          id?: string
+          rationale?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_no_auto_send?: boolean
+          created_at?: string
+          decision?: string | null
+          draft_id?: string
+          id?: string
+          rationale?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_outreach_approvals_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "registry_outreach_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_outreach_do_not_contact: {
+        Row: {
+          active: boolean
+          added_by: string | null
+          company_reference: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          added_by?: string | null
+          company_reference?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          added_by?: string | null
+          company_reference?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registry_outreach_draft_edits: {
+        Row: {
+          created_at: string
+          draft_id: string
+          edit_reason: string | null
+          editor_id: string | null
+          id: string
+          new_body: string | null
+          new_subject: string | null
+          previous_body: string | null
+          previous_subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          draft_id: string
+          edit_reason?: string | null
+          editor_id?: string | null
+          id?: string
+          new_body?: string | null
+          new_subject?: string | null
+          previous_body?: string | null
+          previous_subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          draft_id?: string
+          edit_reason?: string | null
+          editor_id?: string | null
+          id?: string
+          new_body?: string | null
+          new_subject?: string | null
+          previous_body?: string | null
+          previous_subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_outreach_draft_edits_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "registry_outreach_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_outreach_draft_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          created_at: string
+          draft_id: string
+          id: string
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          created_at?: string
+          draft_id: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          created_at?: string
+          draft_id?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_outreach_draft_events_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "registry_outreach_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_outreach_draft_sources: {
+        Row: {
+          created_at: string
+          draft_id: string
+          id: string
+          snippet: string | null
+          source_kind: string
+          source_reference: string
+        }
+        Insert: {
+          created_at?: string
+          draft_id: string
+          id?: string
+          snippet?: string | null
+          source_kind: string
+          source_reference: string
+        }
+        Update: {
+          created_at?: string
+          draft_id?: string
+          id?: string
+          snippet?: string | null
+          source_kind?: string
+          source_reference?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_outreach_draft_sources_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "registry_outreach_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_outreach_drafts: {
+        Row: {
+          ai_confidence: string | null
+          ai_model: string | null
+          approved_at: string | null
+          approved_by: string | null
+          body: string | null
+          cancelled_at: string | null
+          channel: string
+          company_reference: string
+          country_code: string
+          created_at: string
+          expires_at: string | null
+          generated_at: string | null
+          id: string
+          permitted_use_basis: string
+          reason_for_outreach: string
+          recipient_label: string
+          rejected_at: string | null
+          requested_by: string | null
+          status: string
+          subject: string | null
+          target_id: string
+          target_kind: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence?: string | null
+          ai_model?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          body?: string | null
+          cancelled_at?: string | null
+          channel: string
+          company_reference: string
+          country_code: string
+          created_at?: string
+          expires_at?: string | null
+          generated_at?: string | null
+          id?: string
+          permitted_use_basis: string
+          reason_for_outreach: string
+          recipient_label: string
+          rejected_at?: string | null
+          requested_by?: string | null
+          status?: string
+          subject?: string | null
+          target_id: string
+          target_kind: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence?: string | null
+          ai_model?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          body?: string | null
+          cancelled_at?: string | null
+          channel?: string
+          company_reference?: string
+          country_code?: string
+          created_at?: string
+          expires_at?: string | null
+          generated_at?: string | null
+          id?: string
+          permitted_use_basis?: string
+          reason_for_outreach?: string
+          recipient_label?: string
+          rejected_at?: string | null
+          requested_by?: string | null
+          status?: string
+          subject?: string | null
+          target_id?: string
+          target_kind?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_outreach_drafts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "registry_outreach_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_outreach_send_log: {
+        Row: {
+          approval_id: string
+          channel: string
+          created_at: string
+          draft_id: string
+          evidence_note: string | null
+          id: string
+          outcome: string
+          recipient_label: string
+          send_method: string
+          sent_by: string | null
+        }
+        Insert: {
+          approval_id: string
+          channel: string
+          created_at?: string
+          draft_id: string
+          evidence_note?: string | null
+          id?: string
+          outcome: string
+          recipient_label: string
+          send_method?: string
+          sent_by?: string | null
+        }
+        Update: {
+          approval_id?: string
+          channel?: string
+          created_at?: string
+          draft_id?: string
+          evidence_note?: string | null
+          id?: string
+          outcome?: string
+          recipient_label?: string
+          send_method?: string
+          sent_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_outreach_send_log_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "registry_outreach_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_outreach_send_log_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "registry_outreach_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_outreach_templates: {
+        Row: {
+          body_template: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          permitted_use_basis: string
+          subject_template: string
+          template_code: string
+          updated_at: string
+        }
+        Insert: {
+          body_template: string
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          permitted_use_basis: string
+          subject_template: string
+          template_code: string
+          updated_at?: string
+        }
+        Update: {
+          body_template?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          permitted_use_basis?: string
+          subject_template?: string
+          template_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       registry_provenance_events: {
         Row: {
           actor_id: string | null
