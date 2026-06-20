@@ -34,7 +34,10 @@
     "unknown-cp-status-transition",
     "unknown-cp-user-action",
     "registry-readiness-transition",
-    "business-decision-record"
+    "business-decision-record",
+    "registry-provenance-record",
+    "registry-country-coverage-update",
+    "registry-import-batch-manage"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
