@@ -12,7 +12,7 @@ import {
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
-import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE, POI_ORG_VERIFICATION_REQUIRED_CODE } from "../_shared/legitimacy.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
 import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
 import { dispatchD4cInitiatorAlert } from "../_shared/batch-d-initiator-notify.ts";
@@ -1460,6 +1460,7 @@ Deno.serve(async (req) => {
             actorUserId: authCtx.userId ?? null,
             orgId: authCtx.orgId ?? null,
             reason: `org_not_verified:${outreachLegitimacy.reason}`,
+            reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
             details: {
               engagement_id: engagementId,
               initiator_org_id: initiatorOrgIdForGate,

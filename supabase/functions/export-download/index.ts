@@ -102,10 +102,51 @@ Deno.serve(async (req) => {
 
   const { data: reqRow } = await admin
     .from("export_requests")
-    .select("id, kind, requester_user_id, subject_user_id, target_org_id, approval")
+    .select("id, kind, requester_user_id, requester_org_id, subject_user_id, target_org_id, approval, verification")
     .eq("id", fileRow.export_request_id)
     .single();
   if (!reqRow) return json({ error: "request_not_found" }, 404);
+
+  // ── POI Verification Guardrails / Draft-Only Mode ──
+  // Block formal export download when the issuing organisation is not
+  // verified. Draft exports (verification.kind === "internal_draft") remain
+  // downloadable so internal preparation continues. No admin override.
+  const _gateRequesterOrgId = (reqRow as { requester_org_id?: string | null }).requester_org_id ?? null;
+  const _gateVerificationKind = ((reqRow as { verification?: { kind?: string } | null }).verification?.kind) ?? null;
+  if (_gateRequesterOrgId && _gateVerificationKind !== "internal_draft") {
+    const {
+      checkOrgLegitimacy,
+      POI_ORG_VERIFICATION_REQUIRED_CODE,
+      POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+      poiGateBlockedAuditMetadata,
+    } = await import("../_shared/legitimacy.ts");
+    const _gateLegit = await checkOrgLegitimacy(admin, _gateRequesterOrgId, "poi_mint");
+    if (!_gateLegit.allowed) {
+      try {
+        await admin.from("audit_logs").insert({
+          org_id: _gateRequesterOrgId,
+          actor_user_id: caller.id,
+          action: "legitimacy.gate_blocked",
+          entity_type: "export_request",
+          entity_id: reqRow.id,
+          metadata: poiGateBlockedAuditMetadata(_gateLegit, {
+            endpoint: "export-download",
+            attempted_action: "formal_export_download",
+            export_kind: reqRow.kind,
+            file_id,
+          }),
+        });
+      } catch (e) {
+        console.error("[export-download] legitimacy denial audit failed:", e);
+      }
+      return json({
+        error: POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+        code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+      }, 403);
+    }
+  }
+
+
 
   // Authorisation matrix.
   if (reqRow.kind === "user_export") {

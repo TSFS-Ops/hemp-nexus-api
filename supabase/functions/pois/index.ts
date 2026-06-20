@@ -7,6 +7,7 @@ import {
   checkOrgLegitimacy,
   getActiveGovernanceProfile,
   ORG_NOT_VERIFIED_CODE,
+  POI_ORG_VERIFICATION_REQUIRED_CODE,
 } from "../_shared/legitimacy.ts";
 import { tryBypass } from "../_shared/test-mode-bypass.ts";
 import {
@@ -246,6 +247,7 @@ Deno.serve(async (req: Request) => {
                 actor_is_api_key: authCtx.isApiKey,
                 poi_type: parsed.poi_type,
                 reason: "org_not_verified",
+                reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
                 legitimacy_reason: legitimacy.reason,
                 trade_approval_status: legitimacy.status,
                 valid_until: legitimacy.validUntil,

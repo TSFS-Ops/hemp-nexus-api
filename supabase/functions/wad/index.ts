@@ -143,6 +143,73 @@ Deno.serve(async (req) => {
 
     console.log(`[${requestId}] ${req.method} /wad${parts.length ? "/" + parts.join("/") : ""} org:${authCtx.orgId}`);
 
+    // ── POI Verification Guardrails / Draft-Only Mode ──
+    // WaD progression is a formal, counterparty-facing POI action: it must be
+    // blocked when the issuing organisation is not verified, OR when the
+    // calling user does not hold a POI-issuance role. The gate runs on every
+    // mutating WaD entrypoint (create / attest / seal / revoke) — read-only
+    // GETs are intentionally allowed so internal draft history stays visible.
+    // No admin override: platform_admin receives the same 403 + audit row.
+    if (req.method === "POST" && !authCtx.isApiKey) {
+      const { checkUserPoiAuthority, USER_NOT_AUTHORISED_CODE, authorityAuditMetadata } =
+        await import("../_shared/poi-authority.ts");
+      const {
+        checkOrgLegitimacy,
+        POI_ORG_VERIFICATION_REQUIRED_CODE,
+        POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+        poiGateBlockedAuditMetadata,
+      } = await import("../_shared/legitimacy.ts");
+
+      const authority = await checkUserPoiAuthority(supabase, authCtx.userId, authCtx.orgId);
+      if (!authority.allowed) {
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: authCtx.orgId,
+            actor_user_id: authCtx.userId,
+            action: "legitimacy.gate_blocked",
+            entity_type: "wad",
+            entity_id: null,
+            metadata: authorityAuditMetadata(authority, {
+              correlation_id: requestId,
+              endpoint: "wad",
+              attempted_action: "wad_progression",
+              gate: "user_authority",
+              reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+            }),
+          });
+        } catch (e) {
+          console.error(`[${requestId}] Failed to write WaD authority denial audit:`, e);
+        }
+        throw new ApiException(USER_NOT_AUTHORISED_CODE, authority.message, 403);
+      }
+
+      const legitimacy = await checkOrgLegitimacy(supabase, authCtx.orgId, "poi_mint");
+      if (!legitimacy.allowed) {
+        try {
+          await supabase.from("audit_logs").insert({
+            org_id: authCtx.orgId,
+            actor_user_id: authCtx.userId,
+            action: "legitimacy.gate_blocked",
+            entity_type: "wad",
+            entity_id: null,
+            metadata: poiGateBlockedAuditMetadata(legitimacy, {
+              correlation_id: requestId,
+              endpoint: "wad",
+              attempted_action: "wad_progression",
+            }),
+          });
+        } catch (e) {
+          console.error(`[${requestId}] Failed to write WaD legitimacy denial audit:`, e);
+        }
+        throw new ApiException(
+          POI_ORG_VERIFICATION_REQUIRED_CODE,
+          POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+          403,
+        );
+      }
+    }
+
+
     // Helper: write audit log
     const writeAuditLog = async (action: string, entityId: string, metadata: Record<string, unknown> = {}) => {
       await supabase.from("audit_logs").insert({

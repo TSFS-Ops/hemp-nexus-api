@@ -28,7 +28,7 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
-import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE, POI_ORG_VERIFICATION_REQUIRED_CODE } from "../_shared/legitimacy.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { fetchEngagementReadModelByMatchId } from "../_shared/engagement-read-model.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";
@@ -361,6 +361,7 @@ Deno.serve(async (req) => {
               metadata: {
                 request_id: requestId,
                 reason: "org_not_verified",
+                reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
                 legitimacy_reason: legitimacy.reason,
                 trade_approval_status: legitimacy.status,
                 valid_until: legitimacy.validUntil,

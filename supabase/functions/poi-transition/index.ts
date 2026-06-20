@@ -201,7 +201,7 @@ async function _serve(req: Request): Promise<Response> {
         "COMPLETED",
       ]);
       if (FORWARD_COUNTERPARTY_FACING.has(String(toState))) {
-        const { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE } = await import("../_shared/legitimacy.ts");
+        const { checkOrgLegitimacy, ORG_NOT_VERIFIED_CODE, POI_ORG_VERIFICATION_REQUIRED_CODE } = await import("../_shared/legitimacy.ts");
         const { checkUserPoiAuthority, USER_NOT_AUTHORISED_CODE, authorityAuditMetadata } = await import("../_shared/poi-authority.ts");
 
         // (1) User-authority gate — verified org alone is not sufficient.
@@ -253,7 +253,8 @@ async function _serve(req: Request): Promise<Response> {
                 trade_approval_status: legitimacy.status,
                 valid_until: legitimacy.validUntil,
                 gate_position: legitimacy.gatePosition,
-                reason_code: ORG_NOT_VERIFIED_CODE,
+                reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+                legacy_reason_code: ORG_NOT_VERIFIED_CODE,
               },
             });
           } catch (auditErr) {

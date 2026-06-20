@@ -88,6 +88,71 @@ Deno.serve(async (req: Request) => {
 
     const url = new URL(req.url);
 
+    // ── POI Verification Guardrails / Draft-Only Mode ──
+    // p3-wad issuance is a formal POI progression to WaD. Block on:
+    //   (a) caller without POI-issuance authority
+    //   (b) unverified / restricted / expired issuing organisation
+    // No admin override — platform_admin receives the same 403 + audit row.
+    // Read-only GETs are intentionally allowed so draft history stays visible.
+    if (req.method === "POST" && !authCtx.isApiKey) {
+      const { checkUserPoiAuthority, USER_NOT_AUTHORISED_CODE, authorityAuditMetadata } =
+        await import("../_shared/poi-authority.ts");
+      const {
+        checkOrgLegitimacy,
+        POI_ORG_VERIFICATION_REQUIRED_CODE,
+        POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+        poiGateBlockedAuditMetadata,
+      } = await import("../_shared/legitimacy.ts");
+
+      const authority = await checkUserPoiAuthority(admin, authCtx.userId, orgId);
+      if (!authority.allowed) {
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: orgId,
+            actor_user_id: authCtx.userId,
+            action: "legitimacy.gate_blocked",
+            entity_type: "wad",
+            entity_id: null,
+            metadata: authorityAuditMetadata(authority, {
+              correlation_id: correlationId,
+              endpoint: "p3-wad",
+              attempted_action: "wad_progression",
+              gate: "user_authority",
+              reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+            }),
+          });
+        } catch (e) {
+          console.error(`[${correlationId}] p3-wad authority denial audit failed:`, e);
+        }
+        throw new ApiException(USER_NOT_AUTHORISED_CODE, authority.message, 403);
+      }
+
+      const legitimacy = await checkOrgLegitimacy(admin, orgId, "poi_mint");
+      if (!legitimacy.allowed) {
+        try {
+          await admin.from("audit_logs").insert({
+            org_id: orgId,
+            actor_user_id: authCtx.userId,
+            action: "legitimacy.gate_blocked",
+            entity_type: "wad",
+            entity_id: null,
+            metadata: poiGateBlockedAuditMetadata(legitimacy, {
+              correlation_id: correlationId,
+              endpoint: "p3-wad",
+              attempted_action: "wad_progression",
+            }),
+          });
+        } catch (e) {
+          console.error(`[${correlationId}] p3-wad legitimacy denial audit failed:`, e);
+        }
+        throw new ApiException(
+          POI_ORG_VERIFICATION_REQUIRED_CODE,
+          POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+          403,
+        );
+      }
+    }
+
     // ── POST: Issue WaD with hard-gate enforcement ──
     if (req.method === "POST") {
       const idempotencyKey = req.headers.get("Idempotency-Key");

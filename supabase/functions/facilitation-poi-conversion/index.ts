@@ -280,6 +280,54 @@ Deno.serve(async (req) => {
 
   if (isCheck) return json(req, { ok: true, report });
 
+  // ── POI Verification Guardrails / Draft-Only Mode ──
+  // Even via the admin-facilitated route, the *requesting* organisation must
+  // be verified before a formal POI linkage or reference can be recorded. The
+  // platform admin running the conversion does NOT bypass this gate — it is
+  // the requester org's POI, not the admin's. No admin override path.
+  if (requesterOrgId) {
+    const { checkOrgLegitimacy, POI_ORG_VERIFICATION_REQUIRED_CODE, POI_ORG_VERIFICATION_REQUIRED_MESSAGE, poiGateBlockedAuditMetadata } =
+      await import("../_shared/legitimacy.ts");
+    const legitimacy = await checkOrgLegitimacy(admin, requesterOrgId, "poi_mint");
+    if (!legitimacy.allowed) {
+      try {
+        await admin.from("audit_logs").insert({
+          org_id: requesterOrgId,
+          actor_user_id: userId,
+          action: "legitimacy.gate_blocked",
+          entity_type: "facilitation_case",
+          entity_id: caseId,
+          metadata: poiGateBlockedAuditMetadata(legitimacy, {
+            endpoint: "facilitation-poi-conversion",
+            attempted_action: parsed.data.action,
+            facilitator_user_id: userId,
+          }),
+        });
+      } catch (e) {
+        console.error("[facilitation-poi-conversion] legitimacy denial audit failed:", e);
+      }
+      await admin.from("facilitation_case_events").insert({
+        case_id: caseId,
+        actor_user_id: userId,
+        action: FACILITATION_POI_CONVERSION_AUDIT_NAMES[1], // blocked
+        from_status: status,
+        to_status: status,
+        payload: {
+          blockers: ["requester_org_not_eligible"],
+          reason_code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+          legitimacy_reason: legitimacy.reason,
+          action_requested: parsed.data.action,
+        },
+      });
+      return json(req, {
+        error: POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+        code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+        blockers: ["requester_org_not_eligible"],
+      }, 403);
+    }
+  }
+
+
   if (!eligible) {
     await admin.from("facilitation_case_events").insert({
       case_id: caseId,
