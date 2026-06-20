@@ -318,6 +318,128 @@ function StaleIntelTab() {
 
 // Phase 6: AnalyticsPlaceholder replaced by `AiAnalyticsTab`.
 
+// ─── Request rerun button ─────────────────────────────────────────────────
+// Surfaces the existing `ai-proposed-match-decision` action="request_rerun"
+// path for admins reviewing stale or failed AI intel. For Failed Searches
+// rows that lack a `proposed_match_id`, the button degrades to a disabled
+// state with an explanatory tooltip — those tasks must be reopened from the
+// originating proposed match.
+function RequestRerunButton({
+  proposedMatchId,
+  context,
+  defaultReason,
+  invalidateKeys,
+}: {
+  proposedMatchId: string | null;
+  context: string;
+  defaultReason: string;
+  invalidateKeys: (string | number)[][];
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState(defaultReason);
+  const qc = useQueryClient();
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      if (!proposedMatchId) throw new Error("No proposed_match_id on this row");
+      const trimmed = reason.trim();
+      if (!trimmed) throw new Error("Reason is required");
+      const { data, error } = await supabase.functions.invoke("ai-proposed-match-decision", {
+        body: {
+          proposed_match_id: proposedMatchId,
+          action: "request_rerun",
+          reason: trimmed,
+        },
+      });
+      if (error) throw new Error(error.message || "Edge function error");
+      if ((data as { error?: string })?.error) throw new Error((data as { error?: string }).error!);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Rerun requested. Audited as ai_review.proposed_match_request_rerun.");
+      for (const k of invalidateKeys) qc.invalidateQueries({ queryKey: k });
+      setOpen(false);
+    },
+    onError: (err: Error) => toast.error(`Rerun failed: ${err.message}`),
+  });
+
+  if (!proposedMatchId) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        disabled
+        title="This task has no linked proposed match. Reopen from the originating proposal."
+        className="h-7 px-2 text-[11.5px]"
+      >
+        <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.75} />
+        Request rerun
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className="h-7 px-2 text-[11.5px]"
+      >
+        <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.75} />
+        Request rerun
+      </Button>
+      {open ? (
+        <Dialog open onOpenChange={(o) => { if (!o) setOpen(false); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Request rerun</DialogTitle>
+              <DialogDescription>
+                Routes to the existing <span className="font-mono">request_rerun</span> action on
+                <span className="font-mono"> ai-proposed-match-decision</span>. The proposal status is
+                set to <span className="font-mono">needs_more_research</span> and the reason is recorded
+                in the audit trail. Nothing contacts a counterparty.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-[11.5px] text-muted-foreground">
+                Context: <span className="font-mono">{context}</span>
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="rerun-reason">
+                  Reason <span className="text-rose-600">*</span>
+                </Label>
+                <Textarea
+                  id="rerun-reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Short, factual reason recorded in the audit trail."
+                />
+                <p className="text-[10.5px] font-mono text-muted-foreground">{reason.length}/500</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={mut.isPending}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => mut.mutate()}
+                disabled={mut.isPending || reason.trim().length === 0}
+              >
+                {mut.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null}
+                Request rerun
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+    </>
+  );
+}
+
+
 // ─── tiny shared primitives ────────────────────────────────────────────────
 function Panel({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
