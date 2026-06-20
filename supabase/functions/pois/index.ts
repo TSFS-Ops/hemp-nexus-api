@@ -7,6 +7,7 @@ import {
   checkOrgLegitimacy,
   getActiveGovernanceProfile,
   ORG_NOT_VERIFIED_CODE,
+  POI_ORG_VERIFICATION_REQUIRED_CODE,
 } from "../_shared/legitimacy.ts";
 import { tryBypass } from "../_shared/test-mode-bypass.ts";
 import {

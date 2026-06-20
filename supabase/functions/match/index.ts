@@ -28,7 +28,7 @@ import {
   storeIdempotentResponse,
   cachedResponseToHttp,
 } from "../_shared/idempotency.ts";
-import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE, POI_ORG_VERIFICATION_REQUIRED_CODE } from "../_shared/legitimacy.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 import { fetchEngagementReadModelByMatchId } from "../_shared/engagement-read-model.ts";
 import { assertEngagementAllowsProgression } from "../_shared/engagement-progression-guard.ts";

@@ -12,7 +12,7 @@ import {
   storeIdempotentResponse,
 } from "../_shared/idempotency.ts";
 import { checkMaintenanceMode, logDecision, tryBypass } from "../_shared/test-mode-bypass.ts";
-import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE } from "../_shared/legitimacy.ts";
+import { checkOrgLegitimacy, getActiveGovernanceProfile, ORG_NOT_VERIFIED_CODE, POI_ORG_VERIFICATION_REQUIRED_CODE } from "../_shared/legitimacy.ts";
 import { clampSubject } from "../_shared/email-subject.ts";
 import { dispatchD4bAdminAlert } from "../_shared/batch-d-admin-notify.ts";
 import { dispatchD4cInitiatorAlert } from "../_shared/batch-d-initiator-notify.ts";
