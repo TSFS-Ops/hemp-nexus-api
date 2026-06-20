@@ -103,6 +103,10 @@ Prebuild guards enforced automatically by `npm run build`:
  - `check-registry-import-batch-parity.mjs` — Batch 2 (M012) Import Batch SSOT parity guard: pins the 12-state `IMPORT_BATCH_STATES` and the 5-name `IMPORT_BATCH_AUDIT_EVENT_NAMES` between TS and Deno and asserts the `registry-import-batch-manage` edge function emits all five canonical audit names (`registry_import_batch_created`, `registry_import_batch_state_changed`, `registry_import_batch_validation_recorded`, `registry_import_batch_published`, `registry_import_batch_rolled_back`).
  - `check-registry-country-coverage-forbidden-words.mjs` — Batch 2 admin-UI hygiene: blocks `verified`, `live`, `guaranteed`, `production-ready` across the Provenance / Coverage / Imports admin pages and components, and blocks rendering `seed_only` adjacent to `production_ready` without an explicit negation.
  - `check-registry-batch2-audit-names.mjs` — Batch 2 audit-name coverage: asserts every SSOT-declared audit name across M010 / M011 / M012 is referenced by exactly one writer edge function source file.
+ - `check-registry-claim-state-parity.mjs` — Batch 3 (M002 / M003 / M004) SSOT parity guard: pins `REGISTRY_CLAIM_STATES`, `REGISTRY_CLAIM_AUDIT_EVENT_NAMES`, `REGISTRY_SEARCH_RESULT_LABELS` between `src/lib/registry-claims.ts` and `supabase/functions/_shared/registry-claims.ts`.
+ - `check-registry-claim-audit-names.mjs` — Batch 3 audit-name coverage: every name in `REGISTRY_CLAIM_AUDIT_EVENT_NAMES` must be referenced by at least one `registry-company-*` edge function.
+ - `check-registry-claim-approval-wording.mjs` — Batch 3 approval-copy SSOT guard: pins the verbatim non-verification approval copy across SSOT, Deno mirror, claim edge function, and admin Claims page; blocks `verified`/`live`/`guaranteed`/`production-ready` on registry shell surfaces (with allow-listed `not_verified`/`not_provided` exceptions).
+ - `check-registry-public-bank-leakage.mjs` — Batch 3 public-surface hygiene: blocks raw bank-detail tokens (`account_number`, `sort_code`, `iban`, `swift_bic`, `routing_number`, `bank_account`) on the public search, profile, claim pages and the `registry-company-search` / `registry-company-profile` edge functions.
 
 
 
@@ -144,6 +148,12 @@ live in the production runtime before publishing.
 - `unknown-cp-user-action` — P012 requester-driven Add more information / Contact support / Cancel request router (min 20-char message; routes cancellations into `cancelled_by_requester`)
 - `registry-readiness-transition` — Batch 1 (M019) admin-only readiness state transition (role-gated to `platform_admin` / `compliance_owner`; reason ≥20 chars; writes `registry_readiness_states` history + `registry_readiness_state_changed` audit)
 - `business-decision-record` — Batch 1 (M018) Business Decision Register create / update_status / supersede writer (role-gated to `platform_admin` / `compliance_owner`; rationale ≥30 chars; writes `business_decision_events` history + `business_decision_recorded` / `business_decision_status_changed` / `business_decision_superseded` audit events)
+- `registry-provenance-record` — Batch 2 (M010) provenance writer (sources / licences / field provenance audit events)
+- `registry-country-coverage-update` — Batch 2 (M011) country coverage state transitions (seed → production_ready requires approved business_decision + evidence URL)
+- `registry-import-batch-manage` — Batch 2 (M012) 12-state import batch lifecycle writer (publish blocked without approved business decision)
+- `registry-company-search` — Batch 3 (M002) public registry search shell (returns no production rows; gates on country coverage; emits `registry_company_search_performed`)
+- `registry-company-profile` — Batch 3 (M003) public registry profile shell (safe envelope only; bank-detail STATUS LABEL only; emits `registry_company_profile_viewed`)
+- `registry-company-claim` — Batch 3 (M004) Claim Your Company writer (start / submit / add_evidence / review; admin review requires `acknowledged_not_verification: true`; emits 7 claim audit names)
 
 
 

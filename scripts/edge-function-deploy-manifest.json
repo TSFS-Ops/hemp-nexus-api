@@ -37,7 +37,10 @@
     "business-decision-record",
     "registry-provenance-record",
     "registry-country-coverage-update",
-    "registry-import-batch-manage"
+    "registry-import-batch-manage",
+    "registry-company-search",
+    "registry-company-profile",
+    "registry-company-claim"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",

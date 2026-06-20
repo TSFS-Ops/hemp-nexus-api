@@ -132,6 +132,12 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-import-batch-manage]
     verify_jwt = false
+  [functions.registry-company-search]
+    verify_jwt = false
+  [functions.registry-company-profile]
+    verify_jwt = false
+  [functions.registry-company-claim]
+    verify_jwt = false
 
 [storage]
   enabled = true
