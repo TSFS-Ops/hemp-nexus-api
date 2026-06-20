@@ -28,6 +28,12 @@ const EXEMPT_PATH_PARTS = [
   "docs/p010-stub-provider-labelling",
   // Internal infrastructure spec — names future-integration providers in planning context
   "docs/infrastructure-requirements.md",
+  // P011 — Counterparty Rating Methodology page names the four stub providers in
+  // the "Inputs that cannot affect the rating" section, alongside necessary
+  // methodology words like "approved" / "verification complete". This is the
+  // canonical client-facing methodology and is reviewed against the same
+  // P011 forbidden-words list by check-evidence-rating-forbidden-words.mjs.
+  "src/pages/docs/CounterpartyRatingMethodology.tsx",
 ];
 
 const PROVIDER_NAME_REGEXES = [
