@@ -156,6 +156,16 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-api-usage-log]
     verify_jwt = false
+  [functions.registry-ai-outreach-draft]
+    verify_jwt = false
+  [functions.registry-outreach-review]
+    verify_jwt = false
+  [functions.registry-outreach-log-send]
+    verify_jwt = false
+  [functions.registry-admin-operations-summary]
+    verify_jwt = false
+  [functions.registry-client-readiness-summary]
+    verify_jwt = false
 
 
 
