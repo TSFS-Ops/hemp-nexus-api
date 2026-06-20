@@ -131,6 +131,9 @@ live in the production runtime before publishing.
 - `provider-stub-simulate` — P010 admin/developer Test-Mode-only audit-only stub-provider simulation (no external provider call; emits `stub_provider.blocked` / `stub_provider.test_mode_simulated`)
 - `compute-evidence-rating` — P011 event-driven counterparty evidence-confidence rating recalculation (role-gated to `platform_admin` / `compliance_owner`; writes `counterparty_evidence_ratings` snapshot + `counterparty_rating.*` audit events; preserves last rating on failure)
 - `evidence-rating-override` — P011 admin override apply / change / remove for counterparty evidence-confidence ratings (role-gated to `platform_admin` / `compliance_owner`; reason text ≥30 chars; expiry ≤90 days except `admin_block`; never permits `verification_complete`)
+- `unknown-cp-case-bootstrap` — P012 idempotent overlay + initial `poi_created` / `facilitation_case_opened` timeline events for unknown-counterparty facilitation cases
+- `unknown-cp-status-transition` — P012 admin/platform_admin structured status transitions (13 typed actions; `reopen_case` requires `platform_admin`; writes user-safe timeline events + canonical `unknown_cp_*` audit names)
+- `unknown-cp-user-action` — P012 requester-driven Add more information / Contact support / Cancel request router (min 20-char message; routes cancellations into `cancelled_by_requester`)
 
 
 
