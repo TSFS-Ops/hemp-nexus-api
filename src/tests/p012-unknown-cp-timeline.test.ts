@@ -102,7 +102,7 @@ describe("P012 — Unknown-Counterparty Timeline SSOT", () => {
     it.each(cases)("status %s permits expected actions", (status, expected) => {
       const a = getAllowedActions(status);
       for (const [k, v] of Object.entries(expected)) {
-        expect((a as Record<string, unknown>)[k]).toBe(v);
+        expect((a as unknown as Record<string, unknown>)[k]).toBe(v);
       }
       expect(a.contactSupport).toBe(true); // always allowed
       expect(a.disabledMessage.length).toBeGreaterThan(0);
