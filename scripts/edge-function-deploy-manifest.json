@@ -49,7 +49,12 @@
     "registry-institutional-profile-status",
     "registry-institutional-payment-status",
     "registry-api-client-manage",
-    "registry-api-usage-log"
+    "registry-api-usage-log",
+    "registry-ai-outreach-draft",
+    "registry-outreach-review",
+    "registry-outreach-log-send",
+    "registry-admin-operations-summary",
+    "registry-client-readiness-summary"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
