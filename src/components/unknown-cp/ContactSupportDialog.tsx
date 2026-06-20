@@ -24,7 +24,7 @@ export function ContactSupportDialog({ open, onOpenChange, facilitationCaseId, o
         body: { facilitation_case_id: facilitationCaseId, action: "contact_support", message_body: body },
       });
       if (error) throw error;
-      toast({ title: "Support contacted", description: "Your message has been linked to this facilitation case." });
+      toast({ title: "Message sent", description: "Your message has been linked to this facilitation case." });
       setBody("");
       onOpenChange(false);
       onCompleted?.();
