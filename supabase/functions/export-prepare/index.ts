@@ -106,6 +106,49 @@ Deno.serve(async (req) => {
   ]);
   if (_residencyBlock) return residencyBlockResponse(_residencyBlock, corsHeaders);
 
+  // ── POI Verification Guardrails / Draft-Only Mode ──
+  // Formal POI export is blocked when the issuing organisation is not
+  // verified. The legitimacy check runs against `requester_org_id`; if the
+  // request was not org-scoped (subject-only user export with no requester
+  // org, e.g. a personal data subject access request) the gate is skipped.
+  // The request may opt into a draft preview by carrying
+  // `verification.kind === "internal_draft"` (set by the caller); draft
+  // exports remain permitted and MUST be visibly watermarked by the writer.
+  const requesterOrgIdForGate = (reqRow as { requester_org_id?: string | null }).requester_org_id ?? null;
+  const verificationKind = ((reqRow as { verification?: { kind?: string } | null }).verification?.kind) ?? null;
+  if (requesterOrgIdForGate && verificationKind !== "internal_draft") {
+    const {
+      checkOrgLegitimacy,
+      POI_ORG_VERIFICATION_REQUIRED_CODE,
+      POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+      poiGateBlockedAuditMetadata,
+    } = await import("../_shared/legitimacy.ts");
+    const legitimacy = await checkOrgLegitimacy(admin, requesterOrgIdForGate, "poi_mint");
+    if (!legitimacy.allowed) {
+      try {
+        await admin.from("audit_logs").insert({
+          org_id: requesterOrgIdForGate,
+          actor_user_id: (reqRow as { requester_user_id?: string | null }).requester_user_id ?? null,
+          action: "legitimacy.gate_blocked",
+          entity_type: "export_request",
+          entity_id: request_id,
+          metadata: poiGateBlockedAuditMetadata(legitimacy, {
+            endpoint: "export-prepare",
+            attempted_action: "formal_export_prepare",
+            export_kind: reqRow.kind,
+          }),
+        });
+      } catch (e) {
+        console.error("[export-prepare] legitimacy denial audit failed:", e);
+      }
+      return json({
+        error: POI_ORG_VERIFICATION_REQUIRED_MESSAGE,
+        code: POI_ORG_VERIFICATION_REQUIRED_CODE,
+      }, 403);
+    }
+  }
+
+
 
   const isUser = reqRow.kind === "user_export";
   const allowLists = isUser
