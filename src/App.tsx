@@ -67,6 +67,7 @@ const DocsMatches = lazy(() => import("@/pages/docs/Matches"));
 const DocsCounterparties = lazy(() => import("@/pages/docs/Counterparties"));
 const DocsEvidence = lazy(() => import("@/pages/docs/Evidence"));
 const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
+const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/CounterpartyRatingMethodology"));
 const Status = lazy(() => import("@/pages/Status"));
 
 /**
@@ -181,6 +182,7 @@ function App() {
                   <Route path="/docs/counterparties" element={<DocsCounterparties />} />
                   <Route path="/docs/evidence" element={<DocsEvidence />} />
                   <Route path="/docs/errors" element={<DocsErrors />} />
+                  <Route path="/docs/counterparty-rating-methodology" element={<DocsCounterpartyRatingMethodology />} />
                   <Route path="/docs/api" element={<DocsApiReference />} />
                   {/* Legacy /docs/sdks redirects to API reference; the platform is REST-first. */}
                   <Route path="/docs/sdks" element={<LegacyRedirect to="/docs/api" label="SDK documentation" />} />

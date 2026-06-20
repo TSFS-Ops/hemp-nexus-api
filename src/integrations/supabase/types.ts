@@ -3048,6 +3048,142 @@ export type Database = {
           },
         ]
       }
+      counterparty_evidence_ratings: {
+        Row: {
+          calculated_at: string
+          calculation_trigger: string
+          counterparty_id: string
+          created_at: string
+          freshness_state: Database["public"]["Enums"]["evidence_rating_freshness"]
+          has_admin_override: boolean
+          id: string
+          input_summary_json: Json
+          last_audit_event_id: string | null
+          methodology_version: string
+          missing_inputs_json: Json
+          organisation_id: string
+          override_id: string | null
+          rating_band: Database["public"]["Enums"]["evidence_rating_band"]
+          stale_inputs_json: Json
+          supporting_factors_json: Json
+          updated_at: string
+          workflow_effect_json: Json
+        }
+        Insert: {
+          calculated_at?: string
+          calculation_trigger?: string
+          counterparty_id: string
+          created_at?: string
+          freshness_state?: Database["public"]["Enums"]["evidence_rating_freshness"]
+          has_admin_override?: boolean
+          id?: string
+          input_summary_json?: Json
+          last_audit_event_id?: string | null
+          methodology_version?: string
+          missing_inputs_json?: Json
+          organisation_id: string
+          override_id?: string | null
+          rating_band?: Database["public"]["Enums"]["evidence_rating_band"]
+          stale_inputs_json?: Json
+          supporting_factors_json?: Json
+          updated_at?: string
+          workflow_effect_json?: Json
+        }
+        Update: {
+          calculated_at?: string
+          calculation_trigger?: string
+          counterparty_id?: string
+          created_at?: string
+          freshness_state?: Database["public"]["Enums"]["evidence_rating_freshness"]
+          has_admin_override?: boolean
+          id?: string
+          input_summary_json?: Json
+          last_audit_event_id?: string | null
+          methodology_version?: string
+          missing_inputs_json?: Json
+          organisation_id?: string
+          override_id?: string | null
+          rating_band?: Database["public"]["Enums"]["evidence_rating_band"]
+          stale_inputs_json?: Json
+          supporting_factors_json?: Json
+          updated_at?: string
+          workflow_effect_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counterparty_evidence_ratings_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      counterparty_rating_overrides: {
+        Row: {
+          counterparty_id: string
+          created_at: string
+          created_by: string
+          evidence_document_id: string | null
+          expires_at: string
+          id: string
+          old_rating: Database["public"]["Enums"]["evidence_rating_band"]
+          organisation_id: string
+          override_rating: Database["public"]["Enums"]["evidence_rating_band"]
+          reason_code: Database["public"]["Enums"]["evidence_rating_override_reason"]
+          reason_text: string
+          removal_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          counterparty_id: string
+          created_at?: string
+          created_by: string
+          evidence_document_id?: string | null
+          expires_at: string
+          id?: string
+          old_rating: Database["public"]["Enums"]["evidence_rating_band"]
+          organisation_id: string
+          override_rating: Database["public"]["Enums"]["evidence_rating_band"]
+          reason_code: Database["public"]["Enums"]["evidence_rating_override_reason"]
+          reason_text: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          counterparty_id?: string
+          created_at?: string
+          created_by?: string
+          evidence_document_id?: string | null
+          expires_at?: string
+          id?: string
+          old_rating?: Database["public"]["Enums"]["evidence_rating_band"]
+          organisation_id?: string
+          override_rating?: Database["public"]["Enums"]["evidence_rating_band"]
+          reason_code?: Database["public"]["Enums"]["evidence_rating_override_reason"]
+          reason_text?: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counterparty_rating_overrides_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       counterparty_ratings: {
         Row: {
           band: string
@@ -13875,6 +14011,26 @@ export type Database = {
         | "cancelled_email_change"
         | "disputed_being_named"
         | "cancelled_by_initiator"
+      evidence_rating_band:
+        | "limited_information"
+        | "public_source_supported"
+        | "admin_reviewed"
+        | "verification_complete"
+        | "flagged"
+      evidence_rating_freshness:
+        | "fresh"
+        | "stale"
+        | "error"
+        | "never_calculated"
+      evidence_rating_override_reason:
+        | "evidence_corrected"
+        | "false_positive"
+        | "new_document_reviewed"
+        | "expired_check_reviewed"
+        | "dispute_resolved"
+        | "admin_block"
+        | "methodology_exception"
+        | "data_error"
       facilitation_org_merge_status:
         | "eligibility_checked"
         | "blocked"
@@ -14049,6 +14205,29 @@ export const Constants = {
         "cancelled_email_change",
         "disputed_being_named",
         "cancelled_by_initiator",
+      ],
+      evidence_rating_band: [
+        "limited_information",
+        "public_source_supported",
+        "admin_reviewed",
+        "verification_complete",
+        "flagged",
+      ],
+      evidence_rating_freshness: [
+        "fresh",
+        "stale",
+        "error",
+        "never_calculated",
+      ],
+      evidence_rating_override_reason: [
+        "evidence_corrected",
+        "false_positive",
+        "new_document_reviewed",
+        "expired_check_reviewed",
+        "dispute_resolved",
+        "admin_block",
+        "methodology_exception",
+        "data_error",
       ],
       facilitation_org_merge_status: [
         "eligibility_checked",
