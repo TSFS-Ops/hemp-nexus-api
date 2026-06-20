@@ -130,7 +130,7 @@ export default function AdminRegistryBankDetails() {
                   <div><Label>Rationale (≥ 10 chars)</Label><Textarea value={rationale} onChange={(e) => setRationale(e.target.value)} rows={2} /></div>
                   {next === "verified" && (
                     <>
-                      <div className="rounded border bg-amber-50 p-2 text-xs">Verified requires verification method, expiry, audited verifier.</div>
+                      <div className="rounded border bg-amber-50 p-2 text-xs">Marked-verified requires verification method, expiry, audited verifier.</div>
                       <div><Label>Verification method</Label><Input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="e.g. mandate_letter_cross_check" /></div>
                       <div><Label>Expiry</Label><Input type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} /></div>
                     </>
