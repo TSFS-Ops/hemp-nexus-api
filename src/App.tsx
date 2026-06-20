@@ -85,6 +85,11 @@ const AdminRegistryCoverage = lazy(() => import("@/pages/admin/registry/Coverage
 const AdminRegistryImports = lazy(() => import("@/pages/admin/registry/Imports"));
 // Batch 3 — M004 admin claims queue
 const AdminRegistryClaims = lazy(() => import("@/pages/admin/registry/Claims"));
+// Batch 4 — M005 / M006 / M007 authority + bank-detail pages
+const RegistryAuthority = lazy(() => import("@/pages/registry/Authority"));
+const RegistryBankDetails = lazy(() => import("@/pages/registry/BankDetails"));
+const AdminRegistryAuthority = lazy(() => import("@/pages/admin/registry/Authority"));
+const AdminRegistryBankDetails = lazy(() => import("@/pages/admin/registry/BankDetails"));
 
 /**
  * Root element that renders based on host type:
