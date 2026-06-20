@@ -67,6 +67,8 @@ for (const d of shellDirs) {
         if (line.includes("REGISTRY_BANK_DETAIL_VERIFIED_STATE")) return false;
         if (line.includes("isBankDetailVerified")) return false;
         if (line.includes("Verified") && line.includes("Label")) return false;
+        // Batch 4 — state machine equality checks against the literal "verified" state value.
+        if (/===\s*"verified"|"verified"\s*===|next\s*===\s*"verified"|status\s*===\s*"verified"|"verified" \?/.test(line)) return false;
         return true;
       });
       if (offending.length) {
