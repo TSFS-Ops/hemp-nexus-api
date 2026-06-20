@@ -858,3 +858,30 @@ Tests: `src/tests/batch-4-authority-bank-detail-status.test.ts`. Evidence: `evid
 Out of scope (explicitly NOT in Batch 4): registry data ingestion, institutional API facades, AI outreach, human outreach approval queue, CIPC / Onfido / GlobalDatabase / B2BHint / Dow Jones / Refinitiv / PayFast / any bank verification provider, auto-verification of bank details.
 
 Completion phrase: `BATCH_4_AUTHORITY_BANK_DETAIL_STATUS_COMPLETE`.
+
+## Batch 6 — AI Outreach Drafter, Approval Queue, Admin Operations Dashboard, Client-Safe Readiness (M013/M014/M015/M017)
+
+Edge functions added (deploy manifest + `supabase/config.toml` aligned):
+- `registry-ai-outreach-draft` — request / generate / needs_review / edit / cancel; admin-only; AI may draft only and may never send; consults DNC + eligibility gates; emits `registry_outreach_draft_requested`, `registry_outreach_draft_generated`, `registry_outreach_draft_edited`, `registry_outreach_cancelled`.
+- `registry-outreach-review` — human approval queue writer (`start_review` / `approve` / `reject` / `request_changes` / `cancel` / `mark_do_not_contact` / `suppress_contact`); requires `acknowledged_no_auto_send: true` on every decision; emits `registry_outreach_draft_approved`, `registry_outreach_draft_rejected`, `registry_outreach_changes_requested`, `registry_outreach_cancelled`, `registry_outreach_do_not_contact_added`, `registry_outreach_suppressed`.
+- `registry-outreach-log-send` — LOG-ONLY; gated on `approved_for_send` + an `approved` approval row + DNC re-check; never dispatches; emits `registry_outreach_send_logged`.
+- `registry-admin-operations-summary` — read-only ops dashboard summary; emits `registry_admin_operations_viewed`.
+- `registry-client-readiness-summary` — client-safe bucketed readiness payload; emits `registry_client_readiness_viewed`.
+
+Database hardening: `registry_outreach_drafts` and `registry_outreach_approvals` status mutations are blocked by triggers for non-service callers; `registry_outreach_send_log` inserts are entirely blocked for non-service callers. All Batch 6 tables are admin/compliance read only.
+
+Prebuild guards added:
+- `check-registry-outreach-draft-state-parity.mjs` — TS ↔ Deno SSOT parity across draft states, approval states, review actions, channels, send methods/outcomes, audit names, readiness buckets.
+- `check-registry-outreach-approval-state-parity.mjs` — pins approval states referenced by the review writer.
+- `check-registry-outreach-dnc-parity.mjs` — DNC table is consulted by every writer and DNC audit names emitted.
+- `check-registry-outreach-audit-names.mjs` — every audit name in SSOT is emitted by a Batch 6 edge function.
+- `check-registry-batch6-no-auto-send.mjs` — no external dispatcher import in any Batch 6 file; mandatory no-auto-send copy present across SSOT, edge functions and admin UI.
+- `check-registry-outreach-forbidden-wording.mjs` — AI label + wording-safety wired in the draft builder.
+- `check-registry-client-readiness-wording.mjs` — `/registry/readiness` reads SSOT bucket copy; no inline "live"/"guaranteed".
+- `check-registry-batch6-no-provider.mjs` — no provider integration in any Batch 6 surface.
+
+Tests: `src/tests/batch-6-registry-operations-outreach-readiness.test.ts`. Evidence: `evidence/batch-6-registry-operations-outreach-readiness/README.md`.
+
+Out of scope (explicitly NOT in Batch 6): real registry data ingestion; CIPC / Onfido / GlobalDatabase / B2BHint / Dow Jones / Refinitiv / PayFast / any bank verification provider; external email/SMS/WhatsApp dispatch (Resend, SendGrid, Twilio, Postmark, Mailgun); raw bank-detail surfaces; any change to Batch 1–5 accepted rules.
+
+Completion phrase: `BATCH_6_REGISTRY_OPERATIONS_OUTREACH_READINESS_COMPLETE`.
