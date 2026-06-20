@@ -380,8 +380,9 @@ export function AdminSettings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="test-mode">
+        <TabsContent value="test-mode" className="space-y-4">
           <TestModeBypassPanel />
+          <StubProviderSimulationPanel />
         </TabsContent>
       </Tabs>
     </div>
