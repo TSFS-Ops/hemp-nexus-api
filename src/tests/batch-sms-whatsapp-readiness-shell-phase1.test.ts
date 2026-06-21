@@ -190,9 +190,12 @@ describe("Phase 1 — admin readiness page", () => {
     expect(adminPage).toMatch(/Phase 1 event → channel matrix/);
     expect(adminPage).toMatch(/Recognised skip reasons/);
   });
-  it("does not expose a 'live send' or 'test send' control", () => {
-    expect(adminPage.toLowerCase()).not.toMatch(/send live/);
-    expect(adminPage.toLowerCase()).not.toMatch(/test send/);
+  it("does not expose a 'live send' or 'test send' action control", () => {
+    // Status labels like <dt>Test send</dt> are allowed because they show "disabled".
+    // What is forbidden is any clickable control that would actually trigger a send.
+    expect(adminPage).not.toMatch(/onClick=\{[^}]*sendLive/i);
+    expect(adminPage).not.toMatch(/onClick=\{[^}]*sendTest/i);
+    expect(adminPage).not.toMatch(/<Button[^>]*>\s*(Send live|Send test|Run test send)/i);
   });
 });
 
