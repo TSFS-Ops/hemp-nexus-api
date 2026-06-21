@@ -1261,3 +1261,31 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - (none — Batch 19B is a UI/API/UAT alignment patch only)
 
 
+
+
+## Batch 20 — Pre-UAT Embarrassment Audit and Consistency Sweep (BATCH_20_PRE_UAT_EMBARRASSMENT_AUDIT_COMPLETE)
+
+- Pre-UAT sweep across the accepted Batches 1–19B build. No new product
+  functionality; no accepted guardrail weakened.
+- Audit report: `evidence/batch-20-pre-uat-embarrassment-audit/README.md`
+  (issues by category: `uat_blocker`, `uat_risk`, `cosmetic`,
+  `deferred_non_blocking`, `accepted_limitation`).
+- No `uat_blocker` items remain. Live provider verification, production
+  API enablement, and SMS/WhatsApp outreach remain deferred
+  `accepted_limitation`s, each pinned by their existing batch guards.
+- Guards added to prebuild:
+  `scripts/check-batch-20-no-debug-in-registry-ui.mjs` (rejects
+  TODO/FIXME/XXX/HACK/PLACEHOLDER/`DEBUG:`/`console.log(` anywhere in
+  `src/pages/registry/`, `src/pages/admin/registry/`,
+  `src/components/registry/`),
+  `scripts/check-batch-20-evidence-index-present.mjs` (central registry
+  evidence index references Batches 1–19B and 20; Batch 20 README has all
+  five issue-category headings and the final status token),
+  `scripts/check-batch-20-release-gate-not-production-ready.mjs`
+  (defensive: rejects any `production_ready` default assignment in
+  `ReleaseGate.tsx` / release-gate SSOTs).
+- Tests: `src/tests/batch-20-pre-uat-embarrassment-audit.test.ts`.
+- Central evidence index updated with the Batch 20 row.
+
+### Edge functions requiring deploy (Batch 20)
+- (none — Batch 20 is an audit and guard batch only)
