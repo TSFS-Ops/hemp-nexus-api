@@ -167,6 +167,8 @@ live in the production runtime before publishing.
 - `registry-country-coverage-update` — Batch 2 (M011) country coverage state transitions (seed → production_ready requires approved business_decision + evidence URL)
 - `registry-import-batch-manage` — Batch 2 (M012) 12-state import batch lifecycle writer (publish blocked without approved business decision)
 - `registry-company-search` — Batch 3 (M002) public registry search shell (returns no production rows; gates on country coverage; emits `registry_company_search_performed`)
+- `registry-counterparty-link-suggestions` — Trade Desk unified counterparty/register suggestions endpoint (authenticated, paginated, safe fields only)
+- `registry-counterparty-link-propose` — Trade Desk audited/idempotent human link-proposal endpoint (records registry ID, counterparty ID, score and proposer)
 - `registry-company-profile` — Batch 3 (M003) public registry profile shell (safe envelope only; bank-detail STATUS LABEL only; emits `registry_company_profile_viewed`)
 - `registry-company-claim` — Batch 3 (M004) Claim Your Company writer (start / submit / add_evidence / review; admin review requires `acknowledged_not_verification: true`; emits 7 claim audit names)
 - `registry-institutional-profile-status` — Batch 5 (M008) institutional verified-profile status facade (safe status only; consults Business Decision Register + `isProfileInstitutionallyUsable`; emits `registry_api_profile_status_requested` / `registry_api_response_returned` / `registry_api_scope_denied` / `registry_api_request_blocked`)
