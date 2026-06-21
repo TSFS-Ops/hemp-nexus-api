@@ -11061,6 +11061,195 @@ export type Database = {
           },
         ]
       }
+      registry_bank_detail_provider_configs: {
+        Row: {
+          audit_policy: Json
+          created_at: string
+          created_by: string | null
+          credentials_status: string
+          error_mapping: Json
+          id: string
+          is_live: boolean
+          last_health_check_at: string | null
+          notes: string | null
+          permitted_use_decision_id: string | null
+          provider_mode: string
+          provider_name: string
+          response_mapping: Json
+          retry_policy: Json
+          supported_account_fields: string[]
+          supported_countries: string[]
+          timeout_ms: number
+          updated_at: string
+        }
+        Insert: {
+          audit_policy?: Json
+          created_at?: string
+          created_by?: string | null
+          credentials_status?: string
+          error_mapping?: Json
+          id?: string
+          is_live?: boolean
+          last_health_check_at?: string | null
+          notes?: string | null
+          permitted_use_decision_id?: string | null
+          provider_mode?: string
+          provider_name: string
+          response_mapping?: Json
+          retry_policy?: Json
+          supported_account_fields?: string[]
+          supported_countries?: string[]
+          timeout_ms?: number
+          updated_at?: string
+        }
+        Update: {
+          audit_policy?: Json
+          created_at?: string
+          created_by?: string | null
+          credentials_status?: string
+          error_mapping?: Json
+          id?: string
+          is_live?: boolean
+          last_health_check_at?: string | null
+          notes?: string | null
+          permitted_use_decision_id?: string | null
+          provider_mode?: string
+          provider_name?: string
+          response_mapping?: Json
+          retry_policy?: Json
+          supported_account_fields?: string[]
+          supported_countries?: string[]
+          timeout_ms?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_provider_co_permitted_use_decision_id_fkey"
+            columns: ["permitted_use_decision_id"]
+            isOneToOne: false
+            referencedRelation: "business_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_provider_results: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          id: string
+          outcome: string
+          provider_config_id: string | null
+          provider_raw_excerpt: Json | null
+          recorded_by: string | null
+          request_id: string | null
+          simulated: boolean
+          submission_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          outcome: string
+          provider_config_id?: string | null
+          provider_raw_excerpt?: Json | null
+          recorded_by?: string | null
+          request_id?: string | null
+          simulated?: boolean
+          submission_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          outcome?: string
+          provider_config_id?: string | null
+          provider_raw_excerpt?: Json | null
+          recorded_by?: string | null
+          request_id?: string | null
+          simulated?: boolean
+          submission_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_provider_results_provider_config_id_fkey"
+            columns: ["provider_config_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_provider_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_provider_results_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_verification_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_provider_results_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_reverification_reviews: {
+        Row: {
+          created_at: string
+          decision_notes: string | null
+          id: string
+          previous_verification_id: string | null
+          reason: string | null
+          requested_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submission_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision_notes?: string | null
+          id?: string
+          previous_verification_id?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submission_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision_notes?: string | null
+          id?: string
+          previous_verification_id?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submission_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_reverificati_previous_verification_id_fkey"
+            columns: ["previous_verification_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_verification_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_reverification_reviews_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_bank_detail_review_events: {
         Row: {
           acknowledged: boolean
@@ -11216,6 +11405,7 @@ export type Database = {
           country_code: string
           created_at: string
           currency_code: string
+          current_verification_request_id: string | null
           declaration_acknowledged: boolean
           dispute_reason: string | null
           disputed_at: string | null
@@ -11255,6 +11445,7 @@ export type Database = {
           superseded_by: string | null
           updated_at: string
           verification_method: string | null
+          verification_mode: string
           verified_at: string | null
           verified_by: string | null
           withdrawn_at: string | null
@@ -11278,6 +11469,7 @@ export type Database = {
           country_code: string
           created_at?: string
           currency_code: string
+          current_verification_request_id?: string | null
           declaration_acknowledged?: boolean
           dispute_reason?: string | null
           disputed_at?: string | null
@@ -11317,6 +11509,7 @@ export type Database = {
           superseded_by?: string | null
           updated_at?: string
           verification_method?: string | null
+          verification_mode?: string
           verified_at?: string | null
           verified_by?: string | null
           withdrawn_at?: string | null
@@ -11340,6 +11533,7 @@ export type Database = {
           country_code?: string
           created_at?: string
           currency_code?: string
+          current_verification_request_id?: string | null
           declaration_acknowledged?: boolean
           dispute_reason?: string | null
           disputed_at?: string | null
@@ -11379,11 +11573,19 @@ export type Database = {
           superseded_by?: string | null
           updated_at?: string
           verification_method?: string | null
+          verification_mode?: string
           verified_at?: string | null
           verified_by?: string | null
           withdrawn_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_submissi_current_verification_request_fkey"
+            columns: ["current_verification_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_verification_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "registry_bank_detail_submissions_authority_request_id_fkey"
             columns: ["authority_request_id"]
@@ -11435,6 +11637,274 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "registry_bank_detail_unmask_access_logs_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_verification_decisions: {
+        Row: {
+          acknowledgement_text: string | null
+          blocking_gates: Json
+          business_decision_id: string | null
+          created_at: string
+          decision_outcome: string
+          evidence_basis: string | null
+          expires_at: string | null
+          id: string
+          promoted_to_verified: boolean
+          reason: string | null
+          request_id: string
+          reviewer_id: string | null
+          reviewer_role: string | null
+          second_reviewer_id: string | null
+          submission_id: string
+          updated_at: string
+          verification_basis: string | null
+          verification_method: string | null
+        }
+        Insert: {
+          acknowledgement_text?: string | null
+          blocking_gates?: Json
+          business_decision_id?: string | null
+          created_at?: string
+          decision_outcome: string
+          evidence_basis?: string | null
+          expires_at?: string | null
+          id?: string
+          promoted_to_verified?: boolean
+          reason?: string | null
+          request_id: string
+          reviewer_id?: string | null
+          reviewer_role?: string | null
+          second_reviewer_id?: string | null
+          submission_id: string
+          updated_at?: string
+          verification_basis?: string | null
+          verification_method?: string | null
+        }
+        Update: {
+          acknowledgement_text?: string | null
+          blocking_gates?: Json
+          business_decision_id?: string | null
+          created_at?: string
+          decision_outcome?: string
+          evidence_basis?: string | null
+          expires_at?: string | null
+          id?: string
+          promoted_to_verified?: boolean
+          reason?: string | null
+          request_id?: string
+          reviewer_id?: string | null
+          reviewer_role?: string | null
+          second_reviewer_id?: string | null
+          submission_id?: string
+          updated_at?: string
+          verification_basis?: string | null
+          verification_method?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_verification_dec_business_decision_id_fkey"
+            columns: ["business_decision_id"]
+            isOneToOne: false
+            referencedRelation: "business_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_verification_decisions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_verification_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_verification_decisions_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_verification_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          created_at: string
+          id: string
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          reason: string | null
+          request_id: string | null
+          submission_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+          request_id?: string | null
+          submission_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+          request_id?: string | null
+          submission_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_verification_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_verification_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_verification_events_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_verification_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          request_id: string | null
+          submission_id: string | null
+          visibility: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          request_id?: string | null
+          submission_id?: string | null
+          visibility?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          request_id?: string | null
+          submission_id?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_verification_notes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_verification_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_verification_notes_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_verification_requests: {
+        Row: {
+          blocking_gates: Json
+          business_decision_id: string | null
+          cancelled_at: string | null
+          cancelled_reason: string | null
+          consent_ok: boolean
+          country_code: string | null
+          country_supports_mode: boolean
+          created_at: string
+          duplicate_ok: boolean
+          evidence_ok: boolean
+          expires_at: string | null
+          id: string
+          initiated_reason: string | null
+          requested_by: string | null
+          requested_role: string | null
+          risk_ok: boolean
+          submission_id: string
+          updated_at: string
+          verification_mode: string
+          verification_status: string
+        }
+        Insert: {
+          blocking_gates?: Json
+          business_decision_id?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          consent_ok?: boolean
+          country_code?: string | null
+          country_supports_mode?: boolean
+          created_at?: string
+          duplicate_ok?: boolean
+          evidence_ok?: boolean
+          expires_at?: string | null
+          id?: string
+          initiated_reason?: string | null
+          requested_by?: string | null
+          requested_role?: string | null
+          risk_ok?: boolean
+          submission_id: string
+          updated_at?: string
+          verification_mode?: string
+          verification_status?: string
+        }
+        Update: {
+          blocking_gates?: Json
+          business_decision_id?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          consent_ok?: boolean
+          country_code?: string | null
+          country_supports_mode?: boolean
+          created_at?: string
+          duplicate_ok?: boolean
+          evidence_ok?: boolean
+          expires_at?: string | null
+          id?: string
+          initiated_reason?: string | null
+          requested_by?: string | null
+          requested_role?: string | null
+          risk_ok?: boolean
+          submission_id?: string
+          updated_at?: string
+          verification_mode?: string
+          verification_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_verification_req_business_decision_id_fkey"
+            columns: ["business_decision_id"]
+            isOneToOne: false
+            referencedRelation: "business_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_verification_requests_submission_id_fkey"
             columns: ["submission_id"]
             isOneToOne: false
             referencedRelation: "registry_bank_detail_submissions"

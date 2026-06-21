@@ -1072,3 +1072,22 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - Guards: `check-batch-13b-ui-no-verified.mjs`, `check-batch-13b-ui-no-raw-leak.mjs` (wired into `prebuild` after the B13 guards).
 - Evidence: evidence/batch-13b-bank-detail-ui-wiring/README.md
 - captured_unverified is never rendered as verified. Raw bank fields are never read from the UI; only the elevated unmask edge function decodes them, with a reason and a full audit trail.
+
+## Batch 14 — Bank Detail Verification Decision Layer (Phase 1, Backend)
+
+- New tables: registry_bank_detail_verification_requests, registry_bank_detail_verification_events, registry_bank_detail_verification_decisions, registry_bank_detail_provider_configs, registry_bank_detail_provider_results, registry_bank_detail_reverification_reviews, registry_bank_detail_verification_notes.
+- Extended: registry_bank_detail_submissions (+verification_mode, +current_verification_request_id).
+- Edge functions (deploy-listed): registry-bank-verification-request, registry-bank-verification-review, registry-bank-verification-status, registry-bank-verification-provider-config, registry-bank-verification-provider-simulate, registry-bank-verification-expiry-scan, registry-bank-verification-api-status.
+- Guards: `check-registry-bank-verification-parity.mjs`, `check-registry-bank-verification-invariants.mjs`, `check-registry-bank-verification-no-live-provider.mjs` (wired into `prebuild` after the Batch 13B guards).
+- Evidence: evidence/batch-14-bank-detail-verification-decision-layer/README.md
+- Manual verification is DISABLED by default and requires `manual_verification_allowed` mode + approved business decision + compliance_owner + ack text.
+- `manual_verified` and `provider_matched` are NEVER returned as API verified unless promoted via the decision-gate review.
+- Only the final, unexpired, non-disputed/revoked `verified` status returns API verified.
+- Provider simulation is test-mode only; no live provider integration is wired.
+- RLS on all seven new tables restricts read/write to platform_admin or compliance_owner.
+
+## Prebuild guard script index (Batch 14 sync)
+
+- `check-registry-bank-verification-parity.mjs`
+- `check-registry-bank-verification-invariants.mjs`
+- `check-registry-bank-verification-no-live-provider.mjs`
