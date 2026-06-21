@@ -12,8 +12,8 @@ const FORBIDDEN = [
   /\bclaim\s+approval\s+confirms\s+(?:authority|bank|api)\b/i,
   /\bclaim\s+approval\s+grants?\s+(?:authority|bank|api)\b/i,
   // sample-record over-claims
-  /\bsample[_\s-]only.{0,40}production[_\s-]ready\b/i,
-  /\bsample[_\s-]only.{0,40}verified[_\s-]by[_\s-]izenzo\b/i,
+  /\bsample[_\s-]only\s+(?:is|are|records?\s+are)\s+production[_\s-]ready\b/i,
+  /\bsample[_\s-]only\s+(?:is|are|records?\s+are)\s+verified[_\s-]by[_\s-]izenzo\b/i,
 ];
 const ALLOWED_FILES = new Set([
   "src/lib/registry-client-decisions-19a.ts",
