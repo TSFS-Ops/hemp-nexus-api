@@ -65,9 +65,13 @@ describe("Batch 13 — bank-detail submission & review SSOT", () => {
   });
 
   it("provides public labels that never claim verification", () => {
+    // The only "verified"-containing label is the explicit negative
+    // "Bank details captured but not verified".
     for (const label of REGISTRY_BANK_DETAIL_B13_PUBLIC_STATUS_LABELS) {
-      expect(label.toLowerCase()).not.toContain("verified");
-      // captured-but-not-verified is the one allowed phrasing.
+      const lower = label.toLowerCase();
+      if (lower.includes("verified")) {
+        expect(lower).toContain("not verified");
+      }
     }
   });
 
