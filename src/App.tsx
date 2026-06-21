@@ -104,6 +104,8 @@ const AdminRegistryCorrectionRequests = lazy(() => import("@/pages/admin/registr
 const AdminRegistryClaimConflicts = lazy(() => import("@/pages/admin/registry/ClaimConflicts"));
 const AdminRegistryBatch7AuditLog = lazy(() => import("@/pages/admin/registry/Batch7AuditLog"));
 const AdminRegistryRecords = lazy(() => import("@/pages/admin/registry/Records"));
+// Batch 10 — claim activation & record lifecycle controls
+const AdminRegistryClaimActivation = lazy(() => import("@/pages/admin/registry/ClaimActivation"));
 // Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
 const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
 
@@ -218,6 +220,7 @@ function App() {
                   <Route path="/admin/registry/new-company-requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryNewCompanyRequests /></RequireAuth>} />
                   <Route path="/admin/registry/correction-requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryCorrectionRequests /></RequireAuth>} />
                   <Route path="/admin/registry/claim-conflicts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaimConflicts /></RequireAuth>} />
+                  <Route path="/admin/registry/claim-activation" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaimActivation /></RequireAuth>} />
                   <Route path="/admin/registry/batch7-audit-log" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryBatch7AuditLog /></RequireAuth>} />
                   {/* Batch 8 — Registry record model + search */}
                   <Route path="/admin/registry/records" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryRecords /></RequireAuth>} />
