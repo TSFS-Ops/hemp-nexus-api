@@ -1247,3 +1247,17 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 ### Edge functions requiring deploy (Batch 19A)
 - (none — Batch 19A is an alignment patch only)
 
+## Batch 19B — Client Decision UI / API / UAT Alignment (BATCH_19B_CLIENT_DECISION_UI_API_UAT_ALIGNMENT_COMPLETE)
+
+- New SSOT: `src/lib/registry-client-decisions-19b.ts` — public search safe / forbidden match reasons, officer-name search rules, required public profile + sample-record labels, claim UI states + `claim_approved_limited` copy + does-not-unlock list, evidence 12-month refresh label + exception fields, representative blocked UI actions, neutral competing-claim copy + admin outcomes, missing-company no-auto-public-profile copy + intake fields, correction review-gated copy + protected fields, outreach UI rules (email / phone / SMS disabled / WhatsApp disabled / letter), do-not-contact suppression copy, sample-only API contract (`production_api: excluded`, sandbox `verified_by_izenzo: false`, payment-status never usable verified), API must-not-imply list, portal limited-connection copy, operations cockpit work-item list, 14 UAT client-decision scenarios.
+- No DB schema changes. No new edge functions. No production-enable buttons. No live provider integration. No external notifications. SMS/WhatsApp remain disabled in Phase 1.
+- Guards added to prebuild: `scripts/check-batch-19b-ssot-parity.mjs`, `scripts/check-batch-19b-forbidden-wording.mjs`, `scripts/check-batch-19b-sample-only-api.mjs`, `scripts/check-batch-19b-sms-whatsapp-disabled.mjs`, `scripts/check-batch-19b-docs-present.mjs`. All passing.
+- Tests: `src/tests/batch-19b-client-decision-ui-api-uat-alignment.test.ts` (20 tests).
+- Docs updated: `docs/registry/uat-scenarios.md` (scenarios 26-39), `docs/registry/demo-walkthrough.md` (§14), `docs/registry/client-safe-limitations.md`, `docs/registry/release-gate-matrix.md` (matrix reference), evidence index.
+- Evidence: `evidence/batch-19b-client-decision-ui-api-uat-alignment/README.md`.
+- Batches 1–19A guardrails untouched.
+
+### Edge functions requiring deploy (Batch 19B)
+- (none — Batch 19B is a UI/API/UAT alignment patch only)
+
+
