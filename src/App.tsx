@@ -137,6 +137,13 @@ const RegistryAuthorityStatus = lazy(() => import("@/pages/registry/AuthoritySta
 const AdminRegistryAuthorityReview = lazy(() => import("@/pages/admin/registry/AuthorityReview"));
 // Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
 const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
+// Batch 16 — Company Portal Guided Journey
+const RegistryMyCompanies = lazy(() => import("@/pages/registry/MyCompanies"));
+const RegistryMyCompanyDetail = lazy(() => import("@/pages/registry/MyCompanyDetail"));
+const RegistryMyCompanyEvidence = lazy(() => import("@/pages/registry/MyCompanyEvidence"));
+const RegistryMyCompanyCorrections = lazy(() => import("@/pages/registry/MyCompanyCorrections"));
+const RegistryMyCompanyDisputes = lazy(() => import("@/pages/registry/MyCompanyDisputes"));
+const RegistryMyCompanyRevocations = lazy(() => import("@/pages/registry/MyCompanyRevocations"));
 
 /**
  * Root element that renders based on host type:
@@ -228,6 +235,17 @@ function App() {
                   <Route path="/registry/claims/:claimId" element={<RequireAuth><RegistryClaimStatus /></RequireAuth>} />
                   <Route path="/admin/registry/claims-review" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaimsReview /></RequireAuth>} />
                   <Route path="/registry/readiness" element={<RegistryReadiness />} />
+                  {/* Batch 16 — Company Portal Guided Journey */}
+                  <Route path="/registry/my-companies" element={<RequireAuth><RegistryMyCompanies /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId" element={<RequireAuth><RegistryMyCompanyDetail /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/claim" element={<RequireAuth><RegistryClaimStatus /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/authority" element={<RequireAuth><RegistryAuthorityList /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/bank-details" element={<RequireAuth><BankDetailSubmit /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/verification" element={<RequireAuth><BankDetailStatus /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/evidence" element={<RequireAuth><RegistryMyCompanyEvidence /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/corrections" element={<RequireAuth><RegistryMyCompanyCorrections /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/disputes" element={<RequireAuth><RegistryMyCompanyDisputes /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/revocations" element={<RequireAuth><RegistryMyCompanyRevocations /></RequireAuth>} />
                   {/* Batch 1 — Admin registry area (M015 shell, M018 decisions, M019 readiness) */}
                   <Route path="/admin/registry" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryIndex /></RequireAuth>} />
                   <Route path="/admin/registry/readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryReadiness /></RequireAuth>} />

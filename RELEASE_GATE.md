@@ -1154,3 +1154,42 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - Evidence: `evidence/batch-15b-institutional-api-admin-ui/README.md`.
 - Batches 1–15 guardrails untouched. No backend contract changes.
 
+## Batch 16 — Company Portal Guided Journey (BATCH_16_COMPANY_PORTAL_GUIDED_JOURNEY_COMPLETE)
+
+- New claimant routes (auth-gated, RLS-scoped):
+  `/registry/my-companies`, `/registry/my-companies/:companyId`,
+  `/registry/my-companies/:companyId/{claim,authority,bank-details,verification,evidence,corrections,disputes,revocations}`.
+  Sub-routes for claim/authority/bank-details/verification reuse the
+  accepted Batch 11/12/13/14 pages.
+- Portal SSOT: `src/lib/registry-company-portal-ssot.ts` —
+  `PORTAL_CLAIM_LABEL`, `PORTAL_AUTHORITY_LABEL`,
+  `PORTAL_BANK_DETAIL_LABEL`, `PORTAL_VERIFICATION_LABEL`,
+  `PORTAL_NEXT_STEP_LABEL`, `PORTAL_BLOCKED_LABEL`,
+  `PORTAL_TIMELINE_EVENT_LABEL`, `PORTAL_CORRECTION_ACK`,
+  `PORTAL_DISPUTE_ACK`, `PORTAL_REVOCATION_BANK_ACK`,
+  `PORTAL_REVOCATION_AUTHORITY_ACK`, `computeNextStep`,
+  `safeVerificationLabel`, `filterSafeTimeline`, `hasForbiddenField`.
+- `safeVerificationLabel` is the single render path: disputed, revoked,
+  expired, non-final and `manual_verified` ALWAYS downgrade — only final
+  unexpired Batch 14 `verified` retains the `Verified` wording.
+- Edge function `registry-my-companies` aggregates per-user portal state
+  (claim + authority + bank detail + verification + corrections) and
+  NEVER returns raw bank columns, raw provider payloads, admin notes or
+  other users' evidence.
+- Forms: correction, dispute and revocation all require an explicit
+  acknowledgement checkbox using the canonical SSOT copy. Revocation of
+  bank detail / verification always shows the consequence string
+  ("Revocation may cause payment-status responses to return not verified
+  or not usable.").
+- Guards (wired into `prebuild`):
+  `check-batch-16-portal-no-raw-bank.mjs`,
+  `check-batch-16-portal-no-verified-wording.mjs`,
+  `check-batch-16-portal-acknowledgements.mjs`,
+  `check-batch-16-portal-next-step-parity.mjs`.
+- Tests: `src/tests/batch-16-company-portal-guided-journey.test.ts`.
+- Evidence: `evidence/batch-16-company-portal-guided-journey/README.md`.
+- Deploy manifest: `registry-my-companies` added to `required` and
+  `exempt_invokes`.
+- Batches 1–15B guardrails untouched. No backend schema changes.
+
+
