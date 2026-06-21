@@ -12,7 +12,7 @@ result · what NOT to claim to the client.
 - Role: public user
 - Demo record: `demo-co-imported-01`
 - Expected safe result: list rendered without contact or bank fields.
-- Do not claim: that results are verified or guaranteed accurate.
+- Do not claim: that results are verified or that accuracy is guaranteed.
 
 ## 2. Public company profile
 
