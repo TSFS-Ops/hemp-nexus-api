@@ -39,11 +39,23 @@ const shellDirs = [
   "src/pages/registry",
   "src/pages/admin/registry",
 ];
+const EXEMPT_FILES = new Set([
+  // Batch 12 — disputes surface explains disputed records must NOT render as verified (negation copy).
+  "src/pages/registry/MyCompanyDisputes.tsx",
+  // Batch 15B — API test console explains imported data is NOT independently verified by Izenzo.
+  "src/pages/admin/registry/ApiTestConsole.tsx",
+  // Batch 14B — bank verification review uses "verified" as terminal status label;
+  // covered by scripts/check-batch-14b-ui-no-verified.mjs.
+  "src/pages/admin/registry/BankVerificationReview.tsx",
+  // Batch 17 — operations readiness page explicitly disclaims production-ready/verified/live status.
+  "src/pages/admin/registry/operations/Readiness.tsx",
+]);
 for (const d of shellDirs) {
   let files;
   try { files = walk(d); } catch { continue; }
   for (const f of files) {
     if (f.includes(".test.")) continue;
+    if (EXEMPT_FILES.has(f.replace(/\\/g, "/"))) continue;
     const src = readFileSync(f, "utf8");
     for (const word of FORBIDDEN) {
       // allow the canonical "_not_verified" / "_not_provided" labels and the
