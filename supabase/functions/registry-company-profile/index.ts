@@ -24,6 +24,17 @@ Deno.serve(async (req) => {
     }
     const svc = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
+    // Batch 7 — per-IP / per-API-key rate limit.
+    const apiKeyHeader = req.headers.get("x-api-key");
+    const rl = await enforceRegistrySearchRateLimit({
+      supabase: svc,
+      endpoint: "registry-company-profile",
+      ip: clientIpFromRequest(req),
+      apiKeyId: apiKeyHeader ? apiKeyHeader.slice(0, 64) : null,
+    });
+    if (!rl.ok) return withCors(req, rateLimited429(rl));
+
+
     await svc.from("event_store").insert({
       event_name: "registry_company_profile_viewed",
       aggregate_id: parsed.data.company_reference,
