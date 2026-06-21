@@ -117,7 +117,7 @@ export function UnifiedRegisterLinkSuggestions({ counterparties }: Props) {
   if (suggestions.length === 0 && !loading) return null;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden" data-testid="unified-register-link-suggestions">
+    <div className="rounded-md border border-slate-200 bg-white overflow-hidden" data-testid="unified-register-link-suggestions">
       <div className="px-4 sm:px-5 py-3 border-b border-slate-100">
         <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-slate-400">Unified register</p>
         <h3 className="text-sm sm:text-base font-semibold text-slate-900 tracking-tight">Company register link suggestions</h3>
