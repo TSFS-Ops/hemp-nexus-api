@@ -904,3 +904,21 @@ Out of scope (explicitly NOT in Phase 1): live SMS or WhatsApp sending; Twilio /
 
 Completion phrase: `SMS_WHATSAPP_NOTIFICATION_READINESS_SHELL_PHASE_1_COMPLETE`.
 
+---
+
+## Batch 7 — Registry Search & Claim Rules Hardening
+
+Implements the approved questionnaire rules (`izenzo-registry-claim-rules-recommended-answers.docx`) as canonical product behaviour. SSOT: `src/lib/registry-claim-rules.ts` (+ Deno mirror `supabase/functions/_shared/registry-claim-rules.ts`). New migration `20260621*_b7c50001-r7-claim-rules-hardening` creates `registry_new_company_requests`, `registry_new_company_request_events`, `registry_company_correction_requests`, `registry_company_correction_events`, `registry_claim_conflicts`, `registry_claim_conflict_events`, `registry_claim_interest_events` — all with GRANTs and RLS scoped to requester / `platform_admin` / `compliance_owner`. New edge functions: `registry-new-company-request`, `registry-company-correction-request` (both require authenticated + email-verified callers; admin review gated to `platform_admin` / `compliance_owner`; sensitive correction fields gated to `compliance_owner`). New admin pages: `/admin/registry/new-company-requests`, `/admin/registry/correction-requests`, `/admin/registry/claim-conflicts`.
+
+Guards (added to prebuild):
+- `check-registry-claim-rules-parity.mjs` — TS ↔ Deno SSOT parity for every Batch 7 array.
+- `check-registry-claim-rules-forbidden-wording.mjs` — public registry surfaces may never describe imported / shell records as "is verified", "production-ready", "guaranteed accurate" or "institutionally usable".
+- `check-registry-batch7-no-auto-send.mjs` — new Batch 7 edge functions must not import any SMS / WhatsApp / email provider SDK or call provider webhooks.
+
+Tests: `src/tests/batch-7-registry-search-claim-rules-hardening.test.ts`. Evidence: `evidence/batch-7-registry-search-claim-rules-hardening/README.md`.
+
+Out of scope (explicitly NOT in Batch 7): production-scale registry data ingestion; marking any record as verified / production-ready / institutionally usable; raw bank-detail exposure; raw personal contact detail exposure to the public surface; AI auto-send; external provider integration; raw bank-detail API scope; weakening of any Batch 1–6 accepted rule.
+
+Completion phrase: `BATCH_7_REGISTRY_SEARCH_CLAIM_RULES_HARDENING_COMPLETE`.
+
+
