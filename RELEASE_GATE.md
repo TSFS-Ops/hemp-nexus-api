@@ -1193,3 +1193,14 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - Batches 1–15B guardrails untouched. No backend schema changes.
 
 
+
+## Batch 17 — Registry Admin Operations Centre (BATCH_17_REGISTRY_ADMIN_OPERATIONS_CENTRE_COMPLETE)
+
+- New SSOT: `src/lib/registry-operations-centre-ssot.ts` mirrored by `supabase/functions/_shared/registry-operations-centre.ts` (parity guard).
+- New admin routes (platform_admin guarded): `/admin/registry/operations` (cockpit), `/operations/queue`, `/operations/slas`, `/operations/risk`, `/operations/readiness`, `/operations/audit`. Legacy Batch 6 summary preserved at `/operations/legacy`.
+- New read-only edge functions: `registry-operations-summary|queue|risk|slas|readiness|audit`. Each requires platform_admin or compliance_owner via shared `requireOpsAdmin` and emits a `registry_operations_*_viewed` audit event.
+- No DB schema changes. No assignment writes (deferred per spec — read-only aggregation first). No live providers. No external notifications. No outreach.
+- Guards added to prebuild: `check-batch-17-operations-ssot-parity`, `-no-raw-bank`, `-forbidden-words`, `-route-safe`. All passing.
+- Tests: `src/tests/batch-17-registry-admin-operations-centre.test.ts`.
+- Evidence: `evidence/batch-17-registry-admin-operations-centre/README.md`.
+- Batches 1–16 guardrails untouched.
