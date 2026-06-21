@@ -21,7 +21,7 @@ const uat = fs.readFileSync("docs/registry/uat-scenarios.md", "utf8");
 const needles = [
   "sample_only",
   "claim_approved_limited",
-  "officer-name",
+  "officer",
   "do-not-contact",
   "SMS",
   "WhatsApp",
