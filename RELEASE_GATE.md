@@ -1212,3 +1212,20 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - registry-operations-slas
 - registry-operations-readiness
 - registry-operations-audit
+
+
+## Batch 18 — End-to-End UAT, Release Gate and Demo Pack (BATCH_18_END_TO_END_UAT_RELEASE_DEMO_COMPLETE)
+
+- New SSOT: `src/lib/registry-release-gate-ssot.ts` — release statuses, release-gate matrix (25 modules), allowed/forbidden readiness wording, 25-scenario UAT pack, 22-record demo data set, client-safe limitations.
+- New read-only admin routes (platform_admin guarded): `/admin/registry/release-gate`, `/admin/registry/demo-pack`, `/admin/registry/uat-scenarios`.
+- No DB schema changes. No new edge functions. No production-enable buttons. No external notifications. No live provider integration.
+- Default final release status is NOT `production_ready` (asserted by guard + unit test).
+- New docs: `docs/registry/release-gate-matrix.md`, `docs/registry/uat-scenarios.md`, `docs/registry/demo-walkthrough.md`, `docs/registry/client-safe-limitations.md`.
+- Central evidence index: `evidence/registry-evidence-index/README.md` covering Batches 1–18.
+- Guards added to prebuild: `check-batch-18-forbidden-readiness-wording`, `check-batch-18-no-production-ready-default`, `check-batch-18-demo-labelled`, `check-batch-18-evidence-index-present`, `check-batch-18-docs-present`. All passing.
+- Tests: `src/tests/batch-18-end-to-end-uat-release-demo.test.ts`.
+- Evidence: `evidence/batch-18-end-to-end-uat-release-demo/README.md`.
+- Batches 1–17 guardrails untouched.
+
+### Edge functions requiring deploy (Batch 18)
+- (none — Batch 18 adds no edge functions)
