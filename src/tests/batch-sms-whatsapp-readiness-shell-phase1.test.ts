@@ -183,8 +183,8 @@ describe("Phase 1 — admin readiness page", () => {
   it("renders SMS and WhatsApp cards", () => {
     expect(adminPage).toMatch(/data-testid=\{`channel-card-\$\{r\.channel\}`\}/);
   });
-  it("shows the canonical safe label banner", () => {
-    expect(adminPage).toContain("SMS/WhatsApp is not configured. No external message was sent.");
+  it("shows the canonical safe label banner via the SSOT constant", () => {
+    expect(adminPage).toMatch(/NOTIFICATION_SAFE_LABELS\.not_configured/);
   });
   it("renders the Phase 1 event matrix and skip reasons", () => {
     expect(adminPage).toMatch(/Phase 1 event → channel matrix/);
