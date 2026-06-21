@@ -158,3 +158,50 @@ describe("Batch 14B — route stability", () => {
     expect(App.default).toBeDefined();
   });
 });
+
+import {
+  slaIndicatorFor,
+  encodeCursor,
+  decodeCursor,
+  REGISTRY_BANK_VERIFICATION_UI_SLA_APPROACHING_DAYS,
+  REGISTRY_BANK_VERIFICATION_UI_SLA_BREACHED_DAYS,
+} from "@/lib/registry-bank-verification-ui";
+
+describe("Batch 14B — SLA indicators", () => {
+  const now = new Date("2026-06-21T12:00:00Z").getTime();
+  const at = (daysAgo: number) =>
+    new Date(now - daysAgo * 86_400_000).toISOString();
+
+  it("on_track when age < approaching threshold", () => {
+    const r = slaIndicatorFor(at(REGISTRY_BANK_VERIFICATION_UI_SLA_APPROACHING_DAYS - 1), "verification_requested", now);
+    expect(r.state).toBe("on_track");
+  });
+  it("approaching at the approaching threshold", () => {
+    const r = slaIndicatorFor(at(REGISTRY_BANK_VERIFICATION_UI_SLA_APPROACHING_DAYS), "manual_review_required", now);
+    expect(r.state).toBe("approaching");
+    expect(r.label).toMatch(/Approaching SLA/);
+  });
+  it("breached at the breached threshold", () => {
+    const r = slaIndicatorFor(at(REGISTRY_BANK_VERIFICATION_UI_SLA_BREACHED_DAYS), "manual_review_required", now);
+    expect(r.state).toBe("breached");
+    expect(r.label).toMatch(/SLA breached/);
+  });
+  it("terminal statuses are on_track regardless of age", () => {
+    for (const s of ["verified", "failed", "cancelled", "expired", "revoked", "disputed"]) {
+      const r = slaIndicatorFor(at(99), s, now);
+      expect(r.state).toBe("on_track");
+    }
+  });
+});
+
+describe("Batch 14B — cursor pagination", () => {
+  it("encode/decode roundtrips", () => {
+    const c = { createdAt: "2026-06-21T12:00:00.000Z", id: "11111111-2222-3333-4444-555555555555" };
+    expect(decodeCursor(encodeCursor(c))).toEqual(c);
+  });
+  it("decodeCursor returns null on missing/invalid input", () => {
+    expect(decodeCursor(null)).toBeNull();
+    expect(decodeCursor("")).toBeNull();
+    expect(decodeCursor("no-pipe-here")).toBeNull();
+  });
+});
