@@ -8,7 +8,7 @@ import { ActiveOrgIndicator } from "@/components/desk/ActiveOrgIndicator";
 const NAV = [
   { to: "/desk", label: "Overview", icon: Briefcase, end: true },
   { to: "/desk/discover", label: "Counterparties", icon: Search },
-  { to: "/registry", label: "Company Register", icon: Building2 },
+  { to: "/desk/registry", label: "Company Register", icon: Building2 },
   { to: "/desk/deals", label: "My Trades", icon: Files },
   { to: "/desk/compliance", label: "Compliance", icon: ShieldCheck },
   { to: "/desk/billing", label: "Billing", icon: Receipt },

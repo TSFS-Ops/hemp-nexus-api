@@ -29,6 +29,7 @@ import { FacilitationCaseMilestoneView } from "@/components/facilitation/Facilit
 import MatchDetails from "@/pages/MatchDetails";
 import TradeDealWizard from "@/pages/TradeDealWizard";
 import { MatchesList } from "@/components/MatchesList";
+import RegistryLanding from "@/pages/registry/Landing";
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
@@ -206,6 +207,7 @@ export default function Desk() {
               <Routes>
                 <Route index element={<DeskOverview />} />
                 <Route path="discover" element={<DiscoverCounterparties />} />
+                <Route path="registry" element={<RegistryLanding />} />
                 <Route
                   path="deals"
                   element={
