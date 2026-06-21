@@ -1,10 +1,13 @@
 // Batch 3 — M003 Company Profile Shell.
-// Returns a safe profile envelope ONLY. Raw bank details are never returned;
-// only the bank-detail status label is exposed. Records do not exist yet in
-// Batch 3 so we return a not_found envelope and audit the view.
+// Batch 7 — per-IP / per-API-key rate limit added.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
+import {
+  clientIpFromRequest,
+  enforceRegistrySearchRateLimit,
+  rateLimited429,
+} from "../_shared/registry-search-rate-limit.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
