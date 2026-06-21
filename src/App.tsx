@@ -151,6 +151,10 @@ const RegistryMyCompanyEvidence = lazy(() => import("@/pages/registry/MyCompanyE
 const RegistryMyCompanyCorrections = lazy(() => import("@/pages/registry/MyCompanyCorrections"));
 const RegistryMyCompanyDisputes = lazy(() => import("@/pages/registry/MyCompanyDisputes"));
 const RegistryMyCompanyRevocations = lazy(() => import("@/pages/registry/MyCompanyRevocations"));
+// Batch 18 — Release gate, demo pack and UAT scenarios (read-only admin)
+const AdminRegistryReleaseGate = lazy(() => import("@/pages/admin/registry/ReleaseGate"));
+const AdminRegistryDemoPack = lazy(() => import("@/pages/admin/registry/DemoPack"));
+const AdminRegistryUatScenarios = lazy(() => import("@/pages/admin/registry/UatScenarios"));
 
 /**
  * Root element that renders based on host type:
@@ -295,6 +299,11 @@ function App() {
                   <Route path="/admin/registry/operations/risk" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsRisk /></RequireAuth>} />
                   <Route path="/admin/registry/operations/readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsReadiness /></RequireAuth>} />
                   <Route path="/admin/registry/operations/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsAudit /></RequireAuth>} />
+                  {/* Batch 18 — Release gate, demo pack, UAT scenarios (read-only) */}
+                  <Route path="/admin/registry/release-gate" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryReleaseGate /></RequireAuth>} />
+                  <Route path="/admin/registry/demo-pack" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryDemoPack /></RequireAuth>} />
+                  <Route path="/admin/registry/uat-scenarios" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryUatScenarios /></RequireAuth>} />
+
                   <Route path="/admin/registry/operations/legacy" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOperations /></RequireAuth>} />
                   <Route path="/admin/registry/outreach-drafts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachDrafts /></RequireAuth>} />
                   <Route path="/admin/registry/outreach-approvals" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachApprovals /></RequireAuth>} />

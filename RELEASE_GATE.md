@@ -1200,7 +1200,7 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - New admin routes (platform_admin guarded): `/admin/registry/operations` (cockpit), `/operations/queue`, `/operations/slas`, `/operations/risk`, `/operations/readiness`, `/operations/audit`. Legacy Batch 6 summary preserved at `/operations/legacy`.
 - New read-only edge functions: `registry-operations-summary|queue|risk|slas|readiness|audit`. Each requires platform_admin or compliance_owner via shared `requireOpsAdmin` and emits a `registry_operations_*_viewed` audit event.
 - No DB schema changes. No assignment writes (deferred per spec — read-only aggregation first). No live providers. No external notifications. No outreach.
-- Guards added to prebuild: `check-batch-17-operations-ssot-parity`, `-no-raw-bank`, `-forbidden-words`, `-route-safe`. All passing.
+- Guards added to prebuild: `scripts/check-batch-17-operations-ssot-parity.mjs`, `scripts/check-batch-17-operations-no-raw-bank.mjs`, `scripts/check-batch-17-operations-forbidden-words.mjs`, `scripts/check-batch-17-operations-route-safe.mjs`. All passing.
 - Tests: `src/tests/batch-17-registry-admin-operations-centre.test.ts`.
 - Evidence: `evidence/batch-17-registry-admin-operations-centre/README.md`.
 - Batches 1–16 guardrails untouched.
@@ -1212,3 +1212,20 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - registry-operations-slas
 - registry-operations-readiness
 - registry-operations-audit
+
+
+## Batch 18 — End-to-End UAT, Release Gate and Demo Pack (BATCH_18_END_TO_END_UAT_RELEASE_DEMO_COMPLETE)
+
+- New SSOT: `src/lib/registry-release-gate-ssot.ts` — release statuses, release-gate matrix (25 modules), allowed/forbidden readiness wording, 25-scenario UAT pack, 22-record demo data set, client-safe limitations.
+- New read-only admin routes (platform_admin guarded): `/admin/registry/release-gate`, `/admin/registry/demo-pack`, `/admin/registry/uat-scenarios`.
+- No DB schema changes. No new edge functions. No production-enable buttons. No external notifications. No live provider integration.
+- Default final release status is NOT `production_ready` (asserted by guard + unit test).
+- New docs: `docs/registry/release-gate-matrix.md`, `docs/registry/uat-scenarios.md`, `docs/registry/demo-walkthrough.md`, `docs/registry/client-safe-limitations.md`.
+- Central evidence index: `evidence/registry-evidence-index/README.md` covering Batches 1–18.
+- Guards added to prebuild: `scripts/check-batch-18-forbidden-readiness-wording.mjs`, `scripts/check-batch-18-no-production-ready-default.mjs`, `scripts/check-batch-18-demo-labelled.mjs`, `scripts/check-batch-18-evidence-index-present.mjs`, `scripts/check-batch-18-docs-present.mjs`. All passing.
+- Tests: `src/tests/batch-18-end-to-end-uat-release-demo.test.ts`.
+- Evidence: `evidence/batch-18-end-to-end-uat-release-demo/README.md`.
+- Batches 1–17 guardrails untouched.
+
+### Edge functions requiring deploy (Batch 18)
+- (none — Batch 18 adds no edge functions)
