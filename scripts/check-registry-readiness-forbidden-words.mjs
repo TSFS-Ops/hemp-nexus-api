@@ -15,6 +15,14 @@ const EXEMPT = new Set([
   // an explicit status label (with "captured does not mean verified" copy).
   "src/pages/registry/BankDetails.tsx",
   "src/pages/admin/registry/BankDetails.tsx",
+  // Batch 13B — bank-detail submission/review UI uses "Not verified" and
+  // "not verified" copy by design (status badges + captured-not-verified
+  // wording). Forbidden verification phrases are caught by a dedicated
+  // guard: scripts/check-batch-13b-ui-no-verified.mjs.
+  "src/pages/registry/BankDetailSubmit.tsx",
+  "src/pages/registry/BankDetailStatus.tsx",
+  "src/pages/admin/registry/BankDetailReview.tsx",
+  "src/lib/registry-bank-details-b13-ui.ts",
 ]);
 
 const FORBIDDEN = ["verified", "live", "guaranteed", "production-ready"];

@@ -1064,3 +1064,11 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - `check-registry-batch12-authority-audit-names.mjs`
 - `check-registry-batch12-authority-wording.mjs`
 - `check-registry-batch12-no-external-send.mjs`
+
+## Batch 13B — Bank-Detail Submission & Review UI Wiring (thin slice)
+
+- Routes: /registry/bank-details, /registry/bank-details/:bankDetailSubmissionId, /registry/company/:id/bank-details/submit, /admin/registry/bank-details/queue, /admin/registry/bank-details/submissions/:bankDetailSubmissionId.
+- Edge functions reused (no new functions): registry-bank-detail-submit, registry-bank-detail-review, registry-bank-detail-unmask-access.
+- Guards: `check-batch-13b-ui-no-verified.mjs`, `check-batch-13b-ui-no-raw-leak.mjs` (wired into `prebuild` after the B13 guards).
+- Evidence: evidence/batch-13b-bank-detail-ui-wiring/README.md
+- captured_unverified is never rendered as verified. Raw bank fields are never read from the UI; only the elevated unmask edge function decodes them, with a reason and a full audit trail.

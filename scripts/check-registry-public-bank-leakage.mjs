@@ -43,6 +43,13 @@ let failed = false;
 // subsequent reads; only masked_* columns are shown.
 const EXEMPT = new Set([
   "src/pages/registry/BankDetails.tsx",
+  // Batch 13B — controlled capture form (raw fields are typed by the user
+  // here and POSTed to the submit edge function; they are never read back).
+  // The status page only renders masked_* columns and shows the IBAN row
+  // conditionally on masked_iban; the bare token "iban" appears as a label
+  // for that masked value.
+  "src/pages/registry/BankDetailSubmit.tsx",
+  "src/pages/registry/BankDetailStatus.tsx",
 ]);
 for (const d of SCAN) {
   let files;
