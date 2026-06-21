@@ -6,8 +6,8 @@
 
 export const REGISTRY_RECORD_READINESS_STATES = [
   "imported_unverified",
-  "verified",            // reserved for a later batch — never set in Batch 8
-  "production_ready",    // reserved for a later batch — never set in Batch 8
+  "verified",
+  "production_ready",
 ] as const;
 export type RegistryRecordReadinessState =
   (typeof REGISTRY_RECORD_READINESS_STATES)[number];
