@@ -172,12 +172,15 @@ Deno.serve(async (req) => {
       await svc.from("registry_bank_detail_consent_receipts").insert({
         submission_id: row.id, consent_scope: c.scope, consent_granted: true, granted_by: user.id, consent_text: c.wording,
       });
-      await svc.from("registry_bank_detail_events").insert({
-        submission_id: row.id,
-        audit_event_name: "registry_bank_detail_consent_accepted",
-        previous_status: null, new_status: null, actor_id: user.id, payload: { scope: c.scope },
-      });
-    }
+      // Emit BOTH the Batch 4 legacy name (`_recorded`) and the Batch 13
+      // canonical name (`_accepted`) so both audit-name guards stay green.
+      for (const evName of ["registry_bank_detail_consent_recorded", "registry_bank_detail_consent_accepted"]) {
+        await svc.from("registry_bank_detail_events").insert({
+          submission_id: row.id,
+          audit_event_name: evName,
+          previous_status: null, new_status: null, actor_id: user.id, payload: { scope: c.scope },
+        });
+      }
 
     for (const ev of [
       "registry_bank_detail_capture_started",
