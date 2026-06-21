@@ -188,6 +188,7 @@ function App() {
                   {/* Batch 1 — Business Registry shell (M001) */}
                   <Route path="/registry" element={<RegistryLanding />} />
                   <Route path="/registry/search" element={<RegistrySearch />} />
+                  <Route path="/registry/new-company-request" element={<RegistryNewCompanyRequest />} />
                   <Route path="/registry/company/:id" element={<RegistryCompanyProfile />} />
                   <Route path="/registry/claim" element={<RegistryClaim />} />
                   <Route path="/registry/company/:id/claim" element={<RegistryClaim />} />
