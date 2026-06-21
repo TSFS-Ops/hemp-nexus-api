@@ -13641,6 +13641,76 @@ export type Database = {
           },
         ]
       }
+      registry_counterparty_link_proposals: {
+        Row: {
+          claim_id: string | null
+          counterparty_id: string | null
+          counterparty_name: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          org_id: string
+          proposed_by_user_id: string
+          registry_company_record_id: string
+          score: number
+          score_breakdown: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          claim_id?: string | null
+          counterparty_id?: string | null
+          counterparty_name: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          org_id: string
+          proposed_by_user_id: string
+          registry_company_record_id: string
+          score?: number
+          score_breakdown?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          claim_id?: string | null
+          counterparty_id?: string | null
+          counterparty_name?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          org_id?: string
+          proposed_by_user_id?: string
+          registry_company_record_id?: string
+          score?: number
+          score_breakdown?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_counterparty_link_prop_registry_company_record_id_fkey"
+            columns: ["registry_company_record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_counterparty_link_proposals_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_counterparty_link_proposals_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "counterparties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_country_coverage: {
         Row: {
           api_output_state: string
