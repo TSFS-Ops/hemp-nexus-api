@@ -31,6 +31,20 @@ const EXEMPT = new Set([
   "src/pages/admin/registry/ReleaseGate.tsx",
   "src/pages/admin/registry/DemoPack.tsx",
   "src/pages/admin/registry/UatScenarios.tsx",
+  // Batch 14B — bank verification status surfaces legitimately reference
+  // "verified" as a terminal status label. Forbidden verification phrases
+  // are caught by scripts/check-batch-14b-ui-no-verified.mjs.
+  "src/components/registry/BankVerificationPublicStatus.tsx",
+  "src/pages/admin/registry/BankVerificationReview.tsx",
+  // Batch 12 — dispute surface explains that disputed records must NOT
+  // continue to render as verified (status descriptor copy, not a claim).
+  "src/pages/registry/MyCompanyDisputes.tsx",
+  // Batch 15B — API test console explains that imported data is NOT
+  // independently verified by Izenzo (negation copy).
+  "src/pages/admin/registry/ApiTestConsole.tsx",
+  // Batch 17 — readiness operations page explicitly states it never
+  // marks anything as verified/live/production-ready (negation copy).
+  "src/pages/admin/registry/operations/Readiness.tsx",
 ]);
 
 const FORBIDDEN = ["verified", "live", "guaranteed", "production-ready"];
