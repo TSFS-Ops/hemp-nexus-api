@@ -14,7 +14,7 @@ import { recordNotificationSkipped } from "../_shared/notification-skip-audit.ts
 import { resolveAdminRecipients } from "../_shared/admin-recipients.ts";
 
 Deno.serve(async (req) => {
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 

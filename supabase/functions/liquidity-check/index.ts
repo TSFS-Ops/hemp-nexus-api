@@ -175,7 +175,7 @@ function buildSafeTsQuery(product: string): string | null {
 }
 
 Deno.serve(async (req: Request) => {
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const corsResp = handleCors(req, allowedOrigins);
   if (corsResp) return corsResp;
 

@@ -9,7 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 
 Deno.serve(async (req: Request) => {
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 

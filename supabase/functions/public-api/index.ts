@@ -64,7 +64,7 @@ function publicServerUrl(req: Request): string {
 }
 
 Deno.serve(async (req) => {
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const headers = buildCorsHeaders(allowedOrigins, req.headers.get("origin"));
 
   if (req.method === "OPTIONS") {

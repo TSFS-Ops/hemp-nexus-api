@@ -23,7 +23,7 @@ const MANUAL_LABEL =
   "Izenzo logged manual contact outside the platform. This is not a system-sent message.";
 
 Deno.serve(async (req) => {
-  const allowed = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowed = Deno.env.get("ALLOWED_ORIGINS") || '';
   const headers = corsHeaders(allowed, req.headers.get("origin"));
   const pre = handleCors(req, allowed);
   if (pre) return pre;

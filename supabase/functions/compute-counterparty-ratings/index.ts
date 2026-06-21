@@ -373,7 +373,7 @@ async function computeForOrg(
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const headers = corsHeaders(allowedOrigins, req.headers.get("origin"));
 
   const cors = handleCors(req, allowedOrigins);

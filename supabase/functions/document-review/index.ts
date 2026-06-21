@@ -36,7 +36,7 @@ const VALID_TRANSITIONS: Record<string, { from: string[]; to: string }> = {
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = { ...corsHeaders(allowedOrigins, origin), "Content-Type": "application/json" };
 

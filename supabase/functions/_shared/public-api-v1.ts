@@ -497,7 +497,7 @@ export async function handleV1<T>(
   requiredScope: string,
   exec: (ctx: V1RequestCtx, supabase: SupabaseClient, gw: GatewayResult) => Promise<{ body: T; status?: number; contentType?: string; rawBody?: string }>,
 ): Promise<Response> {
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const headers = buildCorsHeaders(allowedOrigins, req.headers.get("origin"));
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers });

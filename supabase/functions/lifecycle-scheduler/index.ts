@@ -39,7 +39,7 @@ function computeSeverity(daysOverdue: number): string {
 }
 
 Deno.serve(async (req: Request) => {
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 

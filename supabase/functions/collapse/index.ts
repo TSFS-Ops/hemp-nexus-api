@@ -126,7 +126,7 @@ Deno.serve(async (req: Request) => {
     void checkResidencyHoldAny; void residencyBlockResponse;
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 

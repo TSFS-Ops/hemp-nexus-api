@@ -50,7 +50,7 @@ function clip(value: unknown, max = MAX_ERR_LEN): string | null {
 
 Deno.serve(async (req) => {
   const serverRequestId = crypto.randomUUID();
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 

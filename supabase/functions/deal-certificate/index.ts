@@ -421,7 +421,7 @@ Deno.serve(async (req) => {
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   const requestId = crypto.randomUUID();
   const startMs = Date.now();
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 
