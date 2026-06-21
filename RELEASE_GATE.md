@@ -1139,3 +1139,18 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - `check-batch-15-no-raw-bank.mjs`
 - `check-batch-15-forbidden-scopes.mjs`
 - `check-batch-15-audit-names.mjs`
+
+## Batch 15B — Institutional API Admin UI & Test Console
+
+- New admin routes (platform_admin gated): `/admin/registry/api-clients`, `/admin/registry/api-clients/:clientId`, `/admin/registry/api-usage`, `/admin/registry/api-test-console`. Batch 5 `/admin/registry/api` is unchanged.
+- UI SSOT: `src/lib/registry-api-hardening-ui.ts` — `REGISTRY_API_UI_COPY` (production acknowledgement, test-console warning, key-visibility warning, raw-bank prohibition, forbidden-scopes explanation), lifecycle/mode/blocked-reason label maps, `paymentStatusLabel`, `safeKeyReference`, `buildScopeOptions`, `isProductionApprovalReady`.
+- Sandbox and production key panels are visibly separated; production key controls are disabled until `lifecycle_status = 'production_active'`. Full API keys are never rendered after creation — only safe key reference / last-four / created-at / status.
+- Forbidden scopes (`registry.bank.raw.read`, `registry.bank.unmasked.read`, `registry.personal_contact.raw.read`, `registry.evidence.raw.read`) appear in the UI but are non-selectable and labelled FORBIDDEN.
+- Production approval submit is gated by `isProductionApprovalReady` (countries + scopes + use case + rate-limit profile + business-decision reference + reason + SSOT acknowledgement checkbox).
+- Payment-status display: `paymentStatusLabel` returns `Verified` ONLY when `result_state === 'usable' && usable === true && expires_at` is in the future. Every other state, including `manual_verified`, `provider_matched`, `manual_review_required`, `expired`, `revoked`, `disputed`, `failed`, `provider_error`, renders as `Not verified`.
+- Test console calls Batch 15 `registry-api-profile-status` and `registry-api-payment-status` and renders the safe response envelope and gate decisions only. SSOT warning copy is always shown.
+- Guards (wired into `prebuild`): `check-batch-15b-ui-no-raw-bank.mjs`, `check-batch-15b-ui-no-full-key.mjs`, `check-batch-15b-ui-forbidden-scopes.mjs`, `check-batch-15b-ui-prod-ack.mjs`.
+- Tests: `src/tests/batch-15b-institutional-api-admin-ui.test.ts`.
+- Evidence: `evidence/batch-15b-institutional-api-admin-ui/README.md`.
+- Batches 1–15 guardrails untouched. No backend contract changes.
+
