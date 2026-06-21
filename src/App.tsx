@@ -219,6 +219,8 @@ function App() {
                   <Route path="/admin/registry/correction-requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryCorrectionRequests /></RequireAuth>} />
                   <Route path="/admin/registry/claim-conflicts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaimConflicts /></RequireAuth>} />
                   <Route path="/admin/registry/batch7-audit-log" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryBatch7AuditLog /></RequireAuth>} />
+                  {/* Batch 8 — Registry record model + search */}
+                  <Route path="/admin/registry/records" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryRecords /></RequireAuth>} />
                   {/* Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell */}
                   <Route path="/admin/notifications/channel-readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminNotificationChannelReadiness /></RequireAuth>} />
 
