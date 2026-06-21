@@ -97,6 +97,8 @@ const AdminRegistryOperations = lazy(() => import("@/pages/admin/registry/Operat
 const AdminRegistryOutreachDrafts = lazy(() => import("@/pages/admin/registry/OutreachDrafts"));
 const AdminRegistryOutreachApprovals = lazy(() => import("@/pages/admin/registry/OutreachApprovals"));
 const AdminRegistryDoNotContact = lazy(() => import("@/pages/admin/registry/DoNotContact"));
+// Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
+const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
 
 /**
  * Root element that renders based on host type:
