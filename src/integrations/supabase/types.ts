@@ -10763,6 +10763,137 @@ export type Database = {
           },
         ]
       }
+      registry_claim_conflict_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          conflict_id: string
+          created_at: string
+          id: string
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          conflict_id: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          conflict_id?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_claim_conflict_events_conflict_id_fkey"
+            columns: ["conflict_id"]
+            isOneToOne: false
+            referencedRelation: "registry_claim_conflicts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_claim_conflicts: {
+        Row: {
+          company_reference: string
+          created_at: string
+          first_claim_id: string | null
+          id: string
+          related_claim_ids: Json
+          resolution_summary: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          scope_grants: Json
+          second_claim_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_reference: string
+          created_at?: string
+          first_claim_id?: string | null
+          id?: string
+          related_claim_ids?: Json
+          resolution_summary?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          scope_grants?: Json
+          second_claim_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_reference?: string
+          created_at?: string
+          first_claim_id?: string | null
+          id?: string
+          related_claim_ids?: Json
+          resolution_summary?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          scope_grants?: Json
+          second_claim_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_claim_conflicts_first_claim_id_fkey"
+            columns: ["first_claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_claim_conflicts_second_claim_id_fkey"
+            columns: ["second_claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_claim_interest_events: {
+        Row: {
+          audit_event_name: string
+          company_reference: string | null
+          created_at: string
+          id: string
+          payload: Json
+          session_token: string
+        }
+        Insert: {
+          audit_event_name: string
+          company_reference?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          session_token: string
+        }
+        Update: {
+          audit_event_name?: string
+          company_reference?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          session_token?: string
+        }
+        Relationships: []
+      }
       registry_company_claim_events: {
         Row: {
           actor_id: string | null
@@ -10960,6 +11091,115 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      registry_company_correction_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          correction_id: string
+          created_at: string
+          id: string
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          correction_id: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          correction_id?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_correction_events_correction_id_fkey"
+            columns: ["correction_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_correction_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_correction_requests: {
+        Row: {
+          applied_at: string | null
+          claim_id: string | null
+          company_reference: string
+          created_at: string
+          current_value: string | null
+          decision_reason: string | null
+          field_path: string
+          id: string
+          proposed_value: string
+          rationale: string
+          requester_user_id: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          sensitive_field: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          claim_id?: string | null
+          company_reference: string
+          created_at?: string
+          current_value?: string | null
+          decision_reason?: string | null
+          field_path: string
+          id?: string
+          proposed_value: string
+          rationale: string
+          requester_user_id: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          sensitive_field?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          claim_id?: string | null
+          company_reference?: string
+          created_at?: string
+          current_value?: string | null
+          decision_reason?: string | null
+          field_path?: string
+          id?: string
+          proposed_value?: string
+          rationale?: string
+          requester_user_id?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          sensitive_field?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_correction_requests_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       registry_country_coverage: {
         Row: {
@@ -11393,6 +11633,113 @@ export type Database = {
           module_code?: string
           module_name?: string
           notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registry_new_company_request_events: {
+        Row: {
+          actor_id: string | null
+          audit_event_name: string
+          created_at: string
+          id: string
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          reason: string | null
+          request_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_event_name: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+          request_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          audit_event_name?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_new_company_request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_new_company_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_new_company_requests: {
+        Row: {
+          claimant_email: string
+          claimant_name: string
+          company_name: string
+          country_code: string
+          created_at: string
+          duplicate_candidate_ids: Json
+          id: string
+          legal_form: string | null
+          provisional_record_id: string | null
+          reason_for_adding: string
+          registration_number: string | null
+          rejection_reason: string | null
+          requester_user_id: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          source_or_evidence: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          claimant_email: string
+          claimant_name: string
+          company_name: string
+          country_code: string
+          created_at?: string
+          duplicate_candidate_ids?: Json
+          id?: string
+          legal_form?: string | null
+          provisional_record_id?: string | null
+          reason_for_adding: string
+          registration_number?: string | null
+          rejection_reason?: string | null
+          requester_user_id: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          source_or_evidence?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          claimant_email?: string
+          claimant_name?: string
+          company_name?: string
+          country_code?: string
+          created_at?: string
+          duplicate_candidate_ids?: Json
+          id?: string
+          legal_form?: string | null
+          provisional_record_id?: string | null
+          reason_for_adding?: string
+          registration_number?: string | null
+          rejection_reason?: string | null
+          requester_user_id?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          source_or_evidence?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
