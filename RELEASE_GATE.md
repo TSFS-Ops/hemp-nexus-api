@@ -870,6 +870,8 @@ Guards wired into `prebuild`:
   - "Approving authority confirms only that this person may act for the company within the recorded scope. It does not verify the company profile or any bank details."
   - "Captured bank details are not verified bank details. They must not be treated as verified unless the status is explicitly marked verified with a valid audit trail and expiry."
 - `check-registry-batch4-no-provider-integration.mjs` — blocks references to CIPC, Onfido, GlobalDatabase, B2BHint, Refinitiv, Dow Jones, PayFast, Yodlee, Plaid, Tink, Trulioo in any Batch 4 file, and blocks `/v1/institutional/` or `institutional_api_v1` references (M008/M009 stay out of scope).
+- `check-registry-bank-detail-b13-parity.mjs` — Batch 13 TS ↔ Deno parity of every B13 array constant and the three mandatory wording strings (consent wording, accept acknowledgement, accept public notice).
+- `check-registry-bank-detail-b13-no-verified.mjs` — Batch 13 scan ensuring no submission status (draft, submitted, evidence_required, under_review, more_evidence_requested, evidence_resubmitted, captured_unverified, rejected, cancelled, withdrawn, revocation_requested, revoked, disputed, expired, superseded) is ever mapped to a verified flag in any Batch 13 SSOT or edge function.
 
 Tests: `src/tests/batch-4-authority-bank-detail-status.test.ts`. Evidence: `evidence/batch-4-authority-bank-detail-status/README.md`.
 
