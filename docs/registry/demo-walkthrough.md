@@ -108,3 +108,20 @@ result · what NOT to claim to the client.
 - Demo record: full matrix
 - Expected: matrix rendered with the demo/UAT warning; default final
   release status is not `production_ready`.
+
+## 14. Client-decision walkthrough (Batch 19B)
+
+- Sample-only records: `bullion_bathrooms_nigeria`,
+  `dangote_fertiliser_limited`, `harith_holdings`, `laurium_capital`,
+  `starfair_162` render with the sample-record label and are excluded
+  from the production API.
+- Claim approval surface: shows `claim_approved_limited` wording only —
+  never "company verified". Authority, bank-detail submission and
+  API-sharing UI remain blocked.
+- Public profile: shows the required sourced-record label; officer /
+  activity / event summaries appear only after public-display approval.
+- Outreach: SMS and WhatsApp panels are visibly disabled in Phase 1;
+  do-not-contact records show the suppression notice.
+- Missing company: new-company request flow shows the
+  "does not create a public profile" notice and stays admin-only until
+  duplicate and source checks pass.
