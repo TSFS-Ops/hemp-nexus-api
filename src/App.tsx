@@ -104,6 +104,13 @@ const AdminBankDetailQueue = lazy(() =>
 const AdminBankDetailReview = lazy(() =>
   import("@/pages/admin/registry/BankDetailReview").then((m) => ({ default: m.AdminBankDetailReview })),
 );
+// Batch 14B — Bank verification admin UI (separate from B13B review)
+const AdminBankVerificationQueue = lazy(() =>
+  import("@/pages/admin/registry/BankVerificationReview").then((m) => ({ default: m.AdminBankVerificationQueue })),
+);
+const AdminBankVerificationReview = lazy(() =>
+  import("@/pages/admin/registry/BankVerificationReview").then((m) => ({ default: m.AdminBankVerificationReview })),
+);
 // Batch 5 — M008 / M009 / M016 institutional API management
 const AdminRegistryApi = lazy(() => import("@/pages/admin/registry/Api"));
 // Batch 6 — M013 / M014 / M015 / M017 operations + outreach + readiness
