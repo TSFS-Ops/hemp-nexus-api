@@ -32,6 +32,7 @@ limitations and outstanding production blockers.
 | 19A | Client claim/search/profile decision alignment | accepted | `evidence/batch-19a-client-claim-search-profile-decisions/README.md` | Five sample records locked `sample_only`; SMS/WhatsApp disabled in Phase 1; claim approval is `claim_approved_limited`. |
 | 19B | Client decision UI / API / UAT alignment | accepted | `evidence/batch-19b-client-decision-ui-api-uat-alignment/README.md` | UI/API/UAT surfaces aligned to client-signed wording; sample_only API contract (`production_api: excluded`, sandbox `verified_by_izenzo: false`); officer-name public search blocked unless approved; SMS/WhatsApp Phase 1 disabled wording pinned; do-not-contact suppression copy pinned. |
 | 20 | Pre-UAT embarrassment audit and consistency sweep | accepted | `evidence/batch-20-pre-uat-embarrassment-audit/README.md` | No `uat_blocker` outstanding; live provider / production API / SMS-WhatsApp remain deferred `accepted_limitation`s; release-gate default not `production_ready`; no debug/TODO/placeholder strings in registry UI. |
+| 21 | UAT test hygiene and client-facing evidence cleanup | accepted | `evidence/batch-21-uat-test-hygiene/README.md` | Quarantine ledger separates stale source-pin tests; UAT journey suite is CI-only via `UAT_PROVISIONING_ENABLED`; client-facing `docs/registry/uat-execution-summary.md` carries no raw failed-test counts; release gate remains UAT/demo-ready, not production-ready. |
 
 ## Cross-cutting guarantees
 
