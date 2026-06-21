@@ -233,8 +233,19 @@ export default function RegistrySearch() {
               </CardContent>
             </Card>
           ))}
+
+          {nextCursor && (
+            <div className="text-center pt-2">
+              <Button variant="outline" onClick={onLoadMore} disabled={loading} data-testid="load-more-cta">
+                {loading ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
+    </main>
+  );
+}
     </main>
   );
 }
