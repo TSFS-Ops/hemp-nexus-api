@@ -43,37 +43,56 @@ export default function RegistrySearch() {
   const [vatNumber, setVatNumber] = useState("");
   const [legalForm, setLegalForm] = useState("");
   const [address, setAddress] = useState("");
+  const [readinessState, setReadinessState] = useState("");
+  const [claimStatus, setClaimStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  async function onSearch() {
+  function buildBody(cursor?: string | null) {
+    return {
+      query: query || undefined,
+      country_code: countryCode || undefined,
+      registration_number: registrationNumber || undefined,
+      vat_number: vatNumber || undefined,
+      legal_form: legalForm || undefined,
+      address: address || undefined,
+      readiness_state: readinessState || undefined,
+      claim_status: claimStatus || undefined,
+      cursor: cursor || undefined,
+    };
+  }
+
+  async function runSearch(cursor: string | null, append: boolean) {
     setLoading(true);
-    setWarning(null);
+    if (!append) setWarning(null);
     try {
       const { data, error } = await supabase.functions.invoke("registry-company-search", {
-        body: {
-          query: query || undefined,
-          country_code: countryCode || undefined,
-          registration_number: registrationNumber || undefined,
-          vat_number: vatNumber || undefined,
-          legal_form: legalForm || undefined,
-          address: address || undefined,
-        },
+        body: buildBody(cursor),
       });
       if (error) throw error;
-      const payload = data as { results?: SearchResult[]; warning?: string | null };
-      setResults(payload?.results ?? []);
+      const payload = data as { results?: SearchResult[]; warning?: string | null; next_cursor?: string | null };
+      const incoming = payload?.results ?? [];
+      setResults((prev) => {
+        if (!append) return incoming;
+        const seen = new Set(prev.map((r) => r.id));
+        return [...prev, ...incoming.filter((r) => !seen.has(r.id))];
+      });
       setWarning(payload?.warning ?? null);
+      setNextCursor(payload?.next_cursor ?? null);
       setSearched(true);
     } catch (err) {
       console.error(err);
-      setResults([]);
+      if (!append) setResults([]);
     } finally {
       setLoading(false);
     }
   }
+
+  function onSearch() { setNextCursor(null); runSearch(null, false); }
+  function onLoadMore() { if (nextCursor) runSearch(nextCursor, true); }
 
   return (
     <main className="max-w-4xl mx-auto p-6">
@@ -115,6 +134,32 @@ export default function RegistrySearch() {
               <Label htmlFor="ad" className="text-xs">Registered address</Label>
               <Input id="ad" maxLength={200} value={address}
                      onChange={(e) => setAddress(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="rs" className="text-xs">Readiness state</Label>
+              <select id="rs" className="w-full h-9 rounded-md border border-input bg-background px-2 text-xs"
+                      value={readinessState} onChange={(e) => setReadinessState(e.target.value)}
+                      data-testid="filter-readiness-state">
+                <option value="">Any</option>
+                <option value="imported_unverified">imported_unverified</option>
+                <option value="claim_in_review">claim_in_review</option>
+                <option value="claim_approved">claim_approved</option>
+                <option value="profile_verified">profile_verified</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="cs" className="text-xs">Claim status</Label>
+              <select id="cs" className="w-full h-9 rounded-md border border-input bg-background px-2 text-xs"
+                      value={claimStatus} onChange={(e) => setClaimStatus(e.target.value)}
+                      data-testid="filter-claim-status">
+                <option value="">Any</option>
+                <option value="unclaimed">unclaimed</option>
+                <option value="claim_started">claim_started</option>
+                <option value="claim_submitted">claim_submitted</option>
+                <option value="approved">approved</option>
+                <option value="rejected">rejected</option>
+                <option value="revoked">revoked</option>
+              </select>
             </div>
           </div>
           <Button onClick={onSearch} disabled={loading} data-testid="registry-search-submit">
@@ -188,6 +233,14 @@ export default function RegistrySearch() {
               </CardContent>
             </Card>
           ))}
+
+          {nextCursor && (
+            <div className="text-center pt-2">
+              <Button variant="outline" onClick={onLoadMore} disabled={loading} data-testid="load-more-cta">
+                {loading ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </main>
