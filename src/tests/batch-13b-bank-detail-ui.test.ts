@@ -26,10 +26,10 @@ describe("Batch 13B — bank-detail UI invariants", () => {
     }
   });
 
-  it("captured_unverified label does not say 'verified'", () => {
+  it("captured_unverified label communicates not-verified status", () => {
     const label = REGISTRY_BANK_DETAIL_B13_UI_STATUS_LABEL.captured_unverified;
-    expect(label.toLowerCase()).not.toMatch(/\bverified\b(?! bank| account)/i);
     expect(label).toBe("Captured but not verified");
+    expect(label.toLowerCase()).toContain("not verified");
   });
 
   it("isBankDetailB13Verified is always false", () => {
