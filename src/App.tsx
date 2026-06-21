@@ -109,6 +109,10 @@ const AdminRegistryBatch7AuditLog = lazy(() => import("@/pages/admin/registry/Ba
 const AdminRegistryRecords = lazy(() => import("@/pages/admin/registry/Records"));
 // Batch 10 — claim activation & record lifecycle controls
 const AdminRegistryClaimActivation = lazy(() => import("@/pages/admin/registry/ClaimActivation"));
+// Batch 12 — Authority-to-Act request, status, review
+const RegistryAuthorityList = lazy(() => import("@/pages/registry/AuthorityList"));
+const RegistryAuthorityStatus = lazy(() => import("@/pages/registry/AuthorityStatus"));
+const AdminRegistryAuthorityReview = lazy(() => import("@/pages/admin/registry/AuthorityReview"));
 // Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
 const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
 
@@ -215,6 +219,10 @@ function App() {
                   <Route path="/registry/company/:id/authority" element={<RegistryAuthority />} />
                   <Route path="/registry/company/:id/bank-details" element={<RegistryBankDetails />} />
                   <Route path="/admin/registry/authority" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryAuthority /></RequireAuth>} />
+                  {/* Batch 12 — Authority-to-Act request, status, review */}
+                  <Route path="/registry/authority" element={<RequireAuth><RegistryAuthorityList /></RequireAuth>} />
+                  <Route path="/registry/authority/:authorityRequestId" element={<RequireAuth><RegistryAuthorityStatus /></RequireAuth>} />
+                  <Route path="/admin/registry/authority/:authorityRequestId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryAuthorityReview /></RequireAuth>} />
                   <Route path="/admin/registry/bank-details" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryBankDetails /></RequireAuth>} />
                   <Route path="/admin/registry/api" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryApi /></RequireAuth>} />
                   {/* Batch 6 — Operations, Outreach, DNC */}

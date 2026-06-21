@@ -10041,6 +10041,59 @@ export type Database = {
           },
         ]
       }
+      registry_active_authorities: {
+        Row: {
+          approved_at: string
+          authority_request_id: string
+          company_reference: string
+          created_at: string
+          expiry_at: string | null
+          id: string
+          revoked_at: string | null
+          scope_code: string
+          status: string
+          suspended_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string
+          authority_request_id: string
+          company_reference: string
+          created_at?: string
+          expiry_at?: string | null
+          id?: string
+          revoked_at?: string | null
+          scope_code: string
+          status?: string
+          suspended_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string
+          authority_request_id?: string
+          company_reference?: string
+          created_at?: string
+          expiry_at?: string | null
+          id?: string
+          revoked_at?: string | null
+          scope_code?: string
+          status?: string
+          suspended_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_active_authorities_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_api_audit_events: {
         Row: {
           actor_id: string | null
@@ -10288,6 +10341,85 @@ export type Database = {
           },
         ]
       }
+      registry_authority_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          authority_request_id: string
+          id: string
+          reviewer_id: string
+          unassigned_at: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          authority_request_id: string
+          id?: string
+          reviewer_id: string
+          unassigned_at?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          authority_request_id?: string
+          id?: string
+          reviewer_id?: string
+          unassigned_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_assignments_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_authority_disputes: {
+        Row: {
+          authority_request_id: string
+          created_at: string
+          id: string
+          opened_by: string
+          reason: string
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          authority_request_id: string
+          created_at?: string
+          id?: string
+          opened_by: string
+          reason: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          authority_request_id?: string
+          created_at?: string
+          id?: string
+          opened_by?: string
+          reason?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_disputes_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_authority_events: {
         Row: {
           actor_id: string | null
@@ -10337,33 +10469,54 @@ export type Database = {
           authority_request_id: string
           created_at: string
           description: string
+          evidence_category: string
           evidence_kind: string
+          expiry_at: string | null
           external_reference: string | null
           id: string
           mime_type: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          scope_code: string | null
           size_bytes: number | null
+          state: string
           uploaded_by: string
         }
         Insert: {
           authority_request_id: string
           created_at?: string
           description: string
+          evidence_category?: string
           evidence_kind: string
+          expiry_at?: string | null
           external_reference?: string | null
           id?: string
           mime_type?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scope_code?: string | null
           size_bytes?: number | null
+          state?: string
           uploaded_by: string
         }
         Update: {
           authority_request_id?: string
           created_at?: string
           description?: string
+          evidence_category?: string
           evidence_kind?: string
+          expiry_at?: string | null
           external_reference?: string | null
           id?: string
           mime_type?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scope_code?: string | null
           size_bytes?: number | null
+          state?: string
           uploaded_by?: string
         }
         Relationships: [
@@ -10376,10 +10529,84 @@ export type Database = {
           },
         ]
       }
+      registry_authority_notes: {
+        Row: {
+          author_id: string
+          authority_request_id: string
+          created_at: string
+          id: string
+          note: string
+        }
+        Insert: {
+          author_id: string
+          authority_request_id: string
+          created_at?: string
+          id?: string
+          note: string
+        }
+        Update: {
+          author_id?: string
+          authority_request_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_notes_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_authority_request_scopes: {
+        Row: {
+          authority_request_id: string
+          created_at: string
+          default_expiry_days: number
+          id: string
+          is_sensitive: boolean
+          scope_code: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          authority_request_id: string
+          created_at?: string
+          default_expiry_days?: number
+          id?: string
+          is_sensitive?: boolean
+          scope_code: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          authority_request_id?: string
+          created_at?: string
+          default_expiry_days?: number
+          id?: string
+          is_sensitive?: boolean
+          scope_code?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_request_scopes_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_authority_requests: {
         Row: {
           approved_scope: string | null
           authority_basis: string
+          cancelled_at: string | null
           claim_id: string | null
           company_email_domain: string | null
           company_name: string
@@ -10392,12 +10619,16 @@ export type Database = {
           declaration_acknowledged: boolean
           dispute_reason: string | null
           disputed_at: string | null
+          escalated_at: string | null
           expiry_at: string | null
           id: string
           internal_notes: string | null
+          is_sensitive: boolean
+          last_activity_at: string
           representative_email: string
           representative_name: string
           representative_role: string
+          requested_scopes: string[]
           requester_user_id: string
           reviewed_at: string | null
           reviewer_id: string | null
@@ -10405,11 +10636,14 @@ export type Database = {
           revoked_at: string | null
           status: string
           submitted_at: string | null
+          two_person_required: boolean
           updated_at: string
+          withdrawn_at: string | null
         }
         Insert: {
           approved_scope?: string | null
           authority_basis: string
+          cancelled_at?: string | null
           claim_id?: string | null
           company_email_domain?: string | null
           company_name: string
@@ -10422,12 +10656,16 @@ export type Database = {
           declaration_acknowledged?: boolean
           dispute_reason?: string | null
           disputed_at?: string | null
+          escalated_at?: string | null
           expiry_at?: string | null
           id?: string
           internal_notes?: string | null
+          is_sensitive?: boolean
+          last_activity_at?: string
           representative_email: string
           representative_name: string
           representative_role: string
+          requested_scopes?: string[]
           requester_user_id: string
           reviewed_at?: string | null
           reviewer_id?: string | null
@@ -10435,11 +10673,14 @@ export type Database = {
           revoked_at?: string | null
           status?: string
           submitted_at?: string | null
+          two_person_required?: boolean
           updated_at?: string
+          withdrawn_at?: string | null
         }
         Update: {
           approved_scope?: string | null
           authority_basis?: string
+          cancelled_at?: string | null
           claim_id?: string | null
           company_email_domain?: string | null
           company_name?: string
@@ -10452,12 +10693,16 @@ export type Database = {
           declaration_acknowledged?: boolean
           dispute_reason?: string | null
           disputed_at?: string | null
+          escalated_at?: string | null
           expiry_at?: string | null
           id?: string
           internal_notes?: string | null
+          is_sensitive?: boolean
+          last_activity_at?: string
           representative_email?: string
           representative_name?: string
           representative_role?: string
+          requested_scopes?: string[]
           requester_user_id?: string
           reviewed_at?: string | null
           reviewer_id?: string | null
@@ -10465,7 +10710,9 @@ export type Database = {
           revoked_at?: string | null
           status?: string
           submitted_at?: string | null
+          two_person_required?: boolean
           updated_at?: string
+          withdrawn_at?: string | null
         }
         Relationships: [
           {
@@ -10517,6 +10764,97 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "registry_authority_reviews_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_authority_scope_decisions: {
+        Row: {
+          acknowledged_not_bank_verification: boolean
+          acknowledged_not_company_verification: boolean
+          authority_request_id: string
+          created_at: string
+          decision: string
+          evidence_basis: string | null
+          expiry_at: string | null
+          id: string
+          rationale: string | null
+          reviewer_id: string
+          reviewer_role: string
+          scope_code: string
+        }
+        Insert: {
+          acknowledged_not_bank_verification?: boolean
+          acknowledged_not_company_verification?: boolean
+          authority_request_id: string
+          created_at?: string
+          decision: string
+          evidence_basis?: string | null
+          expiry_at?: string | null
+          id?: string
+          rationale?: string | null
+          reviewer_id: string
+          reviewer_role: string
+          scope_code: string
+        }
+        Update: {
+          acknowledged_not_bank_verification?: boolean
+          acknowledged_not_company_verification?: boolean
+          authority_request_id?: string
+          created_at?: string
+          decision?: string
+          evidence_basis?: string | null
+          expiry_at?: string | null
+          id?: string
+          rationale?: string | null
+          reviewer_id?: string
+          reviewer_role?: string
+          scope_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_scope_decisions_authority_request_id_fkey"
+            columns: ["authority_request_id"]
+            isOneToOne: false
+            referencedRelation: "registry_authority_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_authority_status_notifications: {
+        Row: {
+          authority_request_id: string
+          body: string
+          created_at: string
+          event_name: string
+          id: string
+          recipient_user_id: string
+          sent_externally: boolean
+        }
+        Insert: {
+          authority_request_id: string
+          body: string
+          created_at?: string
+          event_name: string
+          id?: string
+          recipient_user_id: string
+          sent_externally?: boolean
+        }
+        Update: {
+          authority_request_id?: string
+          body?: string
+          created_at?: string
+          event_name?: string
+          id?: string
+          recipient_user_id?: string
+          sent_externally?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_authority_status_notificatio_authority_request_id_fkey"
             columns: ["authority_request_id"]
             isOneToOne: false
             referencedRelation: "registry_authority_requests"

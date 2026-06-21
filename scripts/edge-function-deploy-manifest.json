@@ -78,7 +78,15 @@
     "registry-claim-status",
     "registry-claim-review",
     "registry-claim-conflict-resolve",
-    "registry-claim-notification-log"
+    "registry-claim-notification-log",
+    "registry-authority-start",
+    "registry-authority-submit",
+    "registry-authority-evidence-upload",
+    "registry-authority-status",
+    "registry-authority-scope-decision",
+    "registry-authority-active-check",
+    "registry-authority-dispute-manage",
+    "registry-authority-notification-log"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",

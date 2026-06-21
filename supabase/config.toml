@@ -204,6 +204,23 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-claim-notification-log]
     verify_jwt = false
+  [functions.registry-authority-start]
+    verify_jwt = false
+  [functions.registry-authority-submit]
+    verify_jwt = false
+  [functions.registry-authority-evidence-upload]
+    verify_jwt = false
+  [functions.registry-authority-status]
+    verify_jwt = false
+  [functions.registry-authority-scope-decision]
+    verify_jwt = false
+  [functions.registry-authority-active-check]
+    verify_jwt = false
+  [functions.registry-authority-dispute-manage]
+    verify_jwt = false
+  [functions.registry-authority-notification-log]
+    verify_jwt = false
+
 
 
 
