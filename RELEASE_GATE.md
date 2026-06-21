@@ -885,3 +885,22 @@ Tests: `src/tests/batch-6-registry-operations-outreach-readiness.test.ts`. Evide
 Out of scope (explicitly NOT in Batch 6): real registry data ingestion; CIPC / Onfido / GlobalDatabase / B2BHint / Dow Jones / Refinitiv / PayFast / any bank verification provider; external email/SMS/WhatsApp dispatch (Resend, SendGrid, Twilio, Postmark, Mailgun); raw bank-detail surfaces; any change to Batch 1–5 accepted rules.
 
 Completion phrase: `BATCH_6_REGISTRY_OPERATIONS_OUTREACH_READINESS_COMPLETE`.
+
+---
+
+## SMS / WhatsApp Notification Channel Readiness Shell — Phase 1
+
+Readiness shell only. **No live SMS or WhatsApp sending.** SMS and WhatsApp are pinned to `not_configured` / `disabled` by DB trigger. Migration `20260621*_notification_channel_readiness` creates `notification_channel_readiness`, `notification_channel_skipped_events`, `manual_outreach_contact_logs` (unknown-counterparty facilitation only), `notification_channel_consent_states`. SSOT: `src/lib/notification-channel-readiness.ts` (+ Deno mirror). Admin route: `/admin/notifications/channel-readiness` (platform_admin only). Edge functions: `notification-channel-readiness-list`, `notification-channel-readiness-update`, `notification-channel-skip-record`, `manual-outreach-contact-log`.
+
+Guards (added to prebuild):
+- `check-notification-channel-readiness-parity.mjs` — TS ↔ Deno SSOT parity.
+- `check-notification-no-live-sms-whatsapp-providers.mjs` — bans Twilio / MessageBird / Vonage / Plivo / WhatsApp Cloud / WhatsApp Business / FB Graph references.
+- `check-notification-skipped-status-parity.mjs` — TS ↔ DB CHECK parity for the 8 skip reasons.
+- `check-manual-outreach-safe-label.mjs` — canonical "Izenzo logged manual contact…" wording enforcement.
+
+Tests: `src/tests/batch-sms-whatsapp-readiness-shell-phase1.test.ts` (30 cases). Evidence: `evidence/batch-sms-whatsapp-readiness-shell-phase-1/README.md`.
+
+Out of scope (explicitly NOT in Phase 1): live SMS or WhatsApp sending; Twilio / MessageBird / Vonage / Plivo / WhatsApp Cloud or any provider SDK; provider credentials; provider webhooks; live test sends; SMS/WhatsApp as a client-facing delivery channel; consent enforcement for live sends; POI/WaD unlock from notification status.
+
+Completion phrase: `SMS_WHATSAPP_NOTIFICATION_READINESS_SHELL_PHASE_1_COMPLETE`.
+
