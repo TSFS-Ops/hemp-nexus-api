@@ -173,6 +173,7 @@ function App() {
                   <Route path={ROUTES.AUTH} element={<Auth />} />
                   <Route path="/welcome" element={<Welcome />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/trust" element={<Trust />} />
                   {/* Billing now lives under the Trade Desk shell */}
                   <Route path="/billing" element={<Navigate to="/desk/billing" replace />} />
 
