@@ -94,6 +94,8 @@ export const ACTION_AAL_REQUIREMENTS: Record<string, "aal2" | "aal1"> = {
   "admin.api_production_key_rotate": "aal2",
   "admin.api_production_key_revoke": "aal2",
   "admin.api_production_key_suspend": "aal2",
+  // Registry record lifecycle admin transitions
+  "registry.record_lifecycle.manage": "aal2",
   // break-glass uses fresh password re-auth via GoTrue, not the JWT aal
   // claim, so it is intentionally NOT listed here as aal2-gated for
   // preflight purposes. See scripts/check-aal-registry-drift.mjs allowlist.
