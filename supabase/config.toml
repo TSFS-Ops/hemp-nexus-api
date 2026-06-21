@@ -190,6 +190,25 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-import-approve-publish]
     verify_jwt = false
+  [functions.registry-claim-start]
+    verify_jwt = false
+  [functions.registry-claim-submit]
+    verify_jwt = false
+  [functions.registry-claim-evidence-upload]
+    verify_jwt = false
+  [functions.registry-claim-status]
+    verify_jwt = false
+  [functions.registry-claim-review]
+    verify_jwt = false
+  [functions.registry-claim-conflict-resolve]
+    verify_jwt = false
+  [functions.registry-claim-notification-log]
+    verify_jwt = false
+
+
+
+
+
 
 
 

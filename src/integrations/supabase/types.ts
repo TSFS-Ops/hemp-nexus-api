@@ -11094,6 +11094,50 @@ export type Database = {
           },
         ]
       }
+      registry_company_claim_assignments: {
+        Row: {
+          active: boolean
+          assigned_by_user_id: string | null
+          assigned_role: string | null
+          assigned_user_id: string | null
+          assignment_type: string
+          claim_id: string
+          created_at: string
+          id: string
+          unassigned_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          assigned_by_user_id?: string | null
+          assigned_role?: string | null
+          assigned_user_id?: string | null
+          assignment_type?: string
+          claim_id: string
+          created_at?: string
+          id?: string
+          unassigned_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          assigned_by_user_id?: string | null
+          assigned_role?: string | null
+          assigned_user_id?: string | null
+          assignment_type?: string
+          claim_id?: string
+          created_at?: string
+          id?: string
+          unassigned_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_claim_assignments_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_company_claim_events: {
         Row: {
           actor_id: string | null
@@ -11140,41 +11184,165 @@ export type Database = {
       }
       registry_company_claim_evidence: {
         Row: {
+          category: string | null
           claim_id: string
+          claimant_statement: string | null
           created_at: string
           description: string
+          document_name: string | null
           evidence_kind: string
+          evidence_state: string
+          expiry_date: string | null
           external_reference: string | null
+          file_path: string | null
           id: string
+          issue_date: string | null
+          issuing_authority: string | null
           mime_type: string | null
+          provenance_link: string | null
+          rejection_reason: string | null
+          review_notes: string | null
+          reviewer_user_id: string | null
+          sensitive: boolean
           size_bytes: number | null
           uploaded_by: string
         }
         Insert: {
+          category?: string | null
           claim_id: string
+          claimant_statement?: string | null
           created_at?: string
           description: string
+          document_name?: string | null
           evidence_kind: string
+          evidence_state?: string
+          expiry_date?: string | null
           external_reference?: string | null
+          file_path?: string | null
           id?: string
+          issue_date?: string | null
+          issuing_authority?: string | null
           mime_type?: string | null
+          provenance_link?: string | null
+          rejection_reason?: string | null
+          review_notes?: string | null
+          reviewer_user_id?: string | null
+          sensitive?: boolean
           size_bytes?: number | null
           uploaded_by: string
         }
         Update: {
+          category?: string | null
           claim_id?: string
+          claimant_statement?: string | null
           created_at?: string
           description?: string
+          document_name?: string | null
           evidence_kind?: string
+          evidence_state?: string
+          expiry_date?: string | null
           external_reference?: string | null
+          file_path?: string | null
           id?: string
+          issue_date?: string | null
+          issuing_authority?: string | null
           mime_type?: string | null
+          provenance_link?: string | null
+          rejection_reason?: string | null
+          review_notes?: string | null
+          reviewer_user_id?: string | null
+          sensitive?: boolean
           size_bytes?: number | null
           uploaded_by?: string
         }
         Relationships: [
           {
             foreignKeyName: "registry_company_claim_evidence_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_claim_notes: {
+        Row: {
+          author_role: string | null
+          author_user_id: string | null
+          claim_id: string
+          created_at: string
+          id: string
+          note: string
+        }
+        Insert: {
+          author_role?: string | null
+          author_user_id?: string | null
+          claim_id: string
+          created_at?: string
+          id?: string
+          note: string
+        }
+        Update: {
+          author_role?: string | null
+          author_user_id?: string | null
+          claim_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_claim_notes_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_claim_review_events: {
+        Row: {
+          action: string
+          claim_id: string
+          created_at: string
+          evidence_id: string | null
+          id: string
+          metadata: Json
+          new_status: string | null
+          previous_status: string | null
+          reason: string | null
+          reviewer_role: string | null
+          reviewer_user_id: string | null
+        }
+        Insert: {
+          action: string
+          claim_id: string
+          created_at?: string
+          evidence_id?: string | null
+          id?: string
+          metadata?: Json
+          new_status?: string | null
+          previous_status?: string | null
+          reason?: string | null
+          reviewer_role?: string | null
+          reviewer_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          claim_id?: string
+          created_at?: string
+          evidence_id?: string | null
+          id?: string
+          metadata?: Json
+          new_status?: string | null
+          previous_status?: string | null
+          reason?: string | null
+          reviewer_role?: string | null
+          reviewer_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_claim_review_events_claim_id_fkey"
             columns: ["claim_id"]
             isOneToOne: false
             referencedRelation: "registry_company_claims"
@@ -11220,75 +11388,158 @@ export type Database = {
           },
         ]
       }
+      registry_company_claim_status_notifications: {
+        Row: {
+          audit_event_name: string
+          body: string | null
+          channel: string
+          claim_id: string
+          created_at: string
+          delivery_state: string
+          id: string
+          metadata: Json
+          recipient_user_id: string | null
+          subject: string | null
+        }
+        Insert: {
+          audit_event_name: string
+          body?: string | null
+          channel?: string
+          claim_id: string
+          created_at?: string
+          delivery_state?: string
+          id?: string
+          metadata?: Json
+          recipient_user_id?: string | null
+          subject?: string | null
+        }
+        Update: {
+          audit_event_name?: string
+          body?: string | null
+          channel?: string
+          claim_id?: string
+          created_at?: string
+          delivery_state?: string
+          id?: string
+          metadata?: Json
+          recipient_user_id?: string | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_claim_status_notifications_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_company_claims: {
         Row: {
+          assigned_reviewer_user_id: string | null
           claimant_email: string
           claimant_name: string
           claimant_role: string
+          claimant_type: string | null
           claimant_user_id: string
           company_email_domain: string | null
+          company_legal_form: string | null
           company_name: string
           company_reference: string
           company_relationship: string
+          conflict_id: string | null
           consent_to_contact: boolean
           consent_to_process_evidence: boolean
           country_code: string
           created_at: string
           declaration_of_authority: boolean
+          evidence_completeness: Json
+          expires_at: string | null
           id: string
           internal_notes: string | null
+          is_professional_representative: boolean
+          last_status_change_at: string
           registration_number: string | null
+          rejection_reason: string | null
+          resubmission_allowed: boolean
           reviewed_at: string | null
           reviewer_id: string | null
+          sla_due_at: string | null
           status: string
           submitted_at: string | null
           updated_at: string
+          workflow_status: string
         }
         Insert: {
+          assigned_reviewer_user_id?: string | null
           claimant_email: string
           claimant_name: string
           claimant_role: string
+          claimant_type?: string | null
           claimant_user_id: string
           company_email_domain?: string | null
+          company_legal_form?: string | null
           company_name: string
           company_reference: string
           company_relationship: string
+          conflict_id?: string | null
           consent_to_contact?: boolean
           consent_to_process_evidence?: boolean
           country_code: string
           created_at?: string
           declaration_of_authority?: boolean
+          evidence_completeness?: Json
+          expires_at?: string | null
           id?: string
           internal_notes?: string | null
+          is_professional_representative?: boolean
+          last_status_change_at?: string
           registration_number?: string | null
+          rejection_reason?: string | null
+          resubmission_allowed?: boolean
           reviewed_at?: string | null
           reviewer_id?: string | null
+          sla_due_at?: string | null
           status?: string
           submitted_at?: string | null
           updated_at?: string
+          workflow_status?: string
         }
         Update: {
+          assigned_reviewer_user_id?: string | null
           claimant_email?: string
           claimant_name?: string
           claimant_role?: string
+          claimant_type?: string | null
           claimant_user_id?: string
           company_email_domain?: string | null
+          company_legal_form?: string | null
           company_name?: string
           company_reference?: string
           company_relationship?: string
+          conflict_id?: string | null
           consent_to_contact?: boolean
           consent_to_process_evidence?: boolean
           country_code?: string
           created_at?: string
           declaration_of_authority?: boolean
+          evidence_completeness?: Json
+          expires_at?: string | null
           id?: string
           internal_notes?: string | null
+          is_professional_representative?: boolean
+          last_status_change_at?: string
           registration_number?: string | null
+          rejection_reason?: string | null
+          resubmission_allowed?: boolean
           reviewed_at?: string | null
           reviewer_id?: string | null
+          sla_due_at?: string | null
           status?: string
           submitted_at?: string | null
           updated_at?: string
+          workflow_status?: string
         }
         Relationships: []
       }

@@ -76,6 +76,9 @@ const RegistrySearch = lazy(() => import("@/pages/registry/Search"));
 const RegistryCompanyProfile = lazy(() => import("@/pages/registry/CompanyProfile"));
 const RegistryNewCompanyRequest = lazy(() => import("@/pages/registry/NewCompanyRequest"));
 const RegistryClaim = lazy(() => import("@/pages/registry/Claim"));
+const RegistryClaimsList = lazy(() => import("@/pages/registry/ClaimsList"));
+const RegistryClaimStatus = lazy(() => import("@/pages/registry/ClaimStatus"));
+const AdminRegistryClaimsReview = lazy(() => import("@/pages/admin/registry/ClaimsReview"));
 const RegistryReadiness = lazy(() => import("@/pages/registry/Readiness"));
 const AdminRegistryIndex = lazy(() => import("@/pages/admin/registry/Index"));
 const AdminRegistryReadiness = lazy(() => import("@/pages/admin/registry/Readiness"));
@@ -194,6 +197,9 @@ function App() {
                   <Route path="/registry/company/:id" element={<RegistryCompanyProfile />} />
                   <Route path="/registry/claim" element={<RegistryClaim />} />
                   <Route path="/registry/company/:id/claim" element={<RegistryClaim />} />
+                  <Route path="/registry/claims" element={<RequireAuth><RegistryClaimsList /></RequireAuth>} />
+                  <Route path="/registry/claims/:claimId" element={<RequireAuth><RegistryClaimStatus /></RequireAuth>} />
+                  <Route path="/admin/registry/claims-review" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaimsReview /></RequireAuth>} />
                   <Route path="/registry/readiness" element={<RegistryReadiness />} />
                   {/* Batch 1 — Admin registry area (M015 shell, M018 decisions, M019 readiness) */}
                   <Route path="/admin/registry" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryIndex /></RequireAuth>} />
