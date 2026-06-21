@@ -12,6 +12,7 @@
 //
 // Canonical user-facing copy (pinned by check-registry-batch4-wording.mjs):
 // Captured bank details are not verified bank details. They must not be treated as verified unless the status is explicitly marked verified with a valid audit trail and expiry.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import {
