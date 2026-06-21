@@ -246,6 +246,3 @@ export default function RegistrySearch() {
     </main>
   );
 }
-    </main>
-  );
-}
