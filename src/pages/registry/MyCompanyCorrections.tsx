@@ -38,13 +38,17 @@ export default function MyCompanyCorrections() {
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("registry_company_correction_requests").insert({
-        company_reference: companyId,
-        field_category: category,
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) throw new Error("Not signed in");
+      const { error } = await supabase.from("registry_company_correction_requests").insert([{
+        company_reference: companyId ?? "",
+        field_path: category,
         proposed_value: proposed,
-        reason,
+        rationale: reason,
+        requester_user_id: uid,
         status: "submitted",
-      });
+      }]);
       if (error) throw error;
       toast({ title: "Correction submitted", description: PORTAL_CORRECTION_ACK });
       setProposed(""); setReason(""); setAck(false);
