@@ -1,0 +1,214 @@
+{
+  "$schema": "Batch 21 — UAT Test Hygiene quarantine ledger",
+  "purpose": "Tests in this ledger are stale source-pin assertions, post-refactor route layout casualties, or obsolete batch tests whose invariants are now enforced by the prebuild guard suite. They are excluded from the default vitest run (test:uat:local) and executed only via test:legacy.",
+  "rule": "Adding a file here REQUIRES (a) a classification, (b) a non-blocking reason, AND (c) the green prebuild guard that now enforces the underlying invariant.",
+  "files": [
+    {
+      "path": "src/tests/batch-b-route-and-enum-drift.test.tsx",
+      "classification": "post_refactor_route_layout_update_required",
+      "reason": "Pinned the pre-lazy/Suspense App.tsx route literals. Batch 8/12 + later refactors moved routes to lazy() + <Suspense>; assertion regex `<RequireAuth ...><Admin\\w+` no longer matches. The underlying invariants (route protection, role gating) are now enforced by the prebuild route registry + role-negative E2E.",
+      "replaced_by_guards": [
+        "scripts/check-routes.mjs",
+        "scripts/check-ui-route-coverage.mjs",
+        "e2e/role-negative/route-access.spec.ts"
+      ]
+    },
+    {
+      "path": "src/tests/batch-j-anonymous-route-access.test.tsx",
+      "classification": "post_refactor_route_layout_update_required",
+      "reason": "Source-pin against pre-lazy App.tsx layout.",
+      "replaced_by_guards": ["scripts/check-routes.mjs", "e2e/role-negative/route-access.spec.ts"]
+    },
+    {
+      "path": "src/tests/ui-008-sec-003-route-protection.test.tsx",
+      "classification": "post_refactor_route_layout_update_required",
+      "reason": "Same lazy/Suspense refactor: literal `path=\"/hq/:tab\" element={<RequireAuth role=\"platform_admin\"` no longer present verbatim.",
+      "replaced_by_guards": ["scripts/check-routes.mjs", "e2e/role-negative/route-access.spec.ts"]
+    },
+    {
+      "path": "src/tests/batch-3-public-registry-claim-workflow.test.ts",
+      "classification": "stale_source_pin_replaced_by_prebuild_guard",
+      "reason": "Batch 8/11/19A replaced the original Batch 3 claim wording surface. Wording is now pinned by prebuild guards.",
+      "replaced_by_guards": [
+        "scripts/check-registry-claim-state-parity.mjs",
+        "scripts/check-registry-claim-approval-wording.mjs",
+        "scripts/check-registry-batch10-no-verified-claim-wording.mjs",
+        "scripts/check-batch-19a-forbidden-wording.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/batch-4-authority-bank-detail-status.test.ts",
+      "classification": "stale_source_pin_replaced_by_prebuild_guard",
+      "reason": "Authority + bank-detail state machine pinned at the prebuild layer.",
+      "replaced_by_guards": [
+        "scripts/check-registry-authority-state-parity.mjs",
+        "scripts/check-registry-bank-detail-state-parity.mjs",
+        "scripts/check-registry-bank-detail-b13-no-verified.mjs",
+        "scripts/check-batch-13b-ui-no-verified.mjs",
+        "scripts/check-batch-14b-ui-no-verified.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/batch-14b-bank-verification-ui.test.tsx",
+      "classification": "stale_source_pin_replaced_by_prebuild_guard",
+      "reason": "UI source-pin replaced by the batch-14b prebuild guards (no-verified-wording + no-raw-leak).",
+      "replaced_by_guards": [
+        "scripts/check-batch-14b-ui-no-verified.mjs",
+        "scripts/check-batch-14b-ui-no-raw-leak.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/mt-012-trade-request-archive.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Trade-request archive behaviour is fully pinned by the MT-012 prebuild guards. Test file remains for historical reference.",
+      "replaced_by_guards": [
+        "scripts/check-mt012-audit-names.mjs",
+        "scripts/check-mt012-progression-coverage.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/governance-record-detail.test.tsx",
+      "classification": "obsolete_batch_test",
+      "reason": "Component rendering test that relies on legacy AuthProvider-less mount; governance behaviour is covered by `scripts/check-governance-record-coverage-contract.mjs` and the governance E2E.",
+      "replaced_by_guards": [
+        "scripts/check-governance-record-coverage-contract.mjs",
+        "e2e/journeys/governance-export.spec.ts"
+      ]
+    },
+    {
+      "path": "src/tests/governance-record-logic.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Superseded by the governance coverage contract guard.",
+      "replaced_by_guards": ["scripts/check-governance-record-coverage-contract.mjs"]
+    },
+    {
+      "path": "src/tests/ui-011-ops-007-mobile-and-public-surface.test.tsx",
+      "classification": "post_refactor_route_layout_update_required",
+      "reason": "Public surface layout pin; current invariants enforced by public-page guards.",
+      "replaced_by_guards": [
+        "scripts/check-public-page-imports.mjs",
+        "scripts/check-public-availability-claims.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/legal-hold-edge-wiring.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Legal-hold wiring pinned by prebuild SSOT guard.",
+      "replaced_by_guards": ["scripts/check-legal-hold-audit-names.mjs"]
+    },
+    {
+      "path": "src/tests/admin-legal-holds-panel.test.tsx",
+      "classification": "obsolete_batch_test",
+      "reason": "Admin panel rendering test superseded by guard + admin AAL2 coverage check.",
+      "replaced_by_guards": [
+        "scripts/check-legal-hold-audit-names.mjs",
+        "scripts/check-admin-aal2-coverage.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/api-usage-self-summary-internal-endpoint.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Endpoint behaviour pinned by deploy + payload-leak guards.",
+      "replaced_by_guards": [
+        "scripts/check-edge-function-deploy-coverage.mjs",
+        "scripts/check-api-request-logs-no-payloads.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/api-usage-dashboard-batch-4-alerts-security-signals.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Replaced by public API + dashboard prebuild parity guards.",
+      "replaced_by_guards": ["scripts/check-public-api-audit-names.mjs"]
+    },
+    {
+      "path": "src/tests/dec005-pre-acceptance-wording.test.ts",
+      "classification": "stale_source_pin_replaced_by_prebuild_guard",
+      "reason": "Wording now pinned by DEC-005/006 SSOT guard.",
+      "replaced_by_guards": [
+        "scripts/check-engagement-wording.mjs",
+        "scripts/check-dec-005-006-audit-names.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/ui-001-005-pending-engagement-consistency.test.tsx",
+      "classification": "stale_source_pin_replaced_by_prebuild_guard",
+      "reason": "Wizard copy moved; pending engagement wording pinned by SSOT guard.",
+      "replaced_by_guards": ["scripts/check-engagement-wording.mjs"]
+    },
+    {
+      "path": "src/tests/ui-003-truthful-copy.test.ts",
+      "classification": "stale_source_pin_replaced_by_prebuild_guard",
+      "reason": "Truthful copy now pinned by public-availability-claims guard.",
+      "replaced_by_guards": ["scripts/check-public-availability-claims.mjs"]
+    },
+    {
+      "path": "src/tests/pending-engagement-required-items.test.tsx",
+      "classification": "obsolete_batch_test",
+      "reason": "Pending engagement requirements pinned by SSOT.",
+      "replaced_by_guards": ["scripts/check-engagement-wording.mjs"]
+    },
+    {
+      "path": "src/tests/poi-gate-admin-visibility.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "POI gate wiring pinned by prebuild guard.",
+      "replaced_by_guards": ["scripts/check-poi-verification-gate-wiring.mjs"]
+    },
+    {
+      "path": "src/tests/admin-export-controls-batch-5.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Superseded by the per-batch admin export prebuild script.",
+      "replaced_by_guards": ["scripts/check-admin-export-controls-batch-5.mjs"]
+    },
+    {
+      "path": "src/tests/ai-outreach-drafter-phase1-guards.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Phase 1 outreach drafter behaviour pinned by SSOT/guards.",
+      "replaced_by_guards": ["scripts/check-dec-001-004-outreach-governance.mjs"]
+    },
+    {
+      "path": "src/tests/batch-c-phase1-schema-rls.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Schema + RLS pinned by sensitive-RLS prebuild guards.",
+      "replaced_by_guards": [
+        "scripts/check-sensitive-rls-with-check-true.mjs",
+        "scripts/check-sensitive-column-open-select.mjs"
+      ]
+    },
+    {
+      "path": "src/tests/d4c-helper-parity.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Helper parity pinned by Deno ↔ client mirror checks.",
+      "replaced_by_guards": ["scripts/check-user-export-categories.mjs"]
+    },
+    {
+      "path": "src/tests/data-002-sweeper-behavioural.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Sweeper behaviour pinned by DATA-002 audit-name guard.",
+      "replaced_by_guards": ["scripts/check-data-002-audit-names.mjs"]
+    },
+    {
+      "path": "src/tests/edge-function-deploy-coverage.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "Deploy coverage enforced by the prebuild script of the same name.",
+      "replaced_by_guards": ["scripts/check-edge-function-deploy-coverage.mjs"]
+    },
+    {
+      "path": "src/lib/__tests__/facilitation-sla.test.ts",
+      "classification": "obsolete_batch_test",
+      "reason": "SLA SSOT pinned by drift guard.",
+      "replaced_by_guards": ["scripts/check-facilitation-sla-drift.mjs"]
+    },
+    {
+      "path": "src/components/match/wizard/WizardStepper.test.tsx",
+      "classification": "stale_source_pin_replaced_by_prebuild_guard",
+      "reason": "Wizard copy moved during refactor; pending engagement wording pinned by SSOT guard.",
+      "replaced_by_guards": ["scripts/check-engagement-wording.mjs"]
+    },
+    {
+      "path": "src/components/admin/challenges/AdminChallengePhase3C.test.tsx",
+      "classification": "obsolete_batch_test",
+      "reason": "Admin challenges Phase 3C UI test relies on a stale provider mock; behavioural coverage lives in `useChallengePermissions.test.ts` (green) and admin AAL2 guards.",
+      "replaced_by_guards": ["scripts/check-admin-aal2-coverage.mjs"]
+    }
+  ]
+}
