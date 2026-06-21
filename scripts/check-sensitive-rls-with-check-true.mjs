@@ -17,8 +17,15 @@ const SENSITIVE = [
   "poi", "kyc", "ubo", "screening",
 ];
 
-// table_name -> reason. Empty until a specific case is justified.
-const ALLOW = {};
+// table_name -> written justification. Anything here is exempt and is
+// tracked separately as a known finding.
+const ALLOW = {
+  // Anon-write audit-trail table. INSERT-only, no UPDATE/DELETE. The
+  // separate `anon_insert_claim_interest` finding tracks rate-limit /
+  // payload-size hardening for this surface.
+  registry_claim_interest_events:
+    "anon INSERT-only audit log; size & rate hardening tracked separately",
+};
 
 const violations = [];
 
