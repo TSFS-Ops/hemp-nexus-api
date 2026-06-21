@@ -144,8 +144,8 @@ export default function BankDetailStatus() {
           {evidence.length === 0 && <p className="text-muted-foreground">No evidence on file.</p>}
           {evidence.map((e) => (
             <div key={e.id} className="flex justify-between border-b py-1">
-              <span>{e.evidence_category ?? e.category ?? "evidence"}</span>
-              <Badge variant="outline">{e.evidence_state ?? e.state ?? "pending"}</Badge>
+              <span>{e.evidence_kind}</span>
+              <Badge variant="outline">{e.description ?? "—"}</Badge>
             </div>
           ))}
         </CardContent>
