@@ -235,6 +235,12 @@ function App() {
                   <Route path="/registry/authority/:authorityRequestId" element={<RequireAuth><RegistryAuthorityStatus /></RequireAuth>} />
                   <Route path="/admin/registry/authority/:authorityRequestId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryAuthorityReview /></RequireAuth>} />
                   <Route path="/admin/registry/bank-details" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryBankDetails /></RequireAuth>} />
+                  {/* Batch 13B — Consent-based bank-detail submission and review UI */}
+                  <Route path="/registry/bank-details" element={<RequireAuth><BankDetailSubmit /></RequireAuth>} />
+                  <Route path="/registry/bank-details/:bankDetailSubmissionId" element={<RequireAuth><BankDetailStatus /></RequireAuth>} />
+                  <Route path="/registry/company/:id/bank-details/submit" element={<RequireAuth><BankDetailSubmit /></RequireAuth>} />
+                  <Route path="/admin/registry/bank-details/queue" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminBankDetailQueue /></RequireAuth>} />
+                  <Route path="/admin/registry/bank-details/submissions/:bankDetailSubmissionId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminBankDetailReview /></RequireAuth>} />
                   <Route path="/admin/registry/api" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryApi /></RequireAuth>} />
                   {/* Batch 6 — Operations, Outreach, DNC */}
                   <Route path="/admin/registry/operations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOperations /></RequireAuth>} />
