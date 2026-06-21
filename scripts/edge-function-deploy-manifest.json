@@ -145,6 +145,7 @@
     "registry-api-payment-status",
     "registry-api-readiness-status",
     "registry-api-coverage-status",
-    "registry-api-client-key-manage"
+    "registry-api-client-key-manage",
+    "registry-my-companies"
   ]
 }
