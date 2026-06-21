@@ -106,6 +106,7 @@
     "registry-api-readiness-status",
     "registry-api-coverage-status",
     "registry-api-client-key-manage"
+  ],
   "exempt_invokes": [
     "admin-residency-review-approve",
     "admin-residency-review-decline",
