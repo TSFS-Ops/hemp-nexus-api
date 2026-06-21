@@ -120,23 +120,23 @@ Deno.serve(async (req) => {
 
     if (claim?.id) {
       await svc.from("registry_counterparty_link_proposals").update({ claim_id: claim.id }).eq("id", proposal.id);
-      await svc.from("registry_company_claim_events").insert({
+      try { await svc.from("registry_company_claim_events").insert({
         claim_id: claim.id,
         audit_event_name: "registry_counterparty_link_proposed",
         actor_id: user.id,
         new_status: "claim_started",
         payload: { proposal_id: proposal.id, registry_company_record_id: registry.id, counterparty_id: counterparty.id, score: confidence.score, score_breakdown: confidence.breakdown },
-      }).catch(() => {});
+      }); } catch { /* best-effort claim event */ }
     }
 
-    await svc.from("audit_logs").insert({
+    try { await svc.from("audit_logs").insert({
       org_id: profile.org_id,
       actor_user_id: user.id,
       action: "registry_counterparty_link_proposed",
       entity_type: "registry_counterparty_link_proposal",
       entity_id: proposal.id,
       metadata: { registry_company_record_id: registry.id, counterparty_id: counterparty.id, score: confidence.score, score_breakdown: confidence.breakdown, claim_id: claim?.id ?? null },
-    }).catch(() => {});
+    }); } catch { /* best-effort audit */ }
 
     return response(req, 200, { ok: true, proposal: { ...proposal, claim_id: claim?.id ?? null }, idempotent_replay: false });
   } catch (e) {
