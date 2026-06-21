@@ -1,7 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
-import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { errorResponse } from "../_shared/errors.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 
