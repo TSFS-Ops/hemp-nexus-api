@@ -16,6 +16,8 @@ const allowed = new Set([
   "scripts/check-batch-15-forbidden-scopes.mjs",
   "scripts/check-batch-15-ssot-parity.mjs",
   "src/tests/batch-15-institutional-api-hardening.test.ts",
+  "src/lib/registry-api-hardening-ui.ts",
+  "src/tests/batch-15b-institutional-api-admin-ui.test.ts",
 ]);
 
 let failed = false;
