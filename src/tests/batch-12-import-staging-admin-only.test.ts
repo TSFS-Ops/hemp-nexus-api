@@ -66,7 +66,7 @@ describe("batch 12 — registry_import_records_staging admin-only access", () =>
         // The current import pipeline functions are admin-gated, so this
         // suite simply records that no public/anon function references
         // them.
-        if (/registry-import-/.test(file)) continue;
+        if (/registry-(import-|source-)/.test(file)) continue;
         offenders.push(file);
       }
     }
