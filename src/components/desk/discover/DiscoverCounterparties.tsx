@@ -14,7 +14,7 @@ export function DiscoverCounterparties() {
       <header className="mb-8 sm:mb-10">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
           <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
-            Liquidity Network
+            Unified Counterparty Register
           </p>
           <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-wider uppercase text-muted-foreground/70">
             <span className="inline-flex items-center gap-1">
@@ -38,7 +38,7 @@ export function DiscoverCounterparties() {
           Discover Counterparties
         </h1>
         <p className="mt-5 text-base text-muted-foreground leading-relaxed max-w-2xl">
-          Search the verified institutional network. Use natural language - the system parses commodity, jurisdiction, role, and liquidity signals, then ranks counterparties by source tier.
+          Search counterparties and company-register records in one place, then propose reviewed links where the data overlaps.
         </p>
       </header>
 

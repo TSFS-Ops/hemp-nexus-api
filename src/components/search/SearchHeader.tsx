@@ -34,10 +34,10 @@ export function SearchHeader({
       <CardHeader className="pb-3 sm:pb-4">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-          Find Trading Partners
+          Find Counterparties + Company Register
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
-          Select your role, then search for trading partners
+          One search checks counterparties and the company register together
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
@@ -97,12 +97,12 @@ export function SearchHeader({
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="flex-1 relative">
             <Input
-              placeholder="e.g., 'buyers for cashew in India'"
+              placeholder="Search counterparties and registered companies"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSearch()}
               className="pr-10 h-10 sm:h-9 text-sm"
-              aria-label="Search for trading partners"
+              aria-label="Search counterparties and the company register"
             />
             <Globe className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>

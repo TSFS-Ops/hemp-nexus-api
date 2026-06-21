@@ -1,7 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { authenticateRequest, requireScope } from "../_shared/auth.ts";
-import { enforceTokenMetering } from "../_shared/token-metering.ts";
 import { errorResponse } from "../_shared/errors.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 
@@ -35,14 +34,9 @@ Deno.serve(async (req) => {
       "search"
     );
 
-    // Enforce token metering
-    await enforceTokenMetering(
-      supabase,
-      authCtx.orgId,
-      authCtx.isApiKey ? authCtx.userId : null,
-      "/search",
-      requestId
-    );
+    // Discovery search is deliberately non-billable. Avoid the metering call
+    // entirely so publish/preview sessions cannot be blocked by legacy credit
+    // burn failures while a user is only trying to find counterparties.
 
     // ── FAILURE MODE 5: Corrupted request body ──
     let rawBody: any;
@@ -192,6 +186,7 @@ Deno.serve(async (req) => {
         org_id: cp.org_id,
         verified: cp.verified,
         registration_number: cp.registration_number,
+        jurisdiction: cp.jurisdiction,
       },
     }));
 

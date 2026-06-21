@@ -202,6 +202,10 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-new-company-request]
     verify_jwt = false
+  [functions.registry-counterparty-link-suggestions]
+    verify_jwt = false
+  [functions.registry-counterparty-link-propose]
+    verify_jwt = false
   [functions.registry-company-correction-request]
     verify_jwt = false
   [functions.registry-source-file-upload]
