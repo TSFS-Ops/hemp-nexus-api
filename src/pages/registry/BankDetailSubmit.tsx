@@ -257,6 +257,31 @@ export default function BankDetailSubmit() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-sm">1b. Confirm company</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Company name *</Label>
+            <Input
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Registered company name"
+              data-testid="bd-company-name"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Country (ISO code, e.g. ZA / NG) *</Label>
+            <Input
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value.toUpperCase() || "DEFAULT")}
+              placeholder="ZA"
+              data-testid="bd-country"
+            />
+          </div>
+        </CardContent>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-sm">2. Bank details ({countryCode})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
