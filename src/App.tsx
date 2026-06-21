@@ -137,6 +137,13 @@ const RegistryAuthorityStatus = lazy(() => import("@/pages/registry/AuthoritySta
 const AdminRegistryAuthorityReview = lazy(() => import("@/pages/admin/registry/AuthorityReview"));
 // Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
 const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
+// Batch 16 — Company Portal Guided Journey
+const RegistryMyCompanies = lazy(() => import("@/pages/registry/MyCompanies"));
+const RegistryMyCompanyDetail = lazy(() => import("@/pages/registry/MyCompanyDetail"));
+const RegistryMyCompanyEvidence = lazy(() => import("@/pages/registry/MyCompanyEvidence"));
+const RegistryMyCompanyCorrections = lazy(() => import("@/pages/registry/MyCompanyCorrections"));
+const RegistryMyCompanyDisputes = lazy(() => import("@/pages/registry/MyCompanyDisputes"));
+const RegistryMyCompanyRevocations = lazy(() => import("@/pages/registry/MyCompanyRevocations"));
 
 /**
  * Root element that renders based on host type:
