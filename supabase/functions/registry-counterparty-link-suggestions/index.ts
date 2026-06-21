@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       ? page
       : [{ state: "counterparty_only", counterparty, score: 0, breakdown: null }, ...page];
 
-    await svc.from("event_store").insert({
+    try { await svc.from("event_store").insert({
       org_id: profile.org_id,
       domain: "registry",
       aggregate_type: "registry_counterparty_link_suggestions",
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
       actor_id: user.id,
       payload: { counterparty_id: counterparty.id, result_count: suggestions.length },
       event_hash: crypto.randomUUID(),
-    }).catch(() => {});
+    }); } catch { /* best-effort audit */ }
 
     return json(req, 200, { ok: true, suggestions, next_cursor: nextCursor });
   } catch (e) {
