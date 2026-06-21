@@ -2692,6 +2692,54 @@ export type Database = {
           },
         ]
       }
+      claim_lifecycle_webhook_outbox: {
+        Row: {
+          aggregate_id: string | null
+          aggregate_type: string | null
+          attempts: number
+          created_at: string
+          dispatched_at: string | null
+          event_type: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          payload: Json
+          request_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aggregate_id?: string | null
+          aggregate_type?: string | null
+          attempts?: number
+          created_at?: string
+          dispatched_at?: string | null
+          event_type: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          request_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          aggregate_id?: string | null
+          aggregate_type?: string | null
+          attempts?: number
+          created_at?: string
+          dispatched_at?: string | null
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          request_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clip_on_billing_failures: {
         Row: {
           created_at: string
@@ -12242,6 +12290,36 @@ export type Database = {
           },
         ]
       }
+      registry_search_rate_limit_buckets: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          request_count: number
+          scope_key: string
+          scope_kind: string
+          window_end: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          request_count?: number
+          scope_key: string
+          scope_kind: string
+          window_end: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          request_count?: number
+          scope_key?: string
+          scope_kind?: string
+          window_end?: string
+        }
+        Relationships: []
+      }
       registry_source_licences: {
         Row: {
           created_at: string
@@ -15241,6 +15319,19 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_list_batch7_audit_events: {
+        Args: { p_from?: string; p_limit?: number; p_to?: string }
+        Returns: {
+          actor_id: string
+          aggregate_id: string
+          aggregate_type: string
+          event_name: string
+          id: string
+          occurred_at: string
+          payload: Json
+          request_id: string
+        }[]
+      }
       admin_list_inconsistent_matches: {
         Args: never
         Returns: {
@@ -15584,6 +15675,16 @@ export type Database = {
         }
         Returns: number
       }
+      atomic_check_registry_search_rate_limit: {
+        Args: {
+          p_endpoint: string
+          p_limit: number
+          p_scope_key: string
+          p_scope_kind: string
+          p_window_end: string
+        }
+        Returns: number
+      }
       atomic_collapse_record: {
         Args: {
           p_collapse: Json
@@ -15846,6 +15947,10 @@ export type Database = {
       atomic_wad_issue: {
         Args: { p_governance?: Json; p_org_id: string; p_poi_id: string }
         Returns: Json
+      }
+      batch7_event_name_to_webhook_event: {
+        Args: { p_event_name: string }
+        Returns: string
       }
       bill_clip_on_request: { Args: { p_request_id: string }; Returns: Json }
       bill_clip_on_subscriptions_monthly: { Args: never; Returns: Json }
