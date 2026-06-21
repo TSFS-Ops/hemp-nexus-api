@@ -38,6 +38,10 @@ const ACTION_TO_AUDIT: Record<string, string> = {
   expire_claim: "registry_claim_expired",
   assign_reviewer: "registry_claim_assigned",
   add_internal_note: "registry_claim_note_added",
+  // Claimant-initiated transitions reach this map when invoked via the
+  // claim-status surface (cancel by claimant maps to withdraw audit name).
+  withdraw_claim: "registry_claim_withdrawn",
+  draft_claim: "registry_claim_drafted",
 };
 
 Deno.serve(async (req) => {
