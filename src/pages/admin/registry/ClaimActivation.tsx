@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import BackButton from "@/components/BackButton";
+import { BackButton } from "@/components/BackButton";
 import {
   REGISTRY_RECORD_LIFECYCLE_STATES,
   publicLifecycleLabel,
