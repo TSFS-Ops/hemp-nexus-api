@@ -127,6 +127,13 @@
     "registry-bank-detail-risk-evaluate",
     "registry-bank-detail-revocation-request",
     "registry-bank-detail-notification-log",
-    "registry-bank-detail-unmask-access"
+    "registry-bank-detail-unmask-access",
+    "registry-bank-verification-request",
+    "registry-bank-verification-review",
+    "registry-bank-verification-status",
+    "registry-bank-verification-provider-config",
+    "registry-bank-verification-provider-simulate",
+    "registry-bank-verification-expiry-scan",
+    "registry-bank-verification-api-status"
   ]
 }
