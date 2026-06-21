@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   } catch (_e) { /* OPS-010 best-effort; live flow continues */ }
   console.log(`[AUTH CHECK] INTERNAL_CRON_KEY: ${Deno.env.has("INTERNAL_CRON_KEY") ? "LOCKED 🔒" : "MISSING 🔓"}`);
   const requestId = crypto.randomUUID();
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 

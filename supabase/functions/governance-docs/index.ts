@@ -41,7 +41,7 @@ function successEnvelope(data: unknown, correlationId: string) {
 }
 
 Deno.serve(async (req: Request) => {
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const corsRes = handleCors(req, allowedOrigins);
   if (corsRes) return corsRes;
 

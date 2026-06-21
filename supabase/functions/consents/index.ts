@@ -7,7 +7,7 @@ import { assertIdempotencyKey } from '../_shared/idempotency.ts';
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
-  const allowedOrigins = Deno.env.get('ALLOWED_ORIGINS') || '*';
+  const allowedOrigins = Deno.env.get('ALLOWED_ORIGINS') || '';
   const origin = req.headers.get('origin');
   const headers = corsHeaders(allowedOrigins, origin);
 

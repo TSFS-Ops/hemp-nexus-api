@@ -9,7 +9,7 @@ import { authenticateRequest, requireScope } from "../_shared/auth.ts";
  */
 Deno.serve(async (req: Request) => {
   const requestId = crypto.randomUUID();
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const origin = req.headers.get("origin");
   const headers = corsHeaders(allowedOrigins, origin);
 

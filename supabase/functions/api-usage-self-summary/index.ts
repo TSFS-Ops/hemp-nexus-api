@@ -59,7 +59,7 @@ function scrub<T>(value: T): T {
 }
 
 Deno.serve(async (req) => {
-  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
   const headers = buildCorsHeaders(allowedOrigins, req.headers.get("origin"));
   const jsonHeaders = { ...headers, "Content-Type": "application/json" };
 

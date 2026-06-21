@@ -53,11 +53,11 @@ async function computeHash(input: string): Promise<string> {
 }
 
 Deno.serve(async (req: Request) => {
-  const corsResp = handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "*");
+  const corsResp = handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || '');
   if (corsResp) return corsResp;
 
   const correlationId = req.headers.get("X-Correlation-ID") || crypto.randomUUID();
-  const headers = { ...corsHeaders(Deno.env.get("ALLOWED_ORIGINS") || "*", req.headers.get("origin")), "Content-Type": "application/json" };
+  const headers = { ...corsHeaders(Deno.env.get("ALLOWED_ORIGINS") || '', req.headers.get("origin")), "Content-Type": "application/json" };
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

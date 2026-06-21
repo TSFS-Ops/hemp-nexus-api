@@ -13,7 +13,7 @@ import { REGISTRY_LIFECYCLE_APPROVAL_ROLES } from "../_shared/registry-record-li
 
 Deno.serve(async (req: Request) => {
   const requestId = crypto.randomUUID();
-  const allowed = Deno.env.get("ALLOWED_ORIGINS") || "*";
+  const allowed = Deno.env.get("ALLOWED_ORIGINS") || '';
   const headers = corsHeaders(allowed, req.headers.get("origin"));
   try {
     const cors = handleCors(req, allowed);

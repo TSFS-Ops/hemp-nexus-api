@@ -15,7 +15,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { sendHeartbeatEvent, sentryDsnConfigured } from "../_shared/sentry.ts";
 
-const ALLOWED_ORIGINS = Deno.env.get("ALLOWED_ORIGINS") || "*";
+const ALLOWED_ORIGINS = Deno.env.get("ALLOWED_ORIGINS") || '';
 
 function corsHeaders(origin: string | null): Record<string, string> {
   const allow = ALLOWED_ORIGINS === "*"
