@@ -30,6 +30,16 @@ Deno.serve(async (req) => {
     }
     const svc = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
+    // Batch 7 — per-IP / per-API-key rate limit.
+    const apiKeyHeader = req.headers.get("x-api-key");
+    const rl = await enforceRegistrySearchRateLimit({
+      supabase: svc,
+      endpoint: "registry-company-search",
+      ip: clientIpFromRequest(req),
+      apiKeyId: apiKeyHeader ? apiKeyHeader.slice(0, 64) : null,
+    });
+    if (!rl.ok) return withCors(req, rateLimited429(rl));
+
     // Country readiness gate. If the requested country is below imported_unverified
     // or has no coverage we never return rows — we surface the coverage warning.
     let warning: string | null = null;
