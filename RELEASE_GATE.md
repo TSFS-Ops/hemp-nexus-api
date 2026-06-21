@@ -1289,3 +1289,39 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 
 ### Edge functions requiring deploy (Batch 20)
 - (none — Batch 20 is an audit and guard batch only)
+
+## Batch 21 — UAT Test Hygiene and Client-Facing Evidence Cleanup (BATCH_21_UAT_TEST_HYGIENE_COMPLETE)
+
+- Pre-UAT-handover cleanup of the Vitest run. No accepted Batch 1–20
+  guardrail was weakened; no real regression was hidden.
+- Quarantine ledger at `src/tests/quarantine.json` classifies every
+  pre-Batch-21 Vitest failure into one of:
+  `stale_source_pin_replaced_by_prebuild_guard`,
+  `post_refactor_route_layout_update_required`,
+  `ci_only_requires_provisioning_secret`, `obsolete_batch_test`,
+  `duplicate_legacy_test`, `needs_manual_review`. `true_regression` is
+  forbidden.
+- Default Vitest config (`vitest.config.ts`) excludes `src/tests/uat/**`
+  and the quarantine ledger. `npm run test:uat:local` is green.
+- CI-only Vitest config (`vitest.config.uat.ts`) runs the UAT journey
+  suite. Each `src/tests/uat/journey-*.test.ts` is gated with
+  `describe.skipIf(!UAT_PROVISIONING_ENABLED)` via the shared
+  `src/tests/uat/_ci-gate.ts`, so missing-secret runs emit
+  `Skipped locally: requires CI provisioning secret.` rather than failing.
+- Legacy Vitest config (`vitest.config.legacy.ts`) runs only the
+  quarantined files for informational maintenance.
+- New package scripts: `test:uat:local`, `test:uat:ci`, `test:legacy`,
+  `check:batch-21`.
+- Guard added to prebuild: `scripts/check-batch-21-uat-hygiene.mjs`
+  (rejects: malformed ledger, unresolved `true_regression`, missing
+  CI gate on journey files, raw failed-test counts in the client-facing
+  UAT report, and unqualified `production-ready` wording).
+- Client-facing UAT evidence: `docs/registry/uat-execution-summary.md`.
+- Internal technical appendix:
+  `docs/registry/uat-technical-appendix.md` (records the historical
+  246-failure count honestly with classification counts and disposition).
+- Tests: `src/tests/batch-21-uat-test-hygiene.test.ts`.
+- Central evidence index updated with the Batch 21 row.
+
+### Edge functions requiring deploy (Batch 21)
+- (none — Batch 21 is a test-hygiene and documentation batch only)
