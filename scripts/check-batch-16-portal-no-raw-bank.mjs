@@ -28,6 +28,8 @@ for (const f of FILES) {
     console.error(`[batch-16] raw bank field selected in ${f}`);
     failed = true;
   }
+  // The SSOT file declares the forbidden patterns — exempt from raw scan.
+  if (f.endsWith("registry-company-portal-ssot.ts")) continue;
   if (BANNED_RAW.test(src)) {
     console.error(`[batch-16] forbidden raw payload/admin field in ${f}`);
     failed = true;
