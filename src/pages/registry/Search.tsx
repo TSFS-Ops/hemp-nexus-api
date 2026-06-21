@@ -43,37 +43,56 @@ export default function RegistrySearch() {
   const [vatNumber, setVatNumber] = useState("");
   const [legalForm, setLegalForm] = useState("");
   const [address, setAddress] = useState("");
+  const [readinessState, setReadinessState] = useState("");
+  const [claimStatus, setClaimStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  async function onSearch() {
+  function buildBody(cursor?: string | null) {
+    return {
+      query: query || undefined,
+      country_code: countryCode || undefined,
+      registration_number: registrationNumber || undefined,
+      vat_number: vatNumber || undefined,
+      legal_form: legalForm || undefined,
+      address: address || undefined,
+      readiness_state: readinessState || undefined,
+      claim_status: claimStatus || undefined,
+      cursor: cursor || undefined,
+    };
+  }
+
+  async function runSearch(cursor: string | null, append: boolean) {
     setLoading(true);
-    setWarning(null);
+    if (!append) setWarning(null);
     try {
       const { data, error } = await supabase.functions.invoke("registry-company-search", {
-        body: {
-          query: query || undefined,
-          country_code: countryCode || undefined,
-          registration_number: registrationNumber || undefined,
-          vat_number: vatNumber || undefined,
-          legal_form: legalForm || undefined,
-          address: address || undefined,
-        },
+        body: buildBody(cursor),
       });
       if (error) throw error;
-      const payload = data as { results?: SearchResult[]; warning?: string | null };
-      setResults(payload?.results ?? []);
+      const payload = data as { results?: SearchResult[]; warning?: string | null; next_cursor?: string | null };
+      const incoming = payload?.results ?? [];
+      setResults((prev) => {
+        if (!append) return incoming;
+        const seen = new Set(prev.map((r) => r.id));
+        return [...prev, ...incoming.filter((r) => !seen.has(r.id))];
+      });
       setWarning(payload?.warning ?? null);
+      setNextCursor(payload?.next_cursor ?? null);
       setSearched(true);
     } catch (err) {
       console.error(err);
-      setResults([]);
+      if (!append) setResults([]);
     } finally {
       setLoading(false);
     }
   }
+
+  function onSearch() { setNextCursor(null); runSearch(null, false); }
+  function onLoadMore() { if (nextCursor) runSearch(nextCursor, true); }
 
   return (
     <main className="max-w-4xl mx-auto p-6">
