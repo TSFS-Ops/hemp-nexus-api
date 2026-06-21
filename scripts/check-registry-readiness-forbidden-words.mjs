@@ -23,6 +23,14 @@ const EXEMPT = new Set([
   "src/pages/registry/BankDetailStatus.tsx",
   "src/pages/admin/registry/BankDetailReview.tsx",
   "src/lib/registry-bank-details-b13-ui.ts",
+  // Batch 18 — release-gate / UAT / demo pack viewers render the
+  // Batch 18 SSOT contents, which legitimately reference "verified" as
+  // a status descriptor inside next-action text. Forbidden release-
+  // readiness wording is enforced separately by
+  // scripts/check-batch-18-forbidden-readiness-wording.mjs.
+  "src/pages/admin/registry/ReleaseGate.tsx",
+  "src/pages/admin/registry/DemoPack.tsx",
+  "src/pages/admin/registry/UatScenarios.tsx",
 ]);
 
 const FORBIDDEN = ["verified", "live", "guaranteed", "production-ready"];
