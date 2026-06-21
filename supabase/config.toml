@@ -178,6 +178,18 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-company-correction-request]
     verify_jwt = false
+  [functions.registry-source-file-upload]
+    verify_jwt = false
+  [functions.registry-import-field-map]
+    verify_jwt = false
+  [functions.registry-import-validate]
+    verify_jwt = false
+  [functions.registry-import-duplicate-check]
+    verify_jwt = false
+  [functions.registry-import-quarantine-review]
+    verify_jwt = false
+  [functions.registry-import-approve-publish]
+    verify_jwt = false
 
 
 
