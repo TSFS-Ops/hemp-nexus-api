@@ -113,6 +113,13 @@
     "notification-channel-readiness-list",
     "notification-channel-readiness-update",
     "notification-channel-skip-record",
-    "manual-outreach-contact-log"
+    "manual-outreach-contact-log",
+    "registry-bank-detail-start",
+    "registry-bank-detail-evidence-upload",
+    "registry-bank-detail-review",
+    "registry-bank-detail-risk-evaluate",
+    "registry-bank-detail-revocation-request",
+    "registry-bank-detail-notification-log",
+    "registry-bank-detail-unmask-access"
   ]
 }
