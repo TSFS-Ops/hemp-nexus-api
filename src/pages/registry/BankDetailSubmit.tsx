@@ -14,7 +14,7 @@
  *      masked status page; no raw account fields are rendered after submit.
  *
  * Raw bank details are NEVER rendered on this page after submit. Captured
- * details are not verified bank details — captured_unverified is shown as
+ * details remain captured/unverified — captured_unverified is shown as
  * not verified.
  */
 import { useEffect, useMemo, useState } from "react";
