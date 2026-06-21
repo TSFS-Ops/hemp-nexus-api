@@ -113,6 +113,11 @@ const AdminBankVerificationReview = lazy(() =>
 );
 // Batch 5 — M008 / M009 / M016 institutional API management
 const AdminRegistryApi = lazy(() => import("@/pages/admin/registry/Api"));
+// Batch 15B — Institutional API admin UI
+const AdminApiClientsList = lazy(() => import("@/pages/admin/registry/ApiClientsList"));
+const AdminApiClientDetail = lazy(() => import("@/pages/admin/registry/ApiClientDetail"));
+const AdminApiUsage = lazy(() => import("@/pages/admin/registry/ApiUsage"));
+const AdminApiTestConsole = lazy(() => import("@/pages/admin/registry/ApiTestConsole"));
 // Batch 6 — M013 / M014 / M015 / M017 operations + outreach + readiness
 const AdminRegistryOperations = lazy(() => import("@/pages/admin/registry/Operations"));
 const AdminRegistryOutreachDrafts = lazy(() => import("@/pages/admin/registry/OutreachDrafts"));
@@ -252,6 +257,11 @@ function App() {
                   <Route path="/admin/registry/bank-verification" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminBankVerificationQueue /></RequireAuth>} />
                   <Route path="/admin/registry/bank-verification/:bankDetailSubmissionId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminBankVerificationReview /></RequireAuth>} />
                   <Route path="/admin/registry/api" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryApi /></RequireAuth>} />
+                  {/* Batch 15B — Institutional API hardening admin UI */}
+                  <Route path="/admin/registry/api-clients" element={<AdminApiClientsList />} />
+                  <Route path="/admin/registry/api-clients/:clientId" element={<AdminApiClientDetail />} />
+                  <Route path="/admin/registry/api-usage" element={<AdminApiUsage />} />
+                  <Route path="/admin/registry/api-test-console" element={<AdminApiTestConsole />} />
                   {/* Batch 6 — Operations, Outreach, DNC */}
                   <Route path="/admin/registry/operations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOperations /></RequireAuth>} />
                   <Route path="/admin/registry/outreach-drafts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachDrafts /></RequireAuth>} />
