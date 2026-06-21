@@ -248,6 +248,9 @@ function App() {
                   <Route path="/registry/company/:id/bank-details/submit" element={<RequireAuth><BankDetailSubmit /></RequireAuth>} />
                   <Route path="/admin/registry/bank-details/queue" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminBankDetailQueue /></RequireAuth>} />
                   <Route path="/admin/registry/bank-details/submissions/:bankDetailSubmissionId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminBankDetailReview /></RequireAuth>} />
+                  {/* Batch 14B — Bank verification admin UI */}
+                  <Route path="/admin/registry/bank-verification" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminBankVerificationQueue /></RequireAuth>} />
+                  <Route path="/admin/registry/bank-verification/:bankDetailSubmissionId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminBankVerificationReview /></RequireAuth>} />
                   <Route path="/admin/registry/api" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryApi /></RequireAuth>} />
                   {/* Batch 6 — Operations, Outreach, DNC */}
                   <Route path="/admin/registry/operations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOperations /></RequireAuth>} />
