@@ -10942,6 +10942,73 @@ export type Database = {
         }
         Relationships: []
       }
+      registry_company_activities: {
+        Row: {
+          activity_summary: string
+          created_at: string
+          id: string
+          public_visible: boolean
+          record_id: string
+        }
+        Insert: {
+          activity_summary: string
+          created_at?: string
+          id?: string
+          public_visible?: boolean
+          record_id: string
+        }
+        Update: {
+          activity_summary?: string
+          created_at?: string
+          id?: string
+          public_visible?: boolean
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_activities_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_addresses: {
+        Row: {
+          address_kind: string
+          address_text: string
+          created_at: string
+          id: string
+          public_visible: boolean
+          record_id: string
+        }
+        Insert: {
+          address_kind: string
+          address_text: string
+          created_at?: string
+          id?: string
+          public_visible?: boolean
+          record_id: string
+        }
+        Update: {
+          address_kind?: string
+          address_text?: string
+          created_at?: string
+          id?: string
+          public_visible?: boolean
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_addresses_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_company_claim_events: {
         Row: {
           actor_id: string | null
@@ -11245,6 +11312,330 @@ export type Database = {
             columns: ["claim_id"]
             isOneToOne: false
             referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_events: {
+        Row: {
+          created_at: string
+          event_date: string | null
+          event_label: string
+          event_summary: string | null
+          id: string
+          public_visible: boolean
+          raw_text: string | null
+          record_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_date?: string | null
+          event_label: string
+          event_summary?: string | null
+          id?: string
+          public_visible?: boolean
+          raw_text?: string | null
+          record_id: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string | null
+          event_label?: string
+          event_summary?: string | null
+          id?: string
+          public_visible?: boolean
+          raw_text?: string | null
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_events_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_filings: {
+        Row: {
+          created_at: string
+          filing_date: string | null
+          filing_label: string
+          filing_summary: string | null
+          id: string
+          public_visible: boolean
+          raw_text: string | null
+          record_id: string
+          source_document_reference: string | null
+        }
+        Insert: {
+          created_at?: string
+          filing_date?: string | null
+          filing_label: string
+          filing_summary?: string | null
+          id?: string
+          public_visible?: boolean
+          raw_text?: string | null
+          record_id: string
+          source_document_reference?: string | null
+        }
+        Update: {
+          created_at?: string
+          filing_date?: string | null
+          filing_label?: string
+          filing_summary?: string | null
+          id?: string
+          public_visible?: boolean
+          raw_text?: string | null
+          record_id?: string
+          source_document_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_filings_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_identifiers: {
+        Row: {
+          created_at: string
+          id: string
+          identifier_kind: string
+          identifier_value: string
+          public_visible: boolean
+          record_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          identifier_kind: string
+          identifier_value: string
+          public_visible?: boolean
+          record_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identifier_kind?: string
+          identifier_value?: string
+          public_visible?: boolean
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_identifiers_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_people: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          full_name: string | null
+          id: string
+          personal_address: string | null
+          personal_email: string | null
+          personal_phone: string | null
+          public_visible: boolean
+          record_id: string
+          role_kind: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          full_name?: string | null
+          id?: string
+          personal_address?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
+          public_visible?: boolean
+          record_id: string
+          role_kind: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          full_name?: string | null
+          id?: string
+          personal_address?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
+          public_visible?: boolean
+          record_id?: string
+          role_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_people_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_record_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_name: string
+          id: string
+          payload: Json
+          record_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_name: string
+          id?: string
+          payload?: Json
+          record_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_name?: string
+          id?: string
+          payload?: Json
+          record_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_record_events_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_company_records: {
+        Row: {
+          api_output_allowed: boolean
+          authority_status_label: string
+          bank_detail_status_label: string
+          claim_allowed: boolean
+          claim_blocked_reason: string | null
+          claim_status: string
+          company_name: string
+          company_status: string | null
+          country_code: string
+          created_at: string
+          id: string
+          internal_confidence_notes: string | null
+          legal_form: string | null
+          local_number: string | null
+          profile_verification_status: string
+          provenance_reference: string | null
+          public_display_allowed: boolean
+          readiness_state: string
+          registered_address: string | null
+          registration_number: string | null
+          source_generated_date: string | null
+          source_summary: string | null
+          updated_at: string
+          vat_number: string | null
+        }
+        Insert: {
+          api_output_allowed?: boolean
+          authority_status_label?: string
+          bank_detail_status_label?: string
+          claim_allowed?: boolean
+          claim_blocked_reason?: string | null
+          claim_status?: string
+          company_name: string
+          company_status?: string | null
+          country_code: string
+          created_at?: string
+          id?: string
+          internal_confidence_notes?: string | null
+          legal_form?: string | null
+          local_number?: string | null
+          profile_verification_status?: string
+          provenance_reference?: string | null
+          public_display_allowed?: boolean
+          readiness_state?: string
+          registered_address?: string | null
+          registration_number?: string | null
+          source_generated_date?: string | null
+          source_summary?: string | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Update: {
+          api_output_allowed?: boolean
+          authority_status_label?: string
+          bank_detail_status_label?: string
+          claim_allowed?: boolean
+          claim_blocked_reason?: string | null
+          claim_status?: string
+          company_name?: string
+          company_status?: string | null
+          country_code?: string
+          created_at?: string
+          id?: string
+          internal_confidence_notes?: string | null
+          legal_form?: string | null
+          local_number?: string | null
+          profile_verification_status?: string
+          provenance_reference?: string | null
+          public_display_allowed?: boolean
+          readiness_state?: string
+          registered_address?: string | null
+          registration_number?: string | null
+          source_generated_date?: string | null
+          source_summary?: string | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Relationships: []
+      }
+      registry_company_search_index: {
+        Row: {
+          created_at: string
+          field_kind: string
+          field_label: string
+          id: string
+          record_id: string
+          tier: string
+          value_normalised: string
+          value_raw: string
+        }
+        Insert: {
+          created_at?: string
+          field_kind: string
+          field_label: string
+          id?: string
+          record_id: string
+          tier: string
+          value_normalised: string
+          value_raw: string
+        }
+        Update: {
+          created_at?: string
+          field_kind?: string
+          field_label?: string
+          id?: string
+          record_id?: string
+          tier?: string
+          value_normalised?: string
+          value_raw?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_search_index_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
             referencedColumns: ["id"]
           },
         ]
@@ -15510,6 +15901,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_seed_batch8_sample_records: { Args: never; Returns: Json }
       admin_trade_request_archive_override_with_governance: {
         Args: {
           p_aal?: string
@@ -16605,6 +16997,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      rebuild_registry_company_search_index: {
+        Args: { p_record_id: string }
+        Returns: number
+      }
       reconcile_acceptance_notifications: { Args: never; Returns: Json }
       reconcile_paystack_purchases: {
         Args: { p_window?: string }
@@ -16704,6 +17100,7 @@ export type Database = {
         }
         Returns: Json
       }
+      registry_normalise_search_value: { Args: { p: string }; Returns: string }
       release_billing_hold: {
         Args: { p_admin_user_id: string; p_org_id: string; p_reason: string }
         Returns: Json
