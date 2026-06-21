@@ -47,6 +47,14 @@ interface Props {
    * label the section ("Also found in the Business Registry" vs primary).
    */
   networkResultCount: number;
+  /**
+   * Optional callback so the parent CounterpartySearch can read the
+   * registry hits and render unified link suggestions alongside the
+   * counterparty results. Pure presentation — no auto-linking.
+   */
+  onRegistryResults?: (
+    rows: Array<{ id: string; name: string; countryCode: string }>,
+  ) => void;
 }
 
 // Conservative, explicit ISO-2 mapping for the most common phrases the
@@ -79,6 +87,7 @@ export function RegistryAlsoFoundPanel({
   hasSearched,
   parsedQuery,
   networkResultCount,
+  onRegistryResults,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<RegistryResult[]>([]);
@@ -122,8 +131,16 @@ export function RegistryAlsoFoundPanel({
           results?: RegistryResult[];
           warning?: string | null;
         };
-        setResults((payload?.results ?? []).slice(0, 5));
+        const trimmedResults = (payload?.results ?? []).slice(0, 5);
+        setResults(trimmedResults);
         setWarning(payload?.warning ?? null);
+        onRegistryResults?.(
+          trimmedResults.map((r) => ({
+            id: r.id,
+            name: r.company_name,
+            countryCode: r.country_code,
+          })),
+        );
       } catch (err) {
         if (cancelled) return;
         console.error("Registry search failed:", err);
