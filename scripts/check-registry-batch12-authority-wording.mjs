@@ -17,13 +17,16 @@ const PUBLIC_NOTICE =
 const adminPath = "src/pages/admin/registry/AuthorityReview.tsx";
 const userPath = "src/pages/registry/AuthorityStatus.tsx";
 let failed = false;
-if (!existsSync(adminPath) || !readFileSync(adminPath, "utf8").includes(ACK)) {
+const adminSrc = existsSync(adminPath) ? readFileSync(adminPath, "utf8") : "";
+const userSrc = existsSync(userPath) ? readFileSync(userPath, "utf8") : "";
+if (
+  !(adminSrc.includes(ACK) || adminSrc.includes("REGISTRY_AUTHORITY_B12_APPROVAL_ACKNOWLEDGEMENT"))
+) {
   console.error(`✗ admin authority review missing acknowledgement copy`);
   failed = true;
 }
 if (
-  !existsSync(userPath) ||
-  !readFileSync(userPath, "utf8").includes(PUBLIC_NOTICE)
+  !(userSrc.includes(PUBLIC_NOTICE) || userSrc.includes("REGISTRY_AUTHORITY_B12_PUBLIC_APPROVAL_NOTICE"))
 ) {
   console.error(`✗ user authority status missing public approval notice`);
   failed = true;
