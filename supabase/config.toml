@@ -178,6 +178,18 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-admin-operations-summary]
     verify_jwt = false
+  [functions.registry-operations-summary]
+    verify_jwt = false
+  [functions.registry-operations-queue]
+    verify_jwt = false
+  [functions.registry-operations-risk]
+    verify_jwt = false
+  [functions.registry-operations-slas]
+    verify_jwt = false
+  [functions.registry-operations-readiness]
+    verify_jwt = false
+  [functions.registry-operations-audit]
+    verify_jwt = false
   [functions.registry-client-readiness-summary]
     verify_jwt = false
   [functions.notification-channel-readiness-list]

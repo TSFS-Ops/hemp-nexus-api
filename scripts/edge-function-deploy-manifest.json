@@ -106,7 +106,13 @@
     "registry-api-readiness-status",
     "registry-api-coverage-status",
     "registry-api-client-key-manage",
-    "registry-my-companies"
+    "registry-my-companies",
+    "registry-operations-summary",
+    "registry-operations-queue",
+    "registry-operations-risk",
+    "registry-operations-slas",
+    "registry-operations-readiness",
+    "registry-operations-audit"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
@@ -146,6 +152,12 @@
     "registry-api-readiness-status",
     "registry-api-coverage-status",
     "registry-api-client-key-manage",
-    "registry-my-companies"
+    "registry-my-companies",
+    "registry-operations-summary",
+    "registry-operations-queue",
+    "registry-operations-risk",
+    "registry-operations-slas",
+    "registry-operations-readiness",
+    "registry-operations-audit"
   ]
 }
