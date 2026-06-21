@@ -1,0 +1,63 @@
+#!/usr/bin/env node
+/**
+ * Batch 10 — Forbid wording that implies claim_enabled means verified /
+ * production-ready / institutionally usable / authority confirmed /
+ * bank verified, anywhere in the registry surfaces.
+ */
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, extname } from "node:path";
+
+const FORBIDDEN = [
+  /verified company/i,
+  /verified profile/i,
+  /production[\s-]ready/i,
+  /institutionally usable/i,
+  /bank details verified/i,
+  /authority confirmed/i,
+  /officially verified/i,
+];
+
+const SCAN_ROOTS = [
+  "src/pages/registry",
+  "src/pages/admin/registry",
+  "src/components/registry",
+  "supabase/functions",
+];
+
+const SSOT_FILES = new Set([
+  "src/lib/registry-record-lifecycle.ts",
+  "supabase/functions/_shared/registry-record-lifecycle.ts",
+  "scripts/check-registry-batch10-no-verified-claim-wording.mjs",
+  "scripts/check-registry-record-lifecycle-parity.mjs",
+]);
+
+const failures = [];
+
+function walk(root) {
+  let entries;
+  try { entries = readdirSync(root); } catch { return; }
+  for (const e of entries) {
+    const full = join(root, e);
+    const st = statSync(full);
+    if (st.isDirectory()) walk(full);
+    else if ([".ts", ".tsx"].includes(extname(full))) scan(full);
+  }
+}
+
+function scan(path) {
+  if (SSOT_FILES.has(path)) return;
+  const src = readFileSync(path, "utf8");
+  for (const re of FORBIDDEN) {
+    const m = src.match(re);
+    if (m) failures.push(`${path}: forbidden wording "${m[0]}"`);
+  }
+}
+
+for (const r of SCAN_ROOTS) walk(r);
+
+if (failures.length) {
+  console.error("[check-registry-batch10-no-verified-claim-wording] FAIL:");
+  for (const f of failures) console.error("  - " + f);
+  process.exit(1);
+}
+console.log("[check-registry-batch10-no-verified-claim-wording] OK");
