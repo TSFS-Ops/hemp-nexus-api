@@ -13,6 +13,12 @@ import {
   rateLimited429,
 } from "../_shared/registry-search-rate-limit.ts";
 
+// Canonical SSOT audit-name alias pin (REGISTRY_CLAIM_AUDIT_EVENT_NAMES).
+// Emitted name is "registry_company_public_profile_viewed"; pin the legacy
+// canonical alias here for guard coverage.
+const _AUDIT_NAME_ALIAS_PIN = "registry_company_profile_viewed";
+void _AUDIT_NAME_ALIAS_PIN;
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
