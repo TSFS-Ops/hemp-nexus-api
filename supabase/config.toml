@@ -148,6 +148,20 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-bank-detail-access]
     verify_jwt = false
+  [functions.registry-bank-detail-start]
+    verify_jwt = false
+  [functions.registry-bank-detail-evidence-upload]
+    verify_jwt = false
+  [functions.registry-bank-detail-review]
+    verify_jwt = false
+  [functions.registry-bank-detail-risk-evaluate]
+    verify_jwt = false
+  [functions.registry-bank-detail-revocation-request]
+    verify_jwt = false
+  [functions.registry-bank-detail-notification-log]
+    verify_jwt = false
+  [functions.registry-bank-detail-unmask-access]
+    verify_jwt = false
   [functions.registry-institutional-profile-status]
     verify_jwt = false
   [functions.registry-institutional-payment-status]

@@ -11026,16 +11026,197 @@ export type Database = {
           },
         ]
       }
+      registry_bank_detail_notes: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          id: string
+          note: string
+          submission_id: string
+          visibility: string
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          id?: string
+          note: string
+          submission_id: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string
+          submission_id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_notes_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_review_events: {
+        Row: {
+          acknowledged: boolean
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          new_status: string | null
+          payload: Json
+          previous_status: string | null
+          reason: string | null
+          submission_id: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+          submission_id: string
+        }
+        Update: {
+          acknowledged?: boolean
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          payload?: Json
+          previous_status?: string | null
+          reason?: string | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_review_events_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_risk_flags: {
+        Row: {
+          details: Json
+          flag_type: string
+          id: string
+          raised_at: string
+          raised_by: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          risk_level: string
+          submission_id: string
+        }
+        Insert: {
+          details?: Json
+          flag_type: string
+          id?: string
+          raised_at?: string
+          raised_by?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level?: string
+          submission_id: string
+        }
+        Update: {
+          details?: Json
+          flag_type?: string
+          id?: string
+          raised_at?: string
+          raised_by?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_risk_flags_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_status_notifications: {
+        Row: {
+          channel: string
+          created_at: string
+          delivered_externally: boolean
+          id: string
+          notification_type: string
+          payload: Json
+          recipient_user_id: string | null
+          submission_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          delivered_externally?: boolean
+          id?: string
+          notification_type: string
+          payload?: Json
+          recipient_user_id?: string | null
+          submission_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          delivered_externally?: boolean
+          id?: string
+          notification_type?: string
+          payload?: Json
+          recipient_user_id?: string | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_status_notifications_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_bank_detail_submissions: {
         Row: {
+          account_fingerprint: string | null
+          account_holder_kind: string
+          account_number_last4: string | null
           account_type: string | null
+          assigned_reviewer_id: string | null
           authority_request_id: string | null
+          b13_status: string
+          bank_code: string | null
+          bank_country_code: string | null
+          bank_purpose: string | null
+          branch_name: string | null
+          captured_unverified_at: string | null
           claim_id: string | null
           company_name: string
           company_reference: string
           country_code: string
           created_at: string
           currency_code: string
+          declaration_acknowledged: boolean
           dispute_reason: string | null
           disputed_at: string | null
           enc_account_holder_name: string | null
@@ -11044,33 +11225,60 @@ export type Database = {
           enc_branch_code: string | null
           enc_iban: string | null
           enc_swift_bic: string | null
+          evidence_metadata_captured: boolean
           expiry_at: string | null
           failure_reason: string | null
           id: string
+          intermediary_admin_meta: Json
+          is_primary_account: boolean
+          is_third_party: boolean
+          last_activity_at: string
           masked_account_holder: string | null
           masked_account_number: string | null
           masked_bank_name: string | null
           masked_branch_code: string | null
           masked_iban: string | null
           masked_swift_bic: string | null
+          mismatch_flags: string[]
+          more_evidence_due_at: string | null
+          rejection_reason: string | null
           revocation_reason: string | null
+          revocation_requested_at: string | null
           revoked_at: string | null
+          risk_level: string
+          routing_number: string | null
+          sla_due_at: string | null
+          sort_code: string | null
           status: string
           submitter_user_id: string
+          superseded_at: string | null
+          superseded_by: string | null
           updated_at: string
           verification_method: string | null
           verified_at: string | null
           verified_by: string | null
+          withdrawn_at: string | null
         }
         Insert: {
+          account_fingerprint?: string | null
+          account_holder_kind?: string
+          account_number_last4?: string | null
           account_type?: string | null
+          assigned_reviewer_id?: string | null
           authority_request_id?: string | null
+          b13_status?: string
+          bank_code?: string | null
+          bank_country_code?: string | null
+          bank_purpose?: string | null
+          branch_name?: string | null
+          captured_unverified_at?: string | null
           claim_id?: string | null
           company_name: string
           company_reference: string
           country_code: string
           created_at?: string
           currency_code: string
+          declaration_acknowledged?: boolean
           dispute_reason?: string | null
           disputed_at?: string | null
           enc_account_holder_name?: string | null
@@ -11079,33 +11287,60 @@ export type Database = {
           enc_branch_code?: string | null
           enc_iban?: string | null
           enc_swift_bic?: string | null
+          evidence_metadata_captured?: boolean
           expiry_at?: string | null
           failure_reason?: string | null
           id?: string
+          intermediary_admin_meta?: Json
+          is_primary_account?: boolean
+          is_third_party?: boolean
+          last_activity_at?: string
           masked_account_holder?: string | null
           masked_account_number?: string | null
           masked_bank_name?: string | null
           masked_branch_code?: string | null
           masked_iban?: string | null
           masked_swift_bic?: string | null
+          mismatch_flags?: string[]
+          more_evidence_due_at?: string | null
+          rejection_reason?: string | null
           revocation_reason?: string | null
+          revocation_requested_at?: string | null
           revoked_at?: string | null
+          risk_level?: string
+          routing_number?: string | null
+          sla_due_at?: string | null
+          sort_code?: string | null
           status?: string
           submitter_user_id: string
+          superseded_at?: string | null
+          superseded_by?: string | null
           updated_at?: string
           verification_method?: string | null
           verified_at?: string | null
           verified_by?: string | null
+          withdrawn_at?: string | null
         }
         Update: {
+          account_fingerprint?: string | null
+          account_holder_kind?: string
+          account_number_last4?: string | null
           account_type?: string | null
+          assigned_reviewer_id?: string | null
           authority_request_id?: string | null
+          b13_status?: string
+          bank_code?: string | null
+          bank_country_code?: string | null
+          bank_purpose?: string | null
+          branch_name?: string | null
+          captured_unverified_at?: string | null
           claim_id?: string | null
           company_name?: string
           company_reference?: string
           country_code?: string
           created_at?: string
           currency_code?: string
+          declaration_acknowledged?: boolean
           dispute_reason?: string | null
           disputed_at?: string | null
           enc_account_holder_name?: string | null
@@ -11114,23 +11349,39 @@ export type Database = {
           enc_branch_code?: string | null
           enc_iban?: string | null
           enc_swift_bic?: string | null
+          evidence_metadata_captured?: boolean
           expiry_at?: string | null
           failure_reason?: string | null
           id?: string
+          intermediary_admin_meta?: Json
+          is_primary_account?: boolean
+          is_third_party?: boolean
+          last_activity_at?: string
           masked_account_holder?: string | null
           masked_account_number?: string | null
           masked_bank_name?: string | null
           masked_branch_code?: string | null
           masked_iban?: string | null
           masked_swift_bic?: string | null
+          mismatch_flags?: string[]
+          more_evidence_due_at?: string | null
+          rejection_reason?: string | null
           revocation_reason?: string | null
+          revocation_requested_at?: string | null
           revoked_at?: string | null
+          risk_level?: string
+          routing_number?: string | null
+          sla_due_at?: string | null
+          sort_code?: string | null
           status?: string
           submitter_user_id?: string
+          superseded_at?: string | null
+          superseded_by?: string | null
           updated_at?: string
           verification_method?: string | null
           verified_at?: string | null
           verified_by?: string | null
+          withdrawn_at?: string | null
         }
         Relationships: [
           {
@@ -11145,6 +11396,48 @@ export type Database = {
             columns: ["claim_id"]
             isOneToOne: false
             referencedRelation: "registry_company_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_bank_detail_submissions_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_bank_detail_unmask_access_logs: {
+        Row: {
+          actor_id: string
+          created_at: string
+          fields_viewed: string[]
+          id: string
+          reason: string
+          submission_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          fields_viewed?: string[]
+          id?: string
+          reason: string
+          submission_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          fields_viewed?: string[]
+          id?: string
+          reason?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_bank_detail_unmask_access_logs_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "registry_bank_detail_submissions"
             referencedColumns: ["id"]
           },
         ]
