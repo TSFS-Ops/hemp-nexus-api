@@ -54,6 +54,15 @@ export default function AdminRegistryIndex() {
         <Link to="/admin/registry/do-not-contact" className={tabClass(loc.pathname.includes("do-not-contact"))}>
           Do not contact
         </Link>
+        <Link to="/admin/registry/new-company-requests" className={tabClass(loc.pathname.includes("new-company-requests"))}>
+          New-company requests
+        </Link>
+        <Link to="/admin/registry/correction-requests" className={tabClass(loc.pathname.includes("correction-requests"))}>
+          Correction requests
+        </Link>
+        <Link to="/admin/registry/claim-conflicts" className={tabClass(loc.pathname.includes("claim-conflicts"))}>
+          Claim conflicts
+        </Link>
       </div>
       <Card>
         <CardHeader><CardTitle className="text-base">Other tabs</CardTitle></CardHeader>

@@ -97,6 +97,10 @@ const AdminRegistryOperations = lazy(() => import("@/pages/admin/registry/Operat
 const AdminRegistryOutreachDrafts = lazy(() => import("@/pages/admin/registry/OutreachDrafts"));
 const AdminRegistryOutreachApprovals = lazy(() => import("@/pages/admin/registry/OutreachApprovals"));
 const AdminRegistryDoNotContact = lazy(() => import("@/pages/admin/registry/DoNotContact"));
+// Batch 7 — new-company requests, correction requests, claim conflicts
+const AdminRegistryNewCompanyRequests = lazy(() => import("@/pages/admin/registry/NewCompanyRequests"));
+const AdminRegistryCorrectionRequests = lazy(() => import("@/pages/admin/registry/CorrectionRequests"));
+const AdminRegistryClaimConflicts = lazy(() => import("@/pages/admin/registry/ClaimConflicts"));
 // Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
 const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
 
@@ -206,6 +210,10 @@ function App() {
                   <Route path="/admin/registry/outreach-drafts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachDrafts /></RequireAuth>} />
                   <Route path="/admin/registry/outreach-approvals" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachApprovals /></RequireAuth>} />
                   <Route path="/admin/registry/do-not-contact" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryDoNotContact /></RequireAuth>} />
+                  {/* Batch 7 — claim rules hardening admin queues */}
+                  <Route path="/admin/registry/new-company-requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryNewCompanyRequests /></RequireAuth>} />
+                  <Route path="/admin/registry/correction-requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryCorrectionRequests /></RequireAuth>} />
+                  <Route path="/admin/registry/claim-conflicts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaimConflicts /></RequireAuth>} />
                   {/* Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell */}
                   <Route path="/admin/notifications/channel-readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminNotificationChannelReadiness /></RequireAuth>} />
 

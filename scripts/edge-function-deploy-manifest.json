@@ -54,7 +54,9 @@
     "registry-outreach-review",
     "registry-outreach-log-send",
     "registry-admin-operations-summary",
-    "registry-client-readiness-summary"
+    "registry-client-readiness-summary",
+    "registry-new-company-request",
+    "registry-company-correction-request"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
