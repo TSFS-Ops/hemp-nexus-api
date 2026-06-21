@@ -1,0 +1,3 @@
+DROP POLICY IF EXISTS registry_country_coverage_read_auth ON public.registry_country_coverage;
+DROP POLICY IF EXISTS registry_import_dupes_read_auth ON public.registry_import_duplicate_candidates;
+DROP POLICY IF EXISTS registry_import_validation_results_read_auth ON public.registry_import_record_validation_results;
