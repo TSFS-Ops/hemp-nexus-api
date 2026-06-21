@@ -800,7 +800,9 @@ export default function CounterpartySearch() {
               counterparties={results.map((r) => ({
                 id: r.id,
                 name: r.title,
-                countryCode: r.metadata?.country_code ?? r.metadata?.jurisdiction ?? parsedQuery?.location ?? undefined,
+                countryCode: String(r.metadata?.country_code ?? r.metadata?.jurisdiction ?? "").length <= 8
+                  ? (r.metadata?.country_code ?? r.metadata?.jurisdiction ?? undefined)
+                  : undefined,
                 registrationNumber: r.metadata?.registration_number ?? undefined,
               }))}
             />
