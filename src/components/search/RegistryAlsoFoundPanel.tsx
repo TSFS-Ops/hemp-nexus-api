@@ -161,7 +161,7 @@ export function RegistryAlsoFoundPanel({
 
   return (
     <div
-      className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+      className="rounded-md border border-slate-200 bg-white overflow-hidden"
       data-testid="registry-also-found-panel"
     >
       <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap px-4 sm:px-5 py-4 border-b border-slate-100">
