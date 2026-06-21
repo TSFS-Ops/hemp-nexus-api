@@ -50,9 +50,9 @@ export function calculateMatchConfidence(cp: MatchableCounterparty, reg: Matchab
   const registrationNumberMatch = cpReg && regReg ? (cpReg === regReg ? "match" : "mismatch") : "missing";
   const countryRule = cp.countryCode && reg.countryCode ? (cp.countryCode.toUpperCase() === reg.countryCode.toUpperCase() ? "match" : "mismatch") : "missing";
   const legalFormRule = cp.legalForm && reg.legalForm ? (normalizeCompanyName(cp.legalForm) === normalizeCompanyName(reg.legalForm) ? "compatible" : "different") : "missing";
-  let score = Math.round(nameSimilarity * 0.62);
-  score += registrationNumberMatch === "match" ? 24 : registrationNumberMatch === "mismatch" ? -18 : 0;
-  score += countryRule === "match" ? 10 : countryRule === "mismatch" ? -20 : 0;
+  let score = Math.round(nameSimilarity * 0.72);
+  score += registrationNumberMatch === "match" ? 16 : registrationNumberMatch === "mismatch" ? -18 : 0;
+  score += countryRule === "match" ? 12 : countryRule === "mismatch" ? -20 : 0;
   score += legalFormRule === "compatible" ? 4 : legalFormRule === "different" ? -4 : 0;
   return { score: Math.max(0, Math.min(100, score)), breakdown: { nameSimilarity, registrationNumberMatch, countryRule, legalFormRule } };
 }
