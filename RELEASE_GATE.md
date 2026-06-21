@@ -1200,7 +1200,7 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - New admin routes (platform_admin guarded): `/admin/registry/operations` (cockpit), `/operations/queue`, `/operations/slas`, `/operations/risk`, `/operations/readiness`, `/operations/audit`. Legacy Batch 6 summary preserved at `/operations/legacy`.
 - New read-only edge functions: `registry-operations-summary|queue|risk|slas|readiness|audit`. Each requires platform_admin or compliance_owner via shared `requireOpsAdmin` and emits a `registry_operations_*_viewed` audit event.
 - No DB schema changes. No assignment writes (deferred per spec — read-only aggregation first). No live providers. No external notifications. No outreach.
-- Guards added to prebuild: `check-batch-17-operations-ssot-parity`, `-no-raw-bank`, `-forbidden-words`, `-route-safe`. All passing.
+- Guards added to prebuild: `scripts/check-batch-17-operations-ssot-parity.mjs`, `scripts/check-batch-17-operations-no-raw-bank.mjs`, `scripts/check-batch-17-operations-forbidden-words.mjs`, `scripts/check-batch-17-operations-route-safe.mjs`. All passing.
 - Tests: `src/tests/batch-17-registry-admin-operations-centre.test.ts`.
 - Evidence: `evidence/batch-17-registry-admin-operations-centre/README.md`.
 - Batches 1–16 guardrails untouched.
@@ -1222,7 +1222,7 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - Default final release status is NOT `production_ready` (asserted by guard + unit test).
 - New docs: `docs/registry/release-gate-matrix.md`, `docs/registry/uat-scenarios.md`, `docs/registry/demo-walkthrough.md`, `docs/registry/client-safe-limitations.md`.
 - Central evidence index: `evidence/registry-evidence-index/README.md` covering Batches 1–18.
-- Guards added to prebuild: `check-batch-18-forbidden-readiness-wording`, `check-batch-18-no-production-ready-default`, `check-batch-18-demo-labelled`, `check-batch-18-evidence-index-present`, `check-batch-18-docs-present`. All passing.
+- Guards added to prebuild: `scripts/check-batch-18-forbidden-readiness-wording.mjs`, `scripts/check-batch-18-no-production-ready-default.mjs`, `scripts/check-batch-18-demo-labelled.mjs`, `scripts/check-batch-18-evidence-index-present.mjs`, `scripts/check-batch-18-docs-present.mjs`. All passing.
 - Tests: `src/tests/batch-18-end-to-end-uat-release-demo.test.ts`.
 - Evidence: `evidence/batch-18-end-to-end-uat-release-demo/README.md`.
 - Batches 1–17 guardrails untouched.
