@@ -3,7 +3,7 @@
  * Shared by /registry/claim and /registry/company/:id/claim.
  */
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,12 +15,21 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { REGISTRY_CLAIM_STATE_LABEL, type RegistryClaimState } from "@/lib/registry-claims";
 
+interface ClaimPrefill {
+  company_reference?: string;
+  company_name?: string;
+  registration_number?: string;
+  country_code?: string;
+}
+
 export default function RegistryClaim() {
   const { id } = useParams();
-  const [companyReference, setCompanyReference] = useState(id ?? "");
-  const [companyName, setCompanyName] = useState("");
-  const [registrationNumber, setRegistrationNumber] = useState("");
-  const [countryCode, setCountryCode] = useState("");
+  const location = useLocation();
+  const prefill = (location.state as { prefill?: ClaimPrefill } | null)?.prefill ?? {};
+  const [companyReference, setCompanyReference] = useState(prefill.company_reference ?? id ?? "");
+  const [companyName, setCompanyName] = useState(prefill.company_name ?? "");
+  const [registrationNumber, setRegistrationNumber] = useState(prefill.registration_number ?? "");
+  const [countryCode, setCountryCode] = useState(prefill.country_code ?? "");
   const [claimantName, setClaimantName] = useState("");
   const [claimantEmail, setClaimantEmail] = useState("");
   const [claimantRole, setClaimantRole] = useState("");
