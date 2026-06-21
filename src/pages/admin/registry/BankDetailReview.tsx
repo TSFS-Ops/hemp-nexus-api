@@ -249,10 +249,28 @@ export function AdminBankDetailReview() {
   return (
     <div className="mx-auto max-w-3xl p-6 space-y-6">
       <BackButton fallback="/admin/registry/bank-details/queue" />
-      <header className="space-y-1">
+      <header className="space-y-2">
         <h1 className="text-xl font-semibold">Review bank-detail submission</h1>
         <p className="text-xs text-muted-foreground">{row.company_name} · {row.country_code}</p>
         <StatusBadges s={row.b13_status} risk={row.risk_level} />
+        {/* Batch 14B non-breaking link — verification status badge + link */}
+        <div className="flex flex-wrap gap-2 items-center text-xs" data-testid="b13b-b14b-link">
+          <span className="text-muted-foreground">Verification:</span>
+          {verification ? (
+            <BankVerificationPublicStatus
+              status={verification.status}
+              expiresAt={verification.expiresAt}
+            />
+          ) : (
+            <Badge variant="secondary">{REGISTRY_BANK_DETAIL_B13_UI_NOT_VERIFIED_BADGE}</Badge>
+          )}
+          <Link
+            className="text-primary underline"
+            to={`/admin/registry/bank-verification/${bankDetailSubmissionId}`}
+          >
+            Open verification review
+          </Link>
+        </div>
       </header>
 
       <Card>
