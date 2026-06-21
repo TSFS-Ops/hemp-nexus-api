@@ -54,12 +54,6 @@ type ActiveAuthority = {
   expiry_at: string | null;
 };
 
-type CompanyLite = {
-  company_reference: string;
-  company_name: string;
-  country_code: string;
-};
-
 export default function BankDetailSubmit() {
   const { id: companyIdParam } = useParams();
   const [params] = useSearchParams();
@@ -67,7 +61,6 @@ export default function BankDetailSubmit() {
 
   const [loading, setLoading] = useState(true);
   const [authorities, setAuthorities] = useState<ActiveAuthority[]>([]);
-  const [companies, setCompanies] = useState<Record<string, CompanyLite>>({});
   const [selectedAuthorityId, setSelectedAuthorityId] = useState<string>("");
   const [intendedAction, setIntendedAction] = useState<"submit" | "update">("submit");
   const [form, setForm] = useState<Record<string, string>>({});
@@ -75,6 +68,8 @@ export default function BankDetailSubmit() {
   const [isThirdParty, setIsThirdParty] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [declarationAccepted, setDeclarationAccepted] = useState(false);
+  const [companyName, setCompanyName] = useState("");
+  const [countryCode, setCountryCode] = useState<string>("DEFAULT");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -87,7 +82,6 @@ export default function BankDetailSubmit() {
           setLoading(false);
           return;
         }
-        // Load active authorities scoped to bank-detail actions only.
         const { data: rows } = await supabase
           .from("registry_active_authorities")
           .select("id, authority_request_id, company_reference, scope_code, status, expiry_at")
@@ -97,18 +91,6 @@ export default function BankDetailSubmit() {
         const list = (rows ?? []) as ActiveAuthority[];
         setAuthorities(list);
 
-        const refs = Array.from(new Set(list.map((r) => r.company_reference)));
-        if (refs.length) {
-          const { data: cos } = await supabase
-            .from("registry_company_records")
-            .select("company_reference, company_name, country_code")
-            .in("company_reference", refs);
-          const map: Record<string, CompanyLite> = {};
-          for (const c of (cos ?? []) as CompanyLite[]) map[c.company_reference] = c;
-          setCompanies(map);
-        }
-
-        // Pre-select via ?authority=...
         const preferred = params.get("authority");
         if (preferred && list.some((r) => r.authority_request_id === preferred)) {
           setSelectedAuthorityId(preferred);
@@ -129,15 +111,14 @@ export default function BankDetailSubmit() {
     () => authorities.find((a) => a.authority_request_id === selectedAuthorityId) ?? null,
     [authorities, selectedAuthorityId],
   );
-  const selectedCompany = selectedAuthority ? companies[selectedAuthority.company_reference] ?? null : null;
-  const countryCode = selectedCompany?.country_code ?? "DEFAULT";
   const requirements = useMemo(() => getBankDetailCountryRequirements(countryCode), [countryCode]);
 
   const missing = useMemo(() => {
-    if (!selectedCompany) return requirements.requiredFields;
+    if (!selectedAuthority) return requirements.requiredFields;
     return findMissingBankFields(countryCode, {
       ...form,
-      company_reference: selectedCompany.company_reference,
+      company_reference: selectedAuthority.company_reference,
+
       country_code: countryCode,
     });
   }, [form, selectedCompany, countryCode, requirements]);
