@@ -11881,6 +11881,54 @@ export type Database = {
           },
         ]
       }
+      registry_import_approval_events: {
+        Row: {
+          batch_id: string
+          business_decision_id: string | null
+          decided_at: string
+          decided_by: string | null
+          decision: string
+          decision_rationale: string
+          evidence_url: string | null
+          id: string
+        }
+        Insert: {
+          batch_id: string
+          business_decision_id?: string | null
+          decided_at?: string
+          decided_by?: string | null
+          decision: string
+          decision_rationale: string
+          evidence_url?: string | null
+          id?: string
+        }
+        Update: {
+          batch_id?: string
+          business_decision_id?: string | null
+          decided_at?: string
+          decided_by?: string | null
+          decision?: string
+          decision_rationale?: string
+          evidence_url?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_approval_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_import_approval_events_business_decision_id_fkey"
+            columns: ["business_decision_id"]
+            isOneToOne: false
+            referencedRelation: "business_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_import_batch_events: {
         Row: {
           actor_id: string | null
@@ -11985,6 +12033,7 @@ export type Database = {
           reviewer_id: string | null
           rolled_back_at: string | null
           schema_version: string
+          source_file_id: string | null
           source_id: string | null
           state: string
           updated_at: string
@@ -12006,6 +12055,7 @@ export type Database = {
           reviewer_id?: string | null
           rolled_back_at?: string | null
           schema_version?: string
+          source_file_id?: string | null
           source_id?: string | null
           state?: string
           updated_at?: string
@@ -12027,6 +12077,7 @@ export type Database = {
           reviewer_id?: string | null
           rolled_back_at?: string | null
           schema_version?: string
+          source_file_id?: string | null
           source_id?: string | null
           state?: string
           updated_at?: string
@@ -12035,10 +12086,389 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "registry_import_batches_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "registry_source_files"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "registry_import_batches_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "registry_data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_duplicate_candidates: {
+        Row: {
+          candidate_record_id: string | null
+          candidate_staging_id: string | null
+          confidence: string
+          created_at: string
+          id: string
+          match_reasons: string[]
+          notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          staging_id: string
+        }
+        Insert: {
+          candidate_record_id?: string | null
+          candidate_staging_id?: string | null
+          confidence: string
+          created_at?: string
+          id?: string
+          match_reasons?: string[]
+          notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          staging_id: string
+        }
+        Update: {
+          candidate_record_id?: string | null
+          candidate_staging_id?: string | null
+          confidence?: string
+          created_at?: string
+          id?: string
+          match_reasons?: string[]
+          notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          staging_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_duplicate_candidates_candidate_record_id_fkey"
+            columns: ["candidate_record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_import_duplicate_candidates_candidate_staging_id_fkey"
+            columns: ["candidate_staging_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_records_staging"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_import_duplicate_candidates_staging_id_fkey"
+            columns: ["staging_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_records_staging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_field_mappings: {
+        Row: {
+          batch_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          source_field: string
+          target_field: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          source_field: string
+          target_field: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          source_field?: string
+          target_field?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_field_mappings_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_publish_events: {
+        Row: {
+          batch_id: string
+          created_at: string
+          detail: Json
+          id: string
+          outcome: string
+          published_record_id: string | null
+          staging_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          outcome: string
+          published_record_id?: string | null
+          staging_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          outcome?: string
+          published_record_id?: string | null
+          staging_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_publish_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_import_publish_events_published_record_id_fkey"
+            columns: ["published_record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_import_publish_events_staging_id_fkey"
+            columns: ["staging_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_records_staging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_quarantine: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          reason_code: string
+          reason_detail: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          staging_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reason_code: string
+          reason_detail?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          staging_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reason_code?: string
+          reason_detail?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          staging_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_quarantine_staging_id_fkey"
+            columns: ["staging_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_records_staging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_record_validation_results: {
+        Row: {
+          created_at: string
+          field_name: string | null
+          id: string
+          message: string
+          payload: Json
+          rule_code: string
+          severity: string
+          staging_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          message: string
+          payload?: Json
+          rule_code: string
+          severity: string
+          staging_id: string
+        }
+        Update: {
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          message?: string
+          payload?: Json
+          rule_code?: string
+          severity?: string
+          staging_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_record_validation_results_staging_id_fkey"
+            columns: ["staging_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_records_staging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_import_records_staging: {
+        Row: {
+          activity_summary: string | null
+          batch_id: string
+          batch_row_id: string | null
+          company_name: string | null
+          company_status: string | null
+          contact_email_admin_only: string | null
+          contact_phone_admin_only: string | null
+          country_code: string | null
+          created_at: string
+          duplicate_status: string
+          events: Json
+          filings: Json
+          id: string
+          legal_form: string | null
+          local_number: string | null
+          officers: Json
+          postal_address: string | null
+          previous_names: string[]
+          publish_status: string
+          published_record_id: string | null
+          quarantine_reason: string | null
+          raw_extra: Json
+          registered_address: string | null
+          registration_number: string | null
+          row_number: number
+          source_generated_date: string | null
+          source_summary: string | null
+          trading_names: string[]
+          updated_at: string
+          validation_outcome: string
+          vat_number: string | null
+        }
+        Insert: {
+          activity_summary?: string | null
+          batch_id: string
+          batch_row_id?: string | null
+          company_name?: string | null
+          company_status?: string | null
+          contact_email_admin_only?: string | null
+          contact_phone_admin_only?: string | null
+          country_code?: string | null
+          created_at?: string
+          duplicate_status?: string
+          events?: Json
+          filings?: Json
+          id?: string
+          legal_form?: string | null
+          local_number?: string | null
+          officers?: Json
+          postal_address?: string | null
+          previous_names?: string[]
+          publish_status?: string
+          published_record_id?: string | null
+          quarantine_reason?: string | null
+          raw_extra?: Json
+          registered_address?: string | null
+          registration_number?: string | null
+          row_number: number
+          source_generated_date?: string | null
+          source_summary?: string | null
+          trading_names?: string[]
+          updated_at?: string
+          validation_outcome?: string
+          vat_number?: string | null
+        }
+        Update: {
+          activity_summary?: string | null
+          batch_id?: string
+          batch_row_id?: string | null
+          company_name?: string | null
+          company_status?: string | null
+          contact_email_admin_only?: string | null
+          contact_phone_admin_only?: string | null
+          country_code?: string | null
+          created_at?: string
+          duplicate_status?: string
+          events?: Json
+          filings?: Json
+          id?: string
+          legal_form?: string | null
+          local_number?: string | null
+          officers?: Json
+          postal_address?: string | null
+          previous_names?: string[]
+          publish_status?: string
+          published_record_id?: string | null
+          quarantine_reason?: string | null
+          raw_extra?: Json
+          registered_address?: string | null
+          registration_number?: string | null
+          row_number?: number
+          source_generated_date?: string | null
+          source_summary?: string | null
+          trading_names?: string[]
+          updated_at?: string
+          validation_outcome?: string
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_import_records_staging_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_import_records_staging_batch_row_id_fkey"
+            columns: ["batch_row_id"]
+            isOneToOne: false
+            referencedRelation: "registry_import_batch_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_import_records_staging_published_record_id_fkey"
+            columns: ["published_record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
             referencedColumns: ["id"]
           },
         ]
@@ -12710,6 +13140,112 @@ export type Database = {
           window_end?: string
         }
         Relationships: []
+      }
+      registry_source_file_pages: {
+        Row: {
+          created_at: string
+          id: string
+          page_number: number
+          page_text: string
+          source_file_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_number: number
+          page_text: string
+          source_file_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_number?: number
+          page_text?: string
+          source_file_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_source_file_pages_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "registry_source_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_source_files: {
+        Row: {
+          country_code: string | null
+          created_at: string
+          id: string
+          licence_reference: string | null
+          parsing_status: string
+          parsing_summary: Json
+          permitted_uses: string[]
+          provider_name: string | null
+          raw_payload: Json | null
+          raw_text: string | null
+          source_generated_date: string | null
+          source_id: string | null
+          source_name: string
+          source_reference: string | null
+          source_type: string
+          storage_url: string | null
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          licence_reference?: string | null
+          parsing_status?: string
+          parsing_summary?: Json
+          permitted_uses?: string[]
+          provider_name?: string | null
+          raw_payload?: Json | null
+          raw_text?: string | null
+          source_generated_date?: string | null
+          source_id?: string | null
+          source_name: string
+          source_reference?: string | null
+          source_type: string
+          storage_url?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          licence_reference?: string | null
+          parsing_status?: string
+          parsing_summary?: Json
+          permitted_uses?: string[]
+          provider_name?: string | null
+          raw_payload?: Json | null
+          raw_text?: string | null
+          source_generated_date?: string | null
+          source_id?: string | null
+          source_name?: string
+          source_reference?: string | null
+          source_type?: string
+          storage_url?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_source_files_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "registry_data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       registry_source_licences: {
         Row: {
@@ -16242,6 +16778,10 @@ export type Database = {
           p_reason?: string
           p_to_state: string
         }
+        Returns: Json
+      }
+      atomic_publish_registry_import_batch: {
+        Args: { p_actor: string; p_batch_id: string }
         Returns: Json
       }
       atomic_reconfirm_late_acceptance: {
