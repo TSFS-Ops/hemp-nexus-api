@@ -72,14 +72,18 @@ export default function MyCompanyDetail() {
         );
         setRow(match ?? null);
 
-        if (match?.company_reference) {
+        if (match?.company_id) {
+          // Safe timeline source: this user's own claim event audit names.
           const { data: ev } = await supabase
-            .from("registry_company_events")
-            .select("event_name, created_at")
-            .eq("company_reference", match.company_reference)
+            .from("registry_company_claim_events")
+            .select("audit_event_name, created_at")
+            .eq("claim_id", match.company_id)
             .order("created_at", { ascending: false })
             .limit(50);
-          setTimeline(filterSafeTimeline((ev ?? []) as TimelineEvent[]));
+          const mapped: TimelineEvent[] = ((ev as Array<{ audit_event_name: string; created_at: string }>) ?? []).map(
+            (e) => ({ event_name: e.audit_event_name.replace(/^registry_/, ""), created_at: e.created_at }),
+          );
+          setTimeline(filterSafeTimeline(mapped));
         }
       } catch (e) {
         setError((e as Error).message);
