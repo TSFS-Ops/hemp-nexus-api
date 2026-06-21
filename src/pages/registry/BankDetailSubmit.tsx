@@ -295,7 +295,7 @@ export default function BankDetailSubmit() {
             <Checkbox checked={isThirdParty} onCheckedChange={(c) => setIsThirdParty(c === true)} />
             <span>This is a third-party account (will be flagged for review)</span>
           </label>
-          {missing.length > 0 && selectedCompany && (
+          {missing.length > 0 && selectedAuthority && (
             <p className="text-xs text-amber-700">
               Missing required: {missing.join(", ")}
             </p>
