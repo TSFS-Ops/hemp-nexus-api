@@ -18141,6 +18141,16 @@ export type Database = {
         }
         Returns: Json
       }
+      registry_company_people_public_safe: {
+        Args: { _record_id: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          id: string
+          record_id: string
+          role_kind: string
+        }[]
+      }
       registry_normalise_search_value: { Args: { p: string }; Returns: string }
       release_billing_hold: {
         Args: { p_admin_user_id: string; p_org_id: string; p_reason: string }
