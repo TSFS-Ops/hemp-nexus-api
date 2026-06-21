@@ -74,6 +74,7 @@ const Status = lazy(() => import("@/pages/Status"));
 const RegistryLanding = lazy(() => import("@/pages/registry/Landing"));
 const RegistrySearch = lazy(() => import("@/pages/registry/Search"));
 const RegistryCompanyProfile = lazy(() => import("@/pages/registry/CompanyProfile"));
+const RegistryNewCompanyRequest = lazy(() => import("@/pages/registry/NewCompanyRequest"));
 const RegistryClaim = lazy(() => import("@/pages/registry/Claim"));
 const RegistryReadiness = lazy(() => import("@/pages/registry/Readiness"));
 const AdminRegistryIndex = lazy(() => import("@/pages/admin/registry/Index"));
