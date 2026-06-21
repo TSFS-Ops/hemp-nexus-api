@@ -56,7 +56,9 @@
     "registry-admin-operations-summary",
     "registry-client-readiness-summary",
     "registry-new-company-request",
-    "registry-company-correction-request"
+    "registry-company-correction-request",
+    "registry-batch7-audit-export",
+    "claim-lifecycle-webhook-dispatch"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
