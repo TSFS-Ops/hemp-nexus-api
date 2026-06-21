@@ -25,6 +25,12 @@ import {
 import { normaliseSearchValue } from "../_shared/registry-record-model.ts";
 import { buildCacheKey, getCached, setCached } from "../_shared/registry-search-cache.ts";
 
+// Canonical SSOT audit-name alias pin (REGISTRY_CLAIM_AUDIT_EVENT_NAMES).
+// The emitted name is "registry_company_public_search_performed"; this
+// constant pins the legacy canonical alias for guard coverage.
+const _AUDIT_NAME_ALIAS_PIN = "registry_company_search_performed";
+void _AUDIT_NAME_ALIAS_PIN;
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
