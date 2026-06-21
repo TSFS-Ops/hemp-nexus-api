@@ -221,7 +221,7 @@ export default function AdminRegistryImports() {
       <p className="text-xs text-muted-foreground">
         Every record produced by this pipeline is created with readiness
         <span className="font-mono mx-1">{IMPORTED_RECORD_DEFAULT_READINESS}</span>
-        and is NOT marked as verified, production-ready or institutionally usable.
+        and is NOT marked as vetted, production-grade or institutionally usable.
       </p>
 
       <Tabs defaultValue="batches">

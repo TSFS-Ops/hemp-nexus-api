@@ -215,7 +215,7 @@ export default function RegistrySearch() {
                     ))}
                   </div>
                 )}
-                <p className="text-[11px] text-amber-700">Source-backed record. Not independently verified by Izenzo.</p>
+                <p className="text-[11px] text-amber-700">Source-backed record. Not independently vetted by Izenzo.</p>
                 <div className="flex gap-2 pt-1">
                   <Button asChild size="sm" variant="outline">
                     <Link to={r.profile_link} data-testid="open-profile-cta">Open profile</Link>
