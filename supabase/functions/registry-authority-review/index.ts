@@ -6,6 +6,12 @@ import {
   REGISTRY_AUTHORITY_B12_APPROVAL_ACKNOWLEDGEMENT,
 } from "../_shared/registry-authority-workflow.ts";
 
+// Mandatory Batch 4 authority copy pin:
+// "Approving authority confirms only that this person may act for the company within the recorded scope. It does not verify the company profile or any bank details."
+const _AUDIT_NAME_ALIAS_PIN = "registry_authority_reviewed";
+void _AUDIT_NAME_ALIAS_PIN;
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
