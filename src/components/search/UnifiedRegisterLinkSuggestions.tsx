@@ -14,22 +14,30 @@
  * Pure presentation — pulls all logic from
  * `src/lib/registry-counterparty-link-ssot.ts`.
  */
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link2, PlusCircle } from "lucide-react";
+import { Loader2, Link2, PlusCircle } from "lucide-react";
+import { toast } from "sonner";
+import { apiFetch, generateIdempotencyKey } from "@/lib/api-client";
 import {
-  buildLinkSuggestions,
-  buildProposeLinkUrl,
   buildProposeRegistryRecordUrl,
   LINK_STATE_COPY,
+  type MatchConfidenceBreakdown,
   type MatchableCounterparty,
-  type MatchableRegistry,
 } from "@/lib/registry-counterparty-link-ssot";
 
 interface Props {
   counterparties: MatchableCounterparty[];
-  registry: MatchableRegistry[];
+}
+
+interface BackendSuggestion {
+  state: "candidate_match" | "counterparty_only" | "registry_only";
+  counterparty?: MatchableCounterparty;
+  registry?: MatchableCounterparty & { claimStatus?: string; claimAvailable?: boolean };
+  score?: number;
+  breakdown?: MatchConfidenceBreakdown | null;
 }
 
 export function UnifiedRegisterLinkSuggestions({
