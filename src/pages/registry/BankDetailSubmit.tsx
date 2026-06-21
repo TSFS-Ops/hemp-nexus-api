@@ -224,14 +224,11 @@ export default function BankDetailSubmit() {
                 <SelectValue placeholder="Pick an active authority" />
               </SelectTrigger>
               <SelectContent>
-                {authorities.map((a) => {
-                  const co = companies[a.company_reference];
-                  return (
-                    <SelectItem key={a.authority_request_id} value={a.authority_request_id}>
-                      {co?.company_name ?? a.company_reference} — {a.scope_code}
-                    </SelectItem>
-                  );
-                })}
+                {authorities.map((a) => (
+                  <SelectItem key={a.authority_request_id} value={a.authority_request_id}>
+                    {a.company_reference} — {a.scope_code}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
