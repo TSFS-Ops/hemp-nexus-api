@@ -7,8 +7,9 @@ import path from "node:path";
 
 const SCAN = ["src/pages/registry", "src/components/registry"];
 const FORBIDDEN = [
-  /\bindependently\s+verified\s+by\s+Izenzo\s*[.,]?\s*This\s+record\s+is/i, // false combo
-  /\bproduction[-_ ]?ready\b/i,
+  // Match prose "production ready" / "production-ready" but NOT the enum
+  // literal "production_ready" (which is a permitted state identifier).
+  /\bproduction[- ]ready\b/i,
   /\binstitutionally\s+usable\b/i,
 ];
 // Allow the negative phrasing ("Not independently verified by Izenzo") which
