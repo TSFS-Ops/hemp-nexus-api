@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     if (!body || !recipient_user_id) {
       return new Response(JSON.stringify({ error: "missing_fields" }), { status: 400, headers: corsHeaders });
     }
-    // sent_externally: false — this batch must not trigger real email/SMS/WhatsApp.
+    // sent_externally: false — log-only; no external provider invoked.
     const { data: ins, error } = await supabase.from("registry_authority_status_notifications").insert({
       authority_request_id, recipient_user_id, event_name, body, sent_externally: false,
     }).select().single();
