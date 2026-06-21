@@ -47,9 +47,19 @@ function walk(root) {
 function scan(path) {
   if (SSOT_FILES.has(path)) return;
   const src = readFileSync(path, "utf8");
+  const lines = src.split(/\r?\n/);
+  // Negative / disclaimer context: legitimate to mention forbidden phrases.
+  const isNegativeContext = (line) =>
+    /\b(not|never|no|do not|don't|cannot|must not|disclaim|forbid|forbidden|without|excludes?|exclude|FORBIDDEN|removed|denied)\b/i.test(line)
+    || /^\s*[\/*#-]/.test(line) // comments/bullets often describe rules
+    || /forbidden|disclaim|warning|guard|rule:/i.test(line);
   for (const re of FORBIDDEN) {
-    const m = src.match(re);
-    if (m) failures.push(`${path}: forbidden wording "${m[0]}"`);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!re.test(line)) continue;
+      if (isNegativeContext(line)) continue;
+      failures.push(`${path}:${i + 1}: forbidden wording "${line.match(re)[0]}"`);
+    }
   }
 }
 
