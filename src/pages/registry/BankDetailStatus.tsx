@@ -42,10 +42,8 @@ type Row = {
 
 type EvidenceRow = {
   id: string;
-  category: string | null;
-  evidence_category: string | null;
-  state: string | null;
-  evidence_state: string | null;
+  evidence_kind: string;
+  description: string | null;
 };
 
 export default function BankDetailStatus() {
