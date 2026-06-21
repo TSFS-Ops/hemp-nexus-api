@@ -30,6 +30,7 @@ limitations and outstanding production blockers.
 | 17 | Admin operations centre | accepted | `evidence/batch-17-registry-admin-operations-centre/README.md` | Role-gated; read-only aggregations. |
 | 18 | End-to-end UAT, release gate, demo pack | accepted | `evidence/batch-18-end-to-end-uat-release-demo/README.md` | Default final status not `production_ready`. |
 | 19A | Client claim/search/profile decision alignment | accepted | `evidence/batch-19a-client-claim-search-profile-decisions/README.md` | Five sample records locked `sample_only`; SMS/WhatsApp disabled in Phase 1; claim approval is `claim_approved_limited`. |
+| 19B | Client decision UI / API / UAT alignment | accepted | `evidence/batch-19b-client-decision-ui-api-uat-alignment/README.md` | UI/API/UAT surfaces aligned to client-signed wording; sample_only API contract (`production_api: excluded`, sandbox `verified_by_izenzo: false`); officer-name public search blocked unless approved; SMS/WhatsApp Phase 1 disabled wording pinned; do-not-contact suppression copy pinned. |
 
 ## Cross-cutting guarantees
 
