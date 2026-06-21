@@ -1204,3 +1204,11 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - Tests: `src/tests/batch-17-registry-admin-operations-centre.test.ts`.
 - Evidence: `evidence/batch-17-registry-admin-operations-centre/README.md`.
 - Batches 1–16 guardrails untouched.
+
+### Edge functions requiring deploy (Batch 17)
+- registry-operations-summary
+- registry-operations-queue
+- registry-operations-risk
+- registry-operations-slas
+- registry-operations-readiness
+- registry-operations-audit
