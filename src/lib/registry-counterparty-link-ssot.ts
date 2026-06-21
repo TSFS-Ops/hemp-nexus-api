@@ -108,18 +108,31 @@ export interface MatchableCounterparty {
   id: string;
   name: string;
   countryCode?: string | null;
+  registrationNumber?: string | null;
+  legalForm?: string | null;
 }
 
 export interface MatchableRegistry {
   id: string;
   name: string;
   countryCode?: string | null;
+  registrationNumber?: string | null;
+  legalForm?: string | null;
+}
+
+export interface MatchConfidenceBreakdown {
+  nameSimilarity: number;
+  registrationNumberMatch: "match" | "mismatch" | "missing";
+  countryRule: "match" | "mismatch" | "missing";
+  legalFormRule: "compatible" | "different" | "missing";
 }
 
 export interface LinkSuggestion {
   state: RegistryCounterpartyLinkState;
   counterparty?: MatchableCounterparty;
   registry?: MatchableRegistry;
+  score?: number;
+  breakdown?: MatchConfidenceBreakdown;
 }
 
 /**
@@ -131,14 +144,42 @@ export function isCandidateMatch(
   cp: MatchableCounterparty,
   reg: MatchableRegistry,
 ): boolean {
-  const a = normalizeCompanyName(cp.name);
-  const b = normalizeCompanyName(reg.name);
-  if (!a || !b) return false;
-  if (a !== b) return false;
-  if (cp.countryCode && reg.countryCode) {
-    return cp.countryCode.toUpperCase() === reg.countryCode.toUpperCase();
-  }
-  return true;
+  return calculateMatchConfidence(cp, reg).score >= 80;
+}
+
+function tokenOverlapSimilarity(a: string, b: string): number {
+  const left = new Set(normalizeCompanyName(a).split(" ").filter(Boolean));
+  const right = new Set(normalizeCompanyName(b).split(" ").filter(Boolean));
+  if (left.size === 0 || right.size === 0) return 0;
+  const intersection = [...left].filter((x) => right.has(x)).length;
+  const union = new Set([...left, ...right]).size;
+  return Math.round((intersection / union) * 100);
+}
+
+export function calculateMatchConfidence(
+  cp: MatchableCounterparty,
+  reg: MatchableRegistry,
+): { score: number; breakdown: MatchConfidenceBreakdown } {
+  const nameSimilarity = tokenOverlapSimilarity(cp.name, reg.name);
+  const cpReg = cp.registrationNumber?.trim().toLowerCase() || "";
+  const regReg = reg.registrationNumber?.trim().toLowerCase() || "";
+  const registrationNumberMatch = cpReg && regReg
+    ? cpReg === regReg ? "match" : "mismatch"
+    : "missing";
+  const countryRule = cp.countryCode && reg.countryCode
+    ? cp.countryCode.toUpperCase() === reg.countryCode.toUpperCase() ? "match" : "mismatch"
+    : "missing";
+  const legalFormRule = cp.legalForm && reg.legalForm
+    ? normalizeCompanyName(cp.legalForm) === normalizeCompanyName(reg.legalForm) ? "compatible" : "different"
+    : "missing";
+
+  let score = Math.round(nameSimilarity * 0.62);
+  score += registrationNumberMatch === "match" ? 24 : registrationNumberMatch === "mismatch" ? -18 : 0;
+  score += countryRule === "match" ? 10 : countryRule === "mismatch" ? -20 : 0;
+  score += legalFormRule === "compatible" ? 4 : legalFormRule === "different" ? -4 : 0;
+  score = Math.max(0, Math.min(100, score));
+
+  return { score, breakdown: { nameSimilarity, registrationNumberMatch, countryRule, legalFormRule } };
 }
 
 /**
@@ -152,10 +193,14 @@ export function buildLinkSuggestions(
   const out: LinkSuggestion[] = [];
   const matchedRegistryIds = new Set<string>();
   for (const cp of counterparties) {
-    const reg = registry.find((r) => isCandidateMatch(cp, r));
+    const ranked = registry
+      .map((r) => ({ registry: r, confidence: calculateMatchConfidence(cp, r) }))
+      .sort((a, b) => b.confidence.score - a.confidence.score);
+    const best = ranked.find((r) => r.confidence.score >= 80);
+    const reg = best?.registry;
     if (reg) {
       matchedRegistryIds.add(reg.id);
-      out.push({ state: "candidate_match", counterparty: cp, registry: reg });
+      out.push({ state: "candidate_match", counterparty: cp, registry: reg, score: best.confidence.score, breakdown: best.confidence.breakdown });
     } else {
       out.push({ state: "counterparty_only", counterparty: cp });
     }
