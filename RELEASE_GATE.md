@@ -921,4 +921,52 @@ Out of scope (explicitly NOT in Batch 7): production-scale registry data ingesti
 
 Completion phrase: `BATCH_7_REGISTRY_SEARCH_CLAIM_RULES_HARDENING_COMPLETE`.
 
+## Batch 8 — Registry Record Model, Search Index & Working Search Experience
+
+Working public registry search and profile experience over a real
+record model + search index. Public-only tier separation enforced by
+RLS, column grants and `check-registry-record-model-parity.mjs`;
+forbidden marketing wording blocked by
+`check-registry-batch8-no-verified-wording.mjs`. Short-lived per-scope
+caching, additional filters (readiness/claim status), cursor pagination
+and lifecycle webhooks (`registry.search_performed`,
+`registry.profile_viewed`) ship alongside.
+
+Evidence: `evidence/batch-8-registry-record-search-profile/README.md`.
+
+Completion phrase: `BATCH_8_REGISTRY_RECORD_SEARCH_PROFILE_COMPLETE`.
+
+## Batch 9 — Registry Source File Import, Field Mapping, Validation
+
+Controlled import pipeline: source-file upload (manual records / JSON
+/ CSV / extracted text), field mapping with visibility tiers,
+validation matrix (required fields, bank-detail patterns, mapping
+policy, intra-batch and DB-wide duplicate detection), quarantine
+queue, duplicate review, business-decision-gated approval and
+atomic publish via `atomic_publish_registry_import_batch`. Every
+published record is forced to `readiness_state = imported_unverified`
+and `api_output_allowed = false`. Public-tier search index rows are
+the only ones written by publish.
+
+Guards added to prebuild:
+- `check-registry-import-pipeline-parity.mjs` — Deno ↔ TS SSOT for
+  source types, target fields, visibility tiers, forbidden public
+  mappings, validation outcomes, duplicate confidence levels,
+  quarantine reason codes, audit event names, and forbidden wording.
+- `check-registry-batch9-no-verified-default.mjs` — fails CI if any
+  new code defaults an imported record to verified / production-ready
+  / institutionally usable.
+
+Tests: `src/tests/batch-9-registry-source-import-validation.test.ts`.
+Evidence: `evidence/batch-9-registry-source-import-validation/README.md`.
+
+Out of scope (explicitly NOT in Batch 9): production-scale automated
+ingestion, OCR pipelines, external provider integrations, any
+verified / production-ready / institutionally-usable wording, raw
+bank-detail or raw personal contact-detail exposure, outreach
+triggers, weakening of any Batch 1–8 accepted rule.
+
+Completion phrase: `BATCH_9_REGISTRY_SOURCE_IMPORT_VALIDATION_COMPLETE`.
+
+
 
