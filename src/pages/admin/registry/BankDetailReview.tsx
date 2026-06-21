@@ -31,6 +31,8 @@ import {
   REGISTRY_BANK_DETAIL_B13_UI_RISK_LABEL,
   REGISTRY_BANK_DETAIL_B13_UI_UNMASK_NOTICE,
 } from "@/lib/registry-bank-details-b13-ui";
+import { BankVerificationPublicStatus } from "@/components/registry/BankVerificationPublicStatus";
+import type { RegistryBankVerificationStatus } from "@/lib/registry-bank-verification";
 
 type QueueRow = {
   id: string;
