@@ -36,9 +36,15 @@ import {
   REGISTRY_BANK_VERIFICATION_UI_EXPIRED_PAYMENT_NOTICE,
   REGISTRY_BANK_VERIFICATION_UI_DISPUTED_PAYMENT_NOTICE,
   REGISTRY_BANK_VERIFICATION_UI_REVOKED_PAYMENT_NOTICE,
+  REGISTRY_BANK_VERIFICATION_UI_PAGE_SIZE,
   verificationBadgeFor,
+  slaIndicatorFor,
+  encodeCursor,
+  decodeCursor,
   type GateDisplayRow,
+  type VerificationQueueCursor,
 } from "@/lib/registry-bank-verification-ui";
+import { REGISTRY_BANK_VERIFICATION_MODES, REGISTRY_BANK_VERIFICATION_STATUSES } from "@/lib/registry-bank-verification";
 
 type QueueRow = {
   id: string;
