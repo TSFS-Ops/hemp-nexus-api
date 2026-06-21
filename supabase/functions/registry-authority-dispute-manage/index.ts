@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
         status: "disputed", disputed_at: new Date().toISOString(), dispute_reason: reason, last_activity_at: new Date().toISOString(),
       }).eq("id", authority_request_id);
       // Suspend sensitive scopes in active cache
-      await supabase.rpc("noop_placeholder", {}).catch(() => null);
       const { data: ar } = await supabase.from("registry_authority_requests").select("requester_user_id,company_reference").eq("id", authority_request_id).maybeSingle();
       if (ar) {
         await supabase.from("registry_active_authorities").update({ suspended_at: new Date().toISOString(), status: "suspended", updated_at: new Date().toISOString() })
