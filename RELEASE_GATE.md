@@ -1091,3 +1091,27 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - `check-registry-bank-verification-parity.mjs`
 - `check-registry-bank-verification-invariants.mjs`
 - `check-registry-bank-verification-no-live-provider.mjs`
+
+## Batch 14B — Bank Verification Admin UI and Claimant-Safe Status Wiring
+
+- New admin routes (separate from Batch 13B):
+  - `/admin/registry/bank-verification` (queue)
+  - `/admin/registry/bank-verification/:bankDetailSubmissionId` (detail)
+- New UI files:
+  - `src/lib/registry-bank-verification-ui.ts` (UI SSOT wrapper, badge resolver, public-label resolver)
+  - `src/pages/admin/registry/BankVerificationReview.tsx` (queue + detail)
+  - `src/components/registry/BankVerificationPublicStatus.tsx` (claimant-safe status badge)
+- Decision-gate display on admin detail covers every gate in `REGISTRY_BANK_VERIFICATION_DECISION_GATES` with `passed | failed | warning | not_applicable` states; failed gates disable the manual action.
+- Manual verification remains DISABLED by default in the UI. When allowed (mode `manual_verification_allowed`, all gates green, not expired, not cancelled) the affordance is gated by the canonical acknowledgement copy from the accepted Batch 14 SSOT and remains backend-gated.
+- Provider simulation surfaces always render the canonical test-only label "Provider simulation only. This does not verify bank details." Simulation results NEVER render as verified.
+- `captured_unverified`, `manual_verified`, `provider_matched`, `provider_mismatch`, `provider_error`, `provider_unavailable`, `failed`, `expired`, `disputed`, `revoked`, `cancelled` ALL render as "Not verified" on every B14B surface.
+- Raw bank-detail columns are never selected by any B14B file. Raw access remains gated by the elevated Batch 13B unmask flow.
+- New guards (wired into `prebuild`): `check-batch-14b-ui-no-verified.mjs`, `check-batch-14b-ui-no-raw-leak.mjs`.
+- Batch 13B routes, callsites, RLS, audit events and guards are unchanged. Batch 14 backend contracts are unchanged.
+- Tests: `src/tests/batch-14b-bank-verification-ui.test.tsx`.
+- Evidence: `evidence/batch-14b-bank-verification-ui-status/README.md`.
+
+## Prebuild guard script index (Batch 14B sync)
+
+- `check-batch-14b-ui-no-verified.mjs`
+- `check-batch-14b-ui-no-raw-leak.mjs`
