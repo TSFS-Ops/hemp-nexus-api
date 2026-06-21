@@ -100,8 +100,12 @@
     "registry-bank-verification-provider-config",
     "registry-bank-verification-provider-simulate",
     "registry-bank-verification-expiry-scan",
-    "registry-bank-verification-api-status"
-  ],
+    "registry-bank-verification-api-status",
+    "registry-api-profile-status",
+    "registry-api-payment-status",
+    "registry-api-readiness-status",
+    "registry-api-coverage-status",
+    "registry-api-client-key-manage"
   "exempt_invokes": [
     "admin-residency-review-approve",
     "admin-residency-review-decline",
