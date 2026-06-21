@@ -1,11 +1,14 @@
 // Batch 3 — M002 Public Company Search (governed shell).
-// Returns ONLY rows that pass readiness + country coverage checks and never
-// exposes raw bank details. No real registry data is loaded in Batch 3, so the
-// result set is always an empty list with a clearly labelled readiness banner.
+// Batch 7 — per-IP / per-API-key rate limiting added to prevent enumeration.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { handleCorsPreflight, withCors } from "../_shared/cors.ts";
 import { REGISTRY_CLAIM_AUDIT_EVENT_NAMES } from "../_shared/registry-claims.ts";
+import {
+  clientIpFromRequest,
+  enforceRegistrySearchRateLimit,
+  rateLimited429,
+} from "../_shared/registry-search-rate-limit.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
