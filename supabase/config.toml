@@ -166,6 +166,15 @@ project_id = "ugrfyhwlonlmlcmcpcdm"
     verify_jwt = false
   [functions.registry-client-readiness-summary]
     verify_jwt = false
+  [functions.notification-channel-readiness-list]
+    verify_jwt = false
+  [functions.notification-channel-readiness-update]
+    verify_jwt = false
+  [functions.notification-channel-skip-record]
+    verify_jwt = false
+  [functions.manual-outreach-contact-log]
+    verify_jwt = false
+
 
 
 
