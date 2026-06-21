@@ -17,6 +17,7 @@ import { SearchMetricsCard } from "@/components/search/SearchMetricsCard";
 import { CompactCounterpartyRow } from "@/components/search/CompactCounterpartyRow";
 import { ResultCardErrorBoundary } from "@/components/search/ResultCardErrorBoundary";
 import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
+import { RegistryAlsoFoundPanel } from "@/components/search/RegistryAlsoFoundPanel";
 import { consumePreAuthState } from "@/lib/pre-auth-state";
 import { sanitizeSearchResults, detectDegradation, type DegradationInfo } from "@/lib/sanitize-search-results";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
@@ -785,6 +786,21 @@ export default function CounterpartySearch() {
             </div>
           );
         })()}
+
+        {/* Business Registry — secondary results panel.
+            Always rendered after the live network results so verified/network
+            counterparties stay primary. Carries the imported_unverified
+            disclaimer and never promotes registry records into the verified
+            lane. Safe to mount even when network results are empty: it has
+            its own loading/empty/error states. */}
+        {!isSearching && !searchError && (
+          <RegistryAlsoFoundPanel
+            query={query}
+            hasSearched={hasSearched}
+            parsedQuery={parsedQuery}
+            networkResultCount={results.length}
+          />
+        )}
 
         {/* Sticky floating CTA, always visible when trading partners are selected */}
         {!isSearching && results.length > 0 && selectedResults.size > 0 && (
