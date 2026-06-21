@@ -135,3 +135,75 @@ export function publicLabelFor(
 }
 
 export { REGISTRY_BANK_VERIFICATION_FINAL_VERIFIED };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SLA / age indicators (admin queue only — never exposed to claimants).
+// ─────────────────────────────────────────────────────────────────────────────
+/** Days from request creation before the SLA-approaching warning shows. */
+export const REGISTRY_BANK_VERIFICATION_UI_SLA_APPROACHING_DAYS = 7;
+/** Days from request creation before the SLA-breached label shows. */
+export const REGISTRY_BANK_VERIFICATION_UI_SLA_BREACHED_DAYS = 14;
+
+export type SlaState = "on_track" | "approaching" | "breached";
+
+export interface SlaIndicator {
+  state: SlaState;
+  ageDays: number;
+  label: string;
+}
+
+/**
+ * Pure helper — derives SLA state and label from a request creation time
+ * and the current clock. Terminal verification statuses (verified, failed,
+ * cancelled, expired, revoked, disputed) are always "on_track" because the
+ * SLA is no longer running against the reviewer.
+ */
+export function slaIndicatorFor(
+  createdAt: string,
+  status: string,
+  now: number = Date.now(),
+): SlaIndicator {
+  const ageMs = Math.max(0, now - new Date(createdAt).getTime());
+  const ageDays = Math.floor(ageMs / 86_400_000);
+  const terminal = new Set([
+    "verified",
+    "failed",
+    "cancelled",
+    "expired",
+    "revoked",
+    "disputed",
+  ]);
+  if (terminal.has(status)) {
+    return { state: "on_track", ageDays, label: `${ageDays}d` };
+  }
+  if (ageDays >= REGISTRY_BANK_VERIFICATION_UI_SLA_BREACHED_DAYS) {
+    return { state: "breached", ageDays, label: `SLA breached · ${ageDays}d` };
+  }
+  if (ageDays >= REGISTRY_BANK_VERIFICATION_UI_SLA_APPROACHING_DAYS) {
+    return { state: "approaching", ageDays, label: `Approaching SLA · ${ageDays}d` };
+  }
+  return { state: "on_track", ageDays, label: `${ageDays}d` };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cursor pagination for the admin queue (stable sort by created_at DESC, id DESC).
+// ─────────────────────────────────────────────────────────────────────────────
+/** Default page size for the admin verification queue. */
+export const REGISTRY_BANK_VERIFICATION_UI_PAGE_SIZE = 25;
+
+export interface VerificationQueueCursor {
+  createdAt: string;
+  id: string;
+}
+
+export function encodeCursor(c: VerificationQueueCursor): string {
+  return `${c.createdAt}|${c.id}`;
+}
+
+export function decodeCursor(raw: string | null | undefined): VerificationQueueCursor | null {
+  if (!raw) return null;
+  const [createdAt, id] = raw.split("|");
+  if (!createdAt || !id) return null;
+  return { createdAt, id };
+}
+
