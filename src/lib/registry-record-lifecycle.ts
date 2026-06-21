@@ -247,3 +247,50 @@ export const REGISTRY_BATCH10_FORBIDDEN_WORDING = [
   "authority confirmed",
   "officially verified",
 ] as const;
+
+export interface ClaimAvailabilityInputs {
+  lifecycle_state: RegistryRecordLifecycleState;
+  has_provenance: boolean;
+  source_approved: boolean;
+  business_decision_approved: boolean;
+  country_ready: boolean;
+  has_unresolved_high_duplicate: boolean;
+  is_quarantined: boolean;
+  has_active_correction_on_identity: boolean;
+  has_claim_conflict_lock: boolean;
+  is_stale: boolean;
+  admin_stale_override?: boolean;
+}
+
+export interface ClaimAvailabilityOutput {
+  result: RegistryClaimAvailabilityResult;
+  public_reason: string;
+  internal_reason: string;
+}
+
+export function evaluateClaimAvailability(
+  i: ClaimAvailabilityInputs,
+): ClaimAvailabilityOutput {
+  const mk = (
+    result: RegistryClaimAvailabilityResult,
+    internal: string,
+  ): ClaimAvailabilityOutput => ({
+    result,
+    public_reason: REGISTRY_CLAIM_PUBLIC_REASONS[result],
+    internal_reason: internal,
+  });
+  if (i.lifecycle_state === "disabled") return mk("record_disabled", "Record is disabled.");
+  if (i.lifecycle_state === "archived") return mk("record_archived", "Record is archived.");
+  if (!i.has_provenance) return mk("insufficient_provenance", "Record has no provenance.");
+  if (i.is_quarantined) return mk("duplicate_review_required", "Record is quarantined.");
+  if (i.has_unresolved_high_duplicate) return mk("duplicate_review_required", "Unresolved high-confidence duplicate.");
+  if (!i.source_approved) return mk("source_not_approved", "Source file has no permitted-use approval.");
+  if (!i.business_decision_approved) return mk("business_decision_required", "No approved business decision for claim activation.");
+  if (!i.country_ready) return mk("country_not_ready", "Country coverage does not allow claims.");
+  if (i.has_active_correction_on_identity) return mk("correction_under_review", "Active correction on identity field.");
+  if (i.has_claim_conflict_lock) return mk("claim_conflict_locked", "Claim conflict lock active.");
+  if (i.is_stale && !i.admin_stale_override) return mk("record_stale", "Record is stale and no admin override.");
+  if (i.lifecycle_state === "claim_suspended") return mk("not_available", "Claim availability is suspended.");
+  if (i.lifecycle_state === "claim_enabled") return mk("available", "All gates satisfied; claim enabled.");
+  return mk("not_available", `Lifecycle state ${i.lifecycle_state} does not permit claim.`);
+}
