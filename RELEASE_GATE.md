@@ -978,5 +978,42 @@ triggers, weakening of any Batch 1–8 accepted rule.
 
 Completion phrase: `BATCH_9_REGISTRY_SOURCE_IMPORT_VALIDATION_COMPLETE`.
 
+---
+
+## Batch 10 — Import-to-Claim Activation & Record Lifecycle Controls
+
+Adds the controlled lifecycle layer that decides when an imported registry
+record may become claimable. New lifecycle states
+(`imported_unverified`, `import_review_required`, `import_review_in_progress`,
+`claim_not_available`, `claim_pending_business_decision`, `claim_enabled`,
+`claim_suspended`, `claim_conflict_locked`, `correction_under_review`,
+`source_refresh_required`, `stale_review_required`, `disabled`, `archived`)
+plus a shared claim-availability engine returning a safe public reason and
+an admin-only internal reason. Claim activation requires `platform_admin`
+or `compliance_owner` (AAL2), provenance, approved source, approved
+business decision, country coverage, and resolution of duplicates,
+corrections and conflict locks. `claim_enabled` only allows the claim
+workflow to start — it never implies verified company, authority approval,
+bank verification, production readiness or institutional usability.
+
+New edge functions (deploy-listed): `registry-record-lifecycle-manage`,
+`registry-claim-availability-check`, `registry-claim-activation-review`,
+`registry-record-stale-review`, `registry-record-lifecycle-summary`.
+
+Guards added to prebuild:
+- `check-registry-record-lifecycle-parity.mjs` — TS ↔ Deno SSOT parity
+  for lifecycle states, claim activation states, availability results,
+  public reasons, public labels, transitions, identity fields, stale
+  defaults, approval roles, audit names and forbidden wording.
+- `check-registry-batch10-no-verified-claim-wording.mjs` — blocks
+  verified / production-ready / institutionally-usable / authority
+  confirmed / bank verified claims appearing in registry surfaces.
+
+Tests: `src/tests/batch-10-import-to-claim-lifecycle.test.ts` (30 cases).
+Evidence: `evidence/batch-10-import-to-claim-lifecycle/README.md`.
+
+Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
+
+
 
 
