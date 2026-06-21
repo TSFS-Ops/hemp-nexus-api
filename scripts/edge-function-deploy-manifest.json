@@ -71,7 +71,14 @@
     "registry-claim-availability-check",
     "registry-claim-activation-review",
     "registry-record-stale-review",
-    "registry-record-lifecycle-summary"
+    "registry-record-lifecycle-summary",
+    "registry-claim-start",
+    "registry-claim-submit",
+    "registry-claim-evidence-upload",
+    "registry-claim-status",
+    "registry-claim-review",
+    "registry-claim-conflict-resolve",
+    "registry-claim-notification-log"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
