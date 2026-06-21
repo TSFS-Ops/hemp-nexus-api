@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { UAT_PROVISIONING_ENABLED, UAT_SKIP_REASON } from "./_ci-gate";
+import { UAT_PROVISIONING_ENABLED } from "./_ci-gate";
 import { createClient } from "@supabase/supabase-js";
 import { signUpTestUser } from "./test-client";
 

@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { UAT_PROVISIONING_ENABLED, UAT_SKIP_REASON } from "./_ci-gate";
+import { UAT_PROVISIONING_ENABLED } from "./_ci-gate";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { signUpTestUser } from "./test-client";

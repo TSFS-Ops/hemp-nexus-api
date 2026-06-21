@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { UAT_PROVISIONING_ENABLED, UAT_SKIP_REASON } from "./_ci-gate";
+import { UAT_PROVISIONING_ENABLED } from "./_ci-gate";
 import { supabase, signUpTestUser } from "./test-client";
 
 const TEST_EMAIL = `uat-billing-${Date.now()}@test.izenzo.co.za`;
