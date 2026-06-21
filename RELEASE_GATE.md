@@ -1017,3 +1017,16 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 
 
 
+
+
+## Batch 11 — Real Claim Submission, Evidence Upload and Review UX
+
+- SSOT: src/lib/registry-claim-workflow.ts (Deno mirror in _shared)
+- Edge functions: registry-claim-start, registry-claim-submit, registry-claim-evidence-upload, registry-claim-status, registry-claim-review, registry-claim-conflict-resolve, registry-claim-notification-log
+- New tables: registry_company_claim_review_events, registry_company_claim_notes, registry_company_claim_assignments, registry_company_claim_status_notifications
+- Extended: registry_company_claims (+11 columns), registry_company_claim_evidence (+13 columns)
+- Routes: /registry/claims, /registry/claims/:claimId, /admin/registry/claims-review
+- Guards: check-registry-claim-workflow-parity, check-registry-batch11-audit-names, check-registry-batch11-no-verified-claim-wording, check-registry-batch11-no-auto-send
+- Evidence: evidence/batch-11-real-claim-submission-review/README.md
+- Approval never grants authority, verification, bank verification or API/institutional use; in-app notifications are LOG-ONLY.
+
