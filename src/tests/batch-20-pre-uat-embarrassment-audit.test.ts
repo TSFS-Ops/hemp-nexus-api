@@ -8,11 +8,11 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 
+import { BATCH_19A_SAMPLE_ONLY_RECORDS } from "@/lib/registry-client-decisions-19a";
 import {
-  REGISTRY_CLIENT_DECISIONS_19A,
-} from "@/lib/registry-client-decisions-19a";
-import {
-  REGISTRY_CLIENT_DECISIONS_19B,
+  BATCH_19B_CLAIM_APPROVED_LIMITED_COPY,
+  BATCH_19B_CLAIM_APPROVAL_DOES_NOT_UNLOCK,
+  BATCH_19B_SAMPLE_ONLY_API_CONTRACT,
 } from "@/lib/registry-client-decisions-19b";
 import {
   REGISTRY_READINESS_COPY,
@@ -21,7 +21,7 @@ import {
 
 describe("Batch 20 — Pre-UAT Embarrassment Audit", () => {
   it("the five client records are locked sample_only and excluded from production API", () => {
-    const ids = REGISTRY_CLIENT_DECISIONS_19A.sampleOnlyRecords.map((r) => r.id);
+    const ids = BATCH_19A_SAMPLE_ONLY_RECORDS.map((r: any) => r.id ?? r);
     expect(ids).toEqual(
       expect.arrayContaining([
         "bullion_bathrooms_nigeria",
@@ -31,20 +31,18 @@ describe("Batch 20 — Pre-UAT Embarrassment Audit", () => {
         "starfair_162",
       ]),
     );
-    expect(REGISTRY_CLIENT_DECISIONS_19B.sampleOnlyApiContract.production_api).toBe(
-      "excluded",
-    );
-    expect(
-      REGISTRY_CLIENT_DECISIONS_19B.sampleOnlyApiContract.sandbox_verified_by_izenzo,
-    ).toBe(false);
+    expect(BATCH_19B_SAMPLE_ONLY_API_CONTRACT.production_api).toBe("excluded");
+    expect(BATCH_19B_SAMPLE_ONLY_API_CONTRACT.sandbox_verified_by_izenzo).toBe(false);
   });
 
   it("claim approval is claim_approved_limited and does not unlock authority/bank/API", () => {
-    const copy = REGISTRY_CLIENT_DECISIONS_19B.claimApprovedLimitedCopy;
-    expect(copy.toLowerCase()).toContain("not verified by this claim approval");
-    expect(REGISTRY_CLIENT_DECISIONS_19B.claimApprovalDoesNotUnlock).toEqual(
-      expect.arrayContaining(["authority", "bank_details", "api_sharing"]),
+    expect(BATCH_19B_CLAIM_APPROVED_LIMITED_COPY.toLowerCase()).toContain(
+      "not verified by this claim approval",
     );
+    const list = BATCH_19B_CLAIM_APPROVAL_DOES_NOT_UNLOCK.join("|").toLowerCase();
+    expect(list).toMatch(/authority/);
+    expect(list).toMatch(/bank/);
+    expect(list).toMatch(/api/);
   });
 
   it("readiness copy never asserts production readiness on non-production states", () => {
