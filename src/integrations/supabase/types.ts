@@ -10811,6 +10811,91 @@ export type Database = {
           },
         ]
       }
+      registry_claim_activation_reviews: {
+        Row: {
+          blocker_snapshot: Json | null
+          created_at: string
+          decision: string
+          id: string
+          reason: string
+          record_id: string
+          reviewer_role: string | null
+          reviewer_user_id: string | null
+        }
+        Insert: {
+          blocker_snapshot?: Json | null
+          created_at?: string
+          decision: string
+          id?: string
+          reason: string
+          record_id: string
+          reviewer_role?: string | null
+          reviewer_user_id?: string | null
+        }
+        Update: {
+          blocker_snapshot?: Json | null
+          created_at?: string
+          decision?: string
+          id?: string
+          reason?: string
+          record_id?: string
+          reviewer_role?: string | null
+          reviewer_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_claim_activation_reviews_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_claim_availability_checks: {
+        Row: {
+          blocker_snapshot: Json | null
+          checked_by_role: string | null
+          checked_by_user_id: string | null
+          created_at: string
+          engine_result: string
+          id: string
+          internal_reason: string | null
+          public_reason: string | null
+          record_id: string
+        }
+        Insert: {
+          blocker_snapshot?: Json | null
+          checked_by_role?: string | null
+          checked_by_user_id?: string | null
+          created_at?: string
+          engine_result: string
+          id?: string
+          internal_reason?: string | null
+          public_reason?: string | null
+          record_id: string
+        }
+        Update: {
+          blocker_snapshot?: Json | null
+          checked_by_role?: string | null
+          checked_by_user_id?: string | null
+          created_at?: string
+          engine_result?: string
+          id?: string
+          internal_reason?: string | null
+          public_reason?: string | null
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_claim_availability_checks_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_claim_conflict_events: {
         Row: {
           actor_id: string | null
@@ -11518,22 +11603,82 @@ export type Database = {
           },
         ]
       }
+      registry_company_record_lifecycle_events: {
+        Row: {
+          actor_role: string | null
+          actor_user_id: string | null
+          blocker_snapshot: Json | null
+          created_at: string
+          id: string
+          next_state: string
+          previous_state: string | null
+          reason: string
+          record_id: string
+          transition_kind: string
+        }
+        Insert: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          blocker_snapshot?: Json | null
+          created_at?: string
+          id?: string
+          next_state: string
+          previous_state?: string | null
+          reason: string
+          record_id: string
+          transition_kind: string
+        }
+        Update: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          blocker_snapshot?: Json | null
+          created_at?: string
+          id?: string
+          next_state?: string
+          previous_state?: string | null
+          reason?: string
+          record_id?: string
+          transition_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_company_record_lifecycle_events_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_company_records: {
         Row: {
           api_output_allowed: boolean
+          archived_at: string | null
+          archived_by: string | null
           authority_status_label: string
           bank_detail_status_label: string
+          claim_activation_state: string
           claim_allowed: boolean
           claim_blocked_reason: string | null
+          claim_enabled_at: string | null
+          claim_enabled_by: string | null
           claim_status: string
+          claim_suspended_at: string | null
+          claim_suspended_by: string | null
           company_name: string
           company_status: string | null
           country_code: string
           created_at: string
+          disabled_at: string | null
+          disabled_by: string | null
           id: string
           internal_confidence_notes: string | null
+          is_stale: boolean
+          last_reviewed_at: string | null
           legal_form: string | null
+          lifecycle_state: string
           local_number: string | null
+          next_review_due_at: string | null
           profile_verification_status: string
           provenance_reference: string | null
           public_display_allowed: boolean
@@ -11542,24 +11687,38 @@ export type Database = {
           registration_number: string | null
           source_generated_date: string | null
           source_summary: string | null
+          stale_after_at: string | null
           updated_at: string
           vat_number: string | null
         }
         Insert: {
           api_output_allowed?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           authority_status_label?: string
           bank_detail_status_label?: string
+          claim_activation_state?: string
           claim_allowed?: boolean
           claim_blocked_reason?: string | null
+          claim_enabled_at?: string | null
+          claim_enabled_by?: string | null
           claim_status?: string
+          claim_suspended_at?: string | null
+          claim_suspended_by?: string | null
           company_name: string
           company_status?: string | null
           country_code: string
           created_at?: string
+          disabled_at?: string | null
+          disabled_by?: string | null
           id?: string
           internal_confidence_notes?: string | null
+          is_stale?: boolean
+          last_reviewed_at?: string | null
           legal_form?: string | null
+          lifecycle_state?: string
           local_number?: string | null
+          next_review_due_at?: string | null
           profile_verification_status?: string
           provenance_reference?: string | null
           public_display_allowed?: boolean
@@ -11568,24 +11727,38 @@ export type Database = {
           registration_number?: string | null
           source_generated_date?: string | null
           source_summary?: string | null
+          stale_after_at?: string | null
           updated_at?: string
           vat_number?: string | null
         }
         Update: {
           api_output_allowed?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           authority_status_label?: string
           bank_detail_status_label?: string
+          claim_activation_state?: string
           claim_allowed?: boolean
           claim_blocked_reason?: string | null
+          claim_enabled_at?: string | null
+          claim_enabled_by?: string | null
           claim_status?: string
+          claim_suspended_at?: string | null
+          claim_suspended_by?: string | null
           company_name?: string
           company_status?: string | null
           country_code?: string
           created_at?: string
+          disabled_at?: string | null
+          disabled_by?: string | null
           id?: string
           internal_confidence_notes?: string | null
+          is_stale?: boolean
+          last_reviewed_at?: string | null
           legal_form?: string | null
+          lifecycle_state?: string
           local_number?: string | null
+          next_review_due_at?: string | null
           profile_verification_status?: string
           provenance_reference?: string | null
           public_display_allowed?: boolean
@@ -11594,6 +11767,7 @@ export type Database = {
           registration_number?: string | null
           source_generated_date?: string | null
           source_summary?: string | null
+          stale_after_at?: string | null
           updated_at?: string
           vat_number?: string | null
         }
@@ -13108,6 +13282,82 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "registry_modules"
             referencedColumns: ["module_code"]
+          },
+        ]
+      }
+      registry_record_lifecycle_notes: {
+        Row: {
+          author_role: string | null
+          author_user_id: string | null
+          created_at: string
+          id: string
+          note: string
+          record_id: string
+        }
+        Insert: {
+          author_role?: string | null
+          author_user_id?: string | null
+          created_at?: string
+          id?: string
+          note: string
+          record_id: string
+        }
+        Update: {
+          author_role?: string | null
+          author_user_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_record_lifecycle_notes_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_record_stale_reviews: {
+        Row: {
+          completed_at: string | null
+          id: string
+          notes: string | null
+          outcome: string | null
+          owner_role: string | null
+          record_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          owner_role?: string | null
+          record_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          owner_role?: string | null
+          record_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_record_stale_reviews_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "registry_company_records"
+            referencedColumns: ["id"]
           },
         ]
       }
