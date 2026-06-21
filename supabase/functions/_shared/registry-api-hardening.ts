@@ -132,7 +132,7 @@ export const REGISTRY_API_HARDENED_RESULT_EXPLANATIONS: Record<
   RegistryApiHardenedResultState,
   string
 > = {
-  usable: "Record is institutionally usable per the recorded state machine and Business Decision Register.",
+  usable: "Record is eligible for institutional use per the recorded state machine and Business Decision Register.",
   not_usable: "Record exists but is not currently approved for institutional use.",
   not_found: "No matching registry record was located.",
   not_ready: "Record is in a pre-production state and is not ready for institutional consumption.",
