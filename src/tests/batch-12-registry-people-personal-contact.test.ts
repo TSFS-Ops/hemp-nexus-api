@@ -38,13 +38,16 @@ describe("batch 12 — registry_company_people personal contact protection", () 
     expect(sql).toMatch(/REVOKE SELECT \(personal_email, personal_phone, personal_address\)[\s\S]*?FROM authenticated/);
   });
 
-  it("exposes a public-safe RPC that excludes personal contact fields", () => {
+  it("exposes a public-safe RPC whose RETURNS TABLE excludes personal contact fields", () => {
     expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.registry_company_people_public_safe/);
-    // The RPC's RETURNS TABLE must NOT list personal_* fields.
-    const rpcBlock = sql.split("registry_company_people_public_safe")[2] ?? "";
-    expect(rpcBlock).not.toMatch(/personal_email/);
-    expect(rpcBlock).not.toMatch(/personal_phone/);
-    expect(rpcBlock).not.toMatch(/personal_address/);
+    // Inspect the RETURNS TABLE projection only — the WHERE clause is
+    // allowed to reference personal_* columns because it enforces them
+    // to be NULL.
+    const fnBlock = sql.split(/CREATE OR REPLACE FUNCTION public\.registry_company_people_public_safe/)[1] ?? "";
+    const returnsBlock = fnBlock.split(/LANGUAGE sql/i)[0] ?? "";
+    expect(returnsBlock).not.toMatch(/personal_email/);
+    expect(returnsBlock).not.toMatch(/personal_phone/);
+    expect(returnsBlock).not.toMatch(/personal_address/);
   });
 
   it("public profile edge function never selects personal_* columns", () => {
