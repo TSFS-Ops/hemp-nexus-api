@@ -7,8 +7,7 @@
  * Admin actions on the detail view: start review, request more evidence
  * (reason required), accept as captured_unverified (acknowledgement + not
  * blocked-risk required), reject (reason required), unmask access
- * (elevated, reasoned, audited). Captured/unverified is NEVER shown as
- * verified.
+ * (elevated, reasoned, audited). Captured/unverified is never treated as verified.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
