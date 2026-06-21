@@ -288,13 +288,13 @@ function App() {
                   <Route path="/admin/registry/api-usage" element={<AdminApiUsage />} />
                   <Route path="/admin/registry/api-test-console" element={<AdminApiTestConsole />} />
                   {/* Batch 6 — Operations, Outreach, DNC */}
-                  <Route path="/admin/registry/operations" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsCentre /></RequireAuth>} />
+                  <Route path="/admin/registry/operations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsCentre /></RequireAuth>} />
                   {/* Batch 17 — Operations Centre sub-routes */}
-                  <Route path="/admin/registry/operations/queue" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsQueue /></RequireAuth>} />
-                  <Route path="/admin/registry/operations/slas" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsSlas /></RequireAuth>} />
-                  <Route path="/admin/registry/operations/risk" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsRisk /></RequireAuth>} />
-                  <Route path="/admin/registry/operations/readiness" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsReadiness /></RequireAuth>} />
-                  <Route path="/admin/registry/operations/audit" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsAudit /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/queue" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsQueue /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/slas" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsSlas /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/risk" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsRisk /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsReadiness /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOpsAudit /></RequireAuth>} />
                   <Route path="/admin/registry/operations/legacy" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOperations /></RequireAuth>} />
                   <Route path="/admin/registry/outreach-drafts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachDrafts /></RequireAuth>} />
                   <Route path="/admin/registry/outreach-approvals" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachApprovals /></RequireAuth>} />
