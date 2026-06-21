@@ -5,12 +5,13 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { UAT_PROVISIONING_ENABLED, UAT_SKIP_REASON } from "./_ci-gate";
 import { supabase, BASE_URL, signUpTestUser } from "./test-client";
 
 const TEST_EMAIL = `uat-dispute-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";
 
-describe("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("Journey 3: Dispute lifecycle - raise → review → resolve", () => {
   let userId: string;
   let orgId: string;
   let accessToken: string;

@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
+import { UAT_PROVISIONING_ENABLED, UAT_SKIP_REASON } from "./_ci-gate";
 import { createClient } from "@supabase/supabase-js";
 import { signUpTestUser } from "./test-client";
 
@@ -69,7 +70,7 @@ async function signPayload(privateKey: CryptoKey, payload: string): Promise<stri
   return `${b64}:${payload}`;
 }
 
-describe("Journey 6: Full Lifecycle - Signup → Search → Match → Settle → Collapse", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("Journey 6: Full Lifecycle - Signup → Search → Match → Settle → Collapse", () => {
 
   // ═══════════════════════════════════════════════════════════════
   // PHASE 1: SIGNUP & PROVISIONING

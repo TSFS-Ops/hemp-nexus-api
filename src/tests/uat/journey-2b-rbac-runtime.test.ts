@@ -29,6 +29,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { UAT_PROVISIONING_ENABLED, UAT_SKIP_REASON } from "./_ci-gate";
 import { supabase, BASE_URL, signUpTestUser } from "./test-client";
 
 const PASSWORD = "UatT3st!Secure2026";
@@ -75,7 +76,7 @@ async function callEdgeFunction(path: string, method: string, token: string, bod
   return { status: res.status, text };
 }
 
-describe("UAT 2b.1 — Legacy admin assignment is blocked at the DB layer", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("UAT 2b.1 — Legacy admin assignment is blocked at the DB layer", () => {
   let userId: string;
 
   it("provisions an org_admin to receive the would-be promotion", async () => {
@@ -112,7 +113,7 @@ describe("UAT 2b.1 — Legacy admin assignment is blocked at the DB layer", () =
   });
 });
 
-describe("UAT 2b.2 — org_member/org_admin denied on platform-admin-only data", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("UAT 2b.2 — org_member/org_admin denied on platform-admin-only data", () => {
   let memberToken: string;
   let memberOrgId: string;
   let memberUserId: string;
@@ -166,7 +167,7 @@ describe("UAT 2b.2 — org_member/org_admin denied on platform-admin-only data",
   });
 });
 
-describe("UAT 2b.3 — change_org_member_role RPC enforces org scope and elevation guard", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("UAT 2b.3 — change_org_member_role RPC enforces org scope and elevation guard", () => {
   let adminToken: string;
   let adminOrgId: string;
   let adminUserId: string;
@@ -262,7 +263,7 @@ describe("UAT 2b.3 — change_org_member_role RPC enforces org scope and elevati
   });
 });
 
-describe("UAT 2b.4 — Admin-sensitive Edge Functions deny non-platform_admin callers", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("UAT 2b.4 — Admin-sensitive Edge Functions deny non-platform_admin callers", () => {
   let memberToken: string;
 
   it("provisions an org_admin caller", async () => {
@@ -289,7 +290,7 @@ describe("UAT 2b.4 — Admin-sensitive Edge Functions deny non-platform_admin ca
   );
 });
 
-describe("UAT 2b.5 — Optional platform_admin happy-path (skipped when no fixture)", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("UAT 2b.5 — Optional platform_admin happy-path (skipped when no fixture)", () => {
   const enabled = !!(PA_EMAIL && PA_PASSWORD);
   (enabled ? it : it.skip)(
     "platform_admin can list organisations via /orgs",
@@ -325,7 +326,7 @@ describe("UAT 2b.5 — Optional platform_admin happy-path (skipped when no fixtu
   );
 });
 
-describe("UAT 2b.6 — Optional auditor/director/api_admin denial smoke tests", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("UAT 2b.6 — Optional auditor/director/api_admin denial smoke tests", () => {
   const auditorEnabled = !!(AUDITOR_EMAIL && AUDITOR_PASSWORD);
   const directorEnabled = !!(DIRECTOR_EMAIL && DIRECTOR_PASSWORD);
   const apiAdminEnabled = !!(API_ADMIN_EMAIL && API_ADMIN_PASSWORD);
