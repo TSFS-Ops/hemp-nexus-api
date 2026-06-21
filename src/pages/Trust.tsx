@@ -11,16 +11,23 @@ import { PublicPageLayout } from "@/components/PublicPageLayout";
 export default function Trust() {
   const lastUpdated = "21 June 2026";
 
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = "Trust, Security & Privacy — Izenzo";
+    const meta = document.querySelector('meta[name="description"]');
+    const prevDesc = meta?.getAttribute("content") ?? null;
+    meta?.setAttribute(
+      "content",
+      "How Izenzo handles access control, hosting, data, retention, subprocessors, and privacy requests. Maintained by the Izenzo team.",
+    );
+    return () => {
+      document.title = prevTitle;
+      if (prevDesc !== null) meta?.setAttribute("content", prevDesc);
+    };
+  }, []);
+
   return (
     <PublicPageLayout>
-      <Helmet>
-        <title>Trust, Security & Privacy — Izenzo</title>
-        <meta
-          name="description"
-          content="How Izenzo handles access control, hosting, data, retention, subprocessors, and privacy requests. Maintained by the Izenzo team."
-        />
-        <link rel="canonical" href="https://trade.izenzo.co.za/trust" />
-      </Helmet>
 
       <article className="max-w-[880px] mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-10 pb-8 border-b border-border">
