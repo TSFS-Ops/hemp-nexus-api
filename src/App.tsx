@@ -219,6 +219,10 @@ function App() {
                   <Route path="/registry/company/:id/authority" element={<RegistryAuthority />} />
                   <Route path="/registry/company/:id/bank-details" element={<RegistryBankDetails />} />
                   <Route path="/admin/registry/authority" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryAuthority /></RequireAuth>} />
+                  {/* Batch 12 — Authority-to-Act request, status, review */}
+                  <Route path="/registry/authority" element={<RequireAuth><RegistryAuthorityList /></RequireAuth>} />
+                  <Route path="/registry/authority/:authorityRequestId" element={<RequireAuth><RegistryAuthorityStatus /></RequireAuth>} />
+                  <Route path="/admin/registry/authority/:authorityRequestId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryAuthorityReview /></RequireAuth>} />
                   <Route path="/admin/registry/bank-details" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryBankDetails /></RequireAuth>} />
                   <Route path="/admin/registry/api" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryApi /></RequireAuth>} />
                   {/* Batch 6 — Operations, Outreach, DNC */}
