@@ -69,6 +69,7 @@ const DocsEvidence = lazy(() => import("@/pages/docs/Evidence"));
 const DocsErrors = lazy(() => import("@/pages/docs/Errors"));
 const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/CounterpartyRatingMethodology"));
 const Status = lazy(() => import("@/pages/Status"));
+const Trust = lazy(() => import("@/pages/Trust"));
 
 // Batch 1 — Business Registry shell (M001) + admin readiness (M019) + decisions (M018)
 const RegistryLanding = lazy(() => import("@/pages/registry/Landing"));
@@ -172,6 +173,7 @@ function App() {
                   <Route path={ROUTES.AUTH} element={<Auth />} />
                   <Route path="/welcome" element={<Welcome />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/trust" element={<Trust />} />
                   {/* Billing now lives under the Trade Desk shell */}
                   <Route path="/billing" element={<Navigate to="/desk/billing" replace />} />
 
