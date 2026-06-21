@@ -87,6 +87,7 @@ describe("Batch 12 — Authority-to-Act SSOT", () => {
 
     it("delegation scope requires two-person approval", () => {
       const r = getAuthorityRequirements({
+        companyLegalForm: "company",
         countryCode: "ZA", approvedClaimType: "approved", claimantType: "listed_director",
         requestedScopes: ["authority_delegation_request"], claimantListedInRegistryPeople: true,
         claimantIsProfessionalRepresentative: false, mandateEvidencePresent: true,
