@@ -173,9 +173,9 @@ export function calculateMatchConfidence(
     ? normalizeCompanyName(cp.legalForm) === normalizeCompanyName(reg.legalForm) ? "compatible" : "different"
     : "missing";
 
-  let score = Math.round(nameSimilarity * 0.62);
-  score += registrationNumberMatch === "match" ? 24 : registrationNumberMatch === "mismatch" ? -18 : 0;
-  score += countryRule === "match" ? 10 : countryRule === "mismatch" ? -20 : 0;
+  let score = Math.round(nameSimilarity * 0.72);
+  score += registrationNumberMatch === "match" ? 16 : registrationNumberMatch === "mismatch" ? -18 : 0;
+  score += countryRule === "match" ? 12 : countryRule === "mismatch" ? -20 : 0;
   score += legalFormRule === "compatible" ? 4 : legalFormRule === "different" ? -4 : 0;
   score = Math.max(0, Math.min(100, score));
 
