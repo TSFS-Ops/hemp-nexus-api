@@ -36,9 +36,15 @@ import {
   REGISTRY_BANK_VERIFICATION_UI_EXPIRED_PAYMENT_NOTICE,
   REGISTRY_BANK_VERIFICATION_UI_DISPUTED_PAYMENT_NOTICE,
   REGISTRY_BANK_VERIFICATION_UI_REVOKED_PAYMENT_NOTICE,
+  REGISTRY_BANK_VERIFICATION_UI_PAGE_SIZE,
   verificationBadgeFor,
+  slaIndicatorFor,
+  encodeCursor,
+  decodeCursor,
   type GateDisplayRow,
+  type VerificationQueueCursor,
 } from "@/lib/registry-bank-verification-ui";
+import { REGISTRY_BANK_VERIFICATION_MODES, REGISTRY_BANK_VERIFICATION_STATUSES } from "@/lib/registry-bank-verification";
 
 type QueueRow = {
   id: string;
@@ -90,26 +96,71 @@ export function AdminBankVerificationQueue() {
   const [rows, setRows] = useState<QueueRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [modeFilter, setModeFilter] = useState<string>("");
+  const [countryFilter, setCountryFilter] = useState<string>("");
+  const [expiredOnly, setExpiredOnly] = useState(false);
+  const [cursorStack, setCursorStack] = useState<(VerificationQueueCursor | null)[]>([null]);
+  const [hasMore, setHasMore] = useState(false);
+
+  const cursor = cursorStack[cursorStack.length - 1] ?? null;
+  const pageSize = REGISTRY_BANK_VERIFICATION_UI_PAGE_SIZE;
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      // Stable sort: (created_at DESC, id DESC). Fetch pageSize+1 to detect
+      // a next page without a separate count query.
+      let q = supabase
         .from("registry_bank_detail_verification_requests")
         .select(
           "id, submission_id, verification_status, verification_mode, country_code, expires_at, created_at, requested_role",
         )
         .order("created_at", { ascending: false })
-        .limit(100);
-      setRows((data ?? []) as QueueRow[]);
+        .order("id", { ascending: false })
+        .limit(pageSize + 1);
+
+      if (statusFilter) q = q.eq("verification_status", statusFilter);
+      if (modeFilter) q = q.eq("verification_mode", modeFilter);
+      if (countryFilter) q = q.eq("country_code", countryFilter.toUpperCase());
+      if (expiredOnly) q = q.lt("expires_at", new Date().toISOString());
+
+      if (cursor) {
+        // Strict ((created_at, id) < cursor) using PostgREST OR composition.
+        q = q.or(
+          `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`,
+        );
+      }
+
+      const { data } = await q;
+      const page = (data ?? []) as QueueRow[];
+      setHasMore(page.length > pageSize);
+      setRows(page.slice(0, pageSize));
       setLoading(false);
     })();
-  }, []);
+  }, [statusFilter, modeFilter, countryFilter, expiredOnly, cursor, pageSize]);
 
-  const filtered = useMemo(
-    () => (statusFilter ? rows.filter((r) => r.verification_status === statusFilter) : rows),
-    [rows, statusFilter],
-  );
+  const resetCursor = () => setCursorStack([null]);
+
+  const goNext = () => {
+    const last = rows[rows.length - 1];
+    if (!last || !hasMore) return;
+    setCursorStack((s) => [...s, { createdAt: last.created_at, id: last.id }]);
+  };
+
+  const goPrev = () => {
+    setCursorStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+  };
+
+  const slaCounts = useMemo(() => {
+    let approaching = 0;
+    let breached = 0;
+    for (const r of rows) {
+      const s = slaIndicatorFor(r.created_at, r.verification_status);
+      if (s.state === "approaching") approaching++;
+      else if (s.state === "breached") breached++;
+    }
+    return { approaching, breached };
+  }, [rows]);
 
   return (
     <div className="mx-auto max-w-5xl p-6 space-y-4">
@@ -126,22 +177,82 @@ export function AdminBankVerificationQueue() {
         <AlertDescription>{REGISTRY_BANK_VERIFICATION_UI_NO_LIVE_PROVIDER_NOTICE}</AlertDescription>
       </Alert>
 
-      <div className="flex gap-2 items-center">
-        <label className="text-xs">Status</label>
-        <select
-          className="border rounded text-xs px-2 py-1"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          data-testid="b14b-queue-status-filter"
-        >
-          <option value="">All</option>
-          {Object.keys(REGISTRY_BANK_VERIFICATION_UI_PUBLIC_LABEL).map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap gap-3 items-end text-xs">
+        <div className="flex flex-col gap-1">
+          <label>Status</label>
+          <select
+            className="border rounded px-2 py-1"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              resetCursor();
+            }}
+            data-testid="b14b-queue-status-filter"
+          >
+            <option value="">All</option>
+            {REGISTRY_BANK_VERIFICATION_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label>Mode</label>
+          <select
+            className="border rounded px-2 py-1"
+            value={modeFilter}
+            onChange={(e) => {
+              setModeFilter(e.target.value);
+              resetCursor();
+            }}
+            data-testid="b14b-queue-mode-filter"
+          >
+            <option value="">All</option>
+            {REGISTRY_BANK_VERIFICATION_MODES.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label>Country (ISO-2)</label>
+          <input
+            className="border rounded px-2 py-1 w-24 uppercase"
+            value={countryFilter}
+            onChange={(e) => {
+              setCountryFilter(e.target.value);
+              resetCursor();
+            }}
+            maxLength={2}
+            data-testid="b14b-queue-country-filter"
+          />
+        </div>
+        <label className="flex gap-1 items-center">
+          <input
+            type="checkbox"
+            checked={expiredOnly}
+            onChange={(e) => {
+              setExpiredOnly(e.target.checked);
+              resetCursor();
+            }}
+            data-testid="b14b-queue-expired-filter"
+          />
+          Expired only
+        </label>
       </div>
+
+      {(slaCounts.approaching > 0 || slaCounts.breached > 0) && (
+        <div className="flex gap-2 text-xs" data-testid="b14b-queue-sla-summary">
+          {slaCounts.approaching > 0 && (
+            <Badge variant="secondary">Approaching SLA · {slaCounts.approaching}</Badge>
+          )}
+          {slaCounts.breached > 0 && (
+            <Badge variant="destructive">SLA breached · {slaCounts.breached}</Badge>
+          )}
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -149,33 +260,40 @@ export function AdminBankVerificationQueue() {
         </CardHeader>
         <CardContent>
           {loading && <p className="text-xs text-muted-foreground">Loading…</p>}
-          {!loading && filtered.length === 0 && (
+          {!loading && rows.length === 0 && (
             <p className="text-xs text-muted-foreground">No verification requests visible.</p>
           )}
           <div className="space-y-2">
-            {filtered.map((r) => {
+            {rows.map((r) => {
               const status = r.verification_status as RegistryBankVerificationStatus;
               const mode = r.verification_mode as RegistryBankVerificationMode;
+              const sla = slaIndicatorFor(r.created_at, r.verification_status);
               return (
                 <div
                   key={r.id}
                   className="flex justify-between items-center border-b py-2 text-xs"
                   data-testid="b14b-queue-row"
+                  data-sla-state={sla.state}
                 >
                   <div className="space-y-1">
                     <div className="font-mono">{r.submission_id.slice(0, 8)}</div>
                     <VerificationBadges status={status} expiresAt={r.expires_at} />
                     <div className="text-muted-foreground">
                       {REGISTRY_BANK_VERIFICATION_UI_MODE_LABEL[mode] ?? mode} ·{" "}
-                      {r.country_code ?? "—"} · age{" "}
-                      {Math.max(
-                        0,
-                        Math.round(
-                          (Date.now() - new Date(r.created_at).getTime()) / 86_400_000,
-                        ),
-                      )}
-                      d
+                      {r.country_code ?? "—"}
                     </div>
+                    <Badge
+                      variant={
+                        sla.state === "breached"
+                          ? "destructive"
+                          : sla.state === "approaching"
+                            ? "secondary"
+                            : "outline"
+                      }
+                      data-testid="b14b-queue-sla-badge"
+                    >
+                      {sla.label}
+                    </Badge>
                   </div>
                   <Link to={`/admin/registry/bank-verification/${r.submission_id}`}>
                     <Button size="sm" variant="outline">
@@ -186,11 +304,40 @@ export function AdminBankVerificationQueue() {
               );
             })}
           </div>
+          <div className="flex justify-between items-center pt-3 text-xs">
+            <span className="text-muted-foreground">
+              Page {cursorStack.length} · {rows.length} row{rows.length === 1 ? "" : "s"}
+              {cursor ? ` · cursor ${encodeCursor(cursor).slice(0, 18)}…` : ""}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={cursorStack.length <= 1 || loading}
+                onClick={goPrev}
+                data-testid="b14b-queue-prev"
+              >
+                Previous
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!hasMore || loading}
+                onClick={goNext}
+                data-testid="b14b-queue-next"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+// Re-export the cursor decoder so external tests/consumers can roundtrip.
+export { decodeCursor as __decodeQueueCursor };
 
 function GatesPanel({ gates }: { gates: GateDisplayRow[] }) {
   return (

@@ -31,6 +31,8 @@ import {
   REGISTRY_BANK_DETAIL_B13_UI_RISK_LABEL,
   REGISTRY_BANK_DETAIL_B13_UI_UNMASK_NOTICE,
 } from "@/lib/registry-bank-details-b13-ui";
+import { BankVerificationPublicStatus } from "@/components/registry/BankVerificationPublicStatus";
+import type { RegistryBankVerificationStatus } from "@/lib/registry-bank-verification";
 
 type QueueRow = {
   id: string;
@@ -136,6 +138,7 @@ export function AdminBankDetailReview() {
   const { bankDetailSubmissionId } = useParams();
   const [row, setRow] = useState<DetailRow | null>(null);
   const [riskFlags, setRiskFlags] = useState<RiskFlag[]>([]);
+  const [verification, setVerification] = useState<{ status: RegistryBankVerificationStatus; expiresAt: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [reason, setReason] = useState("");
@@ -161,6 +164,23 @@ export function AdminBankDetailReview() {
       .select("id, flag_type, risk_level")
       .eq("submission_id", bankDetailSubmissionId);
     setRiskFlags((flags ?? []) as RiskFlag[]);
+    // Batch 14B link — read the latest verification request (RLS-restricted
+    // to admin/compliance). Returns null for non-elevated viewers.
+    const { data: ver } = await supabase
+      .from("registry_bank_detail_verification_requests")
+      .select("verification_status, expires_at")
+      .eq("submission_id", bankDetailSubmissionId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setVerification(
+      ver
+        ? {
+            status: (ver as { verification_status: string }).verification_status as RegistryBankVerificationStatus,
+            expiresAt: (ver as { expires_at: string | null }).expires_at ?? null,
+          }
+        : null,
+    );
     setLoading(false);
   };
 
@@ -229,10 +249,28 @@ export function AdminBankDetailReview() {
   return (
     <div className="mx-auto max-w-3xl p-6 space-y-6">
       <BackButton fallback="/admin/registry/bank-details/queue" />
-      <header className="space-y-1">
+      <header className="space-y-2">
         <h1 className="text-xl font-semibold">Review bank-detail submission</h1>
         <p className="text-xs text-muted-foreground">{row.company_name} · {row.country_code}</p>
         <StatusBadges s={row.b13_status} risk={row.risk_level} />
+        {/* Batch 14B non-breaking link — verification status badge + link */}
+        <div className="flex flex-wrap gap-2 items-center text-xs" data-testid="b13b-b14b-link">
+          <span className="text-muted-foreground">Verification:</span>
+          {verification ? (
+            <BankVerificationPublicStatus
+              status={verification.status}
+              expiresAt={verification.expiresAt}
+            />
+          ) : (
+            <Badge variant="secondary">{REGISTRY_BANK_DETAIL_B13_UI_NOT_VERIFIED_BADGE}</Badge>
+          )}
+          <Link
+            className="text-primary underline"
+            to={`/admin/registry/bank-verification/${bankDetailSubmissionId}`}
+          >
+            Open verification review
+          </Link>
+        </div>
       </header>
 
       <Card>
