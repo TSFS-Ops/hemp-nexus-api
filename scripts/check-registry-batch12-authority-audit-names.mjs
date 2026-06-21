@@ -29,11 +29,9 @@ function walk(d) {
     if (s.isDirectory()) walk(p);
     else if (p.endsWith(".ts")) {
       const src = readFileSync(p, "utf8");
-      for (const mm of src.matchAll(/"(registry_authority_[a-z_]+)"/g)) {
-        const name = mm[1];
-        if (!canon.has(name) && !/_(request_|status_changed|reviewed|revoked|disputed)/.test(name)) {
-          offenders.push({ file: p, name });
-        }
+      // Only inspect strings used as audit_event_name values.
+      for (const mm of src.matchAll(/audit_event_name\s*:\s*"(registry_authority_[a-z_]+)"/g)) {
+        offenders.push({ file: p, name: mm[1] });
       }
     }
   }
