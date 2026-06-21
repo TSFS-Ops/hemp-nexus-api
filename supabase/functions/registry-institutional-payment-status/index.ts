@@ -108,10 +108,36 @@ Deno.serve(async (req) => {
     const bankState = submission?.status ?? "not_provided";
     const paymentFlag = mapBankStateToApiFlag(bankState);
 
+    // Batch 14 safety patch — B14 verification status is the authoritative
+    // source of truth when a verification request exists for this submission.
+    let b14Status: string | null = null;
+    let b14ExpiresAt: string | null = null;
+    if (submission?.id) {
+      const { data: vr } = await svc
+        .from("registry_bank_detail_verification_requests")
+        .select("verification_status, expires_at")
+        .eq("submission_id", submission.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (vr) {
+        b14Status = vr.verification_status as string;
+        b14ExpiresAt = vr.expires_at ?? null;
+      }
+    }
+    const b14ExpiredNow = b14Status === "verified" && b14ExpiresAt && new Date(b14ExpiresAt) < new Date();
+    // Any non-`verified` B14 status, or expired verified, demotes to not_usable.
+    const b14DemotesToNotUsable = b14Status !== null && (b14Status !== "verified" || b14ExpiredNow);
+
     if (!submission) {
       result_state = "not_found";
     } else if (!bdApproved) {
       result_state = "business_decision_required";
+    } else if (b14DemotesToNotUsable) {
+      if (b14Status === "expired" || b14ExpiredNow) result_state = "expired";
+      else if (b14Status === "disputed") result_state = "disputed";
+      else if (b14Status === "revoked") result_state = "revoked";
+      else result_state = "not_usable";
     } else if (paymentFlag === "verified") {
       // Verified requires non-null method, verified_at, expiry_at AND a Business
       // Decision. Anything missing degrades to not_usable.
