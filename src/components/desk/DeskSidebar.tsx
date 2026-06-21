@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut, ExternalLink } from "lucide-react";
+import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut, ExternalLink, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 import { SidebarNotificationItem } from "@/components/notifications/SidebarNotificationItem";
@@ -7,7 +7,8 @@ import { ActiveOrgIndicator } from "@/components/desk/ActiveOrgIndicator";
 
 const NAV = [
   { to: "/desk", label: "Overview", icon: Briefcase, end: true },
-  { to: "/desk/discover", label: "Counterparty Register", icon: Search },
+  { to: "/desk/discover", label: "Counterparties", icon: Search },
+  { to: "/registry", label: "Company Register", icon: Building2 },
   { to: "/desk/deals", label: "My Trades", icon: Files },
   { to: "/desk/compliance", label: "Compliance", icon: ShieldCheck },
   { to: "/desk/billing", label: "Billing", icon: Receipt },
