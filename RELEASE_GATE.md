@@ -1030,3 +1030,12 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - Evidence: evidence/batch-11-real-claim-submission-review/README.md
 - Approval never grants authority, verification, bank verification or API/institutional use; in-app notifications are LOG-ONLY.
 
+
+## Batch 12 — Authority-to-Act Request, Evidence and Approval (M005 expansion)
+- New tables: registry_authority_request_scopes, registry_authority_scope_decisions, registry_authority_notes, registry_authority_assignments, registry_authority_status_notifications, registry_active_authorities, registry_authority_disputes.
+- Extended: registry_authority_requests (requested_scopes, is_sensitive, two_person_required, last_activity_at, withdrawn/cancelled/escalated timestamps); registry_authority_evidence (evidence_category, state, scope_code, review fields, expiry_at).
+- Edge functions (deploy-listed): registry-authority-start, registry-authority-submit, registry-authority-evidence-upload, registry-authority-status, registry-authority-scope-decision, registry-authority-active-check, registry-authority-dispute-manage, registry-authority-notification-log.
+- Routes: /registry/authority, /registry/authority/:authorityRequestId, /admin/registry/authority/:authorityRequestId.
+- Guards: check-registry-authority-workflow-parity, check-registry-batch12-authority-audit-names, check-registry-batch12-authority-wording, check-registry-batch12-no-external-send.
+- Evidence: evidence/batch-12-authority-to-act-request-review/README.md
+- Authority approval grants ONLY named scopes; never verifies company profile, never confirms bank details, never enables API/institutional use. Delegation requires two-person approval. Sensitive scopes require compliance review. In-app notifications are LOG-ONLY.
