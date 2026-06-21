@@ -207,6 +207,8 @@ export default function Desk() {
               <Routes>
                 <Route index element={<DeskOverview />} />
                 <Route path="discover" element={<DiscoverCounterparties />} />
+                <Route path="registry" element={<RegistryLanding />} />
+                <Route path="registry/*" element={<Navigate to="/desk/registry" replace />} />
                 <Route
                   path="deals"
                   element={
