@@ -1115,3 +1115,27 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 
 - `check-batch-14b-ui-no-verified.mjs`
 - `check-batch-14b-ui-no-raw-leak.mjs`
+
+## Batch 15 — Institutional API Hardening (Phase 1, Backend)
+
+- Extends `registry_api_clients` with: mode, client_type, contact_owner, lifecycle_status, allowed_use_cases, allowed_countries, ip_allowlist, rate_limit_profile, usage_limit_profile, billing_usage_enabled, approval markers, production acknowledgement markers, review/expiry/revocation markers.
+- Extends `registry_api_keys` with: key_type, label, last_rotated_at, rotation_reason. Sandbox and production keys are separate (key_type CHECK).
+- New tables (all admin/compliance read; service_role full access; no public/anon access): `registry_api_client_scopes`, `registry_api_client_countries`, `registry_api_client_use_cases`, `registry_api_rate_limit_profiles`, `registry_api_usage_events`, `registry_api_blocked_events`, `registry_api_approval_events`, `registry_api_test_console_events`.
+- Forbidden scope strings (`registry.bank.raw.read`, `registry.bank.unmasked.read`, `registry.personal_contact.raw.read`, `registry.evidence.raw.read`) are CHECK-constrained out at the scopes table.
+- New edge functions (deploy-listed, exempt-invokes — called externally via x-api-key): `registry-api-profile-status`, `registry-api-payment-status`, `registry-api-readiness-status`, `registry-api-coverage-status`, `registry-api-client-key-manage`.
+- Payment-status uses Batch 14 verification truth as the controlled source. Only final, unexpired, non-disputed/revoked `verified` may map to `usable`. `captured_unverified`, `manual_verified`, `provider_matched`, `provider_mismatch`, `provider_error`, `provider_unavailable`, `failed`, `expired`, `revoked`, `disputed`, `cancelled` ALL map to non-`usable` states.
+- Gate-by-gate envelope: lifecycle, scope (forbidden + granted), key validity, key/mode matching (production mode requires production_active + production key), country allowlist, use-case allowlist, rate limit. Blocked requests are logged into `registry_api_blocked_events` with a safe reason.
+- Production-approval acknowledgement text is locked in SSOT (`REGISTRY_API_PRODUCTION_ACKNOWLEDGEMENT_TEXT`).
+- No raw bank details, no masked bank details (no current approved scope), no personal contact details in any B15 API response.
+- SSOTs: `src/lib/registry-api-hardening.ts` ↔ `supabase/functions/_shared/registry-api-hardening.ts`.
+- Guards (wired into `prebuild`): `check-batch-15-ssot-parity.mjs`, `check-batch-15-no-raw-bank.mjs`, `check-batch-15-forbidden-scopes.mjs`, `check-batch-15-audit-names.mjs`.
+- Tests: `src/tests/batch-15-institutional-api-hardening.test.ts`.
+- Evidence: `evidence/batch-15-institutional-api-hardening/README.md`.
+- Batch 5 SSOT, edge functions, and admin route `/admin/registry/api` are unchanged and continue to serve existing institutional callers.
+
+## Prebuild guard script index (Batch 15 sync)
+
+- `check-batch-15-ssot-parity.mjs`
+- `check-batch-15-no-raw-bank.mjs`
+- `check-batch-15-forbidden-scopes.mjs`
+- `check-batch-15-audit-names.mjs`

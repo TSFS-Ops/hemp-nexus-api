@@ -10094,6 +10094,50 @@ export type Database = {
           },
         ]
       }
+      registry_api_approval_events: {
+        Row: {
+          acknowledgement_text: string | null
+          actor_id: string | null
+          approval_type: string
+          client_id: string
+          created_at: string
+          decision: string
+          id: string
+          payload: Json
+          reason: string | null
+        }
+        Insert: {
+          acknowledgement_text?: string | null
+          actor_id?: string | null
+          approval_type: string
+          client_id: string
+          created_at?: string
+          decision: string
+          id?: string
+          payload?: Json
+          reason?: string | null
+        }
+        Update: {
+          acknowledgement_text?: string | null
+          actor_id?: string | null
+          approval_type?: string
+          client_id?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          payload?: Json
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_api_approval_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_api_audit_events: {
         Row: {
           actor_id: string | null
@@ -10142,66 +10186,321 @@ export type Database = {
           },
         ]
       }
+      registry_api_blocked_events: {
+        Row: {
+          audit_reference: string | null
+          block_category: string
+          block_reason: string
+          client_id: string | null
+          country: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          ip_hash: string | null
+          key_id: string | null
+          mode: string | null
+          request_id: string
+          scope: string | null
+          status_code: number
+          user_agent: string | null
+        }
+        Insert: {
+          audit_reference?: string | null
+          block_category: string
+          block_reason: string
+          client_id?: string | null
+          country?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip_hash?: string | null
+          key_id?: string | null
+          mode?: string | null
+          request_id: string
+          scope?: string | null
+          status_code: number
+          user_agent?: string | null
+        }
+        Update: {
+          audit_reference?: string | null
+          block_category?: string
+          block_reason?: string
+          client_id?: string | null
+          country?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip_hash?: string | null
+          key_id?: string | null
+          mode?: string | null
+          request_id?: string
+          scope?: string | null
+          status_code?: number
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_api_blocked_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_api_blocked_events_key_id_fkey"
+            columns: ["key_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_api_client_countries: {
+        Row: {
+          client_id: string
+          country_code: string
+          created_at: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          reason: string | null
+          revoked_at: string | null
+        }
+        Insert: {
+          client_id: string
+          country_code: string
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          revoked_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          country_code?: string
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          revoked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_api_client_countries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_api_client_scopes: {
+        Row: {
+          client_id: string
+          created_at: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          scope_key: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope_key: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_api_client_scopes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_api_client_use_cases: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          reason: string | null
+          revoked_at: string | null
+          use_case_key: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          revoked_at?: string | null
+          use_case_key: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          revoked_at?: string | null
+          use_case_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_api_client_use_cases_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registry_api_clients: {
         Row: {
           admin_notes: string | null
+          allowed_countries: string[]
+          allowed_use_cases: string[]
+          approved_at: string | null
+          approved_by: string | null
           billing_readiness_tier: string | null
+          billing_usage_enabled: boolean
           client_code: string
+          client_type: string | null
           contact_email: string | null
+          contact_owner: string | null
           created_at: string
           created_by: string | null
           display_name: string
           environment: string
+          expires_at: string | null
           id: string
+          ip_allowlist: string[]
+          lifecycle_status: string
+          mode: string
           organization_id: string | null
+          production_acknowledged_at: string | null
+          production_acknowledged_by: string | null
           rate_limit_per_day: number
           rate_limit_per_minute: number
+          rate_limit_profile: string | null
+          review_due_at: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
           scopes: string[]
           status: string
           suspended_at: string | null
           suspended_by: string | null
           suspended_reason: string | null
           updated_at: string
+          usage_limit_profile: string | null
         }
         Insert: {
           admin_notes?: string | null
+          allowed_countries?: string[]
+          allowed_use_cases?: string[]
+          approved_at?: string | null
+          approved_by?: string | null
           billing_readiness_tier?: string | null
+          billing_usage_enabled?: boolean
           client_code: string
+          client_type?: string | null
           contact_email?: string | null
+          contact_owner?: string | null
           created_at?: string
           created_by?: string | null
           display_name: string
           environment?: string
+          expires_at?: string | null
           id?: string
+          ip_allowlist?: string[]
+          lifecycle_status?: string
+          mode?: string
           organization_id?: string | null
+          production_acknowledged_at?: string | null
+          production_acknowledged_by?: string | null
           rate_limit_per_day?: number
           rate_limit_per_minute?: number
+          rate_limit_profile?: string | null
+          review_due_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
           scopes?: string[]
           status?: string
           suspended_at?: string | null
           suspended_by?: string | null
           suspended_reason?: string | null
           updated_at?: string
+          usage_limit_profile?: string | null
         }
         Update: {
           admin_notes?: string | null
+          allowed_countries?: string[]
+          allowed_use_cases?: string[]
+          approved_at?: string | null
+          approved_by?: string | null
           billing_readiness_tier?: string | null
+          billing_usage_enabled?: boolean
           client_code?: string
+          client_type?: string | null
           contact_email?: string | null
+          contact_owner?: string | null
           created_at?: string
           created_by?: string | null
           display_name?: string
           environment?: string
+          expires_at?: string | null
           id?: string
+          ip_allowlist?: string[]
+          lifecycle_status?: string
+          mode?: string
           organization_id?: string | null
+          production_acknowledged_at?: string | null
+          production_acknowledged_by?: string | null
           rate_limit_per_day?: number
           rate_limit_per_minute?: number
+          rate_limit_profile?: string | null
+          review_due_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
           scopes?: string[]
           status?: string
           suspended_at?: string | null
           suspended_by?: string | null
           suspended_reason?: string | null
           updated_at?: string
+          usage_limit_profile?: string | null
         }
         Relationships: [
           {
@@ -10223,10 +10522,14 @@ export type Database = {
           id: string
           key_hash: string
           key_prefix: string
+          key_type: string
+          label: string | null
+          last_rotated_at: string | null
           last_used_at: string | null
           revoked_at: string | null
           revoked_by: string | null
           revoked_reason: string | null
+          rotation_reason: string | null
           status: string
         }
         Insert: {
@@ -10238,10 +10541,14 @@ export type Database = {
           id?: string
           key_hash: string
           key_prefix: string
+          key_type?: string
+          label?: string | null
+          last_rotated_at?: string | null
           last_used_at?: string | null
           revoked_at?: string | null
           revoked_by?: string | null
           revoked_reason?: string | null
+          rotation_reason?: string | null
           status?: string
         }
         Update: {
@@ -10253,10 +10560,14 @@ export type Database = {
           id?: string
           key_hash?: string
           key_prefix?: string
+          key_type?: string
+          label?: string | null
+          last_rotated_at?: string | null
           last_used_at?: string | null
           revoked_at?: string | null
           revoked_by?: string | null
           revoked_reason?: string | null
+          rotation_reason?: string | null
           status?: string
         }
         Relationships: [
@@ -10268,6 +10579,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      registry_api_rate_limit_profiles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          per_day: number
+          per_minute: number
+          per_month: number
+          per_scope: Json
+          profile_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          per_day?: number
+          per_minute?: number
+          per_month?: number
+          per_scope?: Json
+          profile_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          per_day?: number
+          per_minute?: number
+          per_month?: number
+          per_scope?: Json
+          profile_key?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       registry_api_request_logs: {
         Row: {
@@ -10334,6 +10684,131 @@ export type Database = {
           },
           {
             foreignKeyName: "registry_api_request_logs_key_id_fkey"
+            columns: ["key_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_api_test_console_events: {
+        Row: {
+          actor_id: string | null
+          audit_reference: string | null
+          client_id: string | null
+          created_at: string
+          endpoint: string
+          gate_decisions: Json
+          id: string
+          identifier_hash: string | null
+          identifier_type: string | null
+          mode: string | null
+          result_state: string | null
+          usable: boolean
+        }
+        Insert: {
+          actor_id?: string | null
+          audit_reference?: string | null
+          client_id?: string | null
+          created_at?: string
+          endpoint: string
+          gate_decisions?: Json
+          id?: string
+          identifier_hash?: string | null
+          identifier_type?: string | null
+          mode?: string | null
+          result_state?: string | null
+          usable?: boolean
+        }
+        Update: {
+          actor_id?: string | null
+          audit_reference?: string | null
+          client_id?: string | null
+          created_at?: string
+          endpoint?: string
+          gate_decisions?: Json
+          id?: string
+          identifier_hash?: string | null
+          identifier_type?: string | null
+          mode?: string | null
+          result_state?: string | null
+          usable?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_api_test_console_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registry_api_usage_events: {
+        Row: {
+          audit_reference: string | null
+          client_id: string | null
+          country: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          identifier_type: string | null
+          ip_hash: string | null
+          key_id: string | null
+          mode: string | null
+          request_id: string
+          result_state: string | null
+          scope: string | null
+          status_code: number | null
+          usable: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          audit_reference?: string | null
+          client_id?: string | null
+          country?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          identifier_type?: string | null
+          ip_hash?: string | null
+          key_id?: string | null
+          mode?: string | null
+          request_id: string
+          result_state?: string | null
+          scope?: string | null
+          status_code?: number | null
+          usable?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          audit_reference?: string | null
+          client_id?: string | null
+          country?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          identifier_type?: string | null
+          ip_hash?: string | null
+          key_id?: string | null
+          mode?: string | null
+          request_id?: string
+          result_state?: string | null
+          scope?: string | null
+          status_code?: number | null
+          usable?: boolean
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_api_usage_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "registry_api_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_api_usage_events_key_id_fkey"
             columns: ["key_id"]
             isOneToOne: false
             referencedRelation: "registry_api_keys"
@@ -19241,6 +19716,10 @@ export type Database = {
           p_request_id: string
         }
         Returns: Json
+      }
+      registry_api_scope_is_forbidden: {
+        Args: { _scope: string }
+        Returns: boolean
       }
       registry_company_people_public_safe: {
         Args: { _record_id: string }
