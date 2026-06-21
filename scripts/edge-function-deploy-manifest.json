@@ -93,7 +93,14 @@
     "registry-authority-scope-decision",
     "registry-authority-active-check",
     "registry-authority-dispute-manage",
-    "registry-authority-notification-log"
+    "registry-authority-notification-log",
+    "registry-bank-verification-request",
+    "registry-bank-verification-review",
+    "registry-bank-verification-status",
+    "registry-bank-verification-provider-config",
+    "registry-bank-verification-provider-simulate",
+    "registry-bank-verification-expiry-scan",
+    "registry-bank-verification-api-status"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
