@@ -21,7 +21,7 @@ import {
 
 describe("Batch 20 — Pre-UAT Embarrassment Audit", () => {
   it("the five client records are locked sample_only and excluded from production API", () => {
-    const ids = BATCH_19A_SAMPLE_ONLY_RECORDS.map((r: any) => r.id ?? r);
+    const ids = [...BATCH_19A_SAMPLE_ONLY_RECORDS];
     expect(ids).toEqual(
       expect.arrayContaining([
         "bullion_bathrooms_nigeria",
