@@ -29,6 +29,13 @@ const SSOT_FILES = new Set([
   "supabase/functions/_shared/registry-record-lifecycle.ts",
   "scripts/check-registry-batch10-no-verified-claim-wording.mjs",
   "scripts/check-registry-record-lifecycle-parity.mjs",
+  // Batch 5/6/8/9 SSOT and explanation surfaces already governed by their own
+  // forbidden-wording guards. They list the phrases as forbidden values or
+  // describe what is missing — they are not user-facing claim wording.
+  "supabase/functions/_shared/registry-institutional-api.ts",
+  "supabase/functions/_shared/registry-outreach.ts",
+  "supabase/functions/_shared/registry-import-pipeline.ts",
+  "supabase/functions/registry-client-readiness-summary/index.ts",
 ]);
 
 const failures = [];
