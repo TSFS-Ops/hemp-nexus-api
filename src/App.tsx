@@ -95,6 +95,15 @@ const RegistryAuthority = lazy(() => import("@/pages/registry/Authority"));
 const RegistryBankDetails = lazy(() => import("@/pages/registry/BankDetails"));
 const AdminRegistryAuthority = lazy(() => import("@/pages/admin/registry/Authority"));
 const AdminRegistryBankDetails = lazy(() => import("@/pages/admin/registry/BankDetails"));
+// Batch 13B — Consent-based bank-detail submission/review UI
+const BankDetailSubmit = lazy(() => import("@/pages/registry/BankDetailSubmit"));
+const BankDetailStatus = lazy(() => import("@/pages/registry/BankDetailStatus"));
+const AdminBankDetailQueue = lazy(() =>
+  import("@/pages/admin/registry/BankDetailReview").then((m) => ({ default: m.AdminBankDetailQueue })),
+);
+const AdminBankDetailReview = lazy(() =>
+  import("@/pages/admin/registry/BankDetailReview").then((m) => ({ default: m.AdminBankDetailReview })),
+);
 // Batch 5 — M008 / M009 / M016 institutional API management
 const AdminRegistryApi = lazy(() => import("@/pages/admin/registry/Api"));
 // Batch 6 — M013 / M014 / M015 / M017 operations + outreach + readiness
