@@ -164,6 +164,23 @@ export function AdminBankDetailReview() {
       .select("id, flag_type, risk_level")
       .eq("submission_id", bankDetailSubmissionId);
     setRiskFlags((flags ?? []) as RiskFlag[]);
+    // Batch 14B link — read the latest verification request (RLS-restricted
+    // to admin/compliance). Returns null for non-elevated viewers.
+    const { data: ver } = await supabase
+      .from("registry_bank_detail_verification_requests")
+      .select("verification_status, expires_at")
+      .eq("submission_id", bankDetailSubmissionId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setVerification(
+      ver
+        ? {
+            status: (ver as { verification_status: string }).verification_status as RegistryBankVerificationStatus,
+            expiresAt: (ver as { expires_at: string | null }).expires_at ?? null,
+          }
+        : null,
+    );
     setLoading(false);
   };
 
