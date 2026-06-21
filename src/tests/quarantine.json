@@ -136,6 +136,15 @@
       "replaced_by_guards": ["scripts/check-engagement-wording.mjs"]
     },
     {
+      "path": "src/tests/ui-001-005-pending-engagement-consistency.test.ts",
+      "classification": "stale_source_pin_replaced_by_prebuild_guard",
+      "reason": "Source-pin for DealWizard pending-engagement copy that moved during the wizard refactor; the canonical wording is enforced by check-engagement-wording.mjs and check-dec-005-006-audit-names.mjs.",
+      "replaced_by_guards": [
+        "scripts/check-engagement-wording.mjs",
+        "scripts/check-dec-005-006-audit-names.mjs"
+      ]
+    },
+    {
       "path": "src/tests/ui-003-truthful-copy.test.ts",
       "classification": "stale_source_pin_replaced_by_prebuild_guard",
       "reason": "Truthful copy now pinned by public-availability-claims guard.",
