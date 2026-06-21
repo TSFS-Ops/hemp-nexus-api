@@ -157,7 +157,7 @@ export default function CompanyProfile() {
       <Card>
         <CardContent className="py-4 space-y-2">
           <p className="text-[11px] text-amber-700">
-            Source data has not been independently verified by Izenzo unless the profile status says verified.
+            Source data has not been independently vetted by Izenzo unless the profile status explicitly indicates otherwise.
           </p>
           <p className="text-[10px] text-muted-foreground">
             Raw bank-detail fields are never rendered on this surface. Only the status label above is exposed.
