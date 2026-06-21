@@ -148,6 +148,16 @@ live in the production runtime before publishing.
 - `provider-stub-simulate` — P010 admin/developer Test-Mode-only audit-only stub-provider simulation (no external provider call; emits `stub_provider.blocked` / `stub_provider.test_mode_simulated`)
 - `compute-evidence-rating` — P011 event-driven counterparty evidence-confidence rating recalculation (role-gated to `platform_admin` / `compliance_owner`; writes `counterparty_evidence_ratings` snapshot + `counterparty_rating.*` audit events; preserves last rating on failure)
 - `evidence-rating-override` — P011 admin override apply / change / remove for counterparty evidence-confidence ratings (role-gated to `platform_admin` / `compliance_owner`; reason text ≥30 chars; expiry ≤90 days except `admin_block`; never permits `verification_complete`)
+- `registry-batch7-audit-export` — Batch 7 platform-admin audit log JSON/CSV export (calls `admin_list_batch7_audit_events` RPC)
+- `claim-lifecycle-webhook-dispatch` — Batch 7 webhook dispatcher (HMAC-SHA256 signed, retry ladder)
+- `registry-company-record-manage` — Batch 8 admin record + index manage
+- `registry-company-search-index-rebuild` — Batch 8 admin search index rebuild
+- `registry-source-file-upload` — Batch 9 admin source-file + staging creation (admin/compliance role-gated)
+- `registry-import-field-map` — Batch 9 per-batch field mapping writer (rejects forbidden public mappings)
+- `registry-import-validate` — Batch 9 validation matrix runner + quarantine + duplicate detection
+- `registry-import-duplicate-check` — Batch 9 duplicate candidate review writer
+- `registry-import-quarantine-review` — Batch 9 quarantine release / permanent exclusion writer
+- `registry-import-approve-publish` — Batch 9 approve / reject / publish writer (publish delegates to `atomic_publish_registry_import_batch`; published records forced to `imported_unverified`)
 - `unknown-cp-case-bootstrap` — P012 idempotent overlay + initial `poi_created` / `facilitation_case_opened` timeline events for unknown-counterparty facilitation cases
 - `unknown-cp-status-transition` — P012 admin/platform_admin structured status transitions (13 typed actions; `reopen_case` requires `platform_admin`; writes user-safe timeline events + canonical `unknown_cp_*` audit names)
 - `unknown-cp-user-action` — P012 requester-driven Add more information / Contact support / Cancel request router (min 20-char message; routes cancellations into `cancelled_by_requester`)
@@ -920,5 +930,53 @@ Tests: `src/tests/batch-7-registry-search-claim-rules-hardening.test.ts`. Eviden
 Out of scope (explicitly NOT in Batch 7): production-scale registry data ingestion; marking any record as verified / production-ready / institutionally usable; raw bank-detail exposure; raw personal contact detail exposure to the public surface; AI auto-send; external provider integration; raw bank-detail API scope; weakening of any Batch 1–6 accepted rule.
 
 Completion phrase: `BATCH_7_REGISTRY_SEARCH_CLAIM_RULES_HARDENING_COMPLETE`.
+
+## Batch 8 — Registry Record Model, Search Index & Working Search Experience
+
+Working public registry search and profile experience over a real
+record model + search index. Public-only tier separation enforced by
+RLS, column grants and `check-registry-record-model-parity.mjs`;
+forbidden marketing wording blocked by
+`check-registry-batch8-no-verified-wording.mjs`. Short-lived per-scope
+caching, additional filters (readiness/claim status), cursor pagination
+and lifecycle webhooks (`registry.search_performed`,
+`registry.profile_viewed`) ship alongside.
+
+Evidence: `evidence/batch-8-registry-record-search-profile/README.md`.
+
+Completion phrase: `BATCH_8_REGISTRY_RECORD_SEARCH_PROFILE_COMPLETE`.
+
+## Batch 9 — Registry Source File Import, Field Mapping, Validation
+
+Controlled import pipeline: source-file upload (manual records / JSON
+/ CSV / extracted text), field mapping with visibility tiers,
+validation matrix (required fields, bank-detail patterns, mapping
+policy, intra-batch and DB-wide duplicate detection), quarantine
+queue, duplicate review, business-decision-gated approval and
+atomic publish via `atomic_publish_registry_import_batch`. Every
+published record is forced to `readiness_state = imported_unverified`
+and `api_output_allowed = false`. Public-tier search index rows are
+the only ones written by publish.
+
+Guards added to prebuild:
+- `check-registry-import-pipeline-parity.mjs` — Deno ↔ TS SSOT for
+  source types, target fields, visibility tiers, forbidden public
+  mappings, validation outcomes, duplicate confidence levels,
+  quarantine reason codes, audit event names, and forbidden wording.
+- `check-registry-batch9-no-verified-default.mjs` — fails CI if any
+  new code defaults an imported record to verified / production-ready
+  / institutionally usable.
+
+Tests: `src/tests/batch-9-registry-source-import-validation.test.ts`.
+Evidence: `evidence/batch-9-registry-source-import-validation/README.md`.
+
+Out of scope (explicitly NOT in Batch 9): production-scale automated
+ingestion, OCR pipelines, external provider integrations, any
+verified / production-ready / institutionally-usable wording, raw
+bank-detail or raw personal contact-detail exposure, outreach
+triggers, weakening of any Batch 1–8 accepted rule.
+
+Completion phrase: `BATCH_9_REGISTRY_SOURCE_IMPORT_VALIDATION_COMPLETE`.
+
 
 
