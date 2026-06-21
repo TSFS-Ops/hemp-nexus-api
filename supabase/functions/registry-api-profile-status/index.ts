@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
       endpoint: "profile-status", result_state: resultState,
       country: body.country ?? company?.country_code ?? null,
       company_reference: body.company_reference,
-      source_summary: company?.source_tier ?? null,
+      source_summary: null,
       readiness_summary: company?.readiness_state ?? null,
     });
 
