@@ -19,7 +19,6 @@ import { ResultCardErrorBoundary } from "@/components/search/ResultCardErrorBoun
 import { SimilarCounterpartiesSheet } from "@/components/search/SimilarCounterpartiesSheet";
 import { RegistryAlsoFoundPanel } from "@/components/search/RegistryAlsoFoundPanel";
 import { UnifiedRegisterLinkSuggestions } from "@/components/search/UnifiedRegisterLinkSuggestions";
-import type { MatchableRegistry } from "@/lib/registry-counterparty-link-ssot";
 import { consumePreAuthState } from "@/lib/pre-auth-state";
 import { sanitizeSearchResults, detectDegradation, type DegradationInfo } from "@/lib/sanitize-search-results";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
@@ -127,7 +126,6 @@ export default function CounterpartySearch() {
   const [query, setQuery] = useState(initialQuery);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [registryHits, setRegistryHits] = useState<MatchableRegistry[]>([]);
   const [metrics, setMetrics] = useState<SearchMetrics | null>(null);
   const [parsedQuery, setParsedQuery] = useState<ParsedQuery | null>(null);
   const [selectedResults, setSelectedResults] = useState<Set<string>>(new Set());
@@ -802,18 +800,15 @@ export default function CounterpartySearch() {
               counterparties={results.map((r) => ({
                 id: r.id,
                 name: r.title,
-                countryCode: parsedQuery?.location
-                  ? undefined
-                  : undefined,
+                countryCode: r.metadata?.country_code ?? r.metadata?.jurisdiction ?? parsedQuery?.location ?? undefined,
+                registrationNumber: r.metadata?.registration_number ?? undefined,
               }))}
-              registry={registryHits}
             />
             <RegistryAlsoFoundPanel
               query={query}
               hasSearched={hasSearched}
               parsedQuery={parsedQuery}
               networkResultCount={results.length}
-              onRegistryResults={setRegistryHits}
             />
           </>
         )}
