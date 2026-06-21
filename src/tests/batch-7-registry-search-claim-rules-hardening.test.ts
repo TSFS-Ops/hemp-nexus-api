@@ -11,7 +11,7 @@ const ncrEdge = readFileSync("supabase/functions/registry-new-company-request/in
 const ccrEdge = readFileSync("supabase/functions/registry-company-correction-request/index.ts", "utf8");
 const claimEdge = readFileSync("supabase/functions/registry-company-claim/index.ts", "utf8");
 const outreachEdge = readFileSync("supabase/functions/registry-ai-outreach-draft/index.ts", "utf8");
-const migration = readFileSync("supabase/migrations/20260621120000_b7c50001-r7-claim-rules-hardening.sql", "utf8");
+const migration = readFileSync("supabase/migrations/20260621145828_fa957cef-0d5b-4dc9-a645-146650dd2183.sql", "utf8");
 
 describe("Batch 7 — claim rules SSOT parity", () => {
   const arrays = [
