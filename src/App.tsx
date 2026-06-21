@@ -120,6 +120,13 @@ const AdminApiUsage = lazy(() => import("@/pages/admin/registry/ApiUsage"));
 const AdminApiTestConsole = lazy(() => import("@/pages/admin/registry/ApiTestConsole"));
 // Batch 6 — M013 / M014 / M015 / M017 operations + outreach + readiness
 const AdminRegistryOperations = lazy(() => import("@/pages/admin/registry/Operations"));
+// Batch 17 — Registry Admin Operations Centre
+const AdminRegistryOpsCentre = lazy(() => import("@/pages/admin/registry/operations/Centre"));
+const AdminRegistryOpsQueue = lazy(() => import("@/pages/admin/registry/operations/Queue"));
+const AdminRegistryOpsSlas = lazy(() => import("@/pages/admin/registry/operations/Slas"));
+const AdminRegistryOpsRisk = lazy(() => import("@/pages/admin/registry/operations/Risk"));
+const AdminRegistryOpsReadiness = lazy(() => import("@/pages/admin/registry/operations/Readiness"));
+const AdminRegistryOpsAudit = lazy(() => import("@/pages/admin/registry/operations/Audit"));
 const AdminRegistryOutreachDrafts = lazy(() => import("@/pages/admin/registry/OutreachDrafts"));
 const AdminRegistryOutreachApprovals = lazy(() => import("@/pages/admin/registry/OutreachApprovals"));
 const AdminRegistryDoNotContact = lazy(() => import("@/pages/admin/registry/DoNotContact"));
@@ -281,7 +288,14 @@ function App() {
                   <Route path="/admin/registry/api-usage" element={<AdminApiUsage />} />
                   <Route path="/admin/registry/api-test-console" element={<AdminApiTestConsole />} />
                   {/* Batch 6 — Operations, Outreach, DNC */}
-                  <Route path="/admin/registry/operations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOperations /></RequireAuth>} />
+                  <Route path="/admin/registry/operations" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsCentre /></RequireAuth>} />
+                  {/* Batch 17 — Operations Centre sub-routes */}
+                  <Route path="/admin/registry/operations/queue" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsQueue /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/slas" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsSlas /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/risk" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsRisk /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/readiness" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsReadiness /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/audit" element={<RequireAuth role={["platform_admin", "compliance_owner"]} fallbackRoute="/desk"><AdminRegistryOpsAudit /></RequireAuth>} />
+                  <Route path="/admin/registry/operations/legacy" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOperations /></RequireAuth>} />
                   <Route path="/admin/registry/outreach-drafts" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachDrafts /></RequireAuth>} />
                   <Route path="/admin/registry/outreach-approvals" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryOutreachApprovals /></RequireAuth>} />
                   <Route path="/admin/registry/do-not-contact" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryDoNotContact /></RequireAuth>} />
