@@ -25,9 +25,12 @@ if (!fn.includes("NOTIFICATION_SKIP_REASONS")) {
   process.exit(1);
 }
 
-// Verify all reasons appear in the most recent Phase 1 migration
+// Verify all reasons appear somewhere in the migration history. The
+// original Phase 1 CHECK constraint migration defines the canonical
+// reason set; subsequent unrelated migrations push it out of any small
+// sliding window, so we scan the full migration history instead.
 const files = readdirSync("supabase/migrations").sort();
-const recent = files.slice(-15).map((f) => readFileSync(`supabase/migrations/${f}`, "utf8")).join("\n");
+const recent = files.map((f) => readFileSync(`supabase/migrations/${f}`, "utf8")).join("\n");
 let failed = false;
 for (const r of reasons) {
   if (!recent.includes(`'${r}'`)) {
