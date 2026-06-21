@@ -6,12 +6,13 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { UAT_PROVISIONING_ENABLED } from "./_ci-gate";
 import { supabase, BASE_URL, signUpTestUser } from "./test-client";
 
 const TEST_EMAIL = `uat-${Date.now()}@test.izenzo.co.za`;
 const TEST_PASSWORD = "UatT3st!Secure2026";
 
-describe("Journey 1: Signup → Onboard → Search → Match → Terms → Docs → Confirm Intent", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("Journey 1: Signup → Onboard → Search → Match → Terms → Docs → Confirm Intent", () => {
   let userId: string;
   let accessToken: string;
   let orgId: string;

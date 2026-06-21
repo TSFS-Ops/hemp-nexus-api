@@ -12,12 +12,13 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { UAT_PROVISIONING_ENABLED } from "./_ci-gate";
 import { supabase, signUpTestUser } from "./test-client";
 
 const TEST_EMAIL = `uat-billing-${Date.now()}@test.izenzo.co.za`;
 const PASSWORD = "UatT3st!Secure2026";
 
-describe("Journey 4: Credits appear after purchase → deducted on action", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("Journey 4: Credits appear after purchase → deducted on action", () => {
   let userId: string;
   let orgId: string;
 

@@ -17,6 +17,7 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
+import { UAT_PROVISIONING_ENABLED } from "./_ci-gate";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { signUpTestUser } from "./test-client";
@@ -63,9 +64,9 @@ let A_MEMBER: Fixture; // distinct provisioned user; signup trigger gives them t
 let B_ADMIN: Fixture;
 let A_MATCH_ID: string | null = null;
 
-describe("RLS Proof — Core Data Isolation", () => {
+describe.skipIf(!UAT_PROVISIONING_ENABLED)("RLS Proof — Core Data Isolation", () => {
   // ── Section B: Fixture provisioning ──────────────────────────────
-  describe("B. Fixtures", () => {
+  describe.skipIf(!UAT_PROVISIONING_ENABLED)("B. Fixtures", () => {
     it("provisions Org A admin (throwaway)", async () => {
       const c = freshClient();
       const r = await signUpTestUser(c, EMAIL_A_ADMIN, PASSWORD);
@@ -93,7 +94,7 @@ describe("RLS Proof — Core Data Isolation", () => {
   });
 
   // ── Section A: RLS inventory sanity (rls_enabled on every table) ──
-  describe("A. RLS-enabled inventory (live DB)", () => {
+  describe.skipIf(!UAT_PROVISIONING_ENABLED)("A. RLS-enabled inventory (live DB)", () => {
     const TABLES = [
       "organizations",
       "profiles",
@@ -133,7 +134,7 @@ describe("RLS Proof — Core Data Isolation", () => {
   });
 
   // ── Section C: Read-isolation tests ──────────────────────────────
-  describe("C. Cross-org read isolation", () => {
+  describe.skipIf(!UAT_PROVISIONING_ENABLED)("C. Cross-org read isolation", () => {
     it("C1 — Org A admin can read its own organization row", async () => {
       const { data, error } = await A_ADMIN.client
         .from("organizations")
@@ -336,7 +337,7 @@ describe("RLS Proof — Core Data Isolation", () => {
   });
 
   // ── Section D: Mutation isolation ────────────────────────────────
-  describe("D. Mutation isolation", () => {
+  describe.skipIf(!UAT_PROVISIONING_ENABLED)("D. Mutation isolation", () => {
     it("D1 — non-admin cannot INSERT token_ledger (service-role only)", async () => {
       const { data, error } = await A_ADMIN.client
         .from("token_ledger")
