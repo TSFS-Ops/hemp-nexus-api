@@ -109,6 +109,10 @@ const AdminRegistryBatch7AuditLog = lazy(() => import("@/pages/admin/registry/Ba
 const AdminRegistryRecords = lazy(() => import("@/pages/admin/registry/Records"));
 // Batch 10 — claim activation & record lifecycle controls
 const AdminRegistryClaimActivation = lazy(() => import("@/pages/admin/registry/ClaimActivation"));
+// Batch 12 — Authority-to-Act request, status, review
+const RegistryAuthorityList = lazy(() => import("@/pages/registry/AuthorityList"));
+const RegistryAuthorityStatus = lazy(() => import("@/pages/registry/AuthorityStatus"));
+const AdminRegistryAuthorityReview = lazy(() => import("@/pages/admin/registry/AuthorityReview"));
 // Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
 const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
 
