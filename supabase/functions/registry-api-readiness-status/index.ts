@@ -81,10 +81,13 @@ Deno.serve(async (req) => {
       }));
     }
 
-    const { data: r } = await svc.from("registry_readiness_states")
-      .select("readiness_state").eq("company_reference", body.company_reference).maybeSingle();
+    const { data: r } = await svc.from("registry_company_records")
+      .select("readiness_state").eq("registration_number", body.company_reference).maybeSingle();
     const state: RegistryApiHardenedResultState = !r ? "not_found"
-      : r.readiness_state === "ready" ? "usable" : r.readiness_state === "seed" ? "seed_only" : "not_ready";
+      : r.readiness_state === "ready" ? "usable"
+      : r.readiness_state === "seed" ? "seed_only"
+      : r.readiness_state === "imported_unverified" ? "imported_unverified"
+      : "not_ready";
 
     const env = buildResponseEnvelope({
       request_id: requestId, client_id: client!.id, mode, scope: body.scope, endpoint: "readiness-status",
