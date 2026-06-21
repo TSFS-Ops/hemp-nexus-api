@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const FormSchema = z.object({
   company_name: z.string().trim().min(2, "Enter the company name").max(200),
@@ -24,10 +24,18 @@ const FormSchema = z.object({
 });
 
 export default function NewCompanyRequest() {
-  const [companyName, setCompanyName] = useState("");
-  const [countryCode, setCountryCode] = useState("");
+  // Optional pre-fill when the request originates from the unified
+  // counterparty/register search (?name=&country=&from_counterparty=1).
+  // The server never trusts these params — they only seed the form.
+  const [params] = useSearchParams();
+  const [companyName, setCompanyName] = useState(params.get("name") ?? "");
+  const [countryCode, setCountryCode] = useState(params.get("country") ?? "");
   const [registrationNumber, setRegistrationNumber] = useState("");
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(
+    params.get("from_counterparty") === "1"
+      ? "Proposed from counterparty search — please review and link to the registry."
+      : "",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
 
