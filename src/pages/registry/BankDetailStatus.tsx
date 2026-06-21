@@ -67,9 +67,9 @@ export default function BankDetailStatus() {
 
       const { data: ev } = await supabase
         .from("registry_bank_detail_evidence")
-        .select("id, evidence_category, evidence_state")
+        .select("id, evidence_kind, description")
         .eq("submission_id", bankDetailSubmissionId);
-      setEvidence(((ev ?? []) as EvidenceRow[]) ?? []);
+      setEvidence((ev ?? []) as EvidenceRow[]);
       setLoading(false);
     })();
   }, [bankDetailSubmissionId]);
