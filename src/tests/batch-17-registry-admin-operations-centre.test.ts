@@ -62,7 +62,7 @@ describe("Batch 17 — operations SSOT shape", () => {
   });
   it("specialist route map only emits /admin/registry/* routes", () => {
     for (const r of Object.values(REGISTRY_OPS_SPECIALIST_ROUTES)) {
-      expect(r.startsWith("/admin/registry/") || r === "/admin/registry").toBe(true);
+      expect(r.startsWith("/admin/registry")).toBe(true);
     }
   });
   it("source modules and forbidden lists are non-empty", () => {
