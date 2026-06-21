@@ -29,6 +29,7 @@ limitations and outstanding production blockers.
 | 16 | Company portal guided journey | accepted | `evidence/batch-16-company-portal-guided-journey/README.md` | Deterministic next-step engine. |
 | 17 | Admin operations centre | accepted | `evidence/batch-17-registry-admin-operations-centre/README.md` | Role-gated; read-only aggregations. |
 | 18 | End-to-end UAT, release gate, demo pack | accepted | `evidence/batch-18-end-to-end-uat-release-demo/README.md` | Default final status not `production_ready`. |
+| 19A | Client claim/search/profile decision alignment | accepted | `evidence/batch-19a-client-claim-search-profile-decisions/README.md` | Five sample records locked `sample_only`; SMS/WhatsApp disabled in Phase 1; claim approval is `claim_approved_limited`. |
 
 ## Cross-cutting guarantees
 

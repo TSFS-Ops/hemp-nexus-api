@@ -1231,3 +1231,19 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 
 ### Edge functions requiring deploy (Batch 18)
 - (none — Batch 18 adds no edge functions)
+
+
+## Batch 19A — Client Claim/Search/Profile Decision Alignment (BATCH_19A_CLIENT_CLAIM_SEARCH_PROFILE_DECISIONS_COMPLETE)
+
+- Source of truth: `docs/registry/client-decisions/Izenzo_Business_Registry_Claim_Rules_Client_Questionnaire_Completed.docx` (signed by David Davies).
+- New SSOT: `src/lib/registry-client-decisions-19a.ts` — claim starter categories, unregistered-user state flow, `claim_approved_limited` copy + negative grants, evidence matrix (5 categories), evidence freshness (12 months), representative pre-authority forbidden actions, competing-claim conflict state + blocked actions, search visibility tiers (public / logged-in / admin-only / never-public), public profile visibility tiers, the five `sample_only` records + API contract, missing-company state flow, claimant-forbidden direct edits, Phase 1 outreach rules, audit event names.
+- No DB schema changes. No new edge functions. No production-enable buttons. No live provider integration. No external notifications. SMS/WhatsApp remain disabled in Phase 1.
+- The five client-attached records (bullion_bathrooms_nigeria, dangote_fertiliser_limited, harith_holdings, laurium_capital, starfair_162) are locked as `sample_only`: excluded from production API, sandbox returns `verified_by_izenzo = false`, payment-status never reports usable verified.
+- Guards added to prebuild: `scripts/check-batch-19a-ssot-parity.mjs`, `scripts/check-batch-19a-forbidden-wording.mjs`, `scripts/check-batch-19a-sample-only-locked.mjs`, `scripts/check-batch-19a-no-auto-outreach.mjs`. All passing.
+- Tests: `src/tests/batch-19a-client-claim-search-profile-decisions.test.ts` (16 tests, all passing).
+- Evidence: `evidence/batch-19a-client-claim-search-profile-decisions/README.md`. Central index updated.
+- Batches 1–18 guardrails untouched.
+
+### Edge functions requiring deploy (Batch 19A)
+- (none — Batch 19A is an alignment patch only)
+
