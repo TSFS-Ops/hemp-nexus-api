@@ -60,7 +60,13 @@
     "registry-batch7-audit-export",
     "claim-lifecycle-webhook-dispatch",
     "registry-company-record-manage",
-    "registry-company-search-index-rebuild"
+    "registry-company-search-index-rebuild",
+    "registry-source-file-upload",
+    "registry-import-field-map",
+    "registry-import-validate",
+    "registry-import-duplicate-check",
+    "registry-import-quarantine-review",
+    "registry-import-approve-publish"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
