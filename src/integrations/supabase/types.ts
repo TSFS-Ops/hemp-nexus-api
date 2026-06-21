@@ -16470,24 +16470,6 @@ export type Database = {
           },
         ]
       }
-      registry_company_people_public_safe: {
-        Row: {
-          created_at: string | null
-          display_name: string | null
-          id: string | null
-          record_id: string | null
-          role_kind: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "registry_company_people_record_id_fkey"
-            columns: ["record_id"]
-            isOneToOne: false
-            referencedRelation: "registry_company_records"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       v_clip_on_reconciliation: {
         Row: {
           charged_audits: number | null
@@ -16526,14 +16508,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "audit_logs_org_id_fkey"
-            columns: ["settled_org_id"]
+            columns: ["init_org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "audit_logs_org_id_fkey"
-            columns: ["init_org_id"]
+            columns: ["settled_org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
@@ -18158,6 +18140,16 @@ export type Database = {
           p_request_id: string
         }
         Returns: Json
+      }
+      registry_company_people_public_safe: {
+        Args: { _record_id: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          id: string
+          record_id: string
+          role_kind: string
+        }[]
       }
       registry_normalise_search_value: { Args: { p: string }; Returns: string }
       release_billing_hold: {
