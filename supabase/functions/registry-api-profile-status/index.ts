@@ -139,29 +139,25 @@ Deno.serve(async (req) => {
       }));
     }
 
-    // Fetch company record + readiness + claim/authority + lifecycle
+    // Fetch company record by registration_number; gate on B14 controls.
     const { data: company } = await svc.from("registry_company_records")
-      .select("id, country_code, lifecycle_state, readiness_state, source_tier, is_archived, is_disabled")
-      .eq("company_reference", body.company_reference).maybeSingle();
+      .select("id, country_code, lifecycle_state, readiness_state, claim_status, authority_status_label, archived_at, disabled_at, api_output_allowed")
+      .eq("registration_number", body.company_reference).maybeSingle();
 
     let resultState: RegistryApiHardenedResultState = "not_found";
     if (company) {
-      if (company.is_disabled) resultState = "disabled";
-      else if (company.is_archived) resultState = "not_usable";
+      if (company.disabled_at) resultState = "disabled";
+      else if (company.archived_at) resultState = "not_usable";
       else if ((company.readiness_state ?? "") === "seed") resultState = "seed_only";
       else if ((company.readiness_state ?? "") === "imported_unverified") resultState = "imported_unverified";
       else if ((company.lifecycle_state ?? "") === "shell") resultState = "not_ready";
+      else if ((company.claim_status ?? "") !== "approved") resultState = "claim_not_enabled";
+      else if ((company.authority_status_label ?? "") !== "approved") resultState = "authority_not_approved";
       else {
-        // Claim + authority + business decision gates
-        const { data: claim } = await svc.from("registry_company_claims")
-          .select("status").eq("company_id", company.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
-        const { data: authority } = await svc.from("registry_authority_requests")
-          .select("status").eq("company_id", company.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
         const { data: bd } = await svc.from("business_decisions")
           .select("id").eq("category", "api_output").eq("status", "approved").limit(1).maybeSingle();
-        if (!claim || claim.status !== "approved") resultState = "claim_not_enabled";
-        else if (!authority || authority.status !== "approved") resultState = "authority_not_approved";
-        else if (!bd) resultState = "business_decision_required";
+        if (!bd) resultState = "business_decision_required";
+        else if (!company.api_output_allowed) resultState = "not_usable";
         else resultState = "usable";
       }
     }
