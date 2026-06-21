@@ -235,6 +235,17 @@ function App() {
                   <Route path="/registry/claims/:claimId" element={<RequireAuth><RegistryClaimStatus /></RequireAuth>} />
                   <Route path="/admin/registry/claims-review" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryClaimsReview /></RequireAuth>} />
                   <Route path="/registry/readiness" element={<RegistryReadiness />} />
+                  {/* Batch 16 — Company Portal Guided Journey */}
+                  <Route path="/registry/my-companies" element={<RequireAuth><RegistryMyCompanies /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId" element={<RequireAuth><RegistryMyCompanyDetail /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/claim" element={<RequireAuth><RegistryClaimStatus /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/authority" element={<RequireAuth><RegistryAuthorityList /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/bank-details" element={<RequireAuth><BankDetailSubmit /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/verification" element={<RequireAuth><BankDetailStatus /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/evidence" element={<RequireAuth><RegistryMyCompanyEvidence /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/corrections" element={<RequireAuth><RegistryMyCompanyCorrections /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/disputes" element={<RequireAuth><RegistryMyCompanyDisputes /></RequireAuth>} />
+                  <Route path="/registry/my-companies/:companyId/revocations" element={<RequireAuth><RegistryMyCompanyRevocations /></RequireAuth>} />
                   {/* Batch 1 — Admin registry area (M015 shell, M018 decisions, M019 readiness) */}
                   <Route path="/admin/registry" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryIndex /></RequireAuth>} />
                   <Route path="/admin/registry/readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminRegistryReadiness /></RequireAuth>} />
