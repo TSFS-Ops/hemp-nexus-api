@@ -135,6 +135,32 @@ export default function RegistrySearch() {
               <Input id="ad" maxLength={200} value={address}
                      onChange={(e) => setAddress(e.target.value)} />
             </div>
+            <div>
+              <Label htmlFor="rs" className="text-xs">Readiness state</Label>
+              <select id="rs" className="w-full h-9 rounded-md border border-input bg-background px-2 text-xs"
+                      value={readinessState} onChange={(e) => setReadinessState(e.target.value)}
+                      data-testid="filter-readiness-state">
+                <option value="">Any</option>
+                <option value="imported_unverified">imported_unverified</option>
+                <option value="claim_in_review">claim_in_review</option>
+                <option value="claim_approved">claim_approved</option>
+                <option value="profile_verified">profile_verified</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="cs" className="text-xs">Claim status</Label>
+              <select id="cs" className="w-full h-9 rounded-md border border-input bg-background px-2 text-xs"
+                      value={claimStatus} onChange={(e) => setClaimStatus(e.target.value)}
+                      data-testid="filter-claim-status">
+                <option value="">Any</option>
+                <option value="unclaimed">unclaimed</option>
+                <option value="claim_started">claim_started</option>
+                <option value="claim_submitted">claim_submitted</option>
+                <option value="approved">approved</option>
+                <option value="rejected">rejected</option>
+                <option value="revoked">revoked</option>
+              </select>
+            </div>
           </div>
           <Button onClick={onSearch} disabled={loading} data-testid="registry-search-submit">
             {loading ? "Searching…" : "Search"}
