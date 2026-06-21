@@ -138,6 +138,7 @@ export function AdminBankDetailReview() {
   const { bankDetailSubmissionId } = useParams();
   const [row, setRow] = useState<DetailRow | null>(null);
   const [riskFlags, setRiskFlags] = useState<RiskFlag[]>([]);
+  const [verification, setVerification] = useState<{ status: RegistryBankVerificationStatus; expiresAt: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [reason, setReason] = useState("");
