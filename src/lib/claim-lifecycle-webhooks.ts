@@ -18,7 +18,6 @@ export const CLAIM_LIFECYCLE_WEBHOOK_EVENTS = [
   "claim.new_company_requested",
   "claim.new_company_reviewed",
   "claim.outreach_blocked",
-  // Batch 8 follow-up: public discovery telemetry.
   "registry.search_performed",
   "registry.profile_viewed",
 ] as const;
