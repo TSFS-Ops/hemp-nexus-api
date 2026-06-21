@@ -19,6 +19,9 @@ export function PageFooter() {
             <Link to="/docs" className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
               Docs
             </Link>
+            <Link to="/trust" className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+              Trust
+            </Link>
             <a href="mailto:support@izenzo.co.za" className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
               Support
             </a>
