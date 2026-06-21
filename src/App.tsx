@@ -103,6 +103,7 @@ const AdminRegistryNewCompanyRequests = lazy(() => import("@/pages/admin/registr
 const AdminRegistryCorrectionRequests = lazy(() => import("@/pages/admin/registry/CorrectionRequests"));
 const AdminRegistryClaimConflicts = lazy(() => import("@/pages/admin/registry/ClaimConflicts"));
 const AdminRegistryBatch7AuditLog = lazy(() => import("@/pages/admin/registry/Batch7AuditLog"));
+const AdminRegistryRecords = lazy(() => import("@/pages/admin/registry/Records"));
 // Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
 const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
 
