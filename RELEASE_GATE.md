@@ -1049,3 +1049,18 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 - Guards: check-registry-authority-workflow-parity, check-registry-batch12-authority-audit-names, check-registry-batch12-authority-wording, check-registry-batch12-no-external-send.
 - Evidence: evidence/batch-12-authority-to-act-request-review/README.md
 - Authority approval grants ONLY named scopes; never verifies company profile, never confirms bank details, never enables API/institutional use. Delegation requires two-person approval. Sensitive scopes require compliance review. In-app notifications are LOG-ONLY.
+
+## Prebuild guard script index (Batch W sync)
+
+- `check-claim-lifecycle-webhook-parity.mjs`
+- `check-registry-claim-workflow-parity.mjs`
+- `check-registry-batch11-audit-names.mjs`
+- `check-registry-batch11-no-verified-claim-wording.mjs`
+- `check-registry-batch11-no-auto-send.mjs`
+- `check-registry-people-personal-contact-leak.mjs`
+- `check-sensitive-rls-with-check-true.mjs`
+- `check-sensitive-column-open-select.mjs`
+- `check-registry-authority-workflow-parity.mjs`
+- `check-registry-batch12-authority-audit-names.mjs`
+- `check-registry-batch12-authority-wording.mjs`
+- `check-registry-batch12-no-external-send.mjs`
