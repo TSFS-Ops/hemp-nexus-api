@@ -70,6 +70,10 @@
     "export-download",
     "basic-memory-record-write",
     "compute-evidence-rating",
-    "evidence-rating-override"
+    "evidence-rating-override",
+    "notification-channel-readiness-list",
+    "notification-channel-readiness-update",
+    "notification-channel-skip-record",
+    "manual-outreach-contact-log"
   ]
 }

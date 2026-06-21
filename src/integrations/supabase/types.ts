@@ -6703,6 +6703,66 @@ export type Database = {
           },
         ]
       }
+      manual_outreach_contact_logs: {
+        Row: {
+          admin_note: string | null
+          case_id: string
+          case_type: string
+          contact_method: string
+          contact_role: string
+          contacted_at: string
+          created_at: string
+          display_label: string
+          engagement_complete: boolean
+          evidence_reference: string | null
+          id: string
+          logged_by: string
+          logged_by_role: string
+          manual_channel_used: string
+          masked_contact: string
+          next_action: string | null
+          outcome: string
+        }
+        Insert: {
+          admin_note?: string | null
+          case_id: string
+          case_type?: string
+          contact_method: string
+          contact_role: string
+          contacted_at?: string
+          created_at?: string
+          display_label?: string
+          engagement_complete?: boolean
+          evidence_reference?: string | null
+          id?: string
+          logged_by: string
+          logged_by_role: string
+          manual_channel_used: string
+          masked_contact: string
+          next_action?: string | null
+          outcome: string
+        }
+        Update: {
+          admin_note?: string | null
+          case_id?: string
+          case_type?: string
+          contact_method?: string
+          contact_role?: string
+          contacted_at?: string
+          created_at?: string
+          display_label?: string
+          engagement_complete?: boolean
+          evidence_reference?: string | null
+          id?: string
+          logged_by?: string
+          logged_by_role?: string
+          manual_channel_used?: string
+          masked_contact?: string
+          next_action?: string | null
+          outcome?: string
+        }
+        Relationships: []
+      }
       match_analytics: {
         Row: {
           avg_match_time_hours: number | null
@@ -7701,6 +7761,150 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_channel_consent_states: {
+        Row: {
+          channel: string
+          consent_actor: string | null
+          consent_at: string | null
+          consent_granted: boolean
+          consent_source: string | null
+          consent_wording_version: string | null
+          created_at: string
+          id: string
+          opted_out: boolean
+          org_id: string | null
+          suppression_at: string | null
+          suppression_reason: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          consent_actor?: string | null
+          consent_at?: string | null
+          consent_granted?: boolean
+          consent_source?: string | null
+          consent_wording_version?: string | null
+          created_at?: string
+          id?: string
+          opted_out?: boolean
+          org_id?: string | null
+          suppression_at?: string | null
+          suppression_reason?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          consent_actor?: string | null
+          consent_at?: string | null
+          consent_granted?: boolean
+          consent_source?: string | null
+          consent_wording_version?: string | null
+          created_at?: string
+          id?: string
+          opted_out?: boolean
+          org_id?: string | null
+          suppression_at?: string | null
+          suppression_reason?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notification_channel_readiness: {
+        Row: {
+          channel: string
+          created_at: string
+          credentials_status: string
+          id: string
+          live_sending_enabled: boolean
+          phase_1_locked: boolean
+          provider_status: string
+          safe_label: string
+          status: string
+          template_status: string
+          test_send_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          webhook_status: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          credentials_status?: string
+          id?: string
+          live_sending_enabled?: boolean
+          phase_1_locked?: boolean
+          provider_status?: string
+          safe_label: string
+          status: string
+          template_status?: string
+          test_send_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          webhook_status?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          credentials_status?: string
+          id?: string
+          live_sending_enabled?: boolean
+          phase_1_locked?: boolean
+          provider_status?: string
+          safe_label?: string
+          status?: string
+          template_status?: string
+          test_send_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          webhook_status?: string
+        }
+        Relationships: []
+      }
+      notification_channel_skipped_events: {
+        Row: {
+          channel: string
+          created_at: string
+          fallback_channel: string | null
+          id: string
+          masked_contact: string | null
+          metadata: Json
+          reason: string
+          source_event_type: string | null
+          target_entity_id: string | null
+          target_entity_type: string | null
+          template_name: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          fallback_channel?: string | null
+          id?: string
+          masked_contact?: string | null
+          metadata?: Json
+          reason: string
+          source_event_type?: string | null
+          target_entity_id?: string | null
+          target_entity_type?: string | null
+          template_name?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          fallback_channel?: string | null
+          id?: string
+          masked_contact?: string | null
+          metadata?: Json
+          reason?: string
+          source_event_type?: string | null
+          target_entity_id?: string | null
+          target_entity_type?: string | null
+          template_name?: string | null
+        }
+        Relationships: []
       }
       notification_dispatches: {
         Row: {
