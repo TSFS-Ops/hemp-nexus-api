@@ -279,6 +279,9 @@ export default function BankDetailSubmit() {
             />
           </div>
         </CardContent>
+      </Card>
+
+
 
       <Card>
         <CardHeader>
