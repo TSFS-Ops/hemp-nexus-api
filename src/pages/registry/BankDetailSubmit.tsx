@@ -121,12 +121,12 @@ export default function BankDetailSubmit() {
 
       country_code: countryCode,
     });
-  }, [form, selectedCompany, countryCode, requirements]);
+  }, [form, selectedAuthority, countryCode, requirements]);
 
   const canSubmit =
     !submitting &&
     !!selectedAuthority &&
-    !!selectedCompany &&
+    !!companyName.trim() &&
     missing.length === 0 &&
     consentAccepted &&
     declarationAccepted;
@@ -134,14 +134,15 @@ export default function BankDetailSubmit() {
   const handleField = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async () => {
-    if (!selectedAuthority || !selectedCompany) return;
+    if (!selectedAuthority || !companyName.trim()) return;
     try {
       setSubmitting(true);
       const body = {
         authority_request_id: selectedAuthority.authority_request_id,
-        company_reference: selectedCompany.company_reference,
-        company_name: selectedCompany.company_name,
+        company_reference: selectedAuthority.company_reference,
+        company_name: companyName.trim(),
         country_code: countryCode,
+
         currency_code: form.currency_code || "ZAR",
         account_type: form.account_type || undefined,
         account_holder_name: form.account_holder_name,
