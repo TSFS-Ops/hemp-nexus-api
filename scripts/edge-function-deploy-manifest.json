@@ -66,7 +66,12 @@
     "registry-import-validate",
     "registry-import-duplicate-check",
     "registry-import-quarantine-review",
-    "registry-import-approve-publish"
+    "registry-import-approve-publish",
+    "registry-record-lifecycle-manage",
+    "registry-claim-availability-check",
+    "registry-claim-activation-review",
+    "registry-record-stale-review",
+    "registry-record-lifecycle-summary"
   ],
   "exempt_invokes": [
     "admin-residency-review-approve",
