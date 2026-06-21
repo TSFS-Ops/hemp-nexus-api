@@ -47,7 +47,7 @@ const LEGACY_OK = new Set([
   "registry_authority_revoked",
   "registry_authority_disputed",
 ]);
-const real = offenders.filter((o) => !LEGACY_OK.has(o.name));
+const real = offenders.filter((o) => !canon.has(o.name) && !LEGACY_OK.has(o.name));
 if (real.length) {
   for (const o of real) console.error(`✗ ${o.file}: non-canonical ${o.name}`);
   process.exit(1);
