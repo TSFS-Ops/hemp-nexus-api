@@ -30,6 +30,21 @@ import MatchDetails from "@/pages/MatchDetails";
 import TradeDealWizard from "@/pages/TradeDealWizard";
 import { MatchesList } from "@/components/MatchesList";
 import RegistryLanding from "@/pages/registry/Landing";
+import RegistrySearch from "@/pages/registry/Search";
+import RegistryCompanyProfile from "@/pages/registry/CompanyProfile";
+import RegistryClaim from "@/pages/registry/Claim";
+import RegistryNewCompanyRequest from "@/pages/registry/NewCompanyRequest";
+import RegistryMyCompanies from "@/pages/registry/MyCompanies";
+import RegistryMyCompanyDetail from "@/pages/registry/MyCompanyDetail";
+import RegistryClaimStatus from "@/pages/registry/ClaimStatus";
+import RegistryAuthorityList from "@/pages/registry/AuthorityList";
+import RegistryBankDetailSubmit from "@/pages/registry/BankDetailSubmit";
+import RegistryBankDetailStatus from "@/pages/registry/BankDetailStatus";
+import RegistryMyCompanyEvidence from "@/pages/registry/MyCompanyEvidence";
+import RegistryMyCompanyCorrections from "@/pages/registry/MyCompanyCorrections";
+import RegistryMyCompanyDisputes from "@/pages/registry/MyCompanyDisputes";
+import RegistryMyCompanyRevocations from "@/pages/registry/MyCompanyRevocations";
+
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
