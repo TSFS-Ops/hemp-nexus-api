@@ -224,12 +224,25 @@ export default function RegistrySearch() {
                   <div className="col-span-2"><span className="text-muted-foreground">Source:</span> {r.source_summary ?? "—"}</div>
                 </div>
                 {r.match_reasons.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pt-1" data-testid="match-reasons">
-                    {r.match_reasons.map((m, i) => (
-                      <Badge key={i} variant="outline" className="text-[10px]">{m.field_label}</Badge>
-                    ))}
+                  <div className="pt-1" data-testid="match-reasons">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Matched on</p>
+                    <div className="flex flex-wrap gap-1">
+                      {r.match_reasons.map((m, i) => (
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className="text-[10px] font-normal border-emerald-300 bg-emerald-50 text-emerald-900"
+                          data-testid="match-reason-badge"
+                          data-field={m.field_label}
+                        >
+                          <span className="font-medium">{m.field_label}:</span>
+                          <span className="ml-1 font-mono">{m.value_raw}</span>
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
+
                 <p className="text-[11px] text-amber-700">Source-backed record. Not independently vetted by Izenzo.</p>
                 <div className="flex gap-2 pt-1">
                   <Button asChild size="sm" variant="outline">
