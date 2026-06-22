@@ -48,18 +48,16 @@ describe("Point 6 — endpoint pricing linked from usage screens", () => {
 
   it("does not import burn / ledger / payment modules into the pricing page", () => {
     const page = read("src/pages/docs/ApiPricing.tsx");
-    const banned = [
-      "atomic_token_burn",
-      "atomic_token_credit",
-      "payfast",
-      "paystack",
-      "refund",
-      "poi-",
-      "wad-",
-      "api-keys",
-    ];
+    // Only inspect import statements — prose may legitimately mention
+    // these terms when describing the rule.
+    const imports = page
+      .split("\n")
+      .filter((l) => /^\s*import\s/.test(l))
+      .join("\n")
+      .toLowerCase();
+    const banned = ["atomic_token", "payfast", "paystack", "refund", "poi-", "wad-", "api-keys"];
     for (const b of banned) {
-      expect(page.toLowerCase()).not.toContain(b);
+      expect(imports).not.toContain(b);
     }
   });
 });
