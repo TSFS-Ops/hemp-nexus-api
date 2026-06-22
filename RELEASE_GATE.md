@@ -1615,3 +1615,23 @@ UAT/demo-ready, not production-ready.
 
 
 
+
+## P-4 Point 4 — Token / Credit Burn per Chargeable API Call
+
+- Client-confirmed rule encoded in `src/lib/registry-api-artefact-pricing.ts`
+  (+ byte-identical Deno mirror): production API calls burn credits only when
+  they create / return / update / confirm a governed priced artefact.
+- Base unit: 1 Basic POI = USD $10 = 1 credit = 100 credit_units.
+- Smallest-unit semantics prevent silent rounding; fractional artefacts
+  fail closed pending the smallest-unit wallet migration.
+- Sandbox calls, failed technical calls, auth/health/docs/balance calls and
+  no-result calls do not burn.
+- HTTP 402 returned on insufficient credits with safe body shape.
+- Idempotency via `request_id` → `atomic_token_burn.p_reference_id`.
+- Reversals admin-controlled only (`api.token_burn.reversed`).
+- Guard: `npm run check:p4-point-4`.
+- Evidence: `evidence/p4-point-4-token-credit-burn-per-chargeable-api-call/`.
+
+### Edge functions requiring deploy (P-4 Point 4)
+- (none — pure SSOT + shared wrapper. Endpoint integrations consume
+  `_shared/api-artefact-burn.ts` without schema changes.)
