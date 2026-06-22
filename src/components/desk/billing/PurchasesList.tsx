@@ -110,7 +110,9 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
           <CardDescription>
             Recent credit purchases. You can request a refund on a completed
             purchase below - your request will be reviewed before any credits
-            are adjusted.
+            are adjusted. Approval is an internal decision and does not by
+            itself confirm that funds have been returned by the payment
+            provider.
           </CardDescription>
         </CardHeader>
         <CardContent>
