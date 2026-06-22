@@ -107,7 +107,7 @@ export default function CompanyProfile() {
           Placed near the top of the profile, matching the B2BHint-style
           pattern. Wording is deliberately limited: claim approval
           confirms only the claimant connection and never implies the
-          company itself, its bank details or authority are verified. */}
+          company itself, its bank details or authority are confirmed. */}
       <Card data-testid="profile-claim-panel" className="border-emerald-300 bg-emerald-50/40">
         <CardHeader>
           <CardTitle className="text-base" data-testid="profile-claim-panel-title">
