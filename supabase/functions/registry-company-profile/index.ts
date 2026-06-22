@@ -57,12 +57,15 @@ Deno.serve(async (req) => {
     const { data: records } = await recordQuery;
     const record = (records ?? [])[0];
 
-    await svc.from("event_store").insert({
-      event_name: "registry_company_public_profile_viewed",
-      aggregate_id: parsed.data.company_reference,
-      aggregate_type: "registry_company_profile",
-      payload: { found: !!record },
-    }).catch(() => {});
+    try {
+      await svc.from("event_store").insert({
+        event_name: "registry_company_public_profile_viewed",
+        aggregate_id: parsed.data.company_reference,
+        aggregate_type: "registry_company_profile",
+        payload: { found: !!record },
+      });
+    } catch (_e) { /* audit best-effort */ }
+
 
     if (!record) {
       return withCors(req, new Response(JSON.stringify({
