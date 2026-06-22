@@ -103,6 +103,17 @@ export default function RegistrySearch() {
   function onSearch() { setNextCursor(null); runSearch(null, false); }
   function onLoadMore() { if (nextCursor) runSearch(nextCursor, true); }
 
+  // When arriving via "Show all results" from the typeahead the URL has
+  // ?q=… (and optionally ?country=…). Auto-run the full search once so
+  // the result list appears without requiring a second submit.
+  useEffect(() => {
+    if ((searchParams.get("q") ?? "").trim().length > 0 && !searched) {
+      runSearch(null, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   return (
     <main className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-1">Company search</h1>
