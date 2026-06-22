@@ -1445,3 +1445,33 @@ UAT/demo-ready, not production-ready.
 - (none — Batch 25 is a SSOT/guards/tests batch; no edge surface changed)
 
 
+
+## Batch 26 — Search, Typeahead, Public Profile and Corrections Rules
+
+- Client decision source:
+  `docs/registry/Izenzo_Business_Registry_Operating_Rules_Client_Questionnaire_Completed.docx`.
+- Browser SSOT: `src/lib/registry-search-profile-rules.ts`.
+- Deno mirror: `supabase/functions/_shared/registry-search-profile-rules.ts`.
+- Parity guard: `scripts/check-registry-search-profile-rules-parity.mjs`.
+- Invariants guard: `scripts/check-registry-search-profile-allowlists.mjs`.
+- Tests: `src/tests/batch-26-search-profile-corrections.test.ts` (29 source pins).
+- Operating doc: `docs/registry/search-profile-correction-rules.md`.
+- Evidence: `evidence/batch-26-search-profile-corrections-rules/README.md`.
+- Encodes: 5-class field classification; public officer/email/phone
+  search disabled; logged-in officer search gated on 4 conditions;
+  API officer/email/phone search requires `compliance_owner`; partial
+  match >= 3 chars on name fields only; typo floor 0.85; public floor
+  0.75; exact identifier outranks fuzzy name; closed allow-list of 7
+  public match reasons; admin-only match reasons never leak; exact
+  no-result wording; `company_addition_requested` is the only side
+  effect of a no-result submission; public profile field tiers and
+  the four client-supplied wording strings; corrections versioned,
+  never auto-publishing, with sensitive fields routed to
+  `compliance_owner` and `disputed_under_review` blocking public/API
+  exposure.
+- Release status: registry remains UAT/demo-ready — Batch 26 is a
+  SSOT/guards/tests/docs batch with no UI regression of accepted
+  Batch 22 / Batch 23 behaviour.
+
+### Edge functions requiring deploy (Batch 26)
+- (none — Batch 26 is a SSOT/guards/tests batch; no edge surface changed)
