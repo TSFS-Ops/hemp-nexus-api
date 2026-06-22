@@ -71,6 +71,7 @@ Prebuild guards enforced automatically by `npm run build`:
   - `check-facilitation-sla-drift.mjs` — Batch 7 facilitation SLA SSOT drift guard: asserts that `src/lib/facilitation-sla.ts` and `supabase/functions/_shared/facilitation-sla.ts` keep the same SLA window constants, warning codes, and reminder cadence so the SLA evaluator, drawer panel, and queue badges cannot drift.
   - `check-evidence-pack-seal-contract.mjs` — Facilitation Batch 10 evidence-pack SHA-256 sealing contract guard: asserts the canonical-JSON seal helper exists, is invoked by `facilitation-export-evidence-pack`, and the export response returns `{ pack, seal }` with the digest computed over the pack object. Forbids regressions to unsealed exports.
   - `check-registry-api-operating-rules-parity.mjs` — Batch 29 institutional API operating-rules SSOT parity guard: pins SHA-256 byte-parity between `src/lib/registry-api-operating-rules.ts` and `supabase/functions/_shared/registry-api-operating-rules.ts`; validates 45+ required exports; enforces invariants `REGISTRY_API_PUBLIC_SELF_SERVE_PRODUCTION_ENABLED=false`, `REGISTRY_API_DEFAULT_ENVIRONMENT="sandbox"`, `REGISTRY_API_RAW_BANK_DEFAULT_BLOCKED=true`, `REGISTRY_API_RAW_BANK_ENDPOINT_EXISTS=false`, `REGISTRY_API_AUTO_COMPANY_NOTIFICATIONS_ENABLED=false`, `REGISTRY_API_CLIENT_SEES_OWN_LOGS_ONLY=true`, `REGISTRY_API_QUOTA_OVERAGE_SUSPEND_THRESHOLD_PCT=120`, production 60/5,000/100,000, sandbox 30/1,000/10,000, sensitive endpoints 10/1,000.
+  - `check-registry-operations-outreach-rules-parity.mjs` — Batch 30 operations / outreach / notifications / readiness operating-rules SSOT parity guard: pins SHA-256 byte-parity between `src/lib/registry-operations-outreach-rules.ts` and `supabase/functions/_shared/registry-operations-outreach-rules.ts`; validates 60+ required exports; enforces invariants `REGISTRY_OPS_AI_DRAFT_ONLY=true`, `REGISTRY_OPS_AI_MAY_AUTO_SEND=false`, `REGISTRY_OPS_AI_AUTO_SEND_ENABLED=false`, `REGISTRY_OPS_WHATSAPP_ENABLED=false`, `REGISTRY_OPS_SMS_ENABLED=false`, `REGISTRY_OPS_MANUAL_CONTACT_LOG_REPRESENTS_SMS_OR_WHATSAPP=false`, `REGISTRY_OPS_OVERDUE_AUTO_APPROVE_ENABLED=false`, `REGISTRY_OPS_OVERDUE_CREATES_ADMIN_ALERT=true`, `REGISTRY_OPS_ALERT_AUTO_EXTERNAL_SEND_ENABLED=false`, `REGISTRY_OPS_READINESS_DEFAULT_AUDIENCE="internal_admin"`, `REGISTRY_OPS_READINESS_BUILD_VS_DATA_COLLAPSED=false`, real-email triple-gate (`channel` + `template` + `human_approval`), canonical disabled labels `"WhatsApp not configured"` / `"SMS not configured"`, all 12 SLA values, and the queue priority 1–10 pin (bank_detail_review, authority_to_act_review, claim_review, data_disputes_corrections, import_batch_review_quarantine, duplicate_review_merge, api_client_approval, provider_country_readiness_review, outreach_approval, stale_expired_readiness_review).
   - `check-invite-unopened-detector-contract.mjs` — Facilitation Batch 11 Invite-Unopened detector contract guard: asserts `facilitation-invite-unopened-detector` is `INTERNAL_CRON_KEY`-gated, dry-run by default, uses the pinned `invite_unopened_3bd` next-step kind + `facilitation_case.invite_unopened_flagged` audit name, and contains no send / dispatch / POI / WaD / match / token / payment mutation paths and no `facilitation_cases` status mutation.
   - `check-facilitation-template-editor-contract.mjs` — Facilitation Batch 12 Admin Notification Template Editor contract guard: asserts the editor (`facilitation-template-editor`) exposes only the three actions `create_draft` / `update_draft` / `submit_for_approval`, never sends/dispatches anything, never approves a template, never edits approved or archived templates (race-guard `status='draft'`), the existing approval function blocks drafter-self-approval (`DRAFTER_CANNOT_APPROVE_SELF`), the two `facilitation_template.draft_created` / `facilitation_template.draft_updated` audit names are pinned in both server + browser SSOTs, and the editor never imports the requester-safe notification trigger catalogue (`REQUESTER_SAFE_NOTIFICATION_TRIGGERS`).
   - `check-email-anonymisation-readiness-contract.mjs` — DATA-004 Batch 20 Email Anonymisation Readiness Assessment contract guard: asserts the `email-anonymisation-readiness-probe` edge function is assessment-only — gated to `platform_admin` + AAL2/MFA, short-circuits on the `email_send_log_anonymise` record-group legal hold, never calls `.from('email_send_log')`, never invokes the `anonymise_old_email_send_log` RPC, contains no SELECT/UPDATE/DELETE/INSERT/UPSERT/TRUNCATE/ALTER against `email_send_log`, returns a static schema-level disposition inventory + a pinned `READINESS_VERDICT` only (no PII fields keyed from a row), pins the canonical audit name `data.email_anonymisation_readiness_probed` and writes it to `audit_logs`. No anonymisation pathway is created or activated; no scheduler entry is committed.
@@ -1563,5 +1564,54 @@ UAT/demo-ready, not production-ready.
 
 ### Edge functions requiring deploy (Batch 28)
 - (none — Batch 28 is a SSOT/guards/tests batch; no edge surface changed)
+
+## Batch 30 — Outreach, Notifications, Operations Queues and Readiness Dashboard Operating Rules
+
+- Client decision source:
+  `docs/registry/Izenzo_Business_Registry_Operating_Rules_Client_Questionnaire_Completed.docx`.
+- Browser SSOT: `src/lib/registry-operations-outreach-rules.ts`.
+- Deno mirror: `supabase/functions/_shared/registry-operations-outreach-rules.ts` (byte-identical).
+- Parity guard: `scripts/check-registry-operations-outreach-rules-parity.mjs` (wired into `npm run prebuild`).
+- Tests: `src/tests/batch-30-operations-outreach-notifications-readiness.test.ts`.
+- Operating doc: `docs/registry/operations-outreach-notifications-readiness-rules.md`.
+- Evidence: `evidence/batch-30-operations-outreach-notifications-readiness/README.md`.
+- Encodes: AI allowed draft categories (9), AI draft-only with no
+  auto-send/approve/verify, AI field tiers (allowed/masked/admin-only/blocked
+  with raw bank, identity, secrets, unapproved personal data, unverified
+  allegations and provider credentials always blocked), always-forbidden
+  phrases (guaranteed, bank approved, compliant, cleared, trusted, safe,
+  risk-free, we confirm payment details, you are required to transact,
+  sanctions cleared, approved by Izenzo) and the two required safe
+  phrases, outreach approval roles (support_user prepares, platform_admin
+  ordinary, compliance_owner for bank/authority/dispute/adverse/sensitive/
+  legal/institutional), two-person approval for bank/authority/dispute/
+  DNC-override/institutional/non-template, sending mode
+  `mixed_with_exact_gates` with real email requiring approved channel +
+  template + human approval, WhatsApp and SMS disabled with canonical
+  labels `WhatsApp not configured` and `SMS not configured`, manual
+  contact logs never represented as SMS/WhatsApp, do-not-contact scopes
+  (person/email/phone/company/channel) blocking draft/approval/sending,
+  DNC add roles (platform_admin/compliance_owner/support_user-with-reason)
+  and removal requiring both platform_admin AND compliance_owner, queue
+  priority order 1–10 with owner roles per client decision, business-day
+  SLAs (bank 1/3, authority 2, claim 2, disputes 3/10, import 2,
+  duplicate 3, API client 5, provider/country 5, outreach 1, stale 5),
+  overdue raising admin alerts but never auto-approving, admin/compliance/
+  commercial alert trigger lists, notification matrix in-app+email with
+  bank events scoped to authorised company users and API key events to
+  api_client_admin+platform_admin, future-disabled WhatsApp/SMS channels,
+  readiness audience rules (default `internal_admin`; external viewers
+  cannot see internal notes, risk comments, source licence detail, raw
+  bank data or reviewer names), build-vs-data readiness sections (13)
+  with required labels `Built - data/use approval pending` and
+  `Data loaded - workflow not active`, and the seven client-safe wording
+  strings.
+- Release status: registry remains UAT/demo-ready — Batch 30 is a
+  SSOT/guards/tests/docs batch with no regression of accepted Batch
+  6/7/15/15B/17/18/27/28/29 guardrails.
+
+### Edge functions requiring deploy (Batch 30)
+- (none — Batch 30 is a SSOT/guards/tests batch; no edge surface changed)
+
 
 
