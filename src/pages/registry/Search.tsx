@@ -6,8 +6,9 @@
  * availability, and a no-result flow that links to the new-company
  * request workflow built in Batch 7.
  */
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { IMPORTED_UNVERIFIED_NOTICE } from "@/lib/registry-record-model";
 import { useRegistryBase, rebaseRegistryPath } from "@/lib/use-registry-base";
+import { CompanyTypeahead } from "@/components/registry/CompanyTypeahead";
+
 
 
 interface SearchResult {
@@ -40,9 +43,11 @@ interface SearchResult {
 
 export default function RegistrySearch() {
   const base = useRegistryBase();
-  const [query, setQuery] = useState("");
+  const [searchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
 
-  const [countryCode, setCountryCode] = useState("");
+  const [countryCode, setCountryCode] = useState(searchParams.get("country") ?? "");
+
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [vatNumber, setVatNumber] = useState("");
   const [legalForm, setLegalForm] = useState("");
@@ -98,6 +103,17 @@ export default function RegistrySearch() {
   function onSearch() { setNextCursor(null); runSearch(null, false); }
   function onLoadMore() { if (nextCursor) runSearch(nextCursor, true); }
 
+  // When arriving via "Show all results" from the typeahead the URL has
+  // ?q=… (and optionally ?country=…). Auto-run the full search once so
+  // the result list appears without requiring a second submit.
+  useEffect(() => {
+    if ((searchParams.get("q") ?? "").trim().length > 0 && !searched) {
+      runSearch(null, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   return (
     <main className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-1">Company search</h1>
@@ -109,6 +125,12 @@ export default function RegistrySearch() {
         <em> Starfair 162</em>, and registration numbers, VAT/tax numbers and address tokens
         are all matched. Use the country filter to scope to South Africa or Nigeria.
       </p>
+
+      <div className="mb-5">
+        <CompanyTypeahead countryCode={countryCode} initialQuery={query} />
+      </div>
+
+
 
       <Card>
         <CardHeader><CardTitle className="text-base">Search</CardTitle></CardHeader>
