@@ -167,7 +167,7 @@ describe("P-4 Point 4 — token / credit burn per chargeable API call", () => {
         artefact_code,
         artefact_was_produced: true,
         admin_resolved_usd_price: admin,
-        request_id: "r",
+
       } as any);
 
     it("variable artefact without admin-resolved price fails closed", () => {
@@ -205,7 +205,7 @@ describe("P-4 Point 4 — token / credit burn per chargeable API call", () => {
         environment: "production",
         artefact_code: "this_artefact_does_not_exist",
         artefact_was_produced: true,
-        request_id: "r",
+
       });
       expect(p.action).toBe("fail_closed");
       if (p.action === "fail_closed") expect(p.reason).toBe("missing_price");
@@ -218,7 +218,7 @@ describe("P-4 Point 4 — token / credit burn per chargeable API call", () => {
         environment: "production",
         artefact_code: "hash_chain_record",
         artefact_was_produced: true,
-        request_id: "r",
+
       });
       expect(p.action).toBe("fail_closed");
       if (p.action === "fail_closed") expect(p.reason).toBe("non_chargeable_artefact");
