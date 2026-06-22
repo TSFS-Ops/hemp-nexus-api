@@ -19,7 +19,11 @@ export function DeskSidebar() {
   const { signOut, user } = useAuth();
 
   return (
-    <aside className="hidden md:flex w-[248px] shrink-0 flex-col bg-[hsl(var(--surface-sidebar))] border-r border-border">
+    <aside
+      aria-label="Trade Desk sidebar"
+      className="hidden md:flex w-[248px] shrink-0 flex-col bg-[hsl(var(--surface-sidebar))] border-r border-border"
+    >
+
       {/* Wordmark */}
       <div className="px-5 pt-6 pb-5">
         <h2 className="text-base font-semibold tracking-tight text-foreground">
@@ -41,7 +45,7 @@ export function DeskSidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 pt-4">
+      <nav aria-label="Trade Desk primary navigation" className="flex-1 px-3 pt-4">
         <ul className="space-y-0.5">
           {NAV.map((item) => {
             const Icon = item.icon;
@@ -52,12 +56,13 @@ export function DeskSidebar() {
                   end={item.end}
                   className={({ isActive }) =>
                     [
-                      "relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                      "relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       isActive
                         ? "bg-card text-foreground font-medium border border-border/60"
                         : "text-muted-foreground hover:text-foreground hover:bg-card/60",
                     ].join(" ")
                   }
+
                 >
                   {({ isActive }) => (
                     <>
