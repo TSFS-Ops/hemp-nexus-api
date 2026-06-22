@@ -61,6 +61,7 @@ const Developers = lazy(() => import("@/pages/Developers"));
 const DocsIndex = lazy(() => import("@/pages/docs/Index"));
 const DocsQuickstart = lazy(() => import("@/pages/docs/Quickstart"));
 const DocsApiReference = lazy(() => import("@/pages/docs/ApiReference"));
+const DocsApiPricing = lazy(() => import("@/pages/docs/ApiPricing"));
 const DocsAuthentication = lazy(() => import("@/pages/docs/Authentication"));
 const DocsWebhooks = lazy(() => import("@/pages/docs/Webhooks"));
 const DocsMatches = lazy(() => import("@/pages/docs/Matches"));
@@ -359,6 +360,7 @@ function App() {
                   <Route path="/docs/errors" element={<DocsErrors />} />
                   <Route path="/docs/counterparty-rating-methodology" element={<DocsCounterpartyRatingMethodology />} />
                   <Route path="/docs/api" element={<DocsApiReference />} />
+                  <Route path="/docs/api-pricing" element={<DocsApiPricing />} />
                   {/* Legacy /docs/sdks redirects to API reference; the platform is REST-first. */}
                   <Route path="/docs/sdks" element={<LegacyRedirect to="/docs/api" label="SDK documentation" />} />
                   <Route path="/docs/legacy" element={<Docs />} />
