@@ -85,7 +85,7 @@ if (missing.length > 0) {
 }
 
 // Invariant pins.
-const invariants: Array<[RegExp, string]> = [
+const invariants = [
   [/REGISTRY_API_PUBLIC_SELF_SERVE_PRODUCTION_ENABLED\s*=\s*false/, "public/self-serve production must be disabled"],
   [/REGISTRY_API_DEFAULT_ENVIRONMENT\s*=\s*"sandbox"/, "default environment must be sandbox"],
   [/REGISTRY_API_RAW_BANK_DEFAULT_BLOCKED\s*=\s*true/, "raw bank default must be blocked"],
