@@ -18,10 +18,14 @@ const FORBIDDEN_PHRASES = [
   /atomic_token_burn/i,
 ];
 
+// Client-visible surfaces only. Engineering docs under docs/ and evidence/
+// are excluded by design — they legitimately reference internals like
+// `atomic_token_burn` to describe the implementation to developers.
 const SCAN_GLOBS = [
-  "docs/registry/api-artefact-pricing.md",
-  "evidence/p4-point-4-token-credit-burn-per-chargeable-api-call/README.md",
   "src/pages/docs",
+  "src/components/desk/billing",
+  "src/components/desk/settings/TokenBalanceTab.tsx",
+  "src/pages/Billing.tsx",
 ];
 
 // Allowlist: implementation files may legitimately reference internals.
