@@ -80,6 +80,13 @@ export default function RegistryClaimStatus() {
           </p>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader><CardTitle>Review timeline</CardTitle></CardHeader>
+        <CardContent>
+          <ClaimStatusTimeline status={c.workflow_status} />
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader><CardTitle>Evidence</CardTitle></CardHeader>
