@@ -381,7 +381,16 @@ export function AdminApiMonitoringPanel() {
             Operational status labels (healthy / warning / blocked / suspended /
             no_recent_traffic / needs_attention) reflect API health only and do
             not imply compliance clearance. Estimates are visibility only — not
-            invoices.
+            invoices.{" "}
+            <a
+              href="/docs/api-pricing"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 text-foreground hover:text-foreground/80"
+              data-testid="endpoint-pricing-link"
+            >
+              View endpoint pricing reference →
+            </a>
           </div>
         </div>
         <div className="flex gap-2">
