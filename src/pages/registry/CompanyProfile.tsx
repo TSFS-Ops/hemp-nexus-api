@@ -80,7 +80,7 @@ export default function CompanyProfile() {
           <CardContent className="py-6 space-y-3 text-sm">
             <p>No public record was found for this reference.</p>
             <Button asChild>
-              <Link to="/registry/new-company-request">Submit a new-company request</Link>
+              <Link to={`${base}/new-company-request`}>Submit a new-company request</Link>
             </Button>
           </CardContent>
         </Card>
