@@ -30,6 +30,21 @@ import MatchDetails from "@/pages/MatchDetails";
 import TradeDealWizard from "@/pages/TradeDealWizard";
 import { MatchesList } from "@/components/MatchesList";
 import RegistryLanding from "@/pages/registry/Landing";
+import RegistrySearch from "@/pages/registry/Search";
+import RegistryCompanyProfile from "@/pages/registry/CompanyProfile";
+import RegistryClaim from "@/pages/registry/Claim";
+import RegistryNewCompanyRequest from "@/pages/registry/NewCompanyRequest";
+import RegistryMyCompanies from "@/pages/registry/MyCompanies";
+import RegistryMyCompanyDetail from "@/pages/registry/MyCompanyDetail";
+import RegistryClaimStatus from "@/pages/registry/ClaimStatus";
+import RegistryAuthorityList from "@/pages/registry/AuthorityList";
+import RegistryBankDetailSubmit from "@/pages/registry/BankDetailSubmit";
+import RegistryBankDetailStatus from "@/pages/registry/BankDetailStatus";
+import RegistryMyCompanyEvidence from "@/pages/registry/MyCompanyEvidence";
+import RegistryMyCompanyCorrections from "@/pages/registry/MyCompanyCorrections";
+import RegistryMyCompanyDisputes from "@/pages/registry/MyCompanyDisputes";
+import RegistryMyCompanyRevocations from "@/pages/registry/MyCompanyRevocations";
+
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
 function DeskFullBleed({ children }: { children: React.ReactNode }) {
@@ -207,7 +222,26 @@ export default function Desk() {
               <Routes>
                 <Route index element={<DeskOverview />} />
                 <Route path="discover" element={<DiscoverCounterparties />} />
+                {/* Batch 22 — Company Registry inside the Trading Desk shell.
+                    Every /desk/registry/* surface keeps the DeskLayout sidebar
+                    visible. The standalone /registry/* routes in App.tsx are
+                    preserved unchanged for public/embedded use. */}
                 <Route path="registry" element={<RegistryLanding />} />
+                <Route path="registry/search" element={<RegistrySearch />} />
+                <Route path="registry/new-company-request" element={<RegistryNewCompanyRequest />} />
+                <Route path="registry/company/:id" element={<RegistryCompanyProfile />} />
+                <Route path="registry/company/:id/claim" element={<RegistryClaim />} />
+                <Route path="registry/my-companies" element={<RegistryMyCompanies />} />
+                <Route path="registry/my-companies/:companyId" element={<RegistryMyCompanyDetail />} />
+                <Route path="registry/my-companies/:companyId/claim" element={<RegistryClaimStatus />} />
+                <Route path="registry/my-companies/:companyId/authority" element={<RegistryAuthorityList />} />
+                <Route path="registry/my-companies/:companyId/bank-details" element={<RegistryBankDetailSubmit />} />
+                <Route path="registry/my-companies/:companyId/verification" element={<RegistryBankDetailStatus />} />
+                <Route path="registry/my-companies/:companyId/evidence" element={<RegistryMyCompanyEvidence />} />
+                <Route path="registry/my-companies/:companyId/corrections" element={<RegistryMyCompanyCorrections />} />
+                <Route path="registry/my-companies/:companyId/disputes" element={<RegistryMyCompanyDisputes />} />
+                <Route path="registry/my-companies/:companyId/revocations" element={<RegistryMyCompanyRevocations />} />
+
                 <Route
                   path="deals"
                   element={
