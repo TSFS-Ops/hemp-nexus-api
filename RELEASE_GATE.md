@@ -1325,3 +1325,55 @@ Completion phrase: `BATCH_10_IMPORT_TO_CLAIM_LIFECYCLE_COMPLETE`.
 
 ### Edge functions requiring deploy (Batch 21)
 - (none — Batch 21 is a test-hygiene and documentation batch only)
+
+## Batch 22 — Company Registry Shell and Profile-Level Claim Entry Alignment (BATCH_22_REGISTRY_SHELL_PROFILE_CLAIM_ENTRY_COMPLETE)
+
+UAT/demo-ready, not production-ready.
+
+### Shell alignment
+- Company Registry surfaces mount inside the existing Trade Desk
+  `<DeskLayout>` block in `src/pages/Desk.tsx`. The Trade Desk sidebar
+  remains visible on `/desk/registry` and every `/desk/registry/*`
+  sub-surface (search, search results, new-company request, company
+  profile, claim entry, claim upload, claim status, my companies,
+  my company detail, evidence, corrections, disputes, revocations,
+  authority and bank-detail surfaces).
+- The standalone `/registry/*` routes in `src/App.tsx` are unchanged
+  for the public/embedded surface.
+- Internal navigation in `Landing.tsx`, `Search.tsx` and
+  `CompanyProfile.tsx` goes through `useRegistryBase()` /
+  `rebaseRegistryPath()` so links stay inside the active shell.
+
+### Profile-level claim entry
+- `CompanyProfile.tsx` renders the "Is this your company?" panel near
+  the top with the verbatim limited wording. CTA label is
+  **Claim this company** and routes to the company-specific path
+  `${base}/company/:id/claim`.
+- Sample-only records show the
+  `data-testid="profile-claim-sample-warning"` notice.
+- Claim-blocked records continue to show the blocked-reason badge with
+  no CTA.
+
+### Claim-entry page
+- `Claim.tsx` shows the selected-company card with safe fields only
+  (country, registration number, sample notice) and an
+  evidence-explanation paragraph carrying the limited wording.
+
+### Guardrails (unchanged)
+- No raw bank details rendered on profile or claim pages.
+- No personal contact details rendered publicly.
+- No live-provider integration, no outreach, no production-ready
+  wording, no auto-approved claims.
+
+### Evidence
+- `evidence/batch-22-registry-shell-profile-claim-entry/README.md`.
+- Tests: `src/tests/batch-22-registry-shell-claim-entry.test.ts`
+  (11 source pins, all passing) and
+  `src/tests/desk-registry-sidebar-persistence.test.tsx` (4 render
+  tests, all passing).
+- Guard: `scripts/check-batch-22-registry-shell-claim-entry.mjs`,
+  wired into `npm run prebuild` and exposed as
+  `npm run check:batch-22`.
+
+### Edge functions requiring deploy (Batch 22)
+- (none — Batch 22 is a frontend shell and wording batch only)
