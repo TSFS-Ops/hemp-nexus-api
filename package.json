@@ -50,7 +50,9 @@
     "test:e2e:coverage-guard": "node scripts/check-role-negative-e2e-coverage.mjs",
     "test:e2e:evidence-pack": "node scripts/pack-role-negative-evidence.mjs",
     "seed:role-negative": "bash scripts/seed-role-negative-e2e.sh",
-    "check:batch-22": "node scripts/check-batch-22-registry-shell-claim-entry.mjs"
+    "check:batch-22": "node scripts/check-batch-22-registry-shell-claim-entry.mjs",
+    "check:batch-23": "node scripts/check-batch-23-registry-typeahead.mjs"
+
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",
