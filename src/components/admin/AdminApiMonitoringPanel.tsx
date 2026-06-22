@@ -517,10 +517,10 @@ export function AdminApiMonitoringPanel() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={25} className="p-4 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={26} className="p-4 text-center text-muted-foreground">Loading…</td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={25} className="p-4 text-center text-muted-foreground">No rows for the selected filters.</td></tr>
+              <tr><td colSpan={26} className="p-4 text-center text-muted-foreground">No rows for the selected filters.</td></tr>
             )}
             {!loading && rows.map((r) => (
               <tr key={`${r.api_client_id}:${r.environment}`} className="border-t border-border align-top">
