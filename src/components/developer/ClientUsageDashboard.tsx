@@ -196,6 +196,36 @@ export function ClientUsageDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClient, period]);
 
+  // Point 6 — load badge inputs for the selected client (read-only).
+  useEffect(() => {
+    if (!selectedClient) return;
+    let cancelled = false;
+    const orgId = clients.find((c) => c.id === selectedClient)?.org_id;
+    if (!orgId) return;
+    (async () => {
+      const [bal, keys] = await Promise.all([
+        supabase.from("token_balances").select("balance, minimum_required").eq("org_id", orgId).maybeSingle(),
+        supabase.from("api_keys").select("status, expires_at").eq("org_id", orgId),
+      ]);
+      if (cancelled) return;
+      const keyRows = (keys.data ?? []) as Array<{ status: string | null; expires_at: string | null }>;
+      const upcoming = keyRows
+        .map((k) => k.expires_at)
+        .filter((v): v is string => !!v)
+        .sort()[0] ?? null;
+      const suspendedOrRevoked = keyRows.filter((k) =>
+        k.status === "suspended" || k.status === "revoked",
+      ).length;
+      setBadgeInputs({
+        balance: (bal.data?.balance as number | null) ?? null,
+        minimumRequired: (bal.data?.minimum_required as number | null) ?? null,
+        nextKeyExpiry: upcoming,
+        suspendedOrRevokedKeys: suspendedOrRevoked,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [selectedClient, clients]);
+
   const exportCsv = async () => {
     if (!selectedClient || !summary) return;
     setExporting(true);
