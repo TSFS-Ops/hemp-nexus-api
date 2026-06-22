@@ -1,7 +1,7 @@
 /**
- * Batch 25 — Provenance, Country Coverage, Import Validation and (Deno mirror)
- * Duplicate Governance SSOT (browser).
+ * Batch 25 — Provenance / Country / Import / Duplicate SSOT (Deno mirror).
  *
+
  * Source of truth for the client's completed Business Registry Operating
  * Rules Questionnaire (received 21 June 2026, sections 2–9). This module
  * is mirrored verbatim at
