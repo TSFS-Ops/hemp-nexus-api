@@ -59,14 +59,27 @@ async function logUsage(
   svc: ReturnType<typeof createClient>,
   row: Record<string, unknown>,
 ) {
-  await svc.from("registry_api_usage_events").insert(row).catch(() => {});
+  await bestEffortInsert(svc, "registry_api_usage_events", row);
 }
 
 async function logBlocked(
   svc: ReturnType<typeof createClient>,
   row: Record<string, unknown>,
 ) {
-  await svc.from("registry_api_blocked_events").insert(row).catch(() => {});
+  await bestEffortInsert(svc, "registry_api_blocked_events", row);
+}
+
+async function bestEffortInsert(
+  svc: ReturnType<typeof createClient>,
+  table: string,
+  row: Record<string, unknown>,
+) {
+  try {
+    const { error } = await svc.from(table).insert(row);
+    if (error) console.warn(`registry-api-profile-status ${table} insert skipped`, error.message);
+  } catch (err) {
+    console.warn(`registry-api-profile-status ${table} insert failed`, err);
+  }
 }
 
 async function emitAudit(
@@ -75,12 +88,12 @@ async function emitAudit(
   clientId: string | null,
   payload: Record<string, unknown>,
 ) {
-  await svc.from("registry_api_audit_events").insert({
+  await bestEffortInsert(svc, "registry_api_audit_events", {
     audit_event_name: name, client_id: clientId, payload,
-  }).catch(() => {});
-  await svc.from("event_store").insert({
+  });
+  await bestEffortInsert(svc, "event_store", {
     event_name: name, aggregate_type: "registry_api", payload,
-  }).catch(() => {});
+  });
 }
 
 Deno.serve(async (req) => {
