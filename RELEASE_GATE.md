@@ -1475,3 +1475,42 @@ UAT/demo-ready, not production-ready.
 
 ### Edge functions requiring deploy (Batch 26)
 - (none — Batch 26 is a SSOT/guards/tests batch; no edge surface changed)
+
+## Batch 27 — Claim and Authority Operating Rules
+
+- Client decision source:
+  `docs/registry/Izenzo_Business_Registry_Operating_Rules_Client_Questionnaire_Completed.docx`.
+- Browser SSOT: `src/lib/registry-claim-authority-rules.ts`.
+- Deno mirror: `supabase/functions/_shared/registry-claim-authority-rules.ts` (byte-identical).
+- Parity guard: `scripts/check-registry-claim-authority-rules-parity.mjs`.
+- Tests: `src/tests/batch-27-claim-authority-rules.test.ts`.
+- Operating doc: `docs/registry/claim-authority-operating-rules.md`.
+- Evidence: `evidence/batch-27-claim-authority-operating-rules/README.md`.
+- Encodes: six actions require registered + email-verified user;
+  seven claimant role dispositions; evidence matrix per legal form
+  (sole_proprietor / company / close_corporation / partnership /
+  other); 12-month evidence refresh rule with approved reviewer
+  exception override; `unlisted_claimant_review` blocks edit-profile,
+  bank submission, API consent and authority-sensitive workflows;
+  four conflict states routed to `compliance_owner`; claim approval
+  remains `claim_approved_limited` (Batch 19A wording preserved) and
+  never unlocks bank submission, API consent, manage_users,
+  verification changes or self-approval; seven-scope authority
+  allow-list; 12-month default expiry (6 months for `submit_bank_details`
+  and `consent_to_api_sharing`); two-person approval required for
+  bank / API / manage_users; bank / API / dispute scopes additionally
+  require `compliance_owner`; self-approval short-circuited at
+  `evaluateAuthorityAction`; `expired` / `revoked` /
+  `suspended_disputed` / `compliance_review` block all sensitive
+  actions; full authority is not a default state and requires
+  `compliance_owner`; authority never permits changing verification
+  results, deleting audit history, overriding disputes, changing
+  pricing or approving its own grant.
+- Release status: registry remains UAT/demo-ready — Batch 27 is a
+  SSOT/guards/tests/docs batch with no regression of accepted
+  Batch 22 (shell + profile claim entry) or Batch 23 (typeahead)
+  behaviour.
+
+### Edge functions requiring deploy (Batch 27)
+- (none — Batch 27 is a SSOT/guards/tests batch; no edge surface changed)
+
