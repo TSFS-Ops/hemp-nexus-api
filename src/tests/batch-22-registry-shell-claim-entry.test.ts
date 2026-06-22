@@ -99,7 +99,7 @@ describe("Batch 22 — registry shell + profile-level claim entry", () => {
   it("CompanyProfile.tsx shows the sample-only warning for imported_unverified records", () => {
     expect(profile).toContain('data-testid="profile-claim-sample-warning"');
     expect(profile).toContain(
-      "This is a sample record for workflow testing. It is not independently verified by Izenzo.",
+      "This is a sample record for workflow testing. It is not independently confirmed by Izenzo.",
     );
   });
 
@@ -110,7 +110,7 @@ describe("Batch 22 — registry shell + profile-level claim entry", () => {
   // ── Claim entry page — selected company + evidence explanation ──────
   it("Claim.tsx renders the selected-company card", () => {
     expect(claim).toContain('data-testid="claim-selected-company-card"');
-    expect(claim).toContain("Source-backed record. Not independently verified by Izenzo.");
+    expect(claim).toContain("Source-backed record. Not independently confirmed by Izenzo.");
   });
 
   it("Claim.tsx explains the evidence requirement with limited wording", () => {

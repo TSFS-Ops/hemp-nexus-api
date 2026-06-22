@@ -120,7 +120,7 @@ export default function RegistryClaim() {
               <div><span className="text-muted-foreground">Registration number:</span> {prefill.registration_number ?? registrationNumber}</div>
             )}
             <p className="pt-1 text-[10px] text-amber-700">
-              Source-backed record. Not independently verified by Izenzo.
+              Source-backed record. Not independently confirmed by Izenzo.
             </p>
           </CardContent>
         </Card>
