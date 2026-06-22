@@ -26,10 +26,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { auditedDownloadCSVRaw } from "@/lib/download-utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { RefreshCw, Download, ShieldAlert, Lock } from "lucide-react";
+import { RefreshCw, Download, ShieldAlert, Lock, ListTree } from "lucide-react";
+import { Point6UsageHistoryTable } from "@/components/usage/Point6UsageHistoryTable";
+import { Point6DashboardBadges } from "@/components/usage/Point6DashboardBadges";
 
 type Row = {
   api_client_id: string;
@@ -158,6 +161,7 @@ export function AdminApiMonitoringPanel() {
   const [planId, setPlanId] = useState<string>("");
   const [minUsagePct, setMinUsagePct] = useState<string>("");
   const [errorsOnly, setErrorsOnly] = useState(false);
+  const [drillRow, setDrillRow] = useState<Row | null>(null);
 
   const load = useCallback(async () => {
     if (!user || !hasAccess) return;
@@ -508,14 +512,15 @@ export function AdminApiMonitoringPanel() {
               <th className="p-2">Last ok</th>
               <th className="p-2">Last fail</th>
               <th className="p-2">Tickets</th>
+              <th className="p-2">Drill</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={25} className="p-4 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={26} className="p-4 text-center text-muted-foreground">Loading…</td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={25} className="p-4 text-center text-muted-foreground">No rows for the selected filters.</td></tr>
+              <tr><td colSpan={26} className="p-4 text-center text-muted-foreground">No rows for the selected filters.</td></tr>
             )}
             {!loading && rows.map((r) => (
               <tr key={`${r.api_client_id}:${r.environment}`} className="border-t border-border align-top">
@@ -566,11 +571,51 @@ export function AdminApiMonitoringPanel() {
                 <td className="p-2 text-muted-foreground">
                   {r.open_support_tickets === null ? "—" : r.open_support_tickets}
                 </td>
+                <td className="p-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={() => setDrillRow(r)}
+                    data-testid={`admin-drill-${r.api_client_id}`}
+                  >
+                    <ListTree className="h-3.5 w-3.5 mr-1" /> Rows
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Point 6 — drill-down drawer (per-request rows + per-row CSV). */}
+      <Sheet open={!!drillRow} onOpenChange={(o) => { if (!o) setDrillRow(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-[1100px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              Request history — {drillRow?.api_client_name ?? drillRow?.api_client_id.slice(0, 8)} ({drillRow?.environment})
+            </SheetTitle>
+          </SheetHeader>
+          {drillRow && (
+            <div className="mt-4 space-y-4">
+              <Point6DashboardBadges
+                nextKeyExpiry={drillRow.next_key_expiry}
+                suspendedOrRevokedKeys={drillRow.suspended_revoked_key_count}
+                failedProductionCalls={drillRow.error_count}
+              />
+              <Point6UsageHistoryTable
+                mode="admin"
+                apiClientId={drillRow.api_client_id}
+                periodStart={drillRow.period_start}
+                periodEnd={drillRow.period_end}
+                filters={{
+                  environment: drillRow.environment,
+                }}
+              />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

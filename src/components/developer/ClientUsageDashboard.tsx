@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Download, Info, Loader2, RefreshCw } from "lucide-react";
+import { Point6UsageHistoryTable } from "@/components/usage/Point6UsageHistoryTable";
+import { Point6DashboardBadges } from "@/components/usage/Point6DashboardBadges";
 
 interface ApiClientOption {
   id: string;
@@ -132,6 +134,12 @@ export function ClientUsageDashboard() {
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [badgeInputs, setBadgeInputs] = useState<{
+    balance: number | null;
+    minimumRequired: number | null;
+    nextKeyExpiry: string | null;
+    suspendedOrRevokedKeys: number;
+  }>({ balance: null, minimumRequired: null, nextKeyExpiry: null, suspendedOrRevokedKeys: 0 });
 
   // Load clients the viewer is allowed to see (RLS on api_clients already
   // restricts to platform_admin / api_admin / auditor; org admins read via
@@ -187,6 +195,36 @@ export function ClientUsageDashboard() {
     if (selectedClient) loadSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClient, period]);
+
+  // Point 6 — load badge inputs for the selected client (read-only).
+  useEffect(() => {
+    if (!selectedClient) return;
+    let cancelled = false;
+    const orgId = clients.find((c) => c.id === selectedClient)?.org_id;
+    if (!orgId) return;
+    (async () => {
+      const [bal, keys] = await Promise.all([
+        supabase.from("token_balances").select("balance, minimum_required").eq("org_id", orgId).maybeSingle(),
+        supabase.from("api_keys").select("status, expires_at").eq("org_id", orgId),
+      ]);
+      if (cancelled) return;
+      const keyRows = (keys.data ?? []) as Array<{ status: string | null; expires_at: string | null }>;
+      const upcoming = keyRows
+        .map((k) => k.expires_at)
+        .filter((v): v is string => !!v)
+        .sort()[0] ?? null;
+      const suspendedOrRevoked = keyRows.filter((k) =>
+        k.status === "suspended" || k.status === "revoked",
+      ).length;
+      setBadgeInputs({
+        balance: (bal.data?.balance as number | null) ?? null,
+        minimumRequired: (bal.data?.minimum_required as number | null) ?? null,
+        nextKeyExpiry: upcoming,
+        suspendedOrRevokedKeys: suspendedOrRevoked,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [selectedClient, clients]);
 
   const exportCsv = async () => {
     if (!selectedClient || !summary) return;
@@ -261,6 +299,15 @@ export function ClientUsageDashboard() {
           </p>
         </div>
       </div>
+
+      {/* Point 6 — Dashboard-visible alert badges (read-only, no cron, no email). */}
+      <Point6DashboardBadges
+        balance={badgeInputs.balance}
+        minimumRequired={badgeInputs.minimumRequired}
+        nextKeyExpiry={badgeInputs.nextKeyExpiry}
+        suspendedOrRevokedKeys={badgeInputs.suspendedOrRevokedKeys}
+        failedProductionCalls={summary?.error_count ?? 0}
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
@@ -397,6 +444,24 @@ export function ClientUsageDashboard() {
         <div className="rounded-sm border border-slate-800 bg-slate-900/40 px-5 py-8 text-center text-[13px] text-slate-400">
           Select an API client to view usage.
         </div>
+      )}
+
+      {/* Point 6 — per-request history table + customer CSV (own org only). */}
+      {summary && (
+        <Point6UsageHistoryTable
+          mode="client"
+          apiClientId={selectedClient}
+          periodStart={summary.billing_period_start}
+          periodEnd={summary.billing_period_end}
+          filters={{
+            environment: envFilter === "all" ? null : envFilter,
+            endpoint: endpointFilter === "all" ? null : endpointFilter,
+            status: statusFilter === "all" ? null : statusFilter,
+            chargeable:
+              billableFilter === "billable" ? "chargeable" :
+              billableFilter === "non_billable" ? "non_chargeable" : null,
+          }}
+        />
       )}
     </section>
   );
