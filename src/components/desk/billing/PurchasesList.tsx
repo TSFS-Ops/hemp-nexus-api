@@ -187,8 +187,8 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                           data-testid={`refund-resolved-${p.id}`}
                           title={
                             resolved?.decision_reason
-                              ? `${resolvedLabel} - ${resolved.decision_reason}`
-                              : resolvedLabel
+                              ? `${resolvedTooltipPrefix}${resolvedLabel} - ${resolved.decision_reason}`
+                              : `${resolvedTooltipPrefix}${resolvedLabel}`
                           }
                         >
                           {resolvedLabel}
