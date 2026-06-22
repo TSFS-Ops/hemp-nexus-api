@@ -39,7 +39,9 @@ interface SearchResult {
 }
 
 export default function RegistrySearch() {
+  const base = useRegistryBase();
   const [query, setQuery] = useState("");
+
   const [countryCode, setCountryCode] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [vatNumber, setVatNumber] = useState("");
