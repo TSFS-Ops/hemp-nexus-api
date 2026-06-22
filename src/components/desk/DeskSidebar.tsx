@@ -19,7 +19,11 @@ export function DeskSidebar() {
   const { signOut, user } = useAuth();
 
   return (
-    <aside className="hidden md:flex w-[248px] shrink-0 flex-col bg-[hsl(var(--surface-sidebar))] border-r border-border">
+    <aside
+      aria-label="Trade Desk sidebar"
+      className="hidden md:flex w-[248px] shrink-0 flex-col bg-[hsl(var(--surface-sidebar))] border-r border-border"
+    >
+
       {/* Wordmark */}
       <div className="px-5 pt-6 pb-5">
         <h2 className="text-base font-semibold tracking-tight text-foreground">
