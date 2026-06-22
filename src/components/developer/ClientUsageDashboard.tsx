@@ -134,6 +134,12 @@ export function ClientUsageDashboard() {
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [badgeInputs, setBadgeInputs] = useState<{
+    balance: number | null;
+    minimumRequired: number | null;
+    nextKeyExpiry: string | null;
+    suspendedOrRevokedKeys: number;
+  }>({ balance: null, minimumRequired: null, nextKeyExpiry: null, suspendedOrRevokedKeys: 0 });
 
   // Load clients the viewer is allowed to see (RLS on api_clients already
   // restricts to platform_admin / api_admin / auditor; org admins read via
