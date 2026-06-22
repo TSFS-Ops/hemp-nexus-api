@@ -26,7 +26,7 @@ const EDGE = readFileSync(
 // unrelated occurrences elsewhere in the file (refunds, verify, init).
 const handlerStart = EDGE.indexOf("async function handleChargeSuccess");
 expect(handlerStart, "handleChargeSuccess must exist").toBeGreaterThan(-1);
-const handlerEnd = EDGE.indexOf("\n}\n", handlerStart + 1);
+const handlerEnd = EDGE.indexOf("\nasync function ", handlerStart + 1);
 const HANDLER = EDGE.slice(handlerStart, handlerEnd > 0 ? handlerEnd : EDGE.length);
 
 describe("Paystack webhook missing-metadata containment", () => {
