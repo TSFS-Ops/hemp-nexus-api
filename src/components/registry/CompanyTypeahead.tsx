@@ -70,6 +70,9 @@ export function highlightMatch(text: string, query: string): React.ReactNode {
       <span key={i}>{part}</span>
     ),
   );
+}
+
+
 
 
 // Safe match-reason field labels we are willing to render in the
