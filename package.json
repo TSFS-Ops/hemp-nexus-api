@@ -57,7 +57,9 @@
     "check:batch-26": "node scripts/check-registry-search-profile-rules-parity.mjs && node scripts/check-registry-search-profile-allowlists.mjs",
     "check:batch-27": "node scripts/check-registry-claim-authority-rules-parity.mjs",
     "check:batch-28": "node scripts/check-registry-bank-operating-rules-parity.mjs",
-    "check:batch-29": "node scripts/check-registry-api-operating-rules-parity.mjs"
+    "check:batch-29": "node scripts/check-registry-api-operating-rules-parity.mjs",
+    "check:batch-30": "node scripts/check-registry-operations-outreach-rules-parity.mjs",
+    "check:batch-31": "node scripts/check-batch-31-cross-surface-consistency.mjs"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",
