@@ -39,4 +39,4 @@ export type RefundRequestStatus = (typeof REFUND_REQUEST_STATUSES)[number];
  * Pinned verbatim by scripts/check-dec-007-pay-009-guard-coverage.mjs.
  */
 export const DEC_007_PAY_009_ADMIN_DISCLAIMER =
-  "Approval/resolution records the financial decision only. Burned credits and any POI / WaD / execution audit history remain immutable. No evidence is deleted.";
+  "Approval/resolution records the financial decision only. Burned credits and any POI / WaD / execution audit history remain immutable. No evidence is deleted. Approval does NOT submit a refund to Paystack and does NOT confirm that money has been returned to the customer. Provider settlement must be issued separately in the Paystack dashboard.";
