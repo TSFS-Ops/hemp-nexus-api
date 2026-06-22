@@ -40,6 +40,38 @@ interface TypeaheadResult {
   profile_link: string;
 }
 
+// Split text on case-insensitive matches of any query token (≥2 chars)
+// and wrap matches in <mark>. Defensive against regex metacharacters so a
+// user query like "(pty)" cannot break the highlighter.
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function highlightMatch(text: string, query: string): React.ReactNode {
+  if (!text) return text;
+  const tokens = query
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2)
+    .map(escapeRegex);
+  if (tokens.length === 0) return text;
+  const re = new RegExp(`(${tokens.join("|")})`, "ig");
+  const parts = text.split(re);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <mark
+        key={i}
+        data-testid="typeahead-highlight"
+        className="rounded-sm bg-amber-100 px-0.5 text-amber-900"
+      >
+        {part}
+      </mark>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  );
+
+
 // Safe match-reason field labels we are willing to render in the
 // dropdown. Anything outside this set is dropped client-side as a
 // defence-in-depth measure so unsafe categories cannot leak through
