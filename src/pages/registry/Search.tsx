@@ -6,8 +6,9 @@
  * availability, and a no-result flow that links to the new-company
  * request workflow built in Batch 7.
  */
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
