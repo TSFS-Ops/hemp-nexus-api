@@ -93,16 +93,19 @@ Deno.serve(async (req) => {
          .eq("record_id", record.id).eq("public_visible", true),
     ]);
 
-    await svc.from("event_store").insert({
-      event_name: "registry_company_claim_availability_checked",
-      aggregate_id: record.id,
-      aggregate_type: "registry_company_profile",
-      payload: {
-        claim_allowed: record.claim_allowed,
-        claim_blocked_reason: record.claim_blocked_reason,
-        readiness_state: record.readiness_state,
-      },
-    }).catch(() => {});
+    try {
+      await svc.from("event_store").insert({
+        event_name: "registry_company_claim_availability_checked",
+        aggregate_id: record.id,
+        aggregate_type: "registry_company_profile",
+        payload: {
+          claim_allowed: record.claim_allowed,
+          claim_blocked_reason: record.claim_blocked_reason,
+          readiness_state: record.readiness_state,
+        },
+      });
+    } catch (_e) { /* audit best-effort */ }
+
 
     return withCors(req, new Response(JSON.stringify({
       ok: true,
