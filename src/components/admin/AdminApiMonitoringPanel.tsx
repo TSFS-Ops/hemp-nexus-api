@@ -26,10 +26,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { auditedDownloadCSVRaw } from "@/lib/download-utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { RefreshCw, Download, ShieldAlert, Lock } from "lucide-react";
+import { RefreshCw, Download, ShieldAlert, Lock, ListTree } from "lucide-react";
+import { Point6UsageHistoryTable } from "@/components/usage/Point6UsageHistoryTable";
+import { Point6DashboardBadges } from "@/components/usage/Point6DashboardBadges";
 
 type Row = {
   api_client_id: string;
