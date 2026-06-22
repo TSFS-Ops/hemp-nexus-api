@@ -55,7 +55,10 @@ describe("Point 6 · dashboard badges", () => {
   });
 
   it("badges component does not write to alert tables, no cron, no email", () => {
-    const src = read("src/components/usage/Point6DashboardBadges.tsx");
+    const raw = read("src/components/usage/Point6DashboardBadges.tsx");
+    const src = raw
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
     expect(src).not.toMatch(/\.insert\(/);
     expect(src).not.toMatch(/\.update\(/);
     expect(src).not.toMatch(/from\(["']api_usage_alerts["']\)/);
