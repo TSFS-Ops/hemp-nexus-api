@@ -48,8 +48,10 @@ interface ProfileResponse {
 
 export default function CompanyProfile() {
   const { id } = useParams();
+  const base = useRegistryBase();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     if (!id) return;
