@@ -117,10 +117,15 @@ export function AdminBillingReviewPanel() {
               </div>
               <p className="text-sm">{String(r.reason_detail)}</p>
               {r.status === "pending" && (
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => setDecision({ kind: "refund_approve", id: String(r.id) })}>Approve</Button>
-                  <Button size="sm" variant="outline" onClick={() => setDecision({ kind: "refund_decline", id: String(r.id) })}>Decline</Button>
-                </div>
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Approving records an internal decision. It does not submit a refund to Paystack. Provider settlement must be issued separately in the Paystack dashboard until the automated refund submission is built.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => setDecision({ kind: "refund_approve", id: String(r.id) })}>Approve (internal only)</Button>
+                    <Button size="sm" variant="outline" onClick={() => setDecision({ kind: "refund_decline", id: String(r.id) })}>Decline</Button>
+                  </div>
+                </>
               )}
             </div>
           ))}
