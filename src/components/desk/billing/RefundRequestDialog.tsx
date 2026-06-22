@@ -142,7 +142,9 @@ export function RefundRequestDialog({
           <DialogTitle>Request refund</DialogTitle>
           <DialogDescription>
             This records a refund request for review. It does not trigger a
-            live provider refund automatically.
+            live provider refund automatically. If approved, that decision is
+            internal — your bank/card refund will only appear once the
+            payment provider confirms settlement separately.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
