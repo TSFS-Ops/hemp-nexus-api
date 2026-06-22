@@ -58,7 +58,7 @@ describe("Point 6 · unified usage view migration", () => {
 
   it("view is SECURITY INVOKER", () => {
     // Either set inline or via the follow-up ALTER VIEW migration.
-    const followUp = findMigration("security_invoker = true");
+    const followUp = findMigration("v_api_usage_unified", "security_invoker = true");
     expect(followUp).toMatch(/v_api_usage_unified/);
   });
 
