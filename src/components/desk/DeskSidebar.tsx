@@ -56,12 +56,13 @@ export function DeskSidebar() {
                   end={item.end}
                   className={({ isActive }) =>
                     [
-                      "relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                      "relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       isActive
                         ? "bg-card text-foreground font-medium border border-border/60"
                         : "text-muted-foreground hover:text-foreground hover:bg-card/60",
                     ].join(" ")
                   }
+
                 >
                   {({ isActive }) => (
                     <>
