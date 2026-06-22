@@ -56,3 +56,11 @@ limitations and outstanding production blockers.
   verification workflows.
 - No external notifications or outreach triggered from demo/UAT data.
 - RLS enforced on all new registry tables; admin tables role-gated.
+
+## P-4 Point 4 — Token / Credit Burn per Chargeable API Call
+- SSOT: `src/lib/registry-api-artefact-pricing.ts` + Deno mirror.
+- Burn wrapper: `supabase/functions/_shared/api-artefact-burn.ts`.
+- Guard: `scripts/check-registry-api-artefact-pricing-parity.mjs` (`npm run check:p4-point-4`).
+- Tests: `src/tests/p4-point-4-token-burn-per-chargeable-api-call.test.ts` (36 passing).
+- Doc: `docs/registry/api-artefact-pricing.md`.
+- Evidence: `evidence/p4-point-4-token-credit-burn-per-chargeable-api-call/README.md`.
