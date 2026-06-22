@@ -1414,3 +1414,34 @@ UAT/demo-ready, not production-ready.
 ### Edge functions requiring deploy (Batch 24)
 - (none — Batch 24 is a SSOT/guards/tests batch; no edge surface changed)
 
+## Batch 25 — Provenance, country coverage, import validation and duplicate governance
+
+- Client decision source:
+  `docs/registry/Izenzo_Business_Registry_Operating_Rules_Client_Questionnaire_Completed.docx`
+  (received 21 June 2026, sections 2–15).
+- Browser SSOT: `src/lib/registry-provenance-import-rules.ts`.
+- Deno mirror: `supabase/functions/_shared/registry-provenance-import-rules.ts`.
+- Parity guard: `scripts/check-registry-provenance-import-rules-parity.mjs`,
+  wired into `npm run prebuild` and exposed as `npm run check:batch-25`.
+- Wording guard: `scripts/check-registry-provenance-no-generic-country-covered.mjs`,
+  wired into `npm run prebuild` — rejects the generic "country covered" phrase
+  in registry UI files (capability-specific wording required).
+- Tests: `src/tests/batch-25-provenance-country-import-duplicate.test.ts`
+  (36 source pins, all passing) — covers the 10 source types, licensed
+  dataset `sourced_only` + required wording, field-provenance metadata,
+  manual-review field gating, source conflict priority order, 6
+  country capabilities, 12 workflow states, searchable-country
+  minimums, 16-item pre-import checklist, 6 required / 6 quarantine-if
+  / 6 excluded import fields, 5% batch failure threshold, exact / 0.95
+  / 0.92 / 0.85 duplicate thresholds, low-risk vs high-risk merge
+  approval rules and audit/rollback requirements.
+- Operating doc: `docs/registry/provenance-country-import-duplicate-rules.md`.
+- Evidence: `evidence/batch-25-provenance-country-import-duplicate-governance/README.md`.
+- Release status: registry remains UAT/demo-ready — Batch 25 only
+  encodes the operating gates; it does not enable live verification,
+  production API, outreach, or any automatic merge.
+
+### Edge functions requiring deploy (Batch 25)
+- (none — Batch 25 is a SSOT/guards/tests batch; no edge surface changed)
+
+
