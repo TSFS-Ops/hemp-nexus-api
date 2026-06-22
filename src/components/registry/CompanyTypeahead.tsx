@@ -12,8 +12,9 @@
  *     reasons). No bank, no personal email/phone, no evidence, no
  *     compliance notes, no provider payloads.
  *   • Sample / imported_unverified records are tagged with a
- *     "Sample record" chip so they are never mistaken for
- *     production-ready data.
+ *     "Sample record" chip so they are never mistaken for source-vetted
+ *     records.
+
  *   • "Show all results" preserves the query and the active Trade
  *     Desk shell base path (Batch 22).
  *   • Wording never asserts verification.
