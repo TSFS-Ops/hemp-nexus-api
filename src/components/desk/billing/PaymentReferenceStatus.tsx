@@ -285,6 +285,32 @@ export function PaymentReferenceStatus({
             }));
             await loadLedger();
             onCredited?.();
+          } else if (
+            result.verifyInconclusive ||
+            result.paystackStatus === "unknown" ||
+            (result.paystackStatus &&
+              !["failed", "abandoned", "reversed"].includes(result.paystackStatus))
+          ) {
+            // CONTAINMENT (P0): keep polling, surface pending/provider-pending —
+            // never render this as a failed transaction.
+            setVerifyState((s) => ({
+              ...s,
+              [row.reference]: {
+                status: "inconclusive",
+                message:
+                  result.message ??
+                  "Verification still pending with the payment provider.",
+              },
+            }));
+          } else if (result.paystackStatus &&
+            ["failed", "abandoned", "reversed"].includes(result.paystackStatus)) {
+            setVerifyState((s) => ({
+              ...s,
+              [row.reference]: {
+                status: "failed",
+                message: result.message ?? "Transaction not successful",
+              },
+            }));
           } else {
             setVerifyState((s) => ({
               ...s,
@@ -296,11 +322,16 @@ export function PaymentReferenceStatus({
           }
         } catch (e) {
           if (cancelled) return;
+          // CONTAINMENT (P0): a thrown error from the verify call is a
+          // transport-level inconclusive — do NOT render as failed.
           setVerifyState((s) => ({
             ...s,
             [row.reference]: {
-              status: "failed",
-              message: e instanceof Error ? e.message : "Verification failed",
+              status: "inconclusive",
+              message:
+                e instanceof Error
+                  ? `Could not reach payment provider (${e.message}). Verification still pending.`
+                  : "Could not reach payment provider. Verification still pending.",
             },
           }));
         }
