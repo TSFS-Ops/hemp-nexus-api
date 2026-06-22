@@ -1378,6 +1378,20 @@ UAT/demo-ready, not production-ready.
 ### Edge functions requiring deploy (Batch 22)
 - (none — Batch 22 is a frontend shell and wording batch only)
 
+## Batch 23 — Registry typeahead company search
+
+- Component: `src/components/registry/CompanyTypeahead.tsx` wired into
+  `src/pages/registry/Search.tsx`.
+- Guard: `scripts/check-batch-23-registry-typeahead.mjs`, wired into
+  `npm run prebuild`.
+- Tests: `src/tests/batch-23-registry-typeahead.test.ts` (15 pins, all
+  passing).
+- Evidence: `evidence/batch-23-registry-typeahead-company-search/README.md`.
+
+### Edge functions requiring deploy (Batch 23)
+- (none — Batch 23 reuses the existing `registry-company-search` function)
+
+
 ## Batch 24 — Operating Rules SSOT, readiness, business decisions and wording gates
 
 - Client decision source:
