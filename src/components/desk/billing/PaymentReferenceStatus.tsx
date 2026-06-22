@@ -584,6 +584,12 @@ function StatusPill({ status }: { status: AttemptStatus }) {
       classes: "bg-emerald-50 text-emerald-800 border-emerald-200",
       icon: <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />,
     },
+    inconclusive: {
+      // CONTAINMENT (P0): inconclusive provider verify — pending, not failed.
+      label: "Pending Provider",
+      classes: "bg-amber-50 text-amber-800 border-amber-200",
+      icon: <Clock3 className="h-3 w-3" strokeWidth={2.5} />,
+    },
     failed: {
       label: "Failed",
       classes: "bg-destructive/10 text-destructive border-destructive/30",
