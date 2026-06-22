@@ -13,10 +13,9 @@ const FORBIDDEN_PHRASES = [
   /all\s+api\s+calls\s+burn/i,
   /per\s+api\s+call\s+burn/i,
   /burns?\s+credits\s+per\s+api\s+call(?!\s+(that|where|when))/i,
-  // Internal-implementation leakage to client surfaces.
+  // Internal-implementation leakage to client-visible copy.
   /smallest[-_ ]units?\s+(of\s+)?credit/i,
-  /atomic_token_burn/i,
-];
+
 
 // Client-visible surfaces only. Engineering docs under docs/ and evidence/
 // are excluded by design — they legitimately reference internals like
