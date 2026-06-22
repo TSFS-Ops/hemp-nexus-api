@@ -43,7 +43,8 @@ export type AttemptStatus =
   | "verifying" // /verify call in-flight
   | "credited" // ledger row found OR verify success with credits
   | "already_credited" // verify returned alreadyCredited (idempotent)
-  | "failed"; // verify returned success=false or threw
+  | "inconclusive" // CONTAINMENT (P0): provider verify was inconclusive (5xx/timeout/invalid JSON/non-definitive). NOT a failure.
+  | "failed"; // provider definitively returned failed/abandoned/reversed
 
 export interface PaystackAttempt {
   reference: string;
