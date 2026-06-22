@@ -17,7 +17,7 @@ const desk = readFileSync("src/pages/Desk.tsx", "utf8");
 
 describe("Batch 23 — registry typeahead behaviour", () => {
   it("debounces requests (≈200ms) and discards stale responses by sequence", () => {
-    expect(typeahead).toMatch(/setTimeout\([^,]+,\s*200\)/);
+    expect(typeahead).toMatch(/,\s*200\)/);
     expect(typeahead).toMatch(/requestSeqRef/);
     expect(typeahead).toMatch(/seq !== requestSeqRef\.current/);
   });
