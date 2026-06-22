@@ -210,9 +210,13 @@ function BillingContent() {
             
           } else {
             const paystackStatus = data?.paystackStatus;
-            if (paystackStatus === "abandoned") {
+            if (data?.verifyInconclusive || paystackStatus === "unknown") {
+              // CONTAINMENT (P0): inconclusive verify — settling, not failed.
+              setPaymentSettling({ reference });
+              toast.info("Payment verification is still pending with the provider. Credits will appear once settlement confirms.");
+            } else if (paystackStatus === "abandoned") {
               toast.info("Payment was not completed. No credits were charged.");
-            } else if (paystackStatus === "failed") {
+            } else if (paystackStatus === "failed" || paystackStatus === "reversed") {
               toast.error("Payment failed. Your card was not charged. Please try again or use a different payment method.");
             } else {
               setPaymentSettling({ reference });
