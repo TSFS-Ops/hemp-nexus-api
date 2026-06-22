@@ -43,7 +43,8 @@ export type AttemptStatus =
   | "verifying" // /verify call in-flight
   | "credited" // ledger row found OR verify success with credits
   | "already_credited" // verify returned alreadyCredited (idempotent)
-  | "failed"; // verify returned success=false or threw
+  | "inconclusive" // CONTAINMENT (P0): provider verify was inconclusive (5xx/timeout/invalid JSON/non-definitive). NOT a failure.
+  | "failed"; // provider definitively returned failed/abandoned/reversed
 
 export interface PaystackAttempt {
   reference: string;
@@ -284,6 +285,32 @@ export function PaymentReferenceStatus({
             }));
             await loadLedger();
             onCredited?.();
+          } else if (
+            result.verifyInconclusive ||
+            result.paystackStatus === "unknown" ||
+            (result.paystackStatus &&
+              !["failed", "abandoned", "reversed"].includes(result.paystackStatus))
+          ) {
+            // CONTAINMENT (P0): keep polling, surface pending/provider-pending —
+            // never render this as a failed transaction.
+            setVerifyState((s) => ({
+              ...s,
+              [row.reference]: {
+                status: "inconclusive",
+                message:
+                  result.message ??
+                  "Verification still pending with the payment provider.",
+              },
+            }));
+          } else if (result.paystackStatus &&
+            ["failed", "abandoned", "reversed"].includes(result.paystackStatus)) {
+            setVerifyState((s) => ({
+              ...s,
+              [row.reference]: {
+                status: "failed",
+                message: result.message ?? "Transaction not successful",
+              },
+            }));
           } else {
             setVerifyState((s) => ({
               ...s,
@@ -295,11 +322,16 @@ export function PaymentReferenceStatus({
           }
         } catch (e) {
           if (cancelled) return;
+          // CONTAINMENT (P0): a thrown error from the verify call is a
+          // transport-level inconclusive — do NOT render as failed.
           setVerifyState((s) => ({
             ...s,
             [row.reference]: {
-              status: "failed",
-              message: e instanceof Error ? e.message : "Verification failed",
+              status: "inconclusive",
+              message:
+                e instanceof Error
+                  ? `Could not reach payment provider (${e.message}). Verification still pending.`
+                  : "Could not reach payment provider. Verification still pending.",
             },
           }));
         }
@@ -336,7 +368,26 @@ export function PaymentReferenceStatus({
         }));
         await loadLedger();
         onCredited?.();
-      } else {
+      } else if (
+        result.verifyInconclusive ||
+        result.paystackStatus === "unknown" ||
+        (result.paystackStatus &&
+          !["failed", "abandoned", "reversed"].includes(result.paystackStatus))
+      ) {
+        // CONTAINMENT (P0): inconclusive provider response — not a failure.
+        setVerifyState((s) => ({
+          ...s,
+          [reference]: {
+            status: "inconclusive",
+            message:
+              result.message ??
+              "Verification still pending with the payment provider.",
+          },
+        }));
+      } else if (
+        result.paystackStatus &&
+        ["failed", "abandoned", "reversed"].includes(result.paystackStatus)
+      ) {
         setVerifyState((s) => ({
           ...s,
           [reference]: {
@@ -344,13 +395,27 @@ export function PaymentReferenceStatus({
             message: result.message ?? "Transaction not successful",
           },
         }));
+      } else {
+        setVerifyState((s) => ({
+          ...s,
+          [reference]: {
+            status: "inconclusive",
+            message:
+              result.message ??
+              "Verification still pending with the payment provider.",
+          },
+        }));
       }
     } catch (e) {
+      // CONTAINMENT (P0): transport-level errors are inconclusive, not failed.
       setVerifyState((s) => ({
         ...s,
         [reference]: {
-          status: "failed",
-          message: e instanceof Error ? e.message : "Verification failed",
+          status: "inconclusive",
+          message:
+            e instanceof Error
+              ? `Could not reach payment provider (${e.message}). Verification still pending.`
+              : "Could not reach payment provider. Verification still pending.",
         },
       }));
     } finally {
@@ -412,6 +477,11 @@ export function PaymentReferenceStatus({
                     {row.reference}
                     {row.message && row.status === "failed" && (
                       <p className="mt-1 font-sans text-[11px] text-destructive break-words">
+                        {row.message}
+                      </p>
+                    )}
+                    {row.message && row.status === "inconclusive" && (
+                      <p className="mt-1 font-sans text-[11px] text-amber-700 break-words">
                         {row.message}
                       </p>
                     )}
@@ -513,6 +583,12 @@ function StatusPill({ status }: { status: AttemptStatus }) {
       label: "Already Credited",
       classes: "bg-emerald-50 text-emerald-800 border-emerald-200",
       icon: <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />,
+    },
+    inconclusive: {
+      // CONTAINMENT (P0): inconclusive provider verify — pending, not failed.
+      label: "Pending Provider",
+      classes: "bg-amber-50 text-amber-800 border-amber-200",
+      icon: <Clock3 className="h-3 w-3" strokeWidth={2.5} />,
     },
     failed: {
       label: "Failed",

@@ -157,9 +157,14 @@ function BillingContent() {
             publishCrossTab({ kind: "credit-balance" });
           } else {
             const paystackStatus = data?.paystackStatus;
-            if (paystackStatus === "abandoned") {
+            if (data?.verifyInconclusive || paystackStatus === "unknown") {
+              // CONTAINMENT (P0): provider verify was inconclusive (5xx,
+              // timeout, invalid JSON, etc). Show settling — NOT failed.
+              setPaymentSettling({ reference });
+              toast.info("Payment verification is still pending with the provider. Credits will appear once settlement confirms.");
+            } else if (paystackStatus === "abandoned") {
               toast.info("Payment was not completed. No credits were charged.");
-            } else if (paystackStatus === "failed") {
+            } else if (paystackStatus === "failed" || paystackStatus === "reversed") {
               setPaymentFailure("Your payment was not successful. Your card was not charged. Please try again below or use a different payment method.");
               toast.error("Payment failed. Your card was not charged.", { duration: 8000 });
             } else {
@@ -205,9 +210,13 @@ function BillingContent() {
             
           } else {
             const paystackStatus = data?.paystackStatus;
-            if (paystackStatus === "abandoned") {
+            if (data?.verifyInconclusive || paystackStatus === "unknown") {
+              // CONTAINMENT (P0): inconclusive verify — settling, not failed.
+              setPaymentSettling({ reference });
+              toast.info("Payment verification is still pending with the provider. Credits will appear once settlement confirms.");
+            } else if (paystackStatus === "abandoned") {
               toast.info("Payment was not completed. No credits were charged.");
-            } else if (paystackStatus === "failed") {
+            } else if (paystackStatus === "failed" || paystackStatus === "reversed") {
               toast.error("Payment failed. Your card was not charged. Please try again or use a different payment method.");
             } else {
               setPaymentSettling({ reference });

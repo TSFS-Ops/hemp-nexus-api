@@ -81,6 +81,21 @@ export interface VerifyCheckoutResult {
   credits?: number;
   newBalance?: number;
   message?: string;
+  /**
+   * CONTAINMENT (P0): set by the edge function when the Paystack verify
+   * call could not produce a definitive answer (5xx, non-OK, network
+   * error, invalid JSON, or a non-definitive provider status such as
+   * `pending`/`ongoing`/`processing`/`queued`). The UI MUST render this
+   * as a pending/settling state, never as a failed transaction.
+   */
+  verifyInconclusive?: boolean;
+  /**
+   * Raw provider status when known. `"unknown"` is used when the edge
+   * function could not reach Paystack or parse its response. Only
+   * `"failed" | "abandoned" | "reversed"` are treated as definitive
+   * provider failures by the UI.
+   */
+  paystackStatus?: "success" | "failed" | "abandoned" | "reversed" | "unknown" | string;
 }
 
 /**
