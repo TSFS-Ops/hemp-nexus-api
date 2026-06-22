@@ -56,7 +56,6 @@ describe("P-4 Point 4 — token / credit burn per chargeable API call", () => {
       environment: "production" as const,
       artefact_code,
       artefact_was_produced: true,
-      request_id: "req_1",
       ...extra,
     });
 
