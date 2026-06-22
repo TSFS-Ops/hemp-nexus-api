@@ -227,35 +227,9 @@ export default function CompanyProfile() {
           <p className="text-[10px] text-muted-foreground">
             Raw bank-detail fields are never rendered on this surface. Only the status label above is exposed.
           </p>
-          {profile.claim_available ? (
-            <Button asChild>
-              <Link
-                to={`/registry/company/${r.id}/claim`}
-                state={{
-                  prefill: {
-                    company_reference: r.id,
-                    company_name: r.company_name,
-                    registration_number: r.registration_number ?? "",
-                    country_code: r.country_code,
-                  },
-                }}
-                data-testid="profile-claim-cta"
-              >
-                Start claim
-              </Link>
-            </Button>
-          ) : (
-            <div className="space-y-1">
-              <Badge variant="secondary" data-testid="claim-blocked-reason">
-                {profile.claim_blocked_reason ?? "Claim is not available for this record yet."}
-              </Badge>
-              <p className="text-[10px] text-muted-foreground">
-                You cannot start a claim while this record is in its current state.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </main>
+
   );
 }
