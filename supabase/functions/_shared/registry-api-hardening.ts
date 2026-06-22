@@ -288,6 +288,17 @@ export function mapVerificationStateToHardenedResult(
 }
 
 // 12. Canonical response envelope shape
+export interface RegistryApiBillingMetadata {
+  charged: boolean;
+  reason?: string;
+  artefact_code?: string | null;
+  artefact_label?: string | null;
+  credits_burned?: number;
+  remaining_balance?: number | null;
+  request_id: string;
+  event_reference?: string | null;
+}
+
 export interface RegistryApiResponseEnvelope {
   request_id: string;
   timestamp: string;
@@ -305,6 +316,8 @@ export interface RegistryApiResponseEnvelope {
   readiness_summary: string | null;
   expires_at: string | null;
   audit_reference: string;
+  /** P-4 Point 4: artefact-burn billing metadata (null when non-applicable). */
+  billing?: RegistryApiBillingMetadata | null;
 }
 
 export function buildResponseEnvelope(input: {
@@ -320,6 +333,7 @@ export function buildResponseEnvelope(input: {
   readiness_summary?: string | null;
   expires_at?: string | null;
   audit_reference?: string;
+  billing?: RegistryApiBillingMetadata | null;
 }): RegistryApiResponseEnvelope {
   const usable = input.result_state === "usable";
   return {
@@ -339,8 +353,10 @@ export function buildResponseEnvelope(input: {
     readiness_summary: input.readiness_summary ?? null,
     expires_at: input.expires_at ?? null,
     audit_reference: input.audit_reference ?? input.request_id,
+    billing: input.billing ?? null,
   };
 }
+
 
 // 13. Gate evaluation — used by both edge functions and the test console
 export interface RegistryApiGateInput {
