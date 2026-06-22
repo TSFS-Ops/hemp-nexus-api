@@ -1,22 +1,39 @@
 import { Link, NavLink } from "react-router-dom";
-import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut, ExternalLink, Building2 } from "lucide-react";
+import { Briefcase, Search, Files, ShieldCheck, Receipt, Settings, LogOut, ExternalLink, Building2, Keyboard } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContextSwitcher } from "@/components/layout/ContextSwitcher";
 import { SidebarNotificationItem } from "@/components/notifications/SidebarNotificationItem";
 import { ActiveOrgIndicator } from "@/components/desk/ActiveOrgIndicator";
+import { useDeskShortcuts, type DeskShortcut } from "./useDeskShortcuts";
+import { DeskShortcutsDialog, Kbd } from "./DeskShortcutsDialog";
 
-const NAV = [
-  { to: "/desk", label: "Overview", icon: Briefcase, end: true },
-  { to: "/desk/discover", label: "Counterparties", icon: Search },
-  { to: "/desk/registry", label: "Company Register", icon: Building2 },
-  { to: "/desk/deals", label: "My Trades", icon: Files },
-  { to: "/desk/compliance", label: "Compliance", icon: ShieldCheck },
-  { to: "/desk/billing", label: "Billing", icon: Receipt },
-  { to: "/desk/settings", label: "Settings", icon: Settings },
+// Two-key Gmail-style shortcuts. Keys chosen so the leading "g" never
+// collides with a typing target and the second key is mnemonic.
+const NAV: Array<{
+  to: string;
+  label: string;
+  icon: typeof Briefcase;
+  end?: boolean;
+  shortcut: string;
+}> = [
+  { to: "/desk", label: "Overview", icon: Briefcase, end: true, shortcut: "o" },
+  { to: "/desk/discover", label: "Counterparties", icon: Search, shortcut: "c" },
+  { to: "/desk/registry", label: "Company Register", icon: Building2, shortcut: "r" },
+  { to: "/desk/deals", label: "My Trades", icon: Files, shortcut: "t" },
+  { to: "/desk/compliance", label: "Compliance", icon: ShieldCheck, shortcut: "k" },
+  { to: "/desk/billing", label: "Billing", icon: Receipt, shortcut: "b" },
+  { to: "/desk/settings", label: "Settings", icon: Settings, shortcut: "s" },
 ];
+
+const SHORTCUTS: DeskShortcut[] = NAV.map((n) => ({
+  key: n.shortcut,
+  to: n.to,
+  label: n.label,
+}));
 
 export function DeskSidebar() {
   const { signOut, user } = useAuth();
+  const { helpOpen, setHelpOpen } = useDeskShortcuts(SHORTCUTS);
 
   return (
     <aside
@@ -49,20 +66,21 @@ export function DeskSidebar() {
         <ul className="space-y-0.5">
           {NAV.map((item) => {
             const Icon = item.icon;
+            const hint = `Shortcut: g then ${item.shortcut}`;
             return (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
                   end={item.end}
+                  title={hint}
                   className={({ isActive }) =>
                     [
-                      "relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                      "group relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       isActive
                         ? "bg-card text-foreground font-medium border border-border/60"
                         : "text-muted-foreground hover:text-foreground hover:bg-card/60",
                     ].join(" ")
                   }
-
                 >
                   {({ isActive }) => (
                     <>
@@ -76,7 +94,16 @@ export function DeskSidebar() {
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
                         strokeWidth={isActive ? 2 : 1.5}
                       />
-                      <span>{item.label}</span>
+                      <span className="flex-1">{item.label}</span>
+                      <span
+                        aria-hidden
+                        data-shortcut-hint={item.shortcut}
+                        className="hidden lg:inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity"
+                      >
+                        <Kbd>g</Kbd>
+                        <Kbd>{item.shortcut}</Kbd>
+                      </span>
+                      <span className="sr-only"> ({hint})</span>
                     </>
                   )}
                 </NavLink>
@@ -87,6 +114,19 @@ export function DeskSidebar() {
             <SidebarNotificationItem tone="light" />
           </li>
         </ul>
+
+        <button
+          type="button"
+          onClick={() => setHelpOpen(true)}
+          aria-haspopup="dialog"
+          className="mt-3 w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-card/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <span className="flex items-center gap-2">
+            <Keyboard className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Keyboard shortcuts
+          </span>
+          <Kbd>?</Kbd>
+        </button>
       </nav>
 
       {/* User footer */}
@@ -123,6 +163,12 @@ export function DeskSidebar() {
           </button>
         </div>
       </div>
+
+      <DeskShortcutsDialog
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
+        shortcuts={SHORTCUTS}
+      />
     </aside>
   );
 }
