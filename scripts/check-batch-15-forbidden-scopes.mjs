@@ -18,6 +18,9 @@ const allowed = new Set([
   "src/tests/batch-15-institutional-api-hardening.test.ts",
   "src/lib/registry-api-hardening-ui.ts",
   "src/tests/batch-15b-institutional-api-admin-ui.test.ts",
+  "src/lib/registry-api-operating-rules.ts",
+  "supabase/functions/_shared/registry-api-operating-rules.ts",
+  "src/tests/batch-29-api-operating-rules.test.ts",
 ]);
 
 let failed = false;
