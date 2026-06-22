@@ -317,7 +317,7 @@ export function CompanyTypeahead({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium truncate">
-                      {r.company_name}
+                      {highlightMatch(r.company_name, query)}
                     </span>
                     <span className="flex items-center gap-1 shrink-0">
                       <Badge
@@ -340,9 +340,9 @@ export function CompanyTypeahead({
                   </div>
                   <div className="mt-0.5 text-xs text-muted-foreground flex flex-wrap gap-x-3">
                     {r.registration_number && (
-                      <span>Reg. {r.registration_number}</span>
+                      <span>Reg. {highlightMatch(r.registration_number, query)}</span>
                     )}
-                    {r.legal_form && <span>{r.legal_form}</span>}
+                    {r.legal_form && <span>{highlightMatch(r.legal_form, query)}</span>}
                   </div>
                   {r.match_reasons.length > 0 && (
                     <div
@@ -355,12 +355,17 @@ export function CompanyTypeahead({
                           variant="outline"
                           className="text-[10px] font-normal border-emerald-300 bg-emerald-50 text-emerald-900"
                           data-field={m.field_label}
+                          title={m.value_raw}
                         >
-                          {m.field_label}
+                          <span className="font-medium">{m.field_label}:</span>
+                          <span className="ml-1 font-mono">
+                            {highlightMatch(m.value_raw, query)}
+                          </span>
                         </Badge>
                       ))}
                     </div>
                   )}
+
                 </li>
               );
             })}
