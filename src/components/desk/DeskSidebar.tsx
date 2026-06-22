@@ -45,7 +45,7 @@ export function DeskSidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 pt-4">
+      <nav aria-label="Trade Desk primary navigation" className="flex-1 px-3 pt-4">
         <ul className="space-y-0.5">
           {NAV.map((item) => {
             const Icon = item.icon;
