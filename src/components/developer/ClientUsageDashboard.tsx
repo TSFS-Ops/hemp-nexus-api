@@ -300,6 +300,15 @@ export function ClientUsageDashboard() {
         </div>
       </div>
 
+      {/* Point 6 — Dashboard-visible alert badges (read-only, no cron, no email). */}
+      <Point6DashboardBadges
+        balance={badgeInputs.balance}
+        minimumRequired={badgeInputs.minimumRequired}
+        nextKeyExpiry={badgeInputs.nextKeyExpiry}
+        suspendedOrRevokedKeys={badgeInputs.suspendedOrRevokedKeys}
+        failedProductionCalls={summary?.error_count ?? 0}
+      />
+
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
