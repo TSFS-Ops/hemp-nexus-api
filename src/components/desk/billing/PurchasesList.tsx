@@ -135,12 +135,16 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                 const resolved = !hasPending ? resolvedMap.get(p.id) : undefined;
                 const resolvedLabel =
                   resolved?.status === "approved"
-                    ? "Refund approved"
+                    ? "Refund approved — provider settlement pending"
                     : resolved?.status === "declined"
                       ? "Refund declined"
                       : resolved?.status === "superseded"
                         ? "Refund superseded"
                         : null;
+                const resolvedTooltipPrefix =
+                  resolved?.status === "approved"
+                    ? "Internal approval recorded. Awaiting payment-provider (Paystack) confirmation that funds have been returned. "
+                    : "";
                 return (
                   <div
                     key={p.id}
