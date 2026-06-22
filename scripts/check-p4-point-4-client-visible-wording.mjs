@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // P-4 Point 4 — Client-visible wording guard.
-// Blocks embarrassing wording drift in docs / client-visible code that would
-// contradict David's confirmed rule:
-//   "Production API calls burn credits only when they create, return, update
-//    or confirm a governed commercial artefact."
+// Blocks embarrassing wording drift on client-visible surfaces against
+// David's confirmed rule:
+//   "Production API calls burn credits only when they create, return,
+//    update or confirm a governed commercial artefact."
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 
@@ -15,11 +15,11 @@ const FORBIDDEN_PHRASES = [
   /burns?\s+credits\s+per\s+api\s+call(?!\s+(that|where|when))/i,
   // Internal-implementation leakage to client-visible copy.
   /smallest[-_ ]units?\s+(of\s+)?credit/i,
+];
 
-
-// Client-visible surfaces only. Engineering docs under docs/ and evidence/
-// are excluded by design — they legitimately reference internals like
-// `atomic_token_burn` to describe the implementation to developers.
+// Client-visible surfaces only. Internal engineering docs under docs/ and
+// evidence/ are intentionally excluded — they describe the implementation
+// to developers and may reference internal symbols.
 const SCAN_GLOBS = [
   "src/pages/docs",
   "src/components/desk/billing",
@@ -27,7 +27,6 @@ const SCAN_GLOBS = [
   "src/pages/Billing.tsx",
 ];
 
-// Allowlist: implementation files may legitimately reference internals.
 const ALLOWLIST = new Set([
   "scripts/check-p4-point-4-client-visible-wording.mjs",
 ]);
