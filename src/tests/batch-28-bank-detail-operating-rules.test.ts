@@ -106,7 +106,7 @@ describe("Batch 28 — country bank fields", () => {
   it("enforces ZA required fields", () => {
     const r = validateBankFields({ group: "za", fields: {} });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.missing).toContain("branch_code");
+    expect((r as { ok: false; missing: string[] }).missing).toContain("branch_code");
   });
   it("enforces NG required fields and blocks BVN unless approved", () => {
     const missing = validateBankFields({ group: "ng", fields: {} });
@@ -124,7 +124,7 @@ describe("Batch 28 — country bank fields", () => {
       },
     });
     expect(blocked.ok).toBe(false);
-    if (!blocked.ok) expect(blocked.forbidden).toContain("bvn");
+    expect((blocked as { ok: false; forbidden: string[] }).forbidden).toContain("bvn");
     const approved = validateBankFields({
       group: "ng",
       bvn_separately_approved: true,
