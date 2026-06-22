@@ -171,7 +171,7 @@ export function Point6UsageHistoryTable({
       const header = CSV_COLUMNS.join(",");
       const body = rows
         .map((r) =>
-          CSV_COLUMNS.map((c) => csvEscape((r as Record<string, unknown>)[c as string])).join(","),
+          CSV_COLUMNS.map((c) => csvEscape((r as unknown as Record<string, unknown>)[c as string])).join(","),
         )
         .join("\n");
       const csv = header + "\n" + body + "\n";
