@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { IMPORTED_UNVERIFIED_NOTICE } from "@/lib/registry-record-model";
+import { useRegistryBase, rebaseRegistryPath } from "@/lib/use-registry-base";
+
 
 interface SearchResult {
   id: string;
