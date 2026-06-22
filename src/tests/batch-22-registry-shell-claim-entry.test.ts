@@ -99,7 +99,7 @@ describe("Batch 22 — registry shell + profile-level claim entry", () => {
   it("CompanyProfile.tsx shows the sample-only warning for imported_unverified records", () => {
     expect(profile).toContain('data-testid="profile-claim-sample-warning"');
     expect(profile).toContain(
-      "This is a sample record for workflow testing. It is not independently verified by Izenzo.",
+      "This is a sample record for workflow testing. It is not independently confirmed by Izenzo.",
     );
   });
 
