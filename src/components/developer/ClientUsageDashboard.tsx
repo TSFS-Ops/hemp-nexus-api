@@ -445,6 +445,24 @@ export function ClientUsageDashboard() {
           Select an API client to view usage.
         </div>
       )}
+
+      {/* Point 6 — per-request history table + customer CSV (own org only). */}
+      {summary && (
+        <Point6UsageHistoryTable
+          mode="client"
+          apiClientId={selectedClient}
+          periodStart={summary.billing_period_start}
+          periodEnd={summary.billing_period_end}
+          filters={{
+            environment: envFilter === "all" ? null : envFilter,
+            endpoint: endpointFilter === "all" ? null : endpointFilter,
+            status: statusFilter === "all" ? null : statusFilter,
+            chargeable:
+              billableFilter === "billable" ? "chargeable" :
+              billableFilter === "non_billable" ? "non_chargeable" : null,
+          }}
+        />
+      )}
     </section>
   );
 }
