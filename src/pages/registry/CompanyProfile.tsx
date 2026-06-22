@@ -126,7 +126,7 @@ export default function CompanyProfile() {
               className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1"
               data-testid="profile-claim-sample-warning"
             >
-              This is a sample record for workflow testing. It is not independently verified by Izenzo.
+              This is a sample record for workflow testing. It is not independently confirmed by Izenzo.
             </p>
           )}
           {profile.claim_available ? (
