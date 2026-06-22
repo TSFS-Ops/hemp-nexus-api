@@ -1022,7 +1022,11 @@ async function handleChargeSuccess(
     paid_at?: string;
   }
 ): Promise<void> {
-  const { reference, metadata, customer, paid_at } = data;
+  const { reference, customer, paid_at } = data;
+  // `metadata` is intentionally `let` — the missing-metadata containment
+  // below may rehydrate it from server-trusted recovery sources before
+  // the rest of this handler reads `metadata.package_id`, `price_usd`, etc.
+  let metadata = data.metadata;
 
   // D-01 hard guards: payment_reference must exist; metadata must carry the
   // org+credits stamped at initiation. Without these we cannot safely credit.
