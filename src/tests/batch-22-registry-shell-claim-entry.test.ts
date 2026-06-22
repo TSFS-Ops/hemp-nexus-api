@@ -110,7 +110,7 @@ describe("Batch 22 — registry shell + profile-level claim entry", () => {
   // ── Claim entry page — selected company + evidence explanation ──────
   it("Claim.tsx renders the selected-company card", () => {
     expect(claim).toContain('data-testid="claim-selected-company-card"');
-    expect(claim).toContain("Source-backed record. Not independently verified by Izenzo.");
+    expect(claim).toContain("Source-backed record. Not independently confirmed by Izenzo.");
   });
 
   it("Claim.tsx explains the evidence requirement with limited wording", () => {
