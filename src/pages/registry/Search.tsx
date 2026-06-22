@@ -126,6 +126,12 @@ export default function RegistrySearch() {
         are all matched. Use the country filter to scope to South Africa or Nigeria.
       </p>
 
+      <div className="mb-5">
+        <CompanyTypeahead countryCode={countryCode} initialQuery={query} />
+      </div>
+
+
+
       <Card>
         <CardHeader><CardTitle className="text-base">Search</CardTitle></CardHeader>
         <CardContent className="space-y-3">
