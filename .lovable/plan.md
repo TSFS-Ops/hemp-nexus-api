@@ -1,124 +1,147 @@
-## Batch 1 — Business Registry Foundation (M001, M018, M019)
+## Point 6 — Admin/Client Usage Visibility · Gap-fill plan
 
-Scope strictly limited to Batch 1 as instructed. No real registry data ingested. No bank capture, no API facade, no outreach, no claim/authority logic — those are explicitly reserved for Batches 2–6.
+Existing surfaces (`AdminApiMonitoringPanel`, `ClientUsageDashboard`, `WebhookLogs`, `api-usage-self-summary`, `api_request_logs`, `api_usage_alerts`, `api_keys`, `token_balances`) already cover most of David's spec. Below is only what's missing.
 
-### Deliverables
+### Confirmed against DB
 
-**M001 — Business Registry Shell**
+`api_request_logs` already stores: `billable`, `non_billable_reason`, `environment`, `error_code`, `token_cost_units` (credits burned), `quota_position_after` (closing balance), `request_id`, `endpoint`, `method`, `status_code`, `created_at`, `api_key_id`, `org_id`. No `api_key_alias` and no `opening_balance` column.
 
-- New module under `/registry` with role-safe routes:
-  - `/registry` — module landing (explains scope, links to search/claim/admin where applicable)
-  - `/registry/search` — public company search shell (empty-state only, no data)
-  - `/registry/company/:id` — company profile shell (empty-state, "no record loaded")
-  - `/registry/claim` — claim placeholder ("Coming in Batch 3")
-  - `/admin/registry` — admin registry area (tabs: Readiness, Decisions; other tabs marked "Coming in later batch")
-  - `/admin/registry/readiness` — Product Truth dashboard (M019)
-  - `/admin/registry/decisions` — Business Decision Register (M018)
-  - `/registry/readiness` — client-safe readiness summary placeholder (full M017 in Batch 6)
-- All routes guarded; no misleading "live" wording. Every shell page carries a `<ReadinessBanner state="shell_ready" />` so nothing can be mistaken for production.
+### What this build does
 
-**M019 — Module Readiness / Product Truth Layer**
+**1. New unified SSOT view (read-only)** — `public.v_api_usage_unified`
 
-- DB tables (RLS-scoped, `service_role` + `platform_admin` write, `authenticated` read on non-sensitive views):
-  - `registry_modules` — module code (M001…M019), name, category, current readiness state
-  - `registry_readiness_states` — append-only history of state transitions per (module, country, provider, surface) with reason, actor, evidence link, effective_at
-- Readiness enum (exact): `not_started`, `shell_ready`, `test_data_ready`, `provider_pending`, `data_pending`, `licence_pending`, `admin_only`, `client_demo_ready`, `production_ready`, `disabled`.
-- SSOT in `src/lib/registry-readiness.ts` + Deno mirror in `supabase/functions/_shared/registry-readiness.ts`. Parity guard `scripts/check-registry-readiness-parity.mjs`.
-- `<ReadinessBanner />` + `<ReadinessBadge />` components read state and render copy from SSOT. Hard rule: surfaces that aren't `production_ready` cannot render verified/live wording (enforced by `scripts/check-registry-readiness-forbidden-words.mjs`).
-- Admin dashboard `/admin/registry/readiness`: matrix of modules × surfaces with current state, last change, link to history. `platform_admin` and `compliance_owner` can transition states via edge function `registry-readiness-transition` (writes audit event `registry_readiness_state_changed`).
-- Seed every M001–M019 module at `not_started` except M001/M018/M019 set to `shell_ready` after this batch.
+- Columns David listed: `id`, `org_id`, `api_client_id`, `api_client_name`, `api_key_id`, `api_key_alias` (joined `api_keys.name`, `last_four`), `endpoint`, `method`, `environment`, `request_id`, `created_at`, `status_code`, `status` (`success|error|rate_limited|unauthorized`), `billable`, `non_billable_reason`, `error_code`, `token_cost_units` (credits_burned), `quota_position_after` (closing_balance), `opening_balance` (computed: closing + cost when billable success, else closing).
+- `SECURITY INVOKER`, RLS via underlying `api_request_logs` policies. Grants: `authenticated`, `service_role`.
 
-**M018 — Business Decision Register**
+**2. Two new RPCs** (security definer, role-gated, mirror existing CSV RPC contract)
 
-- DB table `business_decisions` (RLS: read = authenticated within org for non-confidential; full read + write = `platform_admin`/`compliance_owner`). Columns: title, category (country | data_source | provider | public_display | api_output | outreach_use | commercial_use | institutional_demo | wording), status (`proposed`, `approved`, `rejected`, `expired`, `superseded`, `under_review`), rationale, effective_at, review_at, expiry_at, owner_role, approved_by, superseded_by, evidence_url.
-- `business_decision_events` append-only audit table; every status change emits audit name `business_decision_recorded` / `business_decision_status_changed`.
-- Edge function `business-decision-record` (POST create / update / supersede; enforces role + 30-char rationale).
-- Admin UI `/admin/registry/decisions`: list with filter by category/status, detail drawer with full history, "Record decision" form (admin-only).
-- Public-safe getter helper `getActiveDecision(category, key)` for later batches to consult before showing any country/provider as live.
+- `get_api_client_usage_rows(p_api_client_id, p_period_start, p_period_end, filters…)` — caller's own client only, paginated (cap 500). Used by ClientUsageDashboard for the new per-request history table and customer CSV.
+- `get_api_admin_usage_rows(p_api_client_id, p_period_start, p_period_end, filters…)` — `platform_admin|api_admin|auditor` only, paginated. Used by AdminApiMonitoringPanel drill-down + admin per-row CSV.
 
-### Guards & Tests
+Both reuse `can_view_api_client_usage` for the customer one. Both return view columns minus `quota_position_after` raw — exposed as `closing_balance`. Forbidden tokens guarded server-side via existing `safeProjection`.
 
-- Prebuild scripts:
-  - `check-registry-readiness-parity.mjs` (TS ↔ Deno mirror)
-  - `check-registry-readiness-forbidden-words.mjs` (blocks "verified", "live", "production", "guaranteed" in non-production-ready shell copy)
-  - `check-business-decision-audit-names.mjs`
-- Vitest suite `src/tests/batch-1-registry-foundation.test.ts` (~25 cases): route guards, readiness state transitions, decision lifecycle, forbidden-word enforcement, RLS isolation across two orgs, audit emission for each transition.
-- RELEASE_GATE.md + edge-function-deploy-manifest.json updated for the two new edge functions and three new prebuild scripts.
-- Evidence pack: `evidence/batch-1-registry-foundation/README.md` with seeded readiness matrix snapshot, decision register screenshot list, audit-event coverage.
+**3. ClientUsageDashboard gaps**
 
-### Out of scope (deferred to later batches, will be rejected if attempted here)
+- Add **Request history** table under the existing summary grid: timestamp · endpoint · env · status · chargeable badge · credits burned · closing balance · non-charge reason · request id (mono). Default 50 rows, "Show more" up to 500.
+- CSV columns extended with: `api_key_alias`, `chargeable`, `non_billable_reason`, `credits_burned`, `opening_balance`, `closing_balance`. Existing forbidden-token guard preserved.
+- **Dashboard badges row** (compute-on-read, no new tables, no cron):
+  - Low balance (`token_balances.balance ≤ minimum_required * 1.25`)
+  - Zero balance (`balance ≤ 0`)
+  - API key expiring (`expires_at ≤ now+14d`)
+  - Suspended/revoked key present
+  - Failed production calls > 25 in current period (from summary)
+- No new alert table writes; no email; no cron.
 
-- Real or seed company records, search results, profile data
-- Claim / authority / bank capture / API facade / outreach / human approval queue
-- Country coverage table (M011), provenance model (M010), import batches (M012) — Batch 2
-- Provider integrations (CIPC, Onfido, bank verification, etc.)
+**4. AdminApiMonitoringPanel gaps**
 
-### Files to create
+- New **Drill-down drawer** opened by clicking a client row → uses `get_api_admin_usage_rows`, same column set as customer view plus client name and org id.
+- Existing admin summary CSV unchanged. New admin per-row CSV exported from the drawer (audit-logged via existing `log_api_monitoring_csv_export` extended with `p_scope='per_row'`).
+- Same dashboard badges visible per row in summary table (uses existing `key_expiry_warning`, `ip_allowlist_exception_active`, `suspended_revoked_key_count`; adds low/zero balance derived from `token_balances`).
 
-- `supabase/migrations/<ts>_batch_1_registry_foundation.sql`
-- `src/lib/registry-readiness.ts`, `src/lib/business-decisions.ts`
-- `supabase/functions/_shared/registry-readiness.ts`
-- `supabase/functions/registry-readiness-transition/index.ts`
-- `supabase/functions/business-decision-record/index.ts`
-- `src/pages/registry/{Landing,Search,CompanyProfile,Claim,Readiness}.tsx`
-- `src/pages/admin/registry/{Index,Readiness,Decisions}.tsx`
-- `src/components/registry/{ReadinessBanner,ReadinessBadge,ReadinessMatrix,DecisionForm,DecisionList}.tsx`
-- `scripts/check-registry-readiness-parity.mjs`
-- `scripts/check-registry-readiness-forbidden-words.mjs`
-- `scripts/check-business-decision-audit-names.mjs`
-- `src/tests/batch-1-registry-foundation.test.ts`
-- `evidence/batch-1-registry-foundation/README.md`
+**5. No-credit enforcement verification (containment only)**
 
-### Acceptance for Batch 1
+- Audit `supabase/functions/_shared/api-artefact-burn.ts` + every chargeable route in `supabase/functions/public-api/index.ts`.
+- The `blocked_insufficient_credits` status already exists. Verify every chargeable handler calls the burn helper **before** producing the chargeable response and returns `402 insufficient_credits` on `blocked_insufficient_credits`. If any chargeable handler is missing the pre-call guard, add a single guard call. No ledger, no balance math changes.
+- Static test guard added to assert every `chargeable: true` route file calls `burnApiArtefact` before its success response.
 
-- All routes render shell-only with readiness banner
-- Readiness matrix shows all 19 modules with correct seeded states
-- Decision register CRUD works for `platform_admin`; non-admins read-only or blocked
-- All audit events emit; RLS blocks cross-org reads
-- Prebuild guards + tests pass
-- No "verified"/"live"/"production" wording anywhere in shell copy
+**6. Tests**
 
-Approve to proceed, or tell me to adjust scope (e.g., split M018 into its own batch, or skip the readiness banner component).  
+- `src/tests/point6-unified-usage-view.test.ts` — migration contains the view + grants; columns match David's spec; no forbidden columns; `api_key_alias` derived not raw.
+- `src/tests/point6-customer-history-and-csv.test.ts` — new history table renders, CSV columns extended, forbidden-token guard preserved, server RPC name pinned.
+- `src/tests/point6-admin-drilldown.test.ts` — drilldown drawer mounted, RPC name pinned, audit-log call still wired, per-row CSV gated to `platform_admin`.
+- `src/tests/point6-dashboard-badges.test.ts` — badge thresholds match spec; no alert writes; no cron import.
+- `src/tests/point6-no-credit-guard.test.ts` — every chargeable handler in `public-api/index.ts` calls `burnApiArtefact` and returns `insufficient_credits` on block.
+
+### Out of scope (explicitly)
+
+- No automated email/notification alerting (David accepted dashboard-only for P-4).
+- No new pricing logic (David's "1 credit per successful chargeable production call" default is already the model).
+- No webhook event types, OpenAPI changes, write API, OAuth/SSO, signup or payment collection.
+- No changes to `token_ledger` semantics, `atomic_token_credit`, refund flow, RLS on `api_request_logs`/`api_keys`/`token_balances`, full keys, key hashes.
+- No `opening_balance` column added to `api_request_logs` (derived in view only).
+
+### Files changed
+
+- **DB migration** — `v_api_usage_unified`, `get_api_client_usage_rows`, `get_api_admin_usage_rows`, extend `log_api_monitoring_csv_export` with optional `p_scope`.
+- `src/components/developer/ClientUsageDashboard.tsx` — history table, extended CSV, badges row.
+- `src/components/admin/AdminApiMonitoringPanel.tsx` — drill-down drawer + per-row CSV + per-row badges column.
+- 5 new test files under `src/tests/`.
+- No edge-function code changes unless step 5 finds a gap; if it does, only the affected route file in `supabase/functions/public-api/index.ts` is touched.
+
+### What remains unresolved after this build
+
+- Endpoint-specific pricing surfacing inside usage screens (David partially answered — defaulted to 1 credit per successful chargeable prod call until pricing is finalised).
+- Automated email/SMS/in-app alerting for the dashboard badges.
+- Customer-visible history beyond current+prior billing period (audit ledger remains retained server-side).
+- Negative-balance exception flow if Izenzo later grants written approval.  
   
-Approved — proceed with **Batch 1 exactly as scoped**.
+This plan is good. It is properly scoped to **Point 6 only** and it does not reopen unrelated payment, POI, WaD, refund, Payfast or ledger work.
+  I would approve it, with one tightening point: **do not extend** `log_api_monitoring_csv_export` **unless absolutely necessary**. If the existing audit function can already capture the export event through metadata, use that instead. Changing DB functions just for `p_scope='per_row'` is acceptable only if it is backwards-compatible and tested.
+  Send this:
+  ```text
+  Go.
 
-One small adjustment before build: keep **M018 inside Batch 1**. Do **not** split it out. The Business Decision Register is needed from day one because the readiness layer must have a formal place to record what can and cannot be said about countries, providers, public display, API output and institutional demos.
+  Proceed with the Point 6 — Admin/Client Usage Visibility gap-fill plan exactly as scoped.
 
-Send this instruction:
+  Approved build approach:
 
-Proceed with Batch 1 — Business Registry Foundation exactly as specified.
+  - Build the read-only unified SSOT view `public.v_api_usage_unified`.
+  - Add the two role-gated RPCs:
+    - `get_api_client_usage_rows`
+    - `get_api_admin_usage_rows`
+  - Update the existing `ClientUsageDashboard` only for the missing request-history table, extended CSV, and dashboard badges.
+  - Update the existing `AdminApiMonitoringPanel` only for the drill-down drawer, per-row CSV, and per-row badges.
+  - Verify insufficient-credit containment only. Add a guard only if a chargeable production route can still proceed at zero balance.
+  - Add the five test files listed.
 
-Scope is approved and remains strictly limited to M001, M018 and M019.
+  Keep this strictly limited to Point 6.
 
-Do not ingest any real or seed registry data. Do not build company records, real search results, claim logic, authority logic, bank-detail capture, API facades, outreach, provider integrations, provenance, country coverage or import batches. Those are deferred to later batches.
+  Do not rebuild existing usage surfaces.
+  Do not change token ledger semantics.
+  Do not change `atomic_token_credit`.
+  Do not change credit pricing.
+  Do not add endpoint price visibility inside usage screens.
+  Do not add automated alerting, cron, email, SMS, WhatsApp, or a new alerts pipeline.
+  Do not expose full API keys.
+  Do not add an `opening_balance` column to `api_request_logs`; derive it in the unified view only.
+  Do not touch Payfast, Paystack webhook logic, refunds, POI, WaD, signup, OAuth/SSO, OpenAPI, or unrelated payment logic.
 
-Key approval points:
+  One constraint:
 
-1. M001 Business Registry Shell is approved.
-2. M019 Product Truth / Module Readiness Layer is approved.
-3. M018 Business Decision Register is approved and should remain in Batch 1.
-4. Readiness banners must appear on every registry shell route.
-5. No shell page may use “verified”, “live”, “production” or “guaranteed” wording unless the relevant surface is `production_ready`.
-6. All readiness transitions and business decision changes must emit audit events.
-7. RLS must block cross-org access.
-8. Platform admins and compliance owners may transition readiness and record decisions.
-9. Other users must only have safe read access where allowed.
-10. The evidence pack, RELEASE_GATE update, deploy manifest update, guards and tests are mandatory acceptance items.
+  Only extend `log_api_monitoring_csv_export` with `p_scope='per_row'` if this is fully backwards-compatible and covered by tests. If the existing audit function can already record the export safely through existing metadata, use the existing function instead.
 
-Acceptance remains:
+  Customer CSV:
 
-- all shell routes render correctly;
-- readiness matrix shows all M001–M019 modules;
-- M001, M018 and M019 are seeded as `shell_ready`;
-- all other modules are seeded as `not_started`;
-- decision register works for authorised admins;
-- non-admins are read-only or blocked as designed;
-- audit events emit correctly;
-- RLS isolation is proven;
-- all prebuild guards pass;
-- all tests pass;
-- no misleading wording appears anywhere in the shell copy.
+  Ship customer CSV in this pass only if it is safely scoped to the caller’s own organisation through the approved RPC path and tests prove there is no org override or cross-organisation leakage. If that cannot be proven safely, ship admin CSV first and defer customer CSV.
 
-Proceed with Batch 1 only.
+  No-credit check:
 
-&nbsp;
+  Verify the existing burn helper and public API chargeable routes. If the insufficient-credit guard already exists everywhere, do not change route logic. If there is a gap, add the smallest containment only to the affected route.
+
+  Required tests/guards must prove:
+
+  1. unified view exists and exposes only safe fields;
+  2. client RPC returns only the caller’s own organisation usage;
+  3. admin RPC is role-gated;
+  4. admin filters work for client, endpoint, date range, environment, status, chargeable/non-chargeable, API key alias, and error type;
+  5. client filters work for endpoint, date range, status, chargeable/non-chargeable, and API key alias where available;
+  6. full API keys are never exposed in screen data or CSV;
+  7. sandbox and production are clearly separated;
+  8. chargeable and non-chargeable requests are distinguishable;
+  9. non-charge reason is visible where available;
+  10. opening balance is derived only, not stored as a new source column;
+  11. admin CSV uses the unified usage source;
+  12. customer CSV, if shipped, cannot export another organisation’s data;
+  13. dashboard badges are read-only/computed and do not create alert rows or cron jobs;
+  14. insufficient-credit handling is verified and, only if needed, contained with a 402 response and zero burn;
+  15. no unrelated payment, Paystack, Payfast, refund, POI, WaD, pricing, key-generation, or ledger semantics are changed.
+
+  Return a final summary with:
+
+  - files changed;
+  - migrations added;
+  - tests added;
+  - tests passed;
+  - any route where insufficient-credit containment was needed;
+  - anything genuinely deferred because it could not be completed safely before 1 July.
+  ```
