@@ -250,11 +250,12 @@ export default function RegistrySearch() {
                 <p className="text-[11px] text-amber-700">Source-backed record. Not independently vetted by Izenzo.</p>
                 <div className="flex gap-2 pt-1">
                   <Button asChild size="sm" variant="outline">
-                    <Link to={r.profile_link} data-testid="open-profile-cta">Open profile</Link>
+                    <Link to={rebaseRegistryPath(r.profile_link, base)} data-testid="open-profile-cta">Open profile</Link>
                   </Button>
                   {r.claim_available ? (
                     <Button asChild size="sm">
-                      <Link to={`/registry/company/${r.id}/claim`} data-testid="claim-cta">Claim this company</Link>
+                      <Link to={`${base}/company/${r.id}/claim`} data-testid="claim-cta">Claim this company</Link>
+
                     </Button>
                   ) : (
                     <Badge variant="secondary" className="self-center text-[10px]" data-testid="claim-blocked">
