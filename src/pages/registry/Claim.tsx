@@ -97,14 +97,47 @@ export default function RegistryClaim() {
     } finally { setSubmitting(false); }
   }
 
+  const selectedCompany = prefill.company_name || companyName || null;
+
   return (
-    <main className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Claim your company</h1>
+    <main className="max-w-2xl mx-auto p-6 space-y-4">
+      <h1 className="text-2xl font-semibold">Claim your company</h1>
       <ReadinessBanner state="shell_ready" moduleCode="M004" />
 
+      {/* Batch 22 — Selected-company card. When the user arrived from a
+          company profile, show safe summary fields so they don't have to
+          re-enter the company. Sensitive fields are never shown here. */}
+      {selectedCompany && (
+        <Card data-testid="claim-selected-company-card" className="border-emerald-300 bg-emerald-50/40">
+          <CardHeader>
+            <CardTitle className="text-base">Claiming: {selectedCompany}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs space-y-1">
+            {(prefill.country_code || countryCode) && (
+              <div><span className="text-muted-foreground">Country:</span> {prefill.country_code ?? countryCode}</div>
+            )}
+            {(prefill.registration_number || registrationNumber) && (
+              <div><span className="text-muted-foreground">Registration number:</span> {prefill.registration_number ?? registrationNumber}</div>
+            )}
+            <p className="pt-1 text-[10px] text-amber-700">
+              Source-backed record. Not independently verified by Izenzo.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
-        <CardHeader><CardTitle className="text-base">Claim details</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Claim details</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground" data-testid="claim-evidence-explanation">
+            To review your claim, Izenzo needs evidence showing your connection to this company.
+            The required documents depend on your role and the company type. Claim approval
+            confirms only that your connection has passed review — it does not verify the
+            company profile, grant authority-to-act or verify bank details.
+          </p>
+
           {!claimId && (
             <>
               <div><Label className="text-xs">Company identifier / reference</Label><Input value={companyReference} onChange={(e) => setCompanyReference(e.target.value)} /></div>
