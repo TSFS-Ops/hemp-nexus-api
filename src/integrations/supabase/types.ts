@@ -10746,16 +10746,19 @@ export type Database = {
       }
       registry_api_usage_events: {
         Row: {
+          artefact_code: string | null
           audit_reference: string | null
           client_id: string | null
           country: string | null
           created_at: string
+          credits_burned: number | null
           endpoint: string
           id: string
           identifier_type: string | null
           ip_hash: string | null
           key_id: string | null
           mode: string | null
+          remaining_balance: number | null
           request_id: string
           result_state: string | null
           scope: string | null
@@ -10764,16 +10767,19 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
+          artefact_code?: string | null
           audit_reference?: string | null
           client_id?: string | null
           country?: string | null
           created_at?: string
+          credits_burned?: number | null
           endpoint: string
           id?: string
           identifier_type?: string | null
           ip_hash?: string | null
           key_id?: string | null
           mode?: string | null
+          remaining_balance?: number | null
           request_id: string
           result_state?: string | null
           scope?: string | null
@@ -10782,16 +10788,19 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
+          artefact_code?: string | null
           audit_reference?: string | null
           client_id?: string | null
           country?: string | null
           created_at?: string
+          credits_burned?: number | null
           endpoint?: string
           id?: string
           identifier_type?: string | null
           ip_hash?: string | null
           key_id?: string | null
           mode?: string | null
+          remaining_balance?: number | null
           request_id?: string
           result_state?: string | null
           scope?: string | null
