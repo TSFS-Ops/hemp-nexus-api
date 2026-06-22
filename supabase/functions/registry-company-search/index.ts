@@ -246,31 +246,36 @@ Deno.serve(async (req) => {
       profile_link: `/registry/company/${r.id}`,
     }));
 
-    await svc.from("event_store").insert({
-      event_name: "registry_company_public_search_performed",
-      aggregate_id: "anonymous_search",
-      aggregate_type: "registry_company_search",
-      payload: {
-        token_count: tokens.length,
-        result_count: results.length,
-        suppressed_record_count: suppressedRecordIds.length,
-        country_code: parsed.data.country_code ?? null,
-        readiness_state: parsed.data.readiness_state ?? null,
-        claim_status_filter: parsed.data.claim_status ?? null,
-        paged: !!cursor.last_id,
-        has_more: hasMore,
-        warning,
-      },
-    }).catch(() => {});
-
-    if (results.length === 0 && !cursor.last_id) {
+    try {
       await svc.from("event_store").insert({
-        event_name: "registry_company_no_result_new_request_prompted",
+        event_name: "registry_company_public_search_performed",
         aggregate_id: "anonymous_search",
         aggregate_type: "registry_company_search",
-        payload: { token_count: tokens.length },
-      }).catch(() => {});
+        payload: {
+          token_count: tokens.length,
+          result_count: results.length,
+          suppressed_record_count: suppressedRecordIds.length,
+          country_code: parsed.data.country_code ?? null,
+          readiness_state: parsed.data.readiness_state ?? null,
+          claim_status_filter: parsed.data.claim_status ?? null,
+          paged: !!cursor.last_id,
+          has_more: hasMore,
+          warning,
+        },
+      });
+    } catch (_e) { /* audit best-effort */ }
+
+    if (results.length === 0 && !cursor.last_id) {
+      try {
+        await svc.from("event_store").insert({
+          event_name: "registry_company_no_result_new_request_prompted",
+          aggregate_id: "anonymous_search",
+          aggregate_type: "registry_company_search",
+          payload: { token_count: tokens.length },
+        });
+      } catch (_e) { /* audit best-effort */ }
     }
+
 
     const body = JSON.stringify({
       ok: true,
