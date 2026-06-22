@@ -112,7 +112,7 @@ describe("P-4 Point 4 — token / credit burn per chargeable API call", () => {
       environment: "production" as const,
       artefact_code: "basic_poi",
       artefact_was_produced: true,
-      request_id: "r",
+      
     };
 
     it("sandbox calls do not burn", () => {
