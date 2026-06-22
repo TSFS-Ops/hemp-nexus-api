@@ -1,11 +1,15 @@
 /**
  * Batch 1 — Business Registry module landing (shell only).
+ * Batch 22 — Shell-aware internal links so the Trade Desk sidebar is
+ * preserved when entered from /desk/registry.
  */
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReadinessBanner } from "@/components/registry/ReadinessBanner";
+import { useRegistryBase } from "@/lib/use-registry-base";
 
 export default function RegistryLanding() {
+  const base = useRegistryBase();
   return (
     <main className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-4">Business Registry</h1>
@@ -15,18 +19,23 @@ export default function RegistryLanding() {
           <CardHeader><CardTitle className="text-base">Company search</CardTitle></CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-3">
-              Shell only — no records have been loaded.
+              Search by name, registration number, VAT/tax number, address, country or legal form.
+              Partial matches are supported.
             </p>
-            <Link to="/registry/search" className="text-sm underline">Open search shell</Link>
+            <Link to={`${base}/search`} className="text-sm underline" data-testid="registry-search-link">
+              Open company search
+            </Link>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-base">Claim your company</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">My companies</CardTitle></CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-3">
-              The claim workflow is being built in a later batch and is not yet available.
+              View claims you have started and companies you are authorised to act for.
             </p>
-            <Link to="/registry/claim" className="text-sm underline">View placeholder</Link>
+            <Link to={`${base}/my-companies`} className="text-sm underline" data-testid="registry-my-companies-link">
+              Open my companies
+            </Link>
           </CardContent>
         </Card>
       </div>
