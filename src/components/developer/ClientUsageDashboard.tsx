@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Download, Info, Loader2, RefreshCw } from "lucide-react";
+import { Point6UsageHistoryTable } from "@/components/usage/Point6UsageHistoryTable";
+import { Point6DashboardBadges } from "@/components/usage/Point6DashboardBadges";
 
 interface ApiClientOption {
   id: string;
