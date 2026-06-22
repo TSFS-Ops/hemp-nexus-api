@@ -90,6 +90,8 @@ export default function CompanyProfile() {
 
   const r = profile.record;
 
+  const isSampleOnly = profile.readiness_label === "imported_unverified";
+
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-semibold mb-1">{r.company_name}</h1>
@@ -100,6 +102,63 @@ export default function CompanyProfile() {
         <Badge variant="secondary" className="text-[10px] font-mono">{profile.profile_verification_status}</Badge>
         <Badge variant="secondary" className="text-[10px] font-mono">{profile.bank_detail_status_label}</Badge>
       </div>
+
+      {/* Batch 22 — Profile-level "Is this your company?" claim panel.
+          Placed near the top of the profile, matching the B2BHint-style
+          pattern. Wording is deliberately limited: claim approval
+          confirms only the claimant connection and never implies the
+          company itself, its bank details or authority are verified. */}
+      <Card data-testid="profile-claim-panel" className="border-emerald-300 bg-emerald-50/40">
+        <CardHeader>
+          <CardTitle className="text-base" data-testid="profile-claim-panel-title">
+            Is this your company?
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p>
+            Claim this company to start the review process. You will be asked to provide
+            documents showing your connection to the company. Claim approval confirms only
+            that your connection has passed review. It does not verify the company profile,
+            grant authority-to-act or verify bank details.
+          </p>
+          {isSampleOnly && (
+            <p
+              className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1"
+              data-testid="profile-claim-sample-warning"
+            >
+              This is a sample record for workflow testing. It is not independently verified by Izenzo.
+            </p>
+          )}
+          {profile.claim_available ? (
+            <Button asChild data-testid="profile-claim-cta-wrapper">
+              <Link
+                to={`${base}/company/${r.id}/claim`}
+                state={{
+                  prefill: {
+                    company_reference: r.id,
+                    company_name: r.company_name,
+                    registration_number: r.registration_number ?? "",
+                    country_code: r.country_code,
+                  },
+                }}
+                data-testid="profile-claim-cta"
+              >
+                Claim this company
+              </Link>
+            </Button>
+          ) : (
+            <div className="space-y-1">
+              <Badge variant="secondary" data-testid="claim-blocked-reason">
+                {profile.claim_blocked_reason ?? "Claim is not available for this record yet."}
+              </Badge>
+              <p className="text-[10px] text-muted-foreground">
+                You cannot start a claim while this record is in its current state.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader><CardTitle className="text-base">Public-safe fields</CardTitle></CardHeader>
