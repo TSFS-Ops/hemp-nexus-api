@@ -571,11 +571,51 @@ export function AdminApiMonitoringPanel() {
                 <td className="p-2 text-muted-foreground">
                   {r.open_support_tickets === null ? "—" : r.open_support_tickets}
                 </td>
+                <td className="p-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={() => setDrillRow(r)}
+                    data-testid={`admin-drill-${r.api_client_id}`}
+                  >
+                    <ListTree className="h-3.5 w-3.5 mr-1" /> Rows
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Point 6 — drill-down drawer (per-request rows + per-row CSV). */}
+      <Sheet open={!!drillRow} onOpenChange={(o) => { if (!o) setDrillRow(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-[1100px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              Request history — {drillRow?.api_client_name ?? drillRow?.api_client_id.slice(0, 8)} ({drillRow?.environment})
+            </SheetTitle>
+          </SheetHeader>
+          {drillRow && (
+            <div className="mt-4 space-y-4">
+              <Point6DashboardBadges
+                nextKeyExpiry={drillRow.next_key_expiry}
+                suspendedOrRevokedKeys={drillRow.suspended_revoked_key_count}
+                failedProductionCalls={drillRow.error_count}
+              />
+              <Point6UsageHistoryTable
+                mode="admin"
+                apiClientId={drillRow.api_client_id}
+                periodStart={drillRow.period_start}
+                periodEnd={drillRow.period_end}
+                filters={{
+                  environment: drillRow.environment,
+                }}
+              />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
