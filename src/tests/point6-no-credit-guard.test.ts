@@ -34,12 +34,14 @@ describe("Point 6 · no-credit enforcement guard", () => {
   });
 
   it("every public-api handler that flips billable=true must also call the burn helper", () => {
-    // Today: no chargeable route is active. If a future edit sets
-    // `ctx.billable = true` without `burnArtefactForApiCall`, this guard
-    // fails — preventing chargeable routes from shipping unguarded.
-    const flips = routes.match(/ctx\.billable\s*=\s*true/g) ?? [];
+    // Strip line and block comments so the sentinel comment doesn't
+    // falsely flag the static guard.
+    const stripped = routes
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    const flips = stripped.match(/ctx\.billable\s*=\s*true/g) ?? [];
     if (flips.length > 0) {
-      expect(routes).toMatch(/burnArtefactForApiCall/);
+      expect(stripped).toMatch(/burnArtefactForApiCall/);
     } else {
       // Sentinel comment must remain so the binding contract is visible.
       expect(routes).toMatch(/production successful lookups WILL set billable=true/);
