@@ -63,13 +63,16 @@ Deno.serve(async (req) => {
     if (typeof data === "number") totalRows += data;
   }
 
-  await svc.from("event_store").insert({
-    event_name: "registry_company_search_index_rebuilt",
-    aggregate_id: parsed.data.record_id ?? "batch8_seed_v1",
-    aggregate_type: "registry_company_search_index",
-    actor_id: who.user.id,
-    payload: { records: recordIds.length, rows: totalRows },
-  }).catch(() => {});
+  try {
+    await svc.from("event_store").insert({
+      event_name: "registry_company_search_index_rebuilt",
+      aggregate_id: parsed.data.record_id ?? "batch8_seed_v1",
+      aggregate_type: "registry_company_search_index",
+      actor_id: who.user.id,
+      payload: { records: recordIds.length, rows: totalRows },
+    });
+  } catch (_e) { /* audit best-effort */ }
+
 
   return withCors(req, new Response(JSON.stringify({
     ok: true, records: recordIds.length, indexed_rows: totalRows,
