@@ -480,6 +480,11 @@ export function PaymentReferenceStatus({
                         {row.message}
                       </p>
                     )}
+                    {row.message && row.status === "inconclusive" && (
+                      <p className="mt-1 font-sans text-[11px] text-amber-700 break-words">
+                        {row.message}
+                      </p>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <StatusPill status={row.status} />
