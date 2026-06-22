@@ -60,7 +60,9 @@
     "check:batch-29": "node scripts/check-registry-api-operating-rules-parity.mjs",
     "check:batch-30": "node scripts/check-registry-operations-outreach-rules-parity.mjs",
     "check:batch-31": "node scripts/check-batch-31-cross-surface-consistency.mjs",
-    "check:p4-point-4": "node scripts/check-registry-api-artefact-pricing-parity.mjs"
+    "check:p4-point-4": "node scripts/check-registry-api-artefact-pricing-parity.mjs",
+    "check:p4-point-4-wording": "node scripts/check-p4-point-4-client-visible-wording.mjs",
+    "check:p4-point-4-wiring": "node scripts/check-p4-point-4-endpoint-wiring.mjs"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.1",
