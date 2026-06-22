@@ -1022,7 +1022,11 @@ async function handleChargeSuccess(
     paid_at?: string;
   }
 ): Promise<void> {
-  const { reference, metadata, customer, paid_at } = data;
+  const { reference, customer, paid_at } = data;
+  // `metadata` is intentionally `let` — the missing-metadata containment
+  // below may rehydrate it from server-trusted recovery sources before
+  // the rest of this handler reads `metadata.package_id`, `price_usd`, etc.
+  let metadata = data.metadata;
 
   // D-01 hard guards: payment_reference must exist; metadata must carry the
   // org+credits stamped at initiation. Without these we cannot safely credit.
@@ -1030,14 +1034,104 @@ async function handleChargeSuccess(
     console.error("[Webhook] Rejecting charge.success: missing payment_reference");
     return;
   }
-  if (!metadata?.org_id || !metadata?.credits) {
-    console.error("[Webhook] Rejecting charge.success: missing org_id/credits in metadata", reference);
-    return;
+  // ── Missing-metadata containment ──
+  // A real paid Paystack charge must never silently disappear just because
+  // its metadata blob is missing the org_id/credits we stamp at init. We
+  // attempt safe recovery from server-trusted records written at checkout
+  // initiation. If recovery yields org_id+credits we fall through to the
+  // normal crediting path (including amount/currency/package validation
+  // and idempotency). If it fails we open an audit_logs + admin_risk_items
+  // record so finance can reconcile manually, and return normally so
+  // Paystack does not retry-storm.
+  let recoveredFrom: "metadata" | "token_purchases" | "purchase_initiated" = "metadata";
+  if (!metadata) {
+    // ensure downstream code can safely read metadata.* fields
+    (data as { metadata?: Record<string, unknown> }).metadata = {};
+  }
+  const meta = (data.metadata ?? {}) as Record<string, unknown>;
+
+  if (!meta.org_id || !meta.credits) {
+    console.warn("[Webhook] charge.success missing org_id/credits — attempting recovery", reference);
+
+    // Recovery A — token_purchases row written at init from an authenticated session.
+    const { data: tpRow } = await supabase
+      .from("token_purchases")
+      .select("org_id, user_id, package_id, token_amount, amount_usd, currency")
+      .eq("paystack_reference", reference)
+      .maybeSingle();
+
+    if (tpRow?.org_id && tpRow?.token_amount) {
+      if (!meta.org_id) meta.org_id = tpRow.org_id;
+      if (!meta.credits) meta.credits = tpRow.token_amount;
+      if (!meta.user_id && tpRow.user_id) meta.user_id = tpRow.user_id;
+      if (!meta.package_id && tpRow.package_id) meta.package_id = tpRow.package_id;
+      if (meta.price_usd == null && tpRow.amount_usd != null) meta.price_usd = tpRow.amount_usd;
+      if (!meta.currency && tpRow.currency) meta.currency = tpRow.currency;
+      recoveredFrom = "token_purchases";
+    }
+
+    // Recovery B — credits.purchase_initiated audit row, if still incomplete.
+    if (!meta.org_id || !meta.credits) {
+      const { data: initRowR } = await supabase
+        .from("audit_logs")
+        .select("org_id, actor_user_id, metadata")
+        .eq("action", "credits.purchase_initiated")
+        .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference}`)
+        .maybeSingle();
+
+      if (initRowR?.metadata) {
+        const im = initRowR.metadata as Record<string, unknown>;
+        if (!meta.org_id) meta.org_id = initRowR.org_id ?? im.org_id;
+        if (!meta.credits) meta.credits = im.credits ?? im.token_amount;
+        if (!meta.user_id) meta.user_id = initRowR.actor_user_id ?? im.user_id;
+        if (!meta.package_id && im.package_id) meta.package_id = im.package_id;
+        if (meta.price_usd == null && im.price_usd != null) meta.price_usd = im.price_usd;
+        if (!meta.currency && im.currency) meta.currency = im.currency;
+        if (recoveredFrom === "metadata") recoveredFrom = "purchase_initiated";
+      }
+    }
+
+    if (!meta.org_id || !meta.credits) {
+      console.error(
+        "[Webhook] Rejecting charge.success: missing org_id/credits and no recovery source",
+        reference,
+      );
+      await supabase.from("audit_logs").insert({
+        action: "credits.purchase_rejected",
+        entity_type: "token_balance",
+        metadata: {
+          payment_reference: reference,
+          reason: "missing_metadata_no_recovery",
+          had_metadata: !!metadata,
+          paystack_amount: data.amount,
+          paystack_currency: data.currency ?? null,
+          customer_email: customer?.email ?? null,
+          paid_at: paid_at ?? null,
+        },
+      });
+      await supabase.from("admin_risk_items").insert({
+        title: `Paystack charge.success with unrecoverable metadata: ${reference}`,
+        description:
+          `charge.success arrived with missing org_id/credits and no token_purchases/purchase_initiated row matched paystack_reference=${reference}. Manual reconciliation required before any credit is issued.`,
+        severity: "high",
+        status: "open",
+      });
+      // Return normally — Paystack must not retry-storm. The risk item is the queue.
+      return;
+    }
+
+    console.log(
+      `[Webhook] Recovered missing metadata for ${reference} from ${recoveredFrom}: org=${meta.org_id} credits=${meta.credits}`,
+    );
   }
 
-  const orgId = metadata.org_id;
-  const credits = metadata.credits;
-  const userId = metadata.user_id;
+  // Re-bind `metadata` so the existing downstream crediting/promotion/audit
+  // code reads from the (possibly recovered) blob without any further edits.
+  metadata = meta as typeof metadata;
+
+  const orgId = meta.org_id as string;
+  const credits = meta.credits as number;
+  const userId = meta.user_id as string | undefined;
 
   console.log(`[Webhook] Processing charge.success: org=${orgId}, credits=${credits}, ref=${reference}`);
 
