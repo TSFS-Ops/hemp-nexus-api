@@ -97,8 +97,13 @@ export default function RegistrySearch() {
   return (
     <main className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-1">Company search</h1>
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className="text-sm text-muted-foreground mb-2">
         Search by name, registration number, VAT/tax number, address, country or legal form.
+      </p>
+      <p className="text-xs text-muted-foreground mb-4" data-testid="search-partial-note">
+        Partial matches are supported — typing <code className="font-mono">starf</code> finds
+        <em> Starfair 162</em>, and registration numbers, VAT/tax numbers and address tokens
+        are all matched. Use the country filter to scope to South Africa or Nigeria.
       </p>
 
       <Card>
@@ -112,9 +117,19 @@ export default function RegistrySearch() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <Label htmlFor="cc" className="text-xs">Country</Label>
-              <Input id="cc" maxLength={3} value={countryCode}
-                     onChange={(e) => setCountryCode(e.target.value.toUpperCase())} placeholder="ZA" />
+              <select
+                id="cc"
+                className="w-full h-9 rounded-md border border-input bg-background px-2 text-xs"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                data-testid="filter-country-code"
+              >
+                <option value="">Any country</option>
+                <option value="ZA">South Africa (ZA)</option>
+                <option value="NG">Nigeria (NG)</option>
+              </select>
             </div>
+
             <div>
               <Label htmlFor="rn" className="text-xs">Registration number</Label>
               <Input id="rn" maxLength={60} value={registrationNumber}
