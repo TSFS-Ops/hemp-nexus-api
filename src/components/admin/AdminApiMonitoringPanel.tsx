@@ -161,6 +161,7 @@ export function AdminApiMonitoringPanel() {
   const [planId, setPlanId] = useState<string>("");
   const [minUsagePct, setMinUsagePct] = useState<string>("");
   const [errorsOnly, setErrorsOnly] = useState(false);
+  const [drillRow, setDrillRow] = useState<Row | null>(null);
 
   const load = useCallback(async () => {
     if (!user || !hasAccess) return;
