@@ -258,15 +258,92 @@ async function _serve(req: Request): Promise<Response> {
         );
       }
 
-      // Verify with Paystack API
-      const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-        headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
-      });
-      const verifyData = await verifyRes.json();
-
-      if (!verifyData.status || verifyData.data?.status !== "success") {
+      // Verify with Paystack API.
+      //
+      // CONTAINMENT (P0): a 5xx, non-OK, network/timeout error, or invalid JSON
+      // from Paystack must NOT be rendered as a definitive "Transaction not
+      // successful" failure. Only `failed`, `abandoned`, or `reversed` from
+      // Paystack are treated as definitive provider failures. Everything else
+      // is reported as `verifyInconclusive: true` with `paystackStatus: "unknown"`
+      // so the UI shows a pending/settling state and the user can re-verify.
+      // No ledger, webhook, refund, schema, RLS, wallet, or idempotency logic
+      // is changed here.
+      let verifyRes: Response;
+      try {
+        verifyRes = await fetch(
+          `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+          { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
+        );
+      } catch (netErr) {
+        console.warn(`[Verify] Paystack network/timeout error for ${reference}:`, netErr);
         return new Response(
-          JSON.stringify({ success: false, message: "Transaction not successful", paystackStatus: verifyData.data?.status }),
+          JSON.stringify({
+            success: false,
+            verifyInconclusive: true,
+            paystackStatus: "unknown",
+            message:
+              "Could not reach payment provider. Verification is still pending — your payment may still complete.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!verifyRes.ok) {
+        console.warn(`[Verify] Paystack returned non-OK status ${verifyRes.status} for ${reference}`);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            verifyInconclusive: true,
+            paystackStatus: "unknown",
+            message:
+              "Payment provider returned a temporary error. Verification is still pending — your payment may still complete.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      let verifyData: { status?: boolean; data?: { status?: string; metadata?: { org_id?: string; credits?: number } } };
+      try {
+        verifyData = await verifyRes.json();
+      } catch (parseErr) {
+        console.warn(`[Verify] Paystack returned invalid JSON for ${reference}:`, parseErr);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            verifyInconclusive: true,
+            paystackStatus: "unknown",
+            message:
+              "Payment provider returned an unreadable response. Verification is still pending — your payment may still complete.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const providerStatus = verifyData?.data?.status;
+      const DEFINITIVE_FAILURES = new Set(["failed", "abandoned", "reversed"]);
+
+      if (providerStatus !== "success") {
+        if (providerStatus && DEFINITIVE_FAILURES.has(providerStatus)) {
+          // Provider definitively told us the charge did not succeed.
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Transaction not successful",
+              paystackStatus: providerStatus,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        // Anything else — `pending`, `ongoing`, `processing`, `queued`,
+        // unknown status, or `verifyData.status` falsy — is non-definitive.
+        return new Response(
+          JSON.stringify({
+            success: false,
+            verifyInconclusive: true,
+            paystackStatus: providerStatus ?? "unknown",
+            message:
+              "Payment verification is still pending with the provider. Credits will appear once settlement confirms.",
+          }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
