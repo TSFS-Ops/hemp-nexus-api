@@ -18125,6 +18125,61 @@ export type Database = {
           },
         ]
       }
+      v_api_usage_unified: {
+        Row: {
+          api_client_id: string | null
+          api_client_name: string | null
+          api_key_alias: string | null
+          api_key_id: string | null
+          chargeable: boolean | null
+          closing_balance: number | null
+          created_at: string | null
+          credits_burned: number | null
+          endpoint: string | null
+          environment: string | null
+          error_code: string | null
+          external_reference: string | null
+          id: string | null
+          method: string | null
+          non_billable_reason: string | null
+          opening_balance: number | null
+          org_id: string | null
+          request_id: string | null
+          response_time_ms: number | null
+          status: string | null
+          status_code: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_request_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_request_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_request_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_clip_on_reconciliation: {
         Row: {
           charged_audits: number | null
@@ -19332,6 +19387,44 @@ export type Database = {
         Args: { event_data: Json; event_type: string; previous_hash: string }
         Returns: string
       }
+      get_api_admin_usage_rows: {
+        Args: {
+          p_api_client_id: string
+          p_api_key_alias?: string
+          p_chargeable?: string
+          p_endpoint?: string
+          p_environment?: string
+          p_error_code?: string
+          p_limit?: number
+          p_offset?: number
+          p_period_end: string
+          p_period_start: string
+          p_status?: string
+        }
+        Returns: {
+          api_client_id: string
+          api_client_name: string
+          api_key_alias: string
+          api_key_id: string
+          chargeable: boolean
+          closing_balance: number
+          created_at: string
+          credits_burned: number
+          endpoint: string
+          environment: string
+          error_code: string
+          external_reference: string
+          id: string
+          method: string
+          non_billable_reason: string
+          opening_balance: number
+          org_id: string
+          request_id: string
+          response_time_ms: number
+          status: string
+          status_code: number
+        }[]
+      }
       get_api_client_usage_csv_rows: {
         Args: {
           p_api_client_id: string
@@ -19354,6 +19447,43 @@ export type Database = {
           request_id: string
           request_timestamp: string
           response_time_ms: number
+          status_code: number
+        }[]
+      }
+      get_api_client_usage_rows: {
+        Args: {
+          p_api_client_id: string
+          p_api_key_alias?: string
+          p_chargeable?: string
+          p_endpoint?: string
+          p_environment?: string
+          p_error_code?: string
+          p_limit?: number
+          p_offset?: number
+          p_period_end: string
+          p_period_start: string
+          p_status?: string
+        }
+        Returns: {
+          api_client_id: string
+          api_client_name: string
+          api_key_alias: string
+          api_key_id: string
+          chargeable: boolean
+          closing_balance: number
+          created_at: string
+          credits_burned: number
+          endpoint: string
+          environment: string
+          error_code: string
+          external_reference: string
+          id: string
+          method: string
+          non_billable_reason: string
+          opening_balance: number
+          request_id: string
+          response_time_ms: number
+          status: string
           status_code: number
         }[]
       }
