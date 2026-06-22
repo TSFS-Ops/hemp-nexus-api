@@ -1,6 +1,7 @@
 /**
- * Batch 24 — Registry Operating Rules SSOT (browser).
+ * Batch 24 — Registry Operating Rules SSOT (Deno mirror).
  *
+
  * Source of truth for the client's completed Business Registry Operating
  * Rules Questionnaire (received 21 June 2026). This module is mirrored
  * verbatim at `supabase/functions/_shared/registry-operating-rules.ts`
