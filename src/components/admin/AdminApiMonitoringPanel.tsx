@@ -512,6 +512,7 @@ export function AdminApiMonitoringPanel() {
               <th className="p-2">Last ok</th>
               <th className="p-2">Last fail</th>
               <th className="p-2">Tickets</th>
+              <th className="p-2">Drill</th>
             </tr>
           </thead>
           <tbody>
