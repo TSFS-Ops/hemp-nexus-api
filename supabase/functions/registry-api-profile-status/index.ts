@@ -12,6 +12,13 @@ import {
   type RegistryApiHardenedResultState,
   type RegistryApiMode,
 } from "../_shared/registry-api-hardening.ts";
+import { burnArtefactForApiCall, buildInsufficientCreditsBody } from "../_shared/api-artefact-burn.ts";
+import { getArtefactPrice } from "../_shared/registry-api-artefact-pricing.ts";
+
+// P-4 Point 4 — chargeable artefact for a usable profile-status response.
+// Basic Counterparty = USD $10 = 1 credit (no fractional risk).
+const PROFILE_STATUS_ARTEFACT_CODE = "basic_counterparty";
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
