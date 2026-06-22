@@ -169,6 +169,93 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ============================================================
+    // P-4 Point 4 — Token / Credit Burn for chargeable artefacts.
+    // Only burn when the call ACTUALLY returns a governed artefact:
+    //   - result_state === "usable" (Verified Counterparty status artefact)
+    //   - environment is production (sandbox/demo never burn)
+    //   - the profile-status response will be returned to the client
+    // Insufficient credits => 402, NO artefact returned.
+    // ============================================================
+    const isProduction =
+      requestedMode === "production" && (auth.key.key_type ?? "sandbox") === "production";
+    const artefactWasProduced = resultState === "usable";
+
+    let billingMetadata: ReturnType<typeof buildBilling> | null = null;
+    let burnRow: { artefact_code: string | null; credits_burned: number | null; remaining_balance: number | null } = {
+      artefact_code: null, credits_burned: null, remaining_balance: null,
+    };
+
+    if (artefactWasProduced && isProduction && (auth.client as { organization_id?: string }).organization_id) {
+      const burn = await burnArtefactForApiCall(svc, {
+        org_id: (auth.client as { organization_id: string }).organization_id,
+        api_client_id: auth.client.id as string,
+        api_key_id: auth.key.id as string,
+        endpoint: "profile-status",
+        request_id: requestId,
+        environment: "production",
+        artefact_code: PROFILE_STATUS_ARTEFACT_CODE,
+        artefact_was_produced: true,
+      });
+
+      if (burn.status === "blocked_insufficient_credits") {
+        await logBlocked(svc, {
+          request_id: requestId, client_id: auth.client.id, key_id: auth.key.id,
+          endpoint: "profile-status", scope: body.scope, mode: requestedMode,
+          country: body.country ?? null,
+          block_reason: "insufficient_credits", block_category: "billing",
+          status_code: 402, ip_hash: ipHash, user_agent: userAgent, audit_reference: requestId,
+        });
+        await emitAudit(svc, "api.token_burn.insufficient_credits", auth.client.id, {
+          request_id: requestId, endpoint: "profile-status",
+          artefact_code: PROFILE_STATUS_ARTEFACT_CODE,
+          required_credits: burn.required_credits, available_credits: burn.available_credits,
+        });
+        return json(req, 402, buildInsufficientCreditsBody(burn, requestId));
+      }
+
+      if (burn.status === "fail_closed") {
+        // Pricing config error; do not return the priced artefact.
+        await emitAudit(svc, "api.token_burn.missing_price_fail_closed", auth.client.id, {
+          request_id: requestId, endpoint: "profile-status",
+          artefact_code: PROFILE_STATUS_ARTEFACT_CODE, plan: burn.plan,
+        });
+        return json(req, burn.http_status || 500, {
+          ok: false, request_id: requestId,
+          error: { code: burn.error_code, message: burn.error_message },
+        });
+      }
+
+      if (burn.status === "burned" || burn.status === "idempotent_replay") {
+        await emitAudit(svc, burn.audit_event, auth.client.id, {
+          request_id: requestId, endpoint: "profile-status",
+          artefact_code: PROFILE_STATUS_ARTEFACT_CODE,
+          credits_burned: burn.credits_burned, remaining_balance: burn.remaining_balance,
+        });
+        billingMetadata = buildBilling({
+          charged: true, artefact_code: PROFILE_STATUS_ARTEFACT_CODE,
+          credits_burned: burn.credits_burned ?? 0,
+          remaining_balance: burn.remaining_balance ?? null,
+          request_id: requestId, event_reference: burn.audit_event,
+        });
+        burnRow = {
+          artefact_code: PROFILE_STATUS_ARTEFACT_CODE,
+          credits_burned: burn.credits_burned ?? 0,
+          remaining_balance: burn.remaining_balance ?? null,
+        };
+      }
+    } else {
+      // Skipped — non-production OR no artefact produced.
+      const skipReason = !artefactWasProduced
+        ? "no_result_no_artefact"
+        : !isProduction
+          ? "sandbox_or_demo"
+          : "non_chargeable";
+      billingMetadata = buildBilling({
+        charged: false, reason: skipReason, request_id: requestId,
+      });
+    }
+
     const envelope = buildResponseEnvelope({
       request_id: requestId, client_id: auth.client.id, mode: requestedMode, scope: body.scope,
       endpoint: "profile-status", result_state: resultState,
@@ -176,6 +263,7 @@ Deno.serve(async (req) => {
       company_reference: body.company_reference,
       source_summary: null,
       readiness_summary: company?.readiness_state ?? null,
+      billing: billingMetadata,
     });
 
     await logUsage(svc, {
@@ -184,6 +272,9 @@ Deno.serve(async (req) => {
       country: body.country ?? null, identifier_type: "company_reference",
       result_state: resultState, usable: envelope.usable, status_code: 200,
       ip_hash: ipHash, user_agent: userAgent, audit_reference: requestId,
+      artefact_code: burnRow.artefact_code,
+      credits_burned: burnRow.credits_burned,
+      remaining_balance: burnRow.remaining_balance,
     });
     await emitAudit(svc, "registry_api_request_allowed", auth.client.id, { request_id: requestId, result_state: resultState });
     await emitAudit(svc, "registry_api_profile_status_checked", auth.client.id, { request_id: requestId, result_state: resultState });
@@ -194,3 +285,26 @@ Deno.serve(async (req) => {
     return json(req, 500, { ok: false, request_id: requestId, error: "internal_error" });
   }
 });
+
+/** Derive artefact_label from pricing SSOT and return a typed billing block. */
+function buildBilling(input: {
+  charged: boolean;
+  reason?: string;
+  artefact_code?: string | null;
+  credits_burned?: number;
+  remaining_balance?: number | null;
+  request_id: string;
+  event_reference?: string | null;
+}) {
+  const price = input.artefact_code ? getArtefactPrice(input.artefact_code) : undefined;
+  return {
+    charged: input.charged,
+    reason: input.reason,
+    artefact_code: input.artefact_code ?? null,
+    artefact_label: price?.label ?? null,
+    credits_burned: input.credits_burned ?? 0,
+    remaining_balance: input.remaining_balance ?? null,
+    request_id: input.request_id,
+    event_reference: input.event_reference ?? null,
+  };
+}
