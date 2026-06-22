@@ -1,5 +1,7 @@
 /**
  * Batch 8 — Public-safe company profile (working).
+ * Batch 22 — Prominent profile-level "Is this your company?" claim panel
+ * and shell-aware links so the Trade Desk sidebar persists.
  *
  * Hydrates the public profile via registry-company-profile edge
  * function. Raw bank details, personal emails, phone numbers and
@@ -11,6 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useRegistryBase } from "@/lib/use-registry-base";
+
 
 interface ProfileResponse {
   found: boolean;
