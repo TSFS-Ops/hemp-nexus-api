@@ -295,7 +295,16 @@ export function ClientUsageDashboard() {
         <div className="flex items-start gap-2">
           <Info className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" strokeWidth={1.75} />
           <p className="text-[12.5px] text-amber-200 leading-relaxed" data-testid="usage-disclaimer">
-            Usage and charges shown here are estimates for visibility only. This is not an invoice and does not collect payment.
+            Usage and charges shown here are estimates for visibility only. This is not an invoice and does not collect payment.{" "}
+            <a
+              href="/docs/api-pricing"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 text-amber-100 hover:text-white"
+              data-testid="endpoint-pricing-link"
+            >
+              View endpoint pricing reference →
+            </a>
           </p>
         </div>
       </div>
