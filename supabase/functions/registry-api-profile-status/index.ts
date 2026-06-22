@@ -45,7 +45,7 @@ async function authenticate(svc: ReturnType<typeof createClient>, req: Request) 
     .eq("key_prefix", prefix).eq("status", "active").maybeSingle();
   if (!key || key.key_hash !== expectedHash) return null;
   const { data: client } = await svc.from("registry_api_clients")
-    .select("id, lifecycle_status, mode, allowed_countries, allowed_use_cases, scopes")
+    .select("id, organization_id, lifecycle_status, mode, allowed_countries, allowed_use_cases, scopes")
     .eq("id", key.client_id).maybeSingle();
   if (!client) return null;
   const { data: scopeRows } = await svc.from("registry_api_client_scopes")
