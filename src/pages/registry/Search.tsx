@@ -202,7 +202,7 @@ export default function RegistrySearch() {
                 <p className="text-sm text-muted-foreground">No matching companies were found.</p>
                 <p className="text-sm">Can't find the company?</p>
                 <Button asChild>
-                  <Link to="/registry/new-company-request" data-testid="new-company-request-cta">
+                  <Link to={`${base}/new-company-request`} data-testid="new-company-request-cta">
                     Submit a new-company request
                   </Link>
                 </Button>
