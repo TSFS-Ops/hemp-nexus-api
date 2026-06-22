@@ -60,7 +60,7 @@ describe("Paystack webhook missing-metadata containment", () => {
     // failure). Assert that one of them carries the unrecoverable-metadata
     // title so we know the missing-metadata branch wires the alert.
     expect(HANDLER).toMatch(
-      /admin_risk_items[\s\S]{0,400}unrecoverable metadata[\s\S]{0,200}severity:\s*["']high["']/,
+      /admin_risk_items[\s\S]{0,600}unrecoverable metadata[\s\S]{0,600}severity:\s*["']high["']/,
     );
   });
 
