@@ -53,7 +53,7 @@ describe("Point 6 · no-credit enforcement guard", () => {
   });
 
   it("buildInsufficientCreditsBody exposes only safe fields (no balances raw, no internal stack)", () => {
-    const body = burn.match(/buildInsufficientCreditsBody[\s\S]*?\}\s*\)/);
+    const body = burn.match(/buildInsufficientCreditsBody[\s\S]*?\};\s*\}/);
     expect(body).toBeTruthy();
     const b = body![0];
     expect(b).toMatch(/code:/);
