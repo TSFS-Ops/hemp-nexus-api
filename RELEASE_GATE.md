@@ -1377,3 +1377,26 @@ UAT/demo-ready, not production-ready.
 
 ### Edge functions requiring deploy (Batch 22)
 - (none — Batch 22 is a frontend shell and wording batch only)
+
+## Batch 24 — Operating Rules SSOT, readiness, business decisions and wording gates
+
+- Client decision source:
+  `docs/registry/Izenzo_Business_Registry_Operating_Rules_Client_Questionnaire_Completed.docx`
+  (received 21 June 2026).
+- Browser SSOT: `src/lib/registry-operating-rules.ts`.
+- Deno mirror: `supabase/functions/_shared/registry-operating-rules.ts`.
+- Parity guard: `scripts/check-registry-operating-rules-parity.mjs`,
+  wired into `npm run prebuild` and exposed as `npm run check:batch-24`.
+- Tests: `src/tests/batch-24-operating-rules.test.ts` (38 source pins,
+  all passing) — covers readiness state list, public-search gate,
+  demo gate, API gate, field-group non-inheritance, approval count
+  + role mix, business-decision expiry/retirement/immediate-review,
+  protected vocabulary, always-blocked vocabulary, client-approved
+  label strings, and the build-vs-data dashboard sections.
+- Release status: registry remains UAT/demo-ready — Batch 24 only
+  encodes the operating gates; it does not change record readiness or
+  approve any production action.
+
+### Edge functions requiring deploy (Batch 24)
+- (none — Batch 24 is a SSOT/guards/tests batch; no edge surface changed)
+
