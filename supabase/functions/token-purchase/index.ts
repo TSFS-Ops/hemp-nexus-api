@@ -1125,6 +1125,10 @@ async function handleChargeSuccess(
     );
   }
 
+  // Re-bind `metadata` so the existing downstream crediting/promotion/audit
+  // code reads from the (possibly recovered) blob without any further edits.
+  metadata = meta as typeof metadata;
+
   const orgId = meta.org_id as string;
   const credits = meta.credits as number;
   const userId = meta.user_id as string | undefined;
