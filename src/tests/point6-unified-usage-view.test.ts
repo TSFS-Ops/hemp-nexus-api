@@ -8,11 +8,12 @@ import { resolve, join } from "path";
 
 const MIG_DIR = resolve(__dirname, "../../supabase/migrations");
 
-function findMigration(token: string): string {
-  const file = readdirSync(MIG_DIR).find((f) =>
-    readFileSync(join(MIG_DIR, f), "utf8").includes(token),
-  );
-  if (!file) throw new Error(`migration containing "${token}" not found`);
+function findMigration(...tokens: string[]): string {
+  const file = readdirSync(MIG_DIR).find((f) => {
+    const sql = readFileSync(join(MIG_DIR, f), "utf8");
+    return tokens.every((t) => sql.includes(t));
+  });
+  if (!file) throw new Error(`migration containing [${tokens.join(", ")}] not found`);
   return readFileSync(join(MIG_DIR, file), "utf8");
 }
 
