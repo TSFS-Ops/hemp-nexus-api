@@ -82,6 +82,11 @@ describe("P-4 Point 4 — profile-status wiring", () => {
     expect(ENDPOINT_SRC).toMatch(/remaining_balance:\s*burnRow\.remaining_balance/);
   });
 
+  it("does not chain .catch directly from PostgREST insert builders", () => {
+    expect(ENDPOINT_SRC).not.toMatch(/\.insert\([^\n]*\)\.catch\(/);
+    expect(ENDPOINT_SRC).toContain("bestEffortInsert");
+  });
+
   it("uses request_id for idempotency (prevents double-burn on retry)", () => {
     expect(ENDPOINT_SRC).toMatch(/request_id:\s*requestId/);
   });

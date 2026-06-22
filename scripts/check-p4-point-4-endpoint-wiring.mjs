@@ -47,6 +47,10 @@ for (const path of CHARGEABLE_NOW) {
     console.error(`✗ chargeable_now endpoint missing billing metadata in response: ${path}`);
     failed++;
   }
+  if (/\.insert\([^\n]*\)\.catch\(/.test(body)) {
+    console.error(`✗ chargeable_now endpoint has invalid PostgREST .insert(...).catch chain: ${path}`);
+    failed++;
+  }
 }
 
 // Sanity-check: the deferred set must NOT silently start charging without
