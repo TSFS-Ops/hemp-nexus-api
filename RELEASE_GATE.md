@@ -1514,3 +1514,53 @@ UAT/demo-ready, not production-ready.
 ### Edge functions requiring deploy (Batch 27)
 - (none — Batch 27 is a SSOT/guards/tests batch; no edge surface changed)
 
+## Batch 28 — Bank Detail Capture, Multi-Account and Verification Operating Rules
+
+- Client decision source:
+  `docs/registry/Izenzo_Business_Registry_Operating_Rules_Client_Questionnaire_Completed.docx`.
+- Browser SSOT: `src/lib/registry-bank-operating-rules.ts`.
+- Deno mirror: `supabase/functions/_shared/registry-bank-operating-rules.ts` (byte-identical).
+- Parity guard: `scripts/check-registry-bank-operating-rules-parity.mjs`.
+- Tests: `src/tests/batch-28-bank-detail-operating-rules.test.ts`.
+- Operating doc: `docs/registry/bank-detail-operating-rules.md`.
+- Evidence: `evidence/batch-28-bank-detail-operating-rules/README.md`.
+- Encodes: bank submission requires authority_active with
+  `submit_bank_details` / `bank_submit` scope; claim approval alone
+  never unlocks bank submission; `expired` / `disputed` / `revoked` /
+  `suspended_disputed` / `compliance_review` authority blocks
+  submission; conditional authority limited to draft only;
+  platform_admin admin-assisted requires evidence + reason; country
+  field requirements pinned for ZA, NG (BVN forbidden unless
+  separately approved) and other countries; V1 max 3 active accounts
+  with `platform_admin` + `compliance_owner` dual approval for the
+  fourth; primary-account uniqueness per currency/payment route;
+  purpose labels closed list (operating / escrow / export / project /
+  subscription / settlement); third-party accounts default to
+  `third_party_account_pending_review`, require five-item evidence
+  set + compliance_owner approval, raw API output blocked by default;
+  base bank evidence pinned; evidence review gates `manually_checked`,
+  `provider_verified`, `bank_confirmed`, `institution_confirmed`,
+  `manual_bank_check_complete`; masked view roles and unmasked view
+  roles pinned; unmasked access requires AAL2 + reason + audit;
+  `BANK_COMPANY_CONFIRMED_IS_VERIFIED=false`; manual check is not a
+  provider check; manual verification requires compliance_owner and
+  platform_admin decision and emits `manual_bank_check_complete` with
+  demo wording "Manual evidence reviewed - no live provider check
+  performed."; manual validity 90 days; provider/bank/institution
+  validity 180 days; immediate expiry triggers pinned;
+  payment-status API usable only for approved verification states
+  with required evidence, manual-compliance approval where
+  applicable, active authority/consent and a permitting business
+  decision; raw bank fields never returned by API by default;
+  canonical UI wording for pending/disputed/revoked/expired/failed
+  states; 25 canonical audit-event names.
+- Release status: registry remains UAT/demo-ready — Batch 28 is a
+  SSOT/guards/tests/docs batch with no regression of accepted
+  Batch 22/23 (shell + typeahead) behaviour and no weakening of the
+  Batch 13/13B/14/14B/15/16/17 bank guarantees or Batch 27 authority
+  gates.
+
+### Edge functions requiring deploy (Batch 28)
+- (none — Batch 28 is a SSOT/guards/tests batch; no edge surface changed)
+
+
