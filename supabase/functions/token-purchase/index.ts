@@ -1097,11 +1097,34 @@ async function handleChargeSuccess(
     console.warn("[Webhook] charge.success missing org_id/credits — attempting recovery", reference);
 
     // Recovery A — token_purchases row written at init from an authenticated session.
-    const { data: tpRow } = await supabase
-      .from("token_purchases")
-      .select("org_id, user_id, package_id, token_amount, amount_usd, currency")
-      .eq("paystack_reference", reference)
-      .maybeSingle();
+    // Lookup is provider-agnostic: tries the Paystack-shaped column first
+    // (current behaviour) and falls back to a generic `metadata->>provider_reference`
+    // shape so a future PayFast init can write the same key and inherit
+    // this recovery path without a parallel branch.
+    let tpRow: {
+      org_id?: string;
+      user_id?: string;
+      package_id?: string;
+      token_amount?: number;
+      amount_usd?: number;
+      currency?: string;
+    } | null = null;
+    {
+      const { data: tpByPaystack } = await supabase
+        .from("token_purchases")
+        .select("org_id, user_id, package_id, token_amount, amount_usd, currency")
+        .eq("paystack_reference", reference)
+        .maybeSingle();
+      tpRow = tpByPaystack ?? null;
+      if (!tpRow) {
+        const { data: tpByProvider } = await supabase
+          .from("token_purchases")
+          .select("org_id, user_id, package_id, token_amount, amount_usd, currency")
+          .eq("metadata->>provider_reference", reference)
+          .maybeSingle();
+        tpRow = tpByProvider ?? null;
+      }
+    }
 
     if (tpRow?.org_id && tpRow?.token_amount) {
       if (!meta.org_id) meta.org_id = tpRow.org_id;
@@ -1114,12 +1137,14 @@ async function handleChargeSuccess(
     }
 
     // Recovery B — credits.purchase_initiated audit row, if still incomplete.
+    // OR-clause includes the legacy payment_reference/reference keys AND the
+    // provider-agnostic provider_reference key for PayFast-readiness.
     if (!meta.org_id || !meta.credits) {
       const { data: initRowR } = await supabase
         .from("audit_logs")
         .select("org_id, actor_user_id, metadata")
         .eq("action", "credits.purchase_initiated")
-        .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference}`)
+        .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference},metadata->>provider_reference.eq.${reference}`)
         .maybeSingle();
 
       if (initRowR?.metadata) {
@@ -1152,13 +1177,32 @@ async function handleChargeSuccess(
           paid_at: paid_at ?? null,
         },
       });
-      await supabase.from("admin_risk_items").insert({
-        title: `Paystack charge.success with unrecoverable metadata: ${reference}`,
-        description:
-          `charge.success arrived with missing org_id/credits and no token_purchases/purchase_initiated row matched paystack_reference=${reference}. Manual reconciliation required before any credit is issued.`,
-        severity: "high",
-        status: "open",
-      });
+      // Dedup: do not open a duplicate unrecoverable-metadata risk item
+      // for the same provider reference. Keyed on the canonical
+      // `payment_metadata_unrecoverable:<reference>` namespace so a future
+      // PayFast init can resolve it through the same surface.
+      const unrecoverableDedup = `payment_metadata_unrecoverable:${reference}`;
+      const { data: existingUnrecoverable } = await supabase
+        .from("admin_risk_items")
+        .select("id")
+        .eq("dedup_key", unrecoverableDedup)
+        .maybeSingle();
+      if (!existingUnrecoverable) {
+        await supabase.from("admin_risk_items").insert({
+          kind: "payment_metadata_unrecoverable",
+          dedup_key: unrecoverableDedup,
+          title: `Paystack charge.success with unrecoverable metadata: ${reference}`,
+          description:
+            `charge.success arrived with missing org_id/credits and no token_purchases/purchase_initiated row matched paystack_reference=${reference}. Manual reconciliation required before any credit is issued.`,
+          severity: "high",
+          status: "open",
+          metadata: {
+            provider_reference: reference,
+            paystack_amount: data.amount,
+            paystack_currency: data.currency ?? null,
+          },
+        });
+      }
       // Return normally — Paystack must not retry-storm. The risk item is the queue.
       return;
     }
@@ -1176,6 +1220,60 @@ async function handleChargeSuccess(
   const credits = meta.credits as number;
   const userId = meta.user_id as string | undefined;
 
+  // ── Edge-level metadata validation (defence in depth) ──
+  // `atomic_paid_credit_purchase` has its own server-side validation and
+  // remains the final safety net. These checks fail-fast before the RPC
+  // so a malformed recovered/received payload never reaches the ledger
+  // and never triggers a misleading SQL error. On failure we write a
+  // visible credits.purchase_rejected audit + a deduped high-severity
+  // risk item and return safely (no retry-storm, no balance mutation).
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const creditsNum = Number(credits);
+  const validationFailures: string[] = [];
+  if (typeof orgId !== "string" || !UUID_RE.test(orgId)) {
+    validationFailures.push(`org_id_not_uuid:${String(orgId)}`);
+  }
+  if (!Number.isFinite(creditsNum) || !Number.isInteger(creditsNum) || creditsNum <= 0) {
+    validationFailures.push(`credits_not_positive_integer:${String(credits)}`);
+  }
+  if (typeof reference !== "string" || reference.trim() === "") {
+    validationFailures.push("reference_empty");
+  }
+  if (validationFailures.length > 0) {
+    console.error(`[Webhook] Rejecting charge.success ${reference}: metadata validation failed: ${validationFailures.join("; ")}`);
+    await supabase.from("audit_logs").insert({
+      org_id: UUID_RE.test(String(orgId)) ? orgId : null,
+      action: "credits.purchase_rejected",
+      entity_type: "token_balance",
+      metadata: {
+        payment_reference: reference,
+        reason: "metadata_validation_failed",
+        validation_failures: validationFailures,
+      },
+    });
+    const dedup = `payment_metadata_unrecoverable:${reference}`;
+    const { data: existingDup } = await supabase
+      .from("admin_risk_items")
+      .select("id")
+      .eq("dedup_key", dedup)
+      .maybeSingle();
+    if (!existingDup) {
+      await supabase.from("admin_risk_items").insert({
+        kind: "payment_metadata_unrecoverable",
+        dedup_key: dedup,
+        title: `Paystack charge.success metadata validation failed: ${reference}`,
+        description: `Edge-level validation rejected metadata before atomic_paid_credit_purchase: ${validationFailures.join("; ")}`,
+        severity: "high",
+        status: "open",
+        metadata: {
+          provider_reference: reference,
+          validation_failures: validationFailures,
+        },
+      });
+    }
+    return;
+  }
+
   console.log(`[Webhook] Processing charge.success: org=${orgId}, credits=${credits}, ref=${reference}`);
 
   // ── D-01: validate amount/currency/package against the initiation row ──
@@ -1189,7 +1287,7 @@ async function handleChargeSuccess(
     .from("audit_logs")
     .select("metadata")
     .eq("action", "credits.purchase_initiated")
-    .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference}`)
+    .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference},metadata->>provider_reference.eq.${reference}`)
     .maybeSingle();
 
   if (initRow?.metadata) {
