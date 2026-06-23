@@ -474,6 +474,95 @@ Deno.serve(async (req) => {
     console.error("revenue_notification_email_dlq check failed:", err);
   }
 
+  // ── 13. cron_heartbeat_failed (24-hour window) ───────────────────
+  // Surfaces any tracked cron job whose most recent heartbeat is in a
+  // failed posture: last_status='failed', last_http_status>=400, or a
+  // non-null last_error stamped within the last 24 hours. Read-only;
+  // does not re-invoke, re-schedule, or mutate cron/runtime state.
+  try {
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: failedRows, error: hbErr } = await supabase
+      .from("cron_heartbeats")
+      .select("job_name, last_status, last_http_status, last_error, last_run_at")
+      .gte("last_run_at", twentyFourHoursAgo)
+      .or("last_status.eq.failed,last_http_status.gte.400,last_error.not.is.null");
+
+    if (hbErr) throw hbErr;
+
+    const rows = (failedRows ?? []) as Array<{
+      job_name: string;
+      last_status: string | null;
+      last_http_status: number | null;
+      last_error: string | null;
+      last_run_at: string | null;
+    }>;
+
+    if (rows.length > 0) {
+      const summary = rows
+        .map((r) => `${r.job_name} [${r.last_status ?? "?"} ${r.last_http_status ?? "-"}]`)
+        .join("; ");
+      alerts.push({
+        metric: "cron_heartbeat_failed (24 hr)",
+        threshold: "0 failed cron heartbeats",
+        actual: `${rows.length} failed: ${summary}`,
+        severity: rows.length >= 3 ? "critical" : "warning",
+        details:
+          "cron_heartbeats rows recorded last_status='failed', last_http_status>=400, or non-null last_error within the last 24 hours. Inspect cron_heartbeats and cron.job_run_details for the named jobs; this alert does not invoke, retry, or mutate cron/runtime state.",
+      });
+    }
+  } catch (err) {
+    console.error("cron_heartbeat_failed check failed:", err);
+  }
+
+  // ── 14. cron_heartbeat_stale (conservative threshold) ────────────
+  // Surfaces tracked cron jobs whose last_run_at is older than
+  // 3× expected_interval_seconds (with a 600s floor) — i.e. the job has
+  // an interval contract but has not ticked. Jobs without a heartbeat row
+  // are intentionally skipped (no row → not yet tracked, no claim made).
+  // Jobs without expected_interval_seconds are also skipped. Read-only.
+  try {
+    const { data: hbRows, error: staleErr } = await supabase
+      .from("cron_heartbeats")
+      .select("job_name, last_run_at, expected_interval_seconds")
+      .not("expected_interval_seconds", "is", null)
+      .not("last_run_at", "is", null);
+
+    if (staleErr) throw staleErr;
+
+    const stale: Array<{ job_name: string; age_secs: number; expected: number }> = [];
+    for (const r of (hbRows ?? []) as Array<{
+      job_name: string;
+      last_run_at: string;
+      expected_interval_seconds: number;
+    }>) {
+      const expected = r.expected_interval_seconds ?? 0;
+      if (expected <= 0) continue;
+      const threshold = Math.max(expected * 3, 600);
+      const ageSecs = Math.floor((now.getTime() - new Date(r.last_run_at).getTime()) / 1000);
+      if (ageSecs > threshold) {
+        stale.push({ job_name: r.job_name, age_secs: ageSecs, expected });
+      }
+    }
+
+    if (stale.length > 0) {
+      const summary = stale
+        .map((s) => `${s.job_name} (${s.age_secs}s vs expected ${s.expected}s)`)
+        .join("; ");
+      alerts.push({
+        metric: "cron_heartbeat_stale (3× expected interval)",
+        threshold: "last_run_at within 3× expected_interval_seconds",
+        actual: `${stale.length} stale: ${summary}`,
+        severity: stale.length >= 3 ? "critical" : "warning",
+        details:
+          "One or more tracked cron jobs have not ticked within 3× their declared expected_interval_seconds. Jobs with no heartbeat row are intentionally not flagged. Read-only — does not enable, disable, or invoke any cron job.",
+      });
+    }
+  } catch (err) {
+    console.error("cron_heartbeat_stale check failed:", err);
+  }
+
+
+
   // ── Dispatch alerts ──────────────────────────────────────────────
   if (alerts.length === 0) {
     return new Response(
