@@ -43,26 +43,33 @@ const SCAN_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".sql", ".mts", ".cts"]
 
 // Files that are allowed to contain a mutation pattern for token_ledger.
 // Normalised to forward-slash paths relative to repo root.
+const COMMON_ALLOWLIST: ReadonlyArray<string | RegExp> = [
+  "src/tests/event-ledger-append-only-convention-guard.test.ts",
+  "supabase/tests/event_ledger_append_only_convention_proof.sql",
+  "evidence/event-ledger-append-only-convention/README.md",
+];
+
 const TOKEN_LEDGER_ALLOWLIST: ReadonlyArray<string | RegExp> = [
+  ...COMMON_ALLOWLIST,
+  // RPCs: atomic_paid_credit_purchase + repair_skeletal_paid_credit
+  // (promote legacy skeletal 'credit' rows → 'credit_purchase').
   /^supabase\/migrations\/20260623124308_.*\.sql$/,
+  // Historical, already-executed migrations.
   /^supabase\/migrations\/20260418155054_.*\.sql$/,
   /^supabase\/migrations\/20260503202233_.*\.sql$/,
-  "src/tests/event-ledger-append-only-convention-guard.test.ts",
-  "supabase/tests/event_ledger_append_only_convention_proof.sql",
-  "evidence/event-ledger-append-only-convention/README.md",
+  // Edge-function: credit_refund promotion mirror of the credit_purchase
+  // pattern — promotes the auto-written 'credit' row produced by
+  // atomic_token_credit to the canonical 'credit_refund' settlement row.
+  // Guarded by UNIQUE(request_id) so exactly one settlement row exists
+  // per refund reference. See token-purchase/index.ts ~L1946.
+  "supabase/functions/token-purchase/index.ts",
+  // Test file describing the credit_purchase UPDATE invariant.
+  "supabase/functions/_shared/payment-atomicity_test.ts",
 ];
 
-const MATCH_EVENTS_ALLOWLIST: ReadonlyArray<string | RegExp> = [
-  "src/tests/event-ledger-append-only-convention-guard.test.ts",
-  "supabase/tests/event_ledger_append_only_convention_proof.sql",
-  "evidence/event-ledger-append-only-convention/README.md",
-];
+const MATCH_EVENTS_ALLOWLIST: ReadonlyArray<string | RegExp> = [...COMMON_ALLOWLIST];
 
-const POI_EVENTS_ALLOWLIST: ReadonlyArray<string | RegExp> = [
-  "src/tests/event-ledger-append-only-convention-guard.test.ts",
-  "supabase/tests/event_ledger_append_only_convention_proof.sql",
-  "evidence/event-ledger-append-only-convention/README.md",
-];
+const POI_EVENTS_ALLOWLIST: ReadonlyArray<string | RegExp> = [...COMMON_ALLOWLIST];
 
 function buildPatterns(table: string): RegExp[] {
   return [
