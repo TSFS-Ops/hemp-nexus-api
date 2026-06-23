@@ -792,6 +792,18 @@ async function _serve(req: Request): Promise<Response> {
 
     if (!paystackData.status) {
       console.error("Paystack error:", paystackData);
+      // Release the idempotency reservation on provider rejection so the
+      // caller can retry without hitting IDEMPOTENCY_REQUEST_IN_PROGRESS
+      // for 24h. Mirrors the timeout/network/invalid-JSON release branches.
+      // Scoped by org_id + idempotency_key + endpoint; only the 202
+      // processing row exists at this point (no completed row written yet),
+      // so this cannot clobber a finalised idempotency record.
+      await supabase
+        .from("idempotency_keys")
+        .delete()
+        .eq("org_id", profile.org_id)
+        .eq("idempotency_key", idempotencyKey)
+        .eq("endpoint", idempotencyEndpoint);
       return new Response(
         JSON.stringify({
           error: "Payment initialisation failed",
