@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
 import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
 import { generateIdempotencyKey } from "@/lib/api-client";
+import { SAFE_LEDGER_COPY } from "@/lib/policy/audit-ledger-capability";
 import {
   AlertDialog,
   AlertDialogAction,
