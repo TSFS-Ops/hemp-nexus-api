@@ -416,6 +416,64 @@ Deno.serve(async (req) => {
     console.error("In-app auto-resolve failure check failed:", err);
   }
 
+  // ── 11. revenue_notification_failed (1-hour window) ──────────────
+  // Narrow named alert tracking any revenue_notification_audit row with
+  // status='failed' regardless of event_type or recipient. Complements
+  // check 5 (per-event-type rate) by guaranteeing a single, easy-to-page
+  // signal whenever revenue notifications fail at all. Read-only; does
+  // not retry, send, or mutate payment/credit/ledger state.
+  try {
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: revFailed } = await supabase
+      .from("revenue_notification_audit")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "failed")
+      .gte("created_at", oneHourAgo);
+
+    const rnFails = revFailed ?? 0;
+    if (rnFails > 0) {
+      alerts.push({
+        metric: "revenue_notification_failed (1 hr)",
+        threshold: "0 failed revenue notifications",
+        actual: `${rnFails} failed`,
+        severity: rnFails >= 5 ? "critical" : "warning",
+        details:
+          "revenue_notification_audit rows with status='failed' in the last hour. Revenue events occurred but the support-desk notification did not deliver. Inspect error_message; payment/credit state is unaffected.",
+      });
+    }
+  } catch (err) {
+    console.error("revenue_notification_failed check failed:", err);
+  }
+
+  // ── 12. revenue_notification_email_dlq (1-hour window) ───────────
+  // email_send_log rows for template_name='revenue-event-notify' that
+  // ended in status 'failed' or 'dlq'. Surfaces queue/provider failures
+  // for the revenue-notify path even when revenue_notification_audit
+  // recorded a queued/sent status. Read-only.
+  try {
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: revDlq } = await supabase
+      .from("email_send_log")
+      .select("*", { count: "exact", head: true })
+      .eq("template_name", "revenue-event-notify")
+      .in("status", ["failed", "dlq"])
+      .gte("created_at", oneHourAgo);
+
+    const rdCount = revDlq ?? 0;
+    if (rdCount > 0) {
+      alerts.push({
+        metric: "revenue_notification_email_dlq (1 hr)",
+        threshold: "0 failed/dlq revenue-event-notify rows",
+        actual: `${rdCount} failed/dlq`,
+        severity: rdCount >= 5 ? "critical" : "warning",
+        details:
+          "email_send_log shows revenue-event-notify sends in failed/dlq state in the last hour. Inspect process-email-queue and provider deliverability; this alert does not retry or mutate ledger state.",
+      });
+    }
+  } catch (err) {
+    console.error("revenue_notification_email_dlq check failed:", err);
+  }
+
   // ── Dispatch alerts ──────────────────────────────────────────────
   if (alerts.length === 0) {
     return new Response(

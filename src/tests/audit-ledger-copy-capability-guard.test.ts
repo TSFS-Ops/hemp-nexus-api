@@ -276,8 +276,16 @@ const EXTENDED_SCAN_DIRS = [
 
 const EDGE_ROOT = join(process.cwd(), "supabase", "functions", "_shared");
 const EDGE_TEMPLATE_DIR = join(EDGE_ROOT, "transactional-email-templates");
+const EDGE_AUTH_EMAIL_TEMPLATE_DIR = join(EDGE_ROOT, "email-templates");
 const EDGE_REVENUE_NOTIFY = join(EDGE_ROOT, "revenue-notify.ts");
 const EDGE_AUDIT_LEDGER_COPY = join(EDGE_ROOT, "audit-ledger-copy.ts");
+const EDGE_INFRA_ALERTS = join(
+  process.cwd(),
+  "supabase",
+  "functions",
+  "infra-alerts",
+  "index.ts",
+);
 
 /**
  * Narrow exact-line allowlist for statements that are TRUTHFULLY backed
@@ -392,5 +400,64 @@ describe("Audit Ledger copy guard — extended internal/admin/export/PDF/email s
     expect(SAFE_LEDGER_COPY.acceptanceReceiptClause).toMatch(/tamper-evident audit trail/i);
     expect(SAFE_LEDGER_COPY.acceptanceReceiptClause).not.toMatch(/immutable/i);
     expect(SAFE_LEDGER_COPY.wadAwaitingSignatureLabel).toBe("AWAITING YOUR HASH-SEALED SIGNATURE");
+  });
+
+  // N6 — explicit auth-email template scan. Even though the broader
+  // _shared/** is implicitly covered elsewhere, list this directory
+  // explicitly so a future refactor cannot silently drop coverage.
+  it("auth (_shared/email-templates) email templates contain no banned trust phrases", () => {
+    if (IMMUTABILITY_BACKEND_ENFORCED) return;
+    if (!existsSync(EDGE_AUTH_EMAIL_TEMPLATE_DIR)) return;
+    const files = walk(EDGE_AUTH_EMAIL_TEMPLATE_DIR);
+    expect(files.length, "expected at least one auth email template").toBeGreaterThan(0);
+    const violations: string[] = [];
+    for (const file of files) {
+      for (const h of scanFileExtended(file)) {
+        violations.push(`${file}:${h.line} → "${h.phrase}" :: ${h.text}`);
+      }
+    }
+    expect(violations, `Banned trust phrases in auth email templates:\n${violations.join("\n")}`).toEqual([]);
+  });
+
+  // N1 — comment-level trust wording in transactional templates can
+  // mislead developers and seed regressions in future AI-generated copy.
+  // Scan WITH comments retained for the narrow word "immutable".
+  it("transactional email template JSDoc/comments do not use outdated trust wording", () => {
+    if (!existsSync(EDGE_TEMPLATE_DIR)) return;
+    const files = walk(EDGE_TEMPLATE_DIR);
+    const violations: string[] = [];
+    for (const file of files) {
+      const raw = readFileSync(file, "utf8");
+      // Extract comment text only (block + line), so this is purely a
+      // comment-scope check and does not double-flag rendered copy.
+      const blockComments = raw.match(/\/\*[\s\S]*?\*\//g) ?? [];
+      const lineComments = raw
+        .split("\n")
+        .map((l) => {
+          const idx = l.indexOf("//");
+          return idx === -1 ? "" : l.slice(idx);
+        })
+        .filter(Boolean);
+      const commentBlob = [...blockComments, ...lineComments].join("\n").toLowerCase();
+      if (commentBlob.includes("immutable")) {
+        violations.push(`${file}: comment uses "immutable"`);
+      }
+    }
+    expect(violations, `Outdated comment trust wording:\n${violations.join("\n")}`).toEqual([]);
+  });
+
+  // N2 — infra-alerts must keep the two narrow revenue-notification
+  // alert names wired so monitoring cannot silently regress.
+  it("infra-alerts exposes revenue_notification_failed and revenue_notification_email_dlq alerts", () => {
+    if (!existsSync(EDGE_INFRA_ALERTS)) return;
+    const src = readFileSync(EDGE_INFRA_ALERTS, "utf8");
+    expect(src).toMatch(/revenue_notification_failed/);
+    expect(src).toMatch(/revenue_notification_email_dlq/);
+    // The dlq check must query email_send_log by the revenue-notify template name.
+    expect(src).toMatch(/template_name["'\s,:]+["']revenue-event-notify["']/);
+    expect(src).toMatch(/\.in\(\s*["']status["']\s*,\s*\[\s*["']failed["']\s*,\s*["']dlq["']\s*\]/);
+    // Read-only posture: no payment/credit/ledger mutation verbs.
+    expect(src).not.toMatch(/token_ledger/);
+    expect(src).not.toMatch(/refund/i);
   });
 });

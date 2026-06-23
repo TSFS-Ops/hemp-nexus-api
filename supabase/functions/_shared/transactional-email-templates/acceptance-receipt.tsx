@@ -2,7 +2,7 @@
  * Acceptance Receipt Email
  * ─────────────────────────
  * Sent to the initiator the moment a counterparty formally accepts a POI
- * engagement. Carries the immutable receipt ID and signature hash so the
+ * engagement. Carries the hash-sealed receipt ID and signature hash so the
  * recipient can self-verify the trade transition without contacting support.
  */
 
