@@ -172,8 +172,22 @@ describe("Batch C — Fix 5: money-integrity invariants pinned in code", () => {
   it("both webhook and verify use the Paystack reference as the request_id", () => {
     // verify path
     expect(TOKEN_PURCHASE).toMatch(/p_reference_id:\s*reference[\s\S]*?credit_purchase/);
-    // webhook path forwards the same Paystack `reference` field.
-    expect(TOKEN_PURCHASE).toMatch(/const \{ reference, metadata, customer, paid_at \} = data;/);
+    // Webhook path forwards the same Paystack `reference` field.
+    //
+    // Structural invariant (tolerant of intermediate destructuring patterns,
+    // e.g. metadata being pulled separately via `let metadata = data.metadata`
+    // so the containment block can rehydrate it from trusted sources):
+    //   1. The webhook handler destructures `reference` out of the Paystack
+    //      `data` payload.
+    //   2. `metadata` is read from the same `data` payload (either in the
+    //      same destructure or via a sibling `data.metadata` read).
+    // We assert the invariant, not the exact source formatting.
+    expect(TOKEN_PURCHASE).toMatch(
+      /const\s*\{\s*reference[^}]*\}\s*=\s*data\s*;/,
+    );
+    expect(TOKEN_PURCHASE).toMatch(
+      /(\{\s*reference[^}]*\bmetadata\b[^}]*\}\s*=\s*data|\bmetadata\s*=\s*data\.metadata)/,
+    );
   });
 
   it("verify rejects references whose org does not match the caller", () => {
