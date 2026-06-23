@@ -33,10 +33,11 @@ DECLARE
   v_repaired_count   integer;
   v_repaired_orphan  integer;
 BEGIN
-  -- Seed an isolated organisation + balance row.
+  -- Seed an isolated organisation. A token_balances row is auto-created
+  -- by a trigger on organizations; ensure it starts at 0.
   INSERT INTO organizations (id, name) VALUES (v_org_id, 'proof-org-' || v_org_id::text);
-  INSERT INTO token_balances (org_id, balance, minimum_required, updated_at)
-  VALUES (v_org_id, 0, 0, now());
+  UPDATE token_balances SET balance = 0 WHERE org_id = v_org_id;
+
 
 
   -- ── 1. First call credits the org and writes a credit_purchase row.
