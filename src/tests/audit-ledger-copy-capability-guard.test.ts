@@ -187,15 +187,67 @@ describe("Audit Ledger copy/capability guard", () => {
       "Immutable",
       "Tamper-Proof",
       "tamper-proofally",
+      "tamper-resistant",
       "append-only",
       "audit-proof",
       "9-gate verified",
       "9/9 gates passed",
       "mathematically provable",
+      "mathematically proven",
+      "mathematically guaranteed",
       "eradicate fraud",
+      "fraud-proof",
+      "unforgeable",
+      "cannot be changed",
+      "cannot be altered",
+      "cannot be modified",
+      "cannot be reversed",
+      "hash-chain guaranteed",
+      "legally final",
     ];
     for (const r of required) {
       expect(BANNED_TRUST_PHRASES).toContain(r);
     }
+  });
+});
+
+describe("WaD / sealed-document copy guard", () => {
+  it("WadModule renders the SSOT-approved intro, description, and bullet copy", () => {
+    const src = readFileSync(join(ROOT, "components", "wad", "WadModule.tsx"), "utf8");
+    expect(src).toContain(SAFE_LEDGER_COPY.wadModuleDescription);
+    expect(src).toContain(SAFE_LEDGER_COPY.wadModuleDescriptionCreate);
+    expect(src).toContain(SAFE_LEDGER_COPY.wadModuleIntro);
+    for (const bullet of SAFE_LEDGER_COPY.wadModuleBullets) {
+      expect(src).toContain(bullet);
+    }
+  });
+
+  it("AcceptBindCard uses the SSOT irreversibility clause and drops 'cannot be reversed'", () => {
+    const src = readFileSync(
+      join(ROOT, "components", "match", "AcceptBindCard.tsx"),
+      "utf8",
+    );
+    expect(src).toContain("SAFE_LEDGER_COPY.wadAcceptBindIrreversibilityClause");
+    // The clause itself must be the safe SSOT string.
+    expect(SAFE_LEDGER_COPY.wadAcceptBindIrreversibilityClause).toMatch(
+      /governed correction process/i,
+    );
+    // The legacy overclaim must be gone from rendered text.
+    expect(stripComments(src)).not.toMatch(/cannot be reversed/i);
+    expect(stripComments(src)).not.toMatch(
+      /hash-sealed and recorded, and cannot be reversed/i,
+    );
+  });
+
+  it("docs/Evidence.tsx does not imply an unshipped automated hash-chain verifier", () => {
+    const src = readFileSync(join(ROOT, "pages", "docs", "Evidence.tsx"), "utf8");
+    const cleaned = stripComments(src);
+    // Must not assert a live integrity result without a qualifier.
+    expect(cleaned).not.toMatch(/Hash-chain integrity result and the count/);
+    expect(cleaned).not.toMatch(/hash-chain guaranteed/i);
+    // Must explicitly qualify verifier status as conditional / when-enabled.
+    expect(cleaned).toMatch(
+      /verifier (is enabled|results are shown when|status is shown when)|where (available|enabled)/i,
+    );
   });
 });
