@@ -36,6 +36,8 @@ Three tables are treated as append-only ledgers/event streams:
 | `token_ledger` | `supabase/migrations/20260623124308_*.sql` — `atomic_paid_credit_purchase`, `repair_skeletal_paid_credit` | Promotes legacy skeletal `'credit'` rows → `'credit_purchase'`. |
 | `token_ledger` | `supabase/migrations/20260418155054_*.sql`                                            | Historical backfill UPDATEs (already executed).                 |
 | `token_ledger` | `supabase/migrations/20260503202233_*.sql`                                            | Historical cleanup DELETE (already executed).                   |
+| `token_ledger` | `supabase/functions/token-purchase/index.ts` (~L1946)                                 | `credit_refund` promotion mirror of the `credit_purchase` pattern; promotes the auto-written `'credit'` row from `atomic_token_credit` to the canonical `'credit_refund'` settlement row. Guarded by `UNIQUE(request_id)` so exactly one settlement row exists per refund reference. **Added to allowlist in this batch — the original inspection missed this site.** |
+| `token_ledger` | `supabase/functions/_shared/payment-atomicity_test.ts`                                | Test comment describing the `credit_purchase` UPDATE invariant. |
 | `match_events` | _(none)_                                                                              | Strictly append-only.                                           |
 | `poi_events`   | _(none)_                                                                              | Strictly append-only.                                           |
 
