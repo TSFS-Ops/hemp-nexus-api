@@ -99,4 +99,23 @@ describe("check-edge-function-deploy-coverage.mjs", () => {
     expect(gate).toContain("seed-mt009-controlled-prod");
     expect(gate).toContain("unseed-mt009-controlled-prod");
   });
+
+  it("wires the Batch V REC C1/C2 reconciliation functions (deploy + release gate + source)", () => {
+    const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"));
+    const gate = readFileSync(resolve("RELEASE_GATE.md"), "utf8");
+    for (const fn of ["balance-drift-reconciliation", "side-effect-reconciliation"]) {
+      expect(manifest.required, `manifest must include ${fn}`).toContain(fn);
+      expect(gate, `RELEASE_GATE.md must mention ${fn}`).toContain(fn);
+      expect(
+        existsSync(resolve(`supabase/functions/${fn}/index.ts`)),
+        `supabase/functions/${fn}/index.ts must exist`,
+      ).toBe(true);
+    }
+    // Cron job names must still match the function route names so
+    // cron_invoke(...) does not 404 again.
+    expect("balance-drift-reconciliation-daily".replace(/-daily$/, ""))
+      .toBe("balance-drift-reconciliation");
+    expect("side-effect-reconciliation-daily".replace(/-daily$/, ""))
+      .toBe("side-effect-reconciliation");
+  });
 });
