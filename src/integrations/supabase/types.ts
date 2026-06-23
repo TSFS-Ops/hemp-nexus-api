@@ -9965,6 +9965,12 @@ export type Database = {
           ledger_adjustment_id: string | null
           metadata: Json
           org_id: string
+          provider_refund_reference: string | null
+          provider_settled_at: string | null
+          provider_settlement_actor: string | null
+          provider_settlement_notes: string | null
+          provider_settlement_status: string | null
+          provider_submitted_at: string | null
           reason_code: string
           reason_detail: string
           requested_by: string
@@ -9983,6 +9989,12 @@ export type Database = {
           ledger_adjustment_id?: string | null
           metadata?: Json
           org_id: string
+          provider_refund_reference?: string | null
+          provider_settled_at?: string | null
+          provider_settlement_actor?: string | null
+          provider_settlement_notes?: string | null
+          provider_settlement_status?: string | null
+          provider_submitted_at?: string | null
           reason_code: string
           reason_detail: string
           requested_by: string
@@ -10001,6 +10013,12 @@ export type Database = {
           ledger_adjustment_id?: string | null
           metadata?: Json
           org_id?: string
+          provider_refund_reference?: string | null
+          provider_settled_at?: string | null
+          provider_settlement_actor?: string | null
+          provider_settlement_notes?: string | null
+          provider_settlement_status?: string | null
+          provider_submitted_at?: string | null
           reason_code?: string
           reason_detail?: string
           requested_by?: string
@@ -19732,6 +19750,28 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      mark_refund_manually_settled_with_governance: {
+        Args: {
+          p_aal?: string
+          p_action_code?: string
+          p_admin_user_id: string
+          p_notes: string
+          p_policy_version?: string
+          p_refund_request_id: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      mark_refund_provider_settled: {
+        Args: {
+          p_amount?: number
+          p_currency?: string
+          p_provider_event_id?: string
+          p_provider_refund_reference: string
+          p_refund_request_id: string
+        }
+        Returns: Json
+      }
       match_document_visible: {
         Args: { _document_id: string; _user: string }
         Returns: boolean
@@ -20085,6 +20125,10 @@ export type Database = {
       }
       scrub_user_pii: { Args: { p_user_id: string }; Returns: Json }
       set_org_data_residency: { Args: { _region: string }; Returns: Json }
+      surface_unsettled_refunds: {
+        Args: { p_limit?: number; p_min_age_minutes?: number }
+        Returns: Json
+      }
       system_resolve_cron_risk_items: {
         Args: { p_job_name: string }
         Returns: number
