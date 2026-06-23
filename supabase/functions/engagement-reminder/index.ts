@@ -8,6 +8,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { resolveNotificationsFor } from "../_shared/resolve-notifications.ts";
+import { resolveAdminRecipients } from "../_shared/admin-recipients.ts";
 
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
