@@ -296,12 +296,12 @@ export function EvidencePackView({
         {demoMode ? <span className="flex items-center gap-3 text-muted-foreground/70">
             <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
             <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
-              Audit Ledger · Immutable Record
+              Audit Ledger · Hash-Sealed Record
             </span>
           </span> : <Link to="/desk/deals" className="flex items-center gap-3 text-muted-foreground/70 hover:text-slate-200 transition-colors">
             <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
             <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
-              Audit Ledger · Immutable Record
+              Audit Ledger · Hash-Sealed Record
             </span>
           </Link>}
         <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
