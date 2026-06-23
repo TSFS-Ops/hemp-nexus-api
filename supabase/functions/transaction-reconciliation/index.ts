@@ -66,6 +66,9 @@ Deno.serve(async (req) => {
       emails_marked_failed: 0,
       skeletal_paid_credit_promoted: 0,
       skeletal_paid_credit_error: null as string | null,
+      refund_settlement_pending_opened: 0,
+      refund_settlement_pending_resolved: 0,
+      refund_settlement_error: null as string | null,
       records: [] as Array<Record<string, unknown>>,
       errors: [] as string[],
     };
@@ -265,7 +268,27 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- 4. Audit log (per-record snapshots + summary) ---
+    // --- 4. Approved refunds awaiting provider settlement (>24h) ---------
+    // Calls public.surface_unsettled_refunds which opens one deduped
+    // admin_risk_items row per stale refund and auto-resolves items whose
+    // refund is no longer not_submitted. Does not move money, does not
+    // call Paystack/PayFast, does not touch balances or ledger rows.
+    if (!dryRun) {
+      const { data: refundSettle, error: refundSettleErr } = await adminClient.rpc(
+        "surface_unsettled_refunds",
+        { p_min_age_minutes: 1440, p_limit: 100 },
+      );
+      if (refundSettleErr) {
+        results.refund_settlement_error = refundSettleErr.message;
+        results.errors.push(`Refund settlement sweep: ${refundSettleErr.message}`);
+      } else if (refundSettle && typeof refundSettle === "object") {
+        const r = refundSettle as { opened?: number; resolved?: number };
+        results.refund_settlement_pending_opened = Number(r.opened ?? 0);
+        results.refund_settlement_pending_resolved = Number(r.resolved ?? 0);
+      }
+    }
+
+    // --- 5. Audit log (per-record snapshots + summary) ---
     await adminClient.from("admin_audit_logs").insert({
       admin_user_id: "00000000-0000-0000-0000-000000000000",
 

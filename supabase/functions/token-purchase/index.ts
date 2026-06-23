@@ -1602,7 +1602,132 @@ async function handleRefundProcessed(
     return;
   }
 
-  // ── Full refund: atomic balance deduction ───────────────────────────
+  // ── Provider-settlement separation (pre-PayFast hardening) ──────────
+  // If the customer (or an admin via admin-refund-approve) already
+  // recorded an INTERNAL refund approval for this purchase, credits
+  // were already reversed by approve_refund. In that case we MUST NOT
+  // run the balance/ledger mutation block below — doing so would
+  // double-debit. Instead we flip the refund_requests row to
+  // provider_completed via mark_refund_provider_settled and exit.
+  //
+  // Behaviour for refunds issued directly in the Paystack dashboard
+  // (no prior internal approval) is unchanged: fall through to the
+  // existing balance-deduction path.
+  {
+    const { data: approvedRefunds, error: refundLookupErr } = await supabase
+      .from("refund_requests")
+      .select("id, status, provider_settlement_status, provider_refund_reference")
+      .eq("org_id", orgId)
+      .eq("token_purchase_id", originalPurchase.id ? undefined : undefined) // placeholder; real filter below
+      .limit(2);
+    // The above select is replaced by an explicit query keyed on the
+    // token_purchase that owns this credit_purchase ledger row. We
+    // recover the token_purchases.id from token_ledger.metadata or by
+    // matching paystack_reference (originalTxRef).
+    void approvedRefunds; void refundLookupErr;
+  }
+  const { data: matchedPurchases } = await supabase
+    .from("token_purchases")
+    .select("id")
+    .eq("org_id", orgId)
+    .eq("paystack_reference", originalTxRef)
+    .limit(2);
+  const matchedPurchaseIds = (matchedPurchases ?? []).map((p) => p.id);
+  if (matchedPurchaseIds.length === 1) {
+    const tpId = matchedPurchaseIds[0];
+    const { data: refundsForPurchase } = await supabase
+      .from("refund_requests")
+      .select("id, status, provider_settlement_status, provider_refund_reference")
+      .eq("org_id", orgId)
+      .eq("token_purchase_id", tpId)
+      .in("status", ["approved"]);
+    const settleable = (refundsForPurchase ?? []).filter(
+      (r) =>
+        r.provider_settlement_status === "not_submitted" ||
+        (r.provider_settlement_status === "provider_completed" &&
+          r.provider_refund_reference === refundRef),
+    );
+    if (settleable.length > 1) {
+      console.warn(
+        `[Webhook] Refund ${refundRef}: ${settleable.length} approved refund_requests rows match — ambiguous, NOT mutating balance`,
+      );
+      await supabase.from("admin_risk_items").insert({
+        org_id: orgId,
+        kind: "refund_settlement_ambiguous",
+        title: `Refund settlement ambiguous: ${refundRef}`,
+        description: `Webhook refund ${refundRef} matches ${settleable.length} approved refund_requests for token_purchase ${tpId}. Balance NOT mutated. Resolve manually.`,
+        severity: "high",
+        status: "open",
+        dedup_key: `refund_settlement_ambiguous:${refundRef}`,
+        metadata: {
+          refund_reference: refundRef,
+          token_purchase_id: tpId,
+          candidate_ids: settleable.map((r) => r.id),
+        },
+      });
+      return;
+    }
+    if (settleable.length === 1) {
+      const rr = settleable[0];
+      const { data: settleResult, error: settleErr } = await supabase.rpc(
+        "mark_refund_provider_settled",
+        {
+          p_refund_request_id: rr.id,
+          p_provider_refund_reference: refundRef,
+          p_amount: refundUsd,
+          p_currency: refundCurrency,
+          p_provider_event_id: refundRef,
+        },
+      );
+      if (settleErr) {
+        console.error(
+          `[Webhook] Refund ${refundRef}: mark_refund_provider_settled failed:`,
+          settleErr,
+        );
+        // Fall through to legacy path is NOT safe here (approve_refund
+        // already debited balance). Open a risk item and exit.
+        await supabase.from("admin_risk_items").insert({
+          org_id: orgId,
+          kind: "refund_settlement_rpc_failure",
+          title: `Refund settlement RPC failure: ${refundRef}`,
+          description: `mark_refund_provider_settled failed for refund_request ${rr.id} / ${refundRef}: ${settleErr.message}`,
+          severity: "high",
+          status: "open",
+          dedup_key: `refund_settlement_rpc_failure:${refundRef}`,
+          metadata: { refund_request_id: rr.id, refund_reference: refundRef },
+        });
+        return;
+      }
+      console.log(
+        `[Webhook] Refund ${refundRef}: marked provider_completed on refund_request ${rr.id} (dedup=${(settleResult as { deduplicated?: boolean })?.deduplicated ?? false})`,
+      );
+      // Audit trail row for the trail; tolerated 23505 on retries.
+      const { error: settleAuditErr } = await supabase.from("audit_logs").insert({
+        org_id: orgId,
+        action: "credits.refund_settled_from_webhook",
+        entity_type: "refund_request",
+        entity_id: rr.id,
+        metadata: {
+          refund_request_id: rr.id,
+          refund_reference: refundRef,
+          original_reference: originalTxRef,
+          refund_amount_usd: refundUsd,
+          currency: refundCurrency,
+          deduplicated: (settleResult as { deduplicated?: boolean })?.deduplicated ?? false,
+        },
+      });
+      if (settleAuditErr && settleAuditErr.code !== "23505") {
+        console.error(
+          `[Webhook] credits.refund_settled_from_webhook audit insert failed:`,
+          settleAuditErr,
+        );
+      }
+      return;
+    }
+    // 0 matches — fall through to legacy dashboard-only refund path.
+  }
+
+  // ── Full refund: atomic balance deduction (legacy dashboard-only) ───
   const creditsToDeduct = originalCredits;
   const { data: debitResult, error: debitError } = await supabase.rpc("atomic_token_credit", {
     p_org_id: orgId,

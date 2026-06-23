@@ -7,11 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { DEC_007_PAY_009_ADMIN_DISCLAIMER } from "@/lib/policy/dec-007-refund-policy";
+import {
+  DEC_007_PAY_009_ADMIN_DISCLAIMER,
+  DEC_007_PAY_009_MANUAL_SETTLEMENT_DISCLAIMER,
+} from "@/lib/policy/dec-007-refund-policy";
+import {
+  isMoneyReturned,
+  settlementBadgeLabel,
+} from "@/lib/policy/refund-settlement";
 
 type Decision =
   | { kind: "refund_approve"; id: string }
   | { kind: "refund_decline"; id: string }
+  | { kind: "refund_mark_settled"; id: string }
   | { kind: "dispute_won"; id: string }
   | { kind: "dispute_lost"; id: string }
   | { kind: "hold_release"; org_id: string };
@@ -71,11 +79,12 @@ export function AdminBillingReviewPanel() {
     try {
       let fn = "", body: Record<string, unknown> = {};
       switch (decision.kind) {
-        case "refund_approve": fn = "admin-refund-approve"; body = { refund_request_id: decision.id, reason }; break;
-        case "refund_decline": fn = "admin-refund-decline"; body = { refund_request_id: decision.id, reason }; break;
-        case "dispute_won":    fn = "admin-payment-dispute-resolve-won"; body = { payment_dispute_id: decision.id, reason }; break;
-        case "dispute_lost":   fn = "admin-payment-dispute-resolve-lost"; body = { payment_dispute_id: decision.id, reason }; break;
-        case "hold_release":   fn = "admin-billing-hold-release"; body = { org_id: decision.org_id, reason }; break;
+        case "refund_approve":      fn = "admin-refund-approve";      body = { refund_request_id: decision.id, reason }; break;
+        case "refund_decline":      fn = "admin-refund-decline";      body = { refund_request_id: decision.id, reason }; break;
+        case "refund_mark_settled": fn = "admin-refund-mark-settled"; body = { refund_request_id: decision.id, notes: reason }; break;
+        case "dispute_won":         fn = "admin-payment-dispute-resolve-won";  body = { payment_dispute_id: decision.id, reason }; break;
+        case "dispute_lost":        fn = "admin-payment-dispute-resolve-lost"; body = { payment_dispute_id: decision.id, reason }; break;
+        case "hold_release":        fn = "admin-billing-hold-release"; body = { org_id: decision.org_id, reason }; break;
       }
       const { data, error } = await supabase.functions.invoke(fn, { body });
       if (error) throw error;
@@ -93,6 +102,8 @@ export function AdminBillingReviewPanel() {
     }
   }
 
+  const isManualSettle = decision?.kind === "refund_mark_settled";
+
   return (
     <div className="space-y-5">
       <Tabs defaultValue="refunds">
@@ -104,31 +115,70 @@ export function AdminBillingReviewPanel() {
 
         <TabsContent value="refunds" className="space-y-3">
           {refunds.length === 0 && <p className="text-sm text-muted-foreground">No refund requests.</p>}
-          {refunds.map((r) => (
-            <div key={String(r.id)} className="border border-border rounded-sm p-3 flex flex-col gap-2 bg-card">
-              <div className="flex items-center justify-between gap-3">
-                <div className="font-mono text-xs">{String(r.id).slice(0, 8)} · purchase {String(r.token_purchase_id).slice(0, 8)}</div>
-                <Badge variant="outline">{String(r.status)}</Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Credits at request: <span className="font-mono">{String(r.credits_at_request)}</span> ·
-                Used at request: <span className="font-mono">{String(r.credits_used_at_request)}</span> ·
-                Reason: {String(r.reason_code)}
-              </div>
-              <p className="text-sm">{String(r.reason_detail)}</p>
-              {r.status === "pending" && (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    Approving records an internal decision. It does not submit a refund to Paystack. Provider settlement must be issued separately in the Paystack dashboard until the automated refund submission is built.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => setDecision({ kind: "refund_approve", id: String(r.id) })}>Approve (internal only)</Button>
-                    <Button size="sm" variant="outline" onClick={() => setDecision({ kind: "refund_decline", id: String(r.id) })}>Decline</Button>
+          {refunds.map((r) => {
+            const status = String(r.status ?? "");
+            const settlement = (r.provider_settlement_status ?? null) as string | null;
+            const moneyReturned = isMoneyReturned(settlement);
+            const showMarkSettled = status === "approved" && settlement === "not_submitted";
+            return (
+              <div key={String(r.id)} className="border border-border rounded-sm p-3 flex flex-col gap-2 bg-card">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="font-mono text-xs">{String(r.id).slice(0, 8)} · purchase {String(r.token_purchase_id).slice(0, 8)}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">internal: {status}</Badge>
+                    {status === "approved" && (
+                      <Badge variant={moneyReturned ? "default" : "secondary"}>
+                        money: {settlementBadgeLabel(settlement)}
+                      </Badge>
+                    )}
                   </div>
-                </>
-              )}
-            </div>
-          ))}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Credits at request: <span className="font-mono">{String(r.credits_at_request)}</span> ·
+                  Used at request: <span className="font-mono">{String(r.credits_used_at_request)}</span> ·
+                  Reason: {String(r.reason_code)}
+                </div>
+                <p className="text-sm">{String(r.reason_detail)}</p>
+                {status === "pending" && (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Approving records an internal decision. It does not submit a refund to Paystack. Provider settlement must be issued separately in the Paystack dashboard until the automated refund submission is built.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => setDecision({ kind: "refund_approve", id: String(r.id) })}>Approve (internal only)</Button>
+                      <Button size="sm" variant="outline" onClick={() => setDecision({ kind: "refund_decline", id: String(r.id) })}>Decline</Button>
+                    </div>
+                  </>
+                )}
+                {showMarkSettled && (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Internally approved. Money has NOT been confirmed as returned. Issue the refund in the provider dashboard, then click "Mark manually settled" with the provider receipt id in the notes.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setDecision({ kind: "refund_mark_settled", id: String(r.id) })}
+                      >
+                        Mark manually settled
+                      </Button>
+                    </div>
+                  </>
+                )}
+                {status === "approved" && settlement === "provider_completed" && (
+                  <p className="text-xs text-muted-foreground">
+                    Provider settlement confirmed via webhook: <span className="font-mono">{String(r.provider_refund_reference ?? "—")}</span>
+                  </p>
+                )}
+                {status === "approved" && settlement === "manually_settled_offline" && (
+                  <p className="text-xs text-muted-foreground">
+                    Marked manually settled offline by an admin. Notes are recorded in the audit trail.
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </TabsContent>
 
         <TabsContent value="disputes" className="space-y-3">
@@ -172,13 +222,20 @@ export function AdminBillingReviewPanel() {
       <Dialog open={!!decision} onOpenChange={(o) => !o && (setDecision(null), setReason(""))}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm decision</DialogTitle>
+            <DialogTitle>{isManualSettle ? "Mark refund manually settled" : "Confirm decision"}</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground border border-border rounded-sm p-2 bg-muted/30">
-            {DEC_007_PAY_009_ADMIN_DISCLAIMER}
+            {isManualSettle
+              ? DEC_007_PAY_009_MANUAL_SETTLEMENT_DISCLAIMER
+              : DEC_007_PAY_009_ADMIN_DISCLAIMER}
           </p>
-          <p className="text-xs">Requires AAL2-elevated session. Reason ≥ 20 characters.</p>
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (≥ 20 chars)" rows={4} />
+          <p className="text-xs">Requires AAL2-elevated session. {isManualSettle ? "Notes" : "Reason"} ≥ 20 characters.</p>
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={isManualSettle ? "Provider receipt id and notes (≥ 20 chars)" : "Reason (≥ 20 chars)"}
+            rows={4}
+          />
           <DialogFooter>
             <Button variant="ghost" onClick={() => { setDecision(null); setReason(""); }}>Cancel</Button>
             <Button disabled={busy || reason.trim().length < 20} onClick={submit}>Confirm</Button>
