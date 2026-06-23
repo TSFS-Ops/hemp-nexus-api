@@ -6,7 +6,7 @@
 -- trigger function in the DEFAULT (no-bypass) session state.
 --
 -- This proof MUST:
---   * never SET app.allow_audit_cleanup='on';
+--   * never enable the app.allow_audit_cleanup bypass GUC;
 --   * roll back at the end (no production rows touched);
 --   * insert any seed rows inside the same transaction so they
 --     vanish on ROLLBACK.
