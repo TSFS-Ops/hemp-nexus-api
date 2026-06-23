@@ -194,7 +194,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
                   <li>This converts a unilateral intent into a bilateral intent.</li>
-                  <li>The action is hash-sealed and recorded, and cannot be reversed.</li>
+                  <li>{SAFE_LEDGER_COPY.wadAcceptBindIrreversibilityClause}</li>
                   <li>Both parties can negotiate terms after binding.</li>
                 </ul>
               </div>
