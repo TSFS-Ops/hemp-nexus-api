@@ -1177,13 +1177,32 @@ async function handleChargeSuccess(
           paid_at: paid_at ?? null,
         },
       });
-      await supabase.from("admin_risk_items").insert({
-        title: `Paystack charge.success with unrecoverable metadata: ${reference}`,
-        description:
-          `charge.success arrived with missing org_id/credits and no token_purchases/purchase_initiated row matched paystack_reference=${reference}. Manual reconciliation required before any credit is issued.`,
-        severity: "high",
-        status: "open",
-      });
+      // Dedup: do not open a duplicate unrecoverable-metadata risk item
+      // for the same provider reference. Keyed on the canonical
+      // `payment_metadata_unrecoverable:<reference>` namespace so a future
+      // PayFast init can resolve it through the same surface.
+      const unrecoverableDedup = `payment_metadata_unrecoverable:${reference}`;
+      const { data: existingUnrecoverable } = await supabase
+        .from("admin_risk_items")
+        .select("id")
+        .eq("dedup_key", unrecoverableDedup)
+        .maybeSingle();
+      if (!existingUnrecoverable) {
+        await supabase.from("admin_risk_items").insert({
+          kind: "payment_metadata_unrecoverable",
+          dedup_key: unrecoverableDedup,
+          title: `Paystack charge.success with unrecoverable metadata: ${reference}`,
+          description:
+            `charge.success arrived with missing org_id/credits and no token_purchases/purchase_initiated row matched paystack_reference=${reference}. Manual reconciliation required before any credit is issued.`,
+          severity: "high",
+          status: "open",
+          metadata: {
+            provider_reference: reference,
+            paystack_amount: data.amount,
+            paystack_currency: data.currency ?? null,
+          },
+        });
+      }
       // Return normally — Paystack must not retry-storm. The risk item is the queue.
       return;
     }
