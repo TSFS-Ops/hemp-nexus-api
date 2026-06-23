@@ -102,10 +102,11 @@ BEGIN
     now() - interval '1 hour'
   );
   INSERT INTO token_purchases (
-    org_id, paystack_reference, token_amount, amount_usd, currency, status
+    org_id, paystack_reference, package_id, token_amount, amount_usd, currency, status
   ) VALUES (
-    v_org_id, v_ref_b, 5, 5.00, 'USD', 'completed'
+    v_org_id, v_ref_b, 'pkg_proof_b', 5, 5.00, 'USD', 'completed'
   );
+
   SELECT balance INTO v_balance_snap FROM token_balances WHERE org_id = v_org_id;
 
   SELECT count(*) INTO v_repaired_count
