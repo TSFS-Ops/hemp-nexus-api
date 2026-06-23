@@ -460,4 +460,30 @@ describe("Audit Ledger copy guard — extended internal/admin/export/PDF/email s
     expect(src).not.toMatch(/token_ledger/);
     expect(src).not.toMatch(/refund/i);
   });
+
+  // C4 — infra-alerts must surface cron heartbeat failure and staleness.
+  // Read-only: queries cron_heartbeats, never invokes/enables/disables crons.
+  it("infra-alerts exposes cron_heartbeat_failed and cron_heartbeat_stale alerts", () => {
+    if (!existsSync(EDGE_INFRA_ALERTS)) return;
+    const src = readFileSync(EDGE_INFRA_ALERTS, "utf8");
+    // Both named alerts present.
+    expect(src).toMatch(/cron_heartbeat_failed/);
+    expect(src).toMatch(/cron_heartbeat_stale/);
+    // Both checks query cron_heartbeats.
+    expect(src).toMatch(/\.from\(\s*["']cron_heartbeats["']\s*\)/);
+    // Failed-posture check references last_status, last_http_status, and last_error.
+    expect(src).toMatch(/last_status\.eq\.failed/);
+    expect(src).toMatch(/last_http_status\.gte\.400/);
+    expect(src).toMatch(/last_error\.not\.is\.null/);
+    // Stale check uses last_run_at and expected_interval_seconds.
+    expect(src).toMatch(/expected_interval_seconds/);
+    expect(src).toMatch(/last_run_at/);
+    // No cron invocation/scheduling/mutation from infra-alerts.
+    expect(src).not.toMatch(/cron_invoke/);
+    expect(src).not.toMatch(/cron\.schedule/);
+    expect(src).not.toMatch(/cron\.unschedule/);
+    expect(src).not.toMatch(/cron\.alter_job/);
+    expect(src).not.toMatch(/functions\/v1\/burn-poi-reconciliation/);
+  });
 });
+
