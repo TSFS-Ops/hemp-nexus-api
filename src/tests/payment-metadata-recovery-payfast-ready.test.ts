@@ -77,11 +77,15 @@ describe("Edge-level metadata validation before atomic_paid_credit_purchase", ()
 
   it("does NOT call atomic_paid_credit_purchase when validation fails (return precedes the RPC)", () => {
     const validationIdx = HANDLER.indexOf("metadata_validation_failed");
-    const rpcIdx = HANDLER.indexOf("atomic_paid_credit_purchase");
+    // Match the actual RPC invocation, not the comment references that
+    // mention `atomic_paid_credit_purchase` by name.
+    const rpcCallRe = /supabase\.rpc\(\s*["']atomic_paid_credit_purchase["']/;
+    const rpcMatch = rpcCallRe.exec(HANDLER);
     expect(validationIdx).toBeGreaterThan(-1);
-    expect(rpcIdx).toBeGreaterThan(validationIdx);
+    expect(rpcMatch, "RPC call must exist").not.toBeNull();
+    expect(rpcMatch!.index).toBeGreaterThan(validationIdx);
     // The validation block must end with `return;` before the RPC call.
-    const between = HANDLER.slice(validationIdx, rpcIdx);
+    const between = HANDLER.slice(validationIdx, rpcMatch!.index);
     expect(between).toMatch(/\n\s*return;\s*\n/);
   });
 });
