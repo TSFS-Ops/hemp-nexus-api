@@ -214,11 +214,14 @@ describe("Audit Ledger copy/capability guard", () => {
 describe("WaD / sealed-document copy guard", () => {
   it("WadModule renders the SSOT-approved intro, description, and bullet copy", () => {
     const src = readFileSync(join(ROOT, "components", "wad", "WadModule.tsx"), "utf8");
-    expect(src).toContain(SAFE_LEDGER_COPY.wadModuleDescription);
-    expect(src).toContain(SAFE_LEDGER_COPY.wadModuleDescriptionCreate);
-    expect(src).toContain(SAFE_LEDGER_COPY.wadModuleIntro);
+    // Collapse whitespace so JSX line-wrapping does not break substring match.
+    const flat = src.replace(/\s+/g, " ");
+    const flatten = (s: string) => s.replace(/\s+/g, " ").trim();
+    expect(flat).toContain(flatten(SAFE_LEDGER_COPY.wadModuleDescription));
+    expect(flat).toContain(flatten(SAFE_LEDGER_COPY.wadModuleDescriptionCreate));
+    expect(flat).toContain(flatten(SAFE_LEDGER_COPY.wadModuleIntro));
     for (const bullet of SAFE_LEDGER_COPY.wadModuleBullets) {
-      expect(src).toContain(bullet);
+      expect(flat).toContain(flatten(bullet));
     }
   });
 
