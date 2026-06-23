@@ -489,7 +489,7 @@ export function EvidencePackView({
               Integrity Inspector · Canonical Payload
             </DialogTitle>
             <DialogDescription className="text-muted-foreground/70 text-[12px] leading-relaxed pt-2">
-              This JSON object is the immutable input for the SHA-256 algorithm. You can copy this payload and run it through any independent hashing utility (e.g.{" "}
+              This JSON object is the canonical input for the SHA-256 algorithm. You can copy this payload and run it through any independent hashing utility (e.g.{" "}
               <span className="font-mono text-muted-foreground/50">sha256sum</span>,{" "}
               <span className="font-mono text-muted-foreground/50">openssl dgst -sha256</span>) to verify it matches the Seal Hash above.
             </DialogDescription>
