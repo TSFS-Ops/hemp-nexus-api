@@ -72,12 +72,13 @@ const MATCH_EVENTS_ALLOWLIST: ReadonlyArray<string | RegExp> = [...COMMON_ALLOWL
 const POI_EVENTS_ALLOWLIST: ReadonlyArray<string | RegExp> = [...COMMON_ALLOWLIST];
 
 function buildPatterns(table: string): RegExp[] {
+  // Negative lookahead `(?!\.from\()` prevents matching across an
+  // intervening `.from(otherTable)` in a long chained file.
+  const chainBody = `(?:(?!\\.from\\()[\\s\\S]){0,400}?`;
   return [
-    // PostgREST / supabase-js client
-    new RegExp(`\\.from\\(\\s*["'\`]${table}["'\`]\\s*\\)[\\s\\S]{0,400}?\\.update\\(`, "i"),
-    new RegExp(`\\.from\\(\\s*["'\`]${table}["'\`]\\s*\\)[\\s\\S]{0,400}?\\.delete\\(`, "i"),
-    new RegExp(`\\.from\\(\\s*["'\`]${table}["'\`]\\s*\\)[\\s\\S]{0,400}?\\.upsert\\(`, "i"),
-    // Raw SQL
+    new RegExp(`\\.from\\(\\s*["'\`]${table}["'\`]\\s*\\)${chainBody}\\.update\\(`, "i"),
+    new RegExp(`\\.from\\(\\s*["'\`]${table}["'\`]\\s*\\)${chainBody}\\.delete\\(`, "i"),
+    new RegExp(`\\.from\\(\\s*["'\`]${table}["'\`]\\s*\\)${chainBody}\\.upsert\\(`, "i"),
     new RegExp(`\\bUPDATE\\s+(?:public\\.)?${table}\\b`, "i"),
     new RegExp(`\\bDELETE\\s+FROM\\s+(?:public\\.)?${table}\\b`, "i"),
     new RegExp(`\\bTRUNCATE\\s+(?:TABLE\\s+)?(?:public\\.)?${table}\\b`, "i"),
