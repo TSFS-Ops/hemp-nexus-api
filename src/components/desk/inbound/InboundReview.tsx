@@ -278,7 +278,7 @@ export function InboundReview() {
             </h1>
             <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-lg">
               <span className="text-foreground font-medium">{data.initiator}</span> has generated
-              a tamper-proofally sealed Proof of Intent and proposed the following terms.
+              a hash-sealed Proof of Intent and proposed the following terms.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-muted-foreground">
