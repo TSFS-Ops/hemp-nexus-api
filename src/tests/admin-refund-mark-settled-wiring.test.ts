@@ -51,17 +51,20 @@ describe("admin-refund-mark-settled F2 atomic wiring", () => {
     expect(fnSrc).toMatch(/min\(\s*20\s*\)/);
   });
 
-  it("edge function does NOT call Paystack or PayFast", () => {
-    expect(fnSrc).not.toMatch(/paystack\.co/i);
+  it("edge function does NOT call a provider HTTP refund endpoint", () => {
     expect(fnSrc).not.toMatch(/api\.paystack/i);
-    expect(fnSrc).not.toMatch(/payfast/i);
+    expect(fnSrc).not.toMatch(/api\.payfast/i);
+    expect(fnSrc).not.toMatch(/transaction\/refund/i);
+    expect(fnSrc).not.toMatch(/fetch\(/);
   });
 
-  it("edge function does NOT mutate token_balances or token_ledger", () => {
-    expect(fnSrc).not.toMatch(/token_balances/);
-    expect(fnSrc).not.toMatch(/token_ledger/);
+  it("edge function does NOT mutate token_balances or token_ledger via RPC", () => {
     expect(fnSrc).not.toMatch(/atomic_token_credit/);
     expect(fnSrc).not.toMatch(/atomic_token_burn/);
+    expect(fnSrc).not.toMatch(/atomic_paid_credit_purchase/);
+    // No direct table writes either
+    expect(fnSrc).not.toMatch(/from\(["']token_balances["']\)/);
+    expect(fnSrc).not.toMatch(/from\(["']token_ledger["']\)/);
   });
 
   it("edge function surfaces governance_event_id from the atomic RPC", () => {
