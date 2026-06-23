@@ -406,7 +406,7 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
             Deal Terms
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Terms are versioned - each proposal creates a new immutable record.
+            Terms are versioned - each proposal creates a new tamper-evident record.
             {latestTerm && ' Click "Amend Terms" to propose changes based on the current version.'}
           </p>
         </div>
