@@ -33,9 +33,11 @@ DECLARE
   v_repaired_count   integer;
   v_repaired_orphan  integer;
 BEGIN
-  -- Seed an isolated balance row.
+  -- Seed an isolated organisation + balance row.
+  INSERT INTO organizations (id, name) VALUES (v_org_id, 'proof-org-' || v_org_id::text);
   INSERT INTO token_balances (org_id, balance, minimum_required, updated_at)
   VALUES (v_org_id, 0, 0, now());
+
 
   -- ── 1. First call credits the org and writes a credit_purchase row.
   v_result := public.atomic_paid_credit_purchase(
