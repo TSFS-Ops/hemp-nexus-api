@@ -67,19 +67,24 @@ describe("Paystack webhook missing-metadata containment", () => {
   it("returns normally after the unrecoverable branch (no throw, no retry-storm trigger)", () => {
     // The unrecoverable branch must end with a plain `return;` — never
     // `throw` (which would surface as 5xx and cause Paystack to retry).
+    // Distance budget expanded to accommodate the dedup + risk-item-kind
+    // hardening added for PayFast-ready recovery.
     expect(HANDLER).toMatch(
-      /missing_metadata_no_recovery[\s\S]{0,1200}\n\s*return;/,
+      /missing_metadata_no_recovery[\s\S]{0,3000}\n\s*return;/,
     );
     expect(HANDLER).not.toMatch(
-      /missing_metadata_no_recovery[\s\S]{0,1200}\n\s*throw\s/,
+      /missing_metadata_no_recovery[\s\S]{0,3000}\n\s*throw\s/,
     );
   });
 
-  it("does not change the call signature of atomic_token_credit", () => {
-    // Containment must not touch ledger semantics.
+  it("calls the canonical paid-credit RPC (atomic_paid_credit_purchase) — containment must not touch ledger semantics", () => {
+    // Post-hardening the handler routes through atomic_paid_credit_purchase
+    // (canonical credit_purchase ledger row). Containment must preserve
+    // that exact signature; never regress to atomic_token_credit here.
     expect(HANDLER).toMatch(
-      /supabase\.rpc\(\s*["']atomic_token_credit["'][\s\S]{0,400}p_org_id[\s\S]{0,40}p_amount[\s\S]{0,80}p_reason[\s\S]{0,80}p_reference_id/,
+      /supabase\.rpc\(\s*["']atomic_paid_credit_purchase["'][\s\S]{0,500}p_org_id[\s\S]{0,80}p_amount[\s\S]{0,80}p_reference_id[\s\S]{0,80}p_endpoint/,
     );
+    expect(HANDLER).not.toMatch(/supabase\.rpc\(\s*["']atomic_token_credit["']/);
   });
 
   it("preserves existing initiation-mismatch validation (amount/currency/package)", () => {
