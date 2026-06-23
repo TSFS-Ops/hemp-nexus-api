@@ -124,6 +124,7 @@
     "admin-billing-hold-release",
     "admin-refund-approve",
     "admin-refund-decline",
+    "admin-refund-mark-settled",
     "admin-payment-dispute-record",
     "admin-payment-dispute-resolve-won",
     "admin-payment-dispute-resolve-lost",
