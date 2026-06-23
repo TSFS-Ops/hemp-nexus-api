@@ -1,27 +1,28 @@
 /**
  * provider-fetch — bounded-timeout wrapper around `fetch()` for outbound
- * payment-provider calls (Paystack today, PayFast tomorrow).
+ * third-party HTTP calls (typically payment providers).
  *
  * WHY THIS EXISTS
  * ---------------
  * Edge Function invocations have a wall-clock limit. A hung TCP socket
- * to a payment provider could block until that limit fires, with two
+ * to an external provider could block until that limit fires, with two
  * bad consequences:
  *   1. The function returns 5xx/timeout to the caller — which the
- *      original Paystack verify-inconclusive containment was written to
- *      handle, but only if we actually reach the catch block in time.
+ *      original inconclusive-verify containment was written to handle,
+ *      but only if we actually reach the catch block in time.
  *   2. A reconciliation tick could run out of budget mid-sweep, leaving
- *      other pending purchases unverified that pass.
+ *      other pending rows unverified that pass.
  *
- * Every call site MUST go through this helper so timeout/abort errors
- * surface deterministically as a typed `ProviderFetchTimeoutError`
- * (a network-style failure, NOT a definitive provider failure).
+ * Every outbound provider call site MUST go through this helper so
+ * timeout/abort errors surface deterministically as a typed
+ * `ProviderFetchTimeoutError` (a network-style failure, NOT a
+ * definitive provider failure).
  *
- * Default timeout is 8000ms — well under any reasonable Paystack RTT
+ * Default timeout is 8000ms — well under any reasonable provider RTT
  * and far below the Edge Function wall-clock.
  *
- * PROVIDER-AGNOSTIC: nothing in this file is Paystack-specific. PayFast
- * (and any future provider) reuses the same helper without modification.
+ * PROVIDER-AGNOSTIC: nothing in this file is provider-specific. Any
+ * caller passes its own `providerName` for error labelling.
  */
 
 export const DEFAULT_PROVIDER_FETCH_TIMEOUT_MS = 8000;
