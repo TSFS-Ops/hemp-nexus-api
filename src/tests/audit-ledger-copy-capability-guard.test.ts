@@ -49,12 +49,17 @@ const SCAN_DIRS = [
   join(ROOT, "components", "landing"),
   join(ROOT, "components", "wad"),
   join(ROOT, "components", "match"),
+  join(ROOT, "components", "desk", "match"),
 ];
 
 const SCAN_FILES = [
   join(ROOT, "components", "PublicHeader.tsx"),
   join(ROOT, "components", "governance", "TriageInbox.tsx"),
   join(ROOT, "components", "developer", "IntegrationGuidePdf.ts"),
+  join(ROOT, "pages", "Docs.tsx"),
+  join(ROOT, "components", "desk", "settings", "NotificationRulesTab.tsx"),
+  join(ROOT, "components", "desk", "compliance", "ComplianceProfile.tsx"),
+  join(ROOT, "components", "developer", "EnvSwitcher.tsx"),
 ];
 
 const ALLOWED_EXT = new Set([".ts", ".tsx"]);

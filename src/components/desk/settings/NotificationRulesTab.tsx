@@ -21,7 +21,7 @@ const RULES: Rule[] = [
   {
     key: "poi_sealed",
     title: "Proof of Intent sealed",
-    description: "Confirm by email when a Proof of Intent is tamper-proofally sealed and binding.",
+    description: "Confirm by email when a Proof of Intent is hash-sealed and recorded.",
     defaultOn: true,
   },
   {

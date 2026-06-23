@@ -212,7 +212,7 @@ const COMPARISON: Array<{
   {
     area: "Audit ledger",
     sandbox: "Tagged test_mode=true. Excluded from regulator-facing exports.",
-    live: "Append-only, SHA-256 chained. Included in every audit, evidence pack and 7-year retention export.",
+    live: "SHA-256 sealed evidence flow. Included in every audit, evidence pack and 7-year retention export.",
   },
   {
     area: "Rate limits",
@@ -222,7 +222,7 @@ const COMPARISON: Array<{
   {
     area: "Reversibility",
     sandbox: "Anything created here can be wiped. No long-term consequence.",
-    live: "POIs, attestations and audit rows are immutable. Mistakes require a dispute, not a delete.",
+    live: "POIs are hash-sealed after issuance; amendments require a new record, not a delete.",
   },
 ];
 
