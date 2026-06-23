@@ -68,6 +68,16 @@ export const SAFE_LEDGER_COPY = {
     "Signed Deal creates an auditable, tamper-evident record that packages the full evidence trail for this trade request. It includes:",
   wadStepperCertificateNote:
     "PDF certificate includes all attestations, evidence bundle hashes, seal verification data, and a tamper-evident verification section.",
+  /**
+   * Bind-accept confirmation clause. Replaces the prior overclaim
+   * "The action is hash-sealed and recorded, and cannot be reversed."
+   * which implied DB-enforced immutability the backend does not yet
+   * provide on `wads`/`wad_attestations`. Uses the "governed correction
+   * process" framing so the wording stays accurate without leaning on
+   * any banned phrase (no "reversed", no "immutable").
+   */
+  wadAcceptBindIrreversibilityClause:
+    "This action is recorded in the tamper-evident audit trail. Changes must follow the governed correction process.",
 } as const;
 
 /**
