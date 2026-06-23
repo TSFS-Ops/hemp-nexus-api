@@ -47,7 +47,7 @@ const BLOCKS: Block[] = [
 
   { kind: "h2", text: "3. Sandbox vs Live" },
   { kind: "p", text: "Sandbox is a safe playground. Synthetic counterparties, simulated credit burns, suppressed outbound email and webhooks, no audit weight. Use it to wire up your integration end-to-end before pointing at Live." },
-  { kind: "p", text: "Live affects real records. POIs are immutable. Email and webhooks reach real counterparties. Credits burn from your actual balance. If you cannot describe in one sentence what a Live call is about to do, switch to Sandbox first." },
+  { kind: "p", text: "Live affects real records. Minted POIs cannot be edited or withdrawn. Email and webhooks reach real counterparties. Credits burn from your actual balance. If you cannot describe in one sentence what a Live call is about to do, switch to Sandbox first." },
 
   { kind: "h2", text: "4. The core flow" },
   { kind: "p", text: "Most integrations need to do four things, in this order:" },
