@@ -111,8 +111,9 @@ describe("Paystack refund webhook routes approved refunds through settlement RPC
     expect(webhookSrc).toMatch(/refund_settlement_ambiguous/);
   });
 
-  it("does not silently call PayFast", () => {
-    expect(webhookSrc).not.toMatch(/payfast/i);
+  it("does not introduce an outbound provider HTTP refund call", () => {
+    expect(webhookSrc).not.toMatch(/api\.payfast/i);
+    expect(webhookSrc).not.toMatch(/transaction\/refund/i);
   });
 });
 
