@@ -51,6 +51,10 @@ const COMMON_ALLOWLIST: ReadonlyArray<string | RegExp> = [
   // It seeds and attempts UPDATE/DELETE/TRUNCATE to prove the trigger
   // raises POI_EVENTS_APPEND_ONLY. Not a runtime mutation caller.
   "supabase/tests/poi_events_append_only_freeze_proof.sql",
+  // Rollback-wrapped freeze proof for match_events append-only trigger.
+  // It seeds and attempts UPDATE/DELETE/TRUNCATE to prove the trigger
+  // raises MATCH_EVENTS_APPEND_ONLY. Not a runtime mutation caller.
+  "supabase/tests/match_events_append_only_freeze_proof.sql",
 ];
 
 const TOKEN_LEDGER_ALLOWLIST: ReadonlyArray<string | RegExp> = [
@@ -238,6 +242,37 @@ describe("event-ledger append-only convention guard (Option A)", () => {
     expect(proof).toMatch(/^\s*ROLLBACK\s*;/m);
   });
 
+  it("match_events append-only freeze proof exists and asserts trigger behaviour", () => {
+    const proof = readFileSync(
+      join(REPO_ROOT, "supabase/tests/match_events_append_only_freeze_proof.sql"),
+      "utf8",
+    );
+    expect(proof).toMatch(/MATCH_EVENTS_APPEND_ONLY/);
+    expect(proof).toMatch(/match_events_no_mutate_trg/);
+    expect(proof).toMatch(/match_events_no_truncate_trg/);
+    expect(proof).toMatch(/^\s*BEGIN\s*;/m);
+    expect(proof).toMatch(/^\s*ROLLBACK\s*;/m);
+  });
+
+  it("MATCH_EVENTS_ALLOWLIST contains no runtime UPDATE/DELETE/TRUNCATE callers", () => {
+    const stringEntries = MATCH_EVENTS_ALLOWLIST.filter(
+      (e): e is string => typeof e === "string",
+    );
+    for (const entry of stringEntries) {
+      expect(
+        entry.startsWith("src/tests/") ||
+          entry.startsWith("supabase/tests/") ||
+          entry.startsWith("evidence/"),
+        `MATCH_EVENTS_ALLOWLIST may only contain guard/proof/README artefacts. Offender: ${entry}`,
+      ).toBe(true);
+    }
+    const regexEntries = MATCH_EVENTS_ALLOWLIST.filter((e) => e instanceof RegExp);
+    expect(
+      regexEntries,
+      "MATCH_EVENTS_ALLOWLIST must not contain regex entries — that would whitelist a runtime mutation caller.",
+    ).toEqual([]);
+  });
+
   it("POI_EVENTS_ALLOWLIST contains no runtime UPDATE/DELETE/TRUNCATE callers", () => {
     // Allowed entries must be limited to guard/proof/README artefacts.
     // No edge function, RPC migration, or scripts entry is permitted.
@@ -257,5 +292,26 @@ describe("event-ledger append-only convention guard (Option A)", () => {
       regexEntries,
       "POI_EVENTS_ALLOWLIST must not contain regex entries — that would whitelist a runtime mutation caller.",
     ).toEqual([]);
+  });
+
+  it("match_events append-only migration creates triggers only and does not mutate rows", () => {
+    const migrationsDir = join(REPO_ROOT, "supabase/migrations");
+    const files = readdirSync(migrationsDir).filter((f) => f.endsWith(".sql"));
+    const matchingFiles = files.filter((f) => {
+      const sql = readFileSync(join(migrationsDir, f), "utf8");
+      return /assert_match_events_append_only/.test(sql);
+    });
+    expect(
+      matchingFiles.length,
+      "expected at least one migration defining assert_match_events_append_only",
+    ).toBeGreaterThanOrEqual(1);
+    for (const f of matchingFiles) {
+      const sql = readFileSync(join(migrationsDir, f), "utf8");
+      expect(sql).toMatch(/match_events_no_mutate_trg/);
+      expect(sql).toMatch(/match_events_no_truncate_trg/);
+      expect(sql).not.toMatch(/\bUPDATE\s+(public\.)?match_events\b/i);
+      expect(sql).not.toMatch(/\bDELETE\s+FROM\s+(public\.)?match_events\b/i);
+      expect(sql).not.toMatch(/\bTRUNCATE\s+(TABLE\s+)?(public\.)?match_events\b/i);
+    }
   });
 });
