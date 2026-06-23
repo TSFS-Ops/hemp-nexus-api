@@ -296,13 +296,17 @@ describe("event-ledger append-only convention guard (Option A)", () => {
 
   it("match_events append-only migration creates triggers only and does not mutate rows", () => {
     const migrationsDir = join(REPO_ROOT, "supabase/migrations");
-    const files = readdirSync(migrationsDir).filter((f) =>
-      /match_events_append_only\.sql$/.test(f),
-    );
-    expect(files.length, "expected one match_events_append_only migration").toBeGreaterThanOrEqual(1);
-    for (const f of files) {
+    const files = readdirSync(migrationsDir).filter((f) => f.endsWith(".sql"));
+    const matchingFiles = files.filter((f) => {
       const sql = readFileSync(join(migrationsDir, f), "utf8");
-      expect(sql).toMatch(/assert_match_events_append_only/);
+      return /assert_match_events_append_only/.test(sql);
+    });
+    expect(
+      matchingFiles.length,
+      "expected at least one migration defining assert_match_events_append_only",
+    ).toBeGreaterThanOrEqual(1);
+    for (const f of matchingFiles) {
+      const sql = readFileSync(join(migrationsDir, f), "utf8");
       expect(sql).toMatch(/match_events_no_mutate_trg/);
       expect(sql).toMatch(/match_events_no_truncate_trg/);
       expect(sql).not.toMatch(/\bUPDATE\s+(public\.)?match_events\b/i);
