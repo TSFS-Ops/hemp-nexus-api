@@ -110,33 +110,101 @@ Deno.serve(async (req) => {
         }
       }
 
+      let insertedReminderCount = 0;
+      let duplicateSkippedCount = 0;
+      let duplicateSkippedIds: string[] = [];
+
       if (stillStale.length === 0) {
         console.log(`[${requestId}] All ${staleEngagements!.length} fetched stale engagements have since moved status — no reminders inserted.`);
       } else {
-        const notifications = stillStale.map((eng: any) => ({
-          user_id: null, // Admin-targeted (null = system)
-          type: "engagement_reminder",
-          title: "Stale engagement - 7 days without contact",
-          message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
-          // NOT-008: link the in-app row to the engagement so that
-          // resolve_notifications_for('poi_engagement', id) can auto-clear it
-          // when the engagement is accepted / declined / cancelled / expired.
-          entity_type: "poi_engagement",
-          entity_id: eng.id,
-          metadata: {
-            engagement_id: eng.id,
-            match_id: eng.match_id,
-            org_id: eng.org_id,
-            days_stale: Math.floor((Date.now() - new Date(eng.created_at).getTime()) / (1000 * 60 * 60 * 24)),
-          },
-          read: false,
-        }));
-
-        const { error: notifErr } = await supabase
+        // ── Idempotency pre-filter ─────────────────────────────────
+        // Backed by partial unique index
+        //   notifications_engagement_reminder_unresolved_uniq
+        //   ON (entity_id, user_id)
+        //   WHERE type='engagement_reminder'
+        //     AND entity_type='poi_engagement'
+        //     AND resolved_at IS NULL
+        // Skip any engagement that already has an UNRESOLVED admin reminder.
+        // The unique index is the durable guard against concurrent overlap;
+        // this pre-filter avoids unnecessary insert failures on the common path.
+        const stillStaleIds = stillStale.map((e: any) => e.id);
+        const { data: existingReminders, error: existingErr } = await supabase
           .from("notifications")
-          .insert(notifications);
-        if (notifErr) {
-          console.warn(`[${requestId}] Could not insert notifications: ${notifErr.message}`);
+          .select("entity_id")
+          .eq("type", "engagement_reminder")
+          .eq("entity_type", "poi_engagement")
+          .is("resolved_at", null)
+          .in("entity_id", stillStaleIds);
+        if (existingErr) {
+          console.warn(`[${requestId}] Could not pre-filter existing reminders: ${existingErr.message}`);
+        }
+        const alreadyReminded = new Set<string>(
+          (existingReminders ?? []).map((r: any) => r.entity_id),
+        );
+        duplicateSkippedIds = stillStale
+          .filter((e: any) => alreadyReminded.has(e.id))
+          .map((e: any) => e.id);
+        duplicateSkippedCount = duplicateSkippedIds.length;
+        const toInsert = stillStale.filter((e: any) => !alreadyReminded.has(e.id));
+
+        if (toInsert.length > 0) {
+          const notifications = toInsert.map((eng: any) => ({
+            user_id: null, // Admin-targeted (null = system)
+            type: "engagement_reminder",
+            title: "Stale engagement - 7 days without contact",
+            message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
+            // NOT-008: link the in-app row to the engagement so that
+            // resolve_notifications_for('poi_engagement', id) can auto-clear it
+            // when the engagement is accepted / declined / cancelled / expired.
+            entity_type: "poi_engagement",
+            entity_id: eng.id,
+            metadata: {
+              engagement_id: eng.id,
+              match_id: eng.match_id,
+              org_id: eng.org_id,
+              days_stale: Math.floor((Date.now() - new Date(eng.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+            },
+            read: false,
+          }));
+
+          // Batch insert first; on unique-violation race (23505), retry per-row
+          // and silently skip the duplicates that the partial unique index caught.
+          const { data: batchInserted, error: notifErr } = await supabase
+            .from("notifications")
+            .insert(notifications)
+            .select("entity_id");
+          if (notifErr) {
+            const isUniqueViolation =
+              (notifErr as any).code === "23505" ||
+              /duplicate key|unique constraint/i.test(notifErr.message ?? "");
+            if (isUniqueViolation) {
+              console.warn(`[${requestId}] Batch reminder insert hit unique-violation race — falling back to per-row inserts.`);
+              for (const row of notifications) {
+                const { error: rowErr } = await supabase
+                  .from("notifications")
+                  .insert(row)
+                  .select("entity_id")
+                  .single();
+                if (!rowErr) {
+                  insertedReminderCount += 1;
+                } else {
+                  const rowUniqueViolation =
+                    (rowErr as any).code === "23505" ||
+                    /duplicate key|unique constraint/i.test(rowErr.message ?? "");
+                  if (rowUniqueViolation) {
+                    duplicateSkippedCount += 1;
+                    duplicateSkippedIds.push(row.entity_id as string);
+                  } else {
+                    console.warn(`[${requestId}] Could not insert reminder for ${row.entity_id}: ${rowErr.message}`);
+                  }
+                }
+              }
+            } else {
+              console.warn(`[${requestId}] Could not insert notifications: ${notifErr.message}`);
+            }
+          } else {
+            insertedReminderCount = batchInserted?.length ?? notifications.length;
+          }
         }
 
         await supabase.from("admin_audit_logs").insert({
@@ -148,6 +216,9 @@ Deno.serve(async (req) => {
             request_id: requestId,
             stale_count: stillStale.length,
             skipped_lifecycle_noop_count: skippedStale.length,
+            notifications_inserted_count: insertedReminderCount,
+            duplicate_skipped_count: duplicateSkippedCount,
+            duplicate_skipped_engagement_ids: duplicateSkippedIds,
             engagement_ids: stillStale.map((e: any) => e.id),
           },
         });
