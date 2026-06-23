@@ -20067,6 +20067,10 @@ export type Database = {
       }
       scrub_user_pii: { Args: { p_user_id: string }; Returns: Json }
       set_org_data_residency: { Args: { _region: string }; Returns: Json }
+      system_resolve_cron_risk_items: {
+        Args: { p_job_name: string }
+        Returns: number
+      }
       tenant_boundary_inventory: {
         Args: never
         Returns: {
