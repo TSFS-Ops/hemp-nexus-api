@@ -216,23 +216,95 @@ Deno.serve(async (req) => {
           paystack_reference: purchase.paystack_reference,
         };
         try {
-          const verifyResp = await fetch(
-            `https://api.paystack.co/transaction/verify/${encodeURIComponent(purchase.paystack_reference)}`,
-            { headers: { Authorization: `Bearer ${paystackKey}` } },
-          );
-          if (!verifyResp.ok) {
-            results.errors.push(`Paystack verify failed for ${purchase.id}: HTTP ${verifyResp.status}`);
+          // Provider-agnostic, bounded-timeout fetch. A timeout / network
+          // failure / non-OK / invalid JSON is inconclusive — the purchase
+          // stays pending and a deduped admin_risk_items row is tracked.
+          let verifyResp: Response;
+          try {
+            verifyResp = await providerFetch(
+              `https://api.paystack.co/transaction/verify/${encodeURIComponent(purchase.paystack_reference)}`,
+              { headers: { Authorization: `Bearer ${paystackKey}` } },
+              { providerName: "paystack", timeoutMs: 8000 },
+            );
+          } catch (netErr) {
+            const isTimeout = netErr instanceof ProviderFetchTimeoutError;
+            const reason = isTimeout
+              ? "paystack_verify_timeout"
+              : netErr instanceof ProviderFetchNetworkError
+                ? "paystack_verify_network_error"
+                : "paystack_verify_transport_error";
+            results.errors.push(`Paystack verify ${isTimeout ? "timeout" : "network"} for ${purchase.id}: ${(netErr as Error).message}`);
+            results.payments_left_pending_inconclusive++;
+            if (!dryRun) {
+              const track = await trackInconclusiveFailure(adminClient, {
+                providerReference: purchase.paystack_reference,
+                purchaseId: purchase.id,
+                orgId: purchase.org_id ?? null,
+                reason,
+              });
+              if (track.opened) results.inconclusive_risk_items_opened++;
+            }
             results.records.push({
               record_type: "token_purchase",
               before,
               after: before,
-              action: "no_change",
-              reason: `paystack_verify_http_${verifyResp.status}`,
+              action: "left_pending_inconclusive",
+              reason,
               dry_run: dryRun,
             });
             continue;
           }
-          const verifyData = await verifyResp.json();
+          if (!verifyResp.ok) {
+            const reason = `paystack_verify_http_${verifyResp.status}`;
+            results.errors.push(`Paystack verify failed for ${purchase.id}: HTTP ${verifyResp.status}`);
+            results.payments_left_pending_inconclusive++;
+            if (!dryRun) {
+              const track = await trackInconclusiveFailure(adminClient, {
+                providerReference: purchase.paystack_reference,
+                purchaseId: purchase.id,
+                orgId: purchase.org_id ?? null,
+                reason,
+              });
+              if (track.opened) results.inconclusive_risk_items_opened++;
+            }
+            // Consume response body to avoid resource leak in Deno.
+            try { await verifyResp.text(); } catch { /* ignore */ }
+            results.records.push({
+              record_type: "token_purchase",
+              before,
+              after: before,
+              action: "left_pending_inconclusive",
+              reason,
+              dry_run: dryRun,
+            });
+            continue;
+          }
+          let verifyData: { data?: { status?: string } };
+          try {
+            verifyData = await verifyResp.json();
+          } catch (parseErr) {
+            const reason = "paystack_verify_invalid_json";
+            results.errors.push(`Paystack verify invalid JSON for ${purchase.id}: ${(parseErr as Error).message}`);
+            results.payments_left_pending_inconclusive++;
+            if (!dryRun) {
+              const track = await trackInconclusiveFailure(adminClient, {
+                providerReference: purchase.paystack_reference,
+                purchaseId: purchase.id,
+                orgId: purchase.org_id ?? null,
+                reason,
+              });
+              if (track.opened) results.inconclusive_risk_items_opened++;
+            }
+            results.records.push({
+              record_type: "token_purchase",
+              before,
+              after: before,
+              action: "left_pending_inconclusive",
+              reason,
+              dry_run: dryRun,
+            });
+            continue;
+          }
           const txStatus = verifyData?.data?.status;
 
           if (txStatus === "success") {
@@ -270,6 +342,12 @@ Deno.serve(async (req) => {
                 .update({ status: "completed", updated_at: new Date().toISOString() })
                 .eq("id", purchase.id);
               results.payments_reconciled++;
+              // Auto-resolve any inconclusive risk item for this reference.
+              const resolved = await resolveInconclusive(adminClient, {
+                providerReference: purchase.paystack_reference,
+                resolutionReason: "purchase_completed",
+              });
+              if (resolved) results.inconclusive_risk_items_resolved++;
               results.records.push({
                 record_type: "token_purchase",
                 before,
@@ -296,6 +374,13 @@ Deno.serve(async (req) => {
               .update({ status: "failed", updated_at: new Date().toISOString() })
               .eq("id", purchase.id);
             results.payments_failed++;
+            // Auto-resolve any inconclusive risk item — provider has now
+            // definitively declared failure.
+            const resolved = await resolveInconclusive(adminClient, {
+              providerReference: purchase.paystack_reference,
+              resolutionReason: "provider_definitive_failure",
+            });
+            if (resolved) results.inconclusive_risk_items_resolved++;
             results.records.push({
               record_type: "token_purchase",
               before,
@@ -304,6 +389,9 @@ Deno.serve(async (req) => {
               dry_run: false,
             });
           } else {
+            // Non-definitive provider status (pending/ongoing/processing/queued/unknown).
+            // Leave purchase pending; do NOT count as inconclusive transport
+            // failure (provider answered, just not finally).
             results.records.push({
               record_type: "token_purchase",
               before,
