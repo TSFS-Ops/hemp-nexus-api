@@ -137,7 +137,7 @@ export function MatchCompiler({
     cancelLabel: "Stay on page",
   });
 
-  // ── Real tamper-proof seal, SHA-256 over canonical payload ──
+  // ── Hash-sealed evidence record, SHA-256 over canonical payload ──
   // In demo mode the seal is pre-baked so we never run hashing.
   useEffect(() => {
     if (demoMode) return;
@@ -450,7 +450,7 @@ export function MatchCompiler({
             </article>
 
             <p className="mt-6 text-center text-[11px] text-muted-foreground leading-relaxed">
-              The Certificate becomes immutable upon Proof of Intent generation.
+              The Certificate is hash-sealed after Proof of Intent; amendments require a new Proof of Intent.
             </p>
           </div>
         </div>

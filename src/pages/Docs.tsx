@@ -488,7 +488,7 @@ sendTradeRequest('your-match-id', 'your-api-key')
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-4 w-4 mt-0.5 text-primary" />
-                      <span>A hash-chained event is recorded in the evidence timeline</span>
+                      <span>A hash-sealed event is recorded in the evidence timeline</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <ArrowRight className="h-4 w-4 mt-0.5 text-primary" />

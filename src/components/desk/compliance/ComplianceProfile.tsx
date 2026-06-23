@@ -518,7 +518,7 @@ export function ComplianceProfile() {
         </p>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-2xl">
           This profile is held by the Izenzo Governance Registry under jurisdiction{" "}
-          {jurisdiction}. Counterparties may request tamper-proof proof of any field
+          {jurisdiction}. Counterparties may request hash-sealed proof of any field
           via the Without-a-Doubt attestation endpoint.
         </p>
       </footer>
