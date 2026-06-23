@@ -320,11 +320,23 @@ Deno.serve(async (req) => {
               results.payments_reconciled++;
               continue;
             }
-            const creditResult = await adminClient.rpc("atomic_token_credit", {
+            // Canonical paid-credit settlement. Uses the provider reference
+            // as `p_reference_id` so it is idempotent against the webhook
+            // path (both routes target the same partial UNIQUE index on
+            // token_ledger.request_id). Produces a canonical
+            // `credit_purchase` ledger row — never an ambient `credit` row.
+            const creditResult = await adminClient.rpc("atomic_paid_credit_purchase", {
               p_org_id: purchase.org_id,
               p_amount: purchase.token_amount,
-              p_reason: "reconciliation_credit",
-              p_reference_id: purchase.id,
+              p_reference_id: purchase.paystack_reference,
+              p_endpoint: "payment:paystack:reconciliation",
+              p_metadata: {
+                payment_reference: purchase.paystack_reference,
+                provider_reference: purchase.paystack_reference,
+                purchase_id: purchase.id,
+                reconciled_at: new Date().toISOString(),
+                source: "transaction-reconciliation",
+              },
             });
             if (creditResult.error) {
               results.errors.push(`Token credit failed for ${purchase.id}: ${creditResult.error.message}`);
