@@ -275,17 +275,26 @@ async function _serve(req: Request): Promise<Response> {
       // is changed here.
       let verifyRes: Response;
       try {
-        verifyRes = await fetch(
+        verifyRes = await providerFetch(
           `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-          { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
+          { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } },
+          { providerName: "paystack", timeoutMs: 8000 },
         );
       } catch (netErr) {
-        console.warn(`[Verify] Paystack network/timeout error for ${reference}:`, netErr);
+        // ProviderFetchTimeoutError or ProviderFetchNetworkError — both
+        // are inconclusive (NOT a definitive provider failure).
+        const isTimeout = netErr instanceof ProviderFetchTimeoutError;
+        const isNetwork = netErr instanceof ProviderFetchNetworkError;
+        console.warn(
+          `[Verify] Paystack ${isTimeout ? "timeout" : isNetwork ? "network" : "transport"} error for ${reference}:`,
+          netErr,
+        );
         return new Response(
           JSON.stringify({
             success: false,
             verifyInconclusive: true,
             paystackStatus: "unknown",
+            providerStatus: "unknown",
             message:
               "Could not reach payment provider. Verification is still pending — your payment may still complete.",
           }),
@@ -300,6 +309,7 @@ async function _serve(req: Request): Promise<Response> {
             success: false,
             verifyInconclusive: true,
             paystackStatus: "unknown",
+            providerStatus: "unknown",
             message:
               "Payment provider returned a temporary error. Verification is still pending — your payment may still complete.",
           }),
@@ -317,6 +327,7 @@ async function _serve(req: Request): Promise<Response> {
             success: false,
             verifyInconclusive: true,
             paystackStatus: "unknown",
+            providerStatus: "unknown",
             message:
               "Payment provider returned an unreadable response. Verification is still pending — your payment may still complete.",
           }),
@@ -335,6 +346,7 @@ async function _serve(req: Request): Promise<Response> {
               success: false,
               message: "Transaction not successful",
               paystackStatus: providerStatus,
+              providerStatus,
             }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
@@ -346,6 +358,7 @@ async function _serve(req: Request): Promise<Response> {
             success: false,
             verifyInconclusive: true,
             paystackStatus: providerStatus ?? "unknown",
+            providerStatus: providerStatus ?? "unknown",
             message:
               "Payment verification is still pending with the provider. Credits will appear once settlement confirms.",
           }),
