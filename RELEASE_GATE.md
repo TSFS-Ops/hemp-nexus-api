@@ -142,6 +142,7 @@ live in the production runtime before publishing.
 - `admin-billing-hold-release` — DEC-007 / PAY-009 Platform Admin billing hold release (AAL2 + reason required)
 - `admin-refund-approve` — DEC-007 Platform Admin refund approval (AAL2 + reason required)
 - `admin-refund-decline` — DEC-007 Platform Admin refund decline (AAL2 + reason required)
+- `admin-refund-mark-settled` — DEC-007 Platform Admin refund mark-settled (AAL2 + reason required)
 - `admin-payment-dispute-record` — PAY-009 Platform Admin manual payment-dispute record (AAL2 + reason required)
 - `admin-payment-dispute-resolve-won` — PAY-009 Platform Admin payment-dispute resolve-won (AAL2 + reason required)
 - `admin-payment-dispute-resolve-lost` — PAY-009 Platform Admin payment-dispute resolve-lost (AAL2 + reason required)
