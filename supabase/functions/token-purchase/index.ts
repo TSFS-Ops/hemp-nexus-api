@@ -1287,7 +1287,7 @@ async function handleChargeSuccess(
     .from("audit_logs")
     .select("metadata")
     .eq("action", "credits.purchase_initiated")
-    .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference}`)
+    .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference},metadata->>provider_reference.eq.${reference}`)
     .maybeSingle();
 
   if (initRow?.metadata) {
