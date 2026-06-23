@@ -39,15 +39,15 @@ function EmeraldWhisper() {
     </div>;
 }
 
-/* ───────────────── BENTO VISUAL, payload → SHA-256 hash ───────────────── */
+/* ───────────────── BENTO VISUAL, payload → SHA-256 hash (sample) ───────────────── */
 
-const HASH_VALUE = "0x7c1a4f8e9b2d6c5f3a1e8d4b7c9f2e5a8d3b6c1f4e7a9d2c5b8e1f4a7d3c9e6b";
+const SAMPLE_HASH_VALUE = "0x7c1a4f8e9b2d6c5f3a1e8d4b7c9f2e5a8d3b6c1f4e7a9d2c5b8e1f4a7d3c9e6b";
 function PayloadToHash() {
   return <div className="grid lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-center">
-      {/* Canonical JSON payload */}
+      {/* Canonical JSON payload (sample) */}
       <div className="rounded-xl bg-muted/60 ring-1 ring-slate-100 p-5 font-mono text-[11px] leading-relaxed text-muted-foreground overflow-hidden">
         <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground/70 mb-3">
-          Canonical Payload
+          Sample Payload
         </p>
         <pre className="whitespace-pre overflow-hidden text-foreground">
 {`{
@@ -57,7 +57,7 @@ function PayloadToHash() {
   "volume_mt": 500,
   "price_usd": 9420,
   "incoterms": "CIF Rotterdam",
-  "gates_passed": 9,
+  "gates_evaluated": "sample",
   "issued_at": "2026-04-17T12:04:11Z"
 }`}
         </pre>
@@ -77,15 +77,15 @@ function PayloadToHash() {
         </p>
       </div>
 
-      {/* Deterministic hash output */}
+      {/* Sample hash output */}
       <div className="rounded-xl bg-slate-900 ring-1 ring-slate-800 p-5 font-mono text-[11px] leading-relaxed text-emerald-300 break-all">
         <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground mb-3">
-          Deterministic Seal
+          Sample SHA-256 Seal
         </p>
-        <p className="text-emerald-300">{HASH_VALUE}</p>
+        <p className="text-emerald-300">{SAMPLE_HASH_VALUE}</p>
         <div className="mt-4 flex items-center gap-2 text-[10px] text-muted-foreground">
           <Lock className="h-3 w-3" strokeWidth={2} />
-          <span className="font-mono tracking-wider">Immutable · 256-bit</span>
+          <span className="font-mono tracking-wider">Hash-sealed · 256-bit · sample</span>
         </div>
       </div>
     </div>;
@@ -148,7 +148,7 @@ export default function AuditLedgerProductPage() {
               duration: 0.7,
               delay: 0.05
             }} className="mt-6 text-3xl sm:text-4xl md:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tighter leading-[1.02] text-foreground">
-                Immutable ledger
+                Tamper-evident ledger
                 <br />
                 for trade finance.
               </motion.h1>
@@ -162,10 +162,10 @@ export default function AuditLedgerProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.1
-            }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
-                Provide banks, DFIs, and insurers with mathematically provable
-                deal records. Eliminate manual auditing, eradicate fraud, and
-                accelerate capital deployment.
+              }} className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
+                Provide banks, DFIs, and insurers with hash-sealed, independently
+                re-verifiable deal records. Reduce manual auditing effort, raise
+                the cost of tampering, and accelerate capital deployment.
               </motion.p>
 
               <motion.div initial={{
@@ -195,8 +195,8 @@ export default function AuditLedgerProductPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.3
-            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
-                SHA-256 sealed · 9-gate verified · Bank-ready exports
+              }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
+                Tamper-evident · Hash-sealed · Bank-ready exports
               </motion.p>
             </div>
 
@@ -221,7 +221,7 @@ export default function AuditLedgerProductPage() {
                 background: "radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.18) 0%, transparent 70%)"
               }} />
                 {/* Masked container - locks height + fades the long doc, scrolled to surface the WaD seal */}
-                <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-card">
+                <div className="relative h-[600px] w-full max-w-lg mx-auto overflow-hidden rounded-xl shadow-2xl ring-1 ring-slate-900/10 -rotate-1 bg-card" aria-label="Sample evidence pack preview (demo)">
                   <div className="absolute inset-x-0 -top-[260px]">
                     <EvidencePackView demoMode />
                   </div>
@@ -229,6 +229,10 @@ export default function AuditLedgerProductPage() {
                   <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none" />
                   {/* bottom fade - disappears into the page */}
                   <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none" />
+                  {/* Demo/sample label - this is not a live backend verification */}
+                  <div className="absolute top-3 right-3 z-20 rounded-md bg-slate-900/80 px-2 py-0.5 font-mono text-[9px] tracking-[0.2em] uppercase text-emerald-300 ring-1 ring-emerald-400/40">
+                    Sample
+                  </div>
                 </div>
               </motion.div>
             </div>

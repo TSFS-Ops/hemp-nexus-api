@@ -100,7 +100,7 @@ function CertificateMockup() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
-                SHA-256 Tamper-Proof Seal
+                SHA-256 Hash-Sealed Record
               </p>
               <p className="mt-1 font-mono text-[11px] text-foreground break-all leading-relaxed">
                 {DEMO_COMPILER_SEAL}

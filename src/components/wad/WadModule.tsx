@@ -134,7 +134,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               <Shield className="h-5 w-5" />
                Signed Deal
             </CardTitle>
-            <CardDescription>Sealed evidence bundle for this intent</CardDescription>
+            <CardDescription>Hash-sealed evidence bundle for this intent</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
@@ -171,7 +171,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
               <Shield className="h-5 w-5" />
               Signed Deal
             </CardTitle>
-            <CardDescription>Create a sealed evidence bundle for this intent</CardDescription>
+            <CardDescription>Create a hash-sealed evidence bundle for this intent</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted rounded-lg space-y-3">
@@ -184,7 +184,7 @@ export function WadModule({ match, onWadCreated }: WadModuleProps) {
                 <li>Trade request timestamps and parties</li>
                 <li>Document hashes and evidence bundle</li>
                 <li>Multi-party attestations</li>
-                <li>Tamper-Proof seal</li>
+                <li>Tamper-evident seal</li>
               </ul>
               {selectedJurisdiction && (
                 <div className="pt-2 border-t">
