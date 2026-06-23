@@ -6,6 +6,7 @@ import {
   ProviderFetchTimeoutError,
   ProviderFetchNetworkError,
 } from "../_shared/provider-fetch.ts";
+import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
 
 // --- Inconclusive-failure tracking ---------------------------------
 // Opens a deduped admin_risk_items row only after the SAME provider
