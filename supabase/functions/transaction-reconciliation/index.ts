@@ -238,9 +238,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- 3. Audit log (per-record snapshots + summary) ---
+    // --- 3. Skeletal paid-credit ledger row repair (bounded, idempotent) ---
+    // Calls public.repair_skeletal_paid_credit which promotes any
+    // token_ledger row left at action_type='credit' whose request_id
+    // matches a real token_purchases.paystack_reference and is older
+    // than 15 minutes. Balance is NOT touched. Safe to run every tick.
+    if (!dryRun) {
+      const { data: repaired, error: repairErr } = await adminClient.rpc(
+        "repair_skeletal_paid_credit",
+        { p_min_age_minutes: 15, p_limit: 100 },
+      );
+      if (repairErr) {
+        results.skeletal_paid_credit_error = repairErr.message;
+        results.errors.push(`Skeletal paid-credit repair: ${repairErr.message}`);
+      } else if (Array.isArray(repaired)) {
+        results.skeletal_paid_credit_promoted = repaired.length;
+        for (const r of repaired) {
+          results.records.push({
+            record_type: "token_ledger_skeletal_paid_credit",
+            action: "promoted",
+            ledger_id: (r as { ledger_id?: string }).ledger_id,
+            reference: (r as { reference?: string }).reference,
+            dry_run: false,
+          });
+        }
+      }
+    }
+
+    // --- 4. Audit log (per-record snapshots + summary) ---
     await adminClient.from("admin_audit_logs").insert({
       admin_user_id: "00000000-0000-0000-0000-000000000000",
+
       action: "transaction.reconciliation",
       target_type: "system",
       details: {
