@@ -366,16 +366,26 @@ async function _serve(req: Request): Promise<Response> {
       const credits = meta.credits;
       const orgId = meta.org_id;
 
-      // Atomic balance credit (no read-then-write)
-      const { data: creditResult, error: creditError } = await supabase.rpc("atomic_token_credit", {
+      // Atomic paid credit purchase: balance update + canonical
+      // `credit_purchase` ledger row in ONE SQL transaction. Idempotent
+      // on the Paystack reference — webhook ↔ verify race is safe.
+      const { data: creditResult, error: creditError } = await supabase.rpc("atomic_paid_credit_purchase", {
         p_org_id: orgId,
         p_amount: credits,
-        p_reason: "credit_purchase",
         p_reference_id: reference,
+        p_endpoint: "payment:paystack:verify",
+        p_metadata: {
+          payment_reference: reference,
+          package_id: meta.package_id,
+          price_usd: meta.price_usd ?? null,
+          currency: "USD",
+          fx_basis: "native_usd",
+          verification_fallback: true,
+        },
       });
 
       if (creditError) {
-        console.error(`[Verify] atomic_token_credit failed for org ${orgId}:`, creditError);
+        console.error(`[Verify] atomic_paid_credit_purchase failed for org ${orgId}:`, creditError);
         return new Response(
           JSON.stringify({ error: "Failed to credit balance. Contact support@izenzo.co.za with reference: " + reference }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -383,53 +393,11 @@ async function _serve(req: Request): Promise<Response> {
       }
 
       const newBalance = creditResult?.new_balance ?? 0;
-
-      // Promote the row written by atomic_token_credit (action_type='credit')
-      // to the canonical 'credit_purchase' state. Matches the webhook path
-      // (D-01 fix) so we never create two ledger rows per Paystack reference.
-      const { data: existingFinalV } = await supabase
-        .from("token_ledger")
-        .select("id")
-        .eq("request_id", reference)
-        .eq("action_type", "credit_purchase")
-        .neq("id", "00000000-0000-0000-0000-000000000000")
-        .maybeSingle();
-      // If we somehow ran twice for the same reference, the previous run
-      // already promoted the row → nothing more to do.
-      if (existingFinalV) {
-        console.log(`[Verify] Already finalised, skipping enrichment: ${reference}`);
-      } else {
-        const { data: promotedV, error: promoteVErr } = await supabase
-          .from("token_ledger")
-          .update({
-            endpoint: "payment:paystack:verify",
-            action_type: "credit_purchase",
-            metadata: {
-              payment_reference: reference,
-              package_id: meta.package_id,
-              price_usd: meta.price_usd ?? null,
-              currency: "USD",
-              fx_basis: "native_usd",
-              verification_fallback: true,
-              credited: credits,
-              balance_after: newBalance,
-            },
-          })
-          .eq("org_id", orgId)
-          .eq("request_id", reference)
-          .eq("action_type", "credit")
-          .select("id")
-          .maybeSingle();
-        if (promoteVErr || !promotedV) {
-          console.error(`[Verify] Ledger promotion failed:`, promoteVErr);
-          await supabase.from("admin_risk_items").insert({
-            title: `Verify ledger promotion failure: ${reference}`,
-            description: `Credits (${credits}) were added to org ${orgId} but the ledger row could not be promoted to credit_purchase. Manual reconciliation required.`,
-            severity: "high",
-            status: "open",
-          });
-        }
+      const alreadyCredited = creditResult?.already_credited === true;
+      if (alreadyCredited) {
+        console.log(`[Verify] Reference already credited/promoted: ${reference}`);
       }
+
 
 
       // Batch C — Fix 1: this insert is now guarded by a partial UNIQUE
