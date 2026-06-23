@@ -58,9 +58,9 @@ export default function FinanceSolutionsPage() {
               </h1>
 
               <p className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
-                Rely on mathematically provable deal records to underwrite trade
-                finance, issue letters of credit, and insure shipments with
-                zero ambiguity.
+                Rely on hash-sealed, independently re-verifiable deal records
+                to underwrite trade finance, issue letters of credit, and insure
+                shipments with reduced ambiguity.
               </p>
 
               <div className="mt-12 flex flex-wrap items-center gap-4">

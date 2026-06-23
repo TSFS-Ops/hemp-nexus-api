@@ -40,7 +40,7 @@ export default function DocsEvidence() {
         <DocEyebrow>Core resources</DocEyebrow>
         <DocH1>Evidence Packs</DocH1>
         <DocLede>
-          Every settled match produces an evidence pack: an append-only, SHA-256-sealed record
+          Every settled match produces an evidence pack: a tamper-evident, SHA-256-sealed record
           of the deal, every supporting document, every event in the lifecycle, and the
           collapse ledger entry that ends it. Packs are designed to be verifiable offline by an
           auditor without any access to Izenzo infrastructure.
@@ -114,7 +114,7 @@ export default function DocsEvidence() {
         <DocH3>Retention</DocH3>
         <DocP>
           Evidence packs are retained online for seven years from settlement, then archived to
-          immutable cold storage. The cold-storage manifest is available on request and the
+          archival cold storage. The cold-storage manifest is available on request and the
           packs themselves remain hash-verifiable in perpetuity.
         </DocP>
       </div>
