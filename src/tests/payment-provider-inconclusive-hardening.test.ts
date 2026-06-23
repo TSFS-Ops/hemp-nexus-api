@@ -154,9 +154,9 @@ describe("transaction-reconciliation: provider fetch + inconclusive tracking", (
     expect(RECON).toMatch(/INCONCLUSIVE_OPEN_THRESHOLD\s*=\s*3/);
     expect(RECON).toMatch(/INCONCLUSIVE_KIND\s*=\s*"payment_provider_inconclusive"/);
     expect(RECON).toMatch(/payment_inconclusive:\$\{params\.providerReference\}/);
-    // First insert is monitoring phase, status='resolved', severity='low'.
+    // First insert is monitoring phase: severity='low', status='resolved'.
     expect(RECON).toMatch(
-      /admin_risk_items[\s\S]{0,200}\.insert\(\{[\s\S]{0,600}status:\s*"resolved"[\s\S]{0,200}severity:\s*"low"[\s\S]{0,400}phase:\s*"monitoring"/,
+      /admin_risk_items[\s\S]{0,200}\.insert\(\{[\s\S]{0,800}severity:\s*"low"[\s\S]{0,200}status:\s*"resolved"[\s\S]{0,600}phase:\s*"monitoring"/,
     );
     // Escalation: flips to open + medium when failure_count >= threshold.
     expect(RECON).toMatch(
