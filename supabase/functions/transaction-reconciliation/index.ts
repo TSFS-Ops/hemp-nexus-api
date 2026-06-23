@@ -280,7 +280,16 @@ Deno.serve(async (req) => {
             });
             continue;
           }
-          let verifyData: { data?: { status?: string } };
+          let verifyData: {
+            data?: {
+              status?: string;
+              amount?: number;
+              currency?: string;
+              paid_at?: string;
+              customer?: { email?: string };
+              metadata?: Record<string, unknown>;
+            };
+          };
           try {
             verifyData = await verifyResp.json();
           } catch (parseErr) {
