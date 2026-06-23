@@ -330,6 +330,116 @@ Deno.serve(async (req) => {
               results.payments_reconciled++;
               continue;
             }
+
+            // ── Mismatch guard parity with webhook path ──
+            // Compare init (credits.purchase_initiated audit row or, as
+            // fallback, the token_purchases row stamped at init) against
+            // settled (Paystack /verify). If amount/currency/package do
+            // not match within the 1-cent tolerance, refuse to credit,
+            // write a deduped credits.purchase_rejected audit + open a
+            // deduped admin risk item. Purchase stays pending so the
+            // dedup checks short-circuit subsequent reconciliation ticks.
+            const verifyTx = verifyData?.data ?? {};
+            const settledAmountUsd = typeof verifyTx.amount === "number"
+              ? Number(verifyTx.amount) / 100
+              : null;
+            const settledCurrency = (verifyTx.currency ?? "").toUpperCase() || null;
+            const customerEmail = verifyTx.customer?.email ?? null;
+            const settledPaidAt = verifyTx.paid_at ?? null;
+            const settledPackage = (verifyTx.metadata?.package_id as string | undefined) ?? null;
+
+            const { data: initRow } = await adminClient
+              .from("audit_logs")
+              .select("metadata, actor_user_id")
+              .eq("action", "credits.purchase_initiated")
+              .or(`metadata->>payment_reference.eq.${purchase.paystack_reference},metadata->>reference.eq.${purchase.paystack_reference},metadata->>provider_reference.eq.${purchase.paystack_reference}`)
+              .maybeSingle();
+            const initMeta = (initRow?.metadata ?? {}) as Record<string, unknown>;
+            const expectedUsd = Number(
+              initMeta.price_usd ?? purchase.amount_usd,
+            );
+            const expectedCurrency = (
+              (initMeta.currency as string | undefined) ?? purchase.currency ?? "USD"
+            ).toUpperCase();
+            const expectedPackage =
+              (initMeta.package_id as string | undefined) ?? purchase.package_id ?? null;
+
+            const mismatch: string[] = [];
+            if (
+              Number.isFinite(expectedUsd) &&
+              settledAmountUsd != null &&
+              Number.isFinite(settledAmountUsd) &&
+              Math.abs(expectedUsd - settledAmountUsd) > 0.01
+            ) {
+              mismatch.push(`amount expected=${expectedUsd} settled=${settledAmountUsd}`);
+            }
+            if (settledCurrency && expectedCurrency !== settledCurrency) {
+              mismatch.push(`currency expected=${expectedCurrency} settled=${settledCurrency}`);
+            }
+            if (expectedPackage && settledPackage && expectedPackage !== settledPackage) {
+              mismatch.push(`package expected=${expectedPackage} settled=${settledPackage}`);
+            }
+
+            if (mismatch.length > 0) {
+              console.error(
+                `[Reconciliation] Rejecting ${purchase.paystack_reference}: ${mismatch.join("; ")}`,
+              );
+              // Dedup audit: skip if an initiation_mismatch row already
+              // exists for this reference.
+              const { data: existingRejection } = await adminClient
+                .from("audit_logs")
+                .select("id")
+                .eq("action", "credits.purchase_rejected")
+                .eq("metadata->>payment_reference", purchase.paystack_reference)
+                .eq("metadata->>reason", "initiation_mismatch")
+                .maybeSingle();
+              if (!existingRejection) {
+                await adminClient.from("audit_logs").insert({
+                  org_id: purchase.org_id,
+                  action: "credits.purchase_rejected",
+                  entity_type: "token_balance",
+                  metadata: {
+                    payment_reference: purchase.paystack_reference,
+                    reason: "initiation_mismatch",
+                    mismatches: mismatch,
+                    source: "transaction-reconciliation",
+                  },
+                });
+              }
+              const mismatchDedup = `payment_settlement_mismatch:${purchase.paystack_reference}`;
+              const { data: existingMismatchRisk } = await adminClient
+                .from("admin_risk_items")
+                .select("id")
+                .eq("dedup_key", mismatchDedup)
+                .maybeSingle();
+              if (!existingMismatchRisk) {
+                await adminClient.from("admin_risk_items").insert({
+                  kind: "payment_settlement_mismatch",
+                  dedup_key: mismatchDedup,
+                  title: `Paystack settlement mismatch (reconciliation): ${purchase.paystack_reference}`,
+                  description: mismatch.join("; "),
+                  severity: "high",
+                  status: "open",
+                  org_id: purchase.org_id,
+                  metadata: {
+                    provider_reference: purchase.paystack_reference,
+                    purchase_id: purchase.id,
+                    mismatches: mismatch,
+                    source: "transaction-reconciliation",
+                  },
+                });
+              }
+              results.records.push({
+                record_type: "token_purchase",
+                before,
+                after: before,
+                action: "left_pending_mismatch",
+                mismatches: mismatch,
+                dry_run: false,
+              });
+              continue;
+            }
+
             // Canonical paid-credit settlement. Uses the provider reference
             // as `p_reference_id` so it is idempotent against the webhook
             // path (both routes target the same partial UNIQUE index on
@@ -364,6 +474,103 @@ Deno.serve(async (req) => {
                 .update({ status: "completed", updated_at: new Date().toISOString() })
                 .eq("id", purchase.id);
               results.payments_reconciled++;
+              const newBalance = (creditResult.data as { new_balance?: number } | null)?.new_balance ?? 0;
+
+              // ── Audit parity: canonical credits.purchased row ──
+              // Same shape + payment_reference key as webhook/verify so
+              // revenue reporting sees reconciliation-recovered purchases.
+              // Guarded by the partial UNIQUE on
+              // (metadata->>'payment_reference') WHERE action='credits.purchased'
+              // — webhook/reconciliation race resolves to one row (23505 noop).
+              {
+                const { error: auditErr } = await adminClient.from("audit_logs").insert({
+                  org_id: purchase.org_id,
+                  actor_user_id: purchase.user_id ?? (initRow?.actor_user_id ?? null),
+                  action: "credits.purchased",
+                  entity_type: "token_balance",
+                  entity_id: purchase.org_id,
+                  metadata: {
+                    credits_added: purchase.token_amount,
+                    new_balance: newBalance,
+                    payment_reference: purchase.paystack_reference,
+                    package_id: purchase.package_id,
+                    price_usd: purchase.amount_usd ?? null,
+                    currency: purchase.currency ?? "USD",
+                    fx_basis: "native_usd",
+                    paid_at: settledPaidAt,
+                    customer_email: customerEmail,
+                    source: "transaction-reconciliation",
+                  },
+                });
+                if (auditErr && auditErr.code !== "23505") {
+                  results.errors.push(
+                    `Reconciliation credits.purchased audit failed for ${purchase.paystack_reference}: ${auditErr.message}`,
+                  );
+                  // Open a deduped risk item so an audit gap is visible.
+                  const auditDedup = `reconciliation_audit_failed:${purchase.paystack_reference}`;
+                  const { data: existingAuditRisk } = await adminClient
+                    .from("admin_risk_items")
+                    .select("id")
+                    .eq("dedup_key", auditDedup)
+                    .maybeSingle();
+                  if (!existingAuditRisk) {
+                    await adminClient.from("admin_risk_items").insert({
+                      kind: "payment_reconciliation_audit_failed",
+                      dedup_key: auditDedup,
+                      title: `Reconciliation credits.purchased audit failed: ${purchase.paystack_reference}`,
+                      description: auditErr.message,
+                      severity: "high",
+                      status: "open",
+                      org_id: purchase.org_id,
+                      metadata: {
+                        provider_reference: purchase.paystack_reference,
+                        error: auditErr.message,
+                      },
+                    });
+                  }
+                }
+              }
+
+              // ── Revenue notification parity ──
+              // Same idempotency key as webhook/verify
+              // (`revenue-credits-purchased-${reference}`); the helper's
+              // dedup ensures at most one notification per provider ref.
+              try {
+                const { data: orgRow } = await adminClient
+                  .from("organizations")
+                  .select("name")
+                  .eq("id", purchase.org_id)
+                  .maybeSingle();
+                const orgName = (orgRow?.name as string) ||
+                  `Org ${String(purchase.org_id).slice(0, 8)}`;
+                await emitRevenueNotification(adminClient, {
+                  eventType: "credits_purchased",
+                  idempotencyKey: `revenue-credits-purchased-${purchase.paystack_reference}`,
+                  referenceId: purchase.paystack_reference,
+                  orgId: purchase.org_id,
+                  orgName,
+                  contactEmail: customerEmail,
+                  headline: `${orgName} purchased ${purchase.token_amount} credit${purchase.token_amount === 1 ? "" : "s"}`,
+                  details: {
+                    "Credits added": purchase.token_amount,
+                    "Amount (USD)": purchase.amount_usd != null
+                      ? `$${Number(purchase.amount_usd).toFixed(2)}`
+                      : "—",
+                    "Package ID": purchase.package_id ?? "—",
+                    "New balance": newBalance,
+                    "Payment reference": purchase.paystack_reference,
+                    "Source": "reconciliation",
+                  },
+                  consoleUrl: `https://api.trade.izenzo.co.za/admin/billing`,
+                  consoleLabel: "Open billing console",
+                  occurredAt: settledPaidAt || new Date().toISOString(),
+                });
+              } catch (revErr) {
+                results.errors.push(
+                  `Reconciliation revenue notification failed for ${purchase.paystack_reference}: ${(revErr as Error).message}`,
+                );
+              }
+
               // Auto-resolve any inconclusive risk item for this reference.
               const resolved = await resolveInconclusive(adminClient, {
                 providerReference: purchase.paystack_reference,
