@@ -7,13 +7,32 @@
  * Until backend immutability is genuinely enforced (UPDATE/DELETE/TRUNCATE
  * blocked on every claimed ledger table with no GUC/owner-droppable bypass,
  * plus an automated hash-chain verifier), strong trust wording must not
- * appear on public/product-facing surfaces under src/pages and src/components.
+ * appear on public/customer-facing surfaces.
+ *
+ * Scope (explicitly per the issue brief):
+ *   - src/pages/products/**
+ *   - src/pages/solutions/**
+ *   - src/pages/docs/**            (public documentation)
+ *   - src/components/landing/**
+ *   - src/components/PublicHeader.tsx
+ *   - src/components/wad/**        (user-facing deal-flow UI)
+ *   - src/components/match/**      (user-facing deal-flow UI)
+ *   - src/components/governance/TriageInbox.tsx (user-facing toast/CTA)
+ *   - src/components/developer/IntegrationGuidePdf.ts (published developer PDF)
+ *
+ * Explicitly out of scope:
+ *   - src/components/admin/**      (admin-only architecture descriptions
+ *                                   that often refer truthfully to tables
+ *                                   that DO have triggers, e.g. collapse_ledger,
+ *                                   break_glass_actions, signing_keys)
+ *   - src/pages/HQ.tsx             (developer/internal map)
+ *   - JS/TS comments (not user-visible)
  *
  * This guard never touches the database. It is presentation-only.
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 import {
   IMMUTABILITY_BACKEND_ENFORCED,
@@ -22,13 +41,26 @@ import {
 } from "@/lib/policy/audit-ledger-capability";
 
 const ROOT = join(process.cwd(), "src");
-const SCAN_DIRS = [join(ROOT, "pages"), join(ROOT, "components")];
+
+const SCAN_DIRS = [
+  join(ROOT, "pages", "products"),
+  join(ROOT, "pages", "solutions"),
+  join(ROOT, "pages", "docs"),
+  join(ROOT, "components", "landing"),
+  join(ROOT, "components", "wad"),
+  join(ROOT, "components", "match"),
+];
+
+const SCAN_FILES = [
+  join(ROOT, "components", "PublicHeader.tsx"),
+  join(ROOT, "components", "governance", "TriageInbox.tsx"),
+  join(ROOT, "components", "developer", "IntegrationGuidePdf.ts"),
+];
+
 const ALLOWED_EXT = new Set([".ts", ".tsx"]);
-// Files in scan dirs that may legitimately reference banned phrases as
-// data (e.g. this guard's own importer of the banned list).
-const ALLOWLIST: string[] = [];
 
 function walk(dir: string, acc: string[] = []): string[] {
+  if (!existsSync(dir)) return acc;
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     const s = statSync(full);
@@ -41,15 +73,40 @@ function walk(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
+/**
+ * Strip TS line/block comments so the guard only scans user-visible text,
+ * not developer comments. This is a deliberately conservative stripper
+ * (no template-literal awareness) but it is enough for our copy surfaces.
+ */
+function stripComments(source: string): string {
+  // Remove /* ... */ blocks first, then // line tail comments.
+  const noBlock = source.replace(/\/\*[\s\S]*?\*\//g, (m) =>
+    m.replace(/[^\n]/g, " "),
+  );
+  return noBlock
+    .split("\n")
+    .map((line) => {
+      const idx = line.indexOf("//");
+      if (idx === -1) return line;
+      // Crude string-aware guard: skip "//" inside quoted strings.
+      const before = line.slice(0, idx);
+      const quoteCount =
+        (before.match(/"/g) || []).length +
+        (before.match(/'/g) || []).length +
+        (before.match(/`/g) || []).length;
+      if (quoteCount % 2 === 1) return line; // inside a string
+      return before;
+    })
+    .join("\n");
+}
+
 function scanFile(file: string): { phrase: string; line: number; text: string }[] {
   const hits: { phrase: string; line: number; text: string }[] = [];
-  const content = readFileSync(file, "utf8");
-  const lines = content.split("\n");
+  const cleaned = stripComments(readFileSync(file, "utf8"));
+  const lines = cleaned.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     for (const phrase of BANNED_TRUST_PHRASES) {
-      // Case-insensitive substring; whole word boundary not required, the
-      // banned list is already specific.
       if (line.toLowerCase().includes(phrase.toLowerCase())) {
         hits.push({ phrase, line: i + 1, text: line.trim() });
       }
@@ -70,19 +127,16 @@ describe("Audit Ledger copy/capability guard", () => {
     expect(SAFE_LEDGER_COPY.shortTagline).not.toMatch(/immutable/i);
   });
 
-  it("public surfaces under src/pages and src/components contain no banned trust phrases while flag is false", () => {
-    if (IMMUTABILITY_BACKEND_ENFORCED) {
-      // If the flag is ever flipped, this guard relaxes — but flipping
-      // requires a separate hardening programme.
-      return;
-    }
-    const files = SCAN_DIRS.flatMap((d) => walk(d)).filter(
-      (f) => !ALLOWLIST.some((a) => f.endsWith(a)),
-    );
+  it("public/customer surfaces contain no banned trust phrases while flag is false", () => {
+    if (IMMUTABILITY_BACKEND_ENFORCED) return; // flag flip relaxes the guard
+
+    const files = [
+      ...SCAN_DIRS.flatMap((d) => walk(d)),
+      ...SCAN_FILES.filter((f) => existsSync(f)),
+    ];
     const violations: string[] = [];
     for (const file of files) {
-      const hits = scanFile(file);
-      for (const h of hits) {
+      for (const h of scanFile(file)) {
         violations.push(`${file}:${h.line} → "${h.phrase}" :: ${h.text}`);
       }
     }
@@ -97,11 +151,7 @@ describe("Audit Ledger copy/capability guard", () => {
     expect(auditLedger).toMatch(/Sample SHA-256 Seal/);
     expect(auditLedger).toMatch(/Sample Payload/);
     expect(auditLedger).toMatch(/SAMPLE_HASH_VALUE/);
-    // Demo evidence pack must carry a sample marker.
-    expect(auditLedger).toMatch(/Sample/);
-    // Hero must use tamper-evident, not immutable, wording.
     expect(auditLedger).toMatch(/Tamper-evident ledger/);
-    // Old hard-coded "gates_passed": 9 must be gone.
     expect(auditLedger).not.toMatch(/"gates_passed"\s*:\s*9/);
   });
 
