@@ -1,6 +1,123 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { errorResponse } from "../_shared/errors.ts";
+import {
+  providerFetch,
+  ProviderFetchTimeoutError,
+  ProviderFetchNetworkError,
+} from "../_shared/provider-fetch.ts";
+
+// --- Inconclusive-failure tracking ---------------------------------
+// Opens a deduped admin_risk_items row only after the SAME provider
+// reference has produced 3 repeated reconciliation failures (network,
+// timeout, non-OK, invalid JSON). Until the threshold is reached the
+// row is kept in a "monitoring" phase (status='resolved' so it does
+// not light up the admin queue). Auto-resolves when the purchase is
+// later credited, definitively failed, or no longer pending.
+//
+// Provider-agnostic by design: dedup_key namespacing is
+// `payment_inconclusive:<provider_reference>` so PayFast can reuse
+// the same surface unchanged.
+const INCONCLUSIVE_OPEN_THRESHOLD = 3;
+const INCONCLUSIVE_KIND = "payment_provider_inconclusive";
+
+// deno-lint-ignore no-explicit-any
+async function trackInconclusiveFailure(adminClient: any, params: {
+  providerReference: string;
+  purchaseId: string;
+  orgId: string | null;
+  reason: string;
+}): Promise<{ failure_count: number; opened: boolean }> {
+  const dedup = `payment_inconclusive:${params.providerReference}`;
+  const { data: existing } = await adminClient
+    .from("admin_risk_items")
+    .select("id, metadata, status, severity")
+    .eq("dedup_key", dedup)
+    .maybeSingle();
+
+  const nowIso = new Date().toISOString();
+  if (!existing) {
+    await adminClient.from("admin_risk_items").insert({
+      kind: INCONCLUSIVE_KIND,
+      dedup_key: dedup,
+      title: `Payment provider verify inconclusive: ${params.providerReference}`,
+      description:
+        `Reconciliation observed an inconclusive provider response (${params.reason}) for purchase ${params.purchaseId}. ` +
+        `Tracking; will escalate to status='open' after ${INCONCLUSIVE_OPEN_THRESHOLD} repeated failures.`,
+      severity: "low",
+      status: "resolved", // monitoring phase, NOT yet escalated
+      org_id: params.orgId,
+      metadata: {
+        phase: "monitoring",
+        failure_count: 1,
+        provider_reference: params.providerReference,
+        purchase_id: params.purchaseId,
+        last_reason: params.reason,
+        first_failure_at: nowIso,
+        last_failure_at: nowIso,
+      },
+    });
+    return { failure_count: 1, opened: false };
+  }
+
+  const prevMeta = (existing.metadata ?? {}) as Record<string, unknown>;
+  const prevCount = Number(prevMeta.failure_count ?? 0);
+  const failure_count = prevCount + 1;
+  const opened = failure_count >= INCONCLUSIVE_OPEN_THRESHOLD;
+  const phase = opened ? "active" : "monitoring";
+  await adminClient
+    .from("admin_risk_items")
+    .update({
+      status: opened ? "open" : existing.status,
+      severity: opened ? "medium" : existing.severity,
+      title: opened
+        ? `Payment provider verify repeatedly inconclusive: ${params.providerReference}`
+        : `Payment provider verify inconclusive: ${params.providerReference}`,
+      metadata: {
+        ...prevMeta,
+        phase,
+        failure_count,
+        last_reason: params.reason,
+        last_failure_at: nowIso,
+        ...(opened && !prevMeta.escalated_at ? { escalated_at: nowIso } : {}),
+      },
+      updated_at: nowIso,
+    })
+    .eq("id", existing.id);
+  return { failure_count, opened };
+}
+
+// deno-lint-ignore no-explicit-any
+async function resolveInconclusive(adminClient: any, params: {
+  providerReference: string;
+  resolutionReason: string;
+}): Promise<boolean> {
+  const dedup = `payment_inconclusive:${params.providerReference}`;
+  const { data: existing } = await adminClient
+    .from("admin_risk_items")
+    .select("id, metadata, status")
+    .eq("dedup_key", dedup)
+    .maybeSingle();
+  if (!existing) return false;
+  const prevMeta = (existing.metadata ?? {}) as Record<string, unknown>;
+  const nowIso = new Date().toISOString();
+  await adminClient
+    .from("admin_risk_items")
+    .update({
+      status: "resolved",
+      resolved_at: nowIso,
+      metadata: {
+        ...prevMeta,
+        phase: "resolved",
+        resolution_reason: params.resolutionReason,
+        resolved_at: nowIso,
+      },
+      updated_at: nowIso,
+    })
+    .eq("id", existing.id);
+  return true;
+}
+
 
 /**
  * Transaction Reconciliation Job — Batch V REC-004 / AUD-019 hardened.
