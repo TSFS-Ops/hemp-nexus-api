@@ -115,8 +115,37 @@ Deno.serve(async (req) => {
       let duplicateSkippedCount = 0;
       let duplicateSkippedIds: string[] = [];
 
+      // ── Admin recipient resolution (P011 routing) ─────────────
+      // Resolve real platform_admin user_ids. notifications.user_id is NOT NULL,
+      // so we MUST route to actual admin users. If no admins exist, skip insert
+      // entirely and record routing_failed in admin_audit_logs.
+      const adminRouting = await resolveAdminRecipients(supabase, "engagement.reminder");
+      const adminRecipients = adminRouting.recipients;
+      const routingFailed = adminRouting.routingFailed || adminRecipients.length === 0;
+
       if (stillStale.length === 0) {
         console.log(`[${requestId}] All ${staleEngagements!.length} fetched stale engagements have since moved status — no reminders inserted.`);
+      } else if (routingFailed) {
+        console.warn(`[${requestId}] No admin recipients resolved for engagement.reminder — skipping notification insert.`);
+        await supabase.from("admin_audit_logs").insert({
+          admin_user_id: null,
+          action: "engagement.reminder_batch",
+          target_type: "poi_engagement",
+          target_id: null,
+          details: {
+            request_id: requestId,
+            stale_count: stillStale.length,
+            skipped_lifecycle_noop_count: skippedStale.length,
+            notifications_inserted_count: 0,
+            duplicate_skipped_count: 0,
+            duplicate_skipped_engagement_ids: [],
+            engagement_ids: stillStale.map((e: any) => e.id),
+            recipient_count: 0,
+            routing_failed: true,
+            routed_to_fallback: false,
+            routing_policy_key: adminRouting.policy.policyKey,
+          },
+        });
       } else {
         // ── Idempotency pre-filter ─────────────────────────────────
         // Backed by partial unique index
@@ -125,49 +154,59 @@ Deno.serve(async (req) => {
         //   WHERE type='engagement_reminder'
         //     AND entity_type='poi_engagement'
         //     AND resolved_at IS NULL
-        // Skip any engagement that already has an UNRESOLVED admin reminder.
-        // The unique index is the durable guard against concurrent overlap;
-        // this pre-filter avoids unnecessary insert failures on the common path.
+        // Skip any (engagement, recipient) pair that already has an UNRESOLVED
+        // admin reminder. The unique index is the durable guard against
+        // concurrent overlap; this pre-filter avoids unnecessary insert failures.
         const stillStaleIds = stillStale.map((e: any) => e.id);
+        const recipientIds = adminRecipients.map((r) => r.userId);
         const { data: existingReminders, error: existingErr } = await supabase
           .from("notifications")
-          .select("entity_id")
+          .select("entity_id, user_id")
           .eq("type", "engagement_reminder")
           .eq("entity_type", "poi_engagement")
           .is("resolved_at", null)
-          .in("entity_id", stillStaleIds);
+          .in("entity_id", stillStaleIds)
+          .in("user_id", recipientIds);
         if (existingErr) {
           console.warn(`[${requestId}] Could not pre-filter existing reminders: ${existingErr.message}`);
         }
+        const alreadyKey = (entityId: string, userId: string) => `${entityId}::${userId}`;
         const alreadyReminded = new Set<string>(
-          (existingReminders ?? []).map((r: any) => r.entity_id),
+          (existingReminders ?? []).map((r: any) => alreadyKey(r.entity_id, r.user_id)),
         );
-        duplicateSkippedIds = stillStale
-          .filter((e: any) => alreadyReminded.has(e.id))
-          .map((e: any) => e.id);
-        duplicateSkippedCount = duplicateSkippedIds.length;
-        const toInsert = stillStale.filter((e: any) => !alreadyReminded.has(e.id));
 
-        if (toInsert.length > 0) {
-          const notifications = toInsert.map((eng: any) => ({
-            user_id: null, // Admin-targeted (null = system)
-            type: "engagement_reminder",
-            title: "Stale engagement - 7 days without contact",
-            message: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
-            // NOT-008: link the in-app row to the engagement so that
-            // resolve_notifications_for('poi_engagement', id) can auto-clear it
-            // when the engagement is accepted / declined / cancelled / expired.
-            entity_type: "poi_engagement",
-            entity_id: eng.id,
-            metadata: {
-              engagement_id: eng.id,
-              match_id: eng.match_id,
-              org_id: eng.org_id,
-              days_stale: Math.floor((Date.now() - new Date(eng.created_at).getTime()) / (1000 * 60 * 60 * 24)),
-            },
-            read: false,
-          }));
+        // Build cross-product (engagement × admin recipient) skipping pre-existing pairs.
+        const notifications: Array<{
+          user_id: string;
+          type: string;
+          title: string;
+          body: string;
+          entity_type: string;
+          entity_id: string;
+          read: boolean;
+        }> = [];
+        const duplicateSkippedEntityIds = new Set<string>();
+        for (const eng of stillStale as any[]) {
+          for (const r of adminRecipients) {
+            if (alreadyReminded.has(alreadyKey(eng.id, r.userId))) {
+              duplicateSkippedEntityIds.add(eng.id);
+              duplicateSkippedCount += 1;
+              continue;
+            }
+            notifications.push({
+              user_id: r.userId,
+              type: "engagement_reminder",
+              title: "Stale engagement - 7 days without contact",
+              body: `Engagement for ${eng.matches?.commodity || "unknown commodity"} from ${eng.initiator_org?.name || "unknown org"} has been waiting 7+ days. Counterparty: ${eng.counterparty_email || eng.counterparty_type}. Consider manual outreach.`,
+              entity_type: "poi_engagement",
+              entity_id: eng.id,
+              read: false,
+            });
+          }
+        }
+        duplicateSkippedIds = Array.from(duplicateSkippedEntityIds);
 
+        if (notifications.length > 0) {
           // Batch insert first; on unique-violation race (23505), retry per-row
           // and silently skip the duplicates that the partial unique index caught.
           const { data: batchInserted, error: notifErr } = await supabase
@@ -194,7 +233,9 @@ Deno.serve(async (req) => {
                     /duplicate key|unique constraint/i.test(rowErr.message ?? "");
                   if (rowUniqueViolation) {
                     duplicateSkippedCount += 1;
-                    duplicateSkippedIds.push(row.entity_id as string);
+                    if (!duplicateSkippedIds.includes(row.entity_id)) {
+                      duplicateSkippedIds.push(row.entity_id);
+                    }
                   } else {
                     console.warn(`[${requestId}] Could not insert reminder for ${row.entity_id}: ${rowErr.message}`);
                   }
@@ -221,6 +262,10 @@ Deno.serve(async (req) => {
             duplicate_skipped_count: duplicateSkippedCount,
             duplicate_skipped_engagement_ids: duplicateSkippedIds,
             engagement_ids: stillStale.map((e: any) => e.id),
+            recipient_count: adminRecipients.length,
+            routing_failed: false,
+            routed_to_fallback: adminRouting.routedToFallback,
+            routing_policy_key: adminRouting.policy.policyKey,
           },
         });
       }
