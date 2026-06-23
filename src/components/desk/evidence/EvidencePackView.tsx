@@ -411,9 +411,14 @@ export function EvidencePackView({
 
           {/* 9-Gate audit trail (real progression) */}
           <section className="pt-10 pb-4 border-t border-border">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-6">
-              II · 9-Gate Tamper-Proof Proof
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-2">
+              II · 9-Gate Compliance Trail
             </p>
+            {demoMode && (
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-emerald-600/80 mb-4">
+                Sample gate data
+              </p>
+            )}
             <ul className="space-y-3">
               {gates.map((gate, idx) => {
               const isVerified = gate.status === "verified";

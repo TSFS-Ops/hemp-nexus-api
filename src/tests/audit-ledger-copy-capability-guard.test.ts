@@ -50,6 +50,7 @@ const SCAN_DIRS = [
   join(ROOT, "components", "wad"),
   join(ROOT, "components", "match"),
   join(ROOT, "components", "desk", "match"),
+  join(ROOT, "components", "desk", "evidence"),
 ];
 
 const SCAN_FILES = [
