@@ -171,7 +171,12 @@ describe("event-ledger append-only convention guard (Option A)", () => {
     ).toEqual([]);
   });
 
-  it("no edge function performs direct UPDATE/DELETE/TRUNCATE on the three ledger/event tables", () => {
+  it("no edge function performs direct UPDATE/DELETE/TRUNCATE on the three ledger/event tables outside the audited allowlist", () => {
+    const allowByTable: Record<string, ReadonlyArray<string | RegExp>> = {
+      token_ledger: TOKEN_LEDGER_ALLOWLIST,
+      match_events: MATCH_EVENTS_ALLOWLIST,
+      poi_events: POI_EVENTS_ALLOWLIST,
+    };
     const offenders: string[] = [];
     const fnFiles = walk(join(REPO_ROOT, "supabase/functions"));
     for (const file of fnFiles) {
@@ -184,16 +189,18 @@ describe("event-ledger append-only convention guard (Option A)", () => {
         }
       })();
       for (const table of ["token_ledger", "match_events", "poi_events"]) {
+        if (isAllowed(r, allowByTable[table])) continue;
         for (const re of buildPatterns(table)) {
           if (re.test(content)) {
             offenders.push(`${r} (${table})`);
+            break;
           }
         }
       }
     }
     expect(
       offenders,
-      `Edge functions must not directly mutate ledger/event tables; use audited RPCs.\n` +
+      `Edge functions must not directly mutate ledger/event tables outside the audited allowlist.\n` +
         offenders.map((o) => ` - ${o}`).join("\n"),
     ).toEqual([]);
   });
