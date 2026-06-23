@@ -290,6 +290,12 @@ const EXTENDED_ALLOWED_LINE_SUBSTRINGS: ReadonlyArray<string> = [
   // collapse_ledger, break_glass_actions, poi_events, match_events all
   // have UPDATE/DELETE/TRUNCATE triggers in production.
   "blocking UPDATE/DELETE/TRUNCATE on the listed tables",
+  // AdminEventStorePanel header: event_store has triggers in production;
+  // the qualifier "where DB-enforced" keeps the statement honest.
+  "(append-only where DB-enforced, tamper-evident)",
+  // BrdConstraintsPanel key label for the completion ledger constraint
+  // (collapse_ledger has UPDATE/DELETE triggers in production).
+  'append_only_ledger: "Append-Only Completion Ledger"',
 ];
 
 function scanFileExtended(file: string): { phrase: string; line: number; text: string }[] {
