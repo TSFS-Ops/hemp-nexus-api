@@ -64,7 +64,7 @@ export function BrdConstraintsPanel() {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">BRD Constraints</h2>
         <p className="text-muted-foreground mt-2">
-          These constraints are locked and cannot be modified without a Director-level change record and formal BRD revision approval.
+          These constraints are locked and require a Director-approved change-record before amendment, alongside a formal BRD revision approval.
         </p>
       </div>
 
@@ -76,7 +76,7 @@ export function BrdConstraintsPanel() {
           </CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Any modification to these constraints requires: (1) a formal BRD revision request, (2) Director-level written approval, and (3) a permanent change record in the audit trail. These safeguards ensure that critical system invariants cannot be altered without governance oversight.
+          Any modification to these constraints requires: (1) a formal BRD revision request, (2) Director-level written approval, and (3) a permanent change record in the audit trail. These safeguards ensure that critical system invariants require a Director-approved change-record before amendment, with governance oversight.
         </CardContent>
       </Card>
 
@@ -120,10 +120,10 @@ export function BrdConstraintsPanel() {
           <CardTitle className="text-base">Governance Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>• <strong>Retention:</strong> Minimum 7 years, then cold storage with tamper-proof integrity preserved.</p>
+          <p>• <strong>Retention:</strong> Minimum 7 years, then cold storage with tamper-evident integrity preserved.</p>
           <p>• <strong>Data residency:</strong> Single approved production-region storage policy in effect. A trading jurisdiction is recorded at onboarding for governance purposes. Per-organisation residency commitments require separate Izenzo approval and are not automatically applied.</p>
           <p>• <strong>RPO/RTO:</strong> Collapse ledger RPO = 0 (synchronous replication). RTO ≤ 60 minutes.</p>
-          <p>• <strong>Immutability:</strong> Collapse ledger and break-glass logs are append-only with database-level triggers preventing UPDATE/DELETE.</p>
+          <p>• <strong>Ledger posture:</strong> Collapse ledger, break-glass logs, poi_events and match_events have database-level triggers blocking UPDATE/DELETE/TRUNCATE on the listed tables.</p>
         </CardContent>
       </Card>
     </div>

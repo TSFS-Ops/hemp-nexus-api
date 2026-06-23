@@ -42,7 +42,7 @@ export function AdminEventStorePanel() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Showing {events.length}{total !== null ? ` of ${total}` : ""} event(s) (append-only, immutable)
+        Showing {events.length}{total !== null ? ` of ${total}` : ""} event(s) (append-only where DB-enforced, tamper-evident)
       </p>
       {total !== null && total > EVENT_LIMIT && events.length >= EVENT_LIMIT && (
         <Alert>
@@ -74,7 +74,7 @@ export function AdminEventStorePanel() {
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Event Detail (Immutable)</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Event Detail (Tamper-evident)</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-2 text-sm">
               <div><span className="text-muted-foreground">ID:</span> <span className="font-mono text-xs">{selected.id}</span></div>

@@ -11,6 +11,7 @@ import {
   Body, Button, Container, Head, Heading, Hr, Html, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { ACCEPTANCE_RECEIPT_CLAUSE } from '../audit-ledger-copy.ts'
 
 const SITE_NAME = 'Izenzo'
 
@@ -46,8 +47,8 @@ const AcceptanceReceiptEmail = ({
           {recipientName ? `${recipientName}, your counterparty has accepted` : 'Your counterparty has accepted'}
         </Heading>
         <Text style={text}>
-          The acceptance has been recorded as an immutable, cryptographically signed receipt.
-          You do not need to contact support to confirm this transition.
+          {ACCEPTANCE_RECEIPT_CLAUSE}
+          {' '}You do not need to contact support to confirm this transition.
         </Text>
 
         <Section style={panel}>

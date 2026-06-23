@@ -441,7 +441,7 @@ export function InboundReview() {
               {/* ── Asymmetric Seal Section ─────────────────── */}
               <div className="mt-2 pt-6 border-t border-border">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-5">
-                  Bilateral Tamper-Proof Seal
+                  Bilateral Hash-Sealed Seal
                 </p>
 
                 <div className="space-y-3">
@@ -476,7 +476,7 @@ export function InboundReview() {
                   ease: "easeInOut"
                 }} className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3">
                     <p className="font-mono text-[11px] tracking-[0.15em] text-amber-800 text-center">
-                      {alreadyResponded ? `[ COUNTERPARTY ${data.engagementStatus?.toUpperCase()} ]` : "[ AWAITING YOUR TAMPER-PROOF SIGNATURE ]"}
+                      {alreadyResponded ? `[ COUNTERPARTY ${data.engagementStatus?.toUpperCase()} ]` : "[ AWAITING YOUR HASH-SEALED SIGNATURE ]"}
                     </p>
                   </motion.div>
                 </div>

@@ -577,7 +577,7 @@ export function AdminVerificationQueuePanel() {
                 />
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Closing this request writes an immutable entry to the audit log.
+                Closing this request writes a tamper-evident entry to the audit log.
                 A “rejected” outcome does not currently auto-block POI mint -
                 the WaD 9-gate engine remains the enforcement boundary.
               </p>

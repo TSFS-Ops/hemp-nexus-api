@@ -78,6 +78,18 @@ export const SAFE_LEDGER_COPY = {
    */
   wadAcceptBindIrreversibilityClause:
     "This action is recorded in the tamper-evident audit trail. Changes must follow the governed correction process.",
+  /**
+   * Outbound acceptance-receipt email clause. Mirrored byte-for-byte in
+   * `supabase/functions/_shared/audit-ledger-copy.ts` as
+   * `ACCEPTANCE_RECEIPT_CLAUSE` (drift-guard enforced).
+   */
+  acceptanceReceiptClause:
+    "The acceptance has been recorded as a hash-sealed, cryptographically signed receipt in the tamper-evident audit trail.",
+  /**
+   * Inbound-review awaiting-signature banner. Mirrored in the Deno twin
+   * as `WAD_AWAITING_SIGNATURE_LABEL`.
+   */
+  wadAwaitingSignatureLabel: "AWAITING YOUR HASH-SEALED SIGNATURE",
 } as const;
 
 /**

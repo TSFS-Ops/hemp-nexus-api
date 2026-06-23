@@ -350,7 +350,7 @@ export function BillingOverview() {
             Usage History
           </h2>
           <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70">
-            Append-only · Tamper-Proofally chained
+            Hash-sealed · Tamper-evident
           </p>
         </div>
 
