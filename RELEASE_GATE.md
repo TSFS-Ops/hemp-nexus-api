@@ -1636,3 +1636,23 @@ UAT/demo-ready, not production-ready.
 ### Edge functions requiring deploy (P-4 Point 4)
 - (none — pure SSOT + shared wrapper. Endpoint integrations consume
   `_shared/api-artefact-burn.ts` without schema changes.)
+
+### Edge functions requiring deploy (Batch V REC reconciliation — C1/C2 404 deploy wiring)
+
+These functions exist in source (Batch V REC-001 / REC-004) and are
+already scheduled by `cron.job` rows `balance-drift-reconciliation-daily`
+(jobid 36, `15 3 * * *`) and `side-effect-reconciliation-daily`
+(jobid 37, `45 3 * * *`). Both were returning HTTP 404 because they
+were not in the deploy manifest. Wiring them in here so the deploy
+coverage guard pins them and they remain live.
+
+- `balance-drift-reconciliation` — Batch V REC-001 daily read-only token
+  balance drift detector. Calls `reconcile_token_balances()`, opens
+  idempotent `admin_risk_items` rows of kind `balance_drift`. Never
+  mutates `token_balances` or `token_ledger`. Auth: `INTERNAL_CRON_KEY` /
+  service_role / platform_admin.
+- `side-effect-reconciliation` — Batch V REC-004 daily read-only
+  side-effect gap detector. For canonical audit/ledger events, checks
+  that expected `notifications` / `email_send_log` fan-out rows exist
+  and opens `admin_risk_items` of kind `missing_side_effect`. Never
+  resends or replays. Auth: same as sibling.

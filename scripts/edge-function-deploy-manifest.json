@@ -2,6 +2,8 @@
   "$schema_note": "Deploy-coverage manifest. Read scripts/check-edge-function-deploy-coverage.mjs for rules.",
   "required": [
     "match-named-contacts-assign",
+    "balance-drift-reconciliation",
+    "side-effect-reconciliation",
     "seed-mt009-controlled-prod",
     "unseed-mt009-controlled-prod",
     "seed-cp002-controlled-prod",
