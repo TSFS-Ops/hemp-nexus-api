@@ -47,6 +47,10 @@ const COMMON_ALLOWLIST: ReadonlyArray<string | RegExp> = [
   "src/tests/event-ledger-append-only-convention-guard.test.ts",
   "supabase/tests/event_ledger_append_only_convention_proof.sql",
   "evidence/event-ledger-append-only-convention/README.md",
+  // Rollback-wrapped freeze proof for poi_events append-only trigger.
+  // It seeds and attempts UPDATE/DELETE/TRUNCATE to prove the trigger
+  // raises POI_EVENTS_APPEND_ONLY. Not a runtime mutation caller.
+  "supabase/tests/poi_events_append_only_freeze_proof.sql",
 ];
 
 const TOKEN_LEDGER_ALLOWLIST: ReadonlyArray<string | RegExp> = [
@@ -218,7 +222,40 @@ describe("event-ledger append-only convention guard (Option A)", () => {
       join(REPO_ROOT, "evidence/event-ledger-append-only-convention/README.md"),
       "utf8",
     );
-    expect(readme).toMatch(/guard\/containment only/i);
-    expect(readme).toMatch(/no DB immutability triggers/i);
+    expect(readme).toMatch(/poi_events/i);
+  });
+
+  it("poi_events append-only freeze proof exists and asserts trigger behaviour", () => {
+    const proof = readFileSync(
+      join(REPO_ROOT, "supabase/tests/poi_events_append_only_freeze_proof.sql"),
+      "utf8",
+    );
+    expect(proof).toMatch(/POI_EVENTS_APPEND_ONLY/);
+    expect(proof).toMatch(/poi_events_no_mutate_trg/);
+    expect(proof).toMatch(/poi_events_no_truncate_trg/);
+    // Must be rollback-wrapped — no production rows touched.
+    expect(proof).toMatch(/^\s*BEGIN\s*;/m);
+    expect(proof).toMatch(/^\s*ROLLBACK\s*;/m);
+  });
+
+  it("POI_EVENTS_ALLOWLIST contains no runtime UPDATE/DELETE/TRUNCATE callers", () => {
+    // Allowed entries must be limited to guard/proof/README artefacts.
+    // No edge function, RPC migration, or scripts entry is permitted.
+    const stringEntries = POI_EVENTS_ALLOWLIST.filter(
+      (e): e is string => typeof e === "string",
+    );
+    for (const entry of stringEntries) {
+      expect(
+        entry.startsWith("src/tests/") ||
+          entry.startsWith("supabase/tests/") ||
+          entry.startsWith("evidence/"),
+        `POI_EVENTS_ALLOWLIST may only contain guard/proof/README artefacts. Offender: ${entry}`,
+      ).toBe(true);
+    }
+    const regexEntries = POI_EVENTS_ALLOWLIST.filter((e) => e instanceof RegExp);
+    expect(
+      regexEntries,
+      "POI_EVENTS_ALLOWLIST must not contain regex entries — that would whitelist a runtime mutation caller.",
+    ).toEqual([]);
   });
 });
