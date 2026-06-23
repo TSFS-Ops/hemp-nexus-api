@@ -66,6 +66,9 @@ Deno.serve(async (req) => {
       emails_marked_failed: 0,
       skeletal_paid_credit_promoted: 0,
       skeletal_paid_credit_error: null as string | null,
+      refund_settlement_pending_opened: 0,
+      refund_settlement_pending_resolved: 0,
+      refund_settlement_error: null as string | null,
       records: [] as Array<Record<string, unknown>>,
       errors: [] as string[],
     };
