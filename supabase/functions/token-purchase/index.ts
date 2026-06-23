@@ -1097,11 +1097,34 @@ async function handleChargeSuccess(
     console.warn("[Webhook] charge.success missing org_id/credits — attempting recovery", reference);
 
     // Recovery A — token_purchases row written at init from an authenticated session.
-    const { data: tpRow } = await supabase
-      .from("token_purchases")
-      .select("org_id, user_id, package_id, token_amount, amount_usd, currency")
-      .eq("paystack_reference", reference)
-      .maybeSingle();
+    // Lookup is provider-agnostic: tries the Paystack-shaped column first
+    // (current behaviour) and falls back to a generic `metadata->>provider_reference`
+    // shape so a future PayFast init can write the same key and inherit
+    // this recovery path without a parallel branch.
+    let tpRow: {
+      org_id?: string;
+      user_id?: string;
+      package_id?: string;
+      token_amount?: number;
+      amount_usd?: number;
+      currency?: string;
+    } | null = null;
+    {
+      const { data: tpByPaystack } = await supabase
+        .from("token_purchases")
+        .select("org_id, user_id, package_id, token_amount, amount_usd, currency")
+        .eq("paystack_reference", reference)
+        .maybeSingle();
+      tpRow = tpByPaystack ?? null;
+      if (!tpRow) {
+        const { data: tpByProvider } = await supabase
+          .from("token_purchases")
+          .select("org_id, user_id, package_id, token_amount, amount_usd, currency")
+          .eq("metadata->>provider_reference", reference)
+          .maybeSingle();
+        tpRow = tpByProvider ?? null;
+      }
+    }
 
     if (tpRow?.org_id && tpRow?.token_amount) {
       if (!meta.org_id) meta.org_id = tpRow.org_id;
@@ -1114,12 +1137,14 @@ async function handleChargeSuccess(
     }
 
     // Recovery B — credits.purchase_initiated audit row, if still incomplete.
+    // OR-clause includes the legacy payment_reference/reference keys AND the
+    // provider-agnostic provider_reference key for PayFast-readiness.
     if (!meta.org_id || !meta.credits) {
       const { data: initRowR } = await supabase
         .from("audit_logs")
         .select("org_id, actor_user_id, metadata")
         .eq("action", "credits.purchase_initiated")
-        .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference}`)
+        .or(`metadata->>payment_reference.eq.${reference},metadata->>reference.eq.${reference},metadata->>provider_reference.eq.${reference}`)
         .maybeSingle();
 
       if (initRowR?.metadata) {
