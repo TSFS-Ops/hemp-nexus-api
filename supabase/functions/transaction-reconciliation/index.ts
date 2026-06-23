@@ -64,9 +64,12 @@ Deno.serve(async (req) => {
       payments_failed: 0,
       emails_checked: 0,
       emails_marked_failed: 0,
+      skeletal_paid_credit_promoted: 0,
+      skeletal_paid_credit_error: null as string | null,
       records: [] as Array<Record<string, unknown>>,
       errors: [] as string[],
     };
+
 
     // --- 1. Stale Paystack payments ---
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
