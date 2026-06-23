@@ -1245,10 +1245,15 @@ async function handleChargeSuccess(
       },
     });
     if (auditErr && auditErr.code !== "23505") {
+      // FAIL-CLOSED: matches the payment.event_created pattern below.
+      // Throwing returns 5xx → Paystack/PayFast retry. The credit RPC is
+      // idempotent on `request_id`, so the retry will not double-credit.
       console.error(`[Webhook] credits.purchased audit insert failed:`, auditErr);
+      throw new Error(`AUDIT_WRITE_FAILED: ${auditErr.message}`);
     } else if (auditErr?.code === "23505") {
       console.log(`[Webhook] credits.purchased audit row already exists for ${reference} (verify won)`);
     }
+
   }
 
   // ── Phase 2 canonical governance proof (FAIL-CLOSED) ──
