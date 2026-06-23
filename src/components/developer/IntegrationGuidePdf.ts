@@ -54,7 +54,7 @@ const BLOCKS: Block[] = [
   { kind: "p", text: "(1) Create a trade request. POST /v1/trade.create with commodity, quantity, side and price. Idempotent on the Idempotency-Key header." },
   { kind: "p", text: "(2) Find or accept a counterparty. Either search the discovery index, accept an inbound engagement, or invite a known partner." },
   { kind: "p", text: "(3) Mint a Proof of Intent. POST /v1/poi.generate. Costs one credit. Requires both parties to have acknowledged the declaration and ATB clauses, and at least one document per side on bilateral matches. The probability of completion must be at least 50.1 percent." },
-  { kind: "p", text: "(4) Seal the WaD bundle. Once both parties have attested, the bundle is sealed with a SHA-256 hash chain and becomes the immutable evidence pack." },
+  { kind: "p", text: "(4) Seal the WaD bundle. Once both parties have attested, the bundle is sealed with a SHA-256 hash and becomes the tamper-evident evidence pack." },
 
   { kind: "h2", text: "5. Webhooks" },
   { kind: "p", text: "Register endpoints in the Developer Centre to receive push events: trade.created, poi.minted, poi.sealed, engagement.accepted, dispute.opened, balance.updated. Each delivery carries a signature header your server should verify. We retry on exponential back-off and auto-disable an endpoint that fails repeatedly. An auto-disabled live endpoint blocks WaD sealing (Gate 10) until restored." },
