@@ -20104,6 +20104,10 @@ export type Database = {
         Returns: Json
       }
       run_data_integrity_checks: { Args: never; Returns: Json }
+      run_reconcile_acceptance_notifications_with_heartbeat: {
+        Args: never
+        Returns: Json
+      }
       safe_transition_match_state: {
         Args: {
           p_expected_state: string
