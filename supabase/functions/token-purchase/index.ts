@@ -1220,6 +1220,60 @@ async function handleChargeSuccess(
   const credits = meta.credits as number;
   const userId = meta.user_id as string | undefined;
 
+  // ── Edge-level metadata validation (defence in depth) ──
+  // `atomic_paid_credit_purchase` has its own server-side validation and
+  // remains the final safety net. These checks fail-fast before the RPC
+  // so a malformed recovered/received payload never reaches the ledger
+  // and never triggers a misleading SQL error. On failure we write a
+  // visible credits.purchase_rejected audit + a deduped high-severity
+  // risk item and return safely (no retry-storm, no balance mutation).
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const creditsNum = Number(credits);
+  const validationFailures: string[] = [];
+  if (typeof orgId !== "string" || !UUID_RE.test(orgId)) {
+    validationFailures.push(`org_id_not_uuid:${String(orgId)}`);
+  }
+  if (!Number.isFinite(creditsNum) || !Number.isInteger(creditsNum) || creditsNum <= 0) {
+    validationFailures.push(`credits_not_positive_integer:${String(credits)}`);
+  }
+  if (typeof reference !== "string" || reference.trim() === "") {
+    validationFailures.push("reference_empty");
+  }
+  if (validationFailures.length > 0) {
+    console.error(`[Webhook] Rejecting charge.success ${reference}: metadata validation failed: ${validationFailures.join("; ")}`);
+    await supabase.from("audit_logs").insert({
+      org_id: UUID_RE.test(String(orgId)) ? orgId : null,
+      action: "credits.purchase_rejected",
+      entity_type: "token_balance",
+      metadata: {
+        payment_reference: reference,
+        reason: "metadata_validation_failed",
+        validation_failures: validationFailures,
+      },
+    });
+    const dedup = `payment_metadata_unrecoverable:${reference}`;
+    const { data: existingDup } = await supabase
+      .from("admin_risk_items")
+      .select("id")
+      .eq("dedup_key", dedup)
+      .maybeSingle();
+    if (!existingDup) {
+      await supabase.from("admin_risk_items").insert({
+        kind: "payment_metadata_unrecoverable",
+        dedup_key: dedup,
+        title: `Paystack charge.success metadata validation failed: ${reference}`,
+        description: `Edge-level validation rejected metadata before atomic_paid_credit_purchase: ${validationFailures.join("; ")}`,
+        severity: "high",
+        status: "open",
+        metadata: {
+          provider_reference: reference,
+          validation_failures: validationFailures,
+        },
+      });
+    }
+    return;
+  }
+
   console.log(`[Webhook] Processing charge.success: org=${orgId}, credits=${credits}, ref=${reference}`);
 
   // ── D-01: validate amount/currency/package against the initiation row ──
