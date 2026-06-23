@@ -82,20 +82,35 @@ export interface VerifyCheckoutResult {
   newBalance?: number;
   message?: string;
   /**
-   * CONTAINMENT (P0): set by the edge function when the Paystack verify
+   * CONTAINMENT (P0): set by the edge function when the provider verify
    * call could not produce a definitive answer (5xx, non-OK, network
-   * error, invalid JSON, or a non-definitive provider status such as
-   * `pending`/`ongoing`/`processing`/`queued`). The UI MUST render this
-   * as a pending/settling state, never as a failed transaction.
+   * error, timeout, invalid JSON, or a non-definitive provider status
+   * such as `pending`/`ongoing`/`processing`/`queued`). The UI MUST
+   * render this as a pending/settling state, never as a failed
+   * transaction. Provider-agnostic — PayFast must populate the same
+   * flag when its verify is inconclusive.
    */
   verifyInconclusive?: boolean;
   /**
    * Raw provider status when known. `"unknown"` is used when the edge
-   * function could not reach Paystack or parse its response. Only
+   * function could not reach the provider or parse its response. Only
    * `"failed" | "abandoned" | "reversed"` are treated as definitive
    * provider failures by the UI.
+   *
+   * `paystackStatus` is the legacy Paystack-specific field name and is
+   * retained for backwards compatibility with existing UI callers.
+   * `providerStatus` is the new provider-agnostic alias — PayFast and
+   * any future provider MUST populate it with the same semantics.
+   * Both fields always carry the same value when set by the edge
+   * function.
    */
   paystackStatus?: "success" | "failed" | "abandoned" | "reversed" | "unknown" | string;
+  /**
+   * Provider-agnostic alias for `paystackStatus`. See the comment on
+   * `paystackStatus` above. PayFast and any future provider verify path
+   * MUST return this field so the UI can stay provider-agnostic.
+   */
+  providerStatus?: "success" | "failed" | "abandoned" | "reversed" | "unknown" | string;
 }
 
 /**

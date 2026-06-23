@@ -22,7 +22,7 @@ const CHECKOUT = read("src/lib/credit-checkout.ts");
 describe("Paystack verify containment", () => {
   it("edge function wraps the Paystack fetch in try/catch and returns verifyInconclusive on network error", () => {
     expect(EDGE).toMatch(
-      /catch\s*\(\s*netErr\s*\)\s*\{[\s\S]{0,400}verifyInconclusive:\s*true/
+      /catch\s*\(\s*netErr\s*\)\s*\{[\s\S]{0,1000}verifyInconclusive:\s*true/
     );
   });
 

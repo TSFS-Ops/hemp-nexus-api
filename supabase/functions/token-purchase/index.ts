@@ -33,6 +33,11 @@ import {
 } from "../_shared/governance-audit-integration.ts";
 import { recordPaymentGovernanceOrEscalate } from "../_shared/payment-governance.ts";
 import { PAYMENT_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
+import {
+  providerFetch,
+  ProviderFetchTimeoutError,
+  ProviderFetchNetworkError,
+} from "../_shared/provider-fetch.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
@@ -270,17 +275,26 @@ async function _serve(req: Request): Promise<Response> {
       // is changed here.
       let verifyRes: Response;
       try {
-        verifyRes = await fetch(
+        verifyRes = await providerFetch(
           `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-          { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
+          { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } },
+          { providerName: "paystack", timeoutMs: 8000 },
         );
       } catch (netErr) {
-        console.warn(`[Verify] Paystack network/timeout error for ${reference}:`, netErr);
+        // ProviderFetchTimeoutError or ProviderFetchNetworkError — both
+        // are inconclusive (NOT a definitive provider failure).
+        const isTimeout = netErr instanceof ProviderFetchTimeoutError;
+        const isNetwork = netErr instanceof ProviderFetchNetworkError;
+        console.warn(
+          `[Verify] Paystack ${isTimeout ? "timeout" : isNetwork ? "network" : "transport"} error for ${reference}:`,
+          netErr,
+        );
         return new Response(
           JSON.stringify({
             success: false,
             verifyInconclusive: true,
             paystackStatus: "unknown",
+            providerStatus: "unknown",
             message:
               "Could not reach payment provider. Verification is still pending — your payment may still complete.",
           }),
@@ -295,6 +309,7 @@ async function _serve(req: Request): Promise<Response> {
             success: false,
             verifyInconclusive: true,
             paystackStatus: "unknown",
+            providerStatus: "unknown",
             message:
               "Payment provider returned a temporary error. Verification is still pending — your payment may still complete.",
           }),
@@ -312,6 +327,7 @@ async function _serve(req: Request): Promise<Response> {
             success: false,
             verifyInconclusive: true,
             paystackStatus: "unknown",
+            providerStatus: "unknown",
             message:
               "Payment provider returned an unreadable response. Verification is still pending — your payment may still complete.",
           }),
@@ -330,6 +346,7 @@ async function _serve(req: Request): Promise<Response> {
               success: false,
               message: "Transaction not successful",
               paystackStatus: providerStatus,
+              providerStatus,
             }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
@@ -341,6 +358,7 @@ async function _serve(req: Request): Promise<Response> {
             success: false,
             verifyInconclusive: true,
             paystackStatus: providerStatus ?? "unknown",
+            providerStatus: providerStatus ?? "unknown",
             message:
               "Payment verification is still pending with the provider. Credits will appear once settlement confirms.",
           }),
@@ -681,39 +699,96 @@ async function _serve(req: Request): Promise<Response> {
 
     // Create Paystack transaction (USD currency, native settlement)
     const callbackBase = callbackUrl?.replace(/\?.*$/, '') || `${req.headers.get("origin")}/billing`;
-    const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: profile.email || userData.user.email,
-        amount: usdCents,
-        currency: "USD",
-        callback_url: `${callbackBase}?status=success`,
-        metadata: {
-          org_id: profile.org_id,
-          user_id: userData.user.id,
-          package_id: packageId,
-          credits: pkg.credits,
-          // USD-native audit fields — propagated through verify + webhook.
-          price_usd: pkg.price_usd,
-          currency: "USD",
-          fx_basis: "native_usd",
-          client_ip: clientIp,
-          timestamp: new Date().toISOString(),
-          custom_fields: [
-            { display_name: "Package", variable_name: "package", value: pkg.label },
-            { display_name: "Credits", variable_name: "credits", value: pkg.credits.toString() },
-            { display_name: "USD Price", variable_name: "usd_price", value: `$${pkg.price_usd.toFixed(2)}` },
-            { display_name: "Entity", variable_name: "entity", value: CHARGING_ENTITY.name },
-          ],
+    // Initialize uses providerFetch so a hung TCP socket cannot stall the
+    // edge function to its wall-clock limit. Timeout / network failure
+    // returns a safe 503 to the caller — no token_purchases row has been
+    // inserted yet at this point (insert happens only after a successful
+    // Paystack response below), so we cannot produce a misleading
+    // completed or failed purchase.
+    let paystackResponse: Response;
+    try {
+      paystackResponse = await providerFetch(
+        "https://api.paystack.co/transaction/initialize",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: profile.email || userData.user.email,
+            amount: usdCents,
+            currency: "USD",
+            callback_url: `${callbackBase}?status=success`,
+            metadata: {
+              org_id: profile.org_id,
+              user_id: userData.user.id,
+              package_id: packageId,
+              credits: pkg.credits,
+              // USD-native audit fields — propagated through verify + webhook.
+              price_usd: pkg.price_usd,
+              currency: "USD",
+              fx_basis: "native_usd",
+              client_ip: clientIp,
+              timestamp: new Date().toISOString(),
+              custom_fields: [
+                { display_name: "Package", variable_name: "package", value: pkg.label },
+                { display_name: "Credits", variable_name: "credits", value: pkg.credits.toString() },
+                { display_name: "USD Price", variable_name: "usd_price", value: `$${pkg.price_usd.toFixed(2)}` },
+                { display_name: "Entity", variable_name: "entity", value: CHARGING_ENTITY.name },
+              ],
+            },
+          }),
         },
-      }),
-    });
+        { providerName: "paystack", timeoutMs: 8000 },
+      );
+    } catch (initErr) {
+      const isTimeout = initErr instanceof ProviderFetchTimeoutError;
+      const isNetwork = initErr instanceof ProviderFetchNetworkError;
+      console.warn(
+        `[Initialize] Paystack ${isTimeout ? "timeout" : isNetwork ? "network" : "transport"} error:`,
+        initErr,
+      );
+      // Release the idempotency reservation so the caller can retry
+      // without hitting "request in progress" for 24h.
+      await supabase
+        .from("idempotency_keys")
+        .delete()
+        .eq("org_id", profile.org_id)
+        .eq("idempotency_key", idempotencyKey)
+        .eq("endpoint", idempotencyEndpoint);
+      return new Response(
+        JSON.stringify({
+          error: "Could not reach payment provider. Please try again shortly.",
+          provider: "paystack",
+          providerStatus: "unknown",
+          retryable: true,
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    const paystackData = await paystackResponse.json();
+    let paystackData: { status?: boolean; data?: { reference: string; authorization_url: string }; code?: string; message?: string };
+    try {
+      paystackData = await paystackResponse.json();
+    } catch (parseErr) {
+      console.warn("[Initialize] Paystack returned invalid JSON:", parseErr);
+      await supabase
+        .from("idempotency_keys")
+        .delete()
+        .eq("org_id", profile.org_id)
+        .eq("idempotency_key", idempotencyKey)
+        .eq("endpoint", idempotencyEndpoint);
+      return new Response(
+        JSON.stringify({
+          error: "Payment provider returned an unreadable response. Please try again shortly.",
+          provider: "paystack",
+          providerStatus: "unknown",
+          retryable: true,
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!paystackData.status) {
       console.error("Paystack error:", paystackData);
