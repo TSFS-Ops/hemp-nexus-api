@@ -278,7 +278,7 @@ export function InboundReview() {
             </h1>
             <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-lg">
               <span className="text-foreground font-medium">{data.initiator}</span> has generated
-              a tamper-proofally sealed Proof of Intent and proposed the following terms.
+              a hash-sealed Proof of Intent and proposed the following terms.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-muted-foreground">
@@ -441,7 +441,7 @@ export function InboundReview() {
               {/* ── Asymmetric Seal Section ─────────────────── */}
               <div className="mt-2 pt-6 border-t border-border">
                 <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-foreground mb-5">
-                  Bilateral Tamper-Proof Seal
+                  Bilateral Hash-Sealed Seal
                 </p>
 
                 <div className="space-y-3">
@@ -476,7 +476,7 @@ export function InboundReview() {
                   ease: "easeInOut"
                 }} className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3">
                     <p className="font-mono text-[11px] tracking-[0.15em] text-amber-800 text-center">
-                      {alreadyResponded ? `[ COUNTERPARTY ${data.engagementStatus?.toUpperCase()} ]` : "[ AWAITING YOUR TAMPER-PROOF SIGNATURE ]"}
+                      {alreadyResponded ? `[ COUNTERPARTY ${data.engagementStatus?.toUpperCase()} ]` : "[ AWAITING YOUR HASH-SEALED SIGNATURE ]"}
                     </p>
                   </motion.div>
                 </div>

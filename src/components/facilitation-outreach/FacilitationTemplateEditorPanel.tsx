@@ -257,7 +257,7 @@ export const FacilitationTemplateEditorPanel: React.FC = () => {
                 placeholder="counterparty-introduction-v2"
                 aria-label="slug"
               />
-              {mode === "edit" && <span className="text-[10px] text-slate-400">Slug cannot be changed on edit.</span>}
+              {mode === "edit" && <span className="text-[10px] text-slate-400">Slug is fixed after creation.</span>}
             </label>
             <label className="text-xs space-y-1">
               <span className="text-slate-500">Name</span>

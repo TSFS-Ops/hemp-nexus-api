@@ -64,7 +64,7 @@ export function AdminSigningKeysPanel() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" />Signing Keys Registry</CardTitle>
-        <CardDescription>Tamper-Proof keys used for completion ledger signatures and evidence sealing.</CardDescription>
+        <CardDescription>Hash-sealed signing keys used for completion ledger signatures and evidence sealing.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-3">

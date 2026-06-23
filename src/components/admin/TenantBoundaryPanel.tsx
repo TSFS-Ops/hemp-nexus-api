@@ -118,7 +118,7 @@ export function TenantBoundaryPanel() {
             with permissive <code className="font-mono text-[11px]">USING (true)</code> policies, or with policies
             that never reference <code className="font-mono text-[11px]">auth.uid()</code> /{" "}
             <code className="font-mono text-[11px]">has_role()</code> /{" "}
-            <code className="font-mono text-[11px]">org_id</code>. Append-only, SHA-256 sealed.
+            <code className="font-mono text-[11px]">org_id</code>. SHA-256 sealed, tamper-evident.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">

@@ -254,3 +254,143 @@ describe("WaD / sealed-document copy guard", () => {
     );
   });
 });
+
+/**
+ * Extended-scope guard for internal/admin/export/PDF/email/template surfaces.
+ *
+ * Added by TRUST_PHRASE_GUARD_EXTENSION_CONTAINMENT_COMPLETE so admin and
+ * outbound surfaces cannot leak strong trust wording into screenshots,
+ * exports, PDFs, or counterparty inboxes.
+ *
+ * HQ.tsx remains explicitly out of scope (developer/internal map).
+ * Comments are stripped before scanning so accurate developer notes are
+ * not flagged.
+ */
+const EXTENDED_SCAN_DIRS = [
+  join(ROOT, "components", "admin"),
+  join(ROOT, "pages", "admin"),
+  join(ROOT, "components", "desk", "billing"),
+  join(ROOT, "components", "desk", "inbound"),
+  join(ROOT, "components", "facilitation-outreach"),
+];
+
+const EDGE_ROOT = join(process.cwd(), "supabase", "functions", "_shared");
+const EDGE_TEMPLATE_DIR = join(EDGE_ROOT, "transactional-email-templates");
+const EDGE_REVENUE_NOTIFY = join(EDGE_ROOT, "revenue-notify.ts");
+const EDGE_AUDIT_LEDGER_COPY = join(EDGE_ROOT, "audit-ledger-copy.ts");
+
+/**
+ * Narrow exact-line allowlist for statements that are TRUTHFULLY backed
+ * by an existing DB-enforced trigger and would otherwise trip the guard.
+ * Keep this list tiny and exact — substring match against the trimmed
+ * source line, after comment-stripping.
+ */
+const EXTENDED_ALLOWED_LINE_SUBSTRINGS: ReadonlyArray<string> = [
+  // BrdConstraintsPanel governance summary line — narrowly accurate:
+  // collapse_ledger, break_glass_actions, poi_events, match_events all
+  // have UPDATE/DELETE/TRUNCATE triggers in production.
+  "blocking UPDATE/DELETE/TRUNCATE on the listed tables",
+  // AdminEventStorePanel header: event_store has triggers in production;
+  // the qualifier "where DB-enforced" keeps the statement honest.
+  "(append-only where DB-enforced, tamper-evident)",
+  // BrdConstraintsPanel key label for the completion ledger constraint
+  // (collapse_ledger has UPDATE/DELETE triggers in production).
+  'append_only_ledger: "Append-Only Completion Ledger"',
+];
+
+function scanFileExtended(file: string): { phrase: string; line: number; text: string }[] {
+  const hits: { phrase: string; line: number; text: string }[] = [];
+  const cleaned = stripComments(readFileSync(file, "utf8"));
+  const lines = cleaned.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (EXTENDED_ALLOWED_LINE_SUBSTRINGS.some((s) => trimmed.includes(s))) continue;
+    for (const phrase of BANNED_TRUST_PHRASES) {
+      if (line.toLowerCase().includes(phrase.toLowerCase())) {
+        hits.push({ phrase, line: i + 1, text: trimmed });
+      }
+    }
+  }
+  return hits;
+}
+
+describe("Audit Ledger copy guard — extended internal/admin/export/PDF/email scope", () => {
+  it("admin / desk-billing / desk-inbound / facilitation-outreach surfaces contain no banned trust phrases", () => {
+    if (IMMUTABILITY_BACKEND_ENFORCED) return;
+    const files = EXTENDED_SCAN_DIRS.flatMap((d) => walk(d));
+    const violations: string[] = [];
+    for (const file of files) {
+      for (const h of scanFileExtended(file)) {
+        violations.push(`${file}:${h.line} → "${h.phrase}" :: ${h.text}`);
+      }
+    }
+    expect(violations, `Banned trust phrases in extended scope:\n${violations.join("\n")}`).toEqual([]);
+  });
+
+  it("outbound transactional email templates contain no banned trust phrases", () => {
+    if (IMMUTABILITY_BACKEND_ENFORCED) return;
+    if (!existsSync(EDGE_TEMPLATE_DIR)) return;
+    const files = walk(EDGE_TEMPLATE_DIR);
+    const violations: string[] = [];
+    for (const file of files) {
+      for (const h of scanFileExtended(file)) {
+        violations.push(`${file}:${h.line} → "${h.phrase}" :: ${h.text}`);
+      }
+    }
+    expect(violations, `Banned trust phrases in email templates:\n${violations.join("\n")}`).toEqual([]);
+  });
+
+  it("revenue-notify edge helper contains no banned trust phrases in user-visible strings", () => {
+    if (IMMUTABILITY_BACKEND_ENFORCED) return;
+    if (!existsSync(EDGE_REVENUE_NOTIFY)) return;
+    const hits = scanFileExtended(EDGE_REVENUE_NOTIFY);
+    expect(hits, `Banned phrases in revenue-notify.ts:\n${hits.map((h) => `L${h.line}: ${h.phrase} :: ${h.text}`).join("\n")}`).toEqual([]);
+  });
+
+  it("acceptance-receipt email uses the SSOT clause and zero banned phrases", () => {
+    const file = join(EDGE_TEMPLATE_DIR, "acceptance-receipt.tsx");
+    const src = readFileSync(file, "utf8");
+    expect(src).toContain("ACCEPTANCE_RECEIPT_CLAUSE");
+    expect(src).toContain("from '../audit-ledger-copy.ts'");
+    const cleaned = stripComments(src);
+    for (const phrase of BANNED_TRUST_PHRASES) {
+      expect(
+        cleaned.toLowerCase().includes(phrase.toLowerCase()),
+        `acceptance-receipt.tsx still contains banned phrase "${phrase}"`,
+      ).toBe(false);
+    }
+  });
+
+  it("billing and inbound user surfaces use safe wording", () => {
+    const billing = readFileSync(
+      join(ROOT, "components", "desk", "billing", "BillingOverview.tsx"),
+      "utf8",
+    );
+    expect(billing).toContain("Hash-sealed · Tamper-evident");
+    expect(stripComments(billing)).not.toMatch(/tamper-proof/i);
+
+    const inbound = readFileSync(
+      join(ROOT, "components", "desk", "inbound", "InboundReview.tsx"),
+      "utf8",
+    );
+    expect(inbound).toContain("Bilateral Hash-Sealed Seal");
+    expect(inbound).toContain("AWAITING YOUR HASH-SEALED SIGNATURE");
+    expect(stripComments(inbound)).not.toMatch(/tamper-proof/i);
+  });
+
+  it("Deno-safe edge copy twin mirrors the browser SSOT byte-for-byte", () => {
+    const twin = readFileSync(EDGE_AUDIT_LEDGER_COPY, "utf8");
+    expect(twin).toContain(SAFE_LEDGER_COPY.acceptanceReceiptClause);
+    expect(twin).toContain(SAFE_LEDGER_COPY.wadAwaitingSignatureLabel);
+    expect(twin).toContain("ACCEPTANCE_RECEIPT_CLAUSE");
+    expect(twin).toContain("WAD_AWAITING_SIGNATURE_LABEL");
+  });
+
+  it("SSOT exposes acceptance-receipt and awaiting-signature primitives", () => {
+    expect(SAFE_LEDGER_COPY.acceptanceReceiptClause).toMatch(/hash-sealed/i);
+    expect(SAFE_LEDGER_COPY.acceptanceReceiptClause).toMatch(/tamper-evident audit trail/i);
+    expect(SAFE_LEDGER_COPY.acceptanceReceiptClause).not.toMatch(/immutable/i);
+    expect(SAFE_LEDGER_COPY.wadAwaitingSignatureLabel).toBe("AWAITING YOUR HASH-SEALED SIGNATURE");
+  });
+});

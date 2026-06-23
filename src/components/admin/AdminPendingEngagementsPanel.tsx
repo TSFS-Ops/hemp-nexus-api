@@ -1569,7 +1569,7 @@ export function AdminPendingEngagementsPanel() {
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Pending Engagements</h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
             POI hold-point queue for {scope === "unknown" ? "unknown counterparties awaiting outreach" : "all counterparty engagements"}.
-            Send notifications and record manual contact attempts - every action is written to an immutable outreach log.
+            Send notifications and record manual contact attempts - every action is written to a tamper-evident outreach log.
           </p>
           <p className="text-xs text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>
@@ -2735,7 +2735,7 @@ export function AdminPendingEngagementsPanel() {
             <DialogTitle>Send outreach email</DialogTitle>
             <DialogDescription>
               Review the message before it's sent. Replies will route to <strong>support@izenzo.co.za</strong>.
-              On send, the engagement will be marked <strong>contacted</strong> and a full snapshot logged to the immutable trail.
+              On send, the engagement will be marked <strong>contacted</strong> and a full snapshot logged to the tamper-evident trail.
             </DialogDescription>
           </DialogHeader>
 
@@ -2843,7 +2843,7 @@ export function AdminPendingEngagementsPanel() {
           <DialogHeader>
             <DialogTitle>Outreach log</DialogTitle>
             <DialogDescription>
-              Immutable history of every status change and contact attempt for this engagement.
+              Tamper-evident history of every status change and contact attempt for this engagement.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto space-y-3">
