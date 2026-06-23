@@ -80,7 +80,7 @@ describe("Audit-log cleanup bypass freeze guard", () => {
     if (existsSync(evidenceReadme)) files.push(evidenceReadme);
 
     for (const file of files) {
-      const rel = relative(ROOT, file).replaceAll("\\", "/");
+      const rel = relative(ROOT, file).split("\\").join("/");
       const body = readFileSync(file, "utf8");
       if (!body.includes(BYPASS_NEEDLE)) continue;
       if (ALLOWLIST.has(rel)) continue;
