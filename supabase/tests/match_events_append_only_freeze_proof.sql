@@ -64,15 +64,16 @@ END $$;
 DO $$
 DECLARE
   v_match_id uuid;
+  v_org_id   uuid;
 BEGIN
-  SELECT id INTO v_match_id FROM public.matches LIMIT 1;
+  SELECT id, org_id INTO v_match_id, v_org_id FROM public.matches LIMIT 1;
   IF v_match_id IS NULL THEN
     RAISE NOTICE 'PROOF_SKIP: no matches row available to seed match_events; skipping INSERT/UPDATE/DELETE assertions';
     RETURN;
   END IF;
 
-  INSERT INTO public.match_events (match_id, event_type, payload, payload_hash)
-  VALUES (v_match_id, 'freeze_proof_seed', '{"freeze":"proof"}'::jsonb, repeat('0', 64));
+  INSERT INTO public.match_events (match_id, org_id, event_type, event_data, payload_hash)
+  VALUES (v_match_id, v_org_id, 'freeze_proof_seed', '{"freeze":"proof"}'::jsonb, repeat('0', 64));
 
   -- 4. UPDATE must raise MATCH_EVENTS_APPEND_ONLY.
   DECLARE v_err text;
