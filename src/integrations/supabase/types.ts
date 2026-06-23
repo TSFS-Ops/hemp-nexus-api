@@ -18941,6 +18941,16 @@ export type Database = {
       }
       atomic_org_retention_clear: { Args: { p_input: Json }; Returns: Json }
       atomic_org_retention_set: { Args: { p_input: Json }; Returns: Json }
+      atomic_paid_credit_purchase: {
+        Args: {
+          p_amount: number
+          p_endpoint: string
+          p_metadata?: Json
+          p_org_id: string
+          p_reference_id: string
+        }
+        Returns: Json
+      }
       atomic_poi_match_transition: {
         Args: {
           p_actor_user_id: string
@@ -19946,6 +19956,14 @@ export type Database = {
         Returns: Json
       }
       release_lifecycle_lock: { Args: never; Returns: undefined }
+      repair_skeletal_paid_credit: {
+        Args: { p_limit?: number; p_min_age_minutes?: number }
+        Returns: {
+          action_taken: string
+          ledger_id: string
+          reference: string
+        }[]
+      }
       request_admin_export: {
         Args: {
           p_date_range: Json
