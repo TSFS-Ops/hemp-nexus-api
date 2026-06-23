@@ -50,6 +50,7 @@ const SCAN_DIRS = [
   join(ROOT, "components", "wad"),
   join(ROOT, "components", "match"),
   join(ROOT, "components", "desk", "match"),
+  join(ROOT, "components", "desk", "evidence"),
 ];
 
 const SCAN_FILES = [
@@ -158,6 +159,27 @@ describe("Audit Ledger copy/capability guard", () => {
     expect(auditLedger).toMatch(/SAMPLE_HASH_VALUE/);
     expect(auditLedger).toMatch(/Tamper-evident ledger/);
     expect(auditLedger).not.toMatch(/"gates_passed"\s*:\s*9/);
+  });
+
+  it("EvidencePackView uses safe 9-Gate section header and demo-labelled sample data", () => {
+    const evidence = readFileSync(
+      join(ROOT, "components", "desk", "evidence", "EvidencePackView.tsx"),
+      "utf8",
+    );
+    // Safer section header replaces the prior banned "Tamper-Proof" wording.
+    expect(evidence).toMatch(/9-Gate Compliance Trail|9-Gate Verification Status/);
+    expect(evidence).not.toMatch(/9-Gate Tamper-Proof Proof/);
+    // Demo embed must surface a sample qualifier inside the card body.
+    expect(evidence).toMatch(/Sample gate data|Sample evidence status/);
+  });
+
+  it("public Audit Ledger demo embed remains sample-labelled", () => {
+    const auditLedger = readFileSync(
+      join(ROOT, "pages", "products", "AuditLedger.tsx"),
+      "utf8",
+    );
+    expect(auditLedger).toMatch(/EvidencePackView\s+demoMode/);
+    expect(auditLedger).toMatch(/Sample evidence pack preview \(demo\)|Sample/);
   });
 
   it("banned-phrase constant covers the issue's named phrases", () => {

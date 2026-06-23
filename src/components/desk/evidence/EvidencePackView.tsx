@@ -296,12 +296,12 @@ export function EvidencePackView({
         {demoMode ? <span className="flex items-center gap-3 text-muted-foreground/70">
             <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
             <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
-              Audit Ledger · Immutable Record
+              Audit Ledger · Hash-Sealed Record
             </span>
           </span> : <Link to="/desk/deals" className="flex items-center gap-3 text-muted-foreground/70 hover:text-slate-200 transition-colors">
             <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
             <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
-              Audit Ledger · Immutable Record
+              Audit Ledger · Hash-Sealed Record
             </span>
           </Link>}
         <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
@@ -411,9 +411,14 @@ export function EvidencePackView({
 
           {/* 9-Gate audit trail (real progression) */}
           <section className="pt-10 pb-4 border-t border-border">
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-6">
-              II · 9-Gate Tamper-Proof Proof
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/70 mb-2">
+              II · 9-Gate Compliance Trail
             </p>
+            {demoMode && (
+              <p className="font-mono text-[9px] tracking-[0.25em] uppercase text-emerald-600/80 mb-4">
+                Sample gate data
+              </p>
+            )}
             <ul className="space-y-3">
               {gates.map((gate, idx) => {
               const isVerified = gate.status === "verified";
@@ -484,7 +489,7 @@ export function EvidencePackView({
               Integrity Inspector · Canonical Payload
             </DialogTitle>
             <DialogDescription className="text-muted-foreground/70 text-[12px] leading-relaxed pt-2">
-              This JSON object is the immutable input for the SHA-256 algorithm. You can copy this payload and run it through any independent hashing utility (e.g.{" "}
+              This JSON object is the canonical input for the SHA-256 algorithm. You can copy this payload and run it through any independent hashing utility (e.g.{" "}
               <span className="font-mono text-muted-foreground/50">sha256sum</span>,{" "}
               <span className="font-mono text-muted-foreground/50">openssl dgst -sha256</span>) to verify it matches the Seal Hash above.
             </DialogDescription>
