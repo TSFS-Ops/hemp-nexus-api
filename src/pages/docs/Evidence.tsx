@@ -53,7 +53,7 @@ export default function DocsEvidence() {
             { name: "packHash",            type: "sha256", desc: "Deterministic hash of the canonical block. Recompute locally to verify integrity." },
             { name: "signatureValidation", type: "object", desc: "Whether a collapse-ledger row exists, whether the signature verifies, and the signing key ID." },
             { name: "timestampMetadata",   type: "object", desc: "Server, NTP source, drift in ms, client and server timestamps." },
-            { name: "chainVerification",   type: "object", desc: "Hash-chain integrity result and the count of events sealed into the pack." },
+            { name: "chainVerification",   type: "object", desc: "Hash-chain integrity metadata recorded with the pack. Automated verifier results are shown when the verifier is enabled." },
             { name: "canonical.match",     type: "object", desc: "The frozen match record at settlement time." },
             { name: "canonical.documents", type: "array",  desc: "Hashes and filenames of every supporting document." },
             { name: "canonical.events",    type: "array",  desc: "Every state transition, sanctions screen, KYC verification, and ATB binding." },
