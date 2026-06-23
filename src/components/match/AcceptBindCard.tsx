@@ -155,7 +155,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
               <p>By accepting, you acknowledge:</p>
               <ul className="list-disc list-inside space-y-0.5 text-xs">
                 <li>Your organisation will be bound as the {willBe.toLowerCase()} in this intent</li>
-                <li>This action is recorded in the immutable audit trail</li>
+                <li>This action is recorded in the tamper-evident audit trail</li>
                 <li>You can negotiate terms after acceptance via the Terms tab</li>
               </ul>
             </div>
@@ -194,7 +194,7 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside">
                   <li>This converts a unilateral intent into a bilateral intent.</li>
-                  <li>The action is tamper-proofally recorded and cannot be reversed.</li>
+                  <li>The action is hash-sealed and recorded, and cannot be reversed.</li>
                   <li>Both parties can negotiate terms after binding.</li>
                 </ul>
               </div>

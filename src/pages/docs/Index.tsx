@@ -47,7 +47,7 @@ const CONCEPTS = [
     to: "/docs/evidence",
     icon: FileCheck,
     title: "Evidence Packs",
-    desc: "Append-only, SHA-256-sealed audit record for every settled deal. Includes the Without a Doubt (WaD) certificate and its 10 hard-gates.",
+    desc: "Tamper-evident, SHA-256-sealed audit record for every settled deal. Includes the Without a Doubt (WaD) certificate and its 10 hard-gates.",
   },
   {
     to: "/docs/webhooks",

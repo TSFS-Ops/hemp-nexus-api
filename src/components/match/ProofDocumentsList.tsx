@@ -154,7 +154,7 @@ export function ProofDocumentsList({ matchId }: ProofDocumentsListProps) {
         ))}
       </div>
       <p className="text-xs text-muted-foreground mt-2">
-        Document hashes are part of the immutable evidence chain.
+        Document hashes are part of the tamper-evident evidence chain.
       </p>
     </div>
   );

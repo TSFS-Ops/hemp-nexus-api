@@ -115,7 +115,7 @@ function CertificateMockup() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-muted-foreground">
-                SHA-256 Tamper-Proof Seal
+                SHA-256 Hash-Sealed Record
               </p>
               <p className="mt-1 font-mono text-[11px] text-foreground break-all leading-relaxed">
                 {DEMO_COMPILER_SEAL}
@@ -310,7 +310,7 @@ export default function TradeDeskProductPage() {
               duration: 0.7,
               delay: 0.3
             }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
-                SHA-256 sealed · 9-gate verified · Audit-ready
+                SHA-256 sealed · Tamper-evident · Audit-ready
               </motion.p>
             </div>
 

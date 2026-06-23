@@ -15,7 +15,7 @@ const MEGA_NAV: MegaCategory[] = [
     items: [
       { label: "Trade Desk", description: "Operational workspace for live deals", to: "/products/trade-desk" },
       { label: "Compliance Engine", description: "KYB, sanctions & jurisdictional gates", to: "/products/compliance-engine" },
-      { label: "Audit Ledger", description: "Immutable, tamper-proofally sealed deal records", to: "/products/audit-ledger" },
+      { label: "Audit Ledger", description: "Tamper-evident, hash-sealed deal records", to: "/products/audit-ledger" },
     ],
   },
   {
@@ -23,7 +23,7 @@ const MEGA_NAV: MegaCategory[] = [
     label: "Solutions",
     items: [
       { label: "Commodity Traders & Corporates", description: "Execute cross-border deals with verified counterparties.", to: "/solutions/traders" },
-      { label: "Trade Finance & Insurance", description: "De-risk letters of credit with tamper-proofally sealed proof.", to: "/solutions/finance" },
+      { label: "Trade Finance & Insurance", description: "De-risk letters of credit with tamper-evident, hash-sealed proof.", to: "/solutions/finance" },
       { label: "Sovereigns & PDBs", description: "Govern institutional trade programmes at scale.", to: "/solutions/sovereigns" },
     ],
   },

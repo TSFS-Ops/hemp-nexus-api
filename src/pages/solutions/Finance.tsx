@@ -58,9 +58,9 @@ export default function FinanceSolutionsPage() {
               </h1>
 
               <p className="mt-8 text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-xl">
-                Rely on mathematically provable deal records to underwrite trade
-                finance, issue letters of credit, and insure shipments with
-                zero ambiguity.
+                Rely on hash-sealed, independently re-verifiable deal records
+                to underwrite trade finance, issue letters of credit, and insure
+                shipments with reduced ambiguity.
               </p>
 
               <div className="mt-12 flex flex-wrap items-center gap-4">
@@ -121,7 +121,7 @@ export default function FinanceSolutionsPage() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Box 1, Immutable Proof */}
+            {/* Box 1, Hash-Sealed Proof */}
             <div className="lg:col-span-2 rounded-2xl bg-card border border-border p-10 lg:p-14">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-8 w-8 rounded-md bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-100 flex items-center justify-center">
@@ -132,7 +132,7 @@ export default function FinanceSolutionsPage() {
                 </p>
               </div>
               <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-foreground">
-                Immutable proof (SHA-256).
+                Hash-sealed proof (SHA-256).
               </h3>
               <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-xl">
                 Every recorded deal carries a 256-bit cryptographic fingerprint
@@ -143,14 +143,14 @@ export default function FinanceSolutionsPage() {
 
               <div className="mt-10 rounded-xl bg-slate-900 ring-1 ring-slate-800 p-6 font-mono text-[11px] leading-relaxed">
                 <p className="text-[9px] tracking-[0.25em] uppercase text-muted-foreground mb-3">
-                  Verifiable Seal · 256-bit
+                  Sample SHA-256 Seal · 256-bit
                 </p>
                 <p className="text-emerald-300 break-all">
                   0x7c1a4f8e9b2d6c5f3a1e8d4b7c9f2e5a8d3b6c1f4e7a9d2c5b8e1f4a7d3c9e6b
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-[10px] text-muted-foreground">
                   <CheckCircle2 className="h-3 w-3 text-[hsl(var(--emerald))]" strokeWidth={2} />
-                  <span>Verified · Match A1B2C3D4 · 9/9 gates passed</span>
+                  <span>Sample · Match A1B2C3D4 · evidence pack</span>
                 </div>
               </div>
             </div>

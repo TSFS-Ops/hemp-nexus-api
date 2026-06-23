@@ -300,7 +300,7 @@ export default function TriageInbox() {
     },
     onSuccess: () => {
       toast.success(`WaD certificate issued for ${active?.shortRef}`, {
-        description: "Tamper-Proofally sealed. All counterparties notified.",
+        description: "Hash-sealed and tamper-evident. All counterparties notified.",
       });
       queryClient.invalidateQueries({ queryKey: ["triage-queue"] });
     },
@@ -550,7 +550,7 @@ export default function TriageInbox() {
             </div>
             <p className="mt-3 max-w-4xl font-mono text-[10px] tracking-wider text-muted-foreground leading-relaxed">
               {alertAcknowledged
-                ? "Clicking Seal will tamper-proofally sign this record and notify all counterparties."
+                ? "Clicking Seal will cryptographically sign this record (hash-sealed, tamper-evident) and notify all counterparties."
                 : "Acknowledge the highlighted alert above to enable WaD issuance."}
             </p>
           </div>

@@ -159,7 +159,7 @@ const CREDITS_PER_ACTION = 1;
 /**
  * Exact declaration sentence required by Daniel (2026-04-30 final POI scope).
  * Surfaced on EVERY POI mint, EVERY time. Both this acknowledgement and the
- * Authority-to-Bind tickbox below are sealed into the immutable POI ledger
+ * Authority-to-Bind tickbox below are sealed into the tamper-evident POI ledger
  * payload + a `poi.acknowledgements_recorded` audit row.
  */
 const DECLARATION_SENTENCE =
@@ -1024,7 +1024,7 @@ export function StateProgressionCard({ match, onAction, loading, engagementStatu
                         className="mt-0.5"
                       />
                       <Label htmlFor="atb-ack" className="text-xs leading-relaxed text-foreground cursor-pointer">
-                        {ATB_SENTENCE} My current platform roles ({roles.length > 0 ? roles.join(", ") : "none"}) and the time of this acknowledgement will be recorded on the immutable audit trail.
+                        {ATB_SENTENCE} My current platform roles ({roles.length > 0 ? roles.join(", ") : "none"}) and the time of this acknowledgement will be recorded on the tamper-evident audit trail.
                       </Label>
                     </div>
 

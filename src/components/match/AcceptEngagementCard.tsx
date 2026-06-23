@@ -153,7 +153,7 @@ export function AcceptEngagementCard({ match, engagementStatus, onResponded }: A
               <ul className="list-disc list-inside space-y-0.5 text-xs">
                 <li>You confirm your interest in this trade as the {roleLabel.toLowerCase()}</li>
                 <li>The deal will progress to the next stage</li>
-                <li>This action is recorded in the immutable audit trail</li>
+                <li>This action is recorded in the tamper-evident audit trail</li>
               </ul>
             </div>
           </div>

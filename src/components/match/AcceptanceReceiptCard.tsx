@@ -1,7 +1,7 @@
 /**
  * AcceptanceReceiptCard
  * ─────────────────────
- * Surfaces the immutable, signed acceptance receipt for a trade engagement.
+ * Surfaces the tamper-evident, signed acceptance receipt for a trade engagement.
  *
  * This card serves two audiences:
  *   1. The COUNTERPARTY sees a passive confirmation that their acceptance
@@ -206,7 +206,7 @@ export function AcceptanceReceiptCard({ matchId }: AcceptanceReceiptCardProps) {
               <CardTitle className="text-base flex items-center gap-2 flex-wrap">
                 Acceptance Receipt
                 <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-                  Signed · Immutable
+                  Signed · Hash-sealed
                 </Badge>
                 {isBackfilled && (
                   <Badge variant="outline" className="text-xs border-muted-foreground/40 text-muted-foreground">
@@ -373,7 +373,7 @@ export function AcceptanceReceiptCard({ matchId }: AcceptanceReceiptCardProps) {
         {isBackfilled && (
           <div className="rounded-sm border border-muted-foreground/30 bg-muted p-3 text-xs text-muted-foreground">
             This receipt was generated retroactively from the original engagement record.
-            The acceptance event itself is immutable; the receipt artefact was created when
+            The acceptance event itself is tamper-evident; the receipt artefact was created when
             the platform's signed-receipt infrastructure was deployed.
           </div>
         )}

@@ -147,7 +147,7 @@ function MacroDashboardMockup() {
           }} />
           </div>
           <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-            <span>78% disbursed · 9/9 gates passed</span>
+            <span>Sample · 78% disbursed · milestone gates</span>
             <span className="text-muted-foreground/70">A1B2C3D4…</span>
           </div>
         </div>
@@ -252,8 +252,8 @@ export default function SovereignsSolutionsPage() {
             }} transition={{
               duration: 0.7,
               delay: 0.3
-            }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
-                Single approved production-region policy · Append-only ledger · Macro telemetry
+              }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
+                Single approved production-region policy · Tamper-evident ledger · Macro telemetry
               </motion.p>
             </div>
 
@@ -297,12 +297,12 @@ export default function SovereignsSolutionsPage() {
                 {[{
                 icon: TrendingUp,
                 label: "Live KPI dashboards"
-              }, {
+                }, {
                 icon: Activity,
-                label: "Append-only event stream"
+                label: "Tamper-evident event stream"
               }, {
                 icon: ShieldCheck,
-                label: "Tamper-Proof provenance"
+                label: "Tamper-evident provenance"
               }].map(s => {
                 const Icon = s.icon;
                 return <div key={s.label} className="rounded-xl bg-muted/70 ring-1 ring-slate-100 p-5">
@@ -328,10 +328,10 @@ export default function SovereignsSolutionsPage() {
               <h3 className="text-2xl font-semibold tracking-tighter text-foreground">
                 Fraud & leakage prevention.
               </h3>
-              <p className="mt-3 text-[15px] text-muted-foreground leading-relaxed"> Every disbursement is gated by milestone verification. Every signature is bound to a verified principal. Every event is hash-chained: making tampering mathematically detectable. </p>
+              <p className="mt-3 text-[15px] text-muted-foreground leading-relaxed"> Every disbursement is gated by milestone verification. Every signature is bound to a verified principal. Every event is hash-sealed, making tampering detectable. </p>
 
               <ul className="mt-8 space-y-3 text-[13px]">
-                {["Milestone-gated fund flows", "Authority-bound signatures", "Hash-chained event store", "Automated breach detection"].map(c => <li key={c} className="flex items-center gap-3 text-muted-foreground">
+                {["Milestone-gated fund flows", "Authority-bound signatures", "Hash-sealed event store", "Automated breach detection"].map(c => <li key={c} className="flex items-center gap-3 text-muted-foreground">
                     <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--emerald))] shrink-0" strokeWidth={2} />
                     {c}
                   </li>)}

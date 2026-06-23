@@ -76,7 +76,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
 
         {/* Sub-headline - wider so it wraps to 2 lines on desktop */}
         <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-10">
-          One cryptographic network. Access it via our turnkey Trade Desk, manage risk through the Compliance Profile, or build directly on the API. All backed by mathematically provable execution.
+          One cryptographic network. Access it via our turnkey Trade Desk, manage risk through the Compliance Profile, or build directly on the API. All backed by hash-sealed, independently verifiable execution.
         </p>
 
         {/* Dual CTAs */}
@@ -110,7 +110,7 @@ export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowP
                 <div key={dup} className="flex gap-x-12 shrink-0 pr-12">
                   <div className="flex items-center gap-3 text-muted-foreground shrink-0">
                     <div className="w-2 h-2 rounded-full bg-[hsl(var(--emerald))]" />
-                    <span className="text-sm font-mono tracking-tight">LEDGER: APPEND-ONLY</span>
+                    <span className="text-sm font-mono tracking-tight">LEDGER: TAMPER-EVIDENT</span>
                   </div>
 
                   <div className="flex items-center gap-3 text-muted-foreground shrink-0">
