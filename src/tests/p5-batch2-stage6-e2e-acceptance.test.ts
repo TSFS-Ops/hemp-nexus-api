@@ -172,7 +172,7 @@ describe("p5-batch2 stage 6 acceptance journey", () => {
     expect(actions.some((a) => a.rule_code === "expiry_reminder_7d")).toBe(true);
 
     // ── 32..36. Masking + safe API output — sensitive defaults stay masked.
-    const masked = maskP5B2Field("counterparty", "1234567890", "bank_account_number");
+    const masked = maskP5B2Field("bank_account_number", "1234567890", { viewer: "counterparty" });
     expect(masked).not.toBe("1234567890");
 
     // ── 37. Memory receives only safe references/outcomes (modelled here as
