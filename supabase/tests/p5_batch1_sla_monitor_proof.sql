@@ -123,7 +123,7 @@ BEGIN
     channel, status, template_name, routing_policy_key, metadata
   ) VALUES (
     'p5.sla.reviewer_unassigned_24h', 'p5_case', v_case_id, 'platform_admin',
-    'in_app', 'queued', 'p5_sla_reviewer_unassigned_24h',
+    'in_app', 'pending', 'p5_sla_reviewer_unassigned_24h',
     'p5_sla_escalation',
     jsonb_build_object(
       'p5_sla_idempotency_key', format('p5_sla:%s:reviewer_unassigned_24h:2026-06-24', v_case_id),

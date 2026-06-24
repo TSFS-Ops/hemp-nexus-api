@@ -274,7 +274,7 @@ Deno.serve(async (req: Request) => {
             recipient_org_id: row.organization_id,
             recipient_role: role,
             channel: "in_app",
-            status: "queued",
+            status: "pending",
             template_name: `p5_sla_${action.rule_code}`,
             routing_policy_key: `p5_sla_${action.severity}`,
             metadata: {
