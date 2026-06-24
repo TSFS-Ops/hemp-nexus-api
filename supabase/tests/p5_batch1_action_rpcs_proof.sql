@@ -10,6 +10,11 @@
 -- All work runs inside a single transaction that is rolled back at the end.
 
 BEGIN;
+-- Bypass FK triggers so we can seed synthetic users in the public schema
+-- without touching auth.users. Everything rolls back at the end.
+SET LOCAL session_replication_role = 'replica';
+
+
 
 -- Two synthetic users; one privileged, one unprivileged.
 DO $$
