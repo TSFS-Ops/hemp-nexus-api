@@ -775,8 +775,87 @@ psql -f supabase/tests/p5_batch1_sla_monitor_proof.sql
 
 **P-5 Batch 1 — Governance, Compliance & Readiness: COMPLETE.**
 
-Test totals: **127 / 127** TypeScript tests passing across 15 files.
+Test totals: **127 / 127** TypeScript tests passing across 15 files (pre-audit).
 SQL proofs: Stage 3 (`P5_STAGE3_PROOF_OK`) + Stage 6
 (`P5_STAGE6_PROOF_OK`).
 
 No Batch 2 work has been started.
+
+---
+
+## Final Embarrassment-Prevention Audit (post-Stage 6, pre-Batch 2)
+
+Status: **P5_BATCH_1_FINAL_EMBARRASSMENT_PREVENTION_AUDIT_COMPLETE**
+
+### Files checked
+- `src/lib/p5-governance/{constants,readiness,transitions,wording-guard,rpc,sla-rules,summary-types,summary-client}.ts`
+- `src/pages/admin/p5-governance/{CasesDashboard,CaseDetail}.tsx`
+- `src/pages/admin/p5-governance/components/{P5StatusBadge,P5AuditTimeline,EvidenceReviewPanel,ProviderDependencyPanel}.tsx`
+- `src/pages/admin/p5-governance/components/dialogs/{ReasonedActionDialog,HoldDialog,WaiverDialog,OverrideDialog,EscalateDialog,RejectDialog,RequestMoreInfoDialog}.tsx`
+- `src/components/p5-governance/P5ReadinessCard.tsx`
+- `src/pages/registry/MyCompanyReadiness.tsx`
+- `src/pages/funder/FunderEvidencePack.tsx`
+- `supabase/functions/p5-governance-readiness-summary/index.ts`
+- `src/hooks/useP5Permissions.ts`
+- `evidence/p5-batch1-governance-readiness/README.md` (self-reflection)
+- Full `src/` tree scanned for direct mutation of `p5_governance_*` tables.
+
+### Tests / scripts added
+- `src/tests/p5-batch1-final-cross-surface-audit.test.tsx` — 18 tests covering
+  status drift, reason-code coverage, badge/timeline render, provider-dependent
+  truth wording, SLA message safety, direct-mutation bypass guard and README
+  reflectivity.
+- `src/tests/p5-batch1-final-permission-leak-audit.test.tsx` — 11 tests covering
+  funder/auditor/customer/developer/reviewer/operator/admin permission matrix
+  via `deriveP5Permissions`.
+- `scripts/check-p5-batch1-final-consistency.mjs` — static sweep for forbidden
+  wording in external surfaces, direct mutation bypass, reasoned-dialog reason
+  code wiring, status-label coverage and dashboard filter completeness.
+
+### Commands run + results
+
+```
+node scripts/check-p5-batch1-final-consistency.mjs
+→ P5_BATCH_1_FINAL_CONSISTENCY_OK (exit 0)
+
+bunx vitest run \
+  src/tests/p5-batch1-final-cross-surface-audit.test.tsx \
+  src/tests/p5-batch1-final-permission-leak-audit.test.tsx
+→ 2 files passed · 29 / 29 tests passed
+
+bunx vitest run src/tests/p5-batch1-*.test.*
+→ 17 files passed · 156 / 156 tests passed
+  (127 prior + 29 new audit tests)
+```
+
+### Issues found
+None. The audit was clean on first green run after a minor regex fix in the
+README reflectivity assertion (tightened to match `.test.ts(x)` filenames).
+No source, edge function, dialog, badge, panel, summary surface, SLA rule or
+permission derivation required changes.
+
+### Fixes applied
+None — see above.
+
+### Confirmations
+- No Batch 2 work has been started.
+- No existing trade, POI, WaD, billing, payment or business-decision rows were
+  read, written, mutated or referenced. The audit is pure module inspection +
+  React render + static grep over P-5 files only.
+- No new SQL migrations applied.
+- All P-5 mutating UI paths continue to go through Stage 3 `p5Rpc.*` wrappers;
+  the bypass guard test failed-loud audit confirms zero direct
+  `insert|update|delete|upsert` on `p5_governance_readiness_cases`,
+  `p5_governance_evidence_items` or `p5_governance_audit_events` outside
+  `src/lib/p5-governance/rpc.ts`.
+- Append-only audit triggers from Stage 1 remain in place; no audit row
+  mutation paths were introduced.
+- Forbidden wording sweep (string literals only) across customer, funder,
+  notification (SLA) and shared P-5 components: zero hits.
+- Funder is strictly read-only (`canFunderMutate = false`); developer /
+  technical admin remains diagnostics-only; auditor remains read-only;
+  customer cannot reach admin surfaces; reviewers cannot waive/override or
+  release holds; operator cannot approve final readiness.
+- Provider-dependent surfaces never imply pass / verified / cleared / bankable
+  / compliant — checked for every `p5_provider_status` value.
+
