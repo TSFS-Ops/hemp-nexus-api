@@ -544,20 +544,36 @@ Deno.serve(async (req) => {
       seller_org_id: string | null; status: string; sealed_at: string | null;
     }>;
     const poiIds = Array.from(new Set(wads.map((w) => w.poi_id).filter((v): v is string => !!v)));
-    const poiById = new Map<string, { id: string; match_id: string | null; state: string | null }>();
+    // pois has no match_id column on the live schema; resolve poi → matches
+    // through the canonical poi_engagements bridge (consider all engagements
+    // for a POI, not only the first).
+    const poiById = new Map<string, { id: string; state: string | null }>();
+    const matchIdsByPoiIdWad = new Map<string, string[]>();
     const matchById = new Map<string, { id: string; buyer_org_id: string | null; seller_org_id: string | null }>();
     if (poiIds.length > 0) {
       const { data: poiRows2, error: pErr } = await admin
         .from("pois")
-        .select("id, match_id, state")
+        .select("id, state")
         .in("id", poiIds);
       if (pErr) throw new Error(`WAD_POI_LOOKUP_FAILED: ${pErr.message}`);
-      for (const p of (poiRows2 ?? []) as Array<{ id: string; match_id: string | null; state: string | null }>) {
+      for (const p of (poiRows2 ?? []) as Array<{ id: string; state: string | null }>) {
         poiById.set(p.id, p);
       }
-      const matchIds2 = Array.from(new Set(
-        Array.from(poiById.values()).map((p) => p.match_id).filter((v): v is string => !!v),
-      ));
+      const { data: wadBridge, error: wbErr } = await admin
+        .from("poi_engagements")
+        .select("poi_id, match_id")
+        .in("poi_id", poiIds)
+        .not("match_id", "is", null);
+      if (wbErr) throw new Error(`WAD_POI_BRIDGE_FAILED: ${wbErr.message}`);
+      const bridgeMatchSet = new Set<string>();
+      for (const b of (wadBridge ?? []) as Array<{ poi_id: string | null; match_id: string | null }>) {
+        if (!b.poi_id || !b.match_id) continue;
+        const arr = matchIdsByPoiIdWad.get(b.poi_id) ?? [];
+        arr.push(b.match_id);
+        matchIdsByPoiIdWad.set(b.poi_id, arr);
+        bridgeMatchSet.add(b.match_id);
+      }
+      const matchIds2 = Array.from(bridgeMatchSet);
       if (matchIds2.length > 0) {
         const { data: matchRows, error: mErr } = await admin
           .from("matches")
@@ -585,21 +601,21 @@ Deno.serve(async (req) => {
           detail: `sealed wad linked to POI in non-terminal state ${poi.state}`,
         });
       }
-      if (poi.match_id) {
-        const match = matchById.get(poi.match_id);
-        if (match) {
-          if (w.buyer_org_id && match.buyer_org_id && w.buyer_org_id !== match.buyer_org_id) {
-            wadPoiDrift.push({
-              wad_id: w.id, poi_id: w.poi_id, match_id: poi.match_id, kind: "buyer_org_mismatch",
-              detail: `wad.buyer_org_id ${w.buyer_org_id} ≠ match.buyer_org_id ${match.buyer_org_id}`,
-            });
-          }
-          if (w.seller_org_id && match.seller_org_id && w.seller_org_id !== match.seller_org_id) {
-            wadPoiDrift.push({
-              wad_id: w.id, poi_id: w.poi_id, match_id: poi.match_id, kind: "seller_org_mismatch",
-              detail: `wad.seller_org_id ${w.seller_org_id} ≠ match.seller_org_id ${match.seller_org_id}`,
-            });
-          }
+      const linkedMatchIds = matchIdsByPoiIdWad.get(w.poi_id) ?? [];
+      for (const linkedMatchId of linkedMatchIds) {
+        const match = matchById.get(linkedMatchId);
+        if (!match) continue;
+        if (w.buyer_org_id && match.buyer_org_id && w.buyer_org_id !== match.buyer_org_id) {
+          wadPoiDrift.push({
+            wad_id: w.id, poi_id: w.poi_id, match_id: linkedMatchId, kind: "buyer_org_mismatch",
+            detail: `wad.buyer_org_id ${w.buyer_org_id} ≠ match.buyer_org_id ${match.buyer_org_id}`,
+          });
+        }
+        if (w.seller_org_id && match.seller_org_id && w.seller_org_id !== match.seller_org_id) {
+          wadPoiDrift.push({
+            wad_id: w.id, poi_id: w.poi_id, match_id: linkedMatchId, kind: "seller_org_mismatch",
+            detail: `wad.seller_org_id ${w.seller_org_id} ≠ match.seller_org_id ${match.seller_org_id}`,
+          });
         }
       }
     }
