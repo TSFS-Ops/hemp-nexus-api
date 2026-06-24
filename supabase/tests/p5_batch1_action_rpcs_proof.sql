@@ -17,7 +17,7 @@ DO $$
 DECLARE
   _admin uuid;
   _stranger uuid;
-  _org uuid := gen_random_uuid();
+  _org uuid;
   _case uuid;
   _ev uuid;
   _audit_count_before int;
