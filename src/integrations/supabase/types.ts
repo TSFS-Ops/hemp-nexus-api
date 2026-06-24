@@ -8826,6 +8826,702 @@ export type Database = {
           },
         ]
       }
+      p5_batch2_evidence_items: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          current_rejection_reason:
+            | Database["public"]["Enums"]["p5b2_rejection_reason"]
+            | null
+          current_version_id: string | null
+          customer_safe_note: string | null
+          expiry_date: string | null
+          id: string
+          is_suspended: boolean
+          is_waived: boolean
+          last_provider_attempt_at: string | null
+          provider_dependency: boolean
+          provider_live: boolean
+          provider_name: string | null
+          provider_result_reference: string | null
+          provider_status:
+            | Database["public"]["Enums"]["p5b2_provider_status"]
+            | null
+          rating: Database["public"]["Enums"]["p5b2_evidence_rating"] | null
+          record_id: string
+          requirement_level: Database["public"]["Enums"]["p5b2_requirement_level"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_note_internal: string | null
+          status: Database["public"]["Enums"]["p5b2_evidence_status"]
+          supports: string[]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          current_rejection_reason?:
+            | Database["public"]["Enums"]["p5b2_rejection_reason"]
+            | null
+          current_version_id?: string | null
+          customer_safe_note?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_suspended?: boolean
+          is_waived?: boolean
+          last_provider_attempt_at?: string | null
+          provider_dependency?: boolean
+          provider_live?: boolean
+          provider_name?: string | null
+          provider_result_reference?: string | null
+          provider_status?:
+            | Database["public"]["Enums"]["p5b2_provider_status"]
+            | null
+          rating?: Database["public"]["Enums"]["p5b2_evidence_rating"] | null
+          record_id: string
+          requirement_level?: Database["public"]["Enums"]["p5b2_requirement_level"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note_internal?: string | null
+          status?: Database["public"]["Enums"]["p5b2_evidence_status"]
+          supports?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          current_rejection_reason?:
+            | Database["public"]["Enums"]["p5b2_rejection_reason"]
+            | null
+          current_version_id?: string | null
+          customer_safe_note?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_suspended?: boolean
+          is_waived?: boolean
+          last_provider_attempt_at?: string | null
+          provider_dependency?: boolean
+          provider_live?: boolean
+          provider_name?: string | null
+          provider_result_reference?: string | null
+          provider_status?:
+            | Database["public"]["Enums"]["p5b2_provider_status"]
+            | null
+          rating?: Database["public"]["Enums"]["p5b2_evidence_rating"] | null
+          record_id?: string
+          requirement_level?: Database["public"]["Enums"]["p5b2_requirement_level"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note_internal?: string | null
+          status?: Database["public"]["Enums"]["p5b2_evidence_status"]
+          supports?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_evidence_items_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_kyc_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch2_evidence_pack_items: {
+        Row: {
+          evidence_item_id: string
+          id: string
+          pack_id: string
+          snapshot_at: string
+          snapshot_file_hash: string
+          snapshot_rating:
+            | Database["public"]["Enums"]["p5b2_evidence_rating"]
+            | null
+          snapshot_status: Database["public"]["Enums"]["p5b2_evidence_status"]
+          version_id: string
+        }
+        Insert: {
+          evidence_item_id: string
+          id?: string
+          pack_id: string
+          snapshot_at?: string
+          snapshot_file_hash: string
+          snapshot_rating?:
+            | Database["public"]["Enums"]["p5b2_evidence_rating"]
+            | null
+          snapshot_status: Database["public"]["Enums"]["p5b2_evidence_status"]
+          version_id: string
+        }
+        Update: {
+          evidence_item_id?: string
+          id?: string
+          pack_id?: string
+          snapshot_at?: string
+          snapshot_file_hash?: string
+          snapshot_rating?:
+            | Database["public"]["Enums"]["p5b2_evidence_rating"]
+            | null
+          snapshot_status?: Database["public"]["Enums"]["p5b2_evidence_status"]
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_evidence_pack_items_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_evidence_pack_items_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_evidence_pack_items_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch2_evidence_packs: {
+        Row: {
+          counterparty_id: string | null
+          created_at: string
+          hash_chain_reference: string | null
+          id: string
+          match_id: string | null
+          metadata: Json
+          organization_id: string | null
+          pack_reason: string
+          pack_status: string
+          sealed_at: string
+          sealed_by: string | null
+          superseded_by: string | null
+          trade_request_id: string | null
+        }
+        Insert: {
+          counterparty_id?: string | null
+          created_at?: string
+          hash_chain_reference?: string | null
+          id?: string
+          match_id?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          pack_reason: string
+          pack_status?: string
+          sealed_at?: string
+          sealed_by?: string | null
+          superseded_by?: string | null
+          trade_request_id?: string | null
+        }
+        Update: {
+          counterparty_id?: string | null
+          created_at?: string
+          hash_chain_reference?: string | null
+          id?: string
+          match_id?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          pack_reason?: string
+          pack_status?: string
+          sealed_at?: string
+          sealed_by?: string | null
+          superseded_by?: string | null
+          trade_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_evidence_packs_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "counterparties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_evidence_packs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_evidence_packs_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_evidence_packs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_evidence_packs_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_evidence_packs_trade_request_id_fkey"
+            columns: ["trade_request_id"]
+            isOneToOne: false
+            referencedRelation: "trade_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch2_evidence_review_events: {
+        Row: {
+          action: string
+          actor_role: string | null
+          actor_type: string
+          actor_user_id: string | null
+          correlation_id: string | null
+          created_at: string
+          customer_safe_note: string | null
+          evidence_item_id: string
+          id: string
+          metadata: Json
+          new_status: Database["public"]["Enums"]["p5b2_evidence_status"] | null
+          previous_status:
+            | Database["public"]["Enums"]["p5b2_evidence_status"]
+            | null
+          rejection_reason:
+            | Database["public"]["Enums"]["p5b2_rejection_reason"]
+            | null
+          reviewer_note_internal: string | null
+          version_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_role?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          customer_safe_note?: string | null
+          evidence_item_id: string
+          id?: string
+          metadata?: Json
+          new_status?:
+            | Database["public"]["Enums"]["p5b2_evidence_status"]
+            | null
+          previous_status?:
+            | Database["public"]["Enums"]["p5b2_evidence_status"]
+            | null
+          rejection_reason?:
+            | Database["public"]["Enums"]["p5b2_rejection_reason"]
+            | null
+          reviewer_note_internal?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_role?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          customer_safe_note?: string | null
+          evidence_item_id?: string
+          id?: string
+          metadata?: Json
+          new_status?:
+            | Database["public"]["Enums"]["p5b2_evidence_status"]
+            | null
+          previous_status?:
+            | Database["public"]["Enums"]["p5b2_evidence_status"]
+            | null
+          rejection_reason?:
+            | Database["public"]["Enums"]["p5b2_rejection_reason"]
+            | null
+          reviewer_note_internal?: string | null
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_evidence_review_events_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_evidence_review_events_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch2_evidence_versions: {
+        Row: {
+          archived_at: string | null
+          audit_reference: string | null
+          evidence_item_id: string
+          file_hash: string
+          file_size_bytes: number | null
+          file_storage_path: string | null
+          id: string
+          is_current: boolean
+          mime_type: string | null
+          replacement_note: string | null
+          replacement_reason:
+            | Database["public"]["Enums"]["p5b2_replacement_reason"]
+            | null
+          uploaded_at: string
+          uploaded_by: string | null
+          uploader_role: string | null
+          version_number: number
+        }
+        Insert: {
+          archived_at?: string | null
+          audit_reference?: string | null
+          evidence_item_id: string
+          file_hash: string
+          file_size_bytes?: number | null
+          file_storage_path?: string | null
+          id?: string
+          is_current?: boolean
+          mime_type?: string | null
+          replacement_note?: string | null
+          replacement_reason?:
+            | Database["public"]["Enums"]["p5b2_replacement_reason"]
+            | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          uploader_role?: string | null
+          version_number: number
+        }
+        Update: {
+          archived_at?: string | null
+          audit_reference?: string | null
+          evidence_item_id?: string
+          file_hash?: string
+          file_size_bytes?: number | null
+          file_storage_path?: string | null
+          id?: string
+          is_current?: boolean
+          mime_type?: string | null
+          replacement_note?: string | null
+          replacement_reason?:
+            | Database["public"]["Enums"]["p5b2_replacement_reason"]
+            | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+          uploader_role?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_evidence_versions_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch2_evidence_waivers: {
+        Row: {
+          approved_at: string
+          approved_by: string | null
+          evidence_item_id: string
+          expires_at: string | null
+          id: string
+          metadata: Json
+          reason_text: string
+          revoked_at: string | null
+          revoked_by: string | null
+          scope: string
+        }
+        Insert: {
+          approved_at?: string
+          approved_by?: string | null
+          evidence_item_id: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json
+          reason_text: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string | null
+          evidence_item_id?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json
+          reason_text?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_evidence_waivers_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch2_kyc_records: {
+        Row: {
+          api_client_id: string | null
+          archived_at: string | null
+          counterparty_id: string | null
+          created_at: string
+          created_by: string | null
+          display_name: string
+          entity_type: string | null
+          id: string
+          is_high_risk: boolean
+          jurisdiction: string | null
+          match_id: string | null
+          notes_internal: string | null
+          organization_id: string | null
+          owner_user_id: string | null
+          programme_id: string | null
+          record_type: Database["public"]["Enums"]["p5b2_kyc_record_type"]
+          status_summary: string | null
+          trade_request_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          api_client_id?: string | null
+          archived_at?: string | null
+          counterparty_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          entity_type?: string | null
+          id?: string
+          is_high_risk?: boolean
+          jurisdiction?: string | null
+          match_id?: string | null
+          notes_internal?: string | null
+          organization_id?: string | null
+          owner_user_id?: string | null
+          programme_id?: string | null
+          record_type: Database["public"]["Enums"]["p5b2_kyc_record_type"]
+          status_summary?: string | null
+          trade_request_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          api_client_id?: string | null
+          archived_at?: string | null
+          counterparty_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          entity_type?: string | null
+          id?: string
+          is_high_risk?: boolean
+          jurisdiction?: string | null
+          match_id?: string | null
+          notes_internal?: string | null
+          organization_id?: string | null
+          owner_user_id?: string | null
+          programme_id?: string | null
+          record_type?: Database["public"]["Enums"]["p5b2_kyc_record_type"]
+          status_summary?: string | null
+          trade_request_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_kyc_records_api_client_id_fkey"
+            columns: ["api_client_id"]
+            isOneToOne: false
+            referencedRelation: "api_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_kyc_records_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "counterparties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_kyc_records_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_kyc_records_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_kyc_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_kyc_records_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_kyc_records_trade_request_id_fkey"
+            columns: ["trade_request_id"]
+            isOneToOne: false
+            referencedRelation: "trade_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch2_record_links: {
+        Row: {
+          child_record_id: string
+          created_at: string
+          created_by: string | null
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          link_type: string
+          notes_internal: string | null
+          ownership_pct: number | null
+          parent_record_id: string
+        }
+        Insert: {
+          child_record_id: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          link_type: string
+          notes_internal?: string | null
+          ownership_pct?: number | null
+          parent_record_id: string
+        }
+        Update: {
+          child_record_id?: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          link_type?: string
+          notes_internal?: string | null
+          ownership_pct?: number | null
+          parent_record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_record_links_child_record_id_fkey"
+            columns: ["child_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_kyc_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_record_links_parent_record_id_fkey"
+            columns: ["parent_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_kyc_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch2_sensitive_access_log: {
+        Row: {
+          access_kind: string
+          actor_role: string | null
+          actor_user_id: string | null
+          created_at: string
+          evidence_item_id: string | null
+          id: string
+          ip_address: unknown
+          reason_text: string
+          record_id: string | null
+          user_agent: string | null
+          version_id: string | null
+        }
+        Insert: {
+          access_kind: string
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          evidence_item_id?: string | null
+          id?: string
+          ip_address?: unknown
+          reason_text: string
+          record_id?: string | null
+          user_agent?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          access_kind?: string
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          evidence_item_id?: string | null
+          id?: string
+          ip_address?: unknown
+          reason_text?: string
+          record_id?: string | null
+          user_agent?: string | null
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_sensitive_access_log_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_sensitive_access_log_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_kyc_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_sensitive_access_log_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       p5_governance_audit_events: {
         Row: {
           actor_type: Database["public"]["Enums"]["p5_actor_type"]
@@ -20442,6 +21138,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      p5b2_has_any_role: {
+        Args: { _roles: string[]; _user_id: string }
+        Returns: boolean
+      }
       platform_admin_break_glass_progress:
         | {
             Args: {
@@ -21023,6 +21723,83 @@ export type Database = {
         | "override_approved"
         | "reopened"
         | "archived_superseded"
+      p5b2_evidence_rating:
+        | "strong"
+        | "good"
+        | "acceptable"
+        | "weak"
+        | "unusable"
+        | "provider_dependent"
+      p5b2_evidence_status:
+        | "missing"
+        | "requested"
+        | "uploaded"
+        | "under_review"
+        | "accepted"
+        | "accepted_with_warning"
+        | "rejected"
+        | "expired"
+        | "replaced"
+        | "waived"
+        | "provider_dependent"
+        | "suspended_hold"
+        | "revoked"
+      p5b2_kyc_record_type:
+        | "company"
+        | "director_officer"
+        | "ubo_controller"
+        | "authorised_rep"
+        | "counterparty"
+        | "funder_entity"
+        | "funder_contact"
+        | "api_customer"
+        | "transaction_party"
+        | "bank_account"
+        | "invited_evidence_owner"
+      p5b2_provider_status:
+        | "provider_ready_not_live_provider_verified"
+        | "provider_credentials_pending"
+        | "provider_result_pending"
+        | "provider_unavailable"
+        | "provider_failed"
+        | "manual_review_recorded_not_provider_verified"
+      p5b2_rejection_reason:
+        | "illegible_document"
+        | "expired_document"
+        | "wrong_document_type"
+        | "missing_page_or_incomplete_file"
+        | "name_mismatch"
+        | "company_number_registration_mismatch"
+        | "address_mismatch"
+        | "not_signed_not_dated"
+        | "authority_insufficient"
+        | "ownership_unclear"
+        | "bank_account_holder_mismatch"
+        | "bank_evidence_stale_or_unofficial"
+        | "tax_vat_mismatch"
+        | "unsupported_jurisdiction_or_format"
+        | "translation_or_notarisation_required"
+        | "provider_check_required"
+        | "provider_failed_or_unavailable"
+        | "suspected_fraud_or_tampering"
+        | "duplicate_document"
+        | "other"
+      p5b2_replacement_reason:
+        | "expired"
+        | "rejected"
+        | "updated"
+        | "correction"
+        | "better_quality"
+        | "authority_changed"
+        | "bank_details_changed"
+        | "ownership_changed"
+        | "admin_correction"
+        | "other"
+      p5b2_requirement_level:
+        | "mandatory"
+        | "optional"
+        | "conditional"
+        | "not_required"
       registry_readiness_state:
         | "not_started"
         | "shell_ready"
@@ -21341,6 +22118,90 @@ export const Constants = {
         "override_approved",
         "reopened",
         "archived_superseded",
+      ],
+      p5b2_evidence_rating: [
+        "strong",
+        "good",
+        "acceptable",
+        "weak",
+        "unusable",
+        "provider_dependent",
+      ],
+      p5b2_evidence_status: [
+        "missing",
+        "requested",
+        "uploaded",
+        "under_review",
+        "accepted",
+        "accepted_with_warning",
+        "rejected",
+        "expired",
+        "replaced",
+        "waived",
+        "provider_dependent",
+        "suspended_hold",
+        "revoked",
+      ],
+      p5b2_kyc_record_type: [
+        "company",
+        "director_officer",
+        "ubo_controller",
+        "authorised_rep",
+        "counterparty",
+        "funder_entity",
+        "funder_contact",
+        "api_customer",
+        "transaction_party",
+        "bank_account",
+        "invited_evidence_owner",
+      ],
+      p5b2_provider_status: [
+        "provider_ready_not_live_provider_verified",
+        "provider_credentials_pending",
+        "provider_result_pending",
+        "provider_unavailable",
+        "provider_failed",
+        "manual_review_recorded_not_provider_verified",
+      ],
+      p5b2_rejection_reason: [
+        "illegible_document",
+        "expired_document",
+        "wrong_document_type",
+        "missing_page_or_incomplete_file",
+        "name_mismatch",
+        "company_number_registration_mismatch",
+        "address_mismatch",
+        "not_signed_not_dated",
+        "authority_insufficient",
+        "ownership_unclear",
+        "bank_account_holder_mismatch",
+        "bank_evidence_stale_or_unofficial",
+        "tax_vat_mismatch",
+        "unsupported_jurisdiction_or_format",
+        "translation_or_notarisation_required",
+        "provider_check_required",
+        "provider_failed_or_unavailable",
+        "suspected_fraud_or_tampering",
+        "duplicate_document",
+        "other",
+      ],
+      p5b2_replacement_reason: [
+        "expired",
+        "rejected",
+        "updated",
+        "correction",
+        "better_quality",
+        "authority_changed",
+        "bank_details_changed",
+        "ownership_changed",
+        "admin_correction",
+        "other",
+      ],
+      p5b2_requirement_level: [
+        "mandatory",
+        "optional",
+        "conditional",
+        "not_required",
       ],
       registry_readiness_state: [
         "not_started",
