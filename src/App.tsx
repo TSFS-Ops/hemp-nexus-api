@@ -148,6 +148,11 @@ const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notif
 // P-5 Batch 1 — Governance, Compliance & Readiness admin surface
 const P5GovernanceCasesDashboard = lazy(() => import("@/pages/admin/p5-governance/CasesDashboard"));
 const P5GovernanceCaseDetail = lazy(() => import("@/pages/admin/p5-governance/CaseDetail"));
+// P-5 Batch 2 — KYC / KYB Evidence & Artefacts admin/operator surfaces (Stage 4)
+const P5Batch2EvidenceDashboard = lazy(() => import("@/pages/admin/p5-batch2/EvidenceDashboard"));
+const P5Batch2RecordDetail = lazy(() => import("@/pages/admin/p5-batch2/RecordDetail"));
+const P5Batch2EvidencePackViewer = lazy(() => import("@/pages/admin/p5-batch2/EvidencePackViewer"));
+const P5Batch2FinalitySnapshotViewer = lazy(() => import("@/pages/admin/p5-batch2/FinalitySnapshotViewer"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -329,6 +334,12 @@ function App() {
                   {/* P-5 Batch 1 — Governance, Compliance & Readiness (admin/internal) */}
                   <Route path="/admin/p5-governance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCasesDashboard /></RequireAuth>} />
                   <Route path="/admin/p5-governance/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCaseDetail /></RequireAuth>} />
+
+                  {/* P-5 Batch 2 — Stage 4: Admin/operator Evidence & Artefacts surfaces */}
+                  <Route path="/admin/p5-batch2" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2EvidenceDashboard /></RequireAuth>} />
+                  <Route path="/admin/p5-batch2/records/:recordId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2RecordDetail /></RequireAuth>} />
+                  <Route path="/admin/p5-batch2/packs" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2EvidencePackViewer /></RequireAuth>} />
+                  <Route path="/admin/p5-batch2/packs/:packId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2FinalitySnapshotViewer /></RequireAuth>} />
 
                   {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}
                   <Route path="/registry/my-companies/:companyId/readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
