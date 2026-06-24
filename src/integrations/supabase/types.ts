@@ -9591,6 +9591,521 @@ export type Database = {
           },
         ]
       }
+      p5_batch3_funder_access_grants: {
+        Row: {
+          access_scope: Json
+          can_download: boolean
+          can_view_raw_documents: boolean
+          created_at: string
+          deal_id: string | null
+          evidence_pack_id: string | null
+          evidence_pack_version: string | null
+          expiry_at: string
+          funder_organisation_id: string
+          funder_status: Database["public"]["Enums"]["p5_batch3_funder_status"]
+          funder_user_id: string
+          id: string
+          nda_reference: string | null
+          permitted_data_categories: string[]
+          release_reason: string
+          released_at: string
+          released_by: string | null
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          role: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          status: Database["public"]["Enums"]["p5_batch3_access_grant_status"]
+          transaction_reference: string
+          unmasked_bank_details: boolean
+          updated_at: string
+        }
+        Insert: {
+          access_scope?: Json
+          can_download?: boolean
+          can_view_raw_documents?: boolean
+          created_at?: string
+          deal_id?: string | null
+          evidence_pack_id?: string | null
+          evidence_pack_version?: string | null
+          expiry_at: string
+          funder_organisation_id: string
+          funder_status?: Database["public"]["Enums"]["p5_batch3_funder_status"]
+          funder_user_id: string
+          id?: string
+          nda_reference?: string | null
+          permitted_data_categories?: string[]
+          release_reason: string
+          released_at?: string
+          released_by?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          status?: Database["public"]["Enums"]["p5_batch3_access_grant_status"]
+          transaction_reference: string
+          unmasked_bank_details?: boolean
+          updated_at?: string
+        }
+        Update: {
+          access_scope?: Json
+          can_download?: boolean
+          can_view_raw_documents?: boolean
+          created_at?: string
+          deal_id?: string | null
+          evidence_pack_id?: string | null
+          evidence_pack_version?: string | null
+          expiry_at?: string
+          funder_organisation_id?: string
+          funder_status?: Database["public"]["Enums"]["p5_batch3_funder_status"]
+          funder_user_id?: string
+          id?: string
+          nda_reference?: string | null
+          permitted_data_categories?: string[]
+          release_reason?: string
+          released_at?: string
+          released_by?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role?: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          status?: Database["public"]["Enums"]["p5_batch3_access_grant_status"]
+          transaction_reference?: string
+          unmasked_bank_details?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch3_funder_access_grants_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch3_funder_access_grants_funder_user_id_fkey"
+            columns: ["funder_user_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch3_funder_audit_events: {
+        Row: {
+          action: string
+          correlation_id: string | null
+          device: string | null
+          document_hash: string | null
+          document_version: string | null
+          funder_organisation_id: string | null
+          funder_user_id: string | null
+          id: string
+          ip_address: unknown
+          new_state: Json | null
+          note: string | null
+          object_id: string | null
+          object_type: string | null
+          occurred_at: string
+          prior_state: Json | null
+          reason_code: string | null
+          role: Database["public"]["Enums"]["p5_batch3_funder_role"] | null
+          source_channel: string
+          success: boolean
+          transaction_reference: string | null
+          user_agent: string | null
+          user_display_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          correlation_id?: string | null
+          device?: string | null
+          document_hash?: string | null
+          document_version?: string | null
+          funder_organisation_id?: string | null
+          funder_user_id?: string | null
+          id?: string
+          ip_address?: unknown
+          new_state?: Json | null
+          note?: string | null
+          object_id?: string | null
+          object_type?: string | null
+          occurred_at?: string
+          prior_state?: Json | null
+          reason_code?: string | null
+          role?: Database["public"]["Enums"]["p5_batch3_funder_role"] | null
+          source_channel?: string
+          success?: boolean
+          transaction_reference?: string | null
+          user_agent?: string | null
+          user_display_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          correlation_id?: string | null
+          device?: string | null
+          document_hash?: string | null
+          document_version?: string | null
+          funder_organisation_id?: string | null
+          funder_user_id?: string | null
+          id?: string
+          ip_address?: unknown
+          new_state?: Json | null
+          note?: string | null
+          object_id?: string | null
+          object_type?: string | null
+          occurred_at?: string
+          prior_state?: Json | null
+          reason_code?: string | null
+          role?: Database["public"]["Enums"]["p5_batch3_funder_role"] | null
+          source_channel?: string
+          success?: boolean
+          transaction_reference?: string | null
+          user_agent?: string | null
+          user_display_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch3_funder_audit_events_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch3_funder_audit_events_funder_user_id_fkey"
+            columns: ["funder_user_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch3_funder_downloads: {
+        Row: {
+          access_grant_id: string | null
+          download_url_expires_at: string
+          downloaded_at: string
+          evidence_pack_id: string | null
+          evidence_pack_version: string | null
+          file_name: string
+          file_type: string | null
+          funder_organisation_id: string
+          funder_user_id: string
+          id: string
+          ip_address: unknown
+          revoked_at: string | null
+          success: boolean
+          transaction_reference: string
+          user_agent: string | null
+          watermark_text: string
+        }
+        Insert: {
+          access_grant_id?: string | null
+          download_url_expires_at: string
+          downloaded_at?: string
+          evidence_pack_id?: string | null
+          evidence_pack_version?: string | null
+          file_name: string
+          file_type?: string | null
+          funder_organisation_id: string
+          funder_user_id: string
+          id?: string
+          ip_address?: unknown
+          revoked_at?: string | null
+          success?: boolean
+          transaction_reference: string
+          user_agent?: string | null
+          watermark_text: string
+        }
+        Update: {
+          access_grant_id?: string | null
+          download_url_expires_at?: string
+          downloaded_at?: string
+          evidence_pack_id?: string | null
+          evidence_pack_version?: string | null
+          file_name?: string
+          file_type?: string | null
+          funder_organisation_id?: string
+          funder_user_id?: string
+          id?: string
+          ip_address?: unknown
+          revoked_at?: string | null
+          success?: boolean
+          transaction_reference?: string
+          user_agent?: string | null
+          watermark_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch3_funder_downloads_access_grant_id_fkey"
+            columns: ["access_grant_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_access_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch3_funder_downloads_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch3_funder_downloads_funder_user_id_fkey"
+            columns: ["funder_user_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch3_funder_organisations: {
+        Row: {
+          api_enabled: boolean
+          contact_email: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          jurisdiction: string | null
+          name: string
+          notes_internal: string | null
+          registration_number: string | null
+          status: Database["public"]["Enums"]["p5_batch3_funder_org_status"]
+          updated_at: string
+        }
+        Insert: {
+          api_enabled?: boolean
+          contact_email?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          jurisdiction?: string | null
+          name: string
+          notes_internal?: string | null
+          registration_number?: string | null
+          status?: Database["public"]["Enums"]["p5_batch3_funder_org_status"]
+          updated_at?: string
+        }
+        Update: {
+          api_enabled?: boolean
+          contact_email?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          jurisdiction?: string | null
+          name?: string
+          notes_internal?: string | null
+          registration_number?: string | null
+          status?: Database["public"]["Enums"]["p5_batch3_funder_org_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      p5_batch3_funder_outcomes: {
+        Row: {
+          access_grant_id: string | null
+          admin_review_status: string
+          admin_reviewed_at: string | null
+          admin_reviewed_by: string | null
+          conditions: string | null
+          created_at: string
+          funder_organisation_id: string
+          funder_user_id: string
+          id: string
+          outcome_type: Database["public"]["Enums"]["p5_batch3_outcome_type"]
+          term_sheet_document_id: string | null
+          transaction_reference: string
+          updated_at: string
+        }
+        Insert: {
+          access_grant_id?: string | null
+          admin_review_status?: string
+          admin_reviewed_at?: string | null
+          admin_reviewed_by?: string | null
+          conditions?: string | null
+          created_at?: string
+          funder_organisation_id: string
+          funder_user_id: string
+          id?: string
+          outcome_type: Database["public"]["Enums"]["p5_batch3_outcome_type"]
+          term_sheet_document_id?: string | null
+          transaction_reference: string
+          updated_at?: string
+        }
+        Update: {
+          access_grant_id?: string | null
+          admin_review_status?: string
+          admin_reviewed_at?: string | null
+          admin_reviewed_by?: string | null
+          conditions?: string | null
+          created_at?: string
+          funder_organisation_id?: string
+          funder_user_id?: string
+          id?: string
+          outcome_type?: Database["public"]["Enums"]["p5_batch3_outcome_type"]
+          term_sheet_document_id?: string | null
+          transaction_reference?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch3_funder_outcomes_access_grant_id_fkey"
+            columns: ["access_grant_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_access_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch3_funder_outcomes_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch3_funder_outcomes_funder_user_id_fkey"
+            columns: ["funder_user_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch3_funder_requests: {
+        Row: {
+          access_grant_id: string | null
+          admin_decision: string | null
+          admin_external_message: string | null
+          admin_reason: string | null
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["p5_batch3_request_category"]
+          closed_at: string | null
+          created_at: string
+          funder_organisation_id: string
+          funder_user_id: string
+          id: string
+          original_message: string
+          status: Database["public"]["Enums"]["p5_batch3_request_status"]
+          transaction_reference: string
+          updated_at: string
+        }
+        Insert: {
+          access_grant_id?: string | null
+          admin_decision?: string | null
+          admin_external_message?: string | null
+          admin_reason?: string | null
+          assigned_to?: string | null
+          category: Database["public"]["Enums"]["p5_batch3_request_category"]
+          closed_at?: string | null
+          created_at?: string
+          funder_organisation_id: string
+          funder_user_id: string
+          id?: string
+          original_message: string
+          status?: Database["public"]["Enums"]["p5_batch3_request_status"]
+          transaction_reference: string
+          updated_at?: string
+        }
+        Update: {
+          access_grant_id?: string | null
+          admin_decision?: string | null
+          admin_external_message?: string | null
+          admin_reason?: string | null
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["p5_batch3_request_category"]
+          closed_at?: string | null
+          created_at?: string
+          funder_organisation_id?: string
+          funder_user_id?: string
+          id?: string
+          original_message?: string
+          status?: Database["public"]["Enums"]["p5_batch3_request_status"]
+          transaction_reference?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch3_funder_requests_access_grant_id_fkey"
+            columns: ["access_grant_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_access_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch3_funder_requests_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch3_funder_requests_funder_user_id_fkey"
+            columns: ["funder_user_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch3_funder_users: {
+        Row: {
+          accepted_at: string | null
+          auth_user_id: string | null
+          created_at: string
+          deactivated_at: string | null
+          display_name: string | null
+          email: string
+          funder_organisation_id: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          status: Database["public"]["Enums"]["p5_batch3_funder_user_status"]
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          deactivated_at?: string | null
+          display_name?: string | null
+          email: string
+          funder_organisation_id: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          role: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          status?: Database["public"]["Enums"]["p5_batch3_funder_user_status"]
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          deactivated_at?: string | null
+          display_name?: string | null
+          email?: string
+          funder_organisation_id?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          status?: Database["public"]["Enums"]["p5_batch3_funder_user_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch3_funder_users_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       p5_governance_audit_events: {
         Row: {
           actor_type: Database["public"]["Enums"]["p5_actor_type"]
@@ -21320,6 +21835,12 @@ export type Database = {
         Args: { p_evidence_item_id: string; p_reason: string }
         Returns: Json
       }
+      p5b3_current_funder_org: { Args: never; Returns: string }
+      p5b3_has_active_grant: {
+        Args: { _transaction_ref: string }
+        Returns: boolean
+      }
+      p5b3_is_platform_admin: { Args: never; Returns: boolean }
       platform_admin_break_glass_progress:
         | {
             Args: {
@@ -21823,6 +22344,71 @@ export type Database = {
         | "email_send_log"
         | "governance_records"
       p5_actor_type: "user" | "system" | "api" | "provider"
+      p5_batch3_access_grant_status: "active" | "revoked" | "expired"
+      p5_batch3_exit_reason:
+        | "funder_declined"
+        | "funder_completed_review"
+        | "transaction_closed"
+        | "funding_completed"
+        | "access_expired"
+        | "admin_revoked"
+        | "policy_concern"
+        | "duplicate_access"
+        | "no_response"
+        | "funder_withdrawn"
+      p5_batch3_funder_org_status: "active" | "suspended" | "closed"
+      p5_batch3_funder_role:
+        | "funder_viewer"
+        | "funder_reviewer"
+        | "funder_approver"
+        | "funder_org_admin"
+        | "external_adviser"
+      p5_batch3_funder_status:
+        | "awaiting_review"
+        | "in_progress"
+        | "interested"
+        | "declined"
+        | "credit_review_pending"
+        | "conditional_support"
+        | "term_sheet_requested"
+        | "term_sheet_provided"
+        | "funding_decision_submitted"
+        | "exited"
+      p5_batch3_funder_user_status: "invited" | "active" | "deactivated"
+      p5_batch3_outcome_type:
+        | "interested"
+        | "not_interested"
+        | "credit_review_pending"
+        | "conditional_support"
+        | "term_sheet_requested"
+        | "term_sheet_provided"
+        | "funding_approved_subject_to_admin"
+        | "declined"
+      p5_batch3_request_category:
+        | "commercial"
+        | "financial"
+        | "legal"
+        | "technical"
+        | "esg_impact"
+        | "kyc_kyb"
+        | "evidence"
+        | "governance_compliance"
+        | "project_readiness"
+        | "transaction_terms"
+        | "security_collateral"
+        | "other"
+      p5_batch3_request_status:
+        | "draft"
+        | "submitted"
+        | "admin_review"
+        | "approved_to_company"
+        | "assigned"
+        | "response_pending"
+        | "answered"
+        | "follow_up_requested"
+        | "rejected"
+        | "closed"
+        | "withdrawn"
       p5_provider_status:
         | "not_live"
         | "credentials_pending"
@@ -22216,6 +22802,77 @@ export const Constants = {
         "governance_records",
       ],
       p5_actor_type: ["user", "system", "api", "provider"],
+      p5_batch3_access_grant_status: ["active", "revoked", "expired"],
+      p5_batch3_exit_reason: [
+        "funder_declined",
+        "funder_completed_review",
+        "transaction_closed",
+        "funding_completed",
+        "access_expired",
+        "admin_revoked",
+        "policy_concern",
+        "duplicate_access",
+        "no_response",
+        "funder_withdrawn",
+      ],
+      p5_batch3_funder_org_status: ["active", "suspended", "closed"],
+      p5_batch3_funder_role: [
+        "funder_viewer",
+        "funder_reviewer",
+        "funder_approver",
+        "funder_org_admin",
+        "external_adviser",
+      ],
+      p5_batch3_funder_status: [
+        "awaiting_review",
+        "in_progress",
+        "interested",
+        "declined",
+        "credit_review_pending",
+        "conditional_support",
+        "term_sheet_requested",
+        "term_sheet_provided",
+        "funding_decision_submitted",
+        "exited",
+      ],
+      p5_batch3_funder_user_status: ["invited", "active", "deactivated"],
+      p5_batch3_outcome_type: [
+        "interested",
+        "not_interested",
+        "credit_review_pending",
+        "conditional_support",
+        "term_sheet_requested",
+        "term_sheet_provided",
+        "funding_approved_subject_to_admin",
+        "declined",
+      ],
+      p5_batch3_request_category: [
+        "commercial",
+        "financial",
+        "legal",
+        "technical",
+        "esg_impact",
+        "kyc_kyb",
+        "evidence",
+        "governance_compliance",
+        "project_readiness",
+        "transaction_terms",
+        "security_collateral",
+        "other",
+      ],
+      p5_batch3_request_status: [
+        "draft",
+        "submitted",
+        "admin_review",
+        "approved_to_company",
+        "assigned",
+        "response_pending",
+        "answered",
+        "follow_up_requested",
+        "rejected",
+        "closed",
+        "withdrawn",
+      ],
       p5_provider_status: [
         "not_live",
         "credentials_pending",
