@@ -59,10 +59,10 @@ DECLARE
   v_blocked  boolean;
 BEGIN
   INSERT INTO public.p5_governance_readiness_cases (
-    id, organization_id, governance_status, compliance_status,
+    id, organization_id, entity_id, governance_status, compliance_status,
     readiness_status, evidence_status, reason_codes
   ) VALUES (
-    gen_random_uuid(), NULL,
+    gen_random_uuid(), NULL, gen_random_uuid(),
     'submitted', 'submitted', 'submitted', 'submitted',
     ARRAY[]::p5_reason_code[]
   )
