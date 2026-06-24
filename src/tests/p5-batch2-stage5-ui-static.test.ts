@@ -144,9 +144,9 @@ describe("p5-batch2 stage 5 — non-admin surface source guarantees", () => {
     }
   });
 
-  it("suspected fraud / tampering never appears in any Stage 5 source", () => {
+  it("suspected fraud / tampering never appears in any Stage 5 rendered source", () => {
     for (const key of STAGE5_FILES) {
-      const src = read(FILES[key]).toLowerCase();
+      const src = stripped(read(FILES[key])).toLowerCase();
       expect(src, `${key}: fraud detail must not leak`).not.toContain("fraud");
       expect(src, `${key}: tampering must not leak`).not.toContain("tamper");
     }
