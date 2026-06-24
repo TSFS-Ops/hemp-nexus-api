@@ -320,6 +320,10 @@ function App() {
                   {/* Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell */}
                   <Route path="/admin/notifications/channel-readiness" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminNotificationChannelReadiness /></RequireAuth>} />
 
+                  {/* P-5 Batch 1 — Governance, Compliance & Readiness (admin/internal) */}
+                  <Route path="/admin/p5-governance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCasesDashboard /></RequireAuth>} />
+                  <Route path="/admin/p5-governance/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCaseDetail /></RequireAuth>} />
+
 
 
 
