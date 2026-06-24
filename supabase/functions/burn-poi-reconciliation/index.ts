@@ -269,9 +269,14 @@ Deno.serve(async (req) => {
   // ── 2. POI_WITHOUT_BURN ────────────────────────────────────────────
   // Pull pois minted in window in any state where credits should have
   // been spent (founder-exemption is captured by audit_logs.action='exempt_burn').
+  //
+  // pois.match_id does not exist on the live schema — POI↔match linkage is
+  // resolved through the poi_engagements bridge in a second query, so a POI
+  // with no engagement row is treated as "fresh/unilateral, not expected to
+  // pair to a counterparty burn" and is skipped (avoids false positives).
   const { data: poiRows, error: poiErr } = await admin
     .from("pois")
-    .select("id, match_id, org_id, state, created_at")
+    .select("id, org_id, state, created_at")
     .in("state", ["PENDING_APPROVAL", "ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"])
     .gte("created_at", sinceIso)
     .order("created_at", { ascending: false })
@@ -283,18 +288,43 @@ Deno.serve(async (req) => {
   }
 
   const poisWithoutBurn: Array<Record<string, unknown>> = [];
-  const poiMatchIds = (poiRows ?? []).map((p) => (p as { match_id: string }).match_id).filter(Boolean);
+  const candidatePoiIds = (poiRows ?? [])
+    .map((p) => (p as { id: string }).id)
+    .filter(Boolean);
+
+  // Resolve poi_id → match_id[] through the canonical bridge.
+  const matchIdsByPoiId = new Map<string, string[]>();
+  const allBridgedMatchIds = new Set<string>();
+  if (candidatePoiIds.length > 0) {
+    const { data: bridgeRows, error: bridgeErr } = await admin
+      .from("poi_engagements")
+      .select("poi_id, match_id")
+      .in("poi_id", candidatePoiIds)
+      .not("match_id", "is", null);
+    if (bridgeErr) {
+      console.error("[burn-poi-reconciliation] poi→match bridge fetch failed:", bridgeErr);
+      throw new Error(`POI_BRIDGE_FETCH_FAILED: ${bridgeErr.message}`);
+    }
+    for (const b of (bridgeRows ?? []) as Array<{ poi_id: string | null; match_id: string | null }>) {
+      if (!b.poi_id || !b.match_id) continue;
+      const arr = matchIdsByPoiId.get(b.poi_id) ?? [];
+      arr.push(b.match_id);
+      matchIdsByPoiId.set(b.poi_id, arr);
+      allBridgedMatchIds.add(b.match_id);
+    }
+  }
 
   let burnHits = new Set<string>();
   let exemptHits = new Set<string>();
 
-  if (poiMatchIds.length > 0) {
+  if (allBridgedMatchIds.size > 0) {
+    const bridgedMatchIdArr = Array.from(allBridgedMatchIds);
     const [{ data: burnLookup }, { data: exemptLookup }] = await Promise.all([
       admin
         .from("token_ledger")
         .select("request_id")
         .eq("action_type", "declare_intent")
-        .in("request_id", poiMatchIds),
+        .in("request_id", bridgedMatchIdArr),
       admin
         .from("audit_logs")
         .select("metadata")
@@ -312,19 +342,27 @@ Deno.serve(async (req) => {
         .map((r) => (r as { metadata: Record<string, unknown> | null }).metadata?.match_id)
         .filter((v): v is string => typeof v === "string"),
     );
+  }
 
-    for (const p of poiRows ?? []) {
-      const row = p as { id: string; match_id: string; org_id: string; state: string; created_at: string };
-      if (!row.match_id) continue;
-      if (burnHits.has(row.match_id) || exemptHits.has(row.match_id)) continue;
-      poisWithoutBurn.push({
-        poi_id: row.id,
-        match_id: row.match_id,
-        org_id: row.org_id,
-        state: row.state,
-        created_at: row.created_at,
-      });
-    }
+  for (const p of poiRows ?? []) {
+    const row = p as { id: string; org_id: string; state: string; created_at: string };
+    const linkedMatchIds = matchIdsByPoiId.get(row.id) ?? [];
+    // No engagement row → unilateral / fresh POI with no expected
+    // counterparty burn pairing. Skip to avoid false positives.
+    if (linkedMatchIds.length === 0) continue;
+    // Covered if ANY linked match has a declare_intent burn or exempt_burn audit.
+    const covered = linkedMatchIds.some(
+      (mid) => burnHits.has(mid) || exemptHits.has(mid),
+    );
+    if (covered) continue;
+    poisWithoutBurn.push({
+      poi_id: row.id,
+      match_id: linkedMatchIds[0],
+      match_ids: linkedMatchIds,
+      org_id: row.org_id,
+      state: row.state,
+      created_at: row.created_at,
+    });
   }
 
   // ── 3. STATE_WITHOUT_LEDGER (POI-012) ──────────────────────────────
