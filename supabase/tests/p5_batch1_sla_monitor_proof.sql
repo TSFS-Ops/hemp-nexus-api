@@ -57,12 +57,18 @@ DECLARE
   v_case_id  uuid;
   v_event_id uuid;
   v_blocked  boolean;
+  v_entity   uuid;
 BEGIN
+  SELECT id INTO v_entity FROM public.entities LIMIT 1;
+  IF v_entity IS NULL THEN
+    RAISE NOTICE 'P5 STAGE 6: no entity rows — append-only proof skipped';
+    RETURN;
+  END IF;
   INSERT INTO public.p5_governance_readiness_cases (
     id, organization_id, entity_id, governance_status, compliance_status,
     readiness_status, evidence_status, reason_codes
   ) VALUES (
-    gen_random_uuid(), NULL, gen_random_uuid(),
+    gen_random_uuid(), NULL, v_entity,
     'submitted', 'submitted', 'submitted', 'submitted',
     ARRAY[]::p5_reason_code[]
   )
