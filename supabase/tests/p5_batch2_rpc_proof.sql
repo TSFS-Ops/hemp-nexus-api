@@ -40,7 +40,6 @@ BEGIN
   -- impersonate v_user for SECURITY DEFINER auth.uid() checks
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_user::text, 'role', 'authenticated')::text, true);
-  PERFORM set_config('role', 'authenticated', true);
 
   -- 1. create KYC record (org-less owner record is allowed)
   r := public.p5b2_create_kyc_record(
