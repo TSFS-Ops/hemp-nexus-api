@@ -280,3 +280,117 @@ Updates `public.reconcile_acceptance_notifications()` to:
 - Open "not notified" risk items: 45
 - Failed dispatch rows: 8
 - Pending dispatch rows: 1
+
+---
+
+## Residual Bucket D — internal/demo post-cutoff rows (evidence-only containment)
+
+Final status: `ACCEPTANCE_RECEIPT_BUCKET_D_INTERNAL_DEMO_CONTAINMENT_COMPLETE`
+
+After B1, B2, B3, and B3.1 ran to completion, 8 acceptance-receipt
+"not notified" risk items remain `status='open'`. All 8 are
+internal/demo artefacts from the 2026-04-25 → 2026-05-04 demo
+window. They are contained here by evidence; no code, migration,
+admin page, or row mutation is applied in this batch. They remain
+visible in `admin_risk_items` for canonical admin/governance
+closure if desired later.
+
+### The 8 residual rows
+
+| # | risk_id | receipt_at (UTC) | recipient | match_id |
+|---|---|---|---|---|
+| 1 | 3e00ea7e-6420-47b9-aecd-44807b10eda1 | 2026-04-25 12:21:05 | dovedavies14@gmail.com | cca49bd3-6df0-4d3f-a5b3-9b022ca54ada |
+| 2 | 4743bc79-c26e-41e6-928a-044ce7dbe307 | 2026-04-26 07:19:29 | dovedavies14@gmail.com | c29cdff4-31d0-477b-91ea-a186e92b424a |
+| 3 | e4eda158-c49e-4f97-857a-74bb820749c5 | 2026-04-26 11:48:15 | dovedavies14@gmail.com | 3341c049-a774-40f0-ae3b-89672d92b6d5 |
+| 4 | 65522fdd-05ae-4753-8113-3f0084214f8c | 2026-04-29 16:51:16 | dovedavies14@gmail.com | 4da8c221-6296-41d5-9a03-714a9a91d54d |
+| 5 | 62e1cd71-a9d5-4bcb-ba43-e416e82ff940 | 2026-04-29 17:41:17 | james@izenzo.co.za | 73508216-d8c5-41e6-aa32-0189c2564da3 |
+| 6 | cc7d8fed-45f3-4096-8105-5a4811849a36 | 2026-04-29 18:22:14 | daniel@izenzo.co.za | 549ffbcb-7d29-4cf2-bbdd-5a9ad84836c6 |
+| 7 | 342e3afe-c955-42f8-8a06-84c2d9f50af6 | 2026-05-01 17:31:30 | dovedavies14@gmail.com | 18b1de11-1325-4cc5-8f22-d6092901382b |
+| 8 | 2f058d83-b06e-40f5-8736-2258f19c887d | 2026-05-04 21:41:02 | david@izenzo.co.za | f5ed9d58-608e-4018-babf-3761d242e48e |
+
+### Why each is internal/demo
+
+- Rows 1–4, 7: recipient `dovedavies14@gmail.com` — known internal
+  demo recipient. Counterparty org `Davies Trading` is the demo
+  trading partner used throughout the 2026-04/05 testing window.
+- Rows 5, 6, 8: recipients `@izenzo.co.za` — Izenzo internal staff
+  (`james`, `daniel`, `david`). All org legs are either `Izenzo`
+  or `Pending verification (legacy)`. No verified external paying
+  counterparty appears on either leg of any of the 8 matches.
+
+### Evidence per row (uniform across all 8)
+
+For every row:
+- `notification_dispatches` (any channel, any status) for
+  `reference_type='acceptance_receipt', reference_id=<receipt>` = 0.
+- `notification_dispatches` rows with `status IN ('delivered','opened')` = 0.
+- `notification_dispatches` rows with `status='failed'` = 0.
+- `notification_dispatches` rows with `status='pending'` = 0.
+- `email_send_log` rows with `template_name='acceptance-receipt'`,
+  `recipient_email ∈ (counterparty_email, accepting_user_email)`,
+  in `[receipt.created_at - 1d, +7d]` = 0.
+
+The diagnostic shape is "no dispatch ever attempted, no email ever
+logged" — the signal of a silent dispatcher path, scoped to the
+historical demo window and not seen on any current data.
+
+### Materiality
+
+- No external paying-counterparty exposure.
+- No PayFast / J1 / payment / token-ledger / settlement relevance.
+  Acceptance receipts are notification artefacts; no funds flow is
+  triggered or blocked by their delivery state.
+- No legal or commercial materiality.
+
+### Why no resend
+
+Manual resend is **not recommended** and is not applied:
+- Recipients are internal Izenzo staff or a known demo Gmail.
+- Resending months-old acceptance receipts to internal/demo
+  recipients creates no operational value and risks confusing
+  internal staff.
+
+### Why no auto-resolve
+
+A strict auto-resolve was considered and **intentionally not
+applied**:
+- It would require hard-coded internal/demo recipient criteria
+  (`@izenzo.co.za` plus a specific personal Gmail) and a hard
+  historical date bound.
+- The matching diagnostic shape ("zero dispatch rows of any
+  status") is identical to the shape of a real silent dispatcher
+  failure. Teaching the reconciler to ignore that shape for
+  certain recipients would weaken future detection coverage if
+  the closure logic were later loosened, and could mask a future
+  client whose registered email happens to be a personal Gmail.
+- Evidence-only containment preserves detection strength while
+  still recording the historical context.
+
+### Closure path
+
+Rows remain visible in `admin_risk_items` with
+`status='open'`. They will be closed only through the canonical
+admin-resolve path (`public.resolve_admin_risk_item`) at the
+discretion of governance — not by the reconciler.
+
+### CLIENT_DECISION (consolidated)
+
+**Decision:** Internal/demo acceptance receipts from the
+2026-04-25 → 2026-05-04 demo window MUST NOT be resent. They
+remain visible until governance closure, or are closed later
+through the canonical admin-resolve path. No commercial,
+operational, or regulatory action is required.
+
+This consolidates the eight Bucket D items into a single
+client-decision register entry.
+
+### Verification this turn
+
+- No migration created.
+- No `admin_risk_items`, `notification_dispatches`,
+  `acceptance_receipts`, or `email_send_log` rows mutated.
+- No edge function invoked. No provider called.
+- No cron / RLS / grant / index / column / schema changes.
+- No code path changed outside this evidence file and the paired
+  evidence guard test (`src/tests/bucket-d-internal-demo-containment-evidence.test.ts`).
+
