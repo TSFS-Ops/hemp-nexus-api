@@ -29,14 +29,10 @@ DECLARE
   _status public.p5_status;
   _err_seen boolean;
 BEGIN
-  -- Seed users + roles (auth.users requires the row, user_roles enforces FK).
-  INSERT INTO auth.users(id, email) VALUES
-    (_admin,   'p5-stage3-admin@example.test'),
-    (_stranger,'p5-stage3-stranger@example.test')
-  ON CONFLICT (id) DO NOTHING;
-
+  -- Seed user_roles only (FK triggers disabled above).
   INSERT INTO public.user_roles(user_id, role) VALUES
     (_admin, 'platform_admin');
+
 
   ------------------------------------------------------------------
   -- 1. Unprivileged caller cannot create a case.
