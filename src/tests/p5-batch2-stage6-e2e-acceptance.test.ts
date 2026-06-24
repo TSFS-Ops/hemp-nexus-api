@@ -12,7 +12,7 @@ import {
 import { evaluateP5B2Sla } from "@/lib/p5-batch2/sla-rules";
 import { maskP5B2Field } from "@/lib/p5-batch2/masking";
 import { checkP5B2ProviderWording } from "@/lib/p5-batch2/provider-wording-guard";
-import { rateP5B2EvidenceItem } from "@/lib/p5-batch2/rating-engine";
+import { rateP5B2Evidence } from "@/lib/p5-batch2/rating-engine";
 import type { P5B2ChecklistExistingEvidence } from "@/lib/p5-batch2/checklist-engine";
 
 const NOW = "2026-06-24T12:00:00.000Z";
