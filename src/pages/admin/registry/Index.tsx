@@ -63,6 +63,9 @@ export default function AdminRegistryIndex() {
         <Link to="/admin/registry/claim-conflicts" className={tabClass(loc.pathname.includes("claim-conflicts"))}>
           Claim conflicts
         </Link>
+        <Link to="/admin/p5-governance" className={tabClass(loc.pathname.startsWith("/admin/p5-governance"))}>
+          P-5 Governance
+        </Link>
       </div>
       <Card>
         <CardHeader><CardTitle className="text-base">Other tabs</CardTitle></CardHeader>

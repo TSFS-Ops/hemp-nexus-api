@@ -60,6 +60,8 @@ export const ROUTES = {
   ADMIN_ENGAGEMENTS: '/admin/engagements',
   ADMIN_SETTINGS: '/admin/settings',
   ADMIN_OVERRIDES: '/admin/overrides',
+  // P-5 Batch 1 — Governance, Compliance & Readiness (admin/internal)
+  ADMIN_P5_GOVERNANCE: '/admin/p5-governance',
   // Legacy aliases
   ADMIN_USERS_ORGS: '/admin/users',
   ADMIN_INFRASTRUCTURE: '/admin/infrastructure',
