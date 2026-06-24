@@ -65,3 +65,23 @@ The seeded heartbeat row is harmless if rolled back.
 
 - Migration: `supabase/migrations/20260623232434_925be919-aa3c-4853-9005-76d35e63d979.sql`
 - Guard test: `src/tests/c5b-reconcile-acceptance-notifications-heartbeat.test.ts`
+
+## C5c — heartbeat status literal repair
+
+The original C5b wrapper wrote `last_status='ok'` on success, but the
+`cron_heartbeats.last_status` CHECK constraint only permits
+`unknown | pending | success | failed`. Every successful tick raised a
+check violation, the wrapper caught it, stamped `'failed'`, and the
+inner reconciler transaction rolled back — blocking the B1/B2
+auto-resolve work from ever taking effect.
+
+C5c replaces the wrapper to stamp the canonical `last_status='success'`
+on success. The CHECK constraint is intentionally preserved unchanged —
+the canonical vocabulary remains `unknown | pending | success | failed`,
+and the C4 alert contract (`cron_heartbeat_failed` /
+`cron_heartbeat_stale`) continues to observe the same status set.
+
+- Migration: `supabase/migrations/20260624064317_42e9aa12-8084-4a18-a375-68bc341af075.sql`
+- Guard test: `src/tests/c5c-reconcile-acceptance-notifications-heartbeat-literal.test.ts`
+- No CHECK/constraint change, no cron schedule/job change, no RLS/grant
+  change, no dispatch/receipt/email mutation, no provider calls.
