@@ -145,4 +145,147 @@ Reason code AND a non-empty note are required for: `reject`, `apply_hold`,
 Stage 3 (Security Definer RPCs that persist case rows + insert audit rows in
 a single transaction) does not begin until Stage 2 is signed off.
 
-Expected next status: **STAGE_2_READINESS_ENGINE_AND_GUARDS_RUNTIME_CONFIRMED**.
+
+## Stage 3 — Action RPCs, SQL readiness mirror, edge function (COMPLETE)
+
+Status: **STAGE_3_ACTION_RPCS_AND_API_DEPLOYED**
+
+### Migration
+
+`p5_batch1_action_rpcs` (plus two hotfixes: `qualify column in readiness
+mirror` and `align submitted-evidence handling with Stage 2`, and one
+behaviour fix: `do not recompute on create`). All three follow the same
+`SECURITY DEFINER` + `SET search_path = public` + `REVOKE FROM PUBLIC` /
+`GRANT TO authenticated, service_role` posture as Stage 1.
+
+### Files added / changed
+
+- `supabase/migrations/*_p5_batch1_action_rpcs*.sql` (migration + hotfixes)
+- `supabase/functions/p5-governance-readiness-summary/index.ts` (new edge
+  function, JWT validated in code)
+- `supabase/tests/p5_batch1_action_rpcs_proof.sql` (SQL proof)
+- `src/tests/p5-batch1-api-scoping.test.ts` (TS API scoping proof)
+- `evidence/p5-batch1-governance-readiness/README.md` (this update)
+
+### RPCs added (19)
+
+`p5_create_case`, `p5_submit_case`, `p5_start_review`, `p5_request_more_info`,
+`p5_approve_internally`, `p5_mark_provider_dependent`,
+`p5_record_provider_result`, `p5_approve_ready_to_proceed`, `p5_apply_hold`,
+`p5_release_hold`, `p5_reject`, `p5_escalate`, `p5_waive`, `p5_override`,
+`p5_reopen`, `p5_archive_superseded`, `p5_assign_owner`,
+`p5_upload_evidence_meta`, `p5_review_evidence`.
+
+Helpers: `public._p5_audit`, `public._p5_require_reason`,
+`public._p5_require_role`, `public.p5_calculate_readiness`,
+`public._p5_recompute_case`. All `SECURITY DEFINER`, `EXECUTE` revoked from
+`PUBLIC`/`anon`; internal helpers are not granted to `authenticated`.
+
+Every RPC writes exactly one `p5_governance_audit_events` row via the
+shared `_p5_audit` helper inside the same transaction as the case/evidence
+mutation. The Stage 1 `p5_audit_no_update` / `p5_audit_no_delete` triggers
+remain in force, so the audit trail is append-only.
+
+### Edge function
+
+`p5-governance-readiness-summary` (GET, `verify_jwt` validated in code via
+`supabase.auth.getClaims`). Returns the approved API shape:
+
+```
+request_id, correlation_id, entity_id, project_id, transaction_id,
+readiness_status, governance_status, compliance_status, evidence_status,
+reason_codes, blocker_count, warning_count, provider_dependency,
+provider_dependency_type, provider_status, provider_last_checked_at,
+next_action, next_owner_type, required_items_missing, last_updated_at,
+status_changed_at, audit_reference, decision_reference,
+evidence_pack_id, evidence_summary_id, version_hash_chain_reference
+```
+
+Privileged callers (`platform_admin`, `executive_approver`,
+`governance_reviewer`, `compliance_analyst`, `operator_case_manager`,
+`developer_technical_admin`, `auditor_read_only`) additionally see
+`organization_id` and `is_on_hold`. No caller — admin or otherwise — ever
+sees raw provider payloads, provider credentials/secrets, internal
+reviewer notes, legal comments, internal risk scores, AI reasoning,
+draft / unapproved evidence packs. All textual labels (`next_action`)
+pass through the Stage 2 wording guard before being returned, and the
+provider-dependent variants explicitly avoid `Verified` / `Cleared` /
+`Compliant` / `Bankable` / `Guaranteed` / finality wording.
+
+### Test commands and results
+
+SQL proof:
+
+```
+psql -v ON_ERROR_STOP=1 -f supabase/tests/p5_batch1_action_rpcs_proof.sql
+```
+
+Result: `BEGIN ... NOTICE: P5_STAGE3_PROOF_OK ... ROLLBACK`. The single
+DO-block proves, end-to-end:
+
+- unauthorised callers are denied (`p5_create_case`, `p5_release_hold`)
+- authorised callers can act and every material action writes an audit row
+- reason code AND non-empty note are required where mandated
+  (`p5_request_more_info`, `p5_apply_hold` with NULL reason, `p5_apply_hold`
+  with empty note all reject)
+- illegal transitions are rejected (`p5_submit_case` from `submitted`)
+- evidence rejection flips readiness to `blocked`
+- `p5_approve_ready_to_proceed` is rejected while a blocker exists, and
+  again while an outstanding provider dependency exists
+- a high-risk provider result returns the case to `under_review` and clears
+  any prior human approval (no auto-finalisation)
+- `release_hold` is denied to an unprivileged caller (never automatic)
+- `p5_governance_audit_events` rejects both `UPDATE` and `DELETE`
+  (Stage 1 immutability triggers still active)
+
+TS / API scoping:
+
+```
+bunx vitest run src/tests/p5-batch1-api-scoping.test.ts
+```
+
+Result: **1 file passed · 6/6 tests passed** (Vitest 4.0.18). Asserts:
+
+- non-admin response omits `organization_id`, `is_on_hold`, and every
+  forbidden field (raw provider payload, credentials, internal reviewer
+  notes, legal comments, internal risk scores, AI reasoning, draft /
+  unapproved evidence packs)
+- admin response is strictly richer (`organization_id`, `is_on_hold`) but
+  still excludes every forbidden field
+- provider-dependent `next_action` never contains forbidden wording
+  (Verified / Cleared / Compliant / Bankable / Guaranteed / finality)
+- every external-surface label passes the Stage 2 wording guard for
+  `customer`, `funder`, and `public_api`
+- forbidden wording is rejected in unsafe contexts
+- the response key set matches the approved shape exactly (no extra fields,
+  no missing fields)
+
+The Stage 1 drift guard and Stage 2 readiness/transition/wording-guard
+tests remain green and are unaffected.
+
+### Constraints honoured in Stage 3
+
+- Every RPC writes an immutable audit row in the same transaction as the
+  case / evidence mutation.
+- Audit table remains append-only (Stage 1 triggers re-asserted by SQL
+  proof).
+- No `UPDATE`/`DELETE` is issued against `trade_requests`, `pois`, `wads`,
+  `token_*` / `payment_*` / `business_decisions` or any other existing
+  business-data table. All RPC bodies operate only on
+  `p5_governance_readiness_cases`, `p5_governance_evidence_items`,
+  `p5_governance_audit_events`.
+- RLS and GRANT posture from Stage 1 is preserved; the new functions are
+  `REVOKE`d from `PUBLIC`/`anon` and only `GRANT`ed to `authenticated` /
+  `service_role` where appropriate.
+- The edge function never returns raw provider payloads, provider
+  credentials, internal reviewer notes, legal comments, internal risk
+  scores, AI reasoning or draft evidence packs.
+
+### Pending
+
+Stage 4 (UI surfaces for the admin governance triage + entity-side
+readiness cards, with role-based visibility) does not begin until Stage 3
+is signed off.
+
+Expected next status: **STAGE_3_ACTION_RPCS_AND_API_RUNTIME_CONFIRMED**.
+
