@@ -30,6 +30,9 @@ BEGIN
   SELECT p.id INTO _stranger FROM public.profiles p
     WHERE NOT EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id=p.id) LIMIT 1;
   IF _stranger IS NULL THEN RAISE EXCEPTION 'PROOF_SETUP_FAIL: need a no-role user'; END IF;
+  SELECT id INTO _org FROM public.organizations LIMIT 1;
+  IF _org IS NULL THEN RAISE EXCEPTION 'PROOF_SETUP_FAIL: need an organization'; END IF;
+
 
 
 
