@@ -10,17 +10,13 @@
 -- All work runs inside a single transaction that is rolled back at the end.
 
 BEGIN;
--- Bypass FK triggers so we can seed synthetic users in the public schema
--- without touching auth.users. Everything rolls back at the end.
-SET LOCAL session_replication_role = 'replica';
 
-
-
--- Two synthetic users; one privileged, one unprivileged.
+-- Two real users (auth.users not writable from this script). Admin already
+-- has platform_admin; stranger has no roles. Everything rolls back.
 DO $$
 DECLARE
-  _admin uuid := gen_random_uuid();
-  _stranger uuid := gen_random_uuid();
+  _admin uuid;
+  _stranger uuid;
   _org uuid := gen_random_uuid();
   _case uuid;
   _ev uuid;
@@ -29,9 +25,12 @@ DECLARE
   _status public.p5_status;
   _err_seen boolean;
 BEGIN
-  -- Seed user_roles only (FK triggers disabled above).
-  INSERT INTO public.user_roles(user_id, role) VALUES
-    (_admin, 'platform_admin');
+  SELECT user_id INTO _admin FROM public.user_roles WHERE role='platform_admin' LIMIT 1;
+  IF _admin IS NULL THEN RAISE EXCEPTION 'PROOF_SETUP_FAIL: need a platform_admin user'; END IF;
+  SELECT p.id INTO _stranger FROM public.profiles p
+    WHERE NOT EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id=p.id) LIMIT 1;
+  IF _stranger IS NULL THEN RAISE EXCEPTION 'PROOF_SETUP_FAIL: need a no-role user'; END IF;
+
 
 
   ------------------------------------------------------------------
