@@ -66,8 +66,14 @@ const ENGAGEMENT_STATUSES_REQUIRING_POI = new Set<string>([
  * WaD/POI consistency note:
  *
  *   wads has poi_id, buyer_org_id, seller_org_id, canonical_payload_json, status.
- *   pois has match_id, org_id, state.
+ *   pois has id, org_id, state (no match_id column — POI↔match linkage lives
+ *     on the poi_engagements bridge).
+ *   poi_engagements has poi_id, match_id, org_id, engagement_status (canonical
+ *     bridge between pois and matches).
  *   matches has buyer_org_id, seller_org_id.
+ *
+ * Canonical POI↔match join path:
+ *   pois.id → poi_engagements.poi_id → poi_engagements.match_id → matches.id
  *
  * The schema does not currently materialise a terms-hash on pois that we can
  * compare against wads.canonical_payload_json deterministically — POI terms
@@ -76,7 +82,7 @@ const ENGAGEMENT_STATUSES_REQUIRING_POI = new Set<string>([
  * schema can prove:
  *   - sealed wad whose linked poi_id no longer exists
  *   - sealed wad linked to a poi in a non-terminal state (not COMPLETED/ELIGIBLE)
- *   - sealed wad whose buyer/seller_org_id disagree with the poi.match
+ *   - sealed wad whose buyer/seller_org_id disagree with the bridged match's
  *     buyer/seller_org_id
  * Terms-hash drift is intentionally not asserted; it would produce false
  * positives without a canonical hash column. Documented in tests.
