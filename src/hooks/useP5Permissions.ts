@@ -82,6 +82,8 @@ export function deriveP5Permissions(roles: readonly string[]): P5Permissions {
   const isComplianceish =
     has(roles, ["compliance_analyst", "compliance_admin", "compliance_reviewer"]);
   const canViewAdmin = isReviewer || isAuditor || isDeveloper;
+  const isCustomer = roles.includes("customer_entity_owner");
+  const isFunder = roles.includes("funder_external_reviewer");
 
   // Developer/technical admin: diagnostics-only, never business decisions.
   // Auditor: read-only.
@@ -96,9 +98,7 @@ export function deriveP5Permissions(roles: readonly string[]): P5Permissions {
     canApproveReadyToProceed: isAdmin,
     canRequestMoreInfo: isReviewer,
     canApplyHold: isReviewer,
-    // Compliance reviewer specifically authorised to apply compliance hold
     canApplyComplianceHold: isReviewer || isComplianceish,
-    // Release-from-blocked / escalated needs admin per Stage 2 rules
     canReleaseHold: isAdmin,
     canReject: isReviewer,
     canEscalate: isReviewer,
@@ -108,6 +108,17 @@ export function deriveP5Permissions(roles: readonly string[]): P5Permissions {
     canArchive: isAdmin,
     canAssignOwner: isReviewer,
     canMutate: isReviewer || isAdmin,
+    // Stage 5 — non-admin surfaces.
+    // Customers see their own scoped readiness. Admin/reviewer roles can
+    // preview the customer surface too. Developer/technical admin and
+    // funder roles must not see customer-scoped self views.
+    canViewCustomerReadiness: isCustomer || isAdmin || isReviewer,
+    canSubmitCustomerEvidence: isCustomer,
+    // Funder view: funders only; admin/reviewer may preview. Developer
+    // technical admin and customer roles must not see funder surfaces.
+    canViewFunderEvidencePack: isFunder || isAdmin || isReviewer,
+    // Funder is strictly read-only on P-5.
+    canFunderMutate: false,
   };
 }
 
