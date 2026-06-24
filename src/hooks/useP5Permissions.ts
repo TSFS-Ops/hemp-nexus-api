@@ -41,6 +41,15 @@ export interface P5Permissions {
   canArchive: boolean;
   canAssignOwner: boolean;
   canMutate: boolean;
+  // Stage 5 — non-admin surfaces.
+  /** Customer/entity owner can see their own scoped readiness summary. */
+  canViewCustomerReadiness: boolean;
+  /** Customer/entity owner can upload/replace evidence on permitted items. */
+  canSubmitCustomerEvidence: boolean;
+  /** Funder/external reviewer can see the approved evidence-pack summary. */
+  canViewFunderEvidencePack: boolean;
+  /** Funder may make any state change. Always false — funder is read-only. */
+  canFunderMutate: boolean;
 }
 
 export const P5_ADMIN_LIKE = ["platform_admin", "super_admin", "executive_approver"] as const;
