@@ -29,9 +29,18 @@ export interface P5B2WordingGuardResult {
 
 const PATTERNS = P5B2_FORBIDDEN_PROVIDER_WORDING.map((phrase) => ({
   phrase,
-  // Word-boundary, case-insensitive. Escape spaces in multi-word phrases.
+  // Word-boundary, case-insensitive. Escape regex metachars.
   re: new RegExp(`\\b${phrase.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`, "i"),
 }));
+
+/**
+ * Negation patterns that legitimately precede otherwise-forbidden phrases —
+ * the safe-wording catalogues use forms such as "not live-provider verified",
+ * "not provider-verified", "Manual review recorded — not provider verified".
+ * If a match is immediately preceded (within ~3 words) by one of these, we
+ * treat it as safe.
+ */
+const SAFE_NEGATION = /\bnot\b(?:\s+[\w-]+){0,3}\s*$/i;
 
 export function checkP5B2ProviderWording(input: P5B2WordingGuardInput): P5B2WordingGuardResult {
   // Admins can see provider raw status — but the unsafe phrasing is still
@@ -43,7 +52,11 @@ export function checkP5B2ProviderWording(input: P5B2WordingGuardInput): P5B2Word
   }
   const matched: string[] = [];
   for (const { phrase, re } of PATTERNS) {
-    if (re.test(input.text)) matched.push(phrase);
+    const m = re.exec(input.text);
+    if (!m) continue;
+    const preceding = input.text.slice(0, m.index);
+    if (SAFE_NEGATION.test(preceding)) continue;
+    matched.push(phrase);
   }
   return { safe: matched.length === 0, matched };
 }
