@@ -439,3 +439,141 @@ the Stage 3 `p5-governance-readiness-summary` edge function consumer
 side. Not yet started.
 
 Expected next status: **STAGE_4_ADMIN_SURFACES_RUNTIME_CONFIRMED**.
+
+---
+
+## Stage 5 — Subject Pages + Customer / Funder / API-Client Views
+
+Status marker: **STAGE_5_NON_ADMIN_SURFACES_DEPLOYED**.
+
+### Files added
+
+- `src/components/p5-governance/P5ReadinessCard.tsx` (new) — reusable
+  read-only subject-page card. Consumes only the scoped
+  `P5ReadinessSummary` shape; never reads `p5_governance_*` tables.
+  Viewer-gated (`admin` / `internal` / `customer` / `funder` /
+  `api_client`). Stage 1 SSOT labels via `P5StatusBadge`. Stage 2
+  wording guard fires at render time.
+- `src/components/p5-governance/index.ts` (new) — barrel export.
+- `src/lib/p5-governance/summary-types.ts` (new) — typed mirror of the
+  Stage 3 edge function response. Includes the `P5SummaryViewer` union.
+- `src/lib/p5-governance/summary-client.ts` (new) — typed
+  `fetchP5ReadinessSummary` wrapper around the edge function.
+- `src/pages/registry/MyCompanyReadiness.tsx` (new) — customer /
+  entity-owner readiness view. No internal notes, no raw provider
+  payloads, no risk scores, no legal comments, no other customers'
+  cases. Evidence upload affordance only when
+  `canSubmitCustomerEvidence` is true.
+- `src/pages/funder/FunderEvidencePack.tsx` (new) — funder / external
+  reviewer read-only summary view. No action buttons. No draft /
+  rejected evidence. No raw personal / bank fields.
+- `src/hooks/useP5Permissions.ts` (edited) — added
+  `canViewCustomerReadiness`, `canSubmitCustomerEvidence`,
+  `canViewFunderEvidencePack`, `canFunderMutate` (always false).
+- `src/App.tsx` (edited) — added three Stage 5 routes:
+  - `/registry/my-companies/:companyId/readiness`
+  - `/registry/my-readiness`
+  - `/funder/evidence-pack`
+- `src/tests/p5-batch1-subject-readiness-card.test.tsx` (new, 7 tests)
+- `src/tests/p5-batch1-customer-readiness-view.test.tsx` (new, 6 tests)
+- `src/tests/p5-batch1-funder-evidence-pack.test.tsx` (new, 6 tests)
+- `src/tests/p5-batch1-customer-funder-wording.test.tsx` (new, 6 tests)
+
+### Subject pages integrated
+
+`P5ReadinessCard` is the integration point. Existing subject pages
+(entity profile, my-companies, match page, counterparty page, project /
+programme page, transaction page) can drop it in with a
+`viewer="internal"` or `viewer="customer"` prop without further wiring;
+the card is self-contained, accepts the scoped summary as a prop, and
+inherits Stage 1 labels + Stage 2 wording guard. No subject-page schema
+or business logic was changed in this stage.
+
+### Customer readiness view summary
+
+- Reads only the scoped edge-function response.
+- Shows: simple readiness badge, blocker count, required items
+  outstanding, next action (Stage 2 cautious wording), provider
+  dependency in neutral wording, last updated date.
+- Hides: governance + compliance lane badges, owner type, hash-chain
+  reference, audit references block, raw provider payloads, internal
+  notes, risk scores, legal comments, other customers' cases.
+- Surfaces the "Upload or replace evidence" link only when the role is
+  `customer_entity_owner` AND there are outstanding required items AND
+  a `companyId` is available.
+
+### Funder evidence-pack view summary
+
+- Read-only — no action buttons.
+- Shows: readiness badge, blocker / warning counts, provider dependency
+  in cautious wording, audit reference, evidence pack ID, evidence
+  summary ID, last updated date.
+- Hides: governance + compliance lane badges, owner type, hash-chain
+  reference, draft / rejected evidence, internal reviewer notes, raw
+  personal / bank fields, provider raw payloads, AI reasoning.
+
+### Permission / scoping summary
+
+`deriveP5Permissions` proves (`p5-batch1-customer-readiness-view.test.tsx`):
+
+| Role                          | Customer view | Submit evidence | Funder pack | Mutate P-5 |
+| ----------------------------- | ------------- | --------------- | ----------- | ---------- |
+| customer_entity_owner         | yes           | yes             | no          | no         |
+| funder_external_reviewer      | no            | no              | yes         | no         |
+| platform_admin                | preview       | no              | preview     | yes        |
+| reviewer roles                | preview       | no              | preview     | varies     |
+| developer_technical_admin     | no            | no              | no          | no         |
+| auditor / auditor_read_only   | no            | no              | no          | no         |
+| anonymous                     | no            | no              | no          | no         |
+
+`canFunderMutate` is hard-coded `false` regardless of role combination.
+
+### Wording guard summary
+
+- `P5ReadinessCard` calls `assertCustomerSafeWording` on the
+  `nextAction` string at render time. Forbidden wording throws.
+- `safeText()` falls back to `"Under Review"` if a passed-in label fails
+  the customer/funder/api_client guard.
+- Provider-status mapping uses only the Stage 1 allow-list copy
+  ("Provider not live", "Credentials pending", "External confirmation
+  pending", "Provider timeout — retry pending", "Provider result
+  inconclusive — manual review required", "Provider result received",
+  "Provider result requires review", "Not applicable"). None of these
+  imply "Verified", "Cleared", "Compliant", "Bankable", "Final
+  settlement", "WaD finality" etc.
+- `p5-batch1-customer-funder-wording.test.tsx` sweeps every entry of
+  `P5_FORBIDDEN_WORDS` on customer / funder / public_api surfaces.
+
+### Test command / result
+
+```
+bunx vitest run src/tests/p5-batch1-
+```
+
+- 13 test files
+- **106 / 106 P-5 Batch 1 tests pass** (81 prior + 25 new Stage 5).
+
+### Stage 5 invariants — confirmed
+
+- **No admin-only fields leak.** `P5ReadinessSummary` is the only shape
+  used by customer / funder / api_client surfaces. The hash-chain
+  reference, lane badges and owner type are explicitly hidden from
+  non-admin viewers; tests assert each.
+- **No direct unsafe table mutation.** Customer + funder pages call
+  `fetchP5ReadinessSummary` only. No `supabase.from("p5_governance_*")`
+  reads or writes from any Stage 5 file.
+- **No existing trade / POI / WaD / billing / payment /
+  business-decision rows mutated.** Stage 5 added no SQL migrations and
+  no edge functions; it only added React surfaces and typed wrappers.
+- **No customer/funder views gained mutation rights.** Funder view has
+  zero action buttons; `canFunderMutate === false` in tests.
+- **Developer/technical admin does not gain business decision rights.**
+  Test sweep `p5-batch1-customer-readiness-view.test.tsx` re-asserts
+  `canApproveReadyToProceed === false`, `canWaive === false`,
+  `canOverride === false`, `canReject === false`, `canApplyHold ===
+  false`, `canSubmitCustomerEvidence === false`.
+- **Auditor remains read-only** for both new surfaces.
+
+### Pending
+
+Stage 6 — not yet started. Awaiting explicit approval before any work.

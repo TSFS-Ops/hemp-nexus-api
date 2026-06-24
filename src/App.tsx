@@ -148,6 +148,9 @@ const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notif
 // P-5 Batch 1 — Governance, Compliance & Readiness admin surface
 const P5GovernanceCasesDashboard = lazy(() => import("@/pages/admin/p5-governance/CasesDashboard"));
 const P5GovernanceCaseDetail = lazy(() => import("@/pages/admin/p5-governance/CaseDetail"));
+// P-5 Batch 1 Stage 5 — non-admin subject surfaces
+const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
+const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
 // Batch 16 — Company Portal Guided Journey
 const RegistryMyCompanies = lazy(() => import("@/pages/registry/MyCompanies"));
 const RegistryMyCompanyDetail = lazy(() => import("@/pages/registry/MyCompanyDetail"));
@@ -326,6 +329,11 @@ function App() {
                   {/* P-5 Batch 1 — Governance, Compliance & Readiness (admin/internal) */}
                   <Route path="/admin/p5-governance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCasesDashboard /></RequireAuth>} />
                   <Route path="/admin/p5-governance/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCaseDetail /></RequireAuth>} />
+
+                  {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}
+                  <Route path="/registry/my-companies/:companyId/readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
+                  <Route path="/registry/my-readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
+                  <Route path="/funder/evidence-pack" element={<RequireAuth><FunderEvidencePack /></RequireAuth>} />
 
 
 
