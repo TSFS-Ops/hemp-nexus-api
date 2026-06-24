@@ -670,6 +670,7 @@ Deno.serve(async (req) => {
       const title = `Reconciliation: minted match without engagement [match ${String(drift.match_id).slice(0, 8)}]`;
       const description = `Match ${drift.match_id} (state=${drift.state ?? 'unknown'}) for org ${drift.org_id ?? 'unknown'} has been minted/burned but has no current poi_engagements row. Engagement self-heal did not run; manual investigation required. No silent repair performed.`;
       try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
+    }
     for (const drift of engagementWithoutPoi) {
       const title = `Reconciliation: engagement without POI [match ${String(drift.match_id).slice(0, 8)}]`;
       const description = `Engagement ${drift.engagement_id} (status=${drift.engagement_status}) for org ${drift.org_id ?? 'unknown'} on match ${drift.match_id} has no POI row. Soft-route pending statuses are excluded; this is real drift. No auto-repair.`;
