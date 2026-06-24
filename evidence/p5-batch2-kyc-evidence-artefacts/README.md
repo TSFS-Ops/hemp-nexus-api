@@ -300,3 +300,114 @@ Test Files  9 passed (9)
 - Edge function passes the provider-wording guard before responding.
 - Stage 4 not started.
 
+
+---
+
+## Stage 4 — Admin / Operator Surfaces
+
+`P5_BATCH_2_STAGE_4_COMPLETE`
+
+Stage 4 introduces the read-mostly admin / operator UI for KYC/KYB evidence,
+strictly behind a new permission hook. Every mutating action routes through
+the Stage 3 SECURITY DEFINER RPC wrappers — components contain **no direct
+table writes** against `p5_batch2_*` tables.
+
+### Files added
+
+- `src/hooks/useP5Batch2Permissions.ts` — pure derivation + React hook.
+  Six role categories: `platform_admin`, `compliance_owner`, `operator`,
+  `auditor`, `developer`, `non_privileged`. Funder, API-customer,
+  customer/counterparty, director/UBO and unauthenticated roles are
+  `non_privileged` and cannot access any Stage 4 surface.
+- `src/lib/p5-batch2/rpc.ts` — typed wrappers around all 11 Stage 3 RPCs
+  (`p5b2CreateKycRecord`, `p5b2LinkRecords`, `p5b2GenerateChecklist`,
+  `p5b2UploadEvidenceVersion`, `p5b2ReviewEvidence`, `p5b2SetProviderState`,
+  `p5b2WaiveEvidence`, `p5b2WithdrawEvidence`, `p5b2SuspendRelease`,
+  `p5b2SnapshotFinalityPack`, `p5b2LogSensitiveAccess`). `P5B2_RPC_WRAPPER_NAMES`
+  registers the surface.
+- `src/pages/admin/p5-batch2/EvidenceDashboard.tsx` — read-only queue tabs:
+  evidence gaps · review queue · provider-dependent · expiry · rejected ·
+  bank-detail changes · UBO/high-risk.
+- `src/pages/admin/p5-batch2/RecordDetail.tsx` — record summary, mandatory/
+  conditional/optional checklist, ratings, version history, review timeline,
+  sensitive access log, linked parties, provider state. Action buttons open
+  the ReasonedActionDialog (RPC-only).
+- `src/pages/admin/p5-batch2/EvidencePackViewer.tsx` — sealed packs list;
+  raw files are not exposed.
+- `src/pages/admin/p5-batch2/FinalitySnapshotViewer.tsx` — immutable
+  snapshot view, explicitly labelled append-only.
+- `src/pages/admin/p5-batch2/components/ProviderSafeLabel.tsx` — every
+  rendered provider label is filtered through
+  `checkP5B2ProviderWording` + `getP5B2SafeProviderLabel`; unsafe wording
+  is replaced with `Provider result pending`.
+- `src/pages/admin/p5-batch2/components/MaskedField.tsx` — default masking
+  via Stage 2 `maskP5B2Field`; unmask requires a reason and calls
+  `p5b2_log_sensitive_access` before revealing.
+- `src/pages/admin/p5-batch2/components/ReasonedActionDialog.tsx` — single
+  reasoned-action dialog for approve · accept-with-warning · reject ·
+  request-correction · waive · suspend · release · set-provider-state.
+  Customer-safe note and admin-only reviewer note are separate inputs;
+  reject/request_correction require `reason_code`; provider_live=true
+  requires `provider_result_reference`.
+
+### Routes added (platform_admin guard via `RequireAuth`)
+
+- `/admin/p5-batch2` — Evidence dashboard
+- `/admin/p5-batch2/records/:recordId` — Record detail
+- `/admin/p5-batch2/packs` — Evidence pack viewer
+- `/admin/p5-batch2/packs/:packId` — Finality snapshot viewer
+
+### Tests added
+
+- `src/tests/p5-batch2-stage4-permissions.test.ts` — 7 cases.
+- `src/tests/p5-batch2-stage4-rpc-wrappers.test.ts` — 12 cases (every
+  wrapper, plus error-surfacing path).
+- `src/tests/p5-batch2-stage4-ui-static.test.ts` — 11 cases enforcing:
+  no direct `.insert/.update/.delete/.upsert` against `p5_batch2_*` from
+  any Stage 4 page; ReasonedActionDialog imports only from
+  `@/lib/p5-batch2/rpc`; MaskedField requires a reason and calls the
+  sensitive-access RPC; ProviderSafeLabel goes through the wording guard;
+  forbidden provider wording does not appear as a string literal in any
+  Stage 4 file; sensitive raw columns (`reviewer_note_internal`,
+  `notes_internal`, `provider_raw_response`, `fraud_flag`,
+  `passport_number`, `id_number`) are not selected by Stage 4 pages;
+  all seven required queues are present; record detail includes
+  checklist + version history + review timeline + sensitive access log;
+  pack viewer marks items append-only and hides raw files; snapshot
+  viewer labels items immutable; dialog covers all 8 reasoned actions
+  with separate customer-safe and internal-note inputs; App.tsx exposes
+  all four `/admin/p5-batch2/...` routes wrapped in `RequireAuth
+  role="platform_admin"`.
+
+### Cumulative test result
+
+```
+bunx vitest run src/tests/p5-batch2-*.test.ts
+Test Files  12 passed (12)
+     Tests  98 passed (98)  (66 prior + 32 Stage 4)
+```
+
+Stage 1, Stage 2 and Stage 3 tests all remain green.
+
+### Confirmations
+
+- **Permission gating:** All Stage 4 routes and surfaces require
+  `platform_admin` via `RequireAuth` and the in-page `useP5Batch2Permissions`
+  hook gates each section/action. Non-privileged roles render an
+  "Access denied" card and see no actions.
+- **No direct table writes.** Every Stage 4 mutation goes through
+  `src/lib/p5-batch2/rpc.ts` (verified by static test).
+- **Provider wording guard applied at render time.** All provider
+  labels render through `ProviderSafeLabel`; forbidden phrases
+  (verified / passed / cleared / sanctions clear / bank verified /
+  provider approved / no adverse result) are blocked.
+- **Masking by default.** Bank, ID/passport, tax/VAT, UBO and personal
+  contact fields are masked by `maskP5B2Field`; unmask requires a reason
+  and logs through `p5b2_log_sensitive_access`.
+- **Funder and API-customer roles are absent** from every Stage 4 allow-list.
+- **No customer / counterparty / director / UBO / funder / API-customer
+  surfaces added.**
+- **No notifications, cron, or Batch 1 readiness wiring added.**
+- **No existing trade / POI / WaD / billing / payment / business-decision
+  rows mutated.**
+- **Stage 5 not started.**
