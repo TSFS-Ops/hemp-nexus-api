@@ -1,5 +1,85 @@
 # Acceptance-Receipt Delivery Backlog
 
+## Batch B3 — Cutoff-inclusive residual auto-resolve (applied)
+
+Migration: `supabase/migrations/20260624075000_e03cef59-03aa-4265-8ee8-1b99f25f55f3.sql`
+Guard test: `src/tests/b3-acceptance-receipt-cutoff-residual.test.ts`
+Final status: `ACCEPTANCE_RECEIPT_CUTOFF_RESIDUAL_AUTO_RESOLVE_SOURCE_REPAIR_DEPLOYED`
+(promotes to `ACCEPTANCE_RECEIPT_CUTOFF_RESIDUAL_AUTO_RESOLVE_COMPLETE`
+after the next scheduled jobid 21 tick confirms runtime.)
+
+### Scope
+
+Closes ONLY historical / cutoff-boundary acceptance-receipt
+"not notified" risk items. Adds a third auto-resolve pass to
+`public.reconcile_acceptance_notifications()` after B1 and B2.
+
+Inclusive cutoff:
+`2026-04-23 09:46:24.999999+00`. Anything created strictly after
+this timestamp is never touched by B3.
+
+### Three branches (any one is sufficient)
+
+1. `acceptance_receipt_pre_backfill_email_send_unverifiable_terminal`
+   — in-app dispatch `delivered`/`opened` exists AND email dispatch
+   is `failed` with `error_message ILIKE '%send_unverifiable%'`.
+2. `acceptance_receipt_pre_backfill_email_send_log_evidence`
+   — `email_send_log` row exists in
+   `[receipt.created_at - 1 day, +7 days]` with
+   `template_name='acceptance-receipt'`, matching the receipt's
+   `counterparty_email`, `accepting_user_email`, or the email
+   dispatch's `recipient_address`.
+3. `acceptance_receipt_pre_backfill_cutoff_boundary_no_recipient`
+   — NULL recipient on receipt AND no `notification_dispatches`
+   row AND no `email_send_log` row in the inspection window.
+
+Each branch uses the same transaction-local trigger-guard bypass
+`set_config('app.allow_risk_item_update', 'on', true)`, stamps
+`status='resolved'` plus metadata, and writes a paired
+`admin_audit_logs` row with `action='admin_risk_item.auto_resolved'`,
+`admin_user_id=NULL`, `details.source='reconcile_acceptance_notifications'`,
+`details.reason=<branch reason>`, and
+`details.inclusive_backfill_cutoff='2026-04-23 09:46:24.999999+00'`.
+
+### Expected runtime effect
+
+- 12 residual risk items expected to resolve at next jobid 21 tick
+  (Bucket B1: 7, Bucket B2: 1, Bucket C: 4).
+- 8 post-cutoff internal/demo rows (Bucket D) remain OPEN by
+  design, pending admin visibility / CLIENT_DECISION handling.
+- Return JSON adds `cutoff_boundary_auto_resolved` and the three
+  per-branch counters. C5b wrapper consumes the raw jsonb result
+  and is unaffected.
+
+### What B3 does NOT do
+
+- Does NOT send any email or call any provider.
+- Does NOT retry, insert, update, or delete `notification_dispatches`.
+- Does NOT mutate `acceptance_receipts` or `email_send_log`.
+- Does NOT change cron schedule, jobid, RLS, grants, indexes, or columns.
+- Does NOT touch the C5b heartbeat wrapper.
+- Does NOT close any post-cutoff item (Bucket D remains open).
+- Does NOT close items with malformed titles, missing receipt rows,
+  pending-only dispatches, or failed email without in-app delivery
+  evidence outside the cutoff window.
+
+Manual resend for the 8 residual Bucket D items remains a
+CLIENT_DECISION and is not recommended. No external paying
+counterparty is affected.
+
+### Verification this turn
+
+- Migration applied successfully via Lovable Cloud migration tool.
+- B1 + B2 paths preserved verbatim (full text reproduced in the
+  replacement function definition).
+- Guard tests: B3, B1, B2, B1/B2 runtime, C5b, C5c — 74 tests pass.
+- No live data mutation triggered from this session. First B3
+  auto-resolve update will occur on the next `*/2 * * * *` tick of
+  jobid 21 (`reconcile-acceptance-notifications`).
+
+
+
+
 ## Batch B2 — Pre-backfill risk-item closure (applied)
 
 Migration: `supabase/migrations/20260623234215_f5494ff9-fc6c-4e92-a504-43bf9c3eccba.sql`
