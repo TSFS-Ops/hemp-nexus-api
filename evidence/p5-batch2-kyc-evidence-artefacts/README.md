@@ -411,3 +411,69 @@ Stage 1, Stage 2 and Stage 3 tests all remain green.
 - **No existing trade / POI / WaD / billing / payment / business-decision
   rows mutated.**
 - **Stage 5 not started.**
+
+---
+
+## Stage 5 — Subject, counterparty, funder and API-customer surfaces
+
+**Status:** `P5_BATCH_2_STAGE_5_COMPLETE`
+
+### Files added
+
+- `src/lib/p5-batch2/summary-client.ts` — typed client for the Stage 3
+  scoped readiness-summary edge function. Stage 5 components consume only
+  this client; raw `p5_batch2_*` table reads are forbidden.
+- `src/pages/registry/p5-batch2/CounterpartyEvidenceChecklist.tsx` —
+  organisation / counterparty checklist with blockers, expiry warnings,
+  customer-safe rejection reasons and a strictly-scoped resubmission button
+  (routes through `p5b2UploadEvidenceVersion`).
+- `src/pages/registry/p5-batch2/subject/SubjectEvidence.tsx` — director /
+  officer / UBO / invited evidence owner own-evidence surface.
+- `src/pages/funder/p5-batch2/FunderEvidencePack.tsx` — read-only,
+  permissioned evidence-pack viewer. Bank/address/UBO masked by default;
+  provider-dependent items rendered as
+  "Provider-dependent — not externally verified".
+- `src/pages/registry/p5-batch2/api-customer/ApiCustomerSummary.tsx` —
+  API-customer metadata-only summary mirroring the safe API JSON shape
+  (no raw files, no full ID/bank/tax, no reviewer notes, no internal scores).
+- `src/tests/p5-batch2-stage5-ui-static.test.ts` — 12 static guarantees.
+- `src/App.tsx` — four new routes under `RequireAuth`:
+  - `/registry/p5-batch2/checklist`
+  - `/registry/p5-batch2/subject`
+  - `/registry/p5-batch2/api-customer`
+  - `/funder/p5-batch2/evidence-pack`
+
+### Test results
+
+- Stage 5 static suite: **12/12 green**.
+- Cumulative suite (Stages 1–5): **110/110 green**.
+
+### Acceptance
+
+- **No Stage 5 component selects from or writes to `p5_batch2_*` tables.**
+  Verified by static scan.
+- **All Stage 5 reads route through `fetchP5B2ReadinessSummary`** (Stage 3
+  scoped edge function with server-side masking and wording guard).
+- **Upload / resubmission uses the approved RPC wrapper only**
+  (`p5b2UploadEvidenceVersion`). All other mutation wrappers are forbidden
+  on subject / counterparty surfaces.
+- **Funder and API-customer surfaces contain no mutation calls at all.**
+- **Provider wording guard applied at render time.** Counterparty / subject
+  surfaces render through `ProviderSafeLabel`; funder surface renders the
+  fixed safe phrase; API-customer mirrors `provider_dependency=true,
+  provider_live=false, verified_by_live_provider=false`.
+- **Forbidden phrases** (verified / passed / cleared / sanctions clear /
+  bank verified / provider approved / no adverse result) do not appear in
+  any Stage 5 rendered source.
+- **Suspected fraud / tampering** never appears in any Stage 5 rendered
+  source; server returns "Manual review required".
+- **Sensitive raw columns** (`reviewer_note_internal`, `notes_internal`,
+  `provider_raw_response`, `fraud_flag`, `passport_number`, `id_number`,
+  `tax_number`, `vat_number`) are never referenced on Stage 5 surfaces.
+- **Masking applied on funder surface** (`maskP5B2Field` for bank and
+  address) and enforced server-side for every other viewer.
+- **No notifications, cron or Batch 1 readiness wiring added.**
+- **No existing trade / POI / WaD / billing / payment / business-decision
+  rows mutated.**
+- **Stage 6 not started.**
+

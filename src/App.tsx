@@ -153,6 +153,11 @@ const P5Batch2EvidenceDashboard = lazy(() => import("@/pages/admin/p5-batch2/Evi
 const P5Batch2RecordDetail = lazy(() => import("@/pages/admin/p5-batch2/RecordDetail"));
 const P5Batch2EvidencePackViewer = lazy(() => import("@/pages/admin/p5-batch2/EvidencePackViewer"));
 const P5Batch2FinalitySnapshotViewer = lazy(() => import("@/pages/admin/p5-batch2/FinalitySnapshotViewer"));
+// P-5 Batch 2 — Stage 5: non-admin surfaces (organisation/counterparty, subject, funder, API customer)
+const P5Batch2CounterpartyChecklist = lazy(() => import("@/pages/registry/p5-batch2/CounterpartyEvidenceChecklist"));
+const P5Batch2SubjectEvidence = lazy(() => import("@/pages/registry/p5-batch2/subject/SubjectEvidence"));
+const P5Batch2FunderEvidencePack = lazy(() => import("@/pages/funder/p5-batch2/FunderEvidencePack"));
+const P5Batch2ApiCustomerSummary = lazy(() => import("@/pages/registry/p5-batch2/api-customer/ApiCustomerSummary"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -345,6 +350,13 @@ function App() {
                   <Route path="/registry/my-companies/:companyId/readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
                   <Route path="/registry/my-readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
                   <Route path="/funder/evidence-pack" element={<RequireAuth><FunderEvidencePack /></RequireAuth>} />
+
+                  {/* P-5 Batch 2 — Stage 5: scoped non-admin surfaces */}
+                  <Route path="/registry/p5-batch2/checklist" element={<RequireAuth><P5Batch2CounterpartyChecklist /></RequireAuth>} />
+                  <Route path="/registry/p5-batch2/subject" element={<RequireAuth><P5Batch2SubjectEvidence /></RequireAuth>} />
+                  <Route path="/registry/p5-batch2/api-customer" element={<RequireAuth><P5Batch2ApiCustomerSummary /></RequireAuth>} />
+                  <Route path="/funder/p5-batch2/evidence-pack" element={<RequireAuth><P5Batch2FunderEvidencePack /></RequireAuth>} />
+
 
 
 
