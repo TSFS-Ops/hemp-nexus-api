@@ -330,6 +330,11 @@ function App() {
                   <Route path="/admin/p5-governance" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCasesDashboard /></RequireAuth>} />
                   <Route path="/admin/p5-governance/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5GovernanceCaseDetail /></RequireAuth>} />
 
+                  {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}
+                  <Route path="/registry/my-companies/:companyId/readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
+                  <Route path="/registry/my-readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
+                  <Route path="/funder/evidence-pack" element={<RequireAuth><FunderEvidencePack /></RequireAuth>} />
+
 
 
 
