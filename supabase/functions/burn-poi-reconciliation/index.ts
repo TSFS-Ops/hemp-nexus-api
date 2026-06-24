@@ -498,15 +498,22 @@ Deno.serve(async (req) => {
     );
     let poiCoverage = new Set<string>();
     if (activeMatchIds.length > 0) {
+      // Canonical bridge: a match "has a POI" iff a poi_engagements row exists
+      // for it with a non-null poi_id. pois has no match_id column.
       const { data: poiHits, error: poiCovErr } = await admin
-        .from("pois")
-        .select("match_id")
-        .in("match_id", activeMatchIds);
+        .from("poi_engagements")
+        .select("match_id, poi_id")
+        .in("match_id", activeMatchIds)
+        .not("poi_id", "is", null);
       if (poiCovErr) {
-        console.error("[burn-poi-reconciliation] poi coverage fetch failed:", poiCovErr);
+        console.error("[burn-poi-reconciliation] poi coverage bridge fetch failed:", poiCovErr);
         throw new Error(`POI_COVERAGE_FETCH_FAILED: ${poiCovErr.message}`);
       }
-      poiCoverage = new Set((poiHits ?? []).map((p) => (p as { match_id: string }).match_id));
+      poiCoverage = new Set(
+        (poiHits ?? [])
+          .map((p) => (p as { match_id: string | null }).match_id)
+          .filter((v): v is string => !!v),
+      );
     }
     for (const e of activeEngagements ?? []) {
       const row = e as { id: string; match_id: string | null; org_id: string | null; engagement_status: string; created_at: string };
