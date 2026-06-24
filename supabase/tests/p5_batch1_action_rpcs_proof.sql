@@ -109,11 +109,13 @@ BEGIN
   EXCEPTION WHEN check_violation THEN _err_seen := true; END;
   IF NOT _err_seen THEN RAISE EXCEPTION 'PROOF_FAIL: ready_to_proceed approved with blocker'; END IF;
 
-  -- Reopen + approve evidence, then mark provider dependent and try again.
-  PERFORM public.p5_reopen(_case,'manual_review_required','reopen after fix');
+  -- Approve the rejected evidence (clears the blocker).
   PERFORM public.p5_review_evidence(_ev,'approve');
-  PERFORM public.p5_submit_case(_case, true);
-  PERFORM public.p5_start_review(_case,_admin);
+  -- After approval the recompute pushes case forward; force back to under_review
+  -- by applying then releasing a hold so we can test internal approval cleanly.
+  PERFORM public.p5_apply_hold(_case,'governance','governance_hold_applied'::public.p5_reason_code,'gate before re-approval');
+  PERFORM public.p5_release_hold(_case,'compliance_hold_released'::public.p5_reason_code,'cleared');
+
   PERFORM public.p5_approve_internally(_case);
   PERFORM public.p5_mark_provider_dependent(_case,'sanctions_screening','pending'::public.p5_provider_status);
   _err_seen := false;
