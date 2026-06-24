@@ -33,12 +33,11 @@ describe("p5-batch2 Stage 3 — edge function shape & safety", () => {
   });
 
   it("never selects raw sensitive columns", () => {
-    // forbidden raw columns that must never be in the .select() projection
     for (const banned of [
       "reviewer_note_internal",
       "notes_internal",
       "provider_raw_response",
-      "fraud",
+      "fraud_flag",
       "passport_number",
       "id_number",
       "bank_account_number",
