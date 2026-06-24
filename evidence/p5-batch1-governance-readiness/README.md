@@ -289,3 +289,153 @@ is signed off.
 
 Expected next status: **STAGE_3_ACTION_RPCS_AND_API_RUNTIME_CONFIRMED**.
 
+
+## Stage 4 — Admin surfaces (COMPLETE)
+
+Status: **STAGE_4_ADMIN_SURFACES_DEPLOYED**
+
+### Admin route added
+
+- `/admin/p5-governance` — P-5 cases dashboard
+- `/admin/p5-governance/:caseId` — case detail
+
+Wired in `src/App.tsx` behind `RequireAuth role="platform_admin"`
+(consistent with all other `/admin/*` routes). Finer-grained role gating
+for action buttons is enforced inside the page via `useP5Permissions`.
+Route constant `ROUTES.ADMIN_P5_GOVERNANCE` added in
+`src/lib/constants.ts`. Nav entry "P-5 Governance" added to
+`src/pages/admin/registry/Index.tsx`.
+
+### Files added
+
+- `src/hooks/useP5Permissions.ts` — pure `deriveP5Permissions(roles)`
+  plus React hook reading `AuthContext.roles`. Single source of truth
+  for admin UI affordances.
+- `src/lib/p5-governance/rpc.ts` — typed wrappers around every Stage 3
+  RPC. Admin dialogs/panels MUST call these instead of writing to
+  `p5_governance_*` tables directly.
+- `src/pages/admin/p5-governance/CasesDashboard.tsx` — case list with
+  the 13 filters required in the Stage 4 brief.
+- `src/pages/admin/p5-governance/CaseDetail.tsx` — three-lane header,
+  subject, action buttons, evidence panel, provider panel, audit
+  timeline.
+- `src/pages/admin/p5-governance/components/P5StatusBadge.tsx`
+- `src/pages/admin/p5-governance/components/EvidenceReviewPanel.tsx`
+- `src/pages/admin/p5-governance/components/ProviderDependencyPanel.tsx`
+- `src/pages/admin/p5-governance/components/P5AuditTimeline.tsx`
+- `src/pages/admin/p5-governance/components/dialogs/ReasonedActionDialog.tsx`
+  — shared shell enforcing reason_code + note for high-stakes actions.
+- `src/pages/admin/p5-governance/components/dialogs/HoldDialog.tsx`
+  (self-contained — includes hold-type selector: governance / compliance
+  / legal / payment / admin).
+- `src/pages/admin/p5-governance/components/dialogs/WaiverDialog.tsx`
+- `src/pages/admin/p5-governance/components/dialogs/OverrideDialog.tsx`
+- `src/pages/admin/p5-governance/components/dialogs/EscalateDialog.tsx`
+- `src/pages/admin/p5-governance/components/dialogs/RequestMoreInfoDialog.tsx`
+- `src/pages/admin/p5-governance/components/dialogs/RejectDialog.tsx`
+
+### Permission hook summary (`useP5Permissions`)
+
+Role mapping aligned with Batch 1 answers and existing `app_role`:
+
+| Role                             | View | Review | Internal approve | Ready to proceed | Hold | Release hold | Waive | Override | Reject | Escalate |
+| -------------------------------- | ---- | ------ | ---------------- | ---------------- | ---- | ------------ | ----- | -------- | ------ | -------- |
+| `platform_admin`                 | ✓    | ✓      | ✓                | ✓                | ✓    | ✓            | ✓     | ✓        | ✓      | ✓        |
+| `executive_approver`             | ✓    | ✓      | ✓                | ✓                | ✓    | ✓            | ✓     | ✓        | ✓      | ✓        |
+| `governance_reviewer`            | ✓    | ✓      | ✓                | ✗                | ✓    | ✗            | ✗     | ✗        | ✓      | ✓        |
+| `operator_case_manager`          | ✓    | ✓      | ✓                | ✗                | ✓    | ✗            | ✗     | ✗        | ✓      | ✓        |
+| `compliance_analyst`             | ✓    | ✓      | ✓                | ✗                | ✓    | ✗            | ✗     | ✗        | ✓      | ✓        |
+| `auditor` / `auditor_read_only`  | ✓    | ✗      | ✗                | ✗                | ✗    | ✗            | ✗     | ✗        | ✗      | ✗        |
+| `developer_technical_admin`      | ✓¹   | ✗      | ✗                | ✗                | ✗    | ✗            | ✗     | ✗        | ✗      | ✗        |
+| `customer_entity_owner` / `funder_external_reviewer` | ✗ | — | — | — | — | — | — | — | — | — |
+
+¹ Diagnostic/provider view only; no business decisions.
+
+### Action / RPC wiring summary
+
+Every mutating button on the admin pages calls a thin wrapper in
+`src/lib/p5-governance/rpc.ts`, never the table directly:
+
+| UI control                        | RPC                              |
+| --------------------------------- | -------------------------------- |
+| Approve internally                | `p5_approve_internally`          |
+| Approve ready to proceed          | `p5_approve_ready_to_proceed`    |
+| Request more information dialog   | `p5_request_more_info`           |
+| Hold dialog                       | `p5_apply_hold`                  |
+| Release hold (admin)              | `p5_release_hold`                |
+| Escalate dialog                   | `p5_escalate`                    |
+| Reject dialog                     | `p5_reject`                      |
+| Waiver dialog                     | `p5_waive`                       |
+| Override dialog                   | `p5_override`                    |
+| Evidence approve / reject /       | `p5_review_evidence`             |
+| request correction                |                                  |
+| Reopen / archive (admin)          | `p5_reopen` / `p5_archive_superseded` |
+| Assign owner / start review       | `p5_assign_owner` / `p5_start_review` |
+| Record provider result            | `p5_record_provider_result`      |
+
+Reject, request-more-info, hold/release, waiver, override and escalate
+all require a `reason_code` AND a free-text `note` on the client side;
+the Stage 3 RPCs re-validate this server-side so this is defence in
+depth, not the only check.
+
+### Test command / result
+
+```bash
+bunx vitest run src/tests/p5-batch1
+```
+
+Result: **9 test files, 81 tests passing.**
+
+Stage 4 added 21 new tests:
+
+- `src/tests/p5-batch1-admin-permissions.test.tsx` — 8 tests covering
+  every required role × capability matrix entry (auditor read-only,
+  developer no business actions, executive_approver / platform_admin
+  full admin, compliance reviewer can hold but not override).
+- `src/tests/p5-batch1-admin-wording.test.tsx` — 3 tests asserting that
+  `P5StatusBadge`, `ProviderDependencyPanel` and `P5AuditTimeline` never
+  emit any term from `P5_FORBIDDEN_WORDS` and only render the Stage 1
+  SSOT status labels and approved provider phrases.
+- `src/tests/p5-batch1-admin-dashboard.test.tsx` — 4 tests covering
+  badge SSOT labels for all statuses, blocked ≠ ready-to-proceed,
+  provider-dependent ≠ ready-to-proceed, and dashboard default export.
+- `src/tests/p5-batch1-admin-actions.test.tsx` — 6 tests covering the
+  `ReasonedActionDialog` shell (confirm disabled without reason+note,
+  warning banner renders for override/waiver), developer/auditor
+  negative gating, admin positive gating, and RPC wrapper module shape
+  (all 15 expected wrappers present).
+
+### Constraints honoured in Stage 4
+
+- **Customer / funder views NOT added.** Only `/admin/p5-governance*`
+  routes were introduced. Stage 5 will introduce the customer-safe and
+  funder-safe surfaces.
+- **No database migrations applied in this stage.** Nothing in
+  `supabase/migrations/` was added or changed for Stage 4. No existing
+  `trade_requests`, `pois`, `wads`, `token_*`, `payment_*`,
+  `business_decisions` or any other business-data row was mutated by
+  this stage's code.
+- **Audit remains append-only.** All mutating actions in the admin UI
+  go through Stage 3 RPCs, which write a `p5_governance_audit_events`
+  row in the same transaction; the Stage 1
+  `p5_audit_no_update`/`p5_audit_no_delete` triggers continue to block
+  any direct edit/delete.
+- **No unsafe wording introduced.** The wording test sweeps every
+  status and every provider state against the full `P5_FORBIDDEN_WORDS`
+  list. Provider panel uses only "Provider result received / failed /
+  timeout / inconclusive / Credentials pending / Provider not live /
+  Requires human review / Not applicable".
+- **Least privilege at the UI layer too.** Action buttons are not
+  rendered for roles that cannot perform the action; the Stage 3 RPC
+  remains the authoritative deny.
+- **No bypass of the action contract.** Every dialog requires reason
+  code + note client-side before enabling confirm, matching the Stage 2
+  `assertTransition` rules and Stage 3 RPC argument checks.
+
+### Pending
+
+Stage 5 — customer / funder / external API client surfaces, including
+the Stage 3 `p5-governance-readiness-summary` edge function consumer
+side. Not yet started.
+
+Expected next status: **STAGE_4_ADMIN_SURFACES_RUNTIME_CONFIRMED**.
