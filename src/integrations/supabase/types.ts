@@ -8965,6 +8965,7 @@ export type Database = {
       }
       p5_governance_readiness_cases: {
         Row: {
+          admin_extension_active: boolean
           archived_at: string | null
           assigned_reviewer_id: string | null
           audit_reference: string | null
@@ -8974,6 +8975,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           decision_reference: string | null
+          dispute_open: boolean
           entity_id: string | null
           escalated_at: string | null
           escalation_owner_user_id: string | null
@@ -8984,7 +8986,9 @@ export type Database = {
           evidence_status: Database["public"]["Enums"]["p5_status"] | null
           evidence_summary_id: string | null
           governance_status: Database["public"]["Enums"]["p5_status"]
+          hard_blocker_open_since: string | null
           hash_chain_reference: string | null
+          hold_applied_at: string | null
           hold_owner_user_id: string | null
           hold_reason_code: Database["public"]["Enums"]["p5_reason_code"] | null
           hold_review_date: string | null
@@ -9000,6 +9004,8 @@ export type Database = {
           match_id: string | null
           minimum_pack_confirmed_at: string | null
           minimum_pack_confirmed_by: string | null
+          more_info_last_response_at: string | null
+          more_info_requested_at: string | null
           next_action: string | null
           next_owner_type: string | null
           organization_id: string | null
@@ -9009,6 +9015,7 @@ export type Database = {
           override_reason_code:
             | Database["public"]["Enums"]["p5_reason_code"]
             | null
+          override_requested: boolean
           override_scope: string | null
           owner_user_id: string | null
           programme_id: string | null
@@ -9031,10 +9038,12 @@ export type Database = {
           waiver_reason_code:
             | Database["public"]["Enums"]["p5_reason_code"]
             | null
+          waiver_requested: boolean
           waiver_scope: string | null
           warning_count: number
         }
         Insert: {
+          admin_extension_active?: boolean
           archived_at?: string | null
           assigned_reviewer_id?: string | null
           audit_reference?: string | null
@@ -9044,6 +9053,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           decision_reference?: string | null
+          dispute_open?: boolean
           entity_id?: string | null
           escalated_at?: string | null
           escalation_owner_user_id?: string | null
@@ -9054,7 +9064,9 @@ export type Database = {
           evidence_status?: Database["public"]["Enums"]["p5_status"] | null
           evidence_summary_id?: string | null
           governance_status?: Database["public"]["Enums"]["p5_status"]
+          hard_blocker_open_since?: string | null
           hash_chain_reference?: string | null
+          hold_applied_at?: string | null
           hold_owner_user_id?: string | null
           hold_reason_code?:
             | Database["public"]["Enums"]["p5_reason_code"]
@@ -9072,6 +9084,8 @@ export type Database = {
           match_id?: string | null
           minimum_pack_confirmed_at?: string | null
           minimum_pack_confirmed_by?: string | null
+          more_info_last_response_at?: string | null
+          more_info_requested_at?: string | null
           next_action?: string | null
           next_owner_type?: string | null
           organization_id?: string | null
@@ -9081,6 +9095,7 @@ export type Database = {
           override_reason_code?:
             | Database["public"]["Enums"]["p5_reason_code"]
             | null
+          override_requested?: boolean
           override_scope?: string | null
           owner_user_id?: string | null
           programme_id?: string | null
@@ -9103,10 +9118,12 @@ export type Database = {
           waiver_reason_code?:
             | Database["public"]["Enums"]["p5_reason_code"]
             | null
+          waiver_requested?: boolean
           waiver_scope?: string | null
           warning_count?: number
         }
         Update: {
+          admin_extension_active?: boolean
           archived_at?: string | null
           assigned_reviewer_id?: string | null
           audit_reference?: string | null
@@ -9116,6 +9133,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           decision_reference?: string | null
+          dispute_open?: boolean
           entity_id?: string | null
           escalated_at?: string | null
           escalation_owner_user_id?: string | null
@@ -9126,7 +9144,9 @@ export type Database = {
           evidence_status?: Database["public"]["Enums"]["p5_status"] | null
           evidence_summary_id?: string | null
           governance_status?: Database["public"]["Enums"]["p5_status"]
+          hard_blocker_open_since?: string | null
           hash_chain_reference?: string | null
+          hold_applied_at?: string | null
           hold_owner_user_id?: string | null
           hold_reason_code?:
             | Database["public"]["Enums"]["p5_reason_code"]
@@ -9144,6 +9164,8 @@ export type Database = {
           match_id?: string | null
           minimum_pack_confirmed_at?: string | null
           minimum_pack_confirmed_by?: string | null
+          more_info_last_response_at?: string | null
+          more_info_requested_at?: string | null
           next_action?: string | null
           next_owner_type?: string | null
           organization_id?: string | null
@@ -9153,6 +9175,7 @@ export type Database = {
           override_reason_code?:
             | Database["public"]["Enums"]["p5_reason_code"]
             | null
+          override_requested?: boolean
           override_scope?: string | null
           owner_user_id?: string | null
           programme_id?: string | null
@@ -9175,6 +9198,7 @@ export type Database = {
           waiver_reason_code?:
             | Database["public"]["Enums"]["p5_reason_code"]
             | null
+          waiver_requested?: boolean
           waiver_scope?: string | null
           warning_count?: number
         }

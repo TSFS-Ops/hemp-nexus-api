@@ -577,3 +577,206 @@ bunx vitest run src/tests/p5-batch1-
 ### Pending
 
 Stage 6 — not yet started. Awaiting explicit approval before any work.
+
+---
+
+## Stage 6 — SLA Monitor + Notifications + Final Acceptance
+
+Status marker: **STAGE_6_SLA_MONITOR_AND_FINAL_ACCEPTANCE_DEPLOYED**.
+
+### Files added / changed
+
+- `src/lib/p5-governance/sla-rules.ts` (new) — pure, deterministic
+  SLA rules engine. 20 rule codes, working-day helper, idempotency key
+  builder. Same TypeScript module is mirrored inline in the edge
+  function (no project-relative imports across the Deno boundary).
+- `supabase/functions/p5-governance-sla-monitor/index.ts` (new) — cron
+  edge function. `x-internal-key` auth, service-role client, scans
+  open cases, writes notification_dispatches + immutable
+  p5_governance_audit_events, applies stale_block status change for
+  the 14-day rule.
+- `supabase/migrations/<ts>_p5_batch1_sla_monitor_columns.sql`
+  (applied via migration tool) — adds 8 nullable / default-false
+  SLA-tracking columns to `p5_governance_readiness_cases`, creates
+  partial index `idx_p5_cases_sla_scan`, seeds the
+  `p5-governance-sla-monitor` cron_heartbeats row. No existing rows
+  mutated; no business tables touched.
+- Cron job registered via `cron.schedule()` (insert tool, not
+  migration — vault-backed `INTERNAL_CRON_KEY` is project-local).
+- `src/tests/p5-batch1-sla-monitor.test.ts` (new, 16 tests).
+- `src/tests/p5-batch1-notifications.test.ts` (new, 5 tests).
+- `supabase/tests/p5_batch1_sla_monitor_proof.sql` (new) — SQL proof.
+
+### Cron job
+
+| Field             | Value                                                     |
+| ----------------- | --------------------------------------------------------- |
+| Job name          | `p5-governance-sla-monitor`                               |
+| Cadence           | `*/15 * * * *`                                            |
+| Invocation        | `public.cron_invoke()` (vault-stored `INTERNAL_CRON_KEY`) |
+| Heartbeat row     | seeded in `cron_heartbeats` (expected_interval 900s)      |
+| Active            | true (verified via `cron.job`)                            |
+
+The standard `cron_invoke()` helper writes the heartbeat row on every
+invocation; `cron_reconcile_heartbeats` then promotes it to
+success / failed based on the `pg_net` response. No bespoke heartbeat
+write is needed in the edge function.
+
+### Edge function
+
+`p5-governance-sla-monitor` — POST only. Returns:
+
+```json
+{
+  "ok": true, "run_id": "uuid",
+  "checked": N, "escalated": N, "reminded": N, "blocked": N,
+  "notifications_created": N, "audit_events_created": N,
+  "skipped_dupes": N
+}
+```
+
+- 401 on missing/incorrect `x-internal-key` (verified live —
+  unauthorised call returns `{"ok":false,"error":"Unauthorized"}`).
+- Service-role client used only inside the handler.
+- No hard-coded secrets.
+
+### Escalation rules implemented (Batch 1 SSOT)
+
+| Rule | Trigger | Severity | Routes to | Bucket |
+| ---- | ------- | -------- | --------- | ------ |
+| `reviewer_unassigned_24h` | submitted, no reviewer, >24h | escalation | platform_admin | daily |
+| `under_review_overdue_48h` | under_review, >48h | escalation | platform_admin | daily |
+| `more_info_reminder_3wd` | more_info, >3 wd no response | reminder | customer + operator | daily |
+| `more_info_escalate_7wd` | more_info, >7 wd no response | escalation | platform_admin + operator | daily |
+| `more_info_stale_14d` | more_info, >14 cal d, no extension | stale_block (→ blocked) | platform_admin + operator | once |
+| `hard_blocker_unresolved_2wd` | blocked, >2 wd since first set | escalation | platform_admin | daily |
+| `compliance_hold_unresolved_5wd` | compliance hold, >5 wd | critical_escalation | executive_approver + compliance_admin | daily |
+| `provider_pending_24h` | provider pending/not_live/creds/timeout, >24h | reminder | dev_admin + operator | daily |
+| `provider_pending_72h_live` | same + affects live/funder, >72h | escalation | platform_admin | daily |
+| `immediate_provider_failed` | reason includes `provider_failed` | critical_escalation | platform_admin + compliance_admin | per_event |
+| `immediate_provider_conflict` | reason includes `provider_result_conflict` | critical_escalation | platform_admin + compliance_admin | per_event |
+| `immediate_sanctions_pep` | reason includes `sanctions_pep_adverse_result_review` | critical_escalation | platform_admin + compliance_admin | per_event |
+| `immediate_bank_issue` | reason includes `bank_detail_verification_issue` | critical_escalation | platform_admin + compliance_admin | per_event |
+| `immediate_payment_anomaly` | reason includes `payment_confirmation_issue` | critical_escalation | platform_admin + compliance_admin | per_event |
+| `immediate_duplicate_notification` | reason includes `duplicate_notification` | critical_escalation | platform_admin + compliance_admin | per_event |
+| `immediate_amount_mismatch` | reason includes `amount_currency_mismatch` | critical_escalation | platform_admin + compliance_admin | per_event |
+| `immediate_audit_tamper` | reason includes `audit_trail_issue` or `tamper_evidence_issue` | critical_escalation | platform_admin + compliance_admin | per_event |
+| `dispute_rejection` | `dispute_open=true` | critical_escalation | platform_admin + executive_approver | per_event |
+| `waiver_request` | `waiver_requested=true` | critical_escalation | platform_admin + executive_approver | per_event |
+| `override_request` | `override_requested=true` | critical_escalation | platform_admin + executive_approver | per_event |
+
+### Notification routing
+
+- Uses existing `notification_dispatches` table — no competing system.
+- One row per recipient role per action.
+- `channel='in_app'`, `status='pending'` (matches
+  `notification_dispatches_status_check`).
+- `metadata.p5_sla_idempotency_key` carries the deterministic key.
+- `metadata.p5_sla_message` carries the customer/funder-safe message
+  emitted by the pure rules engine; messages are sweep-tested against
+  `assertCustomerSafeWording` on customer / funder / public_api
+  surfaces (`p5-batch1-notifications.test.ts`).
+- No notification carries internal reviewer notes, raw provider
+  payloads, credentials, risk scores, AI reasoning, legal comments,
+  raw bank fields or other customers' data.
+
+### Idempotency
+
+Deterministic key `p5_sla:{case_id}:{rule_code}:{bucket}` where bucket
+is `YYYY-MM-DD` for daily rules, an event token for per_event rules,
+and the literal `once` for the 14-day stale_block. Before any insert,
+the monitor queries `notification_dispatches` for a matching key on the
+same `reference_id`+`event_type` and skips if found, incrementing
+`skipped_dupes`.
+
+### Audit summary
+
+Every triggered SLA action writes an immutable row to
+`p5_governance_audit_events`:
+
+- `event_type = 'sla.<rule_code>'`
+- `actor_type = 'system'`
+- `previous_status`, `new_status` (`new_status` set only for the
+  stale_block rule; otherwise mirrors current status)
+- `reason_code` from the rule
+- `note` = customer-safe message
+- `correlation_id` = monitor `run_id`
+- `metadata` includes `p5_sla_rule_code`, `p5_sla_severity`,
+  `p5_sla_notify_roles`, `p5_sla_idempotency_key`, `p5_sla_bucket`.
+
+The SQL proof verifies that `UPDATE` and `DELETE` against an
+existing system-generated row are both rejected by the Stage 1
+append-only trigger.
+
+### Test command / result
+
+```
+bunx vitest run src/tests/p5-batch1-
+psql -f supabase/tests/p5_batch1_sla_monitor_proof.sql
+```
+
+- TypeScript: **127 / 127 P-5 Batch 1 tests pass** (15 files):
+  - Stage 1 enum-drift: 6
+  - Stage 2 readiness / transitions / wording: 22 + 14 + 12
+  - Stage 3 api-scoping: 6
+  - Stage 4 admin permissions / dashboard / actions / wording: 8 + 4 + 6 + 3
+  - Stage 5 subject card / customer / funder / wording: 7 + 6 + 6 + 6
+  - **Stage 6 SLA monitor: 16**, **notifications: 5**
+- SQL proof: emits `NOTICE: P5_STAGE6_PROOF_OK` and rolls back cleanly.
+- Edge function smoke: unauthorised POST returns
+  `{"ok":false,"error":"Unauthorized"}`.
+- Cron registration verified live:
+  `cron.job` row exists with `schedule='*/15 * * * *'`, `active=true`.
+
+### Stage 6 invariants — confirmed
+
+- **No forbidden wording.** Every SLA action's `message` is sweep-tested
+  against `assertCustomerSafeWording` on customer + funder + public_api
+  surfaces (`p5-batch1-notifications.test.ts`).
+- **No admin-only leaks.** Notification metadata carries rule code,
+  severity, idempotency key, safe message and routing — no raw provider
+  payloads, risk scores, legal comments or internal notes.
+- **No existing trade / POI / WaD / billing / payment /
+  business-decision rows mutated.** The migration only adds nullable /
+  default-false columns to `p5_governance_readiness_cases`. The monitor
+  only writes to `notification_dispatches`,
+  `p5_governance_audit_events` and (for the 14-day stale rule)
+  `p5_governance_readiness_cases.readiness_status` /
+  `is_escalated` / `escalated_at`. The SQL proof confirms no
+  `p5_sla_*` columns leaked into `matches`, `trade_requests`,
+  `trade_orders`, `pois`, `wads`, `token_purchases`, `token_ledger`,
+  `payment_disputes`, `refund_requests`, `business_decisions`.
+- **Heartbeat evidence.** Row seeded in `cron_heartbeats` at migration
+  time; `cron_invoke()` updates `last_run_at`, `last_request_id`,
+  `last_status`, `last_http_status`, `last_error` on every invocation
+  via the standard reconciler (no bespoke writer in the edge function).
+
+---
+
+## Batch 1 Final Acceptance Checklist
+
+| # | Criterion | Met | Evidence |
+| - | --------- | --- | -------- |
+| 1 | Statuses implemented consistently | ✅ | Stage 1 `P5_STATUSES` SSOT + `p5_status` DB enum + drift guard (6/6) |
+| 2 | Transition rules coded and tested | ✅ | `src/lib/p5-governance/transitions.ts` + 14 tests |
+| 3 | RBAC / RLS implemented | ✅ | Stage 1 RLS + GRANTs + `has_role`; Stage 3 RPC role checks |
+| 4 | Admin dashboard built | ✅ | Stage 4 `/admin/p5-governance` + 21 tests |
+| 5 | Subject / customer / funder views built | ✅ | Stage 5 `P5ReadinessCard`, `MyCompanyReadiness`, `FunderEvidencePack` + 25 tests |
+| 6 | Hard blockers vs warnings separated | ✅ | `P5_RULE_SEVERITIES` SSOT + readiness engine; `blocker_count` / `warning_count` columns |
+| 7 | Deterministic readiness implemented | ✅ | Stage 2 `calculateReadiness` + 22 tests + Stage 3 SQL mirror |
+| 8 | Governance / compliance actions implemented | ✅ | Stage 3 — 19 `SECURITY DEFINER` RPCs, each audited |
+| 9 | Provider dependency implemented with cautious wording | ✅ | Stage 2 wording guard + Stage 4 `ProviderDependencyPanel` + Stage 5 `P5ReadinessCard` |
+| 10 | Notifications / tasks / escalations implemented | ✅ | Stage 6 SLA monitor + 20 rule codes + idempotent dispatches |
+| 11 | API returns scoped fields | ✅ | Stage 3 `p5-governance-readiness-summary` + 6 scoping tests |
+| 12 | Internal-only fields excluded from unsafe contexts | ✅ | Edge function strips raw payloads / risk scores / notes; Stage 5 viewer gating |
+| 13 | Every material action audited | ✅ | All Stage 3 RPCs + Stage 6 SLA actions write `p5_governance_audit_events`; append-only trigger |
+| 14 | Forbidden wording blocked | ✅ | Stage 2 `assertCustomerSafeWording` + 12 + 6 + 5 sweep tests |
+| 15 | UAT evidence available | ✅ | This README — all six stages documented with file lists, test results and SQL proofs |
+
+**P-5 Batch 1 — Governance, Compliance & Readiness: COMPLETE.**
+
+Test totals: **127 / 127** TypeScript tests passing across 15 files.
+SQL proofs: Stage 3 (`P5_STAGE3_PROOF_OK`) + Stage 6
+(`P5_STAGE6_PROOF_OK`).
+
+No Batch 2 work has been started.
