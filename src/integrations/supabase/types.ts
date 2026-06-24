@@ -8989,11 +8989,17 @@ export type Database = {
           hold_reason_code: Database["public"]["Enums"]["p5_reason_code"] | null
           hold_review_date: string | null
           hold_type: string | null
+          human_approval_by_user_id: string | null
+          human_approval_recorded: boolean
+          human_approval_recorded_at: string | null
           id: string
           is_escalated: boolean
           is_on_hold: boolean
+          last_audit_event_id: string | null
           last_updated_at: string
           match_id: string | null
+          minimum_pack_confirmed_at: string | null
+          minimum_pack_confirmed_by: string | null
           next_action: string | null
           next_owner_type: string | null
           organization_id: string | null
@@ -9055,11 +9061,17 @@ export type Database = {
             | null
           hold_review_date?: string | null
           hold_type?: string | null
+          human_approval_by_user_id?: string | null
+          human_approval_recorded?: boolean
+          human_approval_recorded_at?: string | null
           id?: string
           is_escalated?: boolean
           is_on_hold?: boolean
+          last_audit_event_id?: string | null
           last_updated_at?: string
           match_id?: string | null
+          minimum_pack_confirmed_at?: string | null
+          minimum_pack_confirmed_by?: string | null
           next_action?: string | null
           next_owner_type?: string | null
           organization_id?: string | null
@@ -9121,11 +9133,17 @@ export type Database = {
             | null
           hold_review_date?: string | null
           hold_type?: string | null
+          human_approval_by_user_id?: string | null
+          human_approval_recorded?: boolean
+          human_approval_recorded_at?: string | null
           id?: string
           is_escalated?: boolean
           is_on_hold?: boolean
+          last_audit_event_id?: string | null
           last_updated_at?: string
           match_id?: string | null
+          minimum_pack_confirmed_at?: string | null
+          minimum_pack_confirmed_by?: string | null
           next_action?: string | null
           next_owner_type?: string | null
           organization_id?: string | null
@@ -18705,6 +18723,37 @@ export type Database = {
     }
     Functions: {
       _is_uuid: { Args: { p_text: string }; Returns: boolean }
+      _p5_audit: {
+        Args: {
+          _actor_type: Database["public"]["Enums"]["p5_actor_type"]
+          _actor_user_id: string
+          _api_request_id: string
+          _case_id: string
+          _correlation_id: string
+          _event_type: string
+          _evidence_item_id: string
+          _metadata: Json
+          _new_status: Database["public"]["Enums"]["p5_status"]
+          _note: string
+          _previous_status: Database["public"]["Enums"]["p5_status"]
+          _provider_reference: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: string
+      }
+      _p5_recompute_case: { Args: { _case_id: string }; Returns: undefined }
+      _p5_require_reason: {
+        Args: {
+          _action: string
+          _note: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: undefined
+      }
+      _p5_require_role: {
+        Args: { _action: string; _roles: string[] }
+        Returns: string
+      }
       _provision_user: {
         Args: { p_email: string; p_full_name?: string; p_user_id: string }
         Returns: Json
@@ -20171,9 +20220,203 @@ export type Database = {
         }
         Returns: number
       }
+      p5_apply_hold: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _hold_type: string
+          _note: string
+          _owner_user_id?: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+          _review_date?: string
+        }
+        Returns: undefined
+      }
+      p5_approve_internally: {
+        Args: { _case_id: string; _correlation_id?: string }
+        Returns: Database["public"]["Enums"]["p5_status"]
+      }
+      p5_approve_ready_to_proceed: {
+        Args: { _case_id: string; _correlation_id?: string; _note: string }
+        Returns: undefined
+      }
+      p5_archive_superseded: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _note: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: undefined
+      }
+      p5_assign_owner: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _new_owner_user_id: string
+        }
+        Returns: undefined
+      }
+      p5_calculate_readiness: {
+        Args: { _case_id: string }
+        Returns: {
+          blocker_count: number
+          provider_dependency: boolean
+          reason: Database["public"]["Enums"]["p5_reason_code"]
+          required_items_missing: number
+          status: Database["public"]["Enums"]["p5_status"]
+          warning_count: number
+        }[]
+      }
+      p5_create_case: {
+        Args: {
+          _api_request_id?: string
+          _correlation_id?: string
+          _counterparty_id?: string
+          _entity_id?: string
+          _initial_status?: Database["public"]["Enums"]["p5_status"]
+          _match_id?: string
+          _organization_id: string
+          _programme_id?: string
+          _trade_request_id?: string
+        }
+        Returns: string
+      }
+      p5_escalate: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _due_at?: string
+          _note: string
+          _owner_user_id?: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: undefined
+      }
       p5_has_any_role: {
         Args: { _roles: string[]; _user_id: string }
         Returns: boolean
+      }
+      p5_mark_provider_dependent: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _provider_dependency_type: string
+          _provider_status: Database["public"]["Enums"]["p5_provider_status"]
+        }
+        Returns: undefined
+      }
+      p5_override: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _expires_at?: string
+          _note: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+          _risk_acceptance_note?: string
+          _scope: string
+        }
+        Returns: undefined
+      }
+      p5_record_provider_result: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _is_high_risk_domain?: boolean
+          _provider_checked_at?: string
+          _provider_reference: string
+          _provider_status: Database["public"]["Enums"]["p5_provider_status"]
+        }
+        Returns: undefined
+      }
+      p5_reject: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _evidence_item_id?: string
+          _note: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: undefined
+      }
+      p5_release_hold: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _note: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: undefined
+      }
+      p5_reopen: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _note: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: undefined
+      }
+      p5_request_more_info: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _due_at?: string
+          _note: string
+          _owner_user_id?: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: undefined
+      }
+      p5_review_evidence: {
+        Args: {
+          _correlation_id?: string
+          _customer_safe_note?: string
+          _decision: string
+          _evidence_item_id: string
+          _note?: string
+          _reason_code?: Database["public"]["Enums"]["p5_reason_code"]
+        }
+        Returns: undefined
+      }
+      p5_start_review: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _reviewer_id: string
+        }
+        Returns: undefined
+      }
+      p5_submit_case: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _minimum_pack_complete?: boolean
+        }
+        Returns: undefined
+      }
+      p5_upload_evidence_meta: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _evidence_type: string
+          _expiry_date?: string
+          _required: boolean
+          _uploaded_file_id?: string
+        }
+        Returns: string
+      }
+      p5_waive: {
+        Args: {
+          _case_id: string
+          _correlation_id?: string
+          _expires_at?: string
+          _note: string
+          _reason_code: Database["public"]["Enums"]["p5_reason_code"]
+          _risk_acceptance_note?: string
+          _scope: string
+        }
+        Returns: undefined
       }
       platform_admin_break_glass_progress:
         | {
