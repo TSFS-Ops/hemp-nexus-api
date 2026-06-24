@@ -76,7 +76,13 @@ describe("C6.2 outreach-sla-monitor heartbeat coverage migration", () => {
   });
 
   it("does not call net.http_post directly in the new command", () => {
-    expect(sql).not.toMatch(/net\.http_post\s*\(/);
+    // Strip SQL line comments before matching so descriptive header text
+    // referring to the prior net.http_post shape doesn't trip the guard.
+    const stripped = sql
+      .split("\n")
+      .map((l) => l.replace(/--.*$/, ""))
+      .join("\n");
+    expect(stripped).not.toMatch(/net\.http_post\s*\(/);
   });
 
   it("does not mutate outreach or business tables", () => {
