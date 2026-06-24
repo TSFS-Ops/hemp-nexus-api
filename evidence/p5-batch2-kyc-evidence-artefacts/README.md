@@ -104,12 +104,91 @@ Expected: 7/7 pass (one assertion per enum).
 - **Provider-wording safety** is enforced at the data layer (CHECK
   constraint) and will be enforced again at edge / UI layers in Stages 2–6.
 
+---
+
+## Stage 2 — Pure-TS engines
+
+**Status:** `P5_BATCH_2_STAGE_2_COMPLETE`
+
+Pure deterministic modules only. No DB writes, no UI, no RPCs, no edge
+functions, no Batch 1 readiness wiring, no business-row mutation.
+
+### Files added
+
+- `src/lib/p5-batch2/checklist-engine.ts` — segmented evidence buckets
+  (`missing_mandatory`, `missing_mandatory_before_finality`,
+  `missing_conditional`, `optional_recommendations`, `uploaded_unreviewed`,
+  `rejected`, `expired`, `provider_dependent`, `waived`). Distinguishes
+  mandatory / optional / conditional / not_required and applies
+  jurisdiction / transaction-type / funder-rule / api-rule / override /
+  waiver promotions before bucketing.
+- `src/lib/p5-batch2/status-transitions.ts` — full 13-status legal
+  transition map with structured denial codes (`illegal_status_transition`,
+  `actor_not_authorised`, `terminal_status`). Actor-role guards for
+  `platform_admin`, `compliance_owner`, `operator_case_manager`,
+  `organisation_user`, `counterparty`, `director_officer`,
+  `ubo_controller`, `funder`, `api_customer`, `system`. Funder and
+  api_customer can never mutate evidence.
+- `src/lib/p5-batch2/rating-engine.ts` — six-band pre-rating
+  (`strong`, `good`, `acceptable`, `weak`, `unusable`,
+  `provider_dependent`) plus a `human_review_required` flag. Mandatory
+  evidence ALWAYS requires human review — automation is never final.
+- `src/lib/p5-batch2/provider-wording-guard.ts` — blocks the seven
+  forbidden phrases from `P5B2_FORBIDDEN_PROVIDER_WORDING` when
+  `provider_live=false`, with negation-aware matching so safe phrases such
+  as "Manual review recorded — not provider verified" remain safe. Ships
+  safe wording catalogues for `admin`, `organisation_user`,
+  `counterparty`, `funder` and `api_user`.
+- `src/lib/p5-batch2/readiness-bridge.ts` — pure delta function over
+  `kyb` / `kyc` / `governance` / `compliance` / `bankability` /
+  `execution` / `finality` / `funder_pack` / `api`. Missing-mandatory →
+  blocker; rejected-mandatory → blocker; expired-mandatory → blocker;
+  uploaded-unreviewed-mandatory → review (compliance) + blocker
+  (finality); weak → review; unusable → blocker; waived → progress only
+  within waiver scope; provider-dependent → warning, never live-verified;
+  bank details changed → blocks payment + finality.
+- `src/lib/p5-batch2/expiry-rules.ts` — policies for proof of address,
+  bank confirmation (profile vs payment/finality), tax/VAT, ID/passport,
+  company registration, director/officer list, UBO declaration,
+  authority-to-act, sector licence and transaction documents. Reminder
+  schedule 30 / 14 / 7 days.
+- `src/lib/p5-batch2/masking.ts` — role-based masking helpers for bank
+  account, ID/passport, tax/VAT, physical address, UBO details, personal
+  contact, reviewer note, fraud flag, provider raw response. Usable by
+  both edge functions and UI render code.
+
+### Tests added
+
+- `src/tests/p5-batch2-checklist-engine.test.ts` (5)
+- `src/tests/p5-batch2-status-transitions.test.ts` (12)
+- `src/tests/p5-batch2-rating-engine.test.ts` (7)
+- `src/tests/p5-batch2-provider-wording.test.ts` (5)
+- `src/tests/p5-batch2-readiness-bridge.test.ts` (6)
+- `src/tests/p5-batch2-expiry-rules.test.ts` (7)
+- `src/tests/p5-batch2-masking.test.ts` (9)
+
+```
+npx vitest run src/tests/p5-batch2-*.test.ts
+```
+
+Result: **58 / 58 pass** (51 new Stage 2 + 7 Stage 1 enum-drift).
+
+### Confirmations
+
+- **No DB writes.** No migrations applied in Stage 2.
+- **No UI** changes.
+- **No RPCs or edge functions.**
+- **No Batch 1 readiness wiring** yet — the readiness bridge is pure and
+  not invoked by any Batch 1 surface.
+- **No existing trade / POI / WaD / billing / payment / business-decision
+  rows mutated.**
+- Provider wording guard, readiness bridge and masking helpers are now
+  the reusable foundations for every later UI / API surface in Stages 3–6.
+
 ### Remaining stages (not yet started)
 
-- Stage 2 — pure-TS engines (checklist / status / rating / wording /
-  readiness bridge / expiry / masking)
 - Stage 3 — server RPCs + scoped edge function + SQL proof
 - Stage 4 — admin / operator surfaces
 - Stage 5 — subject / counterparty / funder / API-customer surfaces
-- Stage 6 — notifications, SLA cron, finality bridge, end-to-end acceptance
-  journey, cross-consistency guards, embarrassment audit
+- Stage 6 — notifications, SLA cron, finality bridge, cross-consistency
+  guards, embarrassment audit
