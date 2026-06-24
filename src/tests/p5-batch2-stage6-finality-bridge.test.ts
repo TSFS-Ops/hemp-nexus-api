@@ -65,7 +65,7 @@ describe("p5-batch2 stage 6 finality bridge", () => {
     // Synthesize a checklist with no missing mandatory: all keys waived.
     const allKeys = chk().all_requirements.map((r) => r.key);
     const deltas = bridgeP5B2Readiness({
-      checklist: chk({ waivers: allKeys, active_waiver_scopes: ["execution", "finality", "compliance"] }),
+      checklist: chk({ waivers: allKeys }),
       active_waiver_scopes: ["execution", "finality", "compliance"],
     });
     // With all waived within scope, should not be hard-blocked.
