@@ -1,6 +1,67 @@
 # Acceptance-Receipt Delivery Backlog
 
+## Batch B3.1 — Branch 3 recipient-correlated ESL suppression (applied + runtime confirmed)
+
+Migration: `supabase/migrations/20260624075820_e5ab32ea-1ba3-4762-b3b2-9d78c8dd777f.sql`
+Guard test: `src/tests/b3-1-branch3-recipient-correlated-suppression.test.ts`
+Final status: `ACCEPTANCE_RECEIPT_CUTOFF_RESIDUAL_AUTO_RESOLVE_COMPLETE`
+
+### Why
+The original B3 Branch 3 used a bare
+`NOT EXISTS (email_send_log WHERE template_name='acceptance-receipt' AND created_at BETWEEN ...)`
+suppression. On the 2026-04-23 backfill day there are 140 unrelated
+acceptance-receipt email logs in that window, none of which can be
+correlated to the 4 NULL-recipient/no-dispatch Bucket C artefacts.
+Branch 3 therefore failed to fire at the first post-B3 tick.
+
+### What B3.1 changes
+Replaces `public.reconcile_acceptance_notifications()` in place.
+B1, B2, B3 Branch 1, and B3 Branch 2 are carried forward verbatim.
+Branch 3's email-log suppression now requires recipient correlation:
+an `email_send_log` row only blocks Branch 3 if its `recipient_email`
+matches one of:
+
+- `acceptance_receipts.counterparty_email` (when non-null);
+- `acceptance_receipts.accepting_user_email` (when non-null);
+- any `notification_dispatches.recipient_address` for the receipt
+  (channel `email`, non-null address).
+
+Branch 3's base criteria still require NULL recipient on the receipt
+and no `notification_dispatches` rows — so for genuine Bucket C
+artefacts the suppression is vacuously false and the branch resolves.
+The predicate is written generally for defence in depth.
+
+### Runtime verification
+- `cron_heartbeats['reconcile-acceptance-notifications']`:
+  `last_run_at=2026-06-24 08:02:00 UTC`, `last_status=success`,
+  `last_error=NULL`.
+- Open "Acceptance receipt … not notified" risk items: **12 → 8**.
+- Resolved by reason:
+  - `acceptance_receipt_delivered` (B1): 25 (unchanged)
+  - `acceptance_receipt_pre_backfill_email_send_unverifiable_terminal` (B3 Branch 1): 8 (unchanged)
+  - `acceptance_receipt_pre_backfill_cutoff_boundary_no_recipient` (B3 Branch 3): **0 → 4** ✅
+- Audit rows since deploy: 4, all with the Branch 3 reason,
+  `source='reconcile_acceptance_notifications'`, `admin_user_id=NULL`,
+  `details.inclusive_backfill_cutoff='2026-04-23 09:46:24.999999+00'`.
+- Residual 8 open rows confirmed all post-cutoff internal/demo
+  recipients (`@izenzo.co.za` / `dovedavies14@gmail.com`). No
+  external paying counterparty affected.
+
+### Scope
+- No emails sent. No provider calls. No Mailgun / Resend.
+- No mutation of `notification_dispatches`, `acceptance_receipts`,
+  or `email_send_log`. No dispatch retries.
+- No changes to cron / RLS / grants / indexes / columns / payments /
+  refunds / token ledger / POI / WaD / registry / lifecycle / engagement.
+- C5b heartbeat wrapper unchanged.
+
+Manual resend for the residual 8 Bucket D items remains a
+CLIENT_DECISION and is not recommended.
+
+
 ## Batch B3 — Cutoff-inclusive residual auto-resolve (applied)
+
+
 
 Migration: `supabase/migrations/20260624075000_e03cef59-03aa-4265-8ee8-1b99f25f55f3.sql`
 Guard test: `src/tests/b3-acceptance-receipt-cutoff-residual.test.ts`
