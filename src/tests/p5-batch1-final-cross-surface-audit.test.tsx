@@ -444,7 +444,7 @@ describe("Audit 10 — evidence README references real files", () => {
       "utf8",
     );
     const refs = Array.from(
-      readme.matchAll(/src\/tests\/(p5-batch1[\w.-]+)/g),
+      readme.matchAll(/src\/tests\/(p5-batch1[\w.-]+\.test\.tsx?)/g),
       (m) => `src/tests/${m[1]}`,
     );
     expect(refs.length).toBeGreaterThan(0);
