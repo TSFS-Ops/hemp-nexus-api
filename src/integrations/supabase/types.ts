@@ -9522,6 +9522,75 @@ export type Database = {
           },
         ]
       }
+      p5_batch2_tasks: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          audience: string
+          audit_action: string
+          created_at: string
+          evidence_item_id: string | null
+          id: string
+          idempotency_key: string
+          internal_message: string | null
+          organization_id: string | null
+          record_id: string | null
+          safe_message: string
+          severity: string
+          source: string
+          trigger: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          audience: string
+          audit_action: string
+          created_at?: string
+          evidence_item_id?: string | null
+          id?: string
+          idempotency_key: string
+          internal_message?: string | null
+          organization_id?: string | null
+          record_id?: string | null
+          safe_message: string
+          severity: string
+          source?: string
+          trigger: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          audience?: string
+          audit_action?: string
+          created_at?: string
+          evidence_item_id?: string | null
+          id?: string
+          idempotency_key?: string
+          internal_message?: string | null
+          organization_id?: string | null
+          record_id?: string | null
+          safe_message?: string
+          severity?: string
+          source?: string
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch2_tasks_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_evidence_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch2_tasks_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch2_kyc_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       p5_governance_audit_events: {
         Row: {
           actor_type: Database["public"]["Enums"]["p5_actor_type"]

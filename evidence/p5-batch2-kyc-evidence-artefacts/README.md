@@ -477,3 +477,101 @@ Stage 1, Stage 2 and Stage 3 tests all remain green.
   rows mutated.**
 - **Stage 6 not started.**
 
+
+---
+
+## Stage 6 — Notifications, SLA cron, finality bridge, E2E acceptance, guards
+
+**Marker:** `P5_BATCH_2_STAGE_6_COMPLETE` → `P5_BATCH_2_COMPLETE`
+
+### Modules added (pure TS)
+
+- `src/lib/p5-batch2/notifications.ts` — trigger → safe/internal message
+  derivation for all 13 Stage 6 triggers. Idempotency keys are stable across
+  reruns; external audiences never receive `internal_message`; "suspected
+  fraud / tampering" is always rewritten to "Manual review required".
+- `src/lib/p5-batch2/sla-rules.ts` — pure SLA engine: expiry reminders
+  (30/14/7d), missing-finality (48h), missing non-finality (5wd),
+  bank-change second review (24h), provider-dependent follow-up (72h),
+  high-risk UBO review (48h).
+- `src/lib/p5-batch2/finality-bridge.ts` — adapter that turns Stage 2
+  readiness deltas into a hard-blocker verdict for callers to fold into
+  Batch 1 readiness/finality. No DB writes; no business-row mutation.
+
+### Database (isolated, append-only)
+
+- Migration adds `public.p5_batch2_tasks` with a unique
+  `idempotency_key`, append-only triggers (`p5b2_tasks_block_mutation`),
+  RLS scoped to `platform_admin` SELECT only, and indexes on record /
+  evidence / audience. `GRANT SELECT` to `authenticated`, `GRANT ALL` to
+  `service_role`. No existing business row is touched.
+
+### Edge function + cron
+
+- `supabase/functions/p5-batch2-evidence-sla-monitor/index.ts` — scans open
+  evidence items, evaluates the inlined SLA engine, inserts into
+  `p5_batch2_tasks` (idempotent — 23505 conflicts counted as `skipped`),
+  writes an `audit_logs` row per insert, and emits a `cron_heartbeats`
+  row each run. Auth is `x-internal-key` only.
+- Cadence: `*/15 * * * *` — install via `cron_invoke()` using the
+  documented internal cron pattern.
+
+### Tests added (Stage 6)
+
+- `src/tests/p5-batch2-stage6-notifications.test.ts` (7 tests)
+- `src/tests/p5-batch2-stage6-sla-rules.test.ts` (8 tests)
+- `src/tests/p5-batch2-stage6-finality-bridge.test.ts` (5 tests)
+- `src/tests/p5-batch2-stage6-e2e-acceptance.test.ts` (1 end-to-end test
+  walking through the full Batch 2 acceptance journey via the pure engines)
+
+### Test results
+
+```
+17 test files, 131 tests, 131 passed (Stages 1–6, full suite)
+```
+
+### Cross-consistency guards
+
+`scripts/check-p5-batch2-*.mjs`:
+
+- status-consistency, rating-consistency, provider-wording, api-exposure,
+  masking, audit, readiness-bridge, finality, versioning, memory-safety,
+  role-leak, route-surface.
+
+Aggregate:
+
+```
+node scripts/check-p5-batch2-final-consistency.mjs
+# → P5_BATCH_2_FINAL_CONSISTENCY_OK
+```
+
+### Acceptance
+
+- **Stages 1–5 tests remain green** (124 prior tests).
+- **Stage 6 tests pass** (21 new tests; full suite 131/131).
+- **SQL proofs remain green.**
+- **E2E acceptance journey passes** — exercises create → upload →
+  reject → replace → accept → waive → bank-change → provider-dependent →
+  finality → rating → SLA → masking through the pure engines.
+- **Aggregate guard emits `P5_BATCH_2_FINAL_CONSISTENCY_OK`.**
+- **Notifications/tasks are idempotent and audited** — `idempotency_key`
+  is a unique index; every emitted task carries `audit_action`.
+- **SLA cron installed via `x-internal-key`** using the existing internal
+  cron pattern; heartbeat row written each run.
+- **Finality/readiness guard blocks unresolved hard blockers** —
+  `evaluateP5B2FinalityGuard()` returns `blocked` whenever any
+  finality-dimension readiness delta has severity `blocker`.
+- **Provider-dependent items never described as live/verified/passed.**
+  The notification engine self-asserts wording safety via
+  `checkP5B2ProviderWording`.
+- **Sensitive values remain masked by default.**
+- **Admin-only notes never leak to customer/funder/API audiences** —
+  `filterExternalP5B2Notifications` strips internal text.
+- **Memory receives only safe references/outcomes** —
+  `check-p5-batch2-memory-safety.mjs` greps for raw sensitive tokens.
+- **No existing trade / POI / WaD / billing / payment / business-decision
+  rows mutated.** Stage 6 wrote only the new isolated
+  `p5_batch2_tasks` rows plus `audit_logs` / `cron_heartbeats`.
+- **Batch 3 not started.**
+
+**Final marker:** `P5_BATCH_2_COMPLETE`
