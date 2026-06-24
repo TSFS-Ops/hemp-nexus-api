@@ -148,6 +148,9 @@ const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notif
 // P-5 Batch 1 — Governance, Compliance & Readiness admin surface
 const P5GovernanceCasesDashboard = lazy(() => import("@/pages/admin/p5-governance/CasesDashboard"));
 const P5GovernanceCaseDetail = lazy(() => import("@/pages/admin/p5-governance/CaseDetail"));
+// P-5 Batch 1 Stage 5 — non-admin subject surfaces
+const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
+const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
 // Batch 16 — Company Portal Guided Journey
 const RegistryMyCompanies = lazy(() => import("@/pages/registry/MyCompanies"));
 const RegistryMyCompanyDetail = lazy(() => import("@/pages/registry/MyCompanyDetail"));
