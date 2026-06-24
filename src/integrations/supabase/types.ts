@@ -8826,6 +8826,392 @@ export type Database = {
           },
         ]
       }
+      p5_governance_audit_events: {
+        Row: {
+          actor_type: Database["public"]["Enums"]["p5_actor_type"]
+          actor_user_id: string | null
+          api_request_id: string | null
+          case_id: string
+          correlation_id: string | null
+          created_at: string
+          event_type: string
+          evidence_item_id: string | null
+          id: string
+          metadata: Json
+          new_status: Database["public"]["Enums"]["p5_status"] | null
+          note: string | null
+          previous_status: Database["public"]["Enums"]["p5_status"] | null
+          provider_reference: string | null
+          reason_code: Database["public"]["Enums"]["p5_reason_code"] | null
+        }
+        Insert: {
+          actor_type: Database["public"]["Enums"]["p5_actor_type"]
+          actor_user_id?: string | null
+          api_request_id?: string | null
+          case_id: string
+          correlation_id?: string | null
+          created_at?: string
+          event_type: string
+          evidence_item_id?: string | null
+          id?: string
+          metadata?: Json
+          new_status?: Database["public"]["Enums"]["p5_status"] | null
+          note?: string | null
+          previous_status?: Database["public"]["Enums"]["p5_status"] | null
+          provider_reference?: string | null
+          reason_code?: Database["public"]["Enums"]["p5_reason_code"] | null
+        }
+        Update: {
+          actor_type?: Database["public"]["Enums"]["p5_actor_type"]
+          actor_user_id?: string | null
+          api_request_id?: string | null
+          case_id?: string
+          correlation_id?: string | null
+          created_at?: string
+          event_type?: string
+          evidence_item_id?: string | null
+          id?: string
+          metadata?: Json
+          new_status?: Database["public"]["Enums"]["p5_status"] | null
+          note?: string | null
+          previous_status?: Database["public"]["Enums"]["p5_status"] | null
+          provider_reference?: string | null
+          reason_code?: Database["public"]["Enums"]["p5_reason_code"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_governance_audit_events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "p5_governance_readiness_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_governance_audit_events_evidence_item_id_fkey"
+            columns: ["evidence_item_id"]
+            isOneToOne: false
+            referencedRelation: "p5_governance_evidence_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_governance_evidence_items: {
+        Row: {
+          case_id: string
+          created_at: string
+          customer_safe_note: string | null
+          evidence_type: string
+          evidence_version: number
+          expiry_date: string | null
+          id: string
+          rejection_reason_code:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          required: boolean
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_note: string | null
+          status: Database["public"]["Enums"]["p5_status"]
+          updated_at: string
+          uploaded_file_id: string | null
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          customer_safe_note?: string | null
+          evidence_type: string
+          evidence_version?: number
+          expiry_date?: string | null
+          id?: string
+          rejection_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          required?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          status?: Database["public"]["Enums"]["p5_status"]
+          updated_at?: string
+          uploaded_file_id?: string | null
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          customer_safe_note?: string | null
+          evidence_type?: string
+          evidence_version?: number
+          expiry_date?: string | null
+          id?: string
+          rejection_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          required?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          status?: Database["public"]["Enums"]["p5_status"]
+          updated_at?: string
+          uploaded_file_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_governance_evidence_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "p5_governance_readiness_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_governance_readiness_cases: {
+        Row: {
+          archived_at: string | null
+          assigned_reviewer_id: string | null
+          audit_reference: string | null
+          blocker_count: number
+          compliance_status: Database["public"]["Enums"]["p5_status"]
+          counterparty_id: string | null
+          created_at: string
+          created_by: string | null
+          decision_reference: string | null
+          entity_id: string | null
+          escalated_at: string | null
+          escalation_owner_user_id: string | null
+          escalation_reason_code:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          evidence_pack_id: string | null
+          evidence_status: Database["public"]["Enums"]["p5_status"] | null
+          evidence_summary_id: string | null
+          governance_status: Database["public"]["Enums"]["p5_status"]
+          hash_chain_reference: string | null
+          hold_owner_user_id: string | null
+          hold_reason_code: Database["public"]["Enums"]["p5_reason_code"] | null
+          hold_review_date: string | null
+          hold_type: string | null
+          id: string
+          is_escalated: boolean
+          is_on_hold: boolean
+          last_updated_at: string
+          match_id: string | null
+          next_action: string | null
+          next_owner_type: string | null
+          organization_id: string | null
+          override_active: boolean
+          override_approved_by: string | null
+          override_expires_at: string | null
+          override_reason_code:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          override_scope: string | null
+          owner_user_id: string | null
+          programme_id: string | null
+          provider_dependency: boolean
+          provider_dependency_type: string | null
+          provider_last_checked_at: string | null
+          provider_status:
+            | Database["public"]["Enums"]["p5_provider_status"]
+            | null
+          readiness_status: Database["public"]["Enums"]["p5_status"]
+          reason_codes: Database["public"]["Enums"]["p5_reason_code"][]
+          sla_due_at: string | null
+          status_changed_at: string
+          trade_request_id: string | null
+          updated_at: string
+          updated_by: string | null
+          waiver_active: boolean
+          waiver_approved_by: string | null
+          waiver_expires_at: string | null
+          waiver_reason_code:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          waiver_scope: string | null
+          warning_count: number
+        }
+        Insert: {
+          archived_at?: string | null
+          assigned_reviewer_id?: string | null
+          audit_reference?: string | null
+          blocker_count?: number
+          compliance_status?: Database["public"]["Enums"]["p5_status"]
+          counterparty_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decision_reference?: string | null
+          entity_id?: string | null
+          escalated_at?: string | null
+          escalation_owner_user_id?: string | null
+          escalation_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          evidence_pack_id?: string | null
+          evidence_status?: Database["public"]["Enums"]["p5_status"] | null
+          evidence_summary_id?: string | null
+          governance_status?: Database["public"]["Enums"]["p5_status"]
+          hash_chain_reference?: string | null
+          hold_owner_user_id?: string | null
+          hold_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          hold_review_date?: string | null
+          hold_type?: string | null
+          id?: string
+          is_escalated?: boolean
+          is_on_hold?: boolean
+          last_updated_at?: string
+          match_id?: string | null
+          next_action?: string | null
+          next_owner_type?: string | null
+          organization_id?: string | null
+          override_active?: boolean
+          override_approved_by?: string | null
+          override_expires_at?: string | null
+          override_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          override_scope?: string | null
+          owner_user_id?: string | null
+          programme_id?: string | null
+          provider_dependency?: boolean
+          provider_dependency_type?: string | null
+          provider_last_checked_at?: string | null
+          provider_status?:
+            | Database["public"]["Enums"]["p5_provider_status"]
+            | null
+          readiness_status?: Database["public"]["Enums"]["p5_status"]
+          reason_codes?: Database["public"]["Enums"]["p5_reason_code"][]
+          sla_due_at?: string | null
+          status_changed_at?: string
+          trade_request_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          waiver_active?: boolean
+          waiver_approved_by?: string | null
+          waiver_expires_at?: string | null
+          waiver_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          waiver_scope?: string | null
+          warning_count?: number
+        }
+        Update: {
+          archived_at?: string | null
+          assigned_reviewer_id?: string | null
+          audit_reference?: string | null
+          blocker_count?: number
+          compliance_status?: Database["public"]["Enums"]["p5_status"]
+          counterparty_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decision_reference?: string | null
+          entity_id?: string | null
+          escalated_at?: string | null
+          escalation_owner_user_id?: string | null
+          escalation_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          evidence_pack_id?: string | null
+          evidence_status?: Database["public"]["Enums"]["p5_status"] | null
+          evidence_summary_id?: string | null
+          governance_status?: Database["public"]["Enums"]["p5_status"]
+          hash_chain_reference?: string | null
+          hold_owner_user_id?: string | null
+          hold_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          hold_review_date?: string | null
+          hold_type?: string | null
+          id?: string
+          is_escalated?: boolean
+          is_on_hold?: boolean
+          last_updated_at?: string
+          match_id?: string | null
+          next_action?: string | null
+          next_owner_type?: string | null
+          organization_id?: string | null
+          override_active?: boolean
+          override_approved_by?: string | null
+          override_expires_at?: string | null
+          override_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          override_scope?: string | null
+          owner_user_id?: string | null
+          programme_id?: string | null
+          provider_dependency?: boolean
+          provider_dependency_type?: string | null
+          provider_last_checked_at?: string | null
+          provider_status?:
+            | Database["public"]["Enums"]["p5_provider_status"]
+            | null
+          readiness_status?: Database["public"]["Enums"]["p5_status"]
+          reason_codes?: Database["public"]["Enums"]["p5_reason_code"][]
+          sla_due_at?: string | null
+          status_changed_at?: string
+          trade_request_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          waiver_active?: boolean
+          waiver_approved_by?: string | null
+          waiver_expires_at?: string | null
+          waiver_reason_code?:
+            | Database["public"]["Enums"]["p5_reason_code"]
+            | null
+          waiver_scope?: string | null
+          warning_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_governance_readiness_cases_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "counterparties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_governance_readiness_cases_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_governance_readiness_cases_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "p5_governance_readiness_cases_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_governance_readiness_cases_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_governance_readiness_cases_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_governance_readiness_cases_trade_request_id_fkey"
+            columns: ["trade_request_id"]
+            isOneToOne: false
+            referencedRelation: "trade_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_dispute_affected_burns: {
         Row: {
           billing_review_required: boolean
@@ -19785,6 +20171,10 @@ export type Database = {
         }
         Returns: number
       }
+      p5_has_any_role: {
+        Args: { _roles: string[]; _user_id: string }
+        Returns: boolean
+      }
       platform_admin_break_glass_progress:
         | {
             Args: {
@@ -20215,6 +20605,13 @@ export type Database = {
         | "director"
         | "commercial_owner"
         | "compliance_owner"
+        | "executive_approver"
+        | "governance_reviewer"
+        | "operator_case_manager"
+        | "developer_technical_admin"
+        | "customer_entity_owner"
+        | "funder_external_reviewer"
+        | "auditor_read_only"
       business_decision_category:
         | "country"
         | "data_source"
@@ -20280,6 +20677,85 @@ export type Database = {
         | "audit_logs"
         | "email_send_log"
         | "governance_records"
+      p5_actor_type: "user" | "system" | "api" | "provider"
+      p5_provider_status:
+        | "not_live"
+        | "credentials_pending"
+        | "pending"
+        | "timeout"
+        | "inconclusive"
+        | "failed"
+        | "passed"
+        | "not_applicable"
+      p5_reason_code:
+        | "missing_evidence"
+        | "incomplete_evidence"
+        | "illegible_evidence"
+        | "wrong_document"
+        | "expired_evidence"
+        | "evidence_expiring_soon"
+        | "does_not_match_entity"
+        | "does_not_match_director_ubo"
+        | "does_not_match_transaction_project"
+        | "missing_signature"
+        | "missing_authority_to_act"
+        | "missing_mandate"
+        | "missing_consent"
+        | "terms_nda_not_accepted"
+        | "manual_review_required"
+        | "approved_by_reviewer"
+        | "approved_by_admin"
+        | "rejected_by_reviewer"
+        | "compliance_hold_applied"
+        | "compliance_hold_released"
+        | "governance_hold_applied"
+        | "provider_not_live"
+        | "provider_credentials_pending"
+        | "provider_pending"
+        | "provider_timeout"
+        | "provider_inconclusive"
+        | "provider_failed"
+        | "provider_result_received"
+        | "provider_result_conflict"
+        | "risk_flag"
+        | "high_risk_escalation"
+        | "sanctions_pep_adverse_result_review"
+        | "identity_verification_issue"
+        | "company_verification_issue"
+        | "bank_detail_verification_issue"
+        | "payment_confirmation_issue"
+        | "amount_currency_mismatch"
+        | "duplicate_notification"
+        | "refund_finality_pending"
+        | "audit_trail_issue"
+        | "tamper_evidence_issue"
+        | "data_mismatch"
+        | "counterparty_changed"
+        | "project_scope_changed"
+        | "waiver_granted"
+        | "override_approved"
+        | "overdue_sla"
+        | "disputed_decision"
+        | "archived_superseded"
+      p5_rule_severity: "hard_blocker" | "warning"
+      p5_status:
+        | "not_started"
+        | "incomplete"
+        | "submitted"
+        | "under_review"
+        | "more_information_required"
+        | "internally_ready"
+        | "provider_dependent"
+        | "conditional_ready"
+        | "ready_to_proceed"
+        | "on_hold"
+        | "blocked"
+        | "escalated"
+        | "rejected"
+        | "waived"
+        | "override_approved"
+        | "reopened"
+        | "archived_superseded"
       registry_readiness_state:
         | "not_started"
         | "shell_ready"
@@ -20436,6 +20912,13 @@ export const Constants = {
         "director",
         "commercial_owner",
         "compliance_owner",
+        "executive_approver",
+        "governance_reviewer",
+        "operator_case_manager",
+        "developer_technical_admin",
+        "customer_entity_owner",
+        "funder_external_reviewer",
+        "auditor_read_only",
       ],
       business_decision_category: [
         "country",
@@ -20509,6 +20992,88 @@ export const Constants = {
         "audit_logs",
         "email_send_log",
         "governance_records",
+      ],
+      p5_actor_type: ["user", "system", "api", "provider"],
+      p5_provider_status: [
+        "not_live",
+        "credentials_pending",
+        "pending",
+        "timeout",
+        "inconclusive",
+        "failed",
+        "passed",
+        "not_applicable",
+      ],
+      p5_reason_code: [
+        "missing_evidence",
+        "incomplete_evidence",
+        "illegible_evidence",
+        "wrong_document",
+        "expired_evidence",
+        "evidence_expiring_soon",
+        "does_not_match_entity",
+        "does_not_match_director_ubo",
+        "does_not_match_transaction_project",
+        "missing_signature",
+        "missing_authority_to_act",
+        "missing_mandate",
+        "missing_consent",
+        "terms_nda_not_accepted",
+        "manual_review_required",
+        "approved_by_reviewer",
+        "approved_by_admin",
+        "rejected_by_reviewer",
+        "compliance_hold_applied",
+        "compliance_hold_released",
+        "governance_hold_applied",
+        "provider_not_live",
+        "provider_credentials_pending",
+        "provider_pending",
+        "provider_timeout",
+        "provider_inconclusive",
+        "provider_failed",
+        "provider_result_received",
+        "provider_result_conflict",
+        "risk_flag",
+        "high_risk_escalation",
+        "sanctions_pep_adverse_result_review",
+        "identity_verification_issue",
+        "company_verification_issue",
+        "bank_detail_verification_issue",
+        "payment_confirmation_issue",
+        "amount_currency_mismatch",
+        "duplicate_notification",
+        "refund_finality_pending",
+        "audit_trail_issue",
+        "tamper_evidence_issue",
+        "data_mismatch",
+        "counterparty_changed",
+        "project_scope_changed",
+        "waiver_granted",
+        "override_approved",
+        "overdue_sla",
+        "disputed_decision",
+        "archived_superseded",
+      ],
+      p5_rule_severity: ["hard_blocker", "warning"],
+      p5_status: [
+        "not_started",
+        "incomplete",
+        "submitted",
+        "under_review",
+        "more_information_required",
+        "internally_ready",
+        "provider_dependent",
+        "conditional_ready",
+        "ready_to_proceed",
+        "on_hold",
+        "blocked",
+        "escalated",
+        "rejected",
+        "waived",
+        "override_approved",
+        "reopened",
+        "archived_superseded",
       ],
       registry_readiness_state: [
         "not_started",
