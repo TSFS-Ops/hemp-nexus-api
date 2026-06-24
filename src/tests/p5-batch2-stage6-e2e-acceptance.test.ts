@@ -152,13 +152,14 @@ describe("p5-batch2 stage 6 acceptance journey", () => {
     expect(verdict.verdict === "clear" || verdict.verdict === "review").toBe(true);
 
     // ── 29..30. Rating engine flags items for human review.
-    const rating = rateP5B2EvidenceItem({
-      requirement_level: "mandatory",
+    const rating = rateP5B2Evidence({
+      is_mandatory: true,
       status: "accepted",
       provider_dependency: false,
       provider_live: false,
-      expiry_date: null,
-      now: NOW,
+      completeness: 1,
+      expired: false,
+      party_match: true,
     });
     expect(rating.human_review_required).toBe(true);
 
