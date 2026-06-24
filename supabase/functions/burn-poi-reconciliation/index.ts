@@ -232,17 +232,23 @@ Deno.serve(async (req) => {
 
   if (burnMatchIdSet.size > 0) {
     const matchIds = Array.from(burnMatchIdSet);
-    const { data: poiHits, error: poiHitErr } = await admin
-      .from("pois")
-      .select("match_id")
-      .in("match_id", matchIds);
+    // Canonical bridge: pois.id → poi_engagements.poi_id → poi_engagements.match_id.
+    // A match "has a POI" iff a poi_engagements row exists for it with a
+    // non-null poi_id. pois.match_id does not exist on the live schema.
+    const { data: engBridge, error: poiHitErr } = await admin
+      .from("poi_engagements")
+      .select("match_id, poi_id")
+      .in("match_id", matchIds)
+      .not("poi_id", "is", null);
 
     if (poiHitErr) {
-      console.error("[burn-poi-reconciliation] poi-by-match fetch failed:", poiHitErr);
+      console.error("[burn-poi-reconciliation] poi-by-match bridge fetch failed:", poiHitErr);
       throw new Error(`POI_LOOKUP_FAILED: ${poiHitErr.message}`);
     }
     const poiMatchIdSet = new Set(
-      (poiHits ?? []).map((p) => (p as { match_id: string }).match_id),
+      (engBridge ?? [])
+        .map((p) => (p as { match_id: string | null }).match_id)
+        .filter((v): v is string => !!v),
     );
 
     for (const row of burnRows ?? []) {
