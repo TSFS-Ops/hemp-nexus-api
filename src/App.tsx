@@ -145,6 +145,9 @@ const RegistryAuthorityStatus = lazy(() => import("@/pages/registry/AuthoritySta
 const AdminRegistryAuthorityReview = lazy(() => import("@/pages/admin/registry/AuthorityReview"));
 // Phase 1 — SMS / WhatsApp Notification Channel Readiness Shell
 const AdminNotificationChannelReadiness = lazy(() => import("@/pages/admin/notifications/ChannelReadiness"));
+// P-5 Batch 1 — Governance, Compliance & Readiness admin surface
+const P5GovernanceCasesDashboard = lazy(() => import("@/pages/admin/p5-governance/CasesDashboard"));
+const P5GovernanceCaseDetail = lazy(() => import("@/pages/admin/p5-governance/CaseDetail"));
 // Batch 16 — Company Portal Guided Journey
 const RegistryMyCompanies = lazy(() => import("@/pages/registry/MyCompanies"));
 const RegistryMyCompanyDetail = lazy(() => import("@/pages/registry/MyCompanyDetail"));
