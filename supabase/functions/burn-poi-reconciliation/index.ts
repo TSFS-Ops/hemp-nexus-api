@@ -66,8 +66,14 @@ const ENGAGEMENT_STATUSES_REQUIRING_POI = new Set<string>([
  * WaD/POI consistency note:
  *
  *   wads has poi_id, buyer_org_id, seller_org_id, canonical_payload_json, status.
- *   pois has match_id, org_id, state.
+ *   pois has id, org_id, state (no match_id column — POI↔match linkage lives
+ *     on the poi_engagements bridge).
+ *   poi_engagements has poi_id, match_id, org_id, engagement_status (canonical
+ *     bridge between pois and matches).
  *   matches has buyer_org_id, seller_org_id.
+ *
+ * Canonical POI↔match join path:
+ *   pois.id → poi_engagements.poi_id → poi_engagements.match_id → matches.id
  *
  * The schema does not currently materialise a terms-hash on pois that we can
  * compare against wads.canonical_payload_json deterministically — POI terms
@@ -76,7 +82,7 @@ const ENGAGEMENT_STATUSES_REQUIRING_POI = new Set<string>([
  * schema can prove:
  *   - sealed wad whose linked poi_id no longer exists
  *   - sealed wad linked to a poi in a non-terminal state (not COMPLETED/ELIGIBLE)
- *   - sealed wad whose buyer/seller_org_id disagree with the poi.match
+ *   - sealed wad whose buyer/seller_org_id disagree with the bridged match's
  *     buyer/seller_org_id
  * Terms-hash drift is intentionally not asserted; it would produce false
  * positives without a canonical hash column. Documented in tests.
@@ -226,17 +232,23 @@ Deno.serve(async (req) => {
 
   if (burnMatchIdSet.size > 0) {
     const matchIds = Array.from(burnMatchIdSet);
-    const { data: poiHits, error: poiHitErr } = await admin
-      .from("pois")
-      .select("match_id")
-      .in("match_id", matchIds);
+    // Canonical bridge: pois.id → poi_engagements.poi_id → poi_engagements.match_id.
+    // A match "has a POI" iff a poi_engagements row exists for it with a
+    // non-null poi_id. pois.match_id does not exist on the live schema.
+    const { data: engBridge, error: poiHitErr } = await admin
+      .from("poi_engagements")
+      .select("match_id, poi_id")
+      .in("match_id", matchIds)
+      .not("poi_id", "is", null);
 
     if (poiHitErr) {
-      console.error("[burn-poi-reconciliation] poi-by-match fetch failed:", poiHitErr);
+      console.error("[burn-poi-reconciliation] poi-by-match bridge fetch failed:", poiHitErr);
       throw new Error(`POI_LOOKUP_FAILED: ${poiHitErr.message}`);
     }
     const poiMatchIdSet = new Set(
-      (poiHits ?? []).map((p) => (p as { match_id: string }).match_id),
+      (engBridge ?? [])
+        .map((p) => (p as { match_id: string | null }).match_id)
+        .filter((v): v is string => !!v),
     );
 
     for (const row of burnRows ?? []) {
@@ -257,9 +269,14 @@ Deno.serve(async (req) => {
   // ── 2. POI_WITHOUT_BURN ────────────────────────────────────────────
   // Pull pois minted in window in any state where credits should have
   // been spent (founder-exemption is captured by audit_logs.action='exempt_burn').
+  //
+  // pois.match_id does not exist on the live schema — POI↔match linkage is
+  // resolved through the poi_engagements bridge in a second query, so a POI
+  // with no engagement row is treated as "fresh/unilateral, not expected to
+  // pair to a counterparty burn" and is skipped (avoids false positives).
   const { data: poiRows, error: poiErr } = await admin
     .from("pois")
-    .select("id, match_id, org_id, state, created_at")
+    .select("id, org_id, state, created_at")
     .in("state", ["PENDING_APPROVAL", "ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"])
     .gte("created_at", sinceIso)
     .order("created_at", { ascending: false })
@@ -271,18 +288,43 @@ Deno.serve(async (req) => {
   }
 
   const poisWithoutBurn: Array<Record<string, unknown>> = [];
-  const poiMatchIds = (poiRows ?? []).map((p) => (p as { match_id: string }).match_id).filter(Boolean);
+  const candidatePoiIds = (poiRows ?? [])
+    .map((p) => (p as { id: string }).id)
+    .filter(Boolean);
+
+  // Resolve poi_id → match_id[] through the canonical bridge.
+  const matchIdsByPoiId = new Map<string, string[]>();
+  const allBridgedMatchIds = new Set<string>();
+  if (candidatePoiIds.length > 0) {
+    const { data: bridgeRows, error: bridgeErr } = await admin
+      .from("poi_engagements")
+      .select("poi_id, match_id")
+      .in("poi_id", candidatePoiIds)
+      .not("match_id", "is", null);
+    if (bridgeErr) {
+      console.error("[burn-poi-reconciliation] poi→match bridge fetch failed:", bridgeErr);
+      throw new Error(`POI_BRIDGE_FETCH_FAILED: ${bridgeErr.message}`);
+    }
+    for (const b of (bridgeRows ?? []) as Array<{ poi_id: string | null; match_id: string | null }>) {
+      if (!b.poi_id || !b.match_id) continue;
+      const arr = matchIdsByPoiId.get(b.poi_id) ?? [];
+      arr.push(b.match_id);
+      matchIdsByPoiId.set(b.poi_id, arr);
+      allBridgedMatchIds.add(b.match_id);
+    }
+  }
 
   let burnHits = new Set<string>();
   let exemptHits = new Set<string>();
 
-  if (poiMatchIds.length > 0) {
+  if (allBridgedMatchIds.size > 0) {
+    const bridgedMatchIdArr = Array.from(allBridgedMatchIds);
     const [{ data: burnLookup }, { data: exemptLookup }] = await Promise.all([
       admin
         .from("token_ledger")
         .select("request_id")
         .eq("action_type", "declare_intent")
-        .in("request_id", poiMatchIds),
+        .in("request_id", bridgedMatchIdArr),
       admin
         .from("audit_logs")
         .select("metadata")
@@ -300,19 +342,27 @@ Deno.serve(async (req) => {
         .map((r) => (r as { metadata: Record<string, unknown> | null }).metadata?.match_id)
         .filter((v): v is string => typeof v === "string"),
     );
+  }
 
-    for (const p of poiRows ?? []) {
-      const row = p as { id: string; match_id: string; org_id: string; state: string; created_at: string };
-      if (!row.match_id) continue;
-      if (burnHits.has(row.match_id) || exemptHits.has(row.match_id)) continue;
-      poisWithoutBurn.push({
-        poi_id: row.id,
-        match_id: row.match_id,
-        org_id: row.org_id,
-        state: row.state,
-        created_at: row.created_at,
-      });
-    }
+  for (const p of poiRows ?? []) {
+    const row = p as { id: string; org_id: string; state: string; created_at: string };
+    const linkedMatchIds = matchIdsByPoiId.get(row.id) ?? [];
+    // No engagement row → unilateral / fresh POI with no expected
+    // counterparty burn pairing. Skip to avoid false positives.
+    if (linkedMatchIds.length === 0) continue;
+    // Covered if ANY linked match has a declare_intent burn or exempt_burn audit.
+    const covered = linkedMatchIds.some(
+      (mid) => burnHits.has(mid) || exemptHits.has(mid),
+    );
+    if (covered) continue;
+    poisWithoutBurn.push({
+      poi_id: row.id,
+      match_id: linkedMatchIds[0],
+      match_ids: linkedMatchIds,
+      org_id: row.org_id,
+      state: row.state,
+      created_at: row.created_at,
+    });
   }
 
   // ── 3. STATE_WITHOUT_LEDGER (POI-012) ──────────────────────────────
@@ -448,15 +498,22 @@ Deno.serve(async (req) => {
     );
     let poiCoverage = new Set<string>();
     if (activeMatchIds.length > 0) {
+      // Canonical bridge: a match "has a POI" iff a poi_engagements row exists
+      // for it with a non-null poi_id. pois has no match_id column.
       const { data: poiHits, error: poiCovErr } = await admin
-        .from("pois")
-        .select("match_id")
-        .in("match_id", activeMatchIds);
+        .from("poi_engagements")
+        .select("match_id, poi_id")
+        .in("match_id", activeMatchIds)
+        .not("poi_id", "is", null);
       if (poiCovErr) {
-        console.error("[burn-poi-reconciliation] poi coverage fetch failed:", poiCovErr);
+        console.error("[burn-poi-reconciliation] poi coverage bridge fetch failed:", poiCovErr);
         throw new Error(`POI_COVERAGE_FETCH_FAILED: ${poiCovErr.message}`);
       }
-      poiCoverage = new Set((poiHits ?? []).map((p) => (p as { match_id: string }).match_id));
+      poiCoverage = new Set(
+        (poiHits ?? [])
+          .map((p) => (p as { match_id: string | null }).match_id)
+          .filter((v): v is string => !!v),
+      );
     }
     for (const e of activeEngagements ?? []) {
       const row = e as { id: string; match_id: string | null; org_id: string | null; engagement_status: string; created_at: string };
@@ -494,20 +551,36 @@ Deno.serve(async (req) => {
       seller_org_id: string | null; status: string; sealed_at: string | null;
     }>;
     const poiIds = Array.from(new Set(wads.map((w) => w.poi_id).filter((v): v is string => !!v)));
-    const poiById = new Map<string, { id: string; match_id: string | null; state: string | null }>();
+    // pois has no match_id column on the live schema; resolve poi → matches
+    // through the canonical poi_engagements bridge (consider all engagements
+    // for a POI, not only the first).
+    const poiById = new Map<string, { id: string; state: string | null }>();
+    const matchIdsByPoiIdWad = new Map<string, string[]>();
     const matchById = new Map<string, { id: string; buyer_org_id: string | null; seller_org_id: string | null }>();
     if (poiIds.length > 0) {
       const { data: poiRows2, error: pErr } = await admin
         .from("pois")
-        .select("id, match_id, state")
+        .select("id, state")
         .in("id", poiIds);
       if (pErr) throw new Error(`WAD_POI_LOOKUP_FAILED: ${pErr.message}`);
-      for (const p of (poiRows2 ?? []) as Array<{ id: string; match_id: string | null; state: string | null }>) {
+      for (const p of (poiRows2 ?? []) as Array<{ id: string; state: string | null }>) {
         poiById.set(p.id, p);
       }
-      const matchIds2 = Array.from(new Set(
-        Array.from(poiById.values()).map((p) => p.match_id).filter((v): v is string => !!v),
-      ));
+      const { data: wadBridge, error: wbErr } = await admin
+        .from("poi_engagements")
+        .select("poi_id, match_id")
+        .in("poi_id", poiIds)
+        .not("match_id", "is", null);
+      if (wbErr) throw new Error(`WAD_POI_BRIDGE_FAILED: ${wbErr.message}`);
+      const bridgeMatchSet = new Set<string>();
+      for (const b of (wadBridge ?? []) as Array<{ poi_id: string | null; match_id: string | null }>) {
+        if (!b.poi_id || !b.match_id) continue;
+        const arr = matchIdsByPoiIdWad.get(b.poi_id) ?? [];
+        arr.push(b.match_id);
+        matchIdsByPoiIdWad.set(b.poi_id, arr);
+        bridgeMatchSet.add(b.match_id);
+      }
+      const matchIds2 = Array.from(bridgeMatchSet);
       if (matchIds2.length > 0) {
         const { data: matchRows, error: mErr } = await admin
           .from("matches")
@@ -535,21 +608,21 @@ Deno.serve(async (req) => {
           detail: `sealed wad linked to POI in non-terminal state ${poi.state}`,
         });
       }
-      if (poi.match_id) {
-        const match = matchById.get(poi.match_id);
-        if (match) {
-          if (w.buyer_org_id && match.buyer_org_id && w.buyer_org_id !== match.buyer_org_id) {
-            wadPoiDrift.push({
-              wad_id: w.id, poi_id: w.poi_id, match_id: poi.match_id, kind: "buyer_org_mismatch",
-              detail: `wad.buyer_org_id ${w.buyer_org_id} ≠ match.buyer_org_id ${match.buyer_org_id}`,
-            });
-          }
-          if (w.seller_org_id && match.seller_org_id && w.seller_org_id !== match.seller_org_id) {
-            wadPoiDrift.push({
-              wad_id: w.id, poi_id: w.poi_id, match_id: poi.match_id, kind: "seller_org_mismatch",
-              detail: `wad.seller_org_id ${w.seller_org_id} ≠ match.seller_org_id ${match.seller_org_id}`,
-            });
-          }
+      const linkedMatchIds = matchIdsByPoiIdWad.get(w.poi_id) ?? [];
+      for (const linkedMatchId of linkedMatchIds) {
+        const match = matchById.get(linkedMatchId);
+        if (!match) continue;
+        if (w.buyer_org_id && match.buyer_org_id && w.buyer_org_id !== match.buyer_org_id) {
+          wadPoiDrift.push({
+            wad_id: w.id, poi_id: w.poi_id, match_id: linkedMatchId, kind: "buyer_org_mismatch",
+            detail: `wad.buyer_org_id ${w.buyer_org_id} ≠ match.buyer_org_id ${match.buyer_org_id}`,
+          });
+        }
+        if (w.seller_org_id && match.seller_org_id && w.seller_org_id !== match.seller_org_id) {
+          wadPoiDrift.push({
+            wad_id: w.id, poi_id: w.poi_id, match_id: linkedMatchId, kind: "seller_org_mismatch",
+            detail: `wad.seller_org_id ${w.seller_org_id} ≠ match.seller_org_id ${match.seller_org_id}`,
+          });
         }
       }
     }
@@ -597,6 +670,7 @@ Deno.serve(async (req) => {
       const title = `Reconciliation: minted match without engagement [match ${String(drift.match_id).slice(0, 8)}]`;
       const description = `Match ${drift.match_id} (state=${drift.state ?? 'unknown'}) for org ${drift.org_id ?? 'unknown'} has been minted/burned but has no current poi_engagements row. Engagement self-heal did not run; manual investigation required. No silent repair performed.`;
       try { await buildAndInsert(title, description); } catch (e) { console.error("[burn-poi-reconciliation] risk insert failed:", e); }
+    }
     for (const drift of engagementWithoutPoi) {
       const title = `Reconciliation: engagement without POI [match ${String(drift.match_id).slice(0, 8)}]`;
       const description = `Engagement ${drift.engagement_id} (status=${drift.engagement_status}) for org ${drift.org_id ?? 'unknown'} on match ${drift.match_id} has no POI row. Soft-route pending statuses are excluded; this is real drift. No auto-repair.`;
