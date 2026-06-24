@@ -21138,9 +21138,118 @@ export type Database = {
         }
         Returns: undefined
       }
+      p5b2_actor_role: { Args: { _user_id: string }; Returns: string }
+      p5b2_create_kyc_record: {
+        Args: {
+          p_api_client_id?: string
+          p_correlation_id?: string
+          p_counterparty_id?: string
+          p_display_name: string
+          p_entity_type?: string
+          p_is_high_risk?: boolean
+          p_jurisdiction?: string
+          p_match_id?: string
+          p_notes_internal?: string
+          p_organization_id?: string
+          p_owner_user_id?: string
+          p_programme_id?: string
+          p_record_type: Database["public"]["Enums"]["p5b2_kyc_record_type"]
+          p_trade_request_id?: string
+        }
+        Returns: Json
+      }
+      p5b2_generate_checklist: { Args: { p_record_id: string }; Returns: Json }
       p5b2_has_any_role: {
         Args: { _roles: string[]; _user_id: string }
         Returns: boolean
+      }
+      p5b2_link_records: {
+        Args: {
+          p_child_record_id: string
+          p_correlation_id?: string
+          p_effective_from?: string
+          p_effective_to?: string
+          p_link_type: string
+          p_notes_internal?: string
+          p_ownership_pct?: number
+          p_parent_record_id: string
+        }
+        Returns: Json
+      }
+      p5b2_log_sensitive_access: {
+        Args: {
+          p_access_kind: string
+          p_evidence_item_id?: string
+          p_ip_address?: unknown
+          p_reason: string
+          p_record_id?: string
+          p_user_agent?: string
+          p_version_id?: string
+        }
+        Returns: Json
+      }
+      p5b2_review_evidence: {
+        Args: {
+          p_action: string
+          p_customer_safe_note?: string
+          p_evidence_item_id: string
+          p_new_rating?: Database["public"]["Enums"]["p5b2_evidence_rating"]
+          p_rejection_reason?: Database["public"]["Enums"]["p5b2_rejection_reason"]
+          p_reviewer_note_internal?: string
+        }
+        Returns: Json
+      }
+      p5b2_set_provider_state: {
+        Args: {
+          p_evidence_item_id: string
+          p_provider_live?: boolean
+          p_provider_name?: string
+          p_provider_result_reference?: string
+          p_provider_status: Database["public"]["Enums"]["p5b2_provider_status"]
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      p5b2_snapshot_finality_pack: {
+        Args: {
+          p_counterparty_id?: string
+          p_match_id?: string
+          p_organization_id?: string
+          p_pack_reason: string
+          p_record_id: string
+          p_trade_request_id?: string
+        }
+        Returns: Json
+      }
+      p5b2_suspend_release: {
+        Args: { p_action: string; p_evidence_item_id: string; p_reason: string }
+        Returns: Json
+      }
+      p5b2_upload_evidence_version: {
+        Args: {
+          p_audit_reference?: string
+          p_evidence_item_id: string
+          p_file_hash: string
+          p_file_size_bytes?: number
+          p_file_storage_path: string
+          p_mime_type?: string
+          p_replacement_note?: string
+          p_replacement_reason?: Database["public"]["Enums"]["p5b2_replacement_reason"]
+        }
+        Returns: Json
+      }
+      p5b2_waive_evidence: {
+        Args: {
+          p_evidence_item_id: string
+          p_expires_at?: string
+          p_reason: string
+          p_scope: string
+        }
+        Returns: Json
+      }
+      p5b2_withdraw_evidence: {
+        Args: { p_evidence_item_id: string; p_reason: string }
+        Returns: Json
       }
       platform_admin_break_glass_progress:
         | {
