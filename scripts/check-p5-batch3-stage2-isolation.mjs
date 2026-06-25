@@ -87,14 +87,7 @@ for (const f of files) {
   }
 }
 
-// Rule E: App.tsx must not register funder-facing Batch 3 routes yet (Stage 5+).
-const appTsx = join(ROOT, "src/App.tsx");
-if (existsSync(appTsx)) {
-  const text = readFileSync(appTsx, "utf8");
-  if (/\/funder\/p5-batch3/.test(text)) {
-    V.push("Stage 2 leak: src/App.tsx references funder Batch 3 routes (Stage 5+)");
-  }
-}
+// Rule E: funder routes are permitted as of Stage 5 — guard removed.
 
 if (V.length > 0) {
   console.error("❌ P5_BATCH_3_STAGE_2_ISOLATION_FAILED");
