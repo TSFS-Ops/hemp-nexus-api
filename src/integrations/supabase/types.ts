@@ -3426,8 +3426,10 @@ export type Database = {
         Row: {
           expected_interval_seconds: number
           job_name: string
+          last_correlation_id: string | null
           last_error: string | null
           last_http_status: number | null
+          last_metadata: Json | null
           last_request_id: number | null
           last_run_at: string | null
           last_status: string
@@ -3436,8 +3438,10 @@ export type Database = {
         Insert: {
           expected_interval_seconds?: number
           job_name: string
+          last_correlation_id?: string | null
           last_error?: string | null
           last_http_status?: number | null
+          last_metadata?: Json | null
           last_request_id?: number | null
           last_run_at?: string | null
           last_status?: string
@@ -3446,8 +3450,10 @@ export type Database = {
         Update: {
           expected_interval_seconds?: number
           job_name?: string
+          last_correlation_id?: string | null
           last_error?: string | null
           last_http_status?: number | null
+          last_metadata?: Json | null
           last_request_id?: number | null
           last_run_at?: string | null
           last_status?: string
