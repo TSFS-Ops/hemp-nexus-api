@@ -22706,8 +22706,167 @@ export type Database = {
         }
         Returns: string
       }
+      p5b4_close_case_v1: {
+        Args: { p_case_id: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b4_complete_milestone_v1: {
+        Args: {
+          p_case_id: string
+          p_milestone_key: Database["public"]["Enums"]["p5_batch4_milestone_key"]
+        }
+        Returns: undefined
+      }
+      p5b4_confirm_scope_v1: {
+        Args: { p_case_id: string; p_scope_note: string }
+        Returns: undefined
+      }
       p5b4_current_funder_org: { Args: never; Returns: string }
+      p5b4_generate_checklist_v1: {
+        Args: { p_case_id: string }
+        Returns: undefined
+      }
       p5b4_is_platform_admin: { Args: never; Returns: boolean }
+      p5b4_open_blocker_v1: {
+        Args: {
+          p_blocker_key: Database["public"]["Enums"]["p5_batch4_blocker_key"]
+          p_blocker_name: string
+          p_blocker_type: Database["public"]["Enums"]["p5_batch4_blocker_type"]
+          p_case_id: string
+          p_external_safe_label: string
+          p_internal_detail: string
+        }
+        Returns: string
+      }
+      p5b4_open_case_v1: {
+        Args: {
+          p_case_reference: string
+          p_linked_company_id?: string
+          p_linked_project_id?: string
+          p_linked_transaction_id?: string
+          p_owner_user_id: string
+          p_process_type: Database["public"]["Enums"]["p5_batch4_process_type"]
+        }
+        Returns: string
+      }
+      p5b4_override_blocker_v1: {
+        Args: { p_blocker_id: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b4_record_audit_event_v1: {
+        Args: {
+          p_case_id: string
+          p_event_type: string
+          p_external_safe: string
+          p_internal: string
+        }
+        Returns: string
+      }
+      p5b4_record_compliance_decision_v1: {
+        Args: { p_case_id: string; p_decision: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b4_record_final_approval_v1: {
+        Args: { p_case_id: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b4_record_finality_v1: {
+        Args: {
+          p_approval_reference?: string
+          p_case_id: string
+          p_evidence_pack_reference?: string
+          p_final_outcome: Database["public"]["Enums"]["p5_batch4_finality_outcome"]
+          p_finality_summary: string
+          p_memory_summary?: Json
+          p_reason: string
+        }
+        Returns: string
+      }
+      p5b4_record_funder_decision_v1: {
+        Args: {
+          p_note: string
+          p_release_id: string
+          p_status: Database["public"]["Enums"]["p5_batch4_funder_release_status"]
+        }
+        Returns: undefined
+      }
+      p5b4_record_governance_decision_v1: {
+        Args: { p_case_id: string; p_decision: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b4_release_funder_pack_v1: {
+        Args: {
+          p_access_expires_at: string
+          p_case_id: string
+          p_download_allowed: boolean
+          p_funder_org_id: string
+          p_nda_required: boolean
+          p_pack_reference: string
+          p_release_scope: Json
+        }
+        Returns: string
+      }
+      p5b4_reopen_case_v1: {
+        Args: { p_case_id: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b4_request_evidence_v1: {
+        Args: {
+          p_case_id: string
+          p_evidence_label: string
+          p_evidence_type: string
+          p_requirement_type: Database["public"]["Enums"]["p5_batch4_mandatory_type"]
+        }
+        Returns: string
+      }
+      p5b4_require_admin: { Args: never; Returns: undefined }
+      p5b4_require_reason: { Args: { p_reason: string }; Returns: undefined }
+      p5b4_resolve_blocker_v1: {
+        Args: { p_blocker_id: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b4_review_evidence_v1: {
+        Args: {
+          p_decision: Database["public"]["Enums"]["p5_batch4_evidence_status"]
+          p_evidence_id: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
+      p5b4_revoke_funder_access_v1: {
+        Args: { p_reason: string; p_release_id: string }
+        Returns: undefined
+      }
+      p5b4_submit_evidence_v1: {
+        Args: {
+          p_evidence_id: string
+          p_file_hash: string
+          p_file_reference: string
+        }
+        Returns: undefined
+      }
+      p5b4_waive_evidence_v1: {
+        Args: { p_evidence_id: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b4_write_audit: {
+        Args: {
+          p_actor_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          p_after: Json
+          p_before: Json
+          p_case_id: string
+          p_event_type: string
+          p_external_safe: string
+          p_internal: string
+          p_linked_blocker?: string
+          p_linked_evidence?: string
+          p_linked_finality?: string
+          p_linked_milestone?: string
+          p_linked_release?: string
+          p_reason: string
+        }
+        Returns: string
+      }
       platform_admin_break_glass_progress:
         | {
             Args: {

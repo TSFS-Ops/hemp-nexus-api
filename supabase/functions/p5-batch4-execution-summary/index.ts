@@ -1,0 +1,164 @@
+/**
+ * P-5 Batch 4 Stage 3 — Internal-safe execution summary edge function.
+ *
+ * Internal only (NOT a public funder API). Returns audience-specific
+ * projections:
+ *
+ *   audience = "admin"  → platform_admin only. Full safe-summary view.
+ *   audience = "funder" → caller must belong to the funder org that has
+ *                         a non-revoked, non-expired release for the
+ *                         case. Returns the funder-safe field set only.
+ *
+ * Admin-safe and funder-safe field sets are disjoint where the brief
+ * forbids overlap: funders must never see other funders' status,
+ * internal notes, raw evidence references, or audit internals.
+ */
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const ADMIN_SAFE_FIELDS = [
+  "id",
+  "case_reference",
+  "process_type",
+  "execution_status",
+  "readiness_status",
+  "current_milestone",
+  "blocker_count",
+  "warning_count",
+  "due_at",
+  "funder_status",
+  "finality_status",
+  "provider_dependency_status",
+  "owner_user_id",
+  "created_at",
+  "updated_at",
+] as const;
+
+const FUNDER_SAFE_FIELDS = [
+  "case_reference",
+  "process_type",
+  "execution_status",
+  "current_milestone",
+  "readiness_status",
+  "blocker_count",
+  "warning_count",
+  "funder_status",
+  "due_at",
+] as const;
+
+const FORBIDDEN_FUNDER_FIELDS = new Set([
+  "owner_user_id",
+  "created_by",
+  "linked_company_id",
+  "linked_transaction_id",
+  "linked_project_id",
+  "linked_workstream_id",
+  "responsible_party_id",
+  "memory_summary_id",
+  "reopen_reason",
+  "provider_dependency_status",
+  "finality_status",
+]);
+
+function projectRow<T extends Record<string, unknown>>(
+  row: T,
+  allowed: readonly string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of allowed) if (k in row) out[k] = row[k];
+  for (const k of Object.keys(out)) {
+    if (FORBIDDEN_FUNDER_FIELDS.has(k) && !allowed.includes(k as never)) {
+      delete out[k];
+    }
+  }
+  return out;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const url = new URL(req.url);
+    const audience = url.searchParams.get("audience");
+    const caseId = url.searchParams.get("case_id");
+    if (audience !== "admin" && audience !== "funder") {
+      return json({ error: "invalid_audience" }, 400);
+    }
+
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ error: "authentication_required" }, 401);
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+
+    const { data: userRes, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userRes?.user) return json({ error: "invalid_session" }, 401);
+    const userId = userRes.user.id;
+
+    if (audience === "admin") {
+      const { data: isAdmin } = await supabase.rpc("p5b4_is_platform_admin");
+      if (!isAdmin) return json({ error: "platform_admin_required" }, 403);
+      const q = supabase
+        .from("p5_batch4_execution_cases")
+        .select(ADMIN_SAFE_FIELDS.join(","));
+      const { data, error } = caseId ? await q.eq("id", caseId) : await q.limit(100);
+      if (error) return json({ error: error.message }, 500);
+      const rows = (data ?? []).map((r) =>
+        projectRow(r as Record<string, unknown>, ADMIN_SAFE_FIELDS),
+      );
+      return json({ audience, cases: rows });
+    }
+
+    // audience === "funder"
+    const { data: funderOrg } = await supabase.rpc("p5b4_current_funder_org");
+    if (!funderOrg) return json({ error: "no_active_funder_membership" }, 403);
+
+    const { data: releases, error: relErr } = await supabase
+      .from("p5_batch4_funder_releases")
+      .select("case_id,access_expires_at,status")
+      .eq("funder_org_id", funderOrg)
+      .neq("status", "revoked")
+      .gt("access_expires_at", new Date().toISOString());
+    if (relErr) return json({ error: relErr.message }, 500);
+    const allowedCaseIds = new Set((releases ?? []).map((r) => r.case_id));
+    if (caseId && !allowedCaseIds.has(caseId)) {
+      return json({ error: "case_not_released_to_funder" }, 403);
+    }
+
+    const ids = caseId ? [caseId] : [...allowedCaseIds];
+    if (ids.length === 0) return json({ audience, cases: [] });
+
+    const { data, error } = await supabase
+      .from("p5_batch4_execution_cases")
+      .select(FUNDER_SAFE_FIELDS.join(","))
+      .in("id", ids);
+    if (error) return json({ error: error.message }, 500);
+    const rows = (data ?? []).map((r) =>
+      projectRow(r as Record<string, unknown>, FUNDER_SAFE_FIELDS),
+    );
+    // Audit funder view
+    if (caseId) {
+      await supabase.rpc("p5b4_record_audit_event_v1", {
+        p_case_id: caseId,
+        p_event_type: "funder_pack_viewed",
+        p_external_safe: "Funder viewed released pack.",
+        p_internal: `funder_user=${userId}`,
+      });
+    }
+    return json({ audience, cases: rows });
+  } catch (e) {
+    return json({ error: (e as Error).message }, 500);
+  }
+});
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

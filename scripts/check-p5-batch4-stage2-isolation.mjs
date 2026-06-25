@@ -40,6 +40,10 @@ function walk(dir, out = []) {
 const libDir = join(ROOT, "src/lib/p5-batch4");
 const libFiles = walk(libDir).filter((p) => p.endsWith(".ts"));
 
+// Stage 3 introduces `rpc.ts`, which legitimately imports the supabase
+// client and is exempt from the "pure-TS only" Stage 2 ban.
+const STAGE3_EXEMPT_BASENAMES = new Set(["rpc.ts"]);
+
 const FORBIDDEN_IMPORT_TOKENS = [
   /from\s+['"]@\/integrations\/supabase\/client['"]/,
   /from\s+['"]@\/lib\/p5-batch2\/rpc['"]/,
@@ -51,6 +55,7 @@ const FORBIDDEN_IMPORT_TOKENS = [
   /atomic_generate_poi/,
   /atomic_token_burn/,
 ];
+
 
 // Names of SSOT exports the guard knows about. Any *local* re-declaration
 // of these vocab arrays inside a Stage 2 module is a leak.
@@ -77,10 +82,23 @@ const SSOT_EXEMPT_BASENAMES = new Set(["constants.ts"]);
 for (const f of libFiles) {
   const text = readFileSync(f, "utf8");
   const rel = relative(ROOT, f);
+  const base = rel.split(/[\\/]/).pop() ?? "";
 
-  for (const tok of FORBIDDEN_IMPORT_TOKENS) {
-    if (tok.test(text)) {
-      VIOLATIONS.push(`Stage 2 leak: ${rel} contains forbidden token ${tok}`);
+  // rpc.ts is a Stage 3 wrapper; it is allowed to import the supabase
+  // client. All other forbidden tokens (Batch 2/3 RPCs, React, router)
+  // still apply.
+  if (!STAGE3_EXEMPT_BASENAMES.has(base)) {
+    for (const tok of FORBIDDEN_IMPORT_TOKENS) {
+      if (tok.test(text)) {
+        VIOLATIONS.push(`Stage 2 leak: ${rel} contains forbidden token ${tok}`);
+      }
+    }
+  } else {
+    // Even exempt files must not reach into Batch 2/3 RPCs or trade paths.
+    for (const tok of FORBIDDEN_IMPORT_TOKENS.slice(1)) {
+      if (tok.test(text)) {
+        VIOLATIONS.push(`Stage 2 leak: ${rel} contains forbidden token ${tok}`);
+      }
     }
   }
 
@@ -93,12 +111,7 @@ for (const f of libFiles) {
     }
   }
 
-  // Every non-SSOT module under src/lib/p5-batch4/ must import from constants
-  // (directly or via a sibling that does). We assert at least one re-export
-  // path: either it imports constants, or it imports something that does.
-  // For Stage 2 simplicity, every module must reference constants somewhere.
-  const base = rel.split(/[\\/]/).pop() ?? "";
-  if (!SSOT_EXEMPT_BASENAMES.has(base)) {
+  if (!SSOT_EXEMPT_BASENAMES.has(base) && !STAGE3_EXEMPT_BASENAMES.has(base)) {
     const referencesConstants =
       REQUIRED_IMPORT_RE.test(text) ||
       /from\s+['"]\.\/(constants|roles|blockers|milestones|permissions|wording-guard|finality)['"]/.test(text);
@@ -108,11 +121,17 @@ for (const f of libFiles) {
   }
 }
 
+
 // --- Stage 2 must not add edge functions, UI surfaces, or App.tsx routes ---
+// --- Stage 2 invariants that still hold cumulatively after Stage 3 ---
+// Stage 3 may add exactly one edge function (p5-batch4-execution-summary)
+// and one additional migration (RPC wrappers). Anything beyond that is a
+// surface leak Stage 2 must catch.
+const ALLOWED_BATCH4_EDGE_FNS = new Set(["p5-batch4-execution-summary"]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
-    if (/^p5-?batch-?4/i.test(name)) {
+    if (/^p5-?batch-?4/i.test(name) && !ALLOWED_BATCH4_EDGE_FNS.has(name)) {
       VIOLATIONS.push(`Stage 2 guard: unexpected Batch 4 edge function: ${name}`);
     }
   }
@@ -136,7 +155,6 @@ if (existsSync(appTsx)) {
   }
 }
 
-// --- Stage 2 must not add Batch 4 migrations ---
 const migDir = join(ROOT, "supabase/migrations");
 let batch4Migrations = 0;
 if (existsSync(migDir)) {
@@ -148,8 +166,9 @@ if (existsSync(migDir)) {
     }
   }
 }
-if (batch4Migrations !== 1) {
-  VIOLATIONS.push(`Stage 2 leak: expected exactly 1 Batch 4 migration, got ${batch4Migrations}`);
+// Stage 1 + Stage 3 = at most 2 Batch 4 migrations until Stage 7.
+if (batch4Migrations < 1 || batch4Migrations > 2) {
+  VIOLATIONS.push(`Stage 2 leak: expected 1-2 Batch 4 migrations, got ${batch4Migrations}`);
 }
 
 if (VIOLATIONS.length > 0) {
@@ -161,3 +180,4 @@ if (VIOLATIONS.length > 0) {
 console.log("✅ P5_BATCH_4_STAGE_2_ISOLATION_OK");
 console.log(`   Batch 4 lib files scanned: ${libFiles.length}`);
 console.log(`   Batch 4 migrations: ${batch4Migrations}`);
+
