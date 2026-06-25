@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Menu, X, ChevronDown } from "lucide-react";
-import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/constants";
 
@@ -48,10 +47,7 @@ const MEGA_NAV: MegaCategory[] = [
 ];
 
 export function PublicHeader() {
-  const { getAuthUrl, getDashboardUrl, isPreview } = useCrossDomainUrls();
-  const authUrl = getAuthUrl();
-  const dashboardUrl = getDashboardUrl();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, isPlatformAdmin, rolesLoaded } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const closeTimer = useRef<number | null>(null);
@@ -69,22 +65,22 @@ export function PublicHeader() {
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
   }, []);
 
-  const AuthLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-    if (isPreview) {
-      return <Link to="/auth" className={className}>{children}</Link>;
-    }
-    return <a href={authUrl} className={className}>{children}</a>;
-  };
+  // Wait until the auth session + role lookup have resolved before we
+  // render auth-state-dependent CTAs. Otherwise an already-signed-in
+  // admin arriving on www.izenzo.co.za briefly sees the "Log In /
+  // Create Account" buttons (flash of unauthenticated state) and may
+  // assume the public domain has dropped their session.
+  const authReady = !isLoading && (!isAuthenticated || rolesLoaded);
 
-  // Dashboard always lives on the live console (api.trade.izenzo.co.za).
-  // In preview we keep relative SPA navigation; in production we hop domains
-  // so visitors on www.izenzo.co.za land on the correct authenticated host.
-  const DashboardLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-    if (isPreview) {
-      return <Link to="/dashboard" className={className}>{children}</Link>;
-    }
-    return <a href={dashboardUrl} className={className}>{children}</a>;
-  };
+  // Per client direction (2026-06-25): keep Dashboard CTAs same-origin.
+  // The public domain (www) and the legacy console domain (api.trade)
+  // are separate browser origins with separate localStorage, so a
+  // cross-domain Dashboard link forces a re-auth on the other origin
+  // even when the user is signed in here. The app is now served on both
+  // hosts, so a same-origin Link preserves the active session.
+  const dashboardHref = isPlatformAdmin ? "/hq/users" : ROUTES.DASHBOARD;
+  const dashboardLabel = isPlatformAdmin ? "Go to HQ" : "Dashboard";
+  const authHref = ROUTES.AUTH;
 
   return (
     <>
@@ -154,35 +150,43 @@ export function PublicHeader() {
         </div>
 
         {/* Desktop CTAs */}
-        <div className="hidden lg:flex items-center gap-2">
-          {isAuthenticated ? (
-            <DashboardLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all">
-              Dashboard
+        <div className="hidden lg:flex items-center gap-2" data-auth-ready={authReady ? "true" : "false"}>
+          {!authReady ? (
+            // Reserve space to avoid layout shift while auth resolves.
+            <div aria-hidden className="h-9 w-[180px]" />
+          ) : isAuthenticated ? (
+            <Link
+              to={dashboardHref}
+              className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all"
+            >
+              {dashboardLabel}
               <ArrowRight className="h-3.5 w-3.5" />
-            </DashboardLink>
+            </Link>
           ) : (
             <>
-              <AuthLink className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <Link to={authHref} className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 Log In
-              </AuthLink>
-              <AuthLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md text-white bg-emerald-950 shadow-sm hover:shadow-md hover:bg-emerald-900 transition-all">
+              </Link>
+              <Link to={authHref} className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md text-white bg-emerald-950 shadow-sm hover:shadow-md hover:bg-emerald-900 transition-all">
                 Create Account
                 <ArrowRight className="h-3.5 w-3.5" />
-              </AuthLink>
+              </Link>
             </>
           )}
         </div>
 
         {/* Mobile actions */}
         <div className="lg:hidden flex items-center gap-1.5">
-          {isAuthenticated ? (
-            <DashboardLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950">
-              Dashboard
-            </DashboardLink>
+          {!authReady ? (
+            <div aria-hidden className="h-10 w-[110px]" />
+          ) : isAuthenticated ? (
+            <Link to={dashboardHref} className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950">
+              {dashboardLabel}
+            </Link>
           ) : (
-            <AuthLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-semibold rounded-md text-white bg-emerald-950">
+            <Link to={authHref} className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-semibold rounded-md text-white bg-emerald-950">
               Log In
-            </AuthLink>
+            </Link>
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -220,12 +224,24 @@ export function PublicHeader() {
                 </div>
               </div>
             ))}
-            {!isAuthenticated && (
+            {authReady && !isAuthenticated && (
               <div className="pt-3 border-t border-border">
-                <AuthLink className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-emerald-950">
+                <Link to={authHref} className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-emerald-950">
                   Create Account
                   <ArrowRight className="h-3.5 w-3.5" />
-                </AuthLink>
+                </Link>
+              </div>
+            )}
+            {authReady && isAuthenticated && (
+              <div className="pt-3 border-t border-border">
+                <Link
+                  to={dashboardHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-emerald-950"
+                >
+                  {dashboardLabel}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             )}
           </div>
