@@ -14,10 +14,8 @@ const V = [];
 
 // Rule A: no Stage 4/5/6 files allowed yet (rpc.ts is permitted as of Stage 3).
 const FORBIDDEN_PATHS = [
-  "src/pages/admin/p5-batch3",
   "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
-  "src/hooks/useP5Batch3Permissions.ts",
   "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
