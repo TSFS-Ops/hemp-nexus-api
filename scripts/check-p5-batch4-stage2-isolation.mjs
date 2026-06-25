@@ -40,6 +40,10 @@ function walk(dir, out = []) {
 const libDir = join(ROOT, "src/lib/p5-batch4");
 const libFiles = walk(libDir).filter((p) => p.endsWith(".ts"));
 
+// Stage 3 introduces `rpc.ts`, which legitimately imports the supabase
+// client and is exempt from the "pure-TS only" Stage 2 ban.
+const STAGE3_EXEMPT_BASENAMES = new Set(["rpc.ts"]);
+
 const FORBIDDEN_IMPORT_TOKENS = [
   /from\s+['"]@\/integrations\/supabase\/client['"]/,
   /from\s+['"]@\/lib\/p5-batch2\/rpc['"]/,
@@ -51,6 +55,7 @@ const FORBIDDEN_IMPORT_TOKENS = [
   /atomic_generate_poi/,
   /atomic_token_burn/,
 ];
+
 
 // Names of SSOT exports the guard knows about. Any *local* re-declaration
 // of these vocab arrays inside a Stage 2 module is a leak.
