@@ -1,8 +1,61 @@
 # P-5 Batch 5 — Finality, Memory and Outcome History
 
-**Status:** `P5_BATCH5_PHASE_2_DEPLOYED` (correction / dispute / supersession layer)
+**Status:** `P5_BATCH5_PHASE_3_DEPLOYED` (governed Memory writer + exclusion rules)
 
-## Phase 2 scope (this batch)
+## Phase 3 scope (this batch)
+
+Pure governed Memory write logic + exclusion enforcement. **No UI, no API projection, no cron jobs, no scheduled sweeps.**
+
+### New DB functions (migration `*_phase_3_*.sql`)
+
+- `public.p5b5_write_memory_from_finality(finality_record_id uuid, actor_id uuid, reason text) RETURNS uuid`
+  - `SECURITY DEFINER`. `REVOKE ALL ... FROM PUBLIC`; `GRANT EXECUTE ... TO service_role` only.
+  - **Idempotent** on `finality_record_id` — re-running returns the existing memory id and emits `p5b5.memory_write_skipped_idempotent`. No duplicate reusable memory.
+  - **Exclusions enforced:**
+    - finality not `final` → `p5b5.memory_write_excluded` (reason `not_final`), returns NULL.
+    - outcome `TEST_OR_INVALID` → `p5b5.memory_write_excluded` (reason `test_or_invalid`), returns NULL.
+    - `p5b5_dispute_status = 'under_dispute'` → row written with `memory_status='paused'`, `reliance_level='do_not_rely'`, audit event `p5b5.memory_paused`.
+  - **Provider-dependency safety:** `FAILED_PROVIDER_DEPENDENCY` is tagged `is_provider_process_event=true`, `is_counterparty_fault=false`, `reliance_level='provider_process_history_only'`. Never written as counterparty misconduct.
+  - **Forbidden-field stripping:** every snapshot copied into `safe_facts` is fed through `p5b5_strip_forbidden_fields` first. Raw bank details, account numbers, IBAN/SWIFT/routing, credentials, API keys, tokens, webhook secrets, private/internal/support notes, draft AI suggestions, PII not required, raw provider payloads, scraped claims, media rumours, duplicated notifications, test payments and sandbox payloads are removed recursively.
+  - Emits a row to `p5_batch4_audit_events` on **every** code path (write / paused / excluded / idempotent).
+- `public.p5b5_strip_forbidden_fields(jsonb) RETURNS jsonb` — `IMMUTABLE`, recursive object/array walk. Mirrored at `src/lib/p5-batch5/memory-writer.ts` for tests and edge-function use.
+- `public.p5b5_detect_repeated_pattern(case_id uuid, outcome_type text) RETURNS boolean` — returns true only when EITHER ≥2 finality-backed (`final`, current-effective) events of the same outcome class exist for the case, OR ≥1 compliance-approved material event (`finality_corrections` or `finality_supersessions`) exists. One ordinary event is never enough.
+
+### New TS module
+
+- `src/lib/p5-batch5/memory-writer.ts`
+  - `P5B5_MEMORY_EXCLUDED_OUTCOMES` — outcomes that may never produce reusable memory.
+  - `P5B5_MEMORY_PERMITTED_SOURCES` — the nine approved source classes.
+  - `P5B5_MEMORY_FORBIDDEN_SOURCES` — the exclusion list from the client brief (drafts, allegations, raw bank details, credentials, sandbox, etc.).
+  - `P5B5_FORBIDDEN_FIELDS` — mirrors the DB stripper key set.
+  - `P5B5_REPEATED_PATTERN_RULE` — `{ min_finality_backed_events: 2, min_compliance_approved_material_events: 1 }`.
+  - `p5b5StripForbiddenFields(input)` — pure client-side mirror of the DB stripper (defensive use only).
+  - `callP5B5WriteMemoryFromFinality(client, args)` — typed RPC caller for service-role edge contexts. Browser clients are blocked by the `REVOKE ALL FROM PUBLIC` on the RPC.
+
+### Tests
+
+- `src/tests/p5-batch5-phase-3-memory-writer.test.ts` — 21 tests covering:
+  - forbidden-field stripping for raw bank details, credentials, tokens, API keys, provider payloads, private/internal notes, draft AI, PII; recursion into nested objects and arrays; null/scalar safety.
+  - exclusion / permitted source vocabularies.
+  - repeated-pattern threshold constants.
+  - DB writer source guarantees: idempotency clause, non-final exclusion, `TEST_OR_INVALID` exclusion, `under_dispute` pause path, audit-event emission on every path, provider-dependency safety tags, snapshot stripping, `SECURITY DEFINER` with `REVOKE ALL FROM PUBLIC` and `service_role`-only `GRANT EXECUTE`, pattern detector thresholds.
+  - migration adds no cron, no `pg_cron`, no `CREATE EXTENSION`.
+- Phase 1 + 2 vocab drift guards still pass: `node scripts/check-p5-batch5-vocab-drift.mjs` → OK, `node scripts/check-basic-memory-vocab-drift.mjs` → OK.
+
+### Verification
+
+- Migration applied successfully against `ugrfyhwlonlmlcmcpcdm`.
+- No business rows mutated.
+- No cron jobs or scheduled sweeps added or modified. C6.2 still `CRON_INVOKE_CORRELATION_HARDENING_PHASE_1_DEPLOYED_PENDING_TICK`.
+- No UI surfaces, no API-safe projection — those are Phase 4 / Phase 5.
+
+### Final status
+
+`P5_BATCH5_PHASE_3_DEPLOYED`
+
+---
+
+## Phase 2 scope (previously deployed)
 
 Controlled change layer on top of the Phase 1 locked finality table. **Append-only, no cron jobs, no UI, no Memory writer logic beyond the dispute pause/restore behaviour.**
 
