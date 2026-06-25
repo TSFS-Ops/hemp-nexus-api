@@ -48,11 +48,11 @@ if (existsSync(fnDir)) {
 
 
 // --- Rule 2: no NON-admin Batch 4 UI surfaces exist yet ---
-// Stage 4 legitimately introduces src/pages/admin/p5-batch4. Funder/desk/
-// registry surfaces remain forbidden until later stages.
+// Stage 4 introduces src/pages/admin/p5-batch4. Stage 5 introduces
+// src/pages/desk/p5-batch4 (organisation/counterparty user surface).
+// Funder/registry surfaces remain forbidden until later stages.
 const FORBIDDEN_UI_DIRS = [
   "src/pages/funder/p5-batch4",
-  "src/pages/desk/p5-batch4",
   "src/pages/registry/p5-batch4",
 ];
 for (const rel of FORBIDDEN_UI_DIRS) {
