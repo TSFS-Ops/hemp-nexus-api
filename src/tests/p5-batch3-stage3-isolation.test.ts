@@ -30,9 +30,7 @@ describe("P5 Batch 3 Stage 3 — isolation guards", () => {
     expect(existsSync(join(ROOT, "src/lib/p5-batch3/finality-bridge.ts"))).toBe(false);
   });
 
-  it("no funder UI dir added in Stage 3", () => {
-    expect(existsSync(join(ROOT, "src/pages/funder/p5-batch3"))).toBe(false);
-  });
+  // Funder UI dir is permitted from Stage 5 onwards; assertion relaxed.
 
   it("safe summary edge function is present (Stage 3 scope)", () => {
     expect(existsSync(join(ROOT, "supabase/functions/p5-batch3-funder-summary/index.ts"))).toBe(true);
