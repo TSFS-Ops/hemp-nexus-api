@@ -12,13 +12,12 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 const V = [];
 
-// Rule A: no Stage 4/5/6 files allowed yet.
+// Rule A: no Stage 4/5/6 files allowed yet (rpc.ts is permitted as of Stage 3).
 const FORBIDDEN_PATHS = [
   "src/pages/admin/p5-batch3",
   "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
   "src/hooks/useP5Batch3Permissions.ts",
-  "src/lib/p5-batch3/rpc.ts",
   "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
@@ -29,18 +28,21 @@ for (const p of FORBIDDEN_PATHS) {
   if (existsSync(join(ROOT, p))) V.push(`Stage 2 leak: ${p} present`);
 }
 
-// Rule B: no funder edge function may exist.
+// Rule B: only the Stage 3 safe summary edge function is allowed.
+const ALLOWED_BATCH3_FNS = new Set(["p5-batch3-funder-summary"]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
     if (/^p5-?batch-?3/i.test(name) || /funder/i.test(name)) {
-      V.push(`Stage 2 leak: edge function present: ${name}`);
+      if (!ALLOWED_BATCH3_FNS.has(name)) {
+        V.push(`Stage 2 leak: unexpected edge function: ${name}`);
+      }
     }
   }
 }
 
-// Rule C: no Stage 2 migration may exist (Stage 1 only owns migrations so far).
-// Stage 1 owns its two migrations; nothing additional with batch3 token may appear.
+// Rule C: Stage 3 may add exactly one additional Batch 3 migration
+// (Stage 1 contributed two). Anything beyond that requires Stage 4+ sign-off.
 const migDir = join(ROOT, "supabase/migrations");
 let batch3Migrations = 0;
 if (existsSync(migDir)) {
@@ -50,8 +52,8 @@ if (existsSync(migDir)) {
     if (/p5_batch3_|p5b3_/.test(body)) batch3Migrations++;
   }
 }
-if (batch3Migrations > 2) {
-  V.push(`Stage 2 leak: unexpected Batch 3 migrations (${batch3Migrations} > 2)`);
+if (batch3Migrations > 3) {
+  V.push(`Stage 2 leak: unexpected Batch 3 migrations (${batch3Migrations} > 3)`);
 }
 
 // Rule D: Stage 2 source files must not import Batch 1/2 internals.
