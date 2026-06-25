@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Menu, X, ChevronDown } from "lucide-react";
-import { useCrossDomainUrls } from "@/components/HostnameRouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/constants";
 
