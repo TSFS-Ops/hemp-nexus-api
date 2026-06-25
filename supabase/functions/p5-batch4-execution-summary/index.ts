@@ -46,6 +46,38 @@ const FUNDER_SAFE_FIELDS = [
   "due_at",
 ] as const;
 
+// Stage 5 — Organisation / counterparty user audience. Strictly the
+// safe task-focused projection. NO admin-only, internal, funder-release
+// or audit fields. NO raw evidence references / hashes (those live on
+// the evidence row itself and are never returned here).
+const ORG_USER_SAFE_FIELDS = [
+  "id",
+  "case_reference",
+  "process_type",
+  "execution_status",
+  "readiness_status",
+  "current_milestone",
+  "blocker_count",
+  "warning_count",
+  "due_at",
+] as const;
+
+const FORBIDDEN_ORG_USER_FIELDS = new Set([
+  "owner_user_id",
+  "created_by",
+  "linked_company_id",
+  "linked_transaction_id",
+  "linked_project_id",
+  "linked_workstream_id",
+  "responsible_party_id",
+  "memory_summary_id",
+  "reopen_reason",
+  "provider_dependency_status",
+  "finality_status",
+  "funder_status",
+  "internal_note",
+]);
+
 const FORBIDDEN_FUNDER_FIELDS = new Set([
   "owner_user_id",
   "created_by",
