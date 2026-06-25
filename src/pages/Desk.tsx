@@ -44,6 +44,8 @@ import RegistryMyCompanyEvidence from "@/pages/registry/MyCompanyEvidence";
 import RegistryMyCompanyCorrections from "@/pages/registry/MyCompanyCorrections";
 import RegistryMyCompanyDisputes from "@/pages/registry/MyCompanyDisputes";
 import RegistryMyCompanyRevocations from "@/pages/registry/MyCompanyRevocations";
+import P5Batch4DeskIndex from "@/pages/desk/p5-batch4/Index";
+import P5Batch4DeskCaseDetail from "@/pages/desk/p5-batch4/CaseDetail";
 
 
 /** Full-bleed shell: sidebar only, no padded max-w container. */
