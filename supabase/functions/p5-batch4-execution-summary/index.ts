@@ -111,8 +111,49 @@ Deno.serve(async (req) => {
       const rows = (data ?? []).map((r) =>
         projectRow(r as Record<string, unknown>, ADMIN_SAFE_FIELDS),
       );
-      return json({ audience, cases: rows });
+
+      // Admin-only optional includes for a specific case.
+      const include = (url.searchParams.get("include") ?? "")
+        .split(",").map((s) => s.trim()).filter(Boolean);
+      const extras: Record<string, unknown> = {};
+      if (caseId && include.length > 0) {
+        if (include.includes("milestones")) {
+          const { data: ms } = await supabase
+            .from("p5_batch4_execution_milestones")
+            .select("id,milestone_key,milestone_name,milestone_status,mandatory_type,overdue_label,due_at,completed_at,sort_order")
+            .eq("case_id", caseId)
+            .order("sort_order", { ascending: true });
+          extras.milestones = ms ?? [];
+        }
+        if (include.includes("blockers")) {
+          const { data: bs } = await supabase
+            .from("p5_batch4_blockers")
+            .select("id,blocker_key,blocker_name,blocker_type,blocker_status,external_safe_label,internal_detail,opened_at,resolved_at")
+            .eq("case_id", caseId)
+            .order("opened_at", { ascending: false });
+          extras.blockers = bs ?? [];
+        }
+        if (include.includes("evidence")) {
+          const { data: ev } = await supabase
+            .from("p5_batch4_evidence_items")
+            .select("id,evidence_type,evidence_label,evidence_status,requirement_type,requested_at,reviewed_at,reject_reason")
+            .eq("case_id", caseId)
+            .order("requested_at", { ascending: true });
+          extras.evidence = ev ?? [];
+        }
+        if (include.includes("audit")) {
+          const { data: au } = await supabase
+            .from("p5_batch4_audit_events")
+            .select("id,event_type,external_safe,internal,actor_user_id,created_at")
+            .eq("case_id", caseId)
+            .order("created_at", { ascending: false })
+            .limit(200);
+          extras.audit = au ?? [];
+        }
+      }
+      return json({ audience, cases: rows, ...extras });
     }
+
 
     // audience === "funder"
     const { data: funderOrg } = await supabase.rpc("p5b4_current_funder_org");

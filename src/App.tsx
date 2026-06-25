@@ -172,6 +172,11 @@ const P5Batch3FunderReadiness = lazy(() => import("@/pages/funder/p5-batch3/Read
 const P5Batch3FunderRequests = lazy(() => import("@/pages/funder/p5-batch3/Requests"));
 const P5Batch3FunderOutcomes = lazy(() => import("@/pages/funder/p5-batch3/Outcomes"));
 const P5Batch3FunderDownloads = lazy(() => import("@/pages/funder/p5-batch3/Downloads"));
+// P-5 Batch 4 — Stage 4: admin-only execution engine surfaces (platform_admin)
+const P5Batch4AdminIndex = lazy(() => import("@/pages/admin/p5-batch4/Index"));
+const P5Batch4Cases = lazy(() => import("@/pages/admin/p5-batch4/Cases"));
+const P5Batch4CaseDetail = lazy(() => import("@/pages/admin/p5-batch4/CaseDetail"));
+const P5Batch4Audit = lazy(() => import("@/pages/admin/p5-batch4/Audit"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -375,6 +380,14 @@ function App() {
                   <Route path="/funder/p5-batch3/requests/:grantId" element={<RequireAuth><P5Batch3FunderRequests /></RequireAuth>} />
                   <Route path="/funder/p5-batch3/outcomes/:grantId" element={<RequireAuth><P5Batch3FunderOutcomes /></RequireAuth>} />
                   <Route path="/funder/p5-batch3/downloads/:grantId" element={<RequireAuth><P5Batch3FunderDownloads /></RequireAuth>} />
+
+                  {/* P-5 Batch 4 — Stage 4: admin-only execution engine surfaces */}
+                  <Route path="/admin/p5-batch4" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4AdminIndex /></RequireAuth>} />
+                  <Route path="/admin/p5-batch4/cases" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4Cases /></RequireAuth>} />
+                  <Route path="/admin/p5-batch4/cases/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4CaseDetail /></RequireAuth>} />
+                  <Route path="/admin/p5-batch4/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4Audit /></RequireAuth>} />
+
+
 
 
                   {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}
