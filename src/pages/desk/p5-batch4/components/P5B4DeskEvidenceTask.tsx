@@ -30,8 +30,7 @@ async function sha256OfFile(file: File): Promise<string> {
 }
 
 function actionLabel(status: string): string | null {
-  if (status === "requested" || status === "more_information_requested")
-    return "Upload";
+  if (status === "requested" || status === "missing") return "Upload";
   if (status === "rejected" || status === "expired") return "Replace";
   return null;
 }
