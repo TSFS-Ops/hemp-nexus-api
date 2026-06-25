@@ -53,9 +53,8 @@ if (batch4Fns.length !== 1 || batch4Fns[0] !== "p5-batch4-execution-summary") {
   VIOLATIONS.push(`Stage 3 guard: expected single edge function p5-batch4-execution-summary, got ${JSON.stringify(batch4Fns)}`);
 }
 
-// ---- 3. No Batch 4 UI / routes ----
+// ---- 3. No NON-admin Batch 4 UI / routes (admin/p5-batch4 added in Stage 4) ----
 const FORBIDDEN_UI = [
-  "src/pages/admin/p5-batch4",
   "src/pages/funder/p5-batch4",
   "src/pages/desk/p5-batch4",
   "src/pages/registry/p5-batch4",
@@ -67,9 +66,13 @@ for (const rel of FORBIDDEN_UI) {
   }
 }
 const appTsx = join(ROOT, "src/App.tsx");
-if (existsSync(appTsx) && /p5-batch4/i.test(readFileSync(appTsx, "utf8"))) {
-  VIOLATIONS.push("Stage 3 guard: src/App.tsx references p5-batch4 (no routes allowed yet)");
+if (existsSync(appTsx)) {
+  const t = readFileSync(appTsx, "utf8");
+  for (const bad of [/\/funder\/p5-batch4/, /\/desk\/p5-batch4/, /\/registry\/p5-batch4/]) {
+    if (bad.test(t)) VIOLATIONS.push(`Stage 3 guard: src/App.tsx registers forbidden Batch 4 route ${bad}`);
+  }
 }
+
 
 // ---- 4. rpc.ts wrappers exist for every declared RPC ----
 const rpcPath = join(ROOT, "src/lib/p5-batch4/rpc.ts");
