@@ -54,11 +54,9 @@ function matchesRouteList(pathname: string, routes: string[]): boolean {
  * Users must explicitly click CTAs to navigate between domains.
  */
 export function HostnameRouter({ children }: HostnameRouterProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
+  useLocation(); // keep subscription so host-routed views re-render on nav
   const hostType = getHostType();
-  const pathname = location.pathname;
-  const { user, isLoading: authLoading } = useAuth();
+
 
   // Preview mode: allow everything (for development/testing)
   if (hostType === 'preview') {
