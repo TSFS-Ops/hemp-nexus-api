@@ -104,15 +104,8 @@ for (const f of scanRoots) {
   }
 }
 
-// App.tsx must not register Batch 3 routes yet (Stage 4+).
-// App.tsx may register Stage 4 admin routes only; funder routes remain forbidden.
-const appTsx = join(ROOT, "src/App.tsx");
-if (existsSync(appTsx)) {
-  const text = readFileSync(appTsx, "utf8");
-  if (/\/funder\/p5-batch3/.test(text)) {
-    V.push("Stage 3 leak: src/App.tsx references funder Batch 3 routes (Stage 5+)");
-  }
-}
+// App.tsx may register Stage 4 admin and Stage 5 funder routes; only Stage 6
+// surfaces remain forbidden (handled via FORBIDDEN_PATHS above).
 
 // supabase/config.toml must not declare cron / scheduled blocks for Batch 3.
 const cfg = join(ROOT, "supabase/config.toml");
