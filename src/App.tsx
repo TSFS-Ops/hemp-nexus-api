@@ -158,6 +158,13 @@ const P5Batch2CounterpartyChecklist = lazy(() => import("@/pages/registry/p5-bat
 const P5Batch2SubjectEvidence = lazy(() => import("@/pages/registry/p5-batch2/subject/SubjectEvidence"));
 const P5Batch2FunderEvidencePack = lazy(() => import("@/pages/funder/p5-batch2/FunderEvidencePack"));
 const P5Batch2ApiCustomerSummary = lazy(() => import("@/pages/registry/p5-batch2/api-customer/ApiCustomerSummary"));
+// P-5 Batch 3 — Stage 4: admin-only funder workflow surfaces (platform_admin)
+const P5Batch3AdminIndex = lazy(() => import("@/pages/admin/p5-batch3/Index"));
+const P5Batch3Organisations = lazy(() => import("@/pages/admin/p5-batch3/Organisations"));
+const P5Batch3OrganisationDetail = lazy(() => import("@/pages/admin/p5-batch3/OrganisationDetail"));
+const P5Batch3Release = lazy(() => import("@/pages/admin/p5-batch3/Release"));
+const P5Batch3Requests = lazy(() => import("@/pages/admin/p5-batch3/Requests"));
+const P5Batch3Audit = lazy(() => import("@/pages/admin/p5-batch3/Audit"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
