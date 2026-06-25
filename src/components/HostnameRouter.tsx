@@ -1,10 +1,7 @@
-import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { getHostType, getConsoleUrl, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
-import { DomainMismatch } from "@/components/DomainMismatch";
+import { useLocation } from "react-router-dom";
+import { getHostType, getConsoleUrl } from "@/lib/hostname";
 import { HOSTNAMES } from "@/lib/constants";
-import { useAuth } from "@/contexts/AuthContext";
-import Landing from "@/pages/Landing";
+
 
 /**
  * Hard-redirect (full page navigation) the current browser to the live
@@ -57,20 +54,9 @@ function matchesRouteList(pathname: string, routes: string[]): boolean {
  * Users must explicitly click CTAs to navigate between domains.
  */
 export function HostnameRouter({ children }: HostnameRouterProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
+  useLocation(); // keep subscription so host-routed views re-render on nav
   const hostType = getHostType();
-  const pathname = location.pathname;
-  const { user, isLoading: authLoading } = useAuth();
 
-  // Console domain only: if a signed-in user lands on "/", send them to the
-  // dashboard. Unauthenticated visitors at "/" see the public Landing page
-  // (the former izenzo.co.za home), handled below - no redirect.
-  useEffect(() => {
-    if (hostType === 'console' && pathname === '/' && !authLoading && user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [pathname, hostType, navigate, user, authLoading]);
 
   // Preview mode: allow everything (for development/testing)
   if (hostType === 'preview') {
@@ -84,30 +70,14 @@ export function HostnameRouter({ children }: HostnameRouterProps) {
     return redirectToConsole();
   }
 
-  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za) - per client direction
-  // (2026-05-08), the under-construction holding page is retired so that
-  // search-engine indexing of the apex domain is not damaged. All traffic
-  // is hard-redirected to the live console.
-  if (hostType === 'public') {
-    return redirectToConsole();
-  }
-
-  // CONSOLE DOMAIN
-  if (hostType === 'console') {
-    // Root: show the public Landing page to guests; signed-in users are
-    // redirected to /dashboard by the effect above.
-    if (pathname === '/' && !authLoading && !user) {
-      return <Landing />;
-    }
-
-    // Check if this is a public-only route (excluding root which we handle above)
-    const isPublicRoute = matchesRouteList(pathname, PUBLIC_ONLY_ROUTES) && pathname !== '/';
-
-    if (isPublicRoute) {
-      // Show soft-gate with CTA - NO automatic redirect
-      return <DomainMismatch type="public-content-on-console" attemptedPath={pathname} />;
-    }
-  }
+  // PUBLIC DOMAIN (izenzo.co.za / www.izenzo.co.za) and CONSOLE DOMAIN
+  // (api.trade.izenzo.co.za) both serve the full app. Per client direction
+  // (David Davies, 2026-06-25): the public landing/home page MUST be the
+  // default surface on www.izenzo.co.za. Do NOT hard-redirect to the console,
+  // and do NOT auto-shunt signed-in users from "/" into /desk - the homepage
+  // itself exposes a "Trading Desk" CTA for authenticated visitors who
+  // intentionally want to go there. Honour deep-link returnTo via Auth.tsx,
+  // not via blanket host-level redirects.
 
   // Route is allowed on this domain - render normally
   return <>{children}</>;
