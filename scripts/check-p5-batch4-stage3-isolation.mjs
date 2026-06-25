@@ -49,8 +49,16 @@ const fnDir = join(ROOT, "supabase/functions");
 const batch4Fns = existsSync(fnDir)
   ? readdirSync(fnDir).filter((n) => /^p5-?batch-?4/i.test(n))
   : [];
-if (batch4Fns.length !== 1 || batch4Fns[0] !== "p5-batch4-execution-summary") {
-  VIOLATIONS.push(`Stage 3 guard: expected single edge function p5-batch4-execution-summary, got ${JSON.stringify(batch4Fns)}`);
+{
+  const allowed = new Set(["p5-batch4-execution-summary", "p5-batch4-sla-monitor"]);
+  for (const n of batch4Fns) {
+    if (!allowed.has(n)) {
+      VIOLATIONS.push(`Stage 3 guard: unexpected Batch 4 edge function ${n}`);
+    }
+  }
+  if (!batch4Fns.includes("p5-batch4-execution-summary")) {
+    VIOLATIONS.push("Stage 3 guard: required edge function p5-batch4-execution-summary missing");
+  }
 }
 
 // ---- 3. No Batch 4 UI / routes that haven't shipped yet (admin in Stage 4;

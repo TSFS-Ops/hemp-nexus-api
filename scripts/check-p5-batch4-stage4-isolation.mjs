@@ -48,7 +48,7 @@ for (const rel of [
 
 // --- 2. Single Batch 4 edge function ---
 const fnDir = join(ROOT, "supabase/functions");
-const allowedFns = new Set(["p5-batch4-execution-summary"]);
+const allowedFns = new Set(["p5-batch4-execution-summary", "p5-batch4-sla-monitor"]);
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
     if (/p5-?batch-?4/i.test(name) && !allowedFns.has(name)) {
