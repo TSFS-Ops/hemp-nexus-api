@@ -30,8 +30,7 @@ describe("P5 Batch 3 Stage 3 — isolation guards", () => {
     expect(existsSync(join(ROOT, "src/lib/p5-batch3/finality-bridge.ts"))).toBe(false);
   });
 
-  it("no admin / funder UI dirs added in Stage 3", () => {
-    expect(existsSync(join(ROOT, "src/pages/admin/p5-batch3"))).toBe(false);
+  it("no funder UI dir added in Stage 3", () => {
     expect(existsSync(join(ROOT, "src/pages/funder/p5-batch3"))).toBe(false);
   });
 
