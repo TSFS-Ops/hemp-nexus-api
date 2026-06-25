@@ -80,9 +80,11 @@ export interface P5B3FunderSummaryDenied {
     | "transaction_reference_required";
 }
 
-export type P5B3FunderSummaryResult =
-  | { ok: true; data: P5B3FunderSummaryResponse }
-  | { ok: false; denial: P5B3FunderSummaryDenied };
+export interface P5B3FunderSummaryResult {
+  ok: boolean;
+  data?: P5B3FunderSummaryResponse;
+  denial?: P5B3FunderSummaryDenied;
+}
 
 /**
  * Defensive client-side allow-list pass. The server already filters, but
