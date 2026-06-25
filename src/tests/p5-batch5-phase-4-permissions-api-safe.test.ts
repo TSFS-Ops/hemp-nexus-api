@@ -225,7 +225,7 @@ describe("p5-batch5 phase 4 — API-safe projection allowlist", () => {
       scoring_formula: "secret",
       unverified_allegation: "x",
     } as never, { api_scopes: ["finality.read", "evidence_rating.read", "audit.read", "provider_dependency.read"] });
-    if (out.blocked) throw new Error("expected projection");
+    const p = asProjection(out);
     expect(Object.keys(out).sort()).toEqual([
       "blocked",
       ...P5B5_API_SAFE_FIELDS,
@@ -236,42 +236,42 @@ describe("p5-batch5 phase 4 — API-safe projection allowlist", () => {
     const out = projectFinalityToApiSafe(BASE_INPUT, {
       api_scopes: ["finality.read"],
     });
-    if (out.blocked) throw new Error("expected projection");
-    expect(out.evidence_rating).toBeNull();
+    const p = asProjection(out);
+    expect(p.evidence_rating).toBeNull();
   });
 
   it("hash + finality_record_reference are hidden without audit.read scope", () => {
     const out = projectFinalityToApiSafe(BASE_INPUT, {
       api_scopes: ["finality.read"],
     });
-    if (out.blocked) throw new Error("expected projection");
-    expect(out.hash_reference).toBeNull();
-    expect(out.finality_record_reference).toBeNull();
+    const p = asProjection(out);
+    expect(p.hash_reference).toBeNull();
+    expect(p.finality_record_reference).toBeNull();
   });
 
   it("provider_dependency_status is hidden without scope", () => {
     const out = projectFinalityToApiSafe(BASE_INPUT, {
       api_scopes: ["finality.read"],
     });
-    if (out.blocked) throw new Error("expected projection");
-    expect(out.provider_dependency_status).toBeNull();
+    const p = asProjection(out);
+    expect(p.provider_dependency_status).toBeNull();
   });
 
   it("audit.read implies provider_dependency visibility", () => {
     const out = projectFinalityToApiSafe(BASE_INPUT, {
       api_scopes: ["finality.read", "audit.read"],
     });
-    if (out.blocked) throw new Error("expected projection");
-    expect(out.provider_dependency_status).toBe("success");
+    const p = asProjection(out);
+    expect(p.provider_dependency_status).toBe("success");
   });
 
   it("always stamps schema_version and outcome_code_version", () => {
     const out = projectFinalityToApiSafe(BASE_INPUT, {
       api_scopes: ["finality.read"],
     });
-    if (out.blocked) throw new Error("expected projection");
-    expect(out.schema_version).toBe(P5B5_SCHEMA_VERSION);
-    expect(out.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
+    const p = asProjection(out);
+    expect(p.schema_version).toBe(P5B5_SCHEMA_VERSION);
+    expect(p.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
   });
 
   it("stripToApiSafe removes unknown keys and stamps versions", () => {
@@ -285,8 +285,8 @@ describe("p5-batch5 phase 4 — API-safe projection allowlist", () => {
     expect(out).not.toHaveProperty("raw_payload");
     expect(out).not.toHaveProperty("private_notes");
     expect(out).not.toHaveProperty("api_key");
-    expect(out.schema_version).toBe(P5B5_SCHEMA_VERSION);
-    expect(out.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
+    expect(p.schema_version).toBe(P5B5_SCHEMA_VERSION);
+    expect(p.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
   });
 });
 
@@ -352,8 +352,8 @@ describe("p5-batch5 phase 4 — blocked-state behaviour", () => {
 
   it("buildP5B5BlockedState always stamps versions", () => {
     const out = buildP5B5BlockedState("permission_denied");
-    expect(out.schema_version).toBe(P5B5_SCHEMA_VERSION);
-    expect(out.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
+    expect(p.schema_version).toBe(P5B5_SCHEMA_VERSION);
+    expect(p.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
     expect(out.message.length).toBeGreaterThan(0);
   });
 });
