@@ -63,15 +63,66 @@ Deno.serve(async (req) => {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
+  // ── Phase 1 correlation hardening ────────────────────────────────
+  // Read cron_run_id / cron_job_name injected by public.cron_invoke().
+  // These let cron_reconcile_heartbeats fall through pg_net DNS-timeout
+  // false-failures when a matching witness row was emitted by this run.
+  let cronRunId: string | null = null;
+  let cronJobName: string | null = null;
+  if (req.method === "POST") {
+    try {
+      const body = await req.clone().json();
+      if (body && typeof body === "object") {
+        if (typeof body.cron_run_id === "string") cronRunId = body.cron_run_id;
+        if (typeof body.cron_job_name === "string") cronJobName = body.cron_job_name;
+      }
+    } catch {
+      // Non-JSON / empty body — manual ad-hoc trigger; no correlation id.
+    }
+  }
+
+  const emitWitness = async (
+    outcome: "ok" | "error",
+    extras: Record<string, unknown> = {},
+  ) => {
+    if (!cronRunId) return; // Only emit when invoked via cron_invoke.
+    try {
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: null,
+        action: "cron.outreach_sla_monitor_tick",
+        target_type: "cron_job",
+        target_id: null,
+        details: {
+          cron_run_id: cronRunId,
+          cron_job_name: cronJobName,
+          source: "outreach-sla-monitor",
+          outcome,
+          request_id: requestId,
+          created_by: "cron_invoke_correlation_phase_1",
+          ...extras,
+        },
+      });
+    } catch (witnessErr) {
+      console.warn(`[${requestId}] witness insert failed:`, witnessErr);
+    }
+  };
+
   try {
     const settings = await loadSettings(supabase);
 
     if (!settings.digest_enabled) {
+      await emitWitness("ok", {
+        skipped: "digest_disabled",
+        included: 0,
+        overdue_total: 0,
+        threshold_hours: settings.threshold_hours,
+      });
       return new Response(
         JSON.stringify({ ok: true, skipped: "digest_disabled" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     const thresholdMs = settings.threshold_hours * 60 * 60 * 1000;
     const now = Date.now();
