@@ -1,8 +1,8 @@
 // P-5 Batch 3 — Stage 3 — Safe funder summary edge function.
 //
 // Internal dashboard / funder-readiness use only.
-// This is NOT a public /api/v1/funder/* endpoint. There is no route under
-// /api/v1/funder anywhere in the project; this function is invoked only via
+// This is NOT a public funder API endpoint. There is no public funder API
+// route anywhere in the project; this function is invoked only via
 // supabase.functions.invoke('p5-batch3-funder-summary') from inside the app.
 //
 // Hard guarantees applied server-side before any response:
