@@ -141,7 +141,7 @@ export default function CounterpartyEvidenceChecklist() {
 
       <section data-testid="checklist-provider-dependent" className="text-sm text-slate-600">
         External verification pending — provider may not yet be connected. We
-        never describe a check as live or provider-approved until real provider
+        never describe a check as active or provider-approved until real provider
         results exist.
       </section>
     </main>
