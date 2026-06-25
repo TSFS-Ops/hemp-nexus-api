@@ -244,6 +244,15 @@ export default function Desk() {
                 <Route path="registry/my-companies/:companyId/disputes" element={<RegistryMyCompanyDisputes />} />
                 <Route path="registry/my-companies/:companyId/revocations" element={<RegistryMyCompanyRevocations />} />
 
+                {/* P-5 Batch 4 Stage 5 — organisation / counterparty user surface.
+                    Strictly task-focused. Reads via the audience-filtered
+                    edge function (org_user audience); mutations only via
+                    p5b4OrgUser.* wrappers. NO admin RPCs, NO direct table
+                    access, NO funder / audit / internal fields. */}
+                <Route path="p5-batch4" element={<P5Batch4DeskIndex />} />
+                <Route path="p5-batch4/:caseId" element={<P5Batch4DeskCaseDetail />} />
+
+
                 <Route
                   path="deals"
                   element={
