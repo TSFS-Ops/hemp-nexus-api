@@ -214,6 +214,13 @@ Deno.serve(async (req) => {
 
     if (eligible.length === 0) {
       console.log(`[${requestId}] SLA scan: 0 eligible overdue (${(overdue ?? []).length} overdue total, ${skippedStale.length} stale, others recently reminded)`);
+      await emitWitness("ok", {
+        included: 0,
+        overdue_total: overdue?.length ?? 0,
+        skipped_stale: skippedStale.length,
+        threshold_hours: settings.threshold_hours,
+        email_sent: false,
+      });
       return new Response(
         JSON.stringify({
           ok: true,
@@ -225,6 +232,7 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     const items = eligible.map((e) => {
       const ageHours = (now - new Date(e.created_at).getTime()) / 3600_000;
