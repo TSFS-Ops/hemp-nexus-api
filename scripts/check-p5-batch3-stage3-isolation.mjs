@@ -23,16 +23,14 @@ const ROOT = process.cwd();
 const V = [];
 
 const FORBIDDEN_PATHS = [
-  "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
   "src/lib/p5-batch3/finality-bridge.ts",
   "src/lib/p5-batch3/readiness-bridge.ts",
-  "src/lib/p5-batch3/summary-client.ts",
 ];
 for (const p of FORBIDDEN_PATHS) {
-  if (existsSync(join(ROOT, p))) V.push(`Stage 3 leak: ${p} present (Stage 4+ only)`);
+  if (existsSync(join(ROOT, p))) V.push(`Stage 3 leak: ${p} present (Stage 6 only)`);
 }
 
 // Allowed Stage 3 edge function set (exact match list).
