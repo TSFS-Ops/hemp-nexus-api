@@ -20,9 +20,9 @@ export function P5B4DeskNextAction({ summary, evidence }: P5B4DeskNextActionProp
   const missing = evidence.filter(
     (e) =>
       e.evidence_status === "requested" ||
+      e.evidence_status === "missing" ||
       e.evidence_status === "rejected" ||
-      e.evidence_status === "expired" ||
-      e.evidence_status === "more_information_requested",
+      e.evidence_status === "expired",
   );
 
   let headline = "You're up to date — no action required right now.";
