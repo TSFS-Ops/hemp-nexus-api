@@ -139,10 +139,10 @@ if (existsSync(fnDir)) {
   }
 }
 // Stage 4 legitimately adds src/pages/admin/p5-batch4 and /admin/p5-batch4
-// routes; other Batch 4 UI surfaces remain forbidden.
+// routes; Stage 5 adds src/pages/desk/p5-batch4 (org-user surface).
+// Funder/registry surfaces remain forbidden.
 const FORBIDDEN_UI_DIRS = [
   "src/pages/funder/p5-batch4",
-  "src/pages/desk/p5-batch4",
   "src/pages/registry/p5-batch4",
 ];
 for (const rel of FORBIDDEN_UI_DIRS) {
