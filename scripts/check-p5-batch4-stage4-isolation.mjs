@@ -38,9 +38,9 @@ function walk(dir, out = []) {
   return out;
 }
 
-// --- 1. Forbidden non-admin Batch 4 surfaces ---
+// --- 1. Forbidden non-admin Batch 4 surfaces (Stage 6 introduced funder UI;
+//       admin guard now only forbids the registry surface). ---
 for (const rel of [
-  "src/pages/funder/p5-batch4",
   "src/pages/registry/p5-batch4",
 ]) {
   if (existsSync(join(ROOT, rel))) V.push(`Stage 4 leak: ${rel} present`);
@@ -128,7 +128,7 @@ for (const f of adminFiles) {
 const appTsx = join(ROOT, "src/App.tsx");
 if (existsSync(appTsx)) {
   const text = readFileSync(appTsx, "utf8");
-  for (const bad of [/\/funder\/p5-batch4/, /\/desk\/p5-batch4/, /\/registry\/p5-batch4/]) {
+  for (const bad of [/\/desk\/p5-batch4/, /\/registry\/p5-batch4/]) {
     if (bad.test(text)) V.push(`Stage 4 leak: src/App.tsx registers forbidden Batch 4 route ${bad}`);
   }
   const routeRe = /<Route\s+path=["']\/admin\/p5-batch4[^"']*["'][\s\S]*?\/>/g;

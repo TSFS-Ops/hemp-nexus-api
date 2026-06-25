@@ -44,9 +44,9 @@ function walk(dir, out = []) {
   return out;
 }
 
-// --- 1. Forbidden non-desk / non-admin Batch 4 surfaces ---
+// --- 1. Forbidden non-desk Batch 4 surfaces (Stage 6 introduced funder UI;
+//       desk guard now only forbids the registry surface). ---
 for (const rel of [
-  "src/pages/funder/p5-batch4",
   "src/pages/registry/p5-batch4",
 ]) {
   if (existsSync(join(ROOT, rel))) V.push(`Stage 5 leak: ${rel} present`);
@@ -185,7 +185,7 @@ if (existsSync(deskTsx)) {
   if (routes.length < 2) {
     V.push("Stage 5 guard: /desk/p5-batch4 routes not registered in src/pages/Desk.tsx");
   }
-  for (const bad of [/\/funder\/p5-batch4/, /\/registry\/p5-batch4/]) {
+  for (const bad of [/\/registry\/p5-batch4/]) {
     if (bad.test(text)) V.push(`Stage 5 leak: src/pages/Desk.tsx registers forbidden Batch 4 route ${bad}`);
   }
 }

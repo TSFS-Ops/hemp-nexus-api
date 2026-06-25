@@ -47,12 +47,11 @@ if (existsSync(fnDir)) {
 }
 
 
-// --- Rule 2: no NON-admin Batch 4 UI surfaces exist yet ---
+// --- Rule 2: no Batch 4 UI surface that hasn't shipped yet ---
 // Stage 4 introduces src/pages/admin/p5-batch4. Stage 5 introduces
-// src/pages/desk/p5-batch4 (organisation/counterparty user surface).
-// Funder/registry surfaces remain forbidden until later stages.
+// src/pages/desk/p5-batch4. Stage 6 introduces src/pages/funder/p5-batch4.
+// Registry surface remains forbidden until/unless a later stage adds it.
 const FORBIDDEN_UI_DIRS = [
-  "src/pages/funder/p5-batch4",
   "src/pages/registry/p5-batch4",
 ];
 for (const rel of FORBIDDEN_UI_DIRS) {
@@ -94,8 +93,6 @@ const appTsx = join(ROOT, "src/App.tsx");
 if (existsSync(appTsx)) {
   const text = readFileSync(appTsx, "utf8");
   for (const bad of [
-    /\/funder\/p5-batch4/,
-    /\/desk\/p5-batch4/,
     /\/registry\/p5-batch4/,
   ]) {
     if (bad.test(text)) {
