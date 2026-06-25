@@ -286,3 +286,50 @@ Display + action surface over the Phase 1–4 foundations. **No new business rul
 ## Final status
 
 `P5_BATCH5_PHASE_5_DEPLOYED`
+
+---
+
+## Phase 6 — Final acceptance, verification & evidence (deployed)
+
+Hardening + cross-consistency verification phase. **No new features, no new RPCs, no schema changes, no edge functions, no cron jobs.** C6.2 remains pending and untouched.
+
+### New files
+
+- `src/tests/p5-batch5-phase-6-acceptance.test.ts` — 30 acceptance tests covering finality vocab, all 11 outcome codes, API-safe projection cross-consistency, blocked-state coverage, 9×14 permission matrix, forbidden-field stripping (recursive), repeated-pattern threshold, banned wording in approved phrases/tooltips, v1 basic-memory separation, and cron-absence in migrations.
+- `scripts/check-p5-batch5-no-cron.mjs` — Batch 5 cron-absence drift guard (scans all Batch 5 migrations, lib, components and pages).
+
+### Verification matrix
+
+| Required area | Evidence |
+| --- | --- |
+| Finality creation gates | Phase 2 RPC tests + Phase 6 vocab assertions |
+| All 11 final outcome codes | Phase 6 `routes all 11 outcome codes` |
+| Finality locking | Phase 1 `prevent_finality_mutation` trigger |
+| Correction / dispute / supersession / admin reclassification | Phase 2 tests + Phase 6 enum coverage |
+| Memory writer & exclusions | Phase 3 tests + Phase 6 `TEST_OR_INVALID` exclusion |
+| Forbidden-field stripping (recursive) | Phase 6 `strips raw provider, bank, credentials, pii and internal notes recursively` |
+| Repeated-pattern threshold | Phase 6 `repeated-pattern threshold matches the spec` |
+| 9-role × 14-capability matrix | Phase 4 + Phase 6 `has exactly 9 roles and 14 capabilities` |
+| API-safe projection | Phase 6 `every successful projection emits exactly the 14 allowlisted fields` |
+| Blocked-state responses | Phase 6 `every blocked reason has a non-empty user-safe message` |
+| UI route guards & sensitive-field hiding | Phase 5 contract tests (45) |
+| Warning banners & reasoned-action dialogs | Phase 5 contract tests |
+| Audit event emission | Phase 2 RPC `audit_log` inserts |
+| Drift guards | vocab, UI wording, no-cron — all OK |
+| Banned wording absence | Phase 6 `no approved phrase or tooltip contains a banned phrase` |
+| No cron additions | Phase 6 `no Batch 5 migration contains pg_cron tokens` + `check-p5-batch5-no-cron.mjs` |
+| v1 isolation | Phase 6 `no Batch 5 source file imports basic-memory vocab` |
+
+### Final verification run
+
+- `node scripts/check-p5-batch5-no-cron.mjs` → OK (17 files scanned)
+- `node scripts/check-p5-batch5-vocab-drift.mjs` → OK
+- `node scripts/check-p5-batch5-ui-wording.mjs` → OK (8 files scanned)
+- `node scripts/check-basic-memory-vocab-drift.mjs` → OK (v1 untouched)
+- `bunx vitest run src/tests/p5-batch5-phase-{2,3,4,5,6}-*.test.ts` → **131 / 131 pass**
+- No migration, no edge function, no cron job, no schema change introduced in Phase 6.
+- C6.2 status unchanged: `CRON_INVOKE_CORRELATION_HARDENING_PHASE_1_DEPLOYED_PENDING_TICK`.
+
+## Final acceptance marker
+
+`P5_BATCH5_FINALITY_MEMORY_OUTCOME_HISTORY_COMPLETE`
