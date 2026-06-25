@@ -82,10 +82,23 @@ const SSOT_EXEMPT_BASENAMES = new Set(["constants.ts"]);
 for (const f of libFiles) {
   const text = readFileSync(f, "utf8");
   const rel = relative(ROOT, f);
+  const base = rel.split(/[\\/]/).pop() ?? "";
 
-  for (const tok of FORBIDDEN_IMPORT_TOKENS) {
-    if (tok.test(text)) {
-      VIOLATIONS.push(`Stage 2 leak: ${rel} contains forbidden token ${tok}`);
+  // rpc.ts is a Stage 3 wrapper; it is allowed to import the supabase
+  // client. All other forbidden tokens (Batch 2/3 RPCs, React, router)
+  // still apply.
+  if (!STAGE3_EXEMPT_BASENAMES.has(base)) {
+    for (const tok of FORBIDDEN_IMPORT_TOKENS) {
+      if (tok.test(text)) {
+        VIOLATIONS.push(`Stage 2 leak: ${rel} contains forbidden token ${tok}`);
+      }
+    }
+  } else {
+    // Even exempt files must not reach into Batch 2/3 RPCs or trade paths.
+    for (const tok of FORBIDDEN_IMPORT_TOKENS.slice(1)) {
+      if (tok.test(text)) {
+        VIOLATIONS.push(`Stage 2 leak: ${rel} contains forbidden token ${tok}`);
+      }
     }
   }
 
@@ -98,12 +111,7 @@ for (const f of libFiles) {
     }
   }
 
-  // Every non-SSOT module under src/lib/p5-batch4/ must import from constants
-  // (directly or via a sibling that does). We assert at least one re-export
-  // path: either it imports constants, or it imports something that does.
-  // For Stage 2 simplicity, every module must reference constants somewhere.
-  const base = rel.split(/[\\/]/).pop() ?? "";
-  if (!SSOT_EXEMPT_BASENAMES.has(base)) {
+  if (!SSOT_EXEMPT_BASENAMES.has(base) && !STAGE3_EXEMPT_BASENAMES.has(base)) {
     const referencesConstants =
       REQUIRED_IMPORT_RE.test(text) ||
       /from\s+['"]\.\/(constants|roles|blockers|milestones|permissions|wording-guard|finality)['"]/.test(text);
@@ -112,6 +120,7 @@ for (const f of libFiles) {
     }
   }
 }
+
 
 // --- Stage 2 must not add edge functions, UI surfaces, or App.tsx routes ---
 const fnDir = join(ROOT, "supabase/functions");
