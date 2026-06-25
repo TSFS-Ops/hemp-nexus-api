@@ -23349,6 +23349,10 @@ export type Database = {
         }
         Returns: string
       }
+      p5b5_detect_repeated_pattern: {
+        Args: { p_case_id: string; p_outcome_type: string }
+        Returns: boolean
+      }
       p5b5_mark_under_dispute: {
         Args: {
           _category: Database["public"]["Enums"]["p5b5_dispute_category"]
@@ -23375,11 +23379,20 @@ export type Database = {
         }
         Returns: string
       }
+      p5b5_strip_forbidden_fields: { Args: { p_input: Json }; Returns: Json }
       p5b5_supersede_finality: {
         Args: {
           _original_finality_record_id: string
           _reason: string
           _superseding_finality_record_id: string
+        }
+        Returns: string
+      }
+      p5b5_write_memory_from_finality: {
+        Args: {
+          p_actor_id?: string
+          p_finality_record_id: string
+          p_reason?: string
         }
         Returns: string
       }
