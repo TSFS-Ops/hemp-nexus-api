@@ -32,15 +32,20 @@ function walk(dir, out = []) {
   return out;
 }
 
-// --- Rule 1: no Batch 4 edge functions exist yet (Stage 3 introduces the first one) ---
+// --- Rule 1: only the Stage 3 safe-summary edge function is allowed. ---
+// Stage 1 declared "no Batch 4 edge functions"; once Stage 3 ships the
+// internal-safe summary function, that single function is the only one
+// permitted in this scope. Any additional Batch 4 edge function is a leak.
+const ALLOWED_BATCH4_EDGE_FNS = new Set(["p5-batch4-execution-summary"]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
-    if (/^p5-?batch-?4/i.test(name)) {
+    if (/^p5-?batch-?4/i.test(name) && !ALLOWED_BATCH4_EDGE_FNS.has(name)) {
       VIOLATIONS.push(`Stage 1 guard: unexpected Batch 4 edge function: ${name}`);
     }
   }
 }
+
 
 // --- Rule 2: no Batch 4 UI surfaces exist yet ---
 const FORBIDDEN_UI_DIRS = [
