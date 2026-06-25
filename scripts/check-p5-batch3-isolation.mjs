@@ -33,9 +33,12 @@ function walk(dir, out = []) {
 }
 
 // --- Rule 1: funder edge functions are restricted to the allow-list ------
-// Stage 3 introduces the safe summary edge function. Stages 4–6 must add
-// nothing else under this prefix without explicit sign-off.
-const ALLOWED_BATCH3_FNS = new Set(["p5-batch3-funder-summary"]);
+// Stage 3 introduces the safe summary edge function. Stage 6 adds the
+// internal monitor.
+const ALLOWED_BATCH3_FNS = new Set([
+  "p5-batch3-funder-summary",
+  "p5-batch3-stage6-monitor",
+]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
@@ -47,19 +50,13 @@ if (existsSync(fnDir)) {
   }
 }
 
-// --- Rule 2: Stage 6 cross-cutting surfaces must not exist yet -------------
-// Stage 4 introduced admin UI; Stage 5 introduces funder UI + summary client.
-// Stage 6 (notifications, SLA rules, finality/Memory bridges) remains forbidden.
+// --- Rule 2: Stage 6 surfaces are permitted; only /registry/* remains forbidden ---
 const FORBIDDEN_UI_DIRS = [
   "src/pages/registry/p5-batch3",
-  "src/lib/p5-batch3/notifications.ts",
-  "src/lib/p5-batch3/sla-rules.ts",
-  "src/lib/p5-batch3/finality-bridge.ts",
-  "src/lib/p5-batch3/readiness-bridge.ts",
 ];
 for (const rel of FORBIDDEN_UI_DIRS) {
   if (existsSync(join(ROOT, rel))) {
-    VIOLATIONS.push(`Stage 1 guard: forbidden Stage 6 file/dir present: ${rel}`);
+    VIOLATIONS.push(`Stage 1 guard: forbidden surface present: ${rel}`);
   }
 }
 

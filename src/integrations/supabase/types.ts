@@ -10106,6 +10106,39 @@ export type Database = {
           },
         ]
       }
+      p5_batch3_tasks: {
+        Row: {
+          audience: string
+          created_at: string
+          due_at: string
+          id: string
+          idempotency_key: string
+          kind: string
+          payload: Json
+          refs: Json
+        }
+        Insert: {
+          audience: string
+          created_at?: string
+          due_at?: string
+          id?: string
+          idempotency_key: string
+          kind: string
+          payload?: Json
+          refs?: Json
+        }
+        Update: {
+          audience?: string
+          created_at?: string
+          due_at?: string
+          id?: string
+          idempotency_key?: string
+          kind?: string
+          payload?: Json
+          refs?: Json
+        }
+        Relationships: []
+      }
       p5_governance_audit_events: {
         Row: {
           actor_type: Database["public"]["Enums"]["p5_actor_type"]
@@ -21989,6 +22022,17 @@ export type Database = {
         Returns: boolean
       }
       p5b3_is_platform_admin: { Args: never; Returns: boolean }
+      p5b3_record_task_intent_v1: {
+        Args: {
+          p_audience: string
+          p_due_at: string
+          p_idempotency_key: string
+          p_kind: string
+          p_payload: Json
+          p_refs: Json
+        }
+        Returns: string
+      }
       platform_admin_break_glass_progress:
         | {
             Args: {
