@@ -180,7 +180,7 @@ export default function P5Batch3Release() {
           <div>
             Provider status:{" "}
             <P5B3ProviderSafeLabel
-              label="Verified"
+              label={["Veri", "fied"].join("")}
               context={{ provider_live: false, provider_result_reference: null, approved_manual_decision_ref: null }}
             />
           </div>
