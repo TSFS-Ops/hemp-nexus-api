@@ -102,7 +102,7 @@ describe("P-5 Batch 5 Phase 5 — API-safe preview uses Phase 4 projection", () 
       provider_dependency_status: "success",
     };
     const noScope = projectFinalityToApiSafe(input, { api_scopes: ["finality.read"] });
-    if (noScope.blocked) throw new Error("expected projection");
+    if (noScope.blocked !== false) throw new Error("expected projection");
     expect(noScope.evidence_rating).toBeNull();
     expect(noScope.hash_reference).toBeNull();
     expect(noScope.finality_record_reference).toBeNull();
@@ -111,7 +111,7 @@ describe("P-5 Batch 5 Phase 5 — API-safe preview uses Phase 4 projection", () 
     const full = projectFinalityToApiSafe(input, {
       api_scopes: ["finality.read", "evidence_rating.read", "audit.read", "provider_dependency.read"],
     });
-    if (full.blocked) throw new Error("expected projection");
+    if (full.blocked !== false) throw new Error("expected projection");
     expect(full.evidence_rating).toBe("B+");
     expect(full.hash_reference).toBe("h_1");
     expect(full.provider_dependency_status).toBe("success");
