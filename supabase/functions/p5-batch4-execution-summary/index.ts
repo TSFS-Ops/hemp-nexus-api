@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const audience = url.searchParams.get("audience");
     const caseId = url.searchParams.get("case_id");
-    if (audience !== "admin" && audience !== "funder") {
+    if (audience !== "admin" && audience !== "funder" && audience !== "org_user") {
       return json({ error: "invalid_audience" }, 400);
     }
 
