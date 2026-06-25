@@ -41,7 +41,7 @@ BEGIN
     IF public.has_role(_user_id, r::public.app_role) THEN
       -- Map to the closest p5_batch4_role_key.
       RETURN CASE
-        WHEN r IN ('platform_admin','admin') THEN 'platform_admin'::public.p5_batch4_role_key
+        WHEN r = 'platform_admin' THEN 'platform_admin'::public.p5_batch4_role_key
         ELSE 'operator'::public.p5_batch4_role_key
       END;
     END IF;
