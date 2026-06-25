@@ -1,6 +1,54 @@
 # P-5 Batch 5 — Finality, Memory and Outcome History
 
-**Status:** `P5_BATCH5_PHASE_3_DEPLOYED` (governed Memory writer + exclusion rules)
+**Status:** `P5_BATCH5_PHASE_4_DEPLOYED` (permission matrix + API-safe projection)
+
+## Phase 4 scope (this batch)
+
+Pure TS. Permission matrix and strict-allowlist API-safe projection. **No DB migration, no UI, no API endpoints registered, no cron jobs, no scheduled sweeps. Memory writer restrictions from Phase 3 are unchanged.**
+
+### Files
+
+- `src/lib/p5-batch5/permissions.ts`
+  - 9 roles × 14 capability flags matrix (`getP5B5Capabilities(role, context)`).
+  - Typed helpers: `canViewFinality`, `canViewMemory`, `canPerformFinalityAction`, `canExportP5B5`.
+  - Context inputs: organisation ownership, assigned-case access, funder lane access, API scopes, auditor mandate, support escalation state. Missing context defaults to deny.
+  - Supersede is super-admin-only (matches Phase 2 RPC `p5b5_supersede_finality` server gate).
+- `src/lib/p5-batch5/api-safe.ts`
+  - `P5B5_API_SAFE_FIELDS` — strict 14-field allowlist (matches the brief).
+  - `projectFinalityToApiSafe(input, options)` — drops every key outside the allowlist; hides `evidence_rating` unless `evidence_rating.read` scope is present; hides `finality_record_reference` + `hash_reference` unless `audit.read` is present; hides `provider_dependency_status` unless `provider_dependency.read` (or `audit.read`) is present; always stamps `schema_version` (`p5b5.v1`) and `outcome_code_version` (`p5b5-outcomes.v1`) from `src/lib/p5-batch5/version.ts`.
+  - Reliance-affecting states never return a clean projection — they return a typed blocked state:
+    - missing / `none` → `finality_not_created`
+    - `TEST_OR_INVALID` → `record_invalid_test`
+    - `under_dispute` or paused memory → `memory_paused_due_to_dispute`
+    - `superseded` → `record_superseded` (with `current_effective_record_reference` if supplied)
+    - plus `permission_denied` and `evidence_not_shareable` available for caller composition.
+  - `buildP5B5BlockedState(reason, context)` — typed blocked response. Never carries evidence, notes, raw payloads or internal fields.
+  - `stripToApiSafe(body)` — defensive last-mile stripper for edge functions composing responses from multiple sources.
+
+### Tests
+
+- `src/tests/p5-batch5-phase-4-permissions-api-safe.test.ts` — 29 tests covering:
+  - matrix shape (9 roles, 14 capabilities, every role returns a full flag object).
+  - per-role gating: super admin full powers; compliance admin everything except supersede; org owner / contributor org-scoped + case-assigned; counterparty applicant case-scoped + may mark dispute / never exports; funder lane-gated; external API client scope-gated; auditor mandate-gated + read-only; support read-only during escalation, never exports / corrections / disputes.
+  - typed helpers consistent with the matrix; supersede gating; export gating; unknown role denies everything.
+  - API-safe projection drops unknown fields (`raw_payload`, `private_notes`, `bank_account_number`, `api_key`, `support_notes`, `scoring_formula`, `unverified_allegation`); evidence rating / hash / provider scopes enforced; version stamps always present.
+  - `stripToApiSafe` removes unknown keys and stamps versions.
+  - blocked-state behaviour for missing, TEST_OR_INVALID, under-dispute (3 paths), superseded (with current-effective ref), and version stamping on blocked responses.
+  - blocked states never carry evidence, notes, raw payloads or internal fields (key-set assertion).
+
+### Verification
+
+- `bunx vitest run src/tests/p5-batch5-phase-4-permissions-api-safe.test.ts` → 29 passed.
+- Phase 1 + 2 + 3 vocab drift guards still pass.
+- No DB migration, no edge function registered, no UI added. No cron jobs or scheduled sweeps. C6.2 still `CRON_INVOKE_CORRELATION_HARDENING_PHASE_1_DEPLOYED_PENDING_TICK`.
+
+### Final status
+
+`P5_BATCH5_PHASE_4_DEPLOYED`
+
+---
+
+## Phase 3 scope (previously deployed)
 
 ## Phase 3 scope (this batch)
 
