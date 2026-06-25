@@ -85,7 +85,8 @@ const batch3Files = walk(join(ROOT, "src/lib/p5-batch3"))
         /p5-batch3/.test(p) &&
         // Isolation tests legitimately enumerate the forbidden tokens to
         // assert that the *migration* does not reference them.
-        !/p5-batch3-stage1-schema-isolation\.test\.ts$/.test(p),
+        !/p5-batch3-stage1-schema-isolation\.test\.ts$/.test(p) &&
+        !/p5-batch3-stage4-isolation\.test\.ts$/.test(p),
     ),
   );
 
