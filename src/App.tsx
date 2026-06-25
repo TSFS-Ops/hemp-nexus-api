@@ -165,6 +165,13 @@ const P5Batch3OrganisationDetail = lazy(() => import("@/pages/admin/p5-batch3/Or
 const P5Batch3Release = lazy(() => import("@/pages/admin/p5-batch3/Release"));
 const P5Batch3Requests = lazy(() => import("@/pages/admin/p5-batch3/Requests"));
 const P5Batch3Audit = lazy(() => import("@/pages/admin/p5-batch3/Audit"));
+// P-5 Batch 3 — Stage 5 funder-facing surfaces
+const P5Batch3FunderIndex = lazy(() => import("@/pages/funder/p5-batch3/Index"));
+const P5Batch3FunderOpportunity = lazy(() => import("@/pages/funder/p5-batch3/Opportunity"));
+const P5Batch3FunderReadiness = lazy(() => import("@/pages/funder/p5-batch3/Readiness"));
+const P5Batch3FunderRequests = lazy(() => import("@/pages/funder/p5-batch3/Requests"));
+const P5Batch3FunderOutcomes = lazy(() => import("@/pages/funder/p5-batch3/Outcomes"));
+const P5Batch3FunderDownloads = lazy(() => import("@/pages/funder/p5-batch3/Downloads"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
