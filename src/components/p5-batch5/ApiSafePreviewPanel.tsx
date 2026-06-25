@@ -50,7 +50,7 @@ export function P5B5ApiSafePreviewPanel({ role, context, input }: P5B5ApiSafePre
   }
 
   const hiddenForScope = !projection.blocked
-    ? P5B5_API_SAFE_FIELDS.filter((f) => HIDDEN_FIELD_HINTS[f] && (projection as Record<string, unknown>)[f] == null)
+    ? P5B5_API_SAFE_FIELDS.filter((f) => HIDDEN_FIELD_HINTS[f] && (projection as unknown as Record<string, unknown>)[f] == null)
     : [];
 
   return (
