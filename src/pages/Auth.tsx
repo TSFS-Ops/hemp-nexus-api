@@ -99,7 +99,11 @@ export default function Auth() {
     //    for the allow-list. Stale browser history, external URLs, and
     //    inadvertent /desk/ /dashboard defaults are dropped.
     const returnTo = searchParams.get("returnTo");
-    const intentional = isIntentionalReturn(searchParams);
+    // Intentionality signal: a non-stale protected journey is indicated by
+    // either (a) `expired=1` (session-recovery flow) or (b) RequireAuth
+    // setting a returnTo into our allow-list. The allow-list itself is the
+    // final gate — Landing's generic `returnTo=/` is dropped here.
+    const intentional = searchParams.get("expired") === "1" || Boolean(returnTo);
     const honoured = resolveProtectedReturnTo(returnTo, intentional);
     if (honoured) {
       try {
