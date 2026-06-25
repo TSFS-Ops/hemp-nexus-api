@@ -47,19 +47,19 @@ if (existsSync(fnDir)) {
   }
 }
 
-// --- Rule 2: Stage 4+ surfaces must not exist yet -------------------------
-// Stage 4 introduces admin-only UI under src/pages/admin/p5-batch3.
-// Funder-facing UI (Stage 5+) and Stage 6 cross-cutting modules remain forbidden.
+// --- Rule 2: Stage 6 cross-cutting surfaces must not exist yet -------------
+// Stage 4 introduced admin UI; Stage 5 introduces funder UI + summary client.
+// Stage 6 (notifications, SLA rules, finality/Memory bridges) remains forbidden.
 const FORBIDDEN_UI_DIRS = [
-  "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
-  "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
+  "src/lib/p5-batch3/finality-bridge.ts",
+  "src/lib/p5-batch3/readiness-bridge.ts",
 ];
 for (const rel of FORBIDDEN_UI_DIRS) {
   if (existsSync(join(ROOT, rel))) {
-    VIOLATIONS.push(`Stage 1 guard: forbidden Stage 4+ file/dir already present: ${rel}`);
+    VIOLATIONS.push(`Stage 1 guard: forbidden Stage 6 file/dir present: ${rel}`);
   }
 }
 
