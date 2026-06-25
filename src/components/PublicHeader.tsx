@@ -47,10 +47,7 @@ const MEGA_NAV: MegaCategory[] = [
 ];
 
 export function PublicHeader() {
-  const { getAuthUrl, getDashboardUrl, isPreview } = useCrossDomainUrls();
-  const authUrl = getAuthUrl();
-  const dashboardUrl = getDashboardUrl();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, isPlatformAdmin, rolesLoaded } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const closeTimer = useRef<number | null>(null);
@@ -68,22 +65,22 @@ export function PublicHeader() {
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
   }, []);
 
-  const AuthLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-    if (isPreview) {
-      return <Link to="/auth" className={className}>{children}</Link>;
-    }
-    return <a href={authUrl} className={className}>{children}</a>;
-  };
+  // Wait until the auth session + role lookup have resolved before we
+  // render auth-state-dependent CTAs. Otherwise an already-signed-in
+  // admin arriving on www.izenzo.co.za briefly sees the "Log In /
+  // Create Account" buttons (flash of unauthenticated state) and may
+  // assume the public domain has dropped their session.
+  const authReady = !isLoading && (!isAuthenticated || rolesLoaded);
 
-  // Dashboard always lives on the live console (api.trade.izenzo.co.za).
-  // In preview we keep relative SPA navigation; in production we hop domains
-  // so visitors on www.izenzo.co.za land on the correct authenticated host.
-  const DashboardLink = ({ children, className }: { children: React.ReactNode; className?: string }) => {
-    if (isPreview) {
-      return <Link to="/dashboard" className={className}>{children}</Link>;
-    }
-    return <a href={dashboardUrl} className={className}>{children}</a>;
-  };
+  // Per client direction (2026-06-25): keep Dashboard CTAs same-origin.
+  // The public domain (www) and the legacy console domain (api.trade)
+  // are separate browser origins with separate localStorage, so a
+  // cross-domain Dashboard link forces a re-auth on the other origin
+  // even when the user is signed in here. The app is now served on both
+  // hosts, so a same-origin Link preserves the active session.
+  const dashboardHref = isPlatformAdmin ? "/hq/users" : ROUTES.DASHBOARD;
+  const dashboardLabel = isPlatformAdmin ? "Go to HQ" : "Dashboard";
+  const authHref = ROUTES.AUTH;
 
   return (
     <>
