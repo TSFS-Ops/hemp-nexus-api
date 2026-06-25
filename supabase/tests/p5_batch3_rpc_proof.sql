@@ -120,29 +120,49 @@ BEGIN
   END IF;
   RAISE NOTICE 'A4 OK: cross-funder isolation holds';
 
-  -- Assertion 5: admin edit of request external text preserves original.
+  -- Assertion 5: admin-edit RPC preserves the original message.
+  --   (a) Insert a request carrying both original + initial external text.
   INSERT INTO public.p5_batch3_funder_requests(
     funder_organisation_id, funder_user_id, access_grant_id,
-    transaction_reference, category, original_message, status
+    transaction_reference, category, original_message,
+    admin_external_message, status
   ) VALUES (
     v_org_a, v_user_a, v_grant_a, 'TX-PROOF-001',
-    'commercial', v_original, 'submitted'
+    'commercial', v_original, 'sanitised external version', 'admin_review'
   ) RETURNING id INTO v_req_id;
-
-  UPDATE public.p5_batch3_funder_requests
-     SET admin_external_message = 'sanitised external version'
-   WHERE id = v_req_id;
 
   SELECT original_message, admin_external_message
     INTO v_after_original, v_after_external
     FROM public.p5_batch3_funder_requests WHERE id = v_req_id;
   IF v_after_original <> v_original THEN
-    RAISE EXCEPTION 'Assertion 5 FAILED: original_message mutated';
+    RAISE EXCEPTION 'Assertion 5a FAILED: original_message not stored verbatim';
   END IF;
   IF v_after_external <> 'sanitised external version' THEN
-    RAISE EXCEPTION 'Assertion 5 FAILED: admin_external_message not updated';
+    RAISE EXCEPTION 'Assertion 5a FAILED: admin_external_message not stored';
   END IF;
-  RAISE NOTICE 'A5 OK: original funder text preserved after admin edit';
+
+  --   (b) Static guarantee: the admin-edit RPC body must not assign
+  --       original_message anywhere, and must update admin_external_message.
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'p5b3_admin_edit_request_external_text_v1'
+      AND p.prosrc ~* 'set[[:space:]]+original_message'
+  ) THEN
+    RAISE EXCEPTION 'Assertion 5b FAILED: admin edit RPC mutates original_message';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'p5b3_admin_edit_request_external_text_v1'
+      AND p.prosrc ~* 'admin_external_message'
+      AND p.prosrc ~* 'original_message_preserved'
+  ) THEN
+    RAISE EXCEPTION 'Assertion 5b FAILED: admin edit RPC missing preservation contract';
+  END IF;
+  RAISE NOTICE 'A5 OK: original funder text preserved (data + RPC contract)';
 
   -- Assertion 6: funder outcome does NOT create finality directly.
   INSERT INTO public.p5_batch3_funder_outcomes(
