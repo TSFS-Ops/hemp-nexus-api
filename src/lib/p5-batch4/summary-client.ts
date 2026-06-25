@@ -1,7 +1,7 @@
 /**
  * P-5 Batch 4 Stage 4 — typed client for the Stage 3 execution-summary
  * edge function. Admin pages call this for reads instead of touching
- * `supabase.from('p5_batch4_*')` directly. Mutations always go through
+ * batch-4 tables directly. Mutations always go through
  * `src/lib/p5-batch4/rpc.ts`.
  */
 import { supabase } from "@/integrations/supabase/client";
