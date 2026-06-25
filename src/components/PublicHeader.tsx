@@ -150,35 +150,43 @@ export function PublicHeader() {
         </div>
 
         {/* Desktop CTAs */}
-        <div className="hidden lg:flex items-center gap-2">
-          {isAuthenticated ? (
-            <DashboardLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all">
-              Dashboard
+        <div className="hidden lg:flex items-center gap-2" data-auth-ready={authReady ? "true" : "false"}>
+          {!authReady ? (
+            // Reserve space to avoid layout shift while auth resolves.
+            <div aria-hidden className="h-9 w-[180px]" />
+          ) : isAuthenticated ? (
+            <Link
+              to={dashboardHref}
+              className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-medium rounded-md text-white bg-emerald-950 shadow-sm hover:shadow transition-all"
+            >
+              {dashboardLabel}
               <ArrowRight className="h-3.5 w-3.5" />
-            </DashboardLink>
+            </Link>
           ) : (
             <>
-              <AuthLink className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <Link to={authHref} className="inline-flex items-center px-3 h-9 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 Log In
-              </AuthLink>
-              <AuthLink className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md text-white bg-emerald-950 shadow-sm hover:shadow-md hover:bg-emerald-900 transition-all">
+              </Link>
+              <Link to={authHref} className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md text-white bg-emerald-950 shadow-sm hover:shadow-md hover:bg-emerald-900 transition-all">
                 Create Account
                 <ArrowRight className="h-3.5 w-3.5" />
-              </AuthLink>
+              </Link>
             </>
           )}
         </div>
 
         {/* Mobile actions */}
         <div className="lg:hidden flex items-center gap-1.5">
-          {isAuthenticated ? (
-            <DashboardLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950">
-              Dashboard
-            </DashboardLink>
+          {!authReady ? (
+            <div aria-hidden className="h-10 w-[110px]" />
+          ) : isAuthenticated ? (
+            <Link to={dashboardHref} className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-medium rounded-md text-white bg-emerald-950">
+              {dashboardLabel}
+            </Link>
           ) : (
-            <AuthLink className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-semibold rounded-md text-white bg-emerald-950">
+            <Link to={authHref} className="inline-flex items-center gap-1 px-3 h-10 min-h-[44px] text-sm font-semibold rounded-md text-white bg-emerald-950">
               Log In
-            </AuthLink>
+            </Link>
           )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
