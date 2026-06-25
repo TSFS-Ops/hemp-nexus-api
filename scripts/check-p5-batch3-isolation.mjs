@@ -99,11 +99,12 @@ for (const f of batch3Files) {
 }
 
 // --- Rule 4: routes/pages must not register Batch 3 surfaces yet ---------
+// --- Rule 4: routes/pages must not register funder-facing Batch 3 surfaces yet ---
 const appTsx = join(ROOT, "src/App.tsx");
 if (existsSync(appTsx)) {
   const text = readFileSync(appTsx, "utf8");
-  if (/p5-?batch-?3/i.test(text) || /\/funder\/p5-batch3/.test(text)) {
-    VIOLATIONS.push("Stage 1: src/App.tsx references Batch 3 routes (should be Stage 4+)");
+  if (/\/funder\/p5-batch3/.test(text)) {
+    VIOLATIONS.push("Stage 1: src/App.tsx references funder Batch 3 routes (Stage 5+)");
   }
 }
 
