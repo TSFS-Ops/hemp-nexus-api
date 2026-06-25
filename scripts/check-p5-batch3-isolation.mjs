@@ -99,15 +99,8 @@ for (const f of batch3Files) {
   }
 }
 
-// --- Rule 4: routes/pages must not register Batch 3 surfaces yet ---------
-// --- Rule 4: routes/pages must not register funder-facing Batch 3 surfaces yet ---
-const appTsx = join(ROOT, "src/App.tsx");
-if (existsSync(appTsx)) {
-  const text = readFileSync(appTsx, "utf8");
-  if (/\/funder\/p5-batch3/.test(text)) {
-    VIOLATIONS.push("Stage 1: src/App.tsx references funder Batch 3 routes (Stage 5+)");
-  }
-}
+// --- Rule 4: routes/pages — funder routes are Stage 5+, only Stage 6 forbidden ---
+// (Funder routes are now permitted as of Stage 5.)
 
 if (VIOLATIONS.length > 0) {
   console.error("❌ P5_BATCH_3_STAGE_1_ISOLATION_FAILED");
