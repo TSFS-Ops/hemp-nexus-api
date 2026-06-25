@@ -5989,6 +5989,240 @@ export type Database = {
           },
         ]
       }
+      finality_administrative_reclassifications: {
+        Row: {
+          approved_by: string
+          approver_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id: string | null
+          case_id: string
+          corrected_outcome_label: string
+          created_at: string
+          finality_record_id: string
+          id: string
+          previous_outcome_label: string
+          reason: string
+        }
+        Insert: {
+          approved_by: string
+          approver_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id?: string | null
+          case_id: string
+          corrected_outcome_label: string
+          created_at?: string
+          finality_record_id: string
+          id?: string
+          previous_outcome_label: string
+          reason: string
+        }
+        Update: {
+          approved_by?: string
+          approver_role?: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id?: string | null
+          case_id?: string
+          corrected_outcome_label?: string
+          created_at?: string
+          finality_record_id?: string
+          id?: string
+          previous_outcome_label?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finality_administrative_reclassificatio_finality_record_id_fkey"
+            columns: ["finality_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_finality_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finality_corrections: {
+        Row: {
+          after_state: Json
+          approved_by: string
+          approver_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id: string | null
+          before_state: Json
+          case_id: string
+          created_at: string
+          finality_record_id: string
+          id: string
+          reason: string
+          supporting_evidence: Json
+        }
+        Insert: {
+          after_state: Json
+          approved_by: string
+          approver_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id?: string | null
+          before_state: Json
+          case_id: string
+          created_at?: string
+          finality_record_id: string
+          id?: string
+          reason: string
+          supporting_evidence?: Json
+        }
+        Update: {
+          after_state?: Json
+          approved_by?: string
+          approver_role?: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id?: string | null
+          before_state?: Json
+          case_id?: string
+          created_at?: string
+          finality_record_id?: string
+          id?: string
+          reason?: string
+          supporting_evidence?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finality_corrections_finality_record_id_fkey"
+            columns: ["finality_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_finality_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finality_disputes: {
+        Row: {
+          audit_event_id: string | null
+          case_id: string
+          category: Database["public"]["Enums"]["p5b5_dispute_category"]
+          created_at: string
+          finality_record_id: string
+          id: string
+          linked_challenge_id: string | null
+          opened_by: string
+          opener_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          reason: string
+          resolution:
+            | Database["public"]["Enums"]["p5b5_dispute_resolution"]
+            | null
+          resolution_audit_event_id: string | null
+          resolution_reason: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolver_role:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          reviewer_user_id: string | null
+        }
+        Insert: {
+          audit_event_id?: string | null
+          case_id: string
+          category: Database["public"]["Enums"]["p5b5_dispute_category"]
+          created_at?: string
+          finality_record_id: string
+          id?: string
+          linked_challenge_id?: string | null
+          opened_by: string
+          opener_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          reason: string
+          resolution?:
+            | Database["public"]["Enums"]["p5b5_dispute_resolution"]
+            | null
+          resolution_audit_event_id?: string | null
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolver_role?:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          reviewer_user_id?: string | null
+        }
+        Update: {
+          audit_event_id?: string | null
+          case_id?: string
+          category?: Database["public"]["Enums"]["p5b5_dispute_category"]
+          created_at?: string
+          finality_record_id?: string
+          id?: string
+          linked_challenge_id?: string | null
+          opened_by?: string
+          opener_role?: Database["public"]["Enums"]["p5_batch4_role_key"]
+          reason?: string
+          resolution?:
+            | Database["public"]["Enums"]["p5b5_dispute_resolution"]
+            | null
+          resolution_audit_event_id?: string | null
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolver_role?:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          reviewer_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finality_disputes_finality_record_id_fkey"
+            columns: ["finality_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_finality_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finality_supersessions: {
+        Row: {
+          after_state: Json
+          approved_by: string
+          approver_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id: string | null
+          before_state: Json
+          case_id: string
+          created_at: string
+          id: string
+          original_finality_record_id: string
+          reason: string
+          superseding_finality_record_id: string
+        }
+        Insert: {
+          after_state: Json
+          approved_by: string
+          approver_role: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id?: string | null
+          before_state: Json
+          case_id: string
+          created_at?: string
+          id?: string
+          original_finality_record_id: string
+          reason: string
+          superseding_finality_record_id: string
+        }
+        Update: {
+          after_state?: Json
+          approved_by?: string
+          approver_role?: Database["public"]["Enums"]["p5_batch4_role_key"]
+          audit_event_id?: string | null
+          before_state?: Json
+          case_id?: string
+          created_at?: string
+          id?: string
+          original_finality_record_id?: string
+          reason?: string
+          superseding_finality_record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finality_supersessions_original_finality_record_id_fkey"
+            columns: ["original_finality_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_finality_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finality_supersessions_superseding_finality_record_id_fkey"
+            columns: ["superseding_finality_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_finality_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fund_flows: {
         Row: {
           amount: number
@@ -23102,6 +23336,53 @@ export type Database = {
         }
         Returns: string
       }
+      p5b5_actor_role_for_user: {
+        Args: { _allowed_roles: string[]; _user_id: string }
+        Returns: Database["public"]["Enums"]["p5_batch4_role_key"]
+      }
+      p5b5_add_correction: {
+        Args: {
+          _after_state: Json
+          _finality_record_id: string
+          _reason: string
+          _supporting_evidence?: Json
+        }
+        Returns: string
+      }
+      p5b5_mark_under_dispute: {
+        Args: {
+          _category: Database["public"]["Enums"]["p5b5_dispute_category"]
+          _finality_record_id: string
+          _linked_challenge_id?: string
+          _reason: string
+          _reviewer_user_id?: string
+        }
+        Returns: string
+      }
+      p5b5_reclassify_finality: {
+        Args: {
+          _corrected_outcome_label: string
+          _finality_record_id: string
+          _reason: string
+        }
+        Returns: string
+      }
+      p5b5_resolve_dispute: {
+        Args: {
+          _dispute_id: string
+          _resolution: Database["public"]["Enums"]["p5b5_dispute_resolution"]
+          _resolution_reason: string
+        }
+        Returns: string
+      }
+      p5b5_supersede_finality: {
+        Args: {
+          _original_finality_record_id: string
+          _reason: string
+          _superseding_finality_record_id: string
+        }
+        Returns: string
+      }
       platform_admin_break_glass_progress:
         | {
             Args: {
@@ -23959,6 +24240,23 @@ export type Database = {
         | "corrected"
         | "superseded"
         | "administrative_reclassification"
+      p5b5_dispute_category:
+        | "user_challenge"
+        | "organisation_challenge"
+        | "funder_challenge"
+        | "provider_correction"
+        | "contradictory_evidence"
+        | "legal_compliance_notice"
+        | "duplicated_or_incorrect_case"
+        | "platform_admin_review"
+      p5b5_dispute_resolution:
+        | "upheld"
+        | "partially_upheld"
+        | "dismissed"
+        | "withdrawn"
+        | "corrected"
+        | "superseded"
+        | "escalated"
       p5b5_dispute_status:
         | "none"
         | "under_dispute"
@@ -24627,6 +24925,25 @@ export const Constants = {
         "corrected",
         "superseded",
         "administrative_reclassification",
+      ],
+      p5b5_dispute_category: [
+        "user_challenge",
+        "organisation_challenge",
+        "funder_challenge",
+        "provider_correction",
+        "contradictory_evidence",
+        "legal_compliance_notice",
+        "duplicated_or_incorrect_case",
+        "platform_admin_review",
+      ],
+      p5b5_dispute_resolution: [
+        "upheld",
+        "partially_upheld",
+        "dismissed",
+        "withdrawn",
+        "corrected",
+        "superseded",
+        "escalated",
       ],
       p5b5_dispute_status: [
         "none",
