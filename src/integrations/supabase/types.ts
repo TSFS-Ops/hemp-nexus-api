@@ -21835,7 +21835,155 @@ export type Database = {
         Args: { p_evidence_item_id: string; p_reason: string }
         Returns: Json
       }
+      p5b3_actor_role: { Args: never; Returns: string }
+      p5b3_admin_assign_funder_role_v1: {
+        Args: {
+          p_role: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      p5b3_admin_change_grant_expiry_v1: {
+        Args: { p_grant_id: string; p_new_expiry: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b3_admin_create_access_grant_v1: {
+        Args: {
+          p_access_scope: Json
+          p_can_download: boolean
+          p_can_view_raw_documents: boolean
+          p_deal_id: string
+          p_evidence_pack_id: string
+          p_evidence_pack_version: string
+          p_expiry_at: string
+          p_nda_reference: string
+          p_permitted_categories: string[]
+          p_release_reason: string
+          p_role: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          p_transaction_reference: string
+          p_unmasked_bank_details: boolean
+          p_user_id: string
+        }
+        Returns: string
+      }
+      p5b3_admin_create_funder_org_v1: {
+        Args: {
+          p_contact_email: string
+          p_jurisdiction: string
+          p_name: string
+          p_notes_internal: string
+          p_registration_number: string
+        }
+        Returns: string
+      }
+      p5b3_admin_decide_request_v1: {
+        Args: {
+          p_assignee: string
+          p_decision: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: undefined
+      }
+      p5b3_admin_edit_request_external_text_v1: {
+        Args: { p_admin_external_message: string; p_request_id: string }
+        Returns: undefined
+      }
+      p5b3_admin_exit_review_v1: {
+        Args: {
+          p_exit_reason: Database["public"]["Enums"]["p5_batch3_exit_reason"]
+          p_grant_id: string
+          p_note: string
+        }
+        Returns: undefined
+      }
+      p5b3_admin_invite_funder_user_v1: {
+        Args: {
+          p_display_name: string
+          p_email: string
+          p_org_id: string
+          p_role: Database["public"]["Enums"]["p5_batch3_funder_role"]
+        }
+        Returns: string
+      }
+      p5b3_admin_reactivate_grant_v1: {
+        Args: { p_grant_id: string; p_new_expiry: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b3_admin_release_pack_version_v1: {
+        Args: {
+          p_evidence_pack_id: string
+          p_evidence_pack_version: string
+          p_grant_id: string
+          p_release_reason: string
+        }
+        Returns: undefined
+      }
+      p5b3_admin_review_outcome_v1: {
+        Args: { p_outcome_id: string; p_reason: string; p_status: string }
+        Returns: undefined
+      }
+      p5b3_admin_revoke_grant_v1: {
+        Args: { p_grant_id: string; p_reason: string }
+        Returns: undefined
+      }
+      p5b3_admin_set_funder_user_status_v1: {
+        Args: {
+          p_reason: string
+          p_status: Database["public"]["Enums"]["p5_batch3_funder_user_status"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      p5b3_admin_update_funder_org_v1: {
+        Args: { p_org_id: string; p_patch: Json }
+        Returns: undefined
+      }
+      p5b3_audit: {
+        Args: {
+          p_action: string
+          p_funder_org: string
+          p_funder_user: string
+          p_new: Json
+          p_note: string
+          p_object_id: string
+          p_object_type: string
+          p_prior: Json
+          p_reason_code: string
+          p_role: Database["public"]["Enums"]["p5_batch3_funder_role"]
+          p_transaction_ref: string
+        }
+        Returns: string
+      }
       p5b3_current_funder_org: { Args: never; Returns: string }
+      p5b3_funder_record_download_v1: {
+        Args: {
+          p_evidence_pack_id: string
+          p_evidence_pack_version: string
+          p_file_name: string
+          p_file_type: string
+          p_grant_id: string
+          p_link_ttl_seconds: number
+        }
+        Returns: string
+      }
+      p5b3_funder_submit_outcome_v1: {
+        Args: {
+          p_conditions: string
+          p_grant_id: string
+          p_outcome_type: Database["public"]["Enums"]["p5_batch3_outcome_type"]
+          p_term_sheet_document_id: string
+        }
+        Returns: string
+      }
+      p5b3_funder_submit_request_v1: {
+        Args: {
+          p_category: Database["public"]["Enums"]["p5_batch3_request_category"]
+          p_grant_id: string
+          p_original_message: string
+        }
+        Returns: string
+      }
       p5b3_has_active_grant: {
         Args: { _transaction_ref: string }
         Returns: boolean
