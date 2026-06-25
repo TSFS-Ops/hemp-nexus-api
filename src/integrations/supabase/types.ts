@@ -10619,54 +10619,171 @@ export type Database = {
       p5_batch4_finality_records: {
         Row: {
           approval_reference: string | null
+          approvals_snapshot: Json
+          audit_hash_reference: string | null
           audit_reference: string | null
           blocker_summary: Json
           case_id: string
+          compliance_decision_snapshot: Json
           created_at: string
           evidence_pack_reference: string | null
+          evidence_rating_snapshot: Json
+          evidence_relied_on_snapshot: Json
+          exceptions_snapshot: Json
           final_outcome: Database["public"]["Enums"]["p5_batch4_finality_outcome"]
           finality_summary: string
+          funder_review_outcome_snapshot: Json
           funder_status_summary: Json
+          hash_chain_reference: string | null
           id: string
+          is_current_effective_record: boolean
+          kyb_kyc_decision_snapshot: Json
           locked: boolean
           memory_summary: Json
+          outcome_code_version: string
+          p5b5_correction_status:
+            | Database["public"]["Enums"]["p5b5_correction_status"]
+            | null
+          p5b5_dispute_status:
+            | Database["public"]["Enums"]["p5b5_dispute_status"]
+            | null
+          p5b5_evidence_completeness_status:
+            | Database["public"]["Enums"]["p5b5_evidence_completeness_status"]
+            | null
+          p5b5_final_outcome_code:
+            | Database["public"]["Enums"]["p5b5_final_outcome_code"]
+            | null
+          p5b5_finality_status:
+            | Database["public"]["Enums"]["p5b5_finality_status"]
+            | null
+          p5b5_memory_status:
+            | Database["public"]["Enums"]["p5b5_memory_status"]
+            | null
+          p5b5_provider_dependency_status:
+            | Database["public"]["Enums"]["p5b5_provider_dependency_status"]
+            | null
+          payment_state_snapshot: Json
+          provider_dependency_state_snapshot: Json
+          reconciliation_state_snapshot: Json
           recorded_at: string
           recorded_by: string
+          schema_version: string
+          superseded_by_finality_record_id: string | null
           waiver_summary: Json
+          waivers_snapshot: Json
+          webhook_state_snapshot: Json
         }
         Insert: {
           approval_reference?: string | null
+          approvals_snapshot?: Json
+          audit_hash_reference?: string | null
           audit_reference?: string | null
           blocker_summary?: Json
           case_id: string
+          compliance_decision_snapshot?: Json
           created_at?: string
           evidence_pack_reference?: string | null
+          evidence_rating_snapshot?: Json
+          evidence_relied_on_snapshot?: Json
+          exceptions_snapshot?: Json
           final_outcome: Database["public"]["Enums"]["p5_batch4_finality_outcome"]
           finality_summary: string
+          funder_review_outcome_snapshot?: Json
           funder_status_summary?: Json
+          hash_chain_reference?: string | null
           id?: string
+          is_current_effective_record?: boolean
+          kyb_kyc_decision_snapshot?: Json
           locked?: boolean
           memory_summary?: Json
+          outcome_code_version?: string
+          p5b5_correction_status?:
+            | Database["public"]["Enums"]["p5b5_correction_status"]
+            | null
+          p5b5_dispute_status?:
+            | Database["public"]["Enums"]["p5b5_dispute_status"]
+            | null
+          p5b5_evidence_completeness_status?:
+            | Database["public"]["Enums"]["p5b5_evidence_completeness_status"]
+            | null
+          p5b5_final_outcome_code?:
+            | Database["public"]["Enums"]["p5b5_final_outcome_code"]
+            | null
+          p5b5_finality_status?:
+            | Database["public"]["Enums"]["p5b5_finality_status"]
+            | null
+          p5b5_memory_status?:
+            | Database["public"]["Enums"]["p5b5_memory_status"]
+            | null
+          p5b5_provider_dependency_status?:
+            | Database["public"]["Enums"]["p5b5_provider_dependency_status"]
+            | null
+          payment_state_snapshot?: Json
+          provider_dependency_state_snapshot?: Json
+          reconciliation_state_snapshot?: Json
           recorded_at?: string
           recorded_by: string
+          schema_version?: string
+          superseded_by_finality_record_id?: string | null
           waiver_summary?: Json
+          waivers_snapshot?: Json
+          webhook_state_snapshot?: Json
         }
         Update: {
           approval_reference?: string | null
+          approvals_snapshot?: Json
+          audit_hash_reference?: string | null
           audit_reference?: string | null
           blocker_summary?: Json
           case_id?: string
+          compliance_decision_snapshot?: Json
           created_at?: string
           evidence_pack_reference?: string | null
+          evidence_rating_snapshot?: Json
+          evidence_relied_on_snapshot?: Json
+          exceptions_snapshot?: Json
           final_outcome?: Database["public"]["Enums"]["p5_batch4_finality_outcome"]
           finality_summary?: string
+          funder_review_outcome_snapshot?: Json
           funder_status_summary?: Json
+          hash_chain_reference?: string | null
           id?: string
+          is_current_effective_record?: boolean
+          kyb_kyc_decision_snapshot?: Json
           locked?: boolean
           memory_summary?: Json
+          outcome_code_version?: string
+          p5b5_correction_status?:
+            | Database["public"]["Enums"]["p5b5_correction_status"]
+            | null
+          p5b5_dispute_status?:
+            | Database["public"]["Enums"]["p5b5_dispute_status"]
+            | null
+          p5b5_evidence_completeness_status?:
+            | Database["public"]["Enums"]["p5b5_evidence_completeness_status"]
+            | null
+          p5b5_final_outcome_code?:
+            | Database["public"]["Enums"]["p5b5_final_outcome_code"]
+            | null
+          p5b5_finality_status?:
+            | Database["public"]["Enums"]["p5b5_finality_status"]
+            | null
+          p5b5_memory_status?:
+            | Database["public"]["Enums"]["p5b5_memory_status"]
+            | null
+          p5b5_provider_dependency_status?:
+            | Database["public"]["Enums"]["p5b5_provider_dependency_status"]
+            | null
+          payment_state_snapshot?: Json
+          provider_dependency_state_snapshot?: Json
+          reconciliation_state_snapshot?: Json
           recorded_at?: string
           recorded_by?: string
+          schema_version?: string
+          superseded_by_finality_record_id?: string | null
           waiver_summary?: Json
+          waivers_snapshot?: Json
+          webhook_state_snapshot?: Json
         }
         Relationships: [
           {
@@ -10674,6 +10791,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: true
             referencedRelation: "p5_batch4_execution_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_finality_records_superseded_by_finality_record_i_fkey"
+            columns: ["superseded_by_finality_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_finality_records"
             referencedColumns: ["id"]
           },
         ]
@@ -10814,6 +10938,111 @@ export type Database = {
             columns: ["milestone_id"]
             isOneToOne: false
             referencedRelation: "p5_batch4_execution_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch5_memory_records: {
+        Row: {
+          audit_hash_reference: string | null
+          case_id: string
+          correction_status: Database["public"]["Enums"]["p5b5_correction_status"]
+          counterparty_id: string | null
+          created_at: string
+          dispute_status: Database["public"]["Enums"]["p5b5_dispute_status"]
+          evidence_completeness_status:
+            | Database["public"]["Enums"]["p5b5_evidence_completeness_status"]
+            | null
+          evidence_rating_band: string | null
+          final_outcome_code: Database["public"]["Enums"]["p5b5_final_outcome_code"]
+          finality_record_id: string
+          hash_chain_reference: string | null
+          id: string
+          memory_status: Database["public"]["Enums"]["p5b5_memory_status"]
+          organisation_id: string | null
+          outcome_code_version: string
+          provider_dependency_status:
+            | Database["public"]["Enums"]["p5b5_provider_dependency_status"]
+            | null
+          reliance_level: string
+          safe_facts: Json
+          schema_version: string
+          superseded_by_memory_record_id: string | null
+          trigger_event_type: string
+          written_at: string
+          written_by: string
+        }
+        Insert: {
+          audit_hash_reference?: string | null
+          case_id: string
+          correction_status?: Database["public"]["Enums"]["p5b5_correction_status"]
+          counterparty_id?: string | null
+          created_at?: string
+          dispute_status?: Database["public"]["Enums"]["p5b5_dispute_status"]
+          evidence_completeness_status?:
+            | Database["public"]["Enums"]["p5b5_evidence_completeness_status"]
+            | null
+          evidence_rating_band?: string | null
+          final_outcome_code: Database["public"]["Enums"]["p5b5_final_outcome_code"]
+          finality_record_id: string
+          hash_chain_reference?: string | null
+          id?: string
+          memory_status?: Database["public"]["Enums"]["p5b5_memory_status"]
+          organisation_id?: string | null
+          outcome_code_version?: string
+          provider_dependency_status?:
+            | Database["public"]["Enums"]["p5b5_provider_dependency_status"]
+            | null
+          reliance_level?: string
+          safe_facts?: Json
+          schema_version?: string
+          superseded_by_memory_record_id?: string | null
+          trigger_event_type: string
+          written_at?: string
+          written_by: string
+        }
+        Update: {
+          audit_hash_reference?: string | null
+          case_id?: string
+          correction_status?: Database["public"]["Enums"]["p5b5_correction_status"]
+          counterparty_id?: string | null
+          created_at?: string
+          dispute_status?: Database["public"]["Enums"]["p5b5_dispute_status"]
+          evidence_completeness_status?:
+            | Database["public"]["Enums"]["p5b5_evidence_completeness_status"]
+            | null
+          evidence_rating_band?: string | null
+          final_outcome_code?: Database["public"]["Enums"]["p5b5_final_outcome_code"]
+          finality_record_id?: string
+          hash_chain_reference?: string | null
+          id?: string
+          memory_status?: Database["public"]["Enums"]["p5b5_memory_status"]
+          organisation_id?: string | null
+          outcome_code_version?: string
+          provider_dependency_status?:
+            | Database["public"]["Enums"]["p5b5_provider_dependency_status"]
+            | null
+          reliance_level?: string
+          safe_facts?: Json
+          schema_version?: string
+          superseded_by_memory_record_id?: string | null
+          trigger_event_type?: string
+          written_at?: string
+          written_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch5_memory_records_finality_record_id_fkey"
+            columns: ["finality_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_finality_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch5_memory_records_superseded_by_memory_record_id_fkey"
+            columns: ["superseded_by_memory_record_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch5_memory_records"
             referencedColumns: ["id"]
           },
         ]
@@ -23725,6 +23954,59 @@ export type Database = {
         | "optional"
         | "conditional"
         | "not_required"
+      p5b5_correction_status:
+        | "none"
+        | "corrected"
+        | "superseded"
+        | "administrative_reclassification"
+      p5b5_dispute_status:
+        | "none"
+        | "under_dispute"
+        | "resolved_upheld"
+        | "resolved_partially_upheld"
+        | "resolved_dismissed"
+        | "withdrawn"
+        | "escalated"
+      p5b5_evidence_completeness_status:
+        | "complete"
+        | "incomplete"
+        | "waived"
+        | "not_applicable"
+      p5b5_final_outcome_code:
+        | "COMPLETED"
+        | "COMPLETED_WITH_EXCEPTION"
+        | "APPROVED_NOT_EXECUTED"
+        | "WITHDRAWN_BY_USER"
+        | "REJECTED"
+        | "EXPIRED"
+        | "CANCELLED"
+        | "FAILED_PROVIDER_DEPENDENCY"
+        | "DISPUTED"
+        | "SUPERSEDED"
+        | "TEST_OR_INVALID"
+      p5b5_finality_status:
+        | "none"
+        | "ready_for_finality"
+        | "final"
+        | "under_dispute"
+        | "corrected"
+        | "superseded"
+        | "invalid_test"
+      p5b5_memory_status:
+        | "active"
+        | "paused"
+        | "excluded"
+        | "corrected"
+        | "superseded"
+        | "not_written"
+      p5b5_provider_dependency_status:
+        | "success"
+        | "failed"
+        | "inconclusive"
+        | "reconciled"
+        | "refunded"
+        | "duplicate_ignored"
+        | "not_applicable"
       registry_readiness_state:
         | "not_started"
         | "shell_ready"
@@ -24339,6 +24621,66 @@ export const Constants = {
         "optional",
         "conditional",
         "not_required",
+      ],
+      p5b5_correction_status: [
+        "none",
+        "corrected",
+        "superseded",
+        "administrative_reclassification",
+      ],
+      p5b5_dispute_status: [
+        "none",
+        "under_dispute",
+        "resolved_upheld",
+        "resolved_partially_upheld",
+        "resolved_dismissed",
+        "withdrawn",
+        "escalated",
+      ],
+      p5b5_evidence_completeness_status: [
+        "complete",
+        "incomplete",
+        "waived",
+        "not_applicable",
+      ],
+      p5b5_final_outcome_code: [
+        "COMPLETED",
+        "COMPLETED_WITH_EXCEPTION",
+        "APPROVED_NOT_EXECUTED",
+        "WITHDRAWN_BY_USER",
+        "REJECTED",
+        "EXPIRED",
+        "CANCELLED",
+        "FAILED_PROVIDER_DEPENDENCY",
+        "DISPUTED",
+        "SUPERSEDED",
+        "TEST_OR_INVALID",
+      ],
+      p5b5_finality_status: [
+        "none",
+        "ready_for_finality",
+        "final",
+        "under_dispute",
+        "corrected",
+        "superseded",
+        "invalid_test",
+      ],
+      p5b5_memory_status: [
+        "active",
+        "paused",
+        "excluded",
+        "corrected",
+        "superseded",
+        "not_written",
+      ],
+      p5b5_provider_dependency_status: [
+        "success",
+        "failed",
+        "inconclusive",
+        "reconciled",
+        "refunded",
+        "duplicate_ignored",
+        "not_applicable",
       ],
       registry_readiness_state: [
         "not_started",
