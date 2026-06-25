@@ -124,9 +124,11 @@ export default function Auth() {
       if (!persona) return "/welcome";
       if (persona === "developer") return "/developers/keys";
       if (persona === "governance") return "/governance/triage";
-      // trade
+      // trade — per client direction (David Davies, 2026-06-25): default
+      // post-sign-in destination is the public home page, NOT the trading
+      // desk. Only resume a pre-auth journey if one was explicitly captured.
       if (hasPreAuthState()) return "/desk?resume=1";
-      return "/desk";
+      return "/";
     } catch (e) {
       console.warn("[Auth] persona lookup threw - defaulting to /welcome", e);
       return "/welcome";
