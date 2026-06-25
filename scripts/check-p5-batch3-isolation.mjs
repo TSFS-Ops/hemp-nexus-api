@@ -67,6 +67,8 @@ for (const rel of FORBIDDEN_UI_DIRS) {
 const ALLOWED_BATCH3_DIRS = [
   "src/lib/p5-batch3",
   "src/tests",
+  "src/pages/admin/p5-batch3",
+  "src/pages/funder/p5-batch3",
   "supabase/migrations",
   "scripts",
   "evidence/p5-batch3-funder-workflow",
