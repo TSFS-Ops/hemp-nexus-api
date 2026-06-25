@@ -165,6 +165,13 @@ const P5Batch3OrganisationDetail = lazy(() => import("@/pages/admin/p5-batch3/Or
 const P5Batch3Release = lazy(() => import("@/pages/admin/p5-batch3/Release"));
 const P5Batch3Requests = lazy(() => import("@/pages/admin/p5-batch3/Requests"));
 const P5Batch3Audit = lazy(() => import("@/pages/admin/p5-batch3/Audit"));
+// P-5 Batch 3 — Stage 5 funder-facing surfaces
+const P5Batch3FunderIndex = lazy(() => import("@/pages/funder/p5-batch3/Index"));
+const P5Batch3FunderOpportunity = lazy(() => import("@/pages/funder/p5-batch3/Opportunity"));
+const P5Batch3FunderReadiness = lazy(() => import("@/pages/funder/p5-batch3/Readiness"));
+const P5Batch3FunderRequests = lazy(() => import("@/pages/funder/p5-batch3/Requests"));
+const P5Batch3FunderOutcomes = lazy(() => import("@/pages/funder/p5-batch3/Outcomes"));
+const P5Batch3FunderDownloads = lazy(() => import("@/pages/funder/p5-batch3/Downloads"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -360,6 +367,14 @@ function App() {
                   <Route path="/admin/p5-batch3/release" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Release /></RequireAuth>} />
                   <Route path="/admin/p5-batch3/requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Requests /></RequireAuth>} />
                   <Route path="/admin/p5-batch3/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Audit /></RequireAuth>} />
+
+                  {/* P-5 Batch 3 — Stage 5: funder-facing surfaces (authenticated; grant enforced server-side) */}
+                  <Route path="/funder/p5-batch3" element={<RequireAuth><P5Batch3FunderIndex /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/opportunities/:grantId" element={<RequireAuth><P5Batch3FunderOpportunity /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/readiness/:grantId" element={<RequireAuth><P5Batch3FunderReadiness /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/requests/:grantId" element={<RequireAuth><P5Batch3FunderRequests /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/outcomes/:grantId" element={<RequireAuth><P5Batch3FunderOutcomes /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/downloads/:grantId" element={<RequireAuth><P5Batch3FunderDownloads /></RequireAuth>} />
 
 
                   {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}

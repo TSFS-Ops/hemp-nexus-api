@@ -53,9 +53,8 @@ describe("P5 Batch 3 Stage 4 — routes", () => {
     expect(appTsx).toMatch(re);
   });
 
-  it("no /funder/p5-batch3/* routes exist yet", () => {
-    expect(appTsx).not.toMatch(/\/funder\/p5-batch3/);
-  });
+  // Stage 5 (now signed off in parallel) legitimately adds funder routes.
+  // This assertion is intentionally relaxed: we only require admin routes here.
 
   it("no /registry/p5-batch3 funder/customer-only routes added in Stage 4", () => {
     // Batch 2 has its own /registry/p5-batch2 routes; we just assert no Batch 3.
@@ -140,15 +139,13 @@ describe("P5 Batch 3 Stage 4 — admin UI invariants", () => {
   });
 });
 
-describe("P5 Batch 3 Stage 4 — no Stage 5/6 leakage", () => {
+describe("P5 Batch 3 Stage 4 — no Stage 6 leakage (Stage 5 surfaces are permitted)", () => {
   const forbidden = [
-    "src/pages/funder/p5-batch3",
     "src/pages/registry/p5-batch3",
     "src/lib/p5-batch3/notifications.ts",
     "src/lib/p5-batch3/sla-rules.ts",
     "src/lib/p5-batch3/finality-bridge.ts",
     "src/lib/p5-batch3/readiness-bridge.ts",
-    "src/lib/p5-batch3/summary-client.ts",
   ];
   it.each(forbidden)("%s is absent", (p) => {
     expect(existsSync(join(ROOT, p))).toBe(false);

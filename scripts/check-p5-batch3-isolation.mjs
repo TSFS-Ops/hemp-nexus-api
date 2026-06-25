@@ -47,19 +47,19 @@ if (existsSync(fnDir)) {
   }
 }
 
-// --- Rule 2: Stage 4+ surfaces must not exist yet -------------------------
-// Stage 4 introduces admin-only UI under src/pages/admin/p5-batch3.
-// Funder-facing UI (Stage 5+) and Stage 6 cross-cutting modules remain forbidden.
+// --- Rule 2: Stage 6 cross-cutting surfaces must not exist yet -------------
+// Stage 4 introduced admin UI; Stage 5 introduces funder UI + summary client.
+// Stage 6 (notifications, SLA rules, finality/Memory bridges) remains forbidden.
 const FORBIDDEN_UI_DIRS = [
-  "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
-  "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
+  "src/lib/p5-batch3/finality-bridge.ts",
+  "src/lib/p5-batch3/readiness-bridge.ts",
 ];
 for (const rel of FORBIDDEN_UI_DIRS) {
   if (existsSync(join(ROOT, rel))) {
-    VIOLATIONS.push(`Stage 1 guard: forbidden Stage 4+ file/dir already present: ${rel}`);
+    VIOLATIONS.push(`Stage 1 guard: forbidden Stage 6 file/dir present: ${rel}`);
   }
 }
 
@@ -67,6 +67,8 @@ for (const rel of FORBIDDEN_UI_DIRS) {
 const ALLOWED_BATCH3_DIRS = [
   "src/lib/p5-batch3",
   "src/tests",
+  "src/pages/admin/p5-batch3",
+  "src/pages/funder/p5-batch3",
   "supabase/migrations",
   "scripts",
   "evidence/p5-batch3-funder-workflow",
@@ -99,15 +101,8 @@ for (const f of batch3Files) {
   }
 }
 
-// --- Rule 4: routes/pages must not register Batch 3 surfaces yet ---------
-// --- Rule 4: routes/pages must not register funder-facing Batch 3 surfaces yet ---
-const appTsx = join(ROOT, "src/App.tsx");
-if (existsSync(appTsx)) {
-  const text = readFileSync(appTsx, "utf8");
-  if (/\/funder\/p5-batch3/.test(text)) {
-    VIOLATIONS.push("Stage 1: src/App.tsx references funder Batch 3 routes (Stage 5+)");
-  }
-}
+// --- Rule 4: routes/pages — funder routes are Stage 5+, only Stage 6 forbidden ---
+// (Funder routes are now permitted as of Stage 5.)
 
 if (VIOLATIONS.length > 0) {
   console.error("❌ P5_BATCH_3_STAGE_1_ISOLATION_FAILED");

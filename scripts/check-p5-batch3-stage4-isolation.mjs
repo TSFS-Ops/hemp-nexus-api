@@ -21,18 +21,16 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 const V = [];
 
-// Forbidden Stage 5/6 paths must remain absent.
+// Forbidden Stage 6 paths must remain absent.
 const FORBIDDEN_PATHS = [
-  "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
   "src/lib/p5-batch3/finality-bridge.ts",
   "src/lib/p5-batch3/readiness-bridge.ts",
-  "src/lib/p5-batch3/summary-client.ts",
 ];
 for (const p of FORBIDDEN_PATHS) {
-  if (existsSync(join(ROOT, p))) V.push(`Stage 4 leak: ${p} present (Stage 5/6 only)`);
+  if (existsSync(join(ROOT, p))) V.push(`Stage 4 leak: ${p} present (Stage 6 only)`);
 }
 
 // Edge functions allow-list unchanged from Stage 3.
@@ -134,16 +132,13 @@ for (const f of adminFiles) {
   }
 }
 
-// App.tsx invariants: funder/p5-batch3 still absent; admin routes must be
-// guarded with role="platform_admin".
+// App.tsx invariants: admin /admin/p5-batch3 routes must remain platform_admin
+// guarded. Funder /funder/p5-batch3 routes are permitted as of Stage 5.
 const appTsx = join(ROOT, "src/App.tsx");
 if (existsSync(appTsx)) {
   const text = readFileSync(appTsx, "utf8");
-  if (/\/funder\/p5-batch3/.test(text)) {
-    V.push("Stage 4 leak: src/App.tsx registers /funder/p5-batch3 route (Stage 5)");
-  }
   if (/\/registry\/p5-batch3/.test(text)) {
-    V.push("Stage 4 leak: src/App.tsx registers /registry/p5-batch3 route (Stage 5)");
+    V.push("Stage 4 leak: src/App.tsx registers /registry/p5-batch3 route (forbidden)");
   }
   // Every /admin/p5-batch3 route must include role="platform_admin".
   const routeRe = /<Route\s+path=["']\/admin\/p5-batch3[^"']*["'][\s\S]*?\/>/g;

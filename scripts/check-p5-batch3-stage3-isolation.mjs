@@ -23,16 +23,14 @@ const ROOT = process.cwd();
 const V = [];
 
 const FORBIDDEN_PATHS = [
-  "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
   "src/lib/p5-batch3/finality-bridge.ts",
   "src/lib/p5-batch3/readiness-bridge.ts",
-  "src/lib/p5-batch3/summary-client.ts",
 ];
 for (const p of FORBIDDEN_PATHS) {
-  if (existsSync(join(ROOT, p))) V.push(`Stage 3 leak: ${p} present (Stage 4+ only)`);
+  if (existsSync(join(ROOT, p))) V.push(`Stage 3 leak: ${p} present (Stage 6 only)`);
 }
 
 // Allowed Stage 3 edge function set (exact match list).
@@ -106,15 +104,8 @@ for (const f of scanRoots) {
   }
 }
 
-// App.tsx must not register Batch 3 routes yet (Stage 4+).
-// App.tsx may register Stage 4 admin routes only; funder routes remain forbidden.
-const appTsx = join(ROOT, "src/App.tsx");
-if (existsSync(appTsx)) {
-  const text = readFileSync(appTsx, "utf8");
-  if (/\/funder\/p5-batch3/.test(text)) {
-    V.push("Stage 3 leak: src/App.tsx references funder Batch 3 routes (Stage 5+)");
-  }
-}
+// App.tsx may register Stage 4 admin and Stage 5 funder routes; only Stage 6
+// surfaces remain forbidden (handled via FORBIDDEN_PATHS above).
 
 // supabase/config.toml must not declare cron / scheduled blocks for Batch 3.
 const cfg = join(ROOT, "supabase/config.toml");
