@@ -48,11 +48,11 @@ if (existsSync(fnDir)) {
 }
 
 // --- Rule 2: Stage 4+ surfaces must not exist yet -------------------------
+// Stage 4 introduces admin-only UI under src/pages/admin/p5-batch3.
+// Funder-facing UI (Stage 5+) and Stage 6 cross-cutting modules remain forbidden.
 const FORBIDDEN_UI_DIRS = [
-  "src/pages/admin/p5-batch3",
   "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
-  "src/hooks/useP5Batch3Permissions.ts",
   "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
