@@ -63,15 +63,66 @@ Deno.serve(async (req) => {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
+  // ── Phase 1 correlation hardening ────────────────────────────────
+  // Read cron_run_id / cron_job_name injected by public.cron_invoke().
+  // These let cron_reconcile_heartbeats fall through pg_net DNS-timeout
+  // false-failures when a matching witness row was emitted by this run.
+  let cronRunId: string | null = null;
+  let cronJobName: string | null = null;
+  if (req.method === "POST") {
+    try {
+      const body = await req.clone().json();
+      if (body && typeof body === "object") {
+        if (typeof body.cron_run_id === "string") cronRunId = body.cron_run_id;
+        if (typeof body.cron_job_name === "string") cronJobName = body.cron_job_name;
+      }
+    } catch {
+      // Non-JSON / empty body — manual ad-hoc trigger; no correlation id.
+    }
+  }
+
+  const emitWitness = async (
+    outcome: "ok" | "error",
+    extras: Record<string, unknown> = {},
+  ) => {
+    if (!cronRunId) return; // Only emit when invoked via cron_invoke.
+    try {
+      await supabase.from("admin_audit_logs").insert({
+        admin_user_id: null,
+        action: "cron.outreach_sla_monitor_tick",
+        target_type: "cron_job",
+        target_id: null,
+        details: {
+          cron_run_id: cronRunId,
+          cron_job_name: cronJobName,
+          source: "outreach-sla-monitor",
+          outcome,
+          request_id: requestId,
+          created_by: "cron_invoke_correlation_phase_1",
+          ...extras,
+        },
+      });
+    } catch (witnessErr) {
+      console.warn(`[${requestId}] witness insert failed:`, witnessErr);
+    }
+  };
+
   try {
     const settings = await loadSettings(supabase);
 
     if (!settings.digest_enabled) {
+      await emitWitness("ok", {
+        skipped: "digest_disabled",
+        included: 0,
+        overdue_total: 0,
+        threshold_hours: settings.threshold_hours,
+      });
       return new Response(
         JSON.stringify({ ok: true, skipped: "digest_disabled" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     const thresholdMs = settings.threshold_hours * 60 * 60 * 1000;
     const now = Date.now();
@@ -163,6 +214,13 @@ Deno.serve(async (req) => {
 
     if (eligible.length === 0) {
       console.log(`[${requestId}] SLA scan: 0 eligible overdue (${(overdue ?? []).length} overdue total, ${skippedStale.length} stale, others recently reminded)`);
+      await emitWitness("ok", {
+        included: 0,
+        overdue_total: overdue?.length ?? 0,
+        skipped_stale: skippedStale.length,
+        threshold_hours: settings.threshold_hours,
+        email_sent: false,
+      });
       return new Response(
         JSON.stringify({
           ok: true,
@@ -174,6 +232,7 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     const items = eligible.map((e) => {
       const ageHours = (now - new Date(e.created_at).getTime()) / 3600_000;
@@ -214,11 +273,19 @@ Deno.serve(async (req) => {
     if (sendErr || (sendResult && (sendResult as any).success === false)) {
       const reason = (sendResult as any)?.reason || (sendErr as any)?.message || "send_failed";
       console.error(`[${requestId}] SLA digest send failed:`, reason);
+      await emitWitness("error", {
+        included: 0,
+        overdue_total: overdue?.length ?? 0,
+        threshold_hours: settings.threshold_hours,
+        error: "digest_send_failed",
+        reason,
+      });
       return new Response(
         JSON.stringify({ ok: false, error: "digest_send_failed", reason }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     // Mark each included engagement as reminded so we don't re-spam next tick.
     // ── NOT-010: status predicate on the UPDATE ─────────────────────
@@ -284,6 +351,14 @@ Deno.serve(async (req) => {
       `[${requestId}] SLA digest dispatched: ${ids.length} engagement(s) to ${settings.reminder_email}`
     );
 
+    await emitWitness("ok", {
+      included: ids.length,
+      overdue_total: overdue?.length ?? 0,
+      threshold_hours: settings.threshold_hours,
+      email_sent: true,
+      recipient: settings.reminder_email,
+    });
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -297,6 +372,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error(`[${requestId}] outreach-sla-monitor error:`, err);
+    await emitWitness("error", { error: (err as Error).message });
     return new Response(
       JSON.stringify({ ok: false, error: (err as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
