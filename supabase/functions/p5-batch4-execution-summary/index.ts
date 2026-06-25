@@ -186,8 +186,70 @@ Deno.serve(async (req) => {
       return json({ audience, cases: rows, ...extras });
     }
 
+    // ---------------------------------------------------------------
+    // audience === "org_user"
+    // Organisation / counterparty surface. Scoped strictly to cases
+    // owned by the calling user (owner_user_id = auth.uid()). Returns
+    // ONLY the safe task-focused projection. NO funder data, NO audit,
+    // NO internal blocker detail, NO raw evidence references / hashes.
+    // ---------------------------------------------------------------
+    if (audience === "org_user") {
+      const q = supabase
+        .from("p5_batch4_execution_cases")
+        .select(ORG_USER_SAFE_FIELDS.join(","))
+        .eq("owner_user_id", userId);
+      const { data, error } = caseId
+        ? await q.eq("id", caseId)
+        : await q.limit(100);
+      if (error) return json({ error: error.message }, 500);
+      const rows = (data ?? []).map((r) => {
+        const projected = projectRow(
+          r as Record<string, unknown>,
+          ORG_USER_SAFE_FIELDS,
+        );
+        for (const k of Object.keys(projected)) {
+          if (FORBIDDEN_ORG_USER_FIELDS.has(k)) delete projected[k];
+        }
+        return projected;
+      });
 
-    // audience === "funder"
+      const include = (url.searchParams.get("include") ?? "")
+        .split(",").map((s) => s.trim()).filter(Boolean);
+      const extras: Record<string, unknown> = {};
+      if (caseId && rows.length > 0 && include.length > 0) {
+        if (include.includes("milestones")) {
+          const { data: ms } = await supabase
+            .from("p5_batch4_execution_milestones")
+            .select("id,milestone_key,milestone_name,milestone_status,mandatory_type,overdue_label,due_at,sort_order")
+            .eq("case_id", caseId)
+            .order("sort_order", { ascending: true });
+          extras.milestones = ms ?? [];
+        }
+        if (include.includes("blockers")) {
+          // External-safe label ONLY. Internal detail / blocker_key /
+          // blocker_type are admin-only fields and never returned.
+          const { data: bs } = await supabase
+            .from("p5_batch4_blockers")
+            .select("id,blocker_name,blocker_status,external_safe_label,opened_at,resolved_at")
+            .eq("case_id", caseId)
+            .order("opened_at", { ascending: false });
+          extras.blockers = bs ?? [];
+        }
+        if (include.includes("evidence")) {
+          // No file_reference / file_hash / reviewer identity. reject_reason
+          // is the only feedback field returned — needed so the user knows
+          // why their submission needs replacement.
+          const { data: ev } = await supabase
+            .from("p5_batch4_evidence_items")
+            .select("id,evidence_type,evidence_label,evidence_status,requirement_type,requested_at,reject_reason")
+            .eq("case_id", caseId)
+            .order("requested_at", { ascending: true });
+          extras.evidence = ev ?? [];
+        }
+      }
+      return json({ audience, cases: rows, ...extras });
+    }
+
     const { data: funderOrg } = await supabase.rpc("p5b4_current_funder_org");
     if (!funderOrg) return json({ error: "no_active_funder_membership" }, 403);
 
