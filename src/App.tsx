@@ -353,6 +353,15 @@ function App() {
                   <Route path="/admin/p5-batch2/packs" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2EvidencePackViewer /></RequireAuth>} />
                   <Route path="/admin/p5-batch2/packs/:packId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2FinalitySnapshotViewer /></RequireAuth>} />
 
+                  {/* P-5 Batch 3 — Stage 4: admin-only funder workflow surfaces */}
+                  <Route path="/admin/p5-batch3" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3AdminIndex /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/organisations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Organisations /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/organisations/:organisationId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3OrganisationDetail /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/release" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Release /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Requests /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Audit /></RequireAuth>} />
+
+
                   {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}
                   <Route path="/registry/my-companies/:companyId/readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
                   <Route path="/registry/my-readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
