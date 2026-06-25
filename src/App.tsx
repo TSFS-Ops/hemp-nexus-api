@@ -158,6 +158,13 @@ const P5Batch2CounterpartyChecklist = lazy(() => import("@/pages/registry/p5-bat
 const P5Batch2SubjectEvidence = lazy(() => import("@/pages/registry/p5-batch2/subject/SubjectEvidence"));
 const P5Batch2FunderEvidencePack = lazy(() => import("@/pages/funder/p5-batch2/FunderEvidencePack"));
 const P5Batch2ApiCustomerSummary = lazy(() => import("@/pages/registry/p5-batch2/api-customer/ApiCustomerSummary"));
+// P-5 Batch 3 — Stage 4: admin-only funder workflow surfaces (platform_admin)
+const P5Batch3AdminIndex = lazy(() => import("@/pages/admin/p5-batch3/Index"));
+const P5Batch3Organisations = lazy(() => import("@/pages/admin/p5-batch3/Organisations"));
+const P5Batch3OrganisationDetail = lazy(() => import("@/pages/admin/p5-batch3/OrganisationDetail"));
+const P5Batch3Release = lazy(() => import("@/pages/admin/p5-batch3/Release"));
+const P5Batch3Requests = lazy(() => import("@/pages/admin/p5-batch3/Requests"));
+const P5Batch3Audit = lazy(() => import("@/pages/admin/p5-batch3/Audit"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -345,6 +352,15 @@ function App() {
                   <Route path="/admin/p5-batch2/records/:recordId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2RecordDetail /></RequireAuth>} />
                   <Route path="/admin/p5-batch2/packs" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2EvidencePackViewer /></RequireAuth>} />
                   <Route path="/admin/p5-batch2/packs/:packId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch2FinalitySnapshotViewer /></RequireAuth>} />
+
+                  {/* P-5 Batch 3 — Stage 4: admin-only funder workflow surfaces */}
+                  <Route path="/admin/p5-batch3" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3AdminIndex /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/organisations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Organisations /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/organisations/:organisationId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3OrganisationDetail /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/release" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Release /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Requests /></RequireAuth>} />
+                  <Route path="/admin/p5-batch3/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Audit /></RequireAuth>} />
+
 
                   {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}
                   <Route path="/registry/my-companies/:companyId/readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />

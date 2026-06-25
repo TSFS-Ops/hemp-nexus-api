@@ -48,11 +48,11 @@ if (existsSync(fnDir)) {
 }
 
 // --- Rule 2: Stage 4+ surfaces must not exist yet -------------------------
+// Stage 4 introduces admin-only UI under src/pages/admin/p5-batch3.
+// Funder-facing UI (Stage 5+) and Stage 6 cross-cutting modules remain forbidden.
 const FORBIDDEN_UI_DIRS = [
-  "src/pages/admin/p5-batch3",
   "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
-  "src/hooks/useP5Batch3Permissions.ts",
   "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
@@ -85,7 +85,8 @@ const batch3Files = walk(join(ROOT, "src/lib/p5-batch3"))
         /p5-batch3/.test(p) &&
         // Isolation tests legitimately enumerate the forbidden tokens to
         // assert that the *migration* does not reference them.
-        !/p5-batch3-stage1-schema-isolation\.test\.ts$/.test(p),
+        !/p5-batch3-stage1-schema-isolation\.test\.ts$/.test(p) &&
+        !/p5-batch3-stage4-isolation\.test\.ts$/.test(p),
     ),
   );
 
@@ -99,11 +100,12 @@ for (const f of batch3Files) {
 }
 
 // --- Rule 4: routes/pages must not register Batch 3 surfaces yet ---------
+// --- Rule 4: routes/pages must not register funder-facing Batch 3 surfaces yet ---
 const appTsx = join(ROOT, "src/App.tsx");
 if (existsSync(appTsx)) {
   const text = readFileSync(appTsx, "utf8");
-  if (/p5-?batch-?3/i.test(text) || /\/funder\/p5-batch3/.test(text)) {
-    VIOLATIONS.push("Stage 1: src/App.tsx references Batch 3 routes (should be Stage 4+)");
+  if (/\/funder\/p5-batch3/.test(text)) {
+    VIOLATIONS.push("Stage 1: src/App.tsx references funder Batch 3 routes (Stage 5+)");
   }
 }
 

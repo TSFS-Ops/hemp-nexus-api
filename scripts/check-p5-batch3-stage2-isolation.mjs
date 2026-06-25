@@ -14,10 +14,8 @@ const V = [];
 
 // Rule A: no Stage 4/5/6 files allowed yet (rpc.ts is permitted as of Stage 3).
 const FORBIDDEN_PATHS = [
-  "src/pages/admin/p5-batch3",
   "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
-  "src/hooks/useP5Batch3Permissions.ts",
   "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
@@ -91,12 +89,12 @@ for (const f of files) {
   }
 }
 
-// Rule E: App.tsx must not register Batch 3 routes yet.
+// Rule E: App.tsx must not register funder-facing Batch 3 routes yet (Stage 5+).
 const appTsx = join(ROOT, "src/App.tsx");
 if (existsSync(appTsx)) {
   const text = readFileSync(appTsx, "utf8");
-  if (/p5-?batch-?3/i.test(text)) {
-    V.push("Stage 2 leak: src/App.tsx references Batch 3 routes");
+  if (/\/funder\/p5-batch3/.test(text)) {
+    V.push("Stage 2 leak: src/App.tsx references funder Batch 3 routes (Stage 5+)");
   }
 }
 
