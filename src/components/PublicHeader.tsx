@@ -224,12 +224,24 @@ export function PublicHeader() {
                 </div>
               </div>
             ))}
-            {!isAuthenticated && (
+            {authReady && !isAuthenticated && (
               <div className="pt-3 border-t border-border">
-                <AuthLink className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-emerald-950">
+                <Link to={authHref} className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-emerald-950">
                   Create Account
                   <ArrowRight className="h-3.5 w-3.5" />
-                </AuthLink>
+                </Link>
+              </div>
+            )}
+            {authReady && isAuthenticated && (
+              <div className="pt-3 border-t border-border">
+                <Link
+                  to={dashboardHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md text-white bg-emerald-950"
+                >
+                  {dashboardLabel}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             )}
           </div>
