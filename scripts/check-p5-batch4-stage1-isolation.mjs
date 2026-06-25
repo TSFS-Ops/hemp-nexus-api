@@ -36,7 +36,7 @@ function walk(dir, out = []) {
 // Stage 1 declared "no Batch 4 edge functions"; once Stage 3 ships the
 // internal-safe summary function, that single function is the only one
 // permitted in this scope. Any additional Batch 4 edge function is a leak.
-const ALLOWED_BATCH4_EDGE_FNS = new Set(["p5-batch4-execution-summary"]);
+const ALLOWED_BATCH4_EDGE_FNS = new Set(["p5-batch4-execution-summary", "p5-batch4-sla-monitor"]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {

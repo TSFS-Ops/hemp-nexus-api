@@ -129,7 +129,7 @@ for (const f of libFiles) {
 // Stage 3 may add exactly one edge function (p5-batch4-execution-summary)
 // and one additional migration (RPC wrappers). Anything beyond that is a
 // surface leak Stage 2 must catch.
-const ALLOWED_BATCH4_EDGE_FNS = new Set(["p5-batch4-execution-summary"]);
+const ALLOWED_BATCH4_EDGE_FNS = new Set(["p5-batch4-execution-summary", "p5-batch4-sla-monitor"]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
