@@ -206,7 +206,6 @@ describe("P-5 Batch 5 Phase 6 — API-safe projection cross-consistency", () => 
     const allowed = [...P5B5_API_SAFE_FIELDS].sort();
     expect(keys).toEqual(allowed);
     expect(keys).toHaveLength(14);
-    }
   });
 
   it("stripToApiSafe drops unknown fields and stamps versions", () => {
