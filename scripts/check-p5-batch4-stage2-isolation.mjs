@@ -123,10 +123,15 @@ for (const f of libFiles) {
 
 
 // --- Stage 2 must not add edge functions, UI surfaces, or App.tsx routes ---
+// --- Stage 2 invariants that still hold cumulatively after Stage 3 ---
+// Stage 3 may add exactly one edge function (p5-batch4-execution-summary)
+// and one additional migration (RPC wrappers). Anything beyond that is a
+// surface leak Stage 2 must catch.
+const ALLOWED_BATCH4_EDGE_FNS = new Set(["p5-batch4-execution-summary"]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
-    if (/^p5-?batch-?4/i.test(name)) {
+    if (/^p5-?batch-?4/i.test(name) && !ALLOWED_BATCH4_EDGE_FNS.has(name)) {
       VIOLATIONS.push(`Stage 2 guard: unexpected Batch 4 edge function: ${name}`);
     }
   }
@@ -150,7 +155,6 @@ if (existsSync(appTsx)) {
   }
 }
 
-// --- Stage 2 must not add Batch 4 migrations ---
 const migDir = join(ROOT, "supabase/migrations");
 let batch4Migrations = 0;
 if (existsSync(migDir)) {
@@ -162,8 +166,9 @@ if (existsSync(migDir)) {
     }
   }
 }
-if (batch4Migrations !== 1) {
-  VIOLATIONS.push(`Stage 2 leak: expected exactly 1 Batch 4 migration, got ${batch4Migrations}`);
+// Stage 1 + Stage 3 = at most 2 Batch 4 migrations until Stage 7.
+if (batch4Migrations < 1 || batch4Migrations > 2) {
+  VIOLATIONS.push(`Stage 2 leak: expected 1-2 Batch 4 migrations, got ${batch4Migrations}`);
 }
 
 if (VIOLATIONS.length > 0) {
@@ -175,3 +180,4 @@ if (VIOLATIONS.length > 0) {
 console.log("✅ P5_BATCH_4_STAGE_2_ISOLATION_OK");
 console.log(`   Batch 4 lib files scanned: ${libFiles.length}`);
 console.log(`   Batch 4 migrations: ${batch4Migrations}`);
+
