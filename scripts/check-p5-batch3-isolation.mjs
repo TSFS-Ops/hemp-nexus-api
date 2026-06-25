@@ -32,30 +32,34 @@ function walk(dir, out = []) {
   return out;
 }
 
-// --- Rule 1: no funder edge function may exist in Stage 1 -----------------
+// --- Rule 1: funder edge functions are restricted to the allow-list ------
+// Stage 3 introduces the safe summary edge function. Stages 4–6 must add
+// nothing else under this prefix without explicit sign-off.
+const ALLOWED_BATCH3_FNS = new Set(["p5-batch3-funder-summary"]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
     if (/^p5-?batch-?3/i.test(name) || /funder/i.test(name)) {
-      VIOLATIONS.push(`Stage 1: forbidden edge function present: ${name}`);
+      if (!ALLOWED_BATCH3_FNS.has(name)) {
+        VIOLATIONS.push(`Stage 1 guard: unexpected funder/batch3 edge function: ${name}`);
+      }
     }
   }
 }
 
-// --- Rule 2: no Batch 3 UI / hook / page may exist in Stage 1 ------------
+// --- Rule 2: Stage 4+ surfaces must not exist yet -------------------------
 const FORBIDDEN_UI_DIRS = [
   "src/pages/admin/p5-batch3",
   "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
   "src/hooks/useP5Batch3Permissions.ts",
-  "src/lib/p5-batch3/rpc.ts",
   "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
 ];
 for (const rel of FORBIDDEN_UI_DIRS) {
   if (existsSync(join(ROOT, rel))) {
-    VIOLATIONS.push(`Stage 1: forbidden file/dir already present: ${rel}`);
+    VIOLATIONS.push(`Stage 1 guard: forbidden Stage 4+ file/dir already present: ${rel}`);
   }
 }
 
