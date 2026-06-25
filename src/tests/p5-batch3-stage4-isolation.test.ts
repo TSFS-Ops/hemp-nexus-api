@@ -139,15 +139,13 @@ describe("P5 Batch 3 Stage 4 — admin UI invariants", () => {
   });
 });
 
-describe("P5 Batch 3 Stage 4 — no Stage 5/6 leakage", () => {
+describe("P5 Batch 3 Stage 4 — no Stage 6 leakage (Stage 5 surfaces are permitted)", () => {
   const forbidden = [
-    "src/pages/funder/p5-batch3",
     "src/pages/registry/p5-batch3",
     "src/lib/p5-batch3/notifications.ts",
     "src/lib/p5-batch3/sla-rules.ts",
     "src/lib/p5-batch3/finality-bridge.ts",
     "src/lib/p5-batch3/readiness-bridge.ts",
-    "src/lib/p5-batch3/summary-client.ts",
   ];
   it.each(forbidden)("%s is absent", (p) => {
     expect(existsSync(join(ROOT, p))).toBe(false);
