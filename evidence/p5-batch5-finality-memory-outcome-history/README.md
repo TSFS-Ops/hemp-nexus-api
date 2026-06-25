@@ -1,6 +1,64 @@
 # P-5 Batch 5 — Finality, Memory and Outcome History
 
-**Status:** `P5_BATCH5_PHASE_1_DEPLOYED` (schema + SSOT + drift guard only)
+**Status:** `P5_BATCH5_PHASE_2_DEPLOYED` (correction / dispute / supersession layer)
+
+## Phase 2 scope (this batch)
+
+Controlled change layer on top of the Phase 1 locked finality table. **Append-only, no cron jobs, no UI, no Memory writer logic beyond the dispute pause/restore behaviour.**
+
+### New tables (all append-only via triggers)
+
+- `finality_corrections` — corrected view with before/after; original retained.
+- `finality_disputes` — challenge records + resolution outcomes (resolution fields locked once set).
+- `finality_supersessions` — links original → superseding finality record.
+- `finality_administrative_reclassifications` — outcome-label corrections.
+
+RLS: read by platform_admin / compliance_analyst / legal_reviewer / auditor (per table); all writes via security-definer RPCs (service_role only at the data layer).
+
+GRANTs per project rules: `SELECT` to `authenticated`, `ALL` to `service_role`.
+
+### New enums
+
+- `p5b5_dispute_category` (8 values per brief section 11.1)
+- `p5b5_dispute_resolution` (7 values per brief section 11.6)
+
+### Five server-side RPCs (security-definer, `EXECUTE` revoked from `anon`)
+
+| RPC | Authorised roles | Effect |
+|-----|------------------|--------|
+| `p5b5_add_correction` | platform_admin, compliance_analyst | Inserts correction row; flips `p5b5_correction_status='corrected'`; transitions `final → corrected`. |
+| `p5b5_mark_under_dispute` | platform_admin, compliance_analyst, legal_reviewer | Inserts dispute row; flips `p5b5_dispute_status='under_dispute'`, `p5b5_finality_status='under_dispute'`, `p5b5_memory_status='paused'`; pauses matching `p5_batch5_memory_records`. Blocks if an unresolved dispute already exists. |
+| `p5b5_resolve_dispute` | platform_admin, compliance_analyst | Locks resolution; restores Memory to `active` on `dismissed`; keeps Memory `paused` on `upheld`/`partially_upheld`/`escalated`/`corrected`/`superseded` (caller must follow up with correction/supersession). |
+| `p5b5_supersede_finality` | platform_admin only | Inserts supersession row; marks original `is_current_effective_record=false`, `p5b5_finality_status='superseded'`, `p5b5_memory_status='superseded'`; flips superseding record to current effective. |
+| `p5b5_reclassify_finality` | platform_admin, compliance_analyst | Records previous → corrected outcome label; flips `p5b5_correction_status='administrative_reclassification'`. Does not change underlying evidence. |
+
+Every RPC:
+- validates a non-empty `reason`,
+- writes a row to `p5_batch4_audit_events` with `event_type` prefixed `p5b5.*` and full `before_state`/`after_state` JSON,
+- updates only fields permitted by the Phase 1 `p5b5_prevent_finality_mutation` lock trigger,
+- never deletes or overwrites the original finality record,
+- returns the new record id.
+
+### Append-only enforcement
+
+- `p5b5_insert_only_block()` — blocks all UPDATE/DELETE on `finality_corrections`, `finality_supersessions`, `finality_administrative_reclassifications`.
+- `p5b5_disputes_append_only()` — blocks DELETE; on UPDATE, only resolution fields may transition, and once `resolution IS NOT NULL` they are locked.
+
+### Tests
+
+- `src/tests/p5-batch5-phase-2-correction-dispute-supersession.test.ts` — vocab parity for resolution outcomes, correction statuses, dispute lifecycle and the 11 final outcome codes; documents the five RPC names and four governed table names.
+- Phase 1 drift guard still passes (`node scripts/check-p5-batch5-vocab-drift.mjs` → OK).
+- v1 guard still passes (`node scripts/check-basic-memory-vocab-drift.mjs` → OK).
+
+### Verification
+
+- Migration applied successfully against `ugrfyhwlonlmlcmcpcdm`.
+- No business rows mutated.
+- No cron jobs added or modified. C6.2 still `CRON_INVOKE_CORRELATION_HARDENING_PHASE_1_DEPLOYED_PENDING_TICK`.
+
+---
+
+## Phase 1 scope (previously deployed)
 
 ## Phase 1 scope
 
