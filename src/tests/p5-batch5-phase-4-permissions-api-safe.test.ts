@@ -285,8 +285,8 @@ describe("p5-batch5 phase 4 — API-safe projection allowlist", () => {
     expect(out).not.toHaveProperty("raw_payload");
     expect(out).not.toHaveProperty("private_notes");
     expect(out).not.toHaveProperty("api_key");
-    expect(p.schema_version).toBe(P5B5_SCHEMA_VERSION);
-    expect(p.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
+    expect(out.schema_version).toBe(P5B5_SCHEMA_VERSION);
+    expect(out.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
   });
 });
 
@@ -331,8 +331,8 @@ describe("p5-batch5 phase 4 — blocked-state behaviour", () => {
       current_effective_record_reference: "fr_999",
     });
     expect(out.blocked && out.reason).toBe("record_superseded");
-    if (!out.blocked) throw new Error();
-    expect(out.current_effective_record_reference).toBe("fr_999");
+    const b = asBlocked(out);
+    expect(b.current_effective_record_reference).toBe("fr_999");
   });
 
   it("blocked states never leak evidence, notes or internal fields", () => {
@@ -352,8 +352,8 @@ describe("p5-batch5 phase 4 — blocked-state behaviour", () => {
 
   it("buildP5B5BlockedState always stamps versions", () => {
     const out = buildP5B5BlockedState("permission_denied");
-    expect(p.schema_version).toBe(P5B5_SCHEMA_VERSION);
-    expect(p.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
+    expect(out.schema_version).toBe(P5B5_SCHEMA_VERSION);
+    expect(out.outcome_code_version).toBe(P5B5_OUTCOME_CODE_VERSION);
     expect(out.message.length).toBeGreaterThan(0);
   });
 });
