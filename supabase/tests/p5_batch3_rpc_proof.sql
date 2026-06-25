@@ -3,6 +3,7 @@
 -- Run inside BEGIN ... ROLLBACK. Emits 'P5B3_STAGE3_PROOF_OK' on success.
 -- ============================================================
 BEGIN;
+SET LOCAL ROLE service_role;
 
 DO $$
 DECLARE
