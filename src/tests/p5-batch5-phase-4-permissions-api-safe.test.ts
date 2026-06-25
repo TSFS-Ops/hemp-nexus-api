@@ -18,7 +18,26 @@ import {
   buildP5B5BlockedState,
   projectFinalityToApiSafe,
   stripToApiSafe,
+  type P5B5ApiSafeProjection,
+  type P5B5BlockedState,
 } from "@/lib/p5-batch5/api-safe";
+import {
+  P5B5_OUTCOME_CODE_VERSION,
+  P5B5_SCHEMA_VERSION,
+} from "@/lib/p5-batch5/version";
+
+function asProjection(
+  out: P5B5ApiSafeProjection | P5B5BlockedState,
+): P5B5ApiSafeProjection {
+  if (out.blocked) throw new Error("expected projection, got blocked: " + out.reason);
+  return out;
+}
+function asBlocked(
+  out: P5B5ApiSafeProjection | P5B5BlockedState,
+): P5B5BlockedState {
+  if (!out.blocked) throw new Error("expected blocked state");
+  return out;
+}
 import {
   P5B5_OUTCOME_CODE_VERSION,
   P5B5_SCHEMA_VERSION,
