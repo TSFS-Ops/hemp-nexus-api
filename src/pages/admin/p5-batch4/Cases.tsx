@@ -2,7 +2,7 @@
  * P-5 Batch 4 Stage 4 — admin case list.
  *
  * Reads via the Stage 3 audience-filtered edge function (admin scope).
- * Does NOT call `supabase.from('p5_batch4_*')` directly.
+ * Does NOT touch batch-4 tables directly.
  */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
