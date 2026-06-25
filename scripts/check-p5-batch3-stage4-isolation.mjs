@@ -21,18 +21,16 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 const V = [];
 
-// Forbidden Stage 5/6 paths must remain absent.
+// Forbidden Stage 6 paths must remain absent.
 const FORBIDDEN_PATHS = [
-  "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
   "src/lib/p5-batch3/finality-bridge.ts",
   "src/lib/p5-batch3/readiness-bridge.ts",
-  "src/lib/p5-batch3/summary-client.ts",
 ];
 for (const p of FORBIDDEN_PATHS) {
-  if (existsSync(join(ROOT, p))) V.push(`Stage 4 leak: ${p} present (Stage 5/6 only)`);
+  if (existsSync(join(ROOT, p))) V.push(`Stage 4 leak: ${p} present (Stage 6 only)`);
 }
 
 // Edge functions allow-list unchanged from Stage 3.
