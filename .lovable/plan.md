@@ -1,206 +1,160 @@
-# P-5 Batch 2 — KYC / KYB, Evidence and Artefacts
+# P-5 Batch 4 — Execution, Milestones & Project Tracking
 
-Batch 2 is large enough that it must be built in supervised stages, the same way Batch 1 was (Stages 1→6 + embarrassment audit). Each stage ends with tests + evidence README update, then stops for sign-off.
+This is a very large, governed batch. Following the Batch 3 pattern (Stages 1–6 with sign-off and isolation guards between each), I will deliver Batch 4 in **7 stages**. Each stage is independently testable, has its own isolation guard, and does not touch Batch 1/2/3 or trade/payment areas.
 
-This plan is the **build instruction set**. The client's questionnaire answers are the source of truth, and provider-dependent checks must never be described as live / verified / passed until real provider results exist.
-
----
-
-## Stage 1 — Foundation: schema, enums, RLS, audit, SSOT drift guard
-
-**Goal:** lay down the governed evidence data layer with append-only audit and a TS ↔ DB drift guard. No UI, no behaviour change to Batch 1.
-
-DB (single migration, `p5_batch2_*` namespace, `org_id`-scoped RLS, GRANTs, append-only audit triggers):
-
-- Enums
-  - `p5_kyc_record_type` (company, director_officer, ubo_controller, authorised_rep, counterparty, funder_entity, funder_contact, api_customer, transaction_party, bank_account, invited_evidence_owner)
-  - `p5_evidence_status` (missing, requested, uploaded, under_review, accepted, accepted_with_warning, rejected, expired, replaced, waived, provider_dependent, suspended_hold, revoked)
-  - `p5_evidence_rating` (strong, good, acceptable, weak, unusable, provider_dependent)
-  - `p5_requirement_level` (mandatory, optional, conditional, not_required)
-  - `p5_rejection_reason` (20-code fixed list from §9)
-  - `p5_provider_status` (provider_ready_not_live_provider_verified, provider_credentials_pending, provider_result_pending, provider_unavailable, provider_failed, manual_review_recorded_not_provider_verified)
-  - `p5_replacement_reason` (10 codes from §13)
-- Tables
-  - `p5_kyc_records` (party records — type, linked entity/txn/bank, jurisdiction, status)
-  - `p5_kyc_record_links` (many-to-many person↔company, party↔transaction)
-  - `p5_evidence_items` (record_id, category, requirement_level, status, rating, expiry_date, provider_*, current_version_id)
-  - `p5_evidence_versions` (immutable: file_hash, uploader, uploaded_at, replacement_reason, archived_at)
-  - `p5_evidence_review_events` (append-only: action, reason_code, reviewer_note (admin-only), customer_safe_note, actor_type)
-  - `p5_evidence_packs` + `p5_evidence_pack_items` (finality snapshots)
-  - `p5_evidence_waivers` (scope, reason, expiry)
-  - `p5_sensitive_access_log` (unmask/download events)
-- RLS: `org_id` scoped + role checks (`platform_admin`, compliance, operator, party-owner via record link)
-- GRANTs: `authenticated` + `service_role`; no `anon`
-- Append-only triggers on `*_review_events`, `*_versions`, `*_pack_items`, `sensitive_access_log`
-
-TS SSOT (`src/lib/p5-batch2/`):
-
-- `constants.ts` — all enums mirrored
-- `types.ts` — record / evidence / version / pack interfaces
-- `drift-guard.test.ts` — DB enum ↔ TS SSOT parity (target 7/7 enums)
-
-**Acceptance:** drift guard 7/7 passing; no business rows mutated; evidence/p5-batch2-kyc-evidence-artefacts/README.md created with Stage 1 marker. **Stop.**
+I will not start coding until you confirm this plan.
 
 ---
 
-## Stage 2 — Pure-TS engines: checklist, status, rating, provider wording, readiness bridge
+## Guiding principles (apply to every stage)
 
-No DB writes, no UI. Pure deterministic functions + tests.
-
-- `checklist-engine.ts` — generates required evidence list from `{record_type, jurisdiction, entity_type, transaction_type, finality_condition, funder_rule, api_rule, provider_dependency, overrides, waivers}`. Returns segmented buckets: missing-mandatory, missing-mandatory-before-finality, missing-conditional, optional-recommendations, uploaded-unreviewed, rejected, expired, provider-dependent.
-- `status-transitions.ts` — legal status transitions + actor-role guard.
-- `rating-engine.ts` — six-band auto pre-rating from completeness/expiry/match/provider; flags items requiring human reviewer.
-- `provider-wording-guard.ts` — forbidden phrases ("verified", "passed", "cleared", "sanctions clear", "bank verified", "provider approved", "no adverse result") rejected for any record where `provider_live=false`; safe-wording catalogue per viewer (admin / funder / org / counterparty / api).
-- `readiness-bridge.ts` — given evidence state, returns deltas for {KYB, KYC, governance, compliance, bankability, execution, finality, funder-pack, api-readiness}. Pure function — Stage 3 wires it to DB.
-- `expiry-rules.ts` — §12 expiry windows + reminder schedule (30/14/7d).
-- `masking.ts` — last-4 for bank/ID, partial for tax/VAT/address; role matrix from §11.
-
-Tests under `src/tests/p5-batch2-*.test.ts` covering each engine + a wording-guard sweep.
-
-**Acceptance:** all Stage 2 tests green; no DB or UI changes. README updated. **Stop.**
+- All objects prefixed `p5_batch4_*` (tables, RPCs, scripts, tests, components, routes).
+- No Batch 1/2/3 rewiring; no trade/payment/ledger mutations.
+- All mutations go through `SECURITY DEFINER` RPC wrappers — no direct table writes from UI.
+- Status / milestone / blocker / overdue / role vocabularies live in a single SSOT module; UI, API, audit and reports read from it.
+- Provider-dependent items must never render as "verified" / "compliant" / "bankable" / "live-provider verified". Enforced by a wording guard reused from Batch 2/3.
+- Audit table is append-only (no UPDATE/DELETE policies); finality rows lock on insert.
+- Memory feed strips raw bank/ID/tax/UBO/personal-evidence fields.
+- Every stage adds a `scripts/check-p5-batch4-stage{N}-isolation.mjs` guard and updates the cumulative guard.
+- Funder UI reads only via the safe summary edge function (reuse Batch 3 pattern where possible); funder actions limited to a small whitelist of permitted wrappers.
 
 ---
 
-## Stage 3 — Server RPCs + edge function + provider-state model
+## Stage 1 — Foundation: SSOT, enums, tables, RLS, GRANTs
 
-Server-authoritative actions. Every RPC writes audit. Append-only enforced.
+- Create the SSOT module `src/lib/p5-batch4/constants.ts` with controlled vocabularies for:
+  - process types, execution statuses, readiness statuses, milestone keys, blocker keys, warning keys, overdue labels, role keys, evidence statuses, funder release statuses, finality outcomes.
+- Migration creating all Batch 4 tables exactly as listed in the brief:
+  - `p5_batch4_execution_cases`, `p5_batch4_execution_milestones`, `p5_batch4_evidence_items`, `p5_batch4_blockers`, `p5_batch4_tasks`, `p5_batch4_funder_releases`, `p5_batch4_finality_records`, `p5_batch4_audit_events`.
+- Each table: `CREATE TABLE` → `GRANT` (authenticated + service_role; no anon) → `ENABLE RLS` → `CREATE POLICY` (admin-read by default; per-table scoping for owner/org/funder where required).
+- Audit table: insert-only policy; no UPDATE/DELETE policy.
+- Finality table: insert-only + locked-after-insert trigger.
+- Stage 1 tests: enum drift, table presence, RLS presence, GRANT presence, audit immutability, finality lock.
+- Stage 1 isolation guard.
 
-Migration: RPCs (security definer, `SET search_path = public`):
+## Stage 2 — Pure-TS engine modules (no DB, no UI)
 
-- `p5b2_create_kyc_record`, `p5b2_link_records`
-- `p5b2_generate_checklist` (returns segmented buckets)
-- `p5b2_upload_evidence_version` (creates new version, marks previous Replaced, requires replacement_reason)
-- `p5b2_review_evidence` (accept / accept_with_warning / reject / request_correction — reason_code required for reject/correction)
-- `p5b2_set_provider_state` (admin/system only; never sets a "verified" state without provider result reference)
-- `p5b2_waive_evidence` (admin; scope + reason mandatory)
-- `p5b2_withdraw_evidence`, `p5b2_suspend_release`
-- `p5b2_snapshot_finality_pack` (immutable pack write)
-- `p5b2_log_sensitive_access` (unmask/download)
+Twelve pure-logic modules under `src/lib/p5-batch4/`:
 
-Edge function `p5-batch2-readiness-summary` — viewer-scoped, returns the exact API JSON from §16; never emits raw files / full PII; respects masking + provider-wording guards.
+- `milestones.ts` — milestone path generator per process type, mandatory/conditional/optional flags, completion rules.
+- `evidence-rules.ts` — checklist generation, terminal-status rules, Evidence-Received roll-up.
+- `blockers.ts` — hard vs soft, trigger conditions, override eligibility, safe external labels.
+- `overdue.ts` — Due Soon / Overdue / Escalated / Blocked classification per milestone class with the brief's exact day counts.
+- `readiness.ts` — roll-up of milestones + blockers into Readiness Confirmed.
+- `roles.ts` — role → allowed-action matrix (admin/operator/org user/counterparty/funder viewer/reviewer/approver/API/system).
+- `permissions.ts` — server-style check helpers.
+- `wording-guard.ts` — reuse Batch 2/3 forbidden-wording catalogue.
+- `finality.ts` — finality eligibility evaluator (no DB).
+- `memory-summary.ts` — safe summary builder + raw-evidence stripper.
+- `case-reference.ts` — deterministic case-ref formatter.
+- `api-fields.ts` — safe-field whitelist for API responses.
 
-SQL proof (`supabase/tests/p5_batch2_rpc_proof.sql`): exercises full happy + rejection + replacement + waiver paths in a transaction, emits `P5B2_STAGE3_PROOF_OK`, rolls back.
+Stage 2 tests: ~40+ pure-logic tests. Stage 2 isolation guard.
 
-TS tests: API scoping, masking, provider wording on edge response.
+## Stage 3 — RPC wrappers + internal-safe summary edge function
 
-**Acceptance:** RPC + edge tests pass; SQL proof OK; no business rows mutated; README updated. **Stop.**
+- Migration adding `SECURITY DEFINER` RPCs (all `search_path = public`):
+  - `p5b4_open_case_v1`, `p5b4_confirm_scope_v1`, `p5b4_generate_checklist_v1`, `p5b4_request_evidence_v1`, `p5b4_submit_evidence_v1`, `p5b4_review_evidence_v1`, `p5b4_waive_evidence_v1`, `p5b4_open_blocker_v1`, `p5b4_resolve_blocker_v1`, `p5b4_override_blocker_v1`, `p5b4_complete_milestone_v1`, `p5b4_record_governance_decision_v1`, `p5b4_record_compliance_decision_v1`, `p5b4_release_funder_pack_v1`, `p5b4_revoke_funder_access_v1`, `p5b4_record_funder_decision_v1`, `p5b4_record_final_approval_v1`, `p5b4_record_finality_v1`, `p5b4_close_case_v1`, `p5b4_reopen_case_v1`, `p5b4_record_audit_event_v1`.
+- Every RPC: role-gated, reason-required where the brief mandates it, writes an audit row, never deletes audit.
+- Edge function `supabase/functions/p5-batch4-execution-summary/` returning admin-safe summaries (internal only, not a public funder API).
+- `src/lib/p5-batch4/rpc.ts` typed client wrappers (admin set vs funder set vs org-user set).
+- SQL proof script (`BEGIN … ROLLBACK`) validating RPC contracts and audit immutability.
+- Stage 3 isolation guard.
 
----
+## Stage 4 — Admin UI
 
-## Stage 4 — Admin / operator surfaces
+Routes under `/admin/p5-batch4/*` (all wrapped in existing platform-admin guard):
 
-All admin/operator UI behind `useP5Batch2Permissions` (extends Stage 4 of Batch 1 patterns):
+- `execution-dashboard`, `execution-cases`, `execution-cases/:caseId`, `evidence-review`, `blockers`, `funder-release`, `finality-queue`, `reports`, `audit`.
 
-- Evidence dashboard (gap / review / provider-dependent / expiry / rejected / bank-change / UBO-high-risk queues)
-- Record detail (checklist, version history, audit timeline, sensitive access log)
-- Evidence pack viewer + finality snapshot viewer
-- Reasoned-action dialogs (Approve, Accept with warning, Reject, Request correction, Waive, Suspend/Release, Set provider state, Unmask)
-- All mutations go through Stage 3 RPC wrappers — never direct table writes.
-- Wording guard applied at render time to every label.
+Shared components: `P5B4StatusBadge`, `P5B4MilestoneTimeline`, `P5B4BlockerCard`, `P5B4EvidenceChecklist`, `P5B4MaskedField`, `P5B4ProviderSafeLabel`, `P5B4ReasonedActionDialog`.
 
-Tests: permissions, dashboard render, wording, action wiring.
+All mutations go through Stage 3 wrappers. No `supabase.from('p5_batch4_*')` calls in pages. Stage 4 isolation guard enforces this.
 
-**Acceptance:** Stage 4 tests + Stage 1–3 tests all green. No customer/funder/API surfaces yet. **Stop.**
+## Stage 5 — Organisation / counterparty user surface
 
----
+Routes under `/desk/p5-batch4/*`:
 
-## Stage 5 — Subject + counterparty + funder + API-customer surfaces
+- `my-cases`, `my-cases/:caseId`, `evidence-upload/:caseId`.
 
-Read-only or strictly-scoped write surfaces:
+User checklist UI showing only: status, current milestone, progress bar, due date, next action, missing items, allowed upload/replace/respond actions. No internal notes, no other orgs, no full audit, no other counterparties.
 
-- Org / counterparty: checklist, upload task list, missing list, rejection-with-safe-reason view, expiry warnings, provider-dependent safe messaging, readiness status.
-- Director / UBO / invited owner: own-evidence upload + status only.
-- Funder: permissioned evidence pack viewer, readiness summary, provider-dependent warnings, masked personal/bank.
-- API-customer surface: metadata + readiness + gap output (no raw files by default).
+Static guard forbidding admin-only RPCs and direct table reads from org-user pages.
 
-All these surfaces consume only the scoped summary edge function from Stage 3 — never the raw tables. Wording guard enforced.
+## Stage 6 — Funder UI (released-only)
 
-Tests: leak audit (no admin-only fields in non-admin surfaces), masking, wording, funder-mutation-forbidden.
+Routes under `/funder/p5-batch4/*`:
 
-**Acceptance:** cumulative tests green, no business mutations, no admin-only field leakage. **Stop.**
+- `index`, `case/:caseId`, `pack/:releaseId`, `requests`, `outcomes`.
 
----
+Reads only via the Stage 3 safe summary edge function. Funder actions limited to a 4-RPC whitelist: `p5b4SubmitFunderQuestion`, `p5b4RequestMoreInformation`, `p5b4RecordFunderDecision`, `p5b4RecordPackView`.
 
-## Stage 6 — Notifications, SLA cron, finality bridge, end-to-end acceptance journey
+Wording/masking guarded; "Provider-Dependent" rendered with the safe label rule.
 
-- Notifications/tasks for the 13 triggers in §19 with idempotency.
-- Cron `p5-batch2-evidence-sla-monitor` (15 min) — expiry reminders (30/14/7d), missing-finality escalation (48h), missing-non-finality escalation (5wd), bank-change second-review SLA.
-- Wire `readiness-bridge` outputs into Batch 1 readiness cases; finality must be blocked while hard blockers exist.
-- End-to-end acceptance test mirroring §20 journey (single test that walks all 28 steps).
-- Cross-consistency guards (§21) as scripts under `scripts/check-p5-batch2-*.mjs`:
-status, rating, provider-wording, API-exposure, masking, audit, readiness-bridge, finality, versioning, memory-safety.
-- Final embarrassment-prevention audit (cross-surface, role-leak, wording sweep).
+## Stage 7 — Notifications, overdue cron, reports, finality bridge & final consistency
 
-**Acceptance:** full P-5 Batch 2 test suite green; all guards green; SQL proofs green; README finalised with `P5_BATCH_2_COMPLETE` marker. **Stop. Do not start Batch 3.**
-
----
-
-## Cross-cutting non-negotiables (every stage)
-
-- **Zero business mutation**: no edits to existing trade / POI / WaD / billing / payment / business-decision rows.
-- **Append-only audit**: every material action writes an immutable event; tested via triggers.
-- **Provider wording guard**: enforced in DB (CHECK/trigger where feasible), TS (lint-style guard), and at render time.
-- **Masking**: applied server-side in edge function and client-side at render — never trust either alone.
-- **No raw files in API by default**: file access requires explicit scope + permission + signed short-lived URL + access log.
-- **Memory safety**: only outcome references (no raw PII / bank / ID numbers / provider raw responses) ever sent to Memory.
-- **Stop at each stage** for sign-off before proceeding.
+- `src/lib/p5-batch4/notifications.ts` — reminders, escalations, due-soon, overdue, funder-review-due, finality-pending. Internal vs external audience split.
+- `src/lib/p5-batch4/sla-rules.ts` — idempotent SLA intents using the Stage 1 exact day counts.
+- Cron-style monitor edge function `supabase/functions/p5-batch4-stage7-monitor/` (internal-key gated, not public).
+- Report builders for the 9 reports in the brief (dashboard + CSV; PDF stubbed safely).
+- `finality-bridge.ts` (opt-in, `is_final: false as const` unless admin records finality).
+- `readiness-bridge.ts` → Memory summary intent stripped of raw sensitive evidence.
+- `scripts/check-p5-batch4-final-consistency.mjs` validating: route guards, no raw evidence in funder/user pages, centralised vocab, finality admin-only, audit-write coverage, Memory exclusions.
+- Full Batch 4 + Batch 2/3 combined suite must stay green.
 
 ---
 
-## Technical notes
+## Technical guard summary
 
-- New code lives under `src/lib/p5-batch2/`, `src/pages/admin/p5-batch2/`, `src/pages/registry/p5-batch2/`, `src/pages/funder/p5-batch2/`, `supabase/functions/p5-batch2-*`, `supabase/migrations/`, `evidence/p5-batch2-kyc-evidence-artefacts/`.
-- Reuses Batch 1 patterns: `useP5Permissions`-style hook, RPC wrappers in `src/lib/p5-batch2/rpc.ts`, append-only triggers, drift-guard test pattern, cron via `cron_invoke()` with `x-internal-key`.
-- All UI uses semantic tokens — no hardcoded colours; existing shadcn variants only.
+After each stage I will report:
 
-Awaiting approval to start **Stage 1** only.  
+- files created/changed; modules / RPCs / edge functions added;
+- new tests + cumulative Batch 4 test result; Batch 2+3+4 combined if run;
+- isolation guard result;
+- confirmation Batch 1/2/3 and trade/payment areas were untouched;
+- explicit confirmation the next stage has not started;
+- stage completion marker (`P5_BATCH_4_STAGE_{N}_COMPLETE`).
+
+Final markers on Stage 7 sign-off: `P5_BATCH_4_STAGE_7_COMPLETE` and `P5_BATCH_4_COMPLETE`.
+
+---
+
+## What I will start with after approval
+
+Stage 1 only — SSOT + tables + RLS + GRANTs + Stage 1 isolation guard + Stage 1 tests. I will stop and report for sign-off before starting Stage 2.  
   
-This is strong. I would send it to Lovable almost exactly as written. The only adjustment I’d make is to **tighten the opening instruction** so Lovable does not accidentally start multiple stages or treat the whole document as one mega-build.
+Yes — I would **approve this plan**, with a few small tightening instructions before Stage 1 starts.
 
-Use this as the final command:
+The proposed 7-stage delivery is sensible because Batch 4 is not just UI; it is workflow, permissions, evidence logic, funder visibility, finality, audit and Memory. The client’s answers support exactly this kind of staged execution: they asked for one configurable P-5 Execution Engine with shared rules for owner, milestones, evidence, blockers, approvals, audit, readiness and finality.  
 
-Start **P-5 Batch 2 — Stage 1 only**.
+The plan is also well aligned to the client’s requirement that milestones, statuses, role actions and evidence rules are fixed and buildable. Their answers define mandatory milestones, provider-dependent wording, role-based permissions, evidence completion rules, hard blockers, soft warnings, overdue behaviour, dashboard layout and user journey.  
 
-Use the full Batch 2 build instruction set above as the controlling plan, but implement **Stage 1 only** at this time.
+The only things I would tighten are:
 
-Client answers are the source of truth. Provider-dependent checks must never be described as live, verified, passed, cleared, bank verified, sanctions clear, provider approved or no adverse result unless real provider results exist.
+1. **Stage 1 should not overbuild RLS guesses.** It should create safe admin-first policies and only add user/funder scoping where the linked organisation/funder model is already known in the codebase. If the existing org/funder ID model differs, Stage 1 should adapt to the live schema rather than inventing parallel identity fields.
+2. **Stage 3 edge function wording needs care.** The plan says “internal-safe summary edge function” and later says the funder UI reads via the safe summary edge function. That is fine, but make the distinction explicit: one safe summary function can serve different audiences only if it enforces audience-specific field filtering. Otherwise create separate admin-safe and funder-safe summary modes.
+3. **RPC count is high.** That is acceptable for this governed batch, but every RPC must be tested for audit write, permission gate and reason-required behaviour. No “wrapper exists but logic is thin” shortcuts.
+4. **Finality bridge must remain non-final until admin action.** The plan already says `is_final: false as const` unless admin records finality. Keep that as a hard guard.
+5. **Reports can be stubbed safely, but not misleadingly.** CSV/dashboard can be functional first. PDF can be a safe placeholder only if labelled clearly as not yet a full generated PDF export.
 
-For Stage 1, build only:
+Here is the message I would send back:
 
-1. The governed evidence database foundation.
-2. The required enums.
-3. The `p5_batch2_*` tables.
-4. Org-scoped RLS and role-based access.
-5. GRANTs for `authenticated` and `service_role`, with no `anon`.
-6. Append-only audit triggers.
-7. TS SSOT under `src/lib/p5-batch2/`.
-8. DB enum ↔ TS SSOT drift guard tests.
-9. Evidence README with Stage 1 marker.
+Approved — please proceed with Stage 1 only.
 
-Do **not** build UI.  
-Do **not** wire behaviour into Batch 1.  
-Do **not** mutate existing trade, POI, WaD, billing, payment or business-decision rows.  
-Do **not** start Stage 2.  
-Do **not** create customer, funder or API surfaces.  
-Do **not** add provider simulation or fake verification.
+This staged approach is appropriate for Batch 4 because the execution/milestone layer touches workflow logic, evidence rules, blockers, permissions, funder visibility, finality, audit and Memory. Please keep the Batch 3-style discipline: one stage at a time, tests and isolation guard per stage, and no Batch 1/2/3 or trade/payment rewiring.
 
-Stage 1 acceptance requirement:
+A few conditions before you begin Stage 1:
 
-- One migration only for the Stage 1 DB foundation.
-- All 7 enum drift guards pass.
-- Append-only audit protections are tested.
-- RLS is tested for org scoping and role access.
-- No business rows are mutated.
-- `evidence/p5-batch2-kyc-evidence-artefacts/README.md` is created or updated with a clear Stage 1 marker.
-- Final response must stop after Stage 1 evidence and ask for sign-off before Stage 2.
+1. Keep the SSOT strict. Statuses, milestones, blocker names, overdue labels, role keys, evidence statuses, funder statuses and finality outcomes must all come from the central Batch 4 constants module.
+2. Do not invent identity or organisation/funder scoping if the existing schema already has a model for it. Adapt Batch 4 RLS to the live codebase’s existing user/org/funder structure.
+3. Audit must be append-only from the start. No update/delete policies on audit rows.
+4. Finality must be locked from the start. No finality row may be silently changed after insert.
+5. Provider-dependent wording must be guarded from Stage 1 onward. Nothing provider-dependent may render as verified, compliant, bankable or live-provider verified.
+6. Memory must never receive raw bank, ID, tax, UBO, personal document or unrestricted sensitive evidence fields.
+7. Stage 1 should stop after SSOT, tables, RLS, GRANTs, finality lock, audit immutability, tests and the Stage 1 isolation guard. Do not start Stage 2 until Stage 1 is reported and signed off.
 
-Return:
+Please proceed with Stage 1 and report back with files changed, test results, isolation guard result, confirmation that Batch 1/2/3 and trade/payment areas were untouched, and the marker:
 
-- Files created/changed.
-- Tests added.
-- Test results.
-- SQL proof / guard result.
-- Confirmation that no Batch 1 behaviour or business rows were changed.
-- Clear marker: `P5_BATCH_2_STAGE_1_COMPLETE`.
+P5_BATCH_4_STAGE_1_COMPLETE
 
-The main thing this fixes is scope discipline. Your staged plan is already enterprise-grade; this command makes it impossible for Lovable to “helpfully” jump ahead.
+That is a professional approval and keeps the developer tightly boxed into the stage discipline.

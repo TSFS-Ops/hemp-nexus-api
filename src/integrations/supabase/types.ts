@@ -10139,6 +10139,679 @@ export type Database = {
         }
         Relationships: []
       }
+      p5_batch4_audit_events: {
+        Row: {
+          actor_org_id: string | null
+          actor_role: Database["public"]["Enums"]["p5_batch4_role_key"] | null
+          actor_user_id: string | null
+          after_state: Json | null
+          before_state: Json | null
+          case_id: string | null
+          created_at: string
+          device_summary: string | null
+          event_type: string
+          external_safe_summary: string | null
+          id: string
+          internal_detail: string | null
+          ip_address: unknown
+          linked_blocker_id: string | null
+          linked_evidence_id: string | null
+          linked_finality_id: string | null
+          linked_funder_release_id: string | null
+          linked_milestone_id: string | null
+          reason: string | null
+          request_id: string | null
+          source_channel: Database["public"]["Enums"]["p5_batch4_source_channel"]
+        }
+        Insert: {
+          actor_org_id?: string | null
+          actor_role?: Database["public"]["Enums"]["p5_batch4_role_key"] | null
+          actor_user_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          case_id?: string | null
+          created_at?: string
+          device_summary?: string | null
+          event_type: string
+          external_safe_summary?: string | null
+          id?: string
+          internal_detail?: string | null
+          ip_address?: unknown
+          linked_blocker_id?: string | null
+          linked_evidence_id?: string | null
+          linked_finality_id?: string | null
+          linked_funder_release_id?: string | null
+          linked_milestone_id?: string | null
+          reason?: string | null
+          request_id?: string | null
+          source_channel?: Database["public"]["Enums"]["p5_batch4_source_channel"]
+        }
+        Update: {
+          actor_org_id?: string | null
+          actor_role?: Database["public"]["Enums"]["p5_batch4_role_key"] | null
+          actor_user_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          case_id?: string | null
+          created_at?: string
+          device_summary?: string | null
+          event_type?: string
+          external_safe_summary?: string | null
+          id?: string
+          internal_detail?: string | null
+          ip_address?: unknown
+          linked_blocker_id?: string | null
+          linked_evidence_id?: string | null
+          linked_finality_id?: string | null
+          linked_funder_release_id?: string | null
+          linked_milestone_id?: string | null
+          reason?: string | null
+          request_id?: string | null
+          source_channel?: Database["public"]["Enums"]["p5_batch4_source_channel"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch4_audit_events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_audit_events_linked_blocker_id_fkey"
+            columns: ["linked_blocker_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_blockers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_audit_events_linked_evidence_id_fkey"
+            columns: ["linked_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_evidence_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_audit_events_linked_finality_id_fkey"
+            columns: ["linked_finality_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_finality_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_audit_events_linked_funder_release_id_fkey"
+            columns: ["linked_funder_release_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_funder_releases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_audit_events_linked_milestone_id_fkey"
+            columns: ["linked_milestone_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch4_blockers: {
+        Row: {
+          blocker_key: Database["public"]["Enums"]["p5_batch4_blocker_key"]
+          blocker_name: string
+          blocker_type: Database["public"]["Enums"]["p5_batch4_blocker_type"]
+          can_override: boolean
+          case_id: string
+          created_at: string
+          external_safe_label: string
+          id: string
+          internal_detail: string | null
+          milestone_id: string | null
+          overridden_by: string | null
+          override_by_role:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          override_reason: string | null
+          override_reason_required: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_reason: string | null
+          status: Database["public"]["Enums"]["p5_batch4_blocker_status"]
+          trigger_condition: string | null
+        }
+        Insert: {
+          blocker_key: Database["public"]["Enums"]["p5_batch4_blocker_key"]
+          blocker_name: string
+          blocker_type: Database["public"]["Enums"]["p5_batch4_blocker_type"]
+          can_override?: boolean
+          case_id: string
+          created_at?: string
+          external_safe_label: string
+          id?: string
+          internal_detail?: string | null
+          milestone_id?: string | null
+          overridden_by?: string | null
+          override_by_role?:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          override_reason?: string | null
+          override_reason_required?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_reason?: string | null
+          status?: Database["public"]["Enums"]["p5_batch4_blocker_status"]
+          trigger_condition?: string | null
+        }
+        Update: {
+          blocker_key?: Database["public"]["Enums"]["p5_batch4_blocker_key"]
+          blocker_name?: string
+          blocker_type?: Database["public"]["Enums"]["p5_batch4_blocker_type"]
+          can_override?: boolean
+          case_id?: string
+          created_at?: string
+          external_safe_label?: string
+          id?: string
+          internal_detail?: string | null
+          milestone_id?: string | null
+          overridden_by?: string | null
+          override_by_role?:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          override_reason?: string | null
+          override_reason_required?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_reason?: string | null
+          status?: Database["public"]["Enums"]["p5_batch4_blocker_status"]
+          trigger_condition?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch4_blockers_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_blockers_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch4_evidence_items: {
+        Row: {
+          case_id: string
+          created_at: string
+          evidence_label: string
+          evidence_type: string
+          file_hash: string | null
+          file_reference: string | null
+          id: string
+          milestone_id: string | null
+          provider_dependent: boolean
+          requirement_type: Database["public"]["Enums"]["p5_batch4_mandatory_type"]
+          review_reason: string | null
+          reviewed_by: string | null
+          sensitive: boolean
+          status: Database["public"]["Enums"]["p5_batch4_evidence_status"]
+          updated_at: string
+          uploaded_by: string | null
+          waived_by: string | null
+          waiver_reason: string | null
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          evidence_label: string
+          evidence_type: string
+          file_hash?: string | null
+          file_reference?: string | null
+          id?: string
+          milestone_id?: string | null
+          provider_dependent?: boolean
+          requirement_type?: Database["public"]["Enums"]["p5_batch4_mandatory_type"]
+          review_reason?: string | null
+          reviewed_by?: string | null
+          sensitive?: boolean
+          status?: Database["public"]["Enums"]["p5_batch4_evidence_status"]
+          updated_at?: string
+          uploaded_by?: string | null
+          waived_by?: string | null
+          waiver_reason?: string | null
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          evidence_label?: string
+          evidence_type?: string
+          file_hash?: string | null
+          file_reference?: string | null
+          id?: string
+          milestone_id?: string | null
+          provider_dependent?: boolean
+          requirement_type?: Database["public"]["Enums"]["p5_batch4_mandatory_type"]
+          review_reason?: string | null
+          reviewed_by?: string | null
+          sensitive?: boolean
+          status?: Database["public"]["Enums"]["p5_batch4_evidence_status"]
+          updated_at?: string
+          uploaded_by?: string | null
+          waived_by?: string | null
+          waiver_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch4_evidence_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_evidence_items_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch4_execution_cases: {
+        Row: {
+          archived_at: string | null
+          blocker_count: number
+          case_reference: string
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          current_milestone:
+            | Database["public"]["Enums"]["p5_batch4_milestone_key"]
+            | null
+          due_at: string | null
+          execution_status: Database["public"]["Enums"]["p5_batch4_execution_status"]
+          finality_status:
+            | Database["public"]["Enums"]["p5_batch4_finality_outcome"]
+            | null
+          funder_status:
+            | Database["public"]["Enums"]["p5_batch4_funder_release_status"]
+            | null
+          id: string
+          linked_company_id: string | null
+          linked_project_id: string | null
+          linked_transaction_id: string | null
+          linked_workstream_id: string | null
+          memory_summary_id: string | null
+          overdue_state: string | null
+          owner_user_id: string | null
+          process_type: Database["public"]["Enums"]["p5_batch4_process_type"]
+          provider_dependency_status: string | null
+          readiness_status: Database["public"]["Enums"]["p5_batch4_readiness_status"]
+          reopen_reason: string | null
+          reopened_at: string | null
+          responsible_party_id: string | null
+          responsible_party_type:
+            | Database["public"]["Enums"]["p5_batch4_responsible_party_type"]
+            | null
+          updated_at: string
+          warning_count: number
+        }
+        Insert: {
+          archived_at?: string | null
+          blocker_count?: number
+          case_reference: string
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_milestone?:
+            | Database["public"]["Enums"]["p5_batch4_milestone_key"]
+            | null
+          due_at?: string | null
+          execution_status?: Database["public"]["Enums"]["p5_batch4_execution_status"]
+          finality_status?:
+            | Database["public"]["Enums"]["p5_batch4_finality_outcome"]
+            | null
+          funder_status?:
+            | Database["public"]["Enums"]["p5_batch4_funder_release_status"]
+            | null
+          id?: string
+          linked_company_id?: string | null
+          linked_project_id?: string | null
+          linked_transaction_id?: string | null
+          linked_workstream_id?: string | null
+          memory_summary_id?: string | null
+          overdue_state?: string | null
+          owner_user_id?: string | null
+          process_type: Database["public"]["Enums"]["p5_batch4_process_type"]
+          provider_dependency_status?: string | null
+          readiness_status?: Database["public"]["Enums"]["p5_batch4_readiness_status"]
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          responsible_party_id?: string | null
+          responsible_party_type?:
+            | Database["public"]["Enums"]["p5_batch4_responsible_party_type"]
+            | null
+          updated_at?: string
+          warning_count?: number
+        }
+        Update: {
+          archived_at?: string | null
+          blocker_count?: number
+          case_reference?: string
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_milestone?:
+            | Database["public"]["Enums"]["p5_batch4_milestone_key"]
+            | null
+          due_at?: string | null
+          execution_status?: Database["public"]["Enums"]["p5_batch4_execution_status"]
+          finality_status?:
+            | Database["public"]["Enums"]["p5_batch4_finality_outcome"]
+            | null
+          funder_status?:
+            | Database["public"]["Enums"]["p5_batch4_funder_release_status"]
+            | null
+          id?: string
+          linked_company_id?: string | null
+          linked_project_id?: string | null
+          linked_transaction_id?: string | null
+          linked_workstream_id?: string | null
+          memory_summary_id?: string | null
+          overdue_state?: string | null
+          owner_user_id?: string | null
+          process_type?: Database["public"]["Enums"]["p5_batch4_process_type"]
+          provider_dependency_status?: string | null
+          readiness_status?: Database["public"]["Enums"]["p5_batch4_readiness_status"]
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          responsible_party_id?: string | null
+          responsible_party_type?:
+            | Database["public"]["Enums"]["p5_batch4_responsible_party_type"]
+            | null
+          updated_at?: string
+          warning_count?: number
+        }
+        Relationships: []
+      }
+      p5_batch4_execution_milestones: {
+        Row: {
+          case_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          due_at: string | null
+          id: string
+          mandatory_type: Database["public"]["Enums"]["p5_batch4_mandatory_type"]
+          milestone_key: Database["public"]["Enums"]["p5_batch4_milestone_key"]
+          milestone_name: string
+          overdue_label: string | null
+          owner_user_id: string | null
+          responsible_role:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          sort_order: number
+          status: Database["public"]["Enums"]["p5_batch4_milestone_status"]
+          updated_at: string
+          waived_by: string | null
+          waiver_reason: string | null
+        }
+        Insert: {
+          case_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          mandatory_type?: Database["public"]["Enums"]["p5_batch4_mandatory_type"]
+          milestone_key: Database["public"]["Enums"]["p5_batch4_milestone_key"]
+          milestone_name: string
+          overdue_label?: string | null
+          owner_user_id?: string | null
+          responsible_role?:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["p5_batch4_milestone_status"]
+          updated_at?: string
+          waived_by?: string | null
+          waiver_reason?: string | null
+        }
+        Update: {
+          case_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          mandatory_type?: Database["public"]["Enums"]["p5_batch4_mandatory_type"]
+          milestone_key?: Database["public"]["Enums"]["p5_batch4_milestone_key"]
+          milestone_name?: string
+          overdue_label?: string | null
+          owner_user_id?: string | null
+          responsible_role?:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["p5_batch4_milestone_status"]
+          updated_at?: string
+          waived_by?: string | null
+          waiver_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch4_execution_milestones_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch4_finality_records: {
+        Row: {
+          approval_reference: string | null
+          audit_reference: string | null
+          blocker_summary: Json
+          case_id: string
+          created_at: string
+          evidence_pack_reference: string | null
+          final_outcome: Database["public"]["Enums"]["p5_batch4_finality_outcome"]
+          finality_summary: string
+          funder_status_summary: Json
+          id: string
+          locked: boolean
+          memory_summary: Json
+          recorded_at: string
+          recorded_by: string
+          waiver_summary: Json
+        }
+        Insert: {
+          approval_reference?: string | null
+          audit_reference?: string | null
+          blocker_summary?: Json
+          case_id: string
+          created_at?: string
+          evidence_pack_reference?: string | null
+          final_outcome: Database["public"]["Enums"]["p5_batch4_finality_outcome"]
+          finality_summary: string
+          funder_status_summary?: Json
+          id?: string
+          locked?: boolean
+          memory_summary?: Json
+          recorded_at?: string
+          recorded_by: string
+          waiver_summary?: Json
+        }
+        Update: {
+          approval_reference?: string | null
+          audit_reference?: string | null
+          blocker_summary?: Json
+          case_id?: string
+          created_at?: string
+          evidence_pack_reference?: string | null
+          final_outcome?: Database["public"]["Enums"]["p5_batch4_finality_outcome"]
+          finality_summary?: string
+          funder_status_summary?: Json
+          id?: string
+          locked?: boolean
+          memory_summary?: Json
+          recorded_at?: string
+          recorded_by?: string
+          waiver_summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch4_finality_records_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "p5_batch4_execution_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch4_funder_releases: {
+        Row: {
+          access_expires_at: string
+          case_id: string
+          created_at: string
+          decision_at: string | null
+          decision_by: string | null
+          decision_note: string | null
+          download_allowed: boolean
+          funder_org_id: string
+          id: string
+          last_viewed_at: string | null
+          nda_required: boolean
+          pack_reference: string | null
+          release_scope: Json
+          released_by: string | null
+          status: Database["public"]["Enums"]["p5_batch4_funder_release_status"]
+          updated_at: string
+        }
+        Insert: {
+          access_expires_at: string
+          case_id: string
+          created_at?: string
+          decision_at?: string | null
+          decision_by?: string | null
+          decision_note?: string | null
+          download_allowed?: boolean
+          funder_org_id: string
+          id?: string
+          last_viewed_at?: string | null
+          nda_required?: boolean
+          pack_reference?: string | null
+          release_scope?: Json
+          released_by?: string | null
+          status?: Database["public"]["Enums"]["p5_batch4_funder_release_status"]
+          updated_at?: string
+        }
+        Update: {
+          access_expires_at?: string
+          case_id?: string
+          created_at?: string
+          decision_at?: string | null
+          decision_by?: string | null
+          decision_note?: string | null
+          download_allowed?: boolean
+          funder_org_id?: string
+          id?: string
+          last_viewed_at?: string | null
+          nda_required?: boolean
+          pack_reference?: string | null
+          release_scope?: Json
+          released_by?: string | null
+          status?: Database["public"]["Enums"]["p5_batch4_funder_release_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch4_funder_releases_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5_batch4_tasks: {
+        Row: {
+          assigned_to_role:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          assigned_to_user_id: string | null
+          case_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          escalation_at: string | null
+          id: string
+          milestone_id: string | null
+          reminder_at: string | null
+          status: Database["public"]["Enums"]["p5_batch4_task_status"]
+          task_label: string
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_role?:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          assigned_to_user_id?: string | null
+          case_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          escalation_at?: string | null
+          id?: string
+          milestone_id?: string | null
+          reminder_at?: string | null
+          status?: Database["public"]["Enums"]["p5_batch4_task_status"]
+          task_label: string
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_role?:
+            | Database["public"]["Enums"]["p5_batch4_role_key"]
+            | null
+          assigned_to_user_id?: string | null
+          case_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          escalation_at?: string | null
+          id?: string
+          milestone_id?: string | null
+          reminder_at?: string | null
+          status?: Database["public"]["Enums"]["p5_batch4_task_status"]
+          task_label?: string
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5_batch4_tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "p5_batch4_tasks_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch4_execution_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       p5_governance_audit_events: {
         Row: {
           actor_type: Database["public"]["Enums"]["p5_actor_type"]
@@ -22033,6 +22706,8 @@ export type Database = {
         }
         Returns: string
       }
+      p5b4_current_funder_org: { Args: never; Returns: string }
+      p5b4_is_platform_admin: { Args: never; Returns: boolean }
       platform_admin_break_glass_progress:
         | {
             Args: {
@@ -22601,6 +23276,135 @@ export type Database = {
         | "rejected"
         | "closed"
         | "withdrawn"
+      p5_batch4_blocker_key:
+        | "missing_authority_to_act"
+        | "missing_mandatory_kyc_kyb"
+        | "rejected_or_expired_mandatory_evidence"
+        | "unresolved_compliance_hold"
+        | "bank_account_holder_mismatch"
+        | "ubo_director_unresolved"
+        | "provider_failed_result"
+        | "provider_dependent_finality_item"
+        | "unauthorised_access"
+        | "final_approval_missing"
+        | "optional_evidence_missing"
+        | "document_approaching_expiry"
+        | "name_address_variation"
+        | "provider_not_live_internal_review"
+        | "overdue_non_critical_task"
+      p5_batch4_blocker_status: "open" | "resolved" | "overridden" | "escalated"
+      p5_batch4_blocker_type: "hard" | "soft_warning"
+      p5_batch4_evidence_status:
+        | "missing"
+        | "requested"
+        | "uploaded"
+        | "under_review"
+        | "accepted"
+        | "rejected"
+        | "expired"
+        | "replaced"
+        | "waived"
+        | "provider_dependent"
+      p5_batch4_execution_status:
+        | "not_started"
+        | "opened"
+        | "in_progress"
+        | "waiting_for_evidence"
+        | "evidence_under_review"
+        | "waiting_for_internal_review"
+        | "provider_dependent"
+        | "more_information_requested"
+        | "blocked"
+        | "escalated"
+        | "funder_review"
+        | "approved_to_proceed"
+        | "final_approval_pending"
+        | "finality_recorded"
+        | "rejected"
+        | "withdrawn"
+        | "cancelled"
+        | "closed"
+        | "archived"
+      p5_batch4_finality_outcome:
+        | "finality_recorded"
+        | "rejected"
+        | "withdrawn"
+        | "cancelled"
+        | "superseded"
+        | "archived"
+      p5_batch4_funder_release_status:
+        | "released"
+        | "viewed"
+        | "more_information_requested"
+        | "interested"
+        | "not_interested"
+        | "approved_internally"
+        | "declined"
+        | "exited"
+        | "revoked"
+      p5_batch4_mandatory_type: "mandatory" | "conditional" | "optional"
+      p5_batch4_milestone_key:
+        | "case_opened"
+        | "scope_confirmed"
+        | "evidence_checklist_generated"
+        | "evidence_requested"
+        | "evidence_received"
+        | "evidence_review_complete"
+        | "governance_review_complete"
+        | "compliance_review_complete"
+        | "readiness_confirmed"
+        | "funder_release"
+        | "funder_review_complete"
+        | "execution_conditions_complete"
+        | "final_approval"
+        | "finality_recorded"
+        | "closed_archived"
+      p5_batch4_milestone_status:
+        | "not_started"
+        | "active"
+        | "complete"
+        | "waived"
+        | "not_applicable"
+        | "overdue"
+        | "escalated"
+        | "blocked"
+      p5_batch4_process_type:
+        | "company_onboarding"
+        | "transaction_case"
+        | "project_workstream"
+        | "funder_release"
+      p5_batch4_readiness_status:
+        | "not_ready"
+        | "in_review"
+        | "internally_ready"
+        | "provider_dependent"
+        | "blocked"
+        | "ready_for_finality"
+      p5_batch4_responsible_party_type:
+        | "platform_admin"
+        | "operator"
+        | "organisation_user"
+        | "counterparty"
+        | "funder_organisation"
+        | "system"
+        | "external_provider"
+      p5_batch4_role_key:
+        | "platform_admin"
+        | "operator"
+        | "organisation_user"
+        | "counterparty"
+        | "funder_viewer"
+        | "funder_reviewer"
+        | "funder_approver"
+        | "api_user"
+        | "developer_system"
+      p5_batch4_source_channel: "ui" | "api" | "system" | "webhook"
+      p5_batch4_task_status:
+        | "open"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "escalated"
       p5_provider_status:
         | "not_live"
         | "credentials_pending"
@@ -23064,6 +23868,147 @@ export const Constants = {
         "rejected",
         "closed",
         "withdrawn",
+      ],
+      p5_batch4_blocker_key: [
+        "missing_authority_to_act",
+        "missing_mandatory_kyc_kyb",
+        "rejected_or_expired_mandatory_evidence",
+        "unresolved_compliance_hold",
+        "bank_account_holder_mismatch",
+        "ubo_director_unresolved",
+        "provider_failed_result",
+        "provider_dependent_finality_item",
+        "unauthorised_access",
+        "final_approval_missing",
+        "optional_evidence_missing",
+        "document_approaching_expiry",
+        "name_address_variation",
+        "provider_not_live_internal_review",
+        "overdue_non_critical_task",
+      ],
+      p5_batch4_blocker_status: ["open", "resolved", "overridden", "escalated"],
+      p5_batch4_blocker_type: ["hard", "soft_warning"],
+      p5_batch4_evidence_status: [
+        "missing",
+        "requested",
+        "uploaded",
+        "under_review",
+        "accepted",
+        "rejected",
+        "expired",
+        "replaced",
+        "waived",
+        "provider_dependent",
+      ],
+      p5_batch4_execution_status: [
+        "not_started",
+        "opened",
+        "in_progress",
+        "waiting_for_evidence",
+        "evidence_under_review",
+        "waiting_for_internal_review",
+        "provider_dependent",
+        "more_information_requested",
+        "blocked",
+        "escalated",
+        "funder_review",
+        "approved_to_proceed",
+        "final_approval_pending",
+        "finality_recorded",
+        "rejected",
+        "withdrawn",
+        "cancelled",
+        "closed",
+        "archived",
+      ],
+      p5_batch4_finality_outcome: [
+        "finality_recorded",
+        "rejected",
+        "withdrawn",
+        "cancelled",
+        "superseded",
+        "archived",
+      ],
+      p5_batch4_funder_release_status: [
+        "released",
+        "viewed",
+        "more_information_requested",
+        "interested",
+        "not_interested",
+        "approved_internally",
+        "declined",
+        "exited",
+        "revoked",
+      ],
+      p5_batch4_mandatory_type: ["mandatory", "conditional", "optional"],
+      p5_batch4_milestone_key: [
+        "case_opened",
+        "scope_confirmed",
+        "evidence_checklist_generated",
+        "evidence_requested",
+        "evidence_received",
+        "evidence_review_complete",
+        "governance_review_complete",
+        "compliance_review_complete",
+        "readiness_confirmed",
+        "funder_release",
+        "funder_review_complete",
+        "execution_conditions_complete",
+        "final_approval",
+        "finality_recorded",
+        "closed_archived",
+      ],
+      p5_batch4_milestone_status: [
+        "not_started",
+        "active",
+        "complete",
+        "waived",
+        "not_applicable",
+        "overdue",
+        "escalated",
+        "blocked",
+      ],
+      p5_batch4_process_type: [
+        "company_onboarding",
+        "transaction_case",
+        "project_workstream",
+        "funder_release",
+      ],
+      p5_batch4_readiness_status: [
+        "not_ready",
+        "in_review",
+        "internally_ready",
+        "provider_dependent",
+        "blocked",
+        "ready_for_finality",
+      ],
+      p5_batch4_responsible_party_type: [
+        "platform_admin",
+        "operator",
+        "organisation_user",
+        "counterparty",
+        "funder_organisation",
+        "system",
+        "external_provider",
+      ],
+      p5_batch4_role_key: [
+        "platform_admin",
+        "operator",
+        "organisation_user",
+        "counterparty",
+        "funder_viewer",
+        "funder_reviewer",
+        "funder_approver",
+        "api_user",
+        "developer_system",
+      ],
+      p5_batch4_source_channel: ["ui", "api", "system", "webhook"],
+      p5_batch4_task_status: [
+        "open",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "escalated",
       ],
       p5_provider_status: [
         "not_live",
