@@ -525,8 +525,8 @@ describe("api-fields", () => {
       full_bank_number: "12345",
     });
     expect(Object.keys(safe).sort()).toEqual([...P5B4_API_SAFE_FIELDS].sort());
-    expect((safe as Record<string, unknown>).internal_notes).toBeUndefined();
-    expect((safe as Record<string, unknown>).full_bank_number).toBeUndefined();
+    expect((safe as unknown as Record<string, unknown>).internal_notes).toBeUndefined();
+    expect((safe as unknown as Record<string, unknown>).full_bank_number).toBeUndefined();
   });
 
   it("assertNoForbiddenApiFields throws on leak", () => {
