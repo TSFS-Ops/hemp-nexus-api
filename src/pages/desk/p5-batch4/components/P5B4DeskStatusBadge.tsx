@@ -3,7 +3,7 @@
  *
  * Org-user safe rendering. Uses Batch 4 SSOT vocabularies only. The
  * provider-dependent status is substituted with the wording-safe
- * label, never "verified" / "compliant" / "bankable".
+ * label, never the SSOT-forbidden provider words.
  */
 import { cn } from "@/lib/utils";
 import {
