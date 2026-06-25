@@ -12,11 +12,9 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 const V = [];
 
-// Rule A: no Stage 4/5/6 files allowed yet (rpc.ts is permitted as of Stage 3).
+// Rule A: Stage 6 files remain forbidden (Stage 5 surfaces are now permitted).
 const FORBIDDEN_PATHS = [
-  "src/pages/funder/p5-batch3",
   "src/pages/registry/p5-batch3",
-  "src/lib/p5-batch3/summary-client.ts",
   "src/lib/p5-batch3/notifications.ts",
   "src/lib/p5-batch3/sla-rules.ts",
   "src/lib/p5-batch3/finality-bridge.ts",
