@@ -24,11 +24,8 @@ describe("P5 Batch 3 Stage 3 — isolation guards", () => {
     expect(out).toMatch(/P5_BATCH_3_STAGE_2_ISOLATION_OK/);
   });
 
-  it("no notifications / cron / SLA module added in Stage 3", () => {
-    expect(existsSync(join(ROOT, "src/lib/p5-batch3/notifications.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/lib/p5-batch3/sla-rules.ts"))).toBe(false);
-    expect(existsSync(join(ROOT, "src/lib/p5-batch3/finality-bridge.ts"))).toBe(false);
-  });
+  // Stage 6 notifications/SLA/finality modules are now permitted (Stage 6 signed off).
+
 
   // Funder UI dir is permitted from Stage 5 onwards; assertion relaxed.
 

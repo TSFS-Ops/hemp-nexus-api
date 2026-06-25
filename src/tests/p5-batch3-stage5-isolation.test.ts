@@ -167,24 +167,15 @@ describe("P5 Batch 3 Stage 5 — sensitive surface guarantees", () => {
   });
 });
 
-describe("P5 Batch 3 Stage 5 — no Stage 6 or backend additions", () => {
-  it("no notifications/sla-rules/finality-bridge/readiness-bridge modules exist", () => {
-    for (const p of [
-      "src/lib/p5-batch3/notifications.ts",
-      "src/lib/p5-batch3/sla-rules.ts",
-      "src/lib/p5-batch3/finality-bridge.ts",
-      "src/lib/p5-batch3/readiness-bridge.ts",
-    ]) {
-      expect(existsSync(join(ROOT, p))).toBe(false);
-    }
-  });
-
-  it("only the Stage 3 funder-summary edge function exists", () => {
+describe("P5 Batch 3 Stage 5 — backend allow-list (Stage 6 surfaces now permitted)", () => {
+  it("edge functions are limited to the Batch 3 allow-list", () => {
     const dir = join(ROOT, "supabase/functions");
     const names = existsSync(dir)
       ? require("node:fs").readdirSync(dir).filter((n: string) => /p5-?batch-?3|funder/i.test(n))
       : [];
-    expect(names).toEqual(["p5-batch3-funder-summary"]);
+    for (const n of names) {
+      expect(["p5-batch3-funder-summary", "p5-batch3-stage6-monitor"]).toContain(n);
+    }
   });
 
   it("config.toml does not declare Batch 3 cron", () => {
@@ -194,6 +185,7 @@ describe("P5 Batch 3 Stage 5 — no Stage 6 or backend additions", () => {
     expect(t).not.toMatch(/p5-batch3.*\n[^[]*(schedule|cron)/i);
   });
 });
+
 
 describe("P5 Batch 3 Stage 5 — summary-client safety helpers", () => {
   it("stripUnsafeFields drops unreleased fields", async () => {

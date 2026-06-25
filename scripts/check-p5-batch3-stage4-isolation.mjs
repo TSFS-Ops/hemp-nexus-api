@@ -21,20 +21,19 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 const V = [];
 
-// Forbidden Stage 6 paths must remain absent.
+// Forbidden surfaces: only /registry/* remains forbidden.
 const FORBIDDEN_PATHS = [
   "src/pages/registry/p5-batch3",
-  "src/lib/p5-batch3/notifications.ts",
-  "src/lib/p5-batch3/sla-rules.ts",
-  "src/lib/p5-batch3/finality-bridge.ts",
-  "src/lib/p5-batch3/readiness-bridge.ts",
 ];
 for (const p of FORBIDDEN_PATHS) {
-  if (existsSync(join(ROOT, p))) V.push(`Stage 4 leak: ${p} present (Stage 6 only)`);
+  if (existsSync(join(ROOT, p))) V.push(`Stage 4 leak: ${p} present`);
 }
 
-// Edge functions allow-list unchanged from Stage 3.
-const ALLOWED_BATCH3_FNS = new Set(["p5-batch3-funder-summary"]);
+// Edge functions allow-list: Stage 3 summary + Stage 6 monitor.
+const ALLOWED_BATCH3_FNS = new Set([
+  "p5-batch3-funder-summary",
+  "p5-batch3-stage6-monitor",
+]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {

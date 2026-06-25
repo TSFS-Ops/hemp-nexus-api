@@ -28,20 +28,19 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 const V = [];
 
-// 1. Stage 6 surfaces remain forbidden.
+// 1. Only /registry/* surface remains forbidden.
 const FORBIDDEN_PATHS = [
   "src/pages/registry/p5-batch3",
-  "src/lib/p5-batch3/notifications.ts",
-  "src/lib/p5-batch3/sla-rules.ts",
-  "src/lib/p5-batch3/finality-bridge.ts",
-  "src/lib/p5-batch3/readiness-bridge.ts",
 ];
 for (const p of FORBIDDEN_PATHS) {
-  if (existsSync(join(ROOT, p))) V.push(`Stage 5 leak: ${p} present (Stage 6 only)`);
+  if (existsSync(join(ROOT, p))) V.push(`Stage 5 leak: ${p} present`);
 }
 
-// 2. Edge functions allow-list unchanged from Stage 3/4.
-const ALLOWED_BATCH3_FNS = new Set(["p5-batch3-funder-summary"]);
+// 2. Edge functions allow-list: Stage 3 summary + Stage 6 monitor.
+const ALLOWED_BATCH3_FNS = new Set([
+  "p5-batch3-funder-summary",
+  "p5-batch3-stage6-monitor",
+]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
@@ -56,7 +55,7 @@ if (existsSync(fnDir)) {
   }
 }
 
-// 3. No NEW Batch 3 migrations beyond Stage 1 (2) + Stage 3 (1) = 3.
+// 3. Stage 1 (2) + Stage 3 (1) + Stage 6 (1) = 4 Batch 3 migrations.
 const migDir = join(ROOT, "supabase/migrations");
 let batch3Migrations = 0;
 if (existsSync(migDir)) {
@@ -66,8 +65,8 @@ if (existsSync(migDir)) {
     if (/p5_batch3_|p5b3_/.test(body)) batch3Migrations++;
   }
 }
-if (batch3Migrations !== 3) {
-  V.push(`Stage 5 leak: unexpected Batch 3 migration count (${batch3Migrations} != 3)`);
+if (batch3Migrations !== 4) {
+  V.push(`Stage 5 leak: unexpected Batch 3 migration count (${batch3Migrations} != 4)`);
 }
 
 // 4. Walk funder pages: only safe RPC wrappers, no direct table writes, no

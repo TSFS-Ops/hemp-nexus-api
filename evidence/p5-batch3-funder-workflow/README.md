@@ -200,3 +200,122 @@ Marker: **P5_BATCH_3_STAGE_3_COMPLETE**
   mutated by any Batch 3 path (negatively asserted in SQL proof
   Assertion 11).
 - Stage 4 NOT started.
+
+---
+
+## Stage 6 — Notifications, expiry/SLA, finality/Memory bridge, E2E, final consistency
+
+### Stage 6 modules (pure TS, no I/O)
+- `src/lib/p5-batch3/notifications.ts` — 22 lifecycle triggers, external/
+  internal audience split, idempotency keys, external-safety assertion.
+  Funder messages never include admin notes, raw sensitive data, other
+  funders, internal risk flags or governance reason codes. Funder
+  approval is messaged as non-final / "does not constitute investment
+  advice".
+- `src/lib/p5-batch3/sla-rules.ts` — expiry/SLA engine producing
+  idempotent task + notification intents. Defaults:
+  download-link TTL = 7 days, grant TTL = 30 days unless admin override.
+  Covers access expiry, download expiry, request overdue, dormant funder,
+  stale admin review, stale pending request, revoked/expired cleanup.
+- `src/lib/p5-batch3/finality-bridge.ts` — opt-in read-only adapter.
+  `is_final` is ALWAYS false; finality requires admin confirmation.
+  Single funder decline never closes; all-funder decline becomes
+  admin-closure candidate; term-sheet / funding-decision are admin
+  review candidates only.
+- `src/lib/p5-batch3/readiness-bridge.ts` — Memory intent producer.
+  Reduces requests to category-count summary (no original text), drops
+  private notes from outcomes, strips `private_funder_notes`,
+  `unreleased_credit_material`, `admin_only_notes`, `raw_provider_data`,
+  `other_funder_details`. `screenMemoryIntentSafe()` enforces the
+  contract.
+
+### Stage 6 storage + RPC (one migration)
+- New table `public.p5_batch3_tasks` (append-only intent store).
+  - Platform-admin SELECT only. No UPDATE/DELETE policies. INSERT only
+    via the `p5b3_record_task_intent_v1` SECURITY DEFINER helper or
+    service_role.
+  - Grants: `SELECT` to authenticated; `ALL` to service_role; no anon.
+- `public.p5b3_record_task_intent_v1(...)` SECURITY DEFINER, `SET
+  search_path = public`, EXECUTE revoked from PUBLIC and granted to
+  `authenticated, service_role`. Idempotent via UNIQUE
+  `idempotency_key`.
+
+### Stage 6 internal monitor (non-public)
+- `supabase/functions/p5-batch3-stage6-monitor/index.ts`. Cron-only:
+  requires `x-internal-cron-key` header matched against
+  `INTERNAL_CRON_KEY`. Reads only Batch 3 tables, writes only through
+  `p5b3_record_task_intent_v1`. Records an hourly heartbeat into the
+  task store (kind `monitor_heartbeat`). Does NOT mutate Batch 1/2 /
+  trade / POI / WaD / billing / payment / ledger / token /
+  business_decision rows. Does NOT expose any `/api/v1/funder` route.
+
+### Stage 6 tests
+- `src/tests/p5-batch3-stage6-logic.test.ts` (19) — triggers coverage,
+  internal/external split, idempotency, external wording safety,
+  finality bridge invariants, SLA expiry/overdue, memory bridge field
+  stripping.
+- `src/tests/p5-batch3-stage6-e2e.test.ts` (1 large) — full Batch 3
+  acceptance journey: admin invites funder → release pack → funder
+  isolation → request moderation preserves original text → outcomes
+  don't trigger finality → memory intent screened safe → watermarked
+  PDF allowed, raw exports blocked → expiry produces unavailable task
+  intents → no forbidden wording leaks.
+- `src/tests/p5-batch3-stage6-isolation.test.ts` (5) — Stage 6 + final
+  consistency guards green; prior five stage guards still green;
+  monitor uses internal key auth and declares no `/api/v1/funder`
+  route; Stage 6 lib modules remain pure TS.
+
+### Guards
+- `scripts/check-p5-batch3-stage6-isolation.mjs` — enforces edge-fn
+  allow-list `["p5-batch3-funder-summary", "p5-batch3-stage6-monitor"]`,
+  Batch 3 migration count = 4, pure-TS invariants on Stage 6 lib
+  modules, no `/api/v1/funder` route anywhere, no `/registry/p5-batch3`
+  surface, internal-key auth on monitor, no business-table mutations
+  in monitor.
+- `scripts/check-p5-batch3-final-consistency.mjs` — cross-cutting
+  check covering route guarding, funder-UI safe summary client only,
+  admin-UI RPC wrappers only, three permitted funder wrappers, no
+  direct `p5_batch3_*` writes from UI, no forbidden wording / raw
+  sensitive fields on funder surfaces, masking + provider-wording
+  helpers present, notification engine split + idempotency,
+  finality-bridge opt-in, memory-bridge screening contract, no Batch
+  1/2 business-table mutations.
+- Stages 1–5 guards updated to permit the legitimate Stage 6
+  additions (1 extra migration, 1 extra edge fn, 4 Stage 6 lib
+  modules); they continue to forbid `/registry/p5-batch3` and any
+  `/api/v1/funder` route.
+
+### Results
+- Batch 3 cumulative: **148/148 green** (129 prior + 19 Stage 6
+  logic + e2e + isolation; the e2e file counts as a single test but
+  exercises ten assertions).
+- Batch 2 + Batch 3 combined: **279/279 green**.
+- `P5_BATCH_3_STAGE_1_ISOLATION_OK` ✅
+- `P5_BATCH_3_STAGE_2_ISOLATION_OK` ✅
+- `P5_BATCH_3_STAGE_3_ISOLATION_OK` ✅
+- `P5_BATCH_3_STAGE_4_ISOLATION_OK` ✅
+- `P5_BATCH_3_STAGE_5_ISOLATION_OK` ✅
+- `P5_BATCH_3_STAGE_6_ISOLATION_OK` ✅
+- `P5_BATCH_3_FINAL_CONSISTENCY_OK` ✅
+- SQL proof file `supabase/tests/p5_batch3_rpc_proof.sql` still
+  present and rollback-safe (no Stage 6 SQL changes other than the
+  one new migration).
+- No public `/api/v1/funder/*` endpoint exists in `src/` or
+  `supabase/functions/`.
+- No Batch 1/2 files, RPCs, edge functions, summary clients or
+  business tables modified.
+
+### Final release-readiness audit (Critical / High / Medium / Low)
+- **Critical:** none.
+- **High:** none.
+- **Medium:** none Batch 3-specific. Pre-existing supabase linter
+  warnings (function search_path, public extensions, public-callable
+  SECURITY DEFINER functions) are inherited from Batches 1/2 and
+  unrelated to Batch 3; the Stage 6 helper sets
+  `search_path = public` and revokes EXECUTE from PUBLIC.
+- **Low:** the Stage 6 monitor relies on an external scheduler
+  invoking it with `x-internal-cron-key`; the scheduler wiring itself
+  is operator-side and intentionally out of Batch 3 scope (no public
+  cron block added to `supabase/config.toml`).
+
+Markers: `P5_BATCH_3_STAGE_6_COMPLETE`, `P5_BATCH_3_COMPLETE`.

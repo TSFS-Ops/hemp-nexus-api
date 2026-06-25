@@ -24,17 +24,16 @@ const V = [];
 
 const FORBIDDEN_PATHS = [
   "src/pages/registry/p5-batch3",
-  "src/lib/p5-batch3/notifications.ts",
-  "src/lib/p5-batch3/sla-rules.ts",
-  "src/lib/p5-batch3/finality-bridge.ts",
-  "src/lib/p5-batch3/readiness-bridge.ts",
 ];
 for (const p of FORBIDDEN_PATHS) {
-  if (existsSync(join(ROOT, p))) V.push(`Stage 3 leak: ${p} present (Stage 6 only)`);
+  if (existsSync(join(ROOT, p))) V.push(`Stage 3 leak: ${p} present`);
 }
 
-// Allowed Stage 3 edge function set (exact match list).
-const ALLOWED_BATCH3_FNS = new Set(["p5-batch3-funder-summary"]);
+// Allowed edge function set: Stage 3 summary + Stage 6 monitor.
+const ALLOWED_BATCH3_FNS = new Set([
+  "p5-batch3-funder-summary",
+  "p5-batch3-stage6-monitor",
+]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
   for (const name of readdirSync(fnDir)) {
