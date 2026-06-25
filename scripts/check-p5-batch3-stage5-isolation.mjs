@@ -62,7 +62,7 @@ if (existsSync(migDir)) {
   for (const f of readdirSync(migDir)) {
     if (!f.endsWith(".sql")) continue;
     const body = readFileSync(join(migDir, f), "utf8");
-    if (/CREATE (TABLE|TYPE|OR REPLACE FUNCTION|FUNCTION) public\.(p5_batch3_|p5b3_)/.test(body)) batch3Migrations++;
+    if (/(CREATE (TABLE|TYPE|OR REPLACE FUNCTION|FUNCTION)|ALTER (TABLE|TYPE|FUNCTION)|REVOKE [A-Z ]+ON FUNCTION) public\.(p5_batch3_|p5b3_)/.test(body)) batch3Migrations++;
   }
 }
 if (batch3Migrations !== 4) {
