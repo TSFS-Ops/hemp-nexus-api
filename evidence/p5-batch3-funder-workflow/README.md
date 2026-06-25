@@ -106,3 +106,97 @@ Marker: **P5_BATCH_3_STAGE_2_COMPLETE**
 - `P5_BATCH_3_STAGE_2_ISOLATION_OK` ✅
 - `P5_BATCH_3_STAGE_1_ISOLATION_OK` ✅ (re-checked, still green).
 - Stage 3 NOT started.
+
+## Stage 3 — Server-authoritative RPC layer (COMPLETE)
+
+Marker: **P5_BATCH_3_STAGE_3_COMPLETE**
+
+### Migration
+- `supabase/migrations/<timestamp>_p5_batch3_stage3_rpcs.sql` (approved
+  and applied) adds:
+  - Helper `p5b3_actor_role()` — funder ↔ internal disjoint actor model.
+  - Internal audit writer `p5b3_audit(...)` (service_role only).
+  - Admin RPCs: `p5b3_admin_create_funder_org_v1`, `_update_funder_org_v1`,
+    `_invite_funder_user_v1`, `_assign_funder_role_v1`,
+    `_set_funder_user_status_v1`, `_create_access_grant_v1`,
+    `_release_pack_version_v1`, `_change_grant_expiry_v1`,
+    `_revoke_grant_v1`, `_reactivate_grant_v1`,
+    `_edit_request_external_text_v1`, `_decide_request_v1`,
+    `_review_outcome_v1`, `_exit_review_v1`.
+  - Funder RPCs: `p5b3_funder_submit_request_v1`,
+    `p5b3_funder_submit_outcome_v1`,
+    `p5b3_funder_record_download_v1`.
+  - All RPCs are `SECURITY DEFINER`, `SET search_path = public`, with
+    `EXECUTE` revoked from `PUBLIC`/`anon` and granted only to
+    `authenticated, service_role`.
+  - All admin RPCs assert `p5b3_is_platform_admin()`.
+  - Access grant RPC rejects missing expiry, missing release reason,
+    missing evidence_pack_id+version, and past-dated expiry.
+  - Funder outcome RPC explicitly emits `finality_created: false` in
+    audit — funder approval never creates finality directly.
+  - Deactivating a funder user cascades to revoking that user's active
+    grants (reason recorded).
+
+### Edge function (Stage 3 scope)
+- `supabase/functions/p5-batch3-funder-summary/index.ts` — internal
+  dashboard/funder-readiness use only. **Not** a public funder API
+  endpoint. Validates the caller JWT, looks up an active non-expired
+  grant via RLS-protected SELECTs, returns only allow-listed fields,
+  applies the provider-wording allow-list, and default-masks bank
+  values. Expired/revoked grants return `{ denied: true, … }`.
+
+### RPC client
+- `src/lib/p5-batch3/rpc.ts` — thin TS wrappers. The `P5B3_RPC_NAMES`
+  list is the SSOT used by Stage 3 contract tests.
+
+### SQL proof
+- `supabase/tests/p5_batch3_rpc_proof.sql` — `BEGIN … ROLLBACK` block
+  with 12 assertions. Final notice on success: **`P5B3_STAGE3_PROOF_OK`**.
+- Run command:
+  ```sh
+  psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/p5_batch3_rpc_proof.sql
+  ```
+- Expected tail:
+  ```
+  NOTICE:  P5B3_STAGE3_PROOF_OK
+  DO
+  ROLLBACK
+  ```
+
+### Tests added
+- `src/tests/p5-batch3-stage3-rpc-contracts.test.ts` (8) — RPC names,
+  SECURITY DEFINER + search_path, admin gating, validation invariants,
+  EXECUTE lockdown.
+- `src/tests/p5-batch3-stage3-edge-summary-static.test.ts` (7) — no
+  public API path, JWT required, no raw sensitive column selection,
+  expired/revoked grant denial, provider-wording allow-list, default
+  bank masking, allow-list filter.
+- `src/tests/p5-batch3-stage3-isolation.test.ts` (7) — Stage 1/2/3
+  isolation guards green, no notifications/cron/UI/finality-bridge
+  added.
+
+### Guard
+- `scripts/check-p5-batch3-stage3-isolation.mjs` — forbids Stage 4+
+  surfaces (UI, hooks, notifications, sla-rules, finality/readiness
+  bridge), pins the Batch 3 edge-function allow-list to
+  `["p5-batch3-funder-summary"]`, blocks any real
+  `/api/v1/funder` route registration, blocks mutation references to
+  Batch 1/2 business tables, and blocks Batch 3 cron blocks in
+  `supabase/config.toml`.
+- Stage 1 + Stage 2 guards updated to permit the legitimate Stage 3
+  additions (one extra migration, the safe summary edge fn, and
+  `rpc.ts`) — no other Batch 3 surfaces are allowed.
+
+### Results
+- Batch 3 cumulative test suite: **82/82 green** (17 + 42 + 23, all
+  files under `src/tests/p5-batch3-*`).
+- `P5_BATCH_3_STAGE_3_ISOLATION_OK` ✅
+- `P5_BATCH_3_STAGE_2_ISOLATION_OK` ✅ (re-checked, still green)
+- `P5_BATCH_3_STAGE_1_ISOLATION_OK` ✅ (re-checked, still green)
+- No Batch 1/2 files, tables, RPCs, edge functions or summary clients
+  modified.
+- No `trade_requests` / `pois` / `wads` / `token_ledger` /
+  `token_balances` / `business_decisions` / `payment_disputes` rows
+  mutated by any Batch 3 path (negatively asserted in SQL proof
+  Assertion 11).
+- Stage 4 NOT started.
