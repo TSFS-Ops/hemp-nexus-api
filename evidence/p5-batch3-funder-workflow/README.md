@@ -75,3 +75,34 @@ Disciplined 6-stage build mirroring P-5 Batch 2. Each stage stops for sign-off.
   for the Batch 3 helpers were closed by the EXECUTE lockdown migration).
   All remaining 239 issues are pre-existing project-wide warnings that
   predate Batch 3 and are out of scope for this stage.
+
+## Stage 2 — Pure TypeScript Logic (COMPLETE)
+
+Marker: **P5_BATCH_3_STAGE_2_COMPLETE**
+
+### Modules added (`src/lib/p5-batch3/`)
+- `roles.ts` — internal vs funder vs api-client categorisation; funder roles never inherit internal permissions.
+- `permissions.ts` — funder capability matrix (view/do/never) per role; never-list enforced.
+- `access-grants.ts` — active/expired/revoked/pending + org/user/tx/pack-version scoping + cross-funder isolation.
+- `visibility.ts` — released-field allow-list, blocked raw/admin/internal/provider/other-funder fields, default bank masking.
+- `downloads.ts` — released-PDF only, admin release + watermark, 7-day TTL, revocation invalidation, raw export hard block.
+- `request-lifecycle.ts` — 11-state transition table; original request text preserved on admin edit.
+- `outcomes.ts` — outcome → funder-status map; funding/term-sheet/conditional flagged for admin review.
+- `exit-revocation.ts` — exit triggers, reinstatement gated on platform_admin + reason + new expiry.
+- `multi-funder.ts` — per-funder scoping; sibling funders never visible or mutated.
+- `provider-wording.ts` — safe label allow-list, unsafe label block unless live provider result or approved manual decision.
+- `api-fields.ts` — API allow-list ⊆ dashboard allow-list; raw/internal fields blocked.
+- `readiness-eligibility.ts` — funder action feeds but never alone reaches finality; Memory excludes private/unreleased credit material.
+
+### Tests
+- `src/tests/p5-batch3-stage2-logic.test.ts` — 40 tests across all modules.
+- `src/tests/p5-batch3-stage2-isolation.test.ts` — 2 tests asserting Stage 1 + Stage 2 isolation guards pass.
+
+### Guard
+- `scripts/check-p5-batch3-stage2-isolation.mjs` — forbids UI, RPCs, edge fns, summary clients, notifications, cron, supabase client/rpc/invoke imports, App.tsx route changes, and limits Batch 3 migrations to the two Stage 1 files.
+
+### Results
+- Stage 2 + Stage 1 Batch 3 suite: **59/59 green** (40 + 2 + 9 + 8).
+- `P5_BATCH_3_STAGE_2_ISOLATION_OK` ✅
+- `P5_BATCH_3_STAGE_1_ISOLATION_OK` ✅ (re-checked, still green).
+- Stage 3 NOT started.
