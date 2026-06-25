@@ -172,6 +172,11 @@ const P5Batch3FunderReadiness = lazy(() => import("@/pages/funder/p5-batch3/Read
 const P5Batch3FunderRequests = lazy(() => import("@/pages/funder/p5-batch3/Requests"));
 const P5Batch3FunderOutcomes = lazy(() => import("@/pages/funder/p5-batch3/Outcomes"));
 const P5Batch3FunderDownloads = lazy(() => import("@/pages/funder/p5-batch3/Downloads"));
+// P-5 Batch 4 — Stage 4: admin-only execution engine surfaces (platform_admin)
+const P5Batch4AdminIndex = lazy(() => import("@/pages/admin/p5-batch4/Index"));
+const P5Batch4Cases = lazy(() => import("@/pages/admin/p5-batch4/Cases"));
+const P5Batch4CaseDetail = lazy(() => import("@/pages/admin/p5-batch4/CaseDetail"));
+const P5Batch4Audit = lazy(() => import("@/pages/admin/p5-batch4/Audit"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
