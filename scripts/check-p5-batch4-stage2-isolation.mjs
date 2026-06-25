@@ -41,8 +41,10 @@ const libDir = join(ROOT, "src/lib/p5-batch4");
 const libFiles = walk(libDir).filter((p) => p.endsWith(".ts"));
 
 // Stage 3 introduces `rpc.ts`, which legitimately imports the supabase
-// client and is exempt from the "pure-TS only" Stage 2 ban.
-const STAGE3_EXEMPT_BASENAMES = new Set(["rpc.ts"]);
+// client and is exempt from the "pure-TS only" Stage 2 ban. Stage 4
+// adds `summary-client.ts`, also a thin Supabase wrapper.
+const STAGE3_EXEMPT_BASENAMES = new Set(["rpc.ts", "summary-client.ts"]);
+
 
 const FORBIDDEN_IMPORT_TOKENS = [
   /from\s+['"]@\/integrations\/supabase\/client['"]/,
