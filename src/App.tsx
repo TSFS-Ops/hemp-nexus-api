@@ -381,6 +381,14 @@ function App() {
                   <Route path="/funder/p5-batch3/outcomes/:grantId" element={<RequireAuth><P5Batch3FunderOutcomes /></RequireAuth>} />
                   <Route path="/funder/p5-batch3/downloads/:grantId" element={<RequireAuth><P5Batch3FunderDownloads /></RequireAuth>} />
 
+                  {/* P-5 Batch 4 — Stage 4: admin-only execution engine surfaces */}
+                  <Route path="/admin/p5-batch4" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4AdminIndex /></RequireAuth>} />
+                  <Route path="/admin/p5-batch4/cases" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4Cases /></RequireAuth>} />
+                  <Route path="/admin/p5-batch4/cases/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4CaseDetail /></RequireAuth>} />
+                  <Route path="/admin/p5-batch4/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4Audit /></RequireAuth>} />
+
+
+
 
                   {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}
                   <Route path="/registry/my-companies/:companyId/readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
