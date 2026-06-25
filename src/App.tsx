@@ -177,6 +177,9 @@ const P5Batch4AdminIndex = lazy(() => import("@/pages/admin/p5-batch4/Index"));
 const P5Batch4Cases = lazy(() => import("@/pages/admin/p5-batch4/Cases"));
 const P5Batch4CaseDetail = lazy(() => import("@/pages/admin/p5-batch4/CaseDetail"));
 const P5Batch4Audit = lazy(() => import("@/pages/admin/p5-batch4/Audit"));
+// P-5 Batch 4 — Stage 6: funder-facing surfaces (release-only, funder-org scoped server-side)
+const P5Batch4FunderIndex = lazy(() => import("@/pages/funder/p5-batch4/Index"));
+const P5Batch4FunderCaseDetail = lazy(() => import("@/pages/funder/p5-batch4/CaseDetail"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -386,6 +389,11 @@ function App() {
                   <Route path="/admin/p5-batch4/cases" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4Cases /></RequireAuth>} />
                   <Route path="/admin/p5-batch4/cases/:caseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4CaseDetail /></RequireAuth>} />
                   <Route path="/admin/p5-batch4/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch4Audit /></RequireAuth>} />
+
+                  {/* P-5 Batch 4 — Stage 6: funder-facing surfaces (authenticated; release+funder-org enforced server-side) */}
+                  <Route path="/funder/p5-batch4" element={<RequireAuth><P5Batch4FunderIndex /></RequireAuth>} />
+                  <Route path="/funder/p5-batch4/:caseId" element={<RequireAuth><P5Batch4FunderCaseDetail /></RequireAuth>} />
+
 
 
 

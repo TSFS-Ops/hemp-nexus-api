@@ -255,12 +255,14 @@ Deno.serve(async (req) => {
 
     const { data: releases, error: relErr } = await supabase
       .from("p5_batch4_funder_releases")
-      .select("case_id,access_expires_at,status")
+      .select("id,case_id,access_expires_at,status,download_allowed,nda_required,pack_reference")
       .eq("funder_org_id", funderOrg)
       .neq("status", "revoked")
       .gt("access_expires_at", new Date().toISOString());
     if (relErr) return json({ error: relErr.message }, 500);
-    const allowedCaseIds = new Set((releases ?? []).map((r) => r.case_id));
+    const releaseByCase = new Map<string, Record<string, unknown>>();
+    for (const r of releases ?? []) releaseByCase.set(r.case_id as string, r as Record<string, unknown>);
+    const allowedCaseIds = new Set(releaseByCase.keys());
     if (caseId && !allowedCaseIds.has(caseId)) {
       return json({ error: "case_not_released_to_funder" }, 403);
     }
@@ -270,12 +272,24 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from("p5_batch4_execution_cases")
-      .select(FUNDER_SAFE_FIELDS.join(","))
+      .select(FUNDER_SAFE_FIELDS.join(",") + ",id")
       .in("id", ids);
     if (error) return json({ error: error.message }, 500);
-    const rows = (data ?? []).map((r) =>
-      projectRow(r as Record<string, unknown>, FUNDER_SAFE_FIELDS),
-    );
+    const rows = (data ?? []).map((r) => {
+      const projected = projectRow(r as Record<string, unknown>, FUNDER_SAFE_FIELDS);
+      const caseRowId = (r as Record<string, unknown>).id as string;
+      projected.id = caseRowId;
+      const rel = releaseByCase.get(caseRowId);
+      if (rel) {
+        projected.release_id = rel.id;
+        projected.access_expires_at = rel.access_expires_at;
+        projected.release_status = rel.status;
+        projected.download_allowed = rel.download_allowed;
+        projected.nda_required = rel.nda_required;
+        projected.pack_reference = rel.pack_reference;
+      }
+      return projected;
+    });
     // Audit funder view
     if (caseId) {
       await supabase.rpc("p5b4_record_audit_event_v1", {
