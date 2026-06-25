@@ -368,6 +368,14 @@ function App() {
                   <Route path="/admin/p5-batch3/requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Requests /></RequireAuth>} />
                   <Route path="/admin/p5-batch3/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Audit /></RequireAuth>} />
 
+                  {/* P-5 Batch 3 — Stage 5: funder-facing surfaces (authenticated; grant enforced server-side) */}
+                  <Route path="/funder/p5-batch3" element={<RequireAuth><P5Batch3FunderIndex /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/opportunities/:grantId" element={<RequireAuth><P5Batch3FunderOpportunity /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/readiness/:grantId" element={<RequireAuth><P5Batch3FunderReadiness /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/requests/:grantId" element={<RequireAuth><P5Batch3FunderRequests /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/outcomes/:grantId" element={<RequireAuth><P5Batch3FunderOutcomes /></RequireAuth>} />
+                  <Route path="/funder/p5-batch3/downloads/:grantId" element={<RequireAuth><P5Batch3FunderDownloads /></RequireAuth>} />
+
 
                   {/* P-5 Batch 1 Stage 5 — non-admin subject surfaces */}
                   <Route path="/registry/my-companies/:companyId/readiness" element={<RequireAuth><MyCompanyReadiness /></RequireAuth>} />
