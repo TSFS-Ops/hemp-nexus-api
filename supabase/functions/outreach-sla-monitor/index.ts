@@ -273,11 +273,19 @@ Deno.serve(async (req) => {
     if (sendErr || (sendResult && (sendResult as any).success === false)) {
       const reason = (sendResult as any)?.reason || (sendErr as any)?.message || "send_failed";
       console.error(`[${requestId}] SLA digest send failed:`, reason);
+      await emitWitness("error", {
+        included: 0,
+        overdue_total: overdue?.length ?? 0,
+        threshold_hours: settings.threshold_hours,
+        error: "digest_send_failed",
+        reason,
+      });
       return new Response(
         JSON.stringify({ ok: false, error: "digest_send_failed", reason }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     // Mark each included engagement as reminded so we don't re-spam next tick.
     // ── NOT-010: status predicate on the UPDATE ─────────────────────
