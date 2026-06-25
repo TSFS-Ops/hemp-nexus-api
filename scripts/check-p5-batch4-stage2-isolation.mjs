@@ -43,7 +43,7 @@ const libFiles = walk(libDir).filter((p) => p.endsWith(".ts"));
 // Stage 3 introduces `rpc.ts`, which legitimately imports the supabase
 // client and is exempt from the "pure-TS only" Stage 2 ban. Stage 4
 // adds `summary-client.ts`, also a thin Supabase wrapper.
-const STAGE3_EXEMPT_BASENAMES = new Set(["rpc.ts", "summary-client.ts"]);
+const STAGE3_EXEMPT_BASENAMES = new Set(["rpc.ts", "summary-client.ts", "org-user-client.ts"]);
 
 
 const FORBIDDEN_IMPORT_TOKENS = [
@@ -139,10 +139,10 @@ if (existsSync(fnDir)) {
   }
 }
 // Stage 4 legitimately adds src/pages/admin/p5-batch4 and /admin/p5-batch4
-// routes; other Batch 4 UI surfaces remain forbidden.
+// routes; Stage 5 adds src/pages/desk/p5-batch4 (org-user surface).
+// Funder/registry surfaces remain forbidden.
 const FORBIDDEN_UI_DIRS = [
   "src/pages/funder/p5-batch4",
-  "src/pages/desk/p5-batch4",
   "src/pages/registry/p5-batch4",
 ];
 for (const rel of FORBIDDEN_UI_DIRS) {

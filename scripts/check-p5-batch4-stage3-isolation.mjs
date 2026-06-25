@@ -53,10 +53,9 @@ if (batch4Fns.length !== 1 || batch4Fns[0] !== "p5-batch4-execution-summary") {
   VIOLATIONS.push(`Stage 3 guard: expected single edge function p5-batch4-execution-summary, got ${JSON.stringify(batch4Fns)}`);
 }
 
-// ---- 3. No NON-admin Batch 4 UI / routes (admin/p5-batch4 added in Stage 4) ----
+// ---- 3. No NON-admin Batch 4 UI / routes (admin in Stage 4; desk org-user in Stage 5) ----
 const FORBIDDEN_UI = [
   "src/pages/funder/p5-batch4",
-  "src/pages/desk/p5-batch4",
   "src/pages/registry/p5-batch4",
   "src/components/p5-batch4",
 ];

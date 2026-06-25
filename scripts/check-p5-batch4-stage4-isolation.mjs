@@ -41,7 +41,6 @@ function walk(dir, out = []) {
 // --- 1. Forbidden non-admin Batch 4 surfaces ---
 for (const rel of [
   "src/pages/funder/p5-batch4",
-  "src/pages/desk/p5-batch4",
   "src/pages/registry/p5-batch4",
 ]) {
   if (existsSync(join(ROOT, rel))) V.push(`Stage 4 leak: ${rel} present`);
