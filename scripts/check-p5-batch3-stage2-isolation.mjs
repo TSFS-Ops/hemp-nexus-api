@@ -73,10 +73,10 @@ const FORBIDDEN_TOKENS = [
   /atomic_token_burn/,
 ];
 
-// rpc.ts is the legitimate Stage 3 RPC wrapper; it is intentionally
-// allowed to import the supabase client and call .rpc().
+// rpc.ts (Stage 3) and summary-client.ts (Stage 5) legitimately import the
+// supabase client. Everything else in src/lib/p5-batch3 remains pure TS.
 const files = walk(join(ROOT, "src/lib/p5-batch3")).filter(
-  (f) => !/[\\/]rpc\.ts$/.test(f),
+  (f) => !/[\\/](rpc|summary-client)\.ts$/.test(f),
 );
 for (const f of files) {
   const text = readFileSync(f, "utf8");
