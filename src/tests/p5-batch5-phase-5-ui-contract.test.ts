@@ -158,18 +158,22 @@ describe("P-5 Batch 5 Phase 5 — reasoned-action dialog wiring", () => {
 
 describe("P-5 Batch 5 Phase 5 — warning banner coverage", () => {
   const banners = read("src/components/p5-batch5/WarningBanners.tsx");
-  it("covers all reliance-affecting states", () => {
-    for (const m of [
-      P5B5_APPROVED_PHRASES.UNDER_DISPUTE_SHORT,
-      P5B5_APPROVED_PHRASES.MEMORY_PAUSED,
-      P5B5_APPROVED_PHRASES.SUPERSEDED,
-      P5B5_APPROVED_PHRASES.CORRECTED_SHORT,
-      P5B5_APPROVED_PHRASES.EXCLUDED_FROM_MEMORY,
-      P5B5_APPROVED_PHRASES.PROVIDER_DEPENDENCY,
-      P5B5_APPROVED_PHRASES.TEST_OR_INVALID,
+  it("references each reliance-affecting phrase via the approved-wording SSOT", () => {
+    for (const key of [
+      "UNDER_DISPUTE_SHORT",
+      "MEMORY_PAUSED",
+      "SUPERSEDED",
+      "CORRECTED_SHORT",
+      "EXCLUDED_FROM_MEMORY",
+      "PROVIDER_DEPENDENCY",
+      "TEST_OR_INVALID",
     ]) {
-      expect(banners).toContain(m);
+      expect(banners).toMatch(new RegExp(`P5B5_APPROVED_PHRASES\\.${key}\\b`));
     }
+  });
+  it("approved-phrase values are non-empty", () => {
+    expect(P5B5_APPROVED_PHRASES.MEMORY_PAUSED.length).toBeGreaterThan(0);
+    expect(P5B5_APPROVED_PHRASES.SUPERSEDED.length).toBeGreaterThan(0);
   });
 });
 
