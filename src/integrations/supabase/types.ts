@@ -23371,6 +23371,10 @@ export type Database = {
         }
         Returns: string
       }
+      p5b5_resolve_actor_role: {
+        Args: { _allowed_roles: string[]; _user_id: string }
+        Returns: Database["public"]["Enums"]["p5_batch4_role_key"]
+      }
       p5b5_resolve_dispute: {
         Args: {
           _dispute_id: string
