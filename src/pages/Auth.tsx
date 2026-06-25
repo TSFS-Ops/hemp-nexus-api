@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { hasPreAuthState } from "@/lib/pre-auth-state";
 import { getSafeReturnTo } from "@/lib/safe-redirect";
+import { resolveProtectedReturnTo } from "@/lib/post-auth-redirect";
 import { AUTH_REDIRECT_NOTICE_KEY } from "@/components/AuthRedirectNoticeBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
