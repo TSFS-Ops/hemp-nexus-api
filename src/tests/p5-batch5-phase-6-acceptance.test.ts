@@ -176,13 +176,12 @@ describe("P-5 Batch 5 Phase 6 — API-safe projection cross-consistency", () => 
   it("strips evidence_rating without evidence_rating.read scope", () => {
     const r = projectFinalityToApiSafe(base);
     expect(r.blocked).toBe(false);
-    if (!r.blocked) {
-      expect(r.evidence_rating).toBeNull();
-      expect(r.finality_record_reference).toBeNull();
-      expect(r.hash_reference).toBeNull();
-      expect(r.schema_version).toBe("p5b5.v1");
-      expect(r.outcome_code_version).toBe("p5b5-outcomes.v1");
-    }
+    const proj = r as Extract<typeof r, { blocked: false }>;
+    expect(proj.evidence_rating).toBeNull();
+    expect(proj.finality_record_reference).toBeNull();
+    expect(proj.hash_reference).toBeNull();
+    expect(proj.schema_version).toBe("p5b5.v1");
+    expect(proj.outcome_code_version).toBe("p5b5-outcomes.v1");
   });
 
   it("reveals scoped fields only with the right API scope", () => {
@@ -190,12 +189,11 @@ describe("P-5 Batch 5 Phase 6 — API-safe projection cross-consistency", () => 
       api_scopes: ["evidence_rating.read", "audit.read"],
     });
     expect(r.blocked).toBe(false);
-    if (!r.blocked) {
-      expect(r.evidence_rating).toBe("green");
-      expect(r.finality_record_reference).toBe("p5b4-fin-123");
-      expect(r.hash_reference).toBe("sha256:abc");
-      expect(r.provider_dependency_status).toBe("success");
-    }
+    const proj = r as Extract<typeof r, { blocked: false }>;
+    expect(proj.evidence_rating).toBe("green");
+    expect(proj.finality_record_reference).toBe("p5b4-fin-123");
+    expect(proj.hash_reference).toBe("sha256:abc");
+    expect(proj.provider_dependency_status).toBe("success");
   });
 
   it("every successful projection emits exactly the 14 allowlisted fields", () => {
@@ -203,11 +201,11 @@ describe("P-5 Batch 5 Phase 6 — API-safe projection cross-consistency", () => 
       api_scopes: ["evidence_rating.read", "audit.read", "provider_dependency.read"],
     });
     expect(r.blocked).toBe(false);
-    if (!r.blocked) {
-      const keys = Object.keys(r).filter((k) => k !== "blocked").sort();
-      const allowed = [...P5B5_API_SAFE_FIELDS].sort();
-      expect(keys).toEqual(allowed);
-      expect(keys).toHaveLength(14);
+    const proj = r as Extract<typeof r, { blocked: false }>;
+    const keys = Object.keys(proj).filter((k) => k !== "blocked").sort();
+    const allowed = [...P5B5_API_SAFE_FIELDS].sort();
+    expect(keys).toEqual(allowed);
+    expect(keys).toHaveLength(14);
     }
   });
 
