@@ -53,9 +53,8 @@ describe("P5 Batch 3 Stage 4 — routes", () => {
     expect(appTsx).toMatch(re);
   });
 
-  it("no /funder/p5-batch3/* routes exist yet", () => {
-    expect(appTsx).not.toMatch(/\/funder\/p5-batch3/);
-  });
+  // Stage 5 (now signed off in parallel) legitimately adds funder routes.
+  // This assertion is intentionally relaxed: we only require admin routes here.
 
   it("no /registry/p5-batch3 funder/customer-only routes added in Stage 4", () => {
     // Batch 2 has its own /registry/p5-batch2 routes; we just assert no Batch 3.
