@@ -351,6 +351,14 @@ Deno.serve(async (req) => {
       `[${requestId}] SLA digest dispatched: ${ids.length} engagement(s) to ${settings.reminder_email}`
     );
 
+    await emitWitness("ok", {
+      included: ids.length,
+      overdue_total: overdue?.length ?? 0,
+      threshold_hours: settings.threshold_hours,
+      email_sent: true,
+      recipient: settings.reminder_email,
+    });
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -364,6 +372,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error(`[${requestId}] outreach-sla-monitor error:`, err);
+    await emitWitness("error", { error: (err as Error).message });
     return new Response(
       JSON.stringify({ ok: false, error: (err as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
