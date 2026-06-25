@@ -40,71 +40,44 @@ export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // ── Post-auth routing: admins → /hq; new users → /welcome; returning → persisted persona ──
+  // ── Post-auth routing.
+  //   Client direction (David Davies, 2026-06-25, refined): a normal sign-in
+  //   from the public homepage must land ALL users — including platform
+  //   admins — back on `/` in a logged-in state. HQ / Dashboard / Trading
+  //   Desk are reached via homepage CTAs, not via automatic post-auth
+  //   redirects. We only bypass `/` when the user has an intentional,
+  //   allow-listed protected returnTo (deep link, RequireAuth bounce, or
+  //   session-expiry recovery).
   const resolvePostAuthRoute = async (userId: string): Promise<string> => {
-    console.info("[Auth] resolvePostAuthRoute:start", {
-      userId
-    });
+    console.info("[Auth] resolvePostAuthRoute:start", { userId });
 
-    // 1) Platform admins always go to HQ, bypass returnTo & persona selector.
-    //    Rationale: an admin socially-engineered into clicking a Resend deep
-    //    link should not be silently dropped onto a tenant surface. We force
-    //    them to HQ instead.
-    //    UX caveat: bypassing returnTo is invisible to the user - they may
-    //    have legitimately wanted to open the link. We surface a toast so
-    //    they know the redirect happened and can re-open the original target
-    //    manually.
-    try {
-      const {
-        data: roleRows,
-        error: roleErr
-      } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-      console.info("[Auth] role lookup", {
-        roleRows,
-        roleErr: roleErr?.message
+    // Resolve returnTo intentionality up-front. This applies uniformly to
+    // admins and non-admins.
+    const rawReturnTo = searchParams.get("returnTo");
+    const intentional =
+      searchParams.get("expired") === "1" || Boolean(rawReturnTo);
+    const honoured = resolveProtectedReturnTo(rawReturnTo, intentional);
+    if (rawReturnTo && !honoured) {
+      console.info("[Auth] returnTo rejected (non-protected/stale/external)", {
+        rawReturnTo,
+        intentional,
       });
-      const isPlatformAdmin = (roleRows || []).some(r => r.role === "platform_admin");
-      if (isPlatformAdmin) {
-        const requestedReturn = searchParams.get("returnTo");
-        if (requestedReturn) {
-          // Sanitise before echoing back into the toast - never render raw user input.
-          const safeRequested = getSafeReturnTo(requestedReturn, "");
-          // Persist the original deep-link so HQ can show a non-dismissable
-          // banner until the admin acknowledges or opens it. A 10s toast was
-          // routinely missed (client incident, see chain).
-          if (safeRequested) {
-            try {
-              sessionStorage.setItem(
-                "izenzo_admin_redirect_origin",
-                JSON.stringify({ link: safeRequested, at: Date.now() })
-              );
-            } catch { /* storage blocked - fall through to toast only */ }
-          }
-          toast.info(
-            safeRequested
-              ? `Admin session - redirected to HQ. Original link: ${safeRequested}`
-              : "Admin session - redirected to HQ instead of the requested page.",
-            { duration: 10000 }
-          );
-        }
-        console.info("[Auth] resolved → /hq/users (platform admin)");
-        return "/hq/users";
-      }
-    } catch (e) {
-      console.warn("[Auth] role lookup threw - falling through", e);
     }
 
-    // 2) Honour returnTo for non-admins, but only if it points at an
-    //    intentional protected/workspace journey. See post-auth-redirect.ts
-    //    for the allow-list. Stale browser history, external URLs, and
-    //    inadvertent /desk/ /dashboard defaults are dropped.
-    const returnTo = searchParams.get("returnTo");
-    // Intentionality signal: a non-stale protected journey is indicated by
-    // either (a) `expired=1` (session-recovery flow) or (b) RequireAuth
-    // setting a returnTo into our allow-list. The allow-list itself is the
-    // final gate — Landing's generic `returnTo=/` is dropped here.
-    const intentional = searchParams.get("expired") === "1" || Boolean(returnTo);
-    const honoured = resolveProtectedReturnTo(returnTo, intentional);
+    // Role lookup (best-effort; failures fall through to non-admin path).
+    let isPlatformAdmin = false;
+    try {
+      const { data: roleRows, error: roleErr } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      console.info("[Auth] role lookup", { roleRows, roleErr: roleErr?.message });
+      isPlatformAdmin = (roleRows || []).some((r) => r.role === "platform_admin");
+    } catch (e) {
+      console.warn("[Auth] role lookup threw - treating as non-admin", e);
+    }
+
+    // 1) Honoured protected returnTo wins for all roles.
     if (honoured) {
       try {
         sessionStorage.setItem(
@@ -115,32 +88,38 @@ export default function Auth() {
             at: Date.now(),
           }),
         );
-      } catch { /* storage unavailable - redirect still works */ }
+      } catch {
+        /* storage unavailable - redirect still works */
+      }
       const final = `${honoured}${honoured.includes("?") ? "&" : "?"}resume=1`;
       console.info("[Auth] resolved → returnTo (allow-listed)", final);
       return final;
     }
-    if (returnTo && !honoured) {
-      console.info("[Auth] returnTo rejected (non-protected/stale/external)", { returnTo, intentional });
+
+    // 2) Platform admin without an intentional deep link → land on `/`.
+    //    Homepage exposes a "Go to HQ" CTA for the next step.
+    if (isPlatformAdmin) {
+      console.info("[Auth] resolved → / (platform admin, no protected returnTo)");
+      return "/";
     }
 
-    // 3) Persisted persona → workspace; otherwise persona selector
+    // 3) Non-admin: persisted persona → workspace; otherwise persona picker.
     try {
-      const {
-        data,
-        error: profErr
-      } = await supabase.from("profiles").select("selected_persona").eq("id", userId).maybeSingle();
+      const { data, error: profErr } = await supabase
+        .from("profiles")
+        .select("selected_persona")
+        .eq("id", userId)
+        .maybeSingle();
       console.info("[Auth] persona lookup", {
         persona: data?.selected_persona,
-        profErr: profErr?.message
+        profErr: profErr?.message,
       });
       const persona = data?.selected_persona;
       if (!persona) return "/welcome";
       if (persona === "developer") return "/developers/keys";
       if (persona === "governance") return "/governance/triage";
-      // trade — per client direction (David Davies, 2026-06-25): default
-      // post-sign-in destination is the public home page, NOT the trading
-      // desk. Only resume a pre-auth journey if one was explicitly captured.
+      // trade — default to public home page; only resume into /desk when an
+      // explicit pre-auth journey was captured (e.g. search query).
       if (hasPreAuthState()) return "/desk?resume=1";
       return "/";
     } catch (e) {

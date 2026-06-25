@@ -79,7 +79,24 @@ describe("resolvePostAuthDestination", () => {
     hasPreAuthJourney: false,
   };
 
-  it("platform admin → /hq/users regardless of returnTo", () => {
+  it("platform admin, no returnTo → / (logged-in homepage, NOT /hq)", () => {
+    expect(
+      resolvePostAuthDestination({ ...base, isPlatformAdmin: true }),
+    ).toBe("/");
+  });
+
+  it("platform admin, intentional /hq deep link → resumes into HQ", () => {
+    expect(
+      resolvePostAuthDestination({
+        ...base,
+        isPlatformAdmin: true,
+        rawReturnTo: "/hq/users",
+        returnToIsIntentional: true,
+      }),
+    ).toBe("/hq/users?resume=1");
+  });
+
+  it("platform admin, intentional /desk deep link → still honoured", () => {
     expect(
       resolvePostAuthDestination({
         ...base,
@@ -87,7 +104,29 @@ describe("resolvePostAuthDestination", () => {
         rawReturnTo: "/desk/discover",
         returnToIsIntentional: true,
       }),
-    ).toBe("/hq/users");
+    ).toBe("/desk/discover?resume=1");
+  });
+
+  it("platform admin, stale returnTo → ignored, fallback to /", () => {
+    expect(
+      resolvePostAuthDestination({
+        ...base,
+        isPlatformAdmin: true,
+        rawReturnTo: "/hq/users",
+        returnToIsIntentional: false,
+      }),
+    ).toBe("/");
+  });
+
+  it("platform admin, external returnTo → ignored, fallback to /", () => {
+    expect(
+      resolvePostAuthDestination({
+        ...base,
+        isPlatformAdmin: true,
+        rawReturnTo: "https://evil.example.com/hq",
+        returnToIsIntentional: true,
+      }),
+    ).toBe("/");
   });
 
   it("trade persona, no returnTo, no pre-auth → / (public home)", () => {
