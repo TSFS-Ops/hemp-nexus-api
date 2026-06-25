@@ -93,21 +93,30 @@ export default function Auth() {
       console.warn("[Auth] role lookup threw - falling through", e);
     }
 
-    // 2) Honour returnTo for non-admins (deep-link recovery)
+    // 2) Honour returnTo for non-admins, but only if it points at an
+    //    intentional protected/workspace journey. See post-auth-redirect.ts
+    //    for the allow-list. Stale browser history, external URLs, and
+    //    inadvertent /desk/ /dashboard defaults are dropped.
     const returnTo = searchParams.get("returnTo");
-    if (returnTo) {
-      const safe = getSafeReturnTo(returnTo);
-      if (safe && safe !== "/dashboard") {
-        const final = `${safe}${safe.includes("?") ? "&" : "?"}resume=1`;
-        try {
-          sessionStorage.setItem(
-            AUTH_REDIRECT_NOTICE_KEY,
-            JSON.stringify({ destination: safe, reason: searchParams.get("expired") === "1" ? "expired" : "returnTo", at: Date.now() })
-          );
-        } catch { /* storage unavailable - redirect still works */ }
-        console.info("[Auth] resolved → returnTo", final);
-        return final;
-      }
+    const intentional = isIntentionalReturn(searchParams);
+    const honoured = resolveProtectedReturnTo(returnTo, intentional);
+    if (honoured) {
+      try {
+        sessionStorage.setItem(
+          AUTH_REDIRECT_NOTICE_KEY,
+          JSON.stringify({
+            destination: honoured.split("?")[0],
+            reason: searchParams.get("expired") === "1" ? "expired" : "returnTo",
+            at: Date.now(),
+          }),
+        );
+      } catch { /* storage unavailable - redirect still works */ }
+      const final = `${honoured}${honoured.includes("?") ? "&" : "?"}resume=1`;
+      console.info("[Auth] resolved → returnTo (allow-listed)", final);
+      return final;
+    }
+    if (returnTo && !honoured) {
+      console.info("[Auth] returnTo rejected (non-protected/stale/external)", { returnTo, intentional });
     }
 
     // 3) Persisted persona → workspace; otherwise persona selector
