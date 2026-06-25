@@ -245,3 +245,44 @@ GRANTs:
 ## Final status
 
 `P5_BATCH5_PHASE_1_DEPLOYED`
+
+---
+
+## Phase 5 — UI surfaces (deployed)
+
+Display + action surface over the Phase 1–4 foundations. **No new business rules**, no new RPCs, no cron, no schema changes.
+
+### New files
+
+- `src/pages/admin/p5-batch5/FinalityMemory.tsx` — admin Finality & Memory page (route `/admin/p5-batch5/finality-memory`, `platform_admin` guarded)
+- `src/pages/desk/p5-batch5/OrganisationFinality.tsx` — organisation view (route `/desk/p5-batch5/finality`, `RequireAuth`)
+- `src/pages/funder/p5-batch5/FunderFinality.tsx` — funder lane view (route `/funder/p5-batch5/finality`, `RequireAuth`)
+- `src/components/p5-batch5/CounterpartyFinalitySummary.tsx`
+- `src/components/p5-batch5/MemoryHistoryPanel.tsx` — permission-aware
+- `src/components/p5-batch5/ApiSafePreviewPanel.tsx` — uses `projectFinalityToApiSafe` (no hand-rolled projection)
+- `src/components/p5-batch5/WarningBanners.tsx` — dispute / corrected / superseded / excluded / provider-failure / test-invalid banners using approved wording
+- `src/components/p5-batch5/ReasonedActionDialog.tsx` — reason-required, confirm-required, banned-wording-blocked, role-gated; delegates submit to caller's RPC bridge
+- `src/lib/p5-batch5/wording.ts` — approved phrases + tooltips + `findP5B5BannedPhrases` runtime guard
+- `scripts/check-p5-batch5-ui-wording.mjs` — UI banned-wording drift guard
+- `src/tests/p5-batch5-phase-5-ui-contract.test.ts` — 45 tests
+
+### Guarantees enforced by tests + guards
+
+- UI never calls `supabase.from('p5_batch4_finality_records')`, `supabase.from('p5_batch5_memory_records')`, or `supabase.rpc('p5b5_*')` directly.
+- API-safe preview panel uses the Phase 4 projection helper.
+- Sensitive raw fields (raw provider payloads, raw bank details, private/internal/support notes, draft AI suggestions) are never rendered.
+- Reasoned-action dialog requires reason ≥ 8 chars, confirmation checkbox, role permission and rejects banned wording.
+- All 15 `P5B5_FORBIDDEN_WORDS` are absent across every Batch 5 UI file (8 files scanned).
+- Routes guarded: admin via `role="platform_admin"`, organisation and funder via `RequireAuth`.
+
+### Verification
+
+- `node scripts/check-p5-batch5-ui-wording.mjs` → OK (8 files)
+- `node scripts/check-p5-batch5-vocab-drift.mjs` → OK
+- `node scripts/check-basic-memory-vocab-drift.mjs` → OK (v1 untouched)
+- `bunx vitest run src/tests/p5-batch5-phase-5-ui-contract.test.ts` → 45/45 pass
+- No DB migration, no edge functions, no cron jobs.
+
+## Final status
+
+`P5_BATCH5_PHASE_5_DEPLOYED`
