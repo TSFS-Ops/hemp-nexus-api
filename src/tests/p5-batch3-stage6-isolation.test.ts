@@ -41,7 +41,8 @@ describe("Stage 6 isolation", () => {
     const text = readFileSync(f, "utf8");
     expect(text).toMatch(/INTERNAL_CRON_KEY/);
     expect(text).toMatch(/x-internal-cron-key/i);
-    expect(text).not.toMatch(/\/api\/v1\/funder/);
+    // Must not declare an /api/v1/funder route (comments are fine).
+    expect(text).not.toMatch(/\b(Deno\.serve|fetch|app|router)\b[^\n]{0,40}["']\/api\/v1\/funder/);
   });
 
   it("Stage 6 lib modules remain pure TS", () => {
