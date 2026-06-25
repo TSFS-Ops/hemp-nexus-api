@@ -87,7 +87,7 @@ export interface CreateAccessGrantArgs {
   p_expiry_at: string; // ISO
 }
 export const p5b3CreateAccessGrant = (args: CreateAccessGrantArgs) =>
-  call<string>("p5b3_admin_create_access_grant_v1", args);
+  call<string>("p5b3_admin_create_access_grant_v1", args as unknown as Record<string, unknown>);
 
 export const p5b3ReleasePackVersion = (args: {
   p_grant_id: string; p_evidence_pack_id: string;
