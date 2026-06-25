@@ -77,7 +77,7 @@ export default function P5Batch3FunderIndex() {
     setDenial(null);
     try {
       const res = await fetchFunderSummary({ transaction_reference: txRef.trim() });
-      if (res.ok === false) {
+      if (res.ok !== true) {
         setDenial({ reason: res.denial.reason, message: res.denial.error });
         return;
       }

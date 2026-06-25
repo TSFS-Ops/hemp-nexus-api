@@ -27,7 +27,7 @@ export default function P5Batch3FunderReadiness() {
     setBusy(true);
     setDenial(null);
     const res = await fetchFunderSummary({ transaction_reference: ref.trim() });
-    if (res.ok === false) {
+    if (res.ok !== true) {
       setData(null);
       setDenial({ reason: res.denial.reason, message: res.denial.error });
     } else setData(res.data);
