@@ -33,7 +33,7 @@ export default function P5Batch3FunderDownloads() {
     setBusy(true);
     setDenial(null);
     const res = await fetchFunderSummary({ transaction_reference: ref.trim() });
-    if (!res.ok) {
+    if (res.ok === false) {
       setData(null);
       setDenial({ reason: res.denial.reason, message: res.denial.error });
     } else setData(res.data);
