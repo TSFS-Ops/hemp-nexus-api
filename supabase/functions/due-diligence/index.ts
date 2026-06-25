@@ -968,6 +968,15 @@ async function _serve(req: Request): Promise<Response> {
       if (!target_user_id || !ddRole) {
         return json({ error: "target_user_id and role are required" }, 400);
       }
+      const VALID_DD_ROLES = new Set([
+        "compliance_analyst",
+        "legal_reviewer",
+        "director",
+        "auditor",
+      ]);
+      if (typeof ddRole !== "string" || !VALID_DD_ROLES.has(ddRole)) {
+        return json({ error: "Invalid DD role" }, 400);
+      }
 
       const targetOrgId = org_id || profile.org_id;
 
