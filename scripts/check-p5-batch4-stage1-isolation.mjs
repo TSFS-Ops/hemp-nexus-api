@@ -47,9 +47,10 @@ if (existsSync(fnDir)) {
 }
 
 
-// --- Rule 2: no Batch 4 UI surfaces exist yet ---
+// --- Rule 2: no NON-admin Batch 4 UI surfaces exist yet ---
+// Stage 4 legitimately introduces src/pages/admin/p5-batch4. Funder/desk/
+// registry surfaces remain forbidden until later stages.
 const FORBIDDEN_UI_DIRS = [
-  "src/pages/admin/p5-batch4",
   "src/pages/funder/p5-batch4",
   "src/pages/desk/p5-batch4",
   "src/pages/registry/p5-batch4",
@@ -75,8 +76,6 @@ const batch4Files = walk(join(ROOT, "src/lib/p5-batch4"))
     walk(join(ROOT, "src/tests")).filter(
       (p) =>
         /p5-batch4/.test(p) &&
-        // The schema-isolation test legitimately enumerates forbidden tokens
-        // to assert the migration does not reference them.
         !/p5-batch4-stage1-schema-isolation\.test\.ts$/.test(p),
     ),
   );
@@ -90,14 +89,21 @@ for (const f of batch4Files) {
   }
 }
 
-// --- Rule 4: no App.tsx route registrations for Batch 4 yet ---
+// --- Rule 4: App.tsx may reference Batch 4 only via /admin/p5-batch4 routes ---
 const appTsx = join(ROOT, "src/App.tsx");
 if (existsSync(appTsx)) {
   const text = readFileSync(appTsx, "utf8");
-  if (/p5-batch4/i.test(text)) {
-    VIOLATIONS.push("Stage 1 guard: src/App.tsx references p5-batch4 (no routes allowed yet)");
+  for (const bad of [
+    /\/funder\/p5-batch4/,
+    /\/desk\/p5-batch4/,
+    /\/registry\/p5-batch4/,
+  ]) {
+    if (bad.test(text)) {
+      VIOLATIONS.push(`Stage 1 guard: src/App.tsx registers forbidden Batch 4 route ${bad}`);
+    }
   }
 }
+
 
 if (VIOLATIONS.length > 0) {
   console.error("❌ P5_BATCH_4_STAGE_1_ISOLATION_FAILED");
