@@ -398,6 +398,11 @@ function App() {
                   <Route path="/funder/p5-batch4" element={<RequireAuth><P5Batch4FunderIndex /></RequireAuth>} />
                   <Route path="/funder/p5-batch4/:caseId" element={<RequireAuth><P5Batch4FunderCaseDetail /></RequireAuth>} />
 
+                  {/* P-5 Batch 5 — Phase 5: Finality, Memory and Outcome History UI surfaces */}
+                  <Route path="/admin/p5-batch5/finality-memory" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch5FinalityMemory /></RequireAuth>} />
+                  <Route path="/desk/p5-batch5/finality" element={<RequireAuth><P5Batch5OrganisationFinality /></RequireAuth>} />
+                  <Route path="/funder/p5-batch5/finality" element={<RequireAuth><P5Batch5FunderFinality /></RequireAuth>} />
+
 
 
 
