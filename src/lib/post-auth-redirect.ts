@@ -86,17 +86,21 @@ export function resolveProtectedReturnTo(
  * whether that returnTo is part of an intentional protected journey).
  */
 export function resolvePostAuthDestination(input: PostAuthInputs): string {
-  // 1) Platform admins always go to HQ. returnTo is deliberately ignored
-  //    for admins (surface a banner separately if needed).
-  if (input.isPlatformAdmin) return "/hq/users";
-
-  // 2) Intentional, allow-listed deep links win for non-admins.
+  // 1) Intentional, allow-listed protected deep links win for ALL roles —
+  //    including platform admins. This preserves the "deep-link → sign in →
+  //    resume" flow (e.g. opening /hq/users or /desk/match/x directly).
   const honoured = resolveProtectedReturnTo(input.rawReturnTo, input.returnToIsIntentional);
   if (honoured) {
     return `${honoured}${honoured.includes("?") ? "&" : "?"}resume=1`;
   }
 
-  // 3) Persona-based defaults.
+  // 2) Platform admin default — per client direction (David Davies,
+  //    2026-06-25): a normal sign-in from the public homepage must NOT dump
+  //    admins straight into HQ. They land on `/` in a logged-in state and
+  //    use the homepage "Go to HQ" CTA to enter the workspace.
+  if (input.isPlatformAdmin) return "/";
+
+  // 3) Persona-based defaults for non-admins.
   if (!input.persona) return "/welcome";
   if (input.persona === "developer") return "/developers/keys";
   if (input.persona === "governance") return "/governance/triage";
