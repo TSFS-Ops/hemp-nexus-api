@@ -1,10 +1,7 @@
-import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { getHostType, getConsoleUrl, PUBLIC_ONLY_ROUTES } from "@/lib/hostname";
-import { DomainMismatch } from "@/components/DomainMismatch";
+import { useLocation } from "react-router-dom";
+import { getHostType, getConsoleUrl } from "@/lib/hostname";
 import { HOSTNAMES } from "@/lib/constants";
-import { useAuth } from "@/contexts/AuthContext";
-import Landing from "@/pages/Landing";
+
 
 /**
  * Hard-redirect (full page navigation) the current browser to the live
