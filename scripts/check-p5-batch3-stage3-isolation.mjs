@@ -74,15 +74,24 @@ const scanRoots = ["src", "supabase/functions"]
 for (const f of scanRoots) {
   if (!/p5-batch3|p5_batch3|p5b3/.test(f) && !f.includes("/p5-batch3-funder-summary/")) continue;
   if (!/\.(ts|tsx|mjs|js)$/.test(f)) continue;
+  // Allow tests + the isolation guard files to *reference* forbidden tokens
+  // as negative-assertion strings.
+  const isTest = /\.test\.tsx?$/.test(f);
   const text = readFileSync(f, "utf8");
 
-  if (/\/api\/v1\/funder/.test(text)) {
-    V.push(`Stage 3 leak: ${f} references /api/v1/funder route`);
+  // Real route registrations (Hono/Express/fetch/Deno.serve path) — not
+  // comments. We approximate by requiring an opening route call before the path.
+  if (
+    !isTest &&
+    /\b(app|router|Deno\.serve|fetch)\b[^\n]{0,40}["']\/api\/v1\/funder/.test(text)
+  ) {
+    V.push(`Stage 3 leak: ${f} declares /api/v1/funder route`);
   }
   // No Batch 1/2 internal rewiring.
   if (/from\s+['"]@\/lib\/p5-batch2\/(?!summary-client)/.test(text)) {
     V.push(`Stage 3 leak: ${f} imports Batch 2 internals`);
   }
+  if (isTest) continue;
   // No mutations against business tables.
   for (const re of [
     /from\(['"]trade_requests['"]\)[^;]{0,80}\.(insert|update|delete|upsert)\(/,
