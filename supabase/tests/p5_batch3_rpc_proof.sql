@@ -3,7 +3,18 @@
 -- Run inside BEGIN ... ROLLBACK. Emits 'P5B3_STAGE3_PROOF_OK' on success.
 -- ============================================================
 BEGIN;
-SET LOCAL ROLE service_role;
+-- Local DML grants for proof scope (rolled back at end). In production
+-- these RPCs run as SECURITY DEFINER and never depend on caller DML.
+DO $grant$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT 'public.' || tablename AS t FROM pg_tables
+    WHERE schemaname='public' AND tablename LIKE 'p5_batch3_%'
+  LOOP
+    EXECUTE format('GRANT INSERT, UPDATE, DELETE ON %s TO %I', r.t, current_user);
+  END LOOP;
+END $grant$;
 
 DO $$
 DECLARE
