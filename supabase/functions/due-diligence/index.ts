@@ -368,7 +368,35 @@ async function _serve(req: Request): Promise<Response> {
     if (action === "compute_score") {
       const { org_id, custom_weights } = body;
       const targetOrg = org_id || profile.org_id;
-      const weights = { ...DEFAULT_WEIGHTS, ...(custom_weights || {}) };
+
+      // Custom weights are a platform-admin-only privilege. Non-platform-admin
+      // callers (including org_admins) cannot influence the risk model.
+      let weights = { ...DEFAULT_WEIGHTS };
+      if (custom_weights !== undefined && custom_weights !== null) {
+        const { data: isPlatformAdminForWeights } = await admin.rpc("is_admin", { user_id: user.id });
+        if (!isPlatformAdminForWeights) {
+          return json({ error: "Only platform admins may supply custom_weights" }, 403);
+        }
+        if (typeof custom_weights !== "object" || Array.isArray(custom_weights)) {
+          return json({ error: "custom_weights must be an object" }, 400);
+        }
+        const allowedKeys = Object.keys(DEFAULT_WEIGHTS);
+        const candidate: Record<string, number> = { ...DEFAULT_WEIGHTS };
+        for (const [k, v] of Object.entries(custom_weights as Record<string, unknown>)) {
+          if (!allowedKeys.includes(k)) {
+            return json({ error: `Unknown weight key: ${k}` }, 400);
+          }
+          if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 1) {
+            return json({ error: `Weight ${k} must be a number in [0, 1]` }, 400);
+          }
+          candidate[k] = v;
+        }
+        const sum = Object.values(candidate).reduce((a, b) => a + b, 0);
+        if (Math.abs(sum - 1) > 0.01) {
+          return json({ error: "custom_weights must sum to 1.0 (±0.01)" }, 400);
+        }
+        weights = candidate as typeof DEFAULT_WEIGHTS;
+      }
 
       // Factor 1: KYC completeness (0 = complete, 100 = no docs)
       const { data: kycStatus } = await admin.from("kyc_status").select("*").eq("org_id", targetOrg).maybeSingle();
