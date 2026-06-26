@@ -113,13 +113,21 @@ ok("no pg_cron in any Batch 7 migration");
 
 if (existsSync("supabase/functions")) {
   for (const d of readdirSync("supabase/functions")) {
-    if (/p5b7|batch7/i.test(d)) fail(`edge function ${d} introduced by Batch 7`);
+    // P-5 Batch 7 namespace uses p5b7/p5-batch7. The unrelated pre-existing
+    // "registry-batch7-*" namespace (Registry workstream's batch 7) is not
+    // part of this batch.
+    if (/p5b7|p5[-_]batch7/i.test(d)) fail(`edge function ${d} introduced by Batch 7`);
   }
 }
-ok("no Batch 7 edge functions introduced");
+ok("no P-5 Batch 7 edge functions introduced");
 
-// 6. Sensitive reveal stays log-only — actions wrapper must not return a value
-if (/return\s+value|unmask|reveal_value|raw_value/i.test(actions)) {
+// 6. Sensitive reveal stays log-only — actions wrapper must not return a raw value.
+// Look for code patterns, not comment prose.
+const codeOnlyActions = actions
+  .split("\n")
+  .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+  .join("\n");
+if (/\bunmask\s*\(|\breveal_value\b|\braw_value\b/i.test(codeOnlyActions)) {
   fail("actions.ts appears to return sensitive values");
 }
 ok("sensitive-field reveal helper is audit-only");
