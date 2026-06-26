@@ -24104,6 +24104,10 @@ export type Database = {
         }
         Returns: string
       }
+      p5b7_acknowledge_stale_data: {
+        Args: { p_as_of: string; p_dashboard: string; p_reason: string }
+        Returns: string
+      }
       p5b7_api_v1_compute_stale: {
         Args: { p_as_of: string; p_surface: string }
         Returns: Json
@@ -24199,6 +24203,67 @@ export type Database = {
         Returns: string
       }
       p5b7_delete_saved_view: { Args: { p_view_id: string }; Returns: boolean }
+      p5b7_list_dashboard_audit: {
+        Args: { p_dashboard: string; p_limit: number }
+        Returns: {
+          actor_role: string
+          actor_user_id: string
+          audit_id: string
+          created_at: string
+          dashboard: string
+          event_name: string
+          payload: Json
+          subject_kind: string
+          subject_ref: string
+        }[]
+      }
+      p5b7_list_export_audit: {
+        Args: { p_limit: number }
+        Returns: {
+          actor_user_id: string
+          audit_id: string
+          created_at: string
+          event_name: string
+          export_id: string
+          payload: Json
+        }[]
+      }
+      p5b7_list_my_export_jobs: {
+        Args: { p_dashboard: string; p_limit: number }
+        Returns: {
+          created_at: string
+          dashboard: string
+          expires_at: string
+          export_id: string
+          export_type: string
+          reason: string
+          row_count: number
+          status: string
+          updated_at: string
+        }[]
+      }
+      p5b7_list_saved_views: {
+        Args: { p_dashboard: string }
+        Returns: {
+          dashboard: string
+          filters: Json
+          name: string
+          sort_by: string
+          sort_dir: string
+          updated_at: string
+          view_id: string
+        }[]
+      }
+      p5b7_log_sensitive_field_reveal: {
+        Args: {
+          p_dashboard: string
+          p_field_name: string
+          p_reason: string
+          p_subject_kind: string
+          p_subject_ref: string
+        }
+        Returns: string
+      }
       p5b7_record_dashboard_action: {
         Args: {
           p_dashboard: string
