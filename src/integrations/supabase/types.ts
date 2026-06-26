@@ -23699,6 +23699,87 @@ export type Database = {
         }
         Returns: string
       }
+      p5b6_add_note: {
+        Args: {
+          _body: string
+          _exception_id: string
+          _note_type: string
+          _reason_required?: boolean
+        }
+        Returns: string
+      }
+      p5b6_assert_admin_actor: { Args: never; Returns: undefined }
+      p5b6_assert_external_safe: { Args: { _msg: string }; Returns: undefined }
+      p5b6_assign_exception: {
+        Args: {
+          _exception_id: string
+          _reason?: string
+          _to_assignee_user_id: string
+          _to_queue: string
+        }
+        Returns: undefined
+      }
+      p5b6_create_exception: {
+        Args: {
+          _counterparty_org_id?: string
+          _exception_type: string
+          _external_safe_message?: string
+          _funder_org_id?: string
+          _metadata?: Json
+          _org_id?: string
+          _owner_role: string
+          _priority: string
+          _related_finality_id?: string
+          _related_match_id?: string
+          _related_memory_id?: string
+          _review_queue: string
+          _severity: string
+          _status: string
+          _summary: string
+        }
+        Returns: string
+      }
+      p5b6_raise_dispute: {
+        Args: { _exception_id: string; _pauses_memory?: boolean }
+        Returns: string
+      }
+      p5b6_record_report_export: {
+        Args: {
+          _export_format: string
+          _is_restricted?: boolean
+          _report_code: string
+          _requested_for_org_id?: string
+          _row_count?: number
+          _scope?: Json
+        }
+        Returns: string
+      }
+      p5b6_update_dispute_state: {
+        Args: {
+          _closure_reason?: string
+          _dispute_id: string
+          _new_state: string
+        }
+        Returns: undefined
+      }
+      p5b6_update_exception_priority: {
+        Args: { _exception_id: string; _new_priority: string; _reason: string }
+        Returns: undefined
+      }
+      p5b6_update_exception_status: {
+        Args: { _exception_id: string; _new_status: string; _reason?: string }
+        Returns: undefined
+      }
+      p5b6_write_audit: {
+        Args: {
+          _after: Json
+          _before: Json
+          _event_code: string
+          _exception_id: string
+          _reason: string
+        }
+        Returns: string
+      }
       platform_admin_break_glass_progress:
         | {
             Args: {
