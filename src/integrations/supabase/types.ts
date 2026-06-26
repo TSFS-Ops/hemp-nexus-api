@@ -24104,6 +24104,91 @@ export type Database = {
         }
         Returns: string
       }
+      p5b7_api_v1_compute_stale: {
+        Args: { p_as_of: string; p_surface: string }
+        Returns: Json
+      }
+      p5b7_api_v1_get_case: {
+        Args: { p_case_id: string }
+        Returns: {
+          as_of: string
+          case_created_at: string
+          case_id: string
+          case_reference: string
+          case_stage: string
+          case_status: string
+          case_updated_at: string
+          counterparty_jurisdiction: string
+          counterparty_reference: string
+          evidence_items_count: number
+          evidence_outstanding_count: number
+          evidence_summary_status: string
+          finality_is_blocked: boolean
+          finality_status: string
+          funder_access_status: string
+          is_stale: boolean
+          memory_linkage_status: string
+          open_blockers_count: number
+          open_exceptions_count: number
+          org_id: string
+          org_reference: string
+        }[]
+      }
+      p5b7_api_v1_list_cases: {
+        Args: {
+          p_cursor?: string
+          p_funder_org_id?: string
+          p_limit?: number
+          p_org_id?: string
+        }
+        Returns: {
+          as_of: string
+          case_created_at: string
+          case_id: string
+          case_reference: string
+          case_stage: string
+          case_status: string
+          case_updated_at: string
+          counterparty_jurisdiction: string
+          counterparty_reference: string
+          evidence_items_count: number
+          evidence_outstanding_count: number
+          evidence_summary_status: string
+          finality_is_blocked: boolean
+          finality_status: string
+          funder_access_status: string
+          is_stale: boolean
+          memory_linkage_status: string
+          open_blockers_count: number
+          open_exceptions_count: number
+          org_id: string
+          org_reference: string
+        }[]
+      }
+      p5b7_api_v1_list_provider_status: {
+        Args: never
+        Returns: {
+          as_of: string
+          external_status: string
+          is_stale: boolean
+          provider_code: string
+          provider_label: string
+        }[]
+      }
+      p5b7_api_v1_list_visible_fields: {
+        Args: never
+        Returns: {
+          api_version: string
+          field_name: string
+          is_visible: boolean
+        }[]
+      }
+      p5b7_api_v1_map_case_status: { Args: { p_raw: string }; Returns: string }
+      p5b7_api_v1_map_finality_status: {
+        Args: { p_raw: string }
+        Returns: string
+      }
+      p5b7_api_v1_resolve_scope: { Args: never; Returns: Json }
       p5b7_create_export_job: {
         Args: {
           p_dashboard: string
