@@ -238,3 +238,145 @@ ungoverned write paths introduced.
 
 `P5_BATCH6_PHASE_3_DEPLOYED` — awaiting acceptance before Phase 4
 (permission matrix + API-safe projection).
+
+---
+
+## Phase 4 — API-safe projection (read layer)  ✅ DEPLOYED
+
+Status marker: `P5_BATCH6_PHASE_4_DEPLOYED` — read-only SECURITY DEFINER
+projections for admin/governance/compliance/tenant/funder scopes. See
+migration `20260626051520_*.sql`. Forbidden fields and banned external
+wording excluded by construction.
+
+---
+
+## Phase 5 — UI surfaces  ✅ DEPLOYED
+
+Status marker: `P5_BATCH6_PHASE_5_DEPLOYED`. Five routes registered in
+`src/App.tsx`, all wrapped in `RequireAuth`. Reads use Phase 4 safe
+projections only; writes use Phase 3 RPCs only; no direct `p5b6_*` table
+access from the UI.
+
+---
+
+## Phase 6 — Final QA, tests and acceptance report  ✅ DEPLOYED
+
+Status marker: `P5_BATCH6_PHASE_6_DEPLOYED`
+
+### Scope honoured
+
+- No new features, no schema changes, no edge functions, no cron.
+- No app_role widening. No Memory/finality mutation.
+- No Batch 7 or Batch 8 surfaces. No prior-batch regressions.
+- Only tests, guards, evidence updates.
+
+### Added in Phase 6
+
+- `scripts/check-p5-batch6-phase-6-qa.mjs` — cross-phase static guard.
+- `src/tests/p5-batch6-phase-6-qa.test.ts` — vitest wrapper.
+
+### What the Phase 6 guard verifies
+
+1. **Phase 1 SSOT** registry present and well-formed.
+2. **Phase 2 DB persistence**: 6 tables created, RLS enabled, `authenticated`
+   SELECT + `service_role` ALL grants present, no `anon` grants; every
+   SSOT vocabulary item (12 exception types, 10 queues, 21 statuses,
+   10 note types, 13 dispute states) encoded as CHECK constraint values;
+   append-only triggers on notes, audit events, queue assignments and
+   report exports.
+3. **Phase 3 RPCs** (11 functions): every function `SECURITY DEFINER`
+   (or pure `IMMUTABLE` validator) and pins `SET search_path = public`;
+   `REVOKE … FROM PUBLIC` present for every function; `GRANT EXECUTE …
+   TO authenticated` present for every callable RPC.
+4. **Phase 4 projections** (8 functions): same `SECURITY DEFINER` /
+   `search_path` / `REVOKE` / `GRANT` contract.
+5. **Phase 5 UI** (5 files):
+   - no `supabase.from('p5b6_*')` direct table reads or writes anywhere;
+   - no references to any of the 21 forbidden external fields
+     (raw payloads, secrets, internal/private notes, etc.);
+   - no banned external wording (`fraud`, `suspicious`, `sanctions hit`,
+     `watchlist hit`, …) — 15 phrases checked case-insensitively;
+   - every `.rpc(...)` call resolves to one of the 6 Phase 4 safe-read
+     RPCs or one of the 8 Phase 3 write RPCs;
+   - tenant (`/desk/...`) and funder (`/funder/...`) surfaces never
+     invoke any write RPC.
+6. **Routes**: all 5 Batch 6 routes registered in `src/App.tsx` and
+   every Batch 6 route wrapped in `<RequireAuth>`.
+7. **No pg_cron** schedule statements in any Batch 6 migration; **no
+   edge function** under `supabase/functions/` references `p5b6_*`.
+8. **No Batch 7 / Batch 8 tokens** in any Batch 6 code line (comment
+   lines may negatively reference future batches; code lines may not).
+
+### Test results
+
+```
+$ node scripts/check-p5-batch6-exception-consistency.mjs   → OK
+$ node scripts/check-p5-batch6-phase-6-qa.mjs               → OK
+$ vitest run src/tests/p5-batch6-phase-1-registry.test.ts \
+              src/tests/p5-batch6-phase-6-qa.test.ts        → 53/53 pass
+```
+
+### Route verification
+
+| Route                                            | Guard          | Component                |
+| ------------------------------------------------ | -------------- | ------------------------ |
+| `/admin/p5-batch6`                               | `platform_admin` | `Workbench.tsx`        |
+| `/admin/p5-batch6/exceptions/:exceptionId`       | `platform_admin` | `ExceptionDetail.tsx`  |
+| `/admin/p5-batch6/exports`                       | `platform_admin` | `ReportExports.tsx`    |
+| `/desk/p5-batch6/my-exceptions`                  | `RequireAuth`  | `MyExceptions.tsx`       |
+| `/funder/p5-batch6/exceptions`                   | `RequireAuth`  | `FunderExceptions.tsx`   |
+
+Server-side authorisation for governance/compliance/tenant/funder scopes
+is enforced inside the Phase 4 projections (`p5b6_actor_scope` +
+`p5b6_can_view_exception`); the UI route guard is an additional
+defence-in-depth layer only.
+
+### Security / RLS verification
+
+- All 6 Batch 6 tables: RLS enabled, `authenticated` SELECT only, no
+  anon grants, `service_role` writes only — confirmed by guard.
+- All 19 Batch 6 functions (11 Phase 3 + 8 Phase 4): `SECURITY DEFINER`
+  (or pure `IMMUTABLE` validator), pinned `SET search_path = public`,
+  `EXECUTE` revoked from `PUBLIC`, granted only to `authenticated`.
+- Append-only persistence preserved on notes, audit events, queue
+  assignments and report exports.
+- Memory / finality tables (`p5_batch4_finality_records`,
+  `p5_batch5_memory_records`) are **linked only** via FK columns; no
+  Batch 6 RPC mutates them.
+
+### Forbidden-field and wording verification
+
+- 21 forbidden external fields — none referenced or rendered in any UI
+  file (Workbench, ExceptionDetail, ReportExports, MyExceptions,
+  FunderExceptions).
+- 15 banned external phrases — none rendered in any UI file and none
+  embedded in `P5_BATCH6_EXTERNAL_SAFE_MESSAGES`.
+- Phase 3 `p5b6_assert_external_safe` also enforces the same ban
+  server-side at write time.
+
+### Final professional QA report
+
+| Invariant                                                          | Result |
+| ------------------------------------------------------------------ | :----: |
+| Phase 1 SSOT ↔ Phase 2 CHECK constraints aligned                   |   ✅   |
+| Phase 2 RLS enabled + correct grants on every new table            |   ✅   |
+| Phase 2 append-only triggers on immutable tables                   |   ✅   |
+| Phase 3 RPCs SECURITY DEFINER + search_path pinned + REVOKE PUBLIC |   ✅   |
+| Phase 4 projections SECURITY DEFINER + search_path pinned + REVOKE |   ✅   |
+| Phase 5 UI reads only via Phase 4 safe projections                 |   ✅   |
+| Phase 5 UI writes only via Phase 3 RPCs                            |   ✅   |
+| No direct `p5b6_*` table access from UI                            |   ✅   |
+| Forbidden external fields not referenced in UI                     |   ✅   |
+| Banned external wording absent from external-safe surfaces         |   ✅   |
+| Tenant / funder surfaces are read-only and scope-limited           |   ✅   |
+| All Batch 6 routes registered and guarded by `RequireAuth`         |   ✅   |
+| No `pg_cron` jobs introduced (C6.2 still pending)                  |   ✅   |
+| No edge functions reference Batch 6                                |   ✅   |
+| No `app_role` enum widening                                        |   ✅   |
+| No mutation of Memory / finality / prior P-5 / P-4 tables          |   ✅   |
+| No Batch 7 / Batch 8 surface leakage                               |   ✅   |
+| Vitest: 53 / 53 pass                                               |   ✅   |
+
+### Final status marker
+
+`P5_BATCH6_DEPLOYED` — all six phases accepted; Batch 6 closed.
