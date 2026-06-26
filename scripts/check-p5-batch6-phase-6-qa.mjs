@@ -141,7 +141,10 @@ function auditDefinerMigration(label, prefix, mustRevoke) {
     if (!nameMatch) continue;
     const name = nameMatch[1];
     const head = block.slice(0, block.toLowerCase().indexOf(" as $$"));
-    if (!/SECURITY DEFINER/i.test(head)) fail(`${label}: ${name} not SECURITY DEFINER`);
+    const isPureHelper = /\b(IMMUTABLE|STABLE)\b/i.test(head) && !/SECURITY DEFINER/i.test(head);
+    if (!/SECURITY DEFINER/i.test(head) && !isPureHelper) {
+      fail(`${label}: ${name} not SECURITY DEFINER (and not a pure IMMUTABLE/STABLE helper)`);
+    }
     if (!/SET\s+search_path\s*=\s*public/i.test(head)) fail(`${label}: ${name} missing SET search_path = public`);
   }
   // EXECUTE revoke + grant
