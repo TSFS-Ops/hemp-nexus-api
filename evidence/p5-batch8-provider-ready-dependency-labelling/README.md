@@ -1,6 +1,12 @@
 # P-5 Batch 8 — Provider-Ready Structures & External Dependency Labelling
 
-Evidence pack for **Phase 1 — SSOT registry only**.
+Evidence pack — Phases 1 and 2.
+
+Current status marker: `P5_BATCH8_PHASE_2_DEPLOYED`
+
+---
+
+## Phase 2 — DB persistence (additive only)
 
 Status marker: `P5_BATCH8_PHASE_1_DEPLOYED`
 
