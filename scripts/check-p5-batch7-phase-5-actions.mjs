@@ -97,7 +97,12 @@ const ROOTS = [
 for (const root of ROOTS) {
   for (const file of walk(root)) {
     const src = readFileSync(file, "utf8");
-    if (/p5[_-]?batch8|p5b8|batch[\s_-]?8/i.test(src)) {
+    // strip JS comment lines so scope-exclusion comments don't trip the guard
+    const code = src
+      .split("\n")
+      .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+      .join("\n");
+    if (/p5[_-]?batch8|p5b8|batch[\s_-]?8/i.test(code)) {
       fail(`${file}: Batch 8 token referenced (out of scope)`);
     }
     if (file === ACTIONS_PATH) continue;
