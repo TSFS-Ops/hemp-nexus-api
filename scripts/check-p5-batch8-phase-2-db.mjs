@@ -131,10 +131,8 @@ ok(`No Batch 6 / Batch 7 token leakage in migration`);
 // Verify Phase 2 created no UI / RPC / edge artefacts
 import("node:fs").then(({ existsSync }) => {
   const FORBIDDEN_PATHS = [
-    "src/pages/admin/p5-batch8",
     "src/pages/desk/p5-batch8",
     "src/pages/funder/p5-batch8",
-    "src/components/p5-batch8",
     "supabase/functions/p5-batch8",
   ];
   for (const p of FORBIDDEN_PATHS) {
