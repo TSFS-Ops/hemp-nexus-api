@@ -12008,6 +12008,242 @@ export type Database = {
         }
         Relationships: []
       }
+      p5b7_api_field_visibility: {
+        Row: {
+          api_version: string
+          created_at: string
+          description: string | null
+          field_name: string
+          is_forbidden: boolean
+          is_visible: boolean
+          updated_at: string
+        }
+        Insert: {
+          api_version?: string
+          created_at?: string
+          description?: string | null
+          field_name: string
+          is_forbidden?: boolean
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Update: {
+          api_version?: string
+          created_at?: string
+          description?: string | null
+          field_name?: string
+          is_forbidden?: boolean
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      p5b7_dashboard_actions_audit: {
+        Row: {
+          actor_role: string | null
+          actor_user_id: string | null
+          audit_id: string
+          created_at: string
+          dashboard: string
+          event_name: string
+          payload: Json
+          subject_kind: string | null
+          subject_ref: string | null
+        }
+        Insert: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          audit_id?: string
+          created_at?: string
+          dashboard: string
+          event_name: string
+          payload?: Json
+          subject_kind?: string | null
+          subject_ref?: string | null
+        }
+        Update: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          audit_id?: string
+          created_at?: string
+          dashboard?: string
+          event_name?: string
+          payload?: Json
+          subject_kind?: string | null
+          subject_ref?: string | null
+        }
+        Relationships: []
+      }
+      p5b7_export_audit: {
+        Row: {
+          actor_user_id: string | null
+          audit_id: string
+          created_at: string
+          event_name: string
+          export_id: string | null
+          payload: Json
+        }
+        Insert: {
+          actor_user_id?: string | null
+          audit_id?: string
+          created_at?: string
+          event_name: string
+          export_id?: string | null
+          payload?: Json
+        }
+        Update: {
+          actor_user_id?: string | null
+          audit_id?: string
+          created_at?: string
+          event_name?: string
+          export_id?: string | null
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b7_export_audit_export_id_fkey"
+            columns: ["export_id"]
+            isOneToOne: false
+            referencedRelation: "p5b7_export_jobs"
+            referencedColumns: ["export_id"]
+          },
+        ]
+      }
+      p5b7_export_jobs: {
+        Row: {
+          created_at: string
+          dashboard: string
+          expires_at: string | null
+          export_id: string
+          export_type: string
+          filters: Json
+          reason: string | null
+          requested_by: string
+          row_count: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dashboard: string
+          expires_at?: string | null
+          export_id?: string
+          export_type: string
+          filters?: Json
+          reason?: string | null
+          requested_by: string
+          row_count?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dashboard?: string
+          expires_at?: string | null
+          export_id?: string
+          export_type?: string
+          filters?: Json
+          reason?: string | null
+          requested_by?: string
+          row_count?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      p5b7_provider_dependencies: {
+        Row: {
+          category: string
+          created_at: string
+          health_status: string
+          last_checked_at: string | null
+          notes: string | null
+          provider_id: string
+          provider_label: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          health_status?: string
+          last_checked_at?: string | null
+          notes?: string | null
+          provider_id: string
+          provider_label: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          health_status?: string
+          last_checked_at?: string | null
+          notes?: string | null
+          provider_id?: string
+          provider_label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      p5b7_saved_views: {
+        Row: {
+          created_at: string
+          dashboard: string
+          filters: Json
+          name: string
+          sort_by: string | null
+          sort_dir: string | null
+          updated_at: string
+          user_id: string
+          view_id: string
+        }
+        Insert: {
+          created_at?: string
+          dashboard: string
+          filters?: Json
+          name: string
+          sort_by?: string | null
+          sort_dir?: string | null
+          updated_at?: string
+          user_id: string
+          view_id?: string
+        }
+        Update: {
+          created_at?: string
+          dashboard?: string
+          filters?: Json
+          name?: string
+          sort_by?: string | null
+          sort_dir?: string | null
+          updated_at?: string
+          user_id?: string
+          view_id?: string
+        }
+        Relationships: []
+      }
+      p5b7_stale_data_thresholds: {
+        Row: {
+          created_at: string
+          fail_after_seconds: number
+          surface: string
+          updated_at: string
+          warn_after_seconds: number
+        }
+        Insert: {
+          created_at?: string
+          fail_after_seconds: number
+          surface: string
+          updated_at?: string
+          warn_after_seconds: number
+        }
+        Update: {
+          created_at?: string
+          fail_after_seconds?: number
+          surface?: string
+          updated_at?: string
+          warn_after_seconds?: number
+        }
+        Relationships: []
+      }
       payment_dispute_affected_burns: {
         Row: {
           billing_review_required: boolean
@@ -23865,6 +24101,37 @@ export type Database = {
           _event_code: string
           _exception_id: string
           _reason: string
+        }
+        Returns: string
+      }
+      p5b7_create_export_job: {
+        Args: {
+          p_dashboard: string
+          p_export_type: string
+          p_filters: Json
+          p_reason: string
+        }
+        Returns: string
+      }
+      p5b7_delete_saved_view: { Args: { p_view_id: string }; Returns: boolean }
+      p5b7_record_dashboard_action: {
+        Args: {
+          p_dashboard: string
+          p_event_name: string
+          p_payload: Json
+          p_subject_kind: string
+          p_subject_ref: string
+        }
+        Returns: string
+      }
+      p5b7_upsert_saved_view: {
+        Args: {
+          p_dashboard: string
+          p_filters: Json
+          p_name: string
+          p_sort_by: string
+          p_sort_dir: string
+          p_view_id: string
         }
         Returns: string
       }
