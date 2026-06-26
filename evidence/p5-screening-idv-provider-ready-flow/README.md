@@ -213,7 +213,74 @@ Scope confirmation (Phase 5):
 - No P-4 POI/WaD/Trading-Engine changes
 - No tenant or funder surfaces; admin (`platform_admin`) only
 
-Awaiting acceptance before proceeding to Phase 6 (Memory/audit rules / final QA).
+## Phase 6 — Memory/audit hardening + final QA aggregate (deployed)
+
+Status markers: `P5_SCREENING_PHASE_6_DEPLOYED`, `P5_SCREENING_IDV_FINAL_QA_COMPLETE`
+
+Files:
+
+- `supabase/migrations/20260626182605_*.sql` — additive guard-only migration
+- `scripts/check-p5-screening-phase-6-memory-audit.mjs` — Memory/audit guard
+- `src/tests/p5-screening-phase-6-memory-audit.test.ts` — vitest coverage
+
+Hard contracts:
+
+- `p5scr_memory_finality_links` rejects any row whose `kind` is one of the SSOT
+  Memory-banned payload kinds (`raw_provider_payload`, `id_image`, `selfie`,
+  `biometric`, `unresolved_possible_match`, `provider_pending_state`,
+  `raw_adverse_media`) via `BEFORE INSERT OR UPDATE` trigger
+  `p5scr_memory_link_kind_guard`.
+- `p5scr_audit_events.payload_admin_only` rejects any row whose JSON object
+  contains a top-level key in the SSOT API-forbidden set
+  (`raw_provider_payload`, `provider_api_secret`, `id_image`, `selfie`,
+  `biometric_template`, `match_score`, `list_name`, `raw_adverse_media`) via
+  `BEFORE INSERT OR UPDATE` trigger `p5scr_audit_payload_key_guard`.
+- Both guard functions are `SECURITY DEFINER`, `SET search_path = public`, and
+  have `EXECUTE` revoked from `PUBLIC`.
+- Append-only triggers from Phase 2 remain in force; Phase 6 only layers
+  additional rejection rules — no row is ever mutated or deleted by Phase 6.
+
+Scope confirmation (Phase 6):
+
+- Memory/audit rule hardening only — no new tables, no new RLS policies,
+  no new RPC write path, no projection change, no UI change
+- No edge functions, no cron, no live provider calls, no provider credentials
+- No payment-provider changes
+- No Batch 6 / Batch 7 / Batch 8 surfaces touched
+- No `app_role` enum widening, no destructive schema changes
+- No Memory / finality mutation; rule layer only
+- No P-4 POI/WaD/Trading-Engine changes
+
+### Final QA aggregate
+
+What can be claimed as **internal-live**:
+
+- Canonical screening spine (`p5scr_*` tables, append-only ledgers)
+- Required-check RPC engine (12 writers + 2 read projections)
+- Admin readiness workbench at `/admin/p5-screening` (`platform_admin` only)
+- SSOT-pinned vocabulary, allowed/banned wording guards, API-safe field
+  allowlist, Memory-banned payload-kind guard, audit-payload key guard
+- Gate matrix wired so POI create/accept/WaD create are only blocked by
+  confirmed-block states (`failed`/`rejected`); WaD seal, finality,
+  funder-ready, and API `ready=true` are blocked by any unresolved state
+
+What can only be claimed as **provider-ready** (NOT provider-verified):
+
+- Sanctions / PEP / watchlist / adverse media outcomes (all admin- or
+  stub-sourced; no live Dilisense / Dow Jones / Refinitiv calls)
+- IDV outcomes (no live Onfido / CIPC calls)
+- Webhook ledger (`p5scr_webhook_events_ledger`) accepts records but no live
+  provider currently posts to it
+
+What must **not** be claimed yet:
+
+- Live provider verification of any subject
+- Real-time provider freshness
+- Automated adverse-media monitoring
+- Cross-jurisdiction watchlist coverage beyond what the admin records manually
+
+Release marker: `P5_SCREENING_IDV_FINAL_QA_COMPLETE`.
+
 
 
 
