@@ -1,27 +1,41 @@
 /**
- * P-5 Batch 7 — Phase 4
- * Control Dashboard (admin surface, read-only).
- * Data via Phase 3 API v1 projection only.
+ * P-5 Batch 7 — Phase 4 (read shell) + Phase 5 (action wiring).
+ * Control Dashboard (admin surface, read-only data via Phase 3 API v1).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   P5B7DashboardShell,
   P5B7SummaryCards,
-  P5B7FilterBar,
-  P5B7SavedViewSelector,
   P5B7DetailSection,
-  P5B7StaleDataBanner,
   P5B7Loading,
   P5B7Empty,
   P5B7ErrorState,
 } from "@/components/p5-batch7/DashboardShell";
-import { p5b7ApiV1ListCases, type P5Batch7ApiV1Envelope, type P5Batch7ApiV1Row } from "@/lib/p5-batch7/api-v1";
+import { P5B7ActionBar } from "@/components/p5-batch7/ActionBar";
+import { P5B7StaleAckBanner } from "@/components/p5-batch7/StaleAckBanner";
+import {
+  p5b7ApiV1ListCases,
+  type P5Batch7ApiV1Envelope,
+  type P5Batch7ApiV1Row,
+} from "@/lib/p5-batch7/api-v1";
+import { p5b7RecordDashboardAction, type P5B7SavedView } from "@/lib/p5-batch7/actions";
+
+const DASHBOARD = "control_dashboard" as const;
 
 export default function P5Batch7ControlDashboard() {
   const [q, setQ] = useState("");
-  const [view, setView] = useState<string | null>(null);
+  const [view, setView] = useState<P5B7SavedView | null>(null);
   const [env, setEnv] = useState<P5Batch7ApiV1Envelope<P5Batch7ApiV1Row> | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void p5b7RecordDashboardAction({
+      dashboard: DASHBOARD,
+      event: "p5b7.dashboard.viewed",
+      subjectKind: "dashboard",
+      subjectRef: DASHBOARD,
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,16 +46,26 @@ export default function P5Batch7ControlDashboard() {
     return () => { cancelled = true; };
   }, []);
 
+  // Apply saved-view filters (q only for now)
+  useEffect(() => {
+    if (view?.filters && typeof view.filters.q === "string") setQ(String(view.filters.q));
+  }, [view]);
+
   const rows = (env?.data ?? []).filter((r) =>
     q ? JSON.stringify(r).toLowerCase().includes(q.toLowerCase()) : true,
   );
   const open = rows.filter((r) => r.case_status === "in_progress").length;
   const blocked = rows.filter((r) => r.case_status === "blocked" || r.case_status === "on_hold").length;
   const resolved = rows.filter((r) => r.case_status === "resolved" || r.case_status === "closed").length;
+  const filters = useMemo(() => ({ q }), [q]);
 
   return (
-    <P5B7DashboardShell dashboard="control_dashboard">
-      <P5B7StaleDataBanner dashboard="control_dashboard" asOf={env?.as_of ?? null} isStale={env?.is_stale ?? false} />
+    <P5B7DashboardShell dashboard={DASHBOARD}>
+      <P5B7StaleAckBanner
+        dashboard={DASHBOARD}
+        asOf={env?.as_of ?? null}
+        isStale={env?.is_stale ?? false}
+      />
       <P5B7SummaryCards
         cards={[
           { label: "Total cases", value: rows.length },
@@ -50,11 +74,13 @@ export default function P5Batch7ControlDashboard() {
           { label: "Resolved / closed", value: resolved },
         ]}
       />
-      <P5B7FilterBar
-        query={q}
-        onQueryChange={setQ}
-        placeholder="Filter cases…"
-        rightSlot={<P5B7SavedViewSelector views={[]} value={view} onChange={setView} disabled />}
+      <P5B7ActionBar
+        dashboard={DASHBOARD}
+        filters={filters}
+        selectedViewId={view?.view_id ?? null}
+        onSelectView={setView}
+        effectiveRoles={["platform_admin"]}
+        availableExportTypes={["control_summary_csv"]}
       />
       <P5B7DetailSection title="Recent cases" description="Read-only snapshot from the v1 API projection.">
         {loading ? (

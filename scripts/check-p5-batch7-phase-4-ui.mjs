@@ -94,12 +94,14 @@ for (const root of UI_ROOTS) {
       fail(`${file}: direct raw p5b7_* table read (use Phase 3 RPC projection)`);
     }
 
-    // write mutations
+    // direct raw writes never permitted in Batch 7 UI
     for (const m of [".insert(", ".update(", ".delete(", ".upsert("]) {
-      if (src.includes(m)) fail(`${file}: write mutation ${m} not permitted in Phase 4 UI`);
+      if (src.includes(m)) fail(`${file}: write mutation ${m} not permitted (use src/lib/p5-batch7/actions.ts)`);
     }
-    if (/rpc\(\s*['"]p5b7_(upsert|record_|create_|delete_|update_)/.test(src)) {
-      fail(`${file}: write RPC call not permitted in Phase 4 UI`);
+    // Direct supabase.rpc calls are not permitted in Batch 7 UI; all writes
+    // go through src/lib/p5-batch7/actions.ts wrappers (Phase 5).
+    if (/supabase\.rpc\s*\(|sb\.rpc\s*\(/.test(src)) {
+      fail(`${file}: direct supabase.rpc call not permitted — call through src/lib/p5-batch7/actions.ts`);
     }
 
     // banned wording (skip comments + the page that explicitly disclaims them)
