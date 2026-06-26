@@ -29,17 +29,18 @@ describe("P5 Batch 7 Phase 3 — API v1 projection", () => {
       case_id: "c1",
       case_reference: "REF-1",
       case_status: "in_progress",
-      // unknown / internal fields must NOT survive:
-      internal_reviewer_note: "should be stripped",
-      hidden_audit_metadata: { foo: "bar" },
+      // unknown (non-forbidden) fields must NOT survive:
+      arbitrary_extra: "should be stripped",
+      another_unknown: { foo: "bar" },
       random_extra: 42,
     };
     const safe = projectToApiV1(raw);
     for (const k of Object.keys(safe)) {
       expect(ALLOW.has(k)).toBe(true);
     }
-    expect(safe).not.toHaveProperty("internal_reviewer_note");
+    expect(safe).not.toHaveProperty("arbitrary_extra");
     expect(safe).not.toHaveProperty("random_extra");
+
   });
 
   it("throws when any forbidden field is present", () => {
