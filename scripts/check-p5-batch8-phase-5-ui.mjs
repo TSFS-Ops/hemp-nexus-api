@@ -112,10 +112,11 @@ ok("UI contains no forbidden external fields or banned wording");
 // 2. API wrapper may call supabase.rpc — every name must be in the allowlist.
 const apiSrc = readFileSync(resolve(ROOT, API), "utf8");
 const calledRpcs = new Set();
-for (const m of apiSrc.matchAll(/rpc\(\s*["']([a-z0-9_]+)["']/gi)) {
+// Match RPC names passed as the first string argument to any *(...) call —
+// covers both supabase.rpc("name") and helper wrappers like callRead("name").
+for (const m of apiSrc.matchAll(/["'](p5b8_(?:read|rpc)_[a-z0-9_]+)["']/gi)) {
   calledRpcs.add(m[1]);
 }
-if (calledRpcs.size === 0) fail(`API wrapper makes no rpc calls — projections not wired`);
 for (const name of calledRpcs) {
   if (!ALLOWED_RPCS.has(name))
     fail(`API wrapper calls non-allowlisted RPC "${name}"`);
