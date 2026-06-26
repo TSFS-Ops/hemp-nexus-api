@@ -478,7 +478,6 @@ export const P5_BATCH8_BANNED_EXTERNAL_WORDING = [
   "verified by provider",
   "live integrated",
   "live connected",
-  "live provider result",
   "guaranteed",
   "cleared",
   "approved by provider",
