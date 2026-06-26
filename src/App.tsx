@@ -190,6 +190,14 @@ const P5Batch6ExceptionDetail = lazy(() => import("@/pages/admin/p5-batch6/Excep
 const P5Batch6ReportExports = lazy(() => import("@/pages/admin/p5-batch6/ReportExports"));
 const P5Batch6MyExceptions = lazy(() => import("@/pages/desk/p5-batch6/MyExceptions"));
 const P5Batch6FunderExceptions = lazy(() => import("@/pages/funder/p5-batch6/FunderExceptions"));
+// P-5 Batch 7 — Phase 4: read-only role-based dashboards (no exports, no writes)
+const P5Batch7ControlDashboard = lazy(() => import("@/pages/admin/p5-batch7/ControlDashboard"));
+const P5Batch7ComplianceDashboard = lazy(() => import("@/pages/admin/p5-batch7/ComplianceDashboard"));
+const P5Batch7ApiDashboard = lazy(() => import("@/pages/admin/p5-batch7/ApiDashboard"));
+const P5Batch7ProviderDashboard = lazy(() => import("@/pages/admin/p5-batch7/ProviderDashboard"));
+const P5Batch7AuditDashboard = lazy(() => import("@/pages/admin/p5-batch7/AuditDashboard"));
+const P5Batch7OrgDashboard = lazy(() => import("@/pages/desk/p5-batch7/OrgDashboard"));
+const P5Batch7FunderDashboard = lazy(() => import("@/pages/funder/p5-batch7/FunderDashboard"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -415,6 +423,15 @@ function App() {
                   <Route path="/admin/p5-batch6/exports" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch6ReportExports /></RequireAuth>} />
                   <Route path="/desk/p5-batch6/my-exceptions" element={<RequireAuth><P5Batch6MyExceptions /></RequireAuth>} />
                   <Route path="/funder/p5-batch6/exceptions" element={<RequireAuth><P5Batch6FunderExceptions /></RequireAuth>} />
+
+                  {/* P-5 Batch 7 — Phase 4: read-only role-based dashboards */}
+                  <Route path="/admin/p5-batch7/control-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7ControlDashboard /></RequireAuth>} />
+                  <Route path="/admin/p5-batch7/compliance-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7ComplianceDashboard /></RequireAuth>} />
+                  <Route path="/admin/p5-batch7/api-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7ApiDashboard /></RequireAuth>} />
+                  <Route path="/admin/p5-batch7/provider-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7ProviderDashboard /></RequireAuth>} />
+                  <Route path="/admin/p5-batch7/audit-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7AuditDashboard /></RequireAuth>} />
+                  <Route path="/desk/p5-batch7/org-dashboard" element={<RequireAuth><P5Batch7OrgDashboard /></RequireAuth>} />
+                  <Route path="/funder/p5-batch7/funder-dashboard" element={<RequireAuth><P5Batch7FunderDashboard /></RequireAuth>} />
 
 
 
