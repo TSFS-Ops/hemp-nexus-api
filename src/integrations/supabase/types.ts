@@ -12680,6 +12680,392 @@ export type Database = {
         }
         Relationships: []
       }
+      p5scr_audit_events: {
+        Row: {
+          actor_user_id: string | null
+          category: string | null
+          created_at: string
+          event: string
+          gate: string | null
+          id: string
+          payload_admin_only: Json | null
+          subject_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          category?: string | null
+          created_at?: string
+          event: string
+          gate?: string | null
+          id?: string
+          payload_admin_only?: Json | null
+          subject_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          category?: string | null
+          created_at?: string
+          event?: string
+          gate?: string | null
+          id?: string
+          payload_admin_only?: Json | null
+          subject_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5scr_audit_events_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "p5scr_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5scr_check_results: {
+        Row: {
+          activation_signed_off_at: string | null
+          category: string
+          created_at: string
+          decided_at: string
+          expires_at: string | null
+          id: string
+          provider_live_now: boolean
+          provider_ref: string | null
+          raw_provider_payload_admin_only: Json | null
+          recorded_by: string | null
+          source: string
+          state: string
+          subject_id: string
+        }
+        Insert: {
+          activation_signed_off_at?: string | null
+          category: string
+          created_at?: string
+          decided_at?: string
+          expires_at?: string | null
+          id?: string
+          provider_live_now?: boolean
+          provider_ref?: string | null
+          raw_provider_payload_admin_only?: Json | null
+          recorded_by?: string | null
+          source: string
+          state: string
+          subject_id: string
+        }
+        Update: {
+          activation_signed_off_at?: string | null
+          category?: string
+          created_at?: string
+          decided_at?: string
+          expires_at?: string | null
+          id?: string
+          provider_live_now?: boolean
+          provider_ref?: string | null
+          raw_provider_payload_admin_only?: Json | null
+          recorded_by?: string | null
+          source?: string
+          state?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5scr_check_results_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "p5scr_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5scr_check_state: {
+        Row: {
+          active_invalidation_triggers: string[]
+          category: string
+          created_at: string
+          decided_at: string | null
+          expires_at: string | null
+          id: string
+          last_result_id: string | null
+          state: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          active_invalidation_triggers?: string[]
+          category: string
+          created_at?: string
+          decided_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_result_id?: string | null
+          state: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          active_invalidation_triggers?: string[]
+          category?: string
+          created_at?: string
+          decided_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_result_id?: string | null
+          state?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5scr_check_state_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "p5scr_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5scr_idv_records: {
+        Row: {
+          activation_signed_off_at: string | null
+          created_at: string
+          decided_at: string
+          expires_at: string | null
+          id: string
+          provider_live_now: boolean
+          provider_ref: string | null
+          raw_provider_payload_admin_only: Json | null
+          recorded_by: string | null
+          state: string
+          subject_id: string
+        }
+        Insert: {
+          activation_signed_off_at?: string | null
+          created_at?: string
+          decided_at?: string
+          expires_at?: string | null
+          id?: string
+          provider_live_now?: boolean
+          provider_ref?: string | null
+          raw_provider_payload_admin_only?: Json | null
+          recorded_by?: string | null
+          state: string
+          subject_id: string
+        }
+        Update: {
+          activation_signed_off_at?: string | null
+          created_at?: string
+          decided_at?: string
+          expires_at?: string | null
+          id?: string
+          provider_live_now?: boolean
+          provider_ref?: string | null
+          raw_provider_payload_admin_only?: Json | null
+          recorded_by?: string | null
+          state?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5scr_idv_records_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "p5scr_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5scr_invalidations: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string | null
+          subject_id: string
+          trigger: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          subject_id: string
+          trigger: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          subject_id?: string
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5scr_invalidations_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "p5scr_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5scr_manual_reviews: {
+        Row: {
+          category: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision: string | null
+          id: string
+          notes_admin_only: string | null
+          opened_at: string
+          opened_by: string | null
+          reason: string | null
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string | null
+          id?: string
+          notes_admin_only?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          reason?: string | null
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string | null
+          id?: string
+          notes_admin_only?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          reason?: string | null
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5scr_manual_reviews_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "p5scr_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5scr_memory_finality_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          finality_record_id: string | null
+          id: string
+          kind: string
+          link_note: string | null
+          memory_record_id: string | null
+          subject_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          finality_record_id?: string | null
+          id?: string
+          kind: string
+          link_note?: string | null
+          memory_record_id?: string | null
+          subject_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          finality_record_id?: string | null
+          id?: string
+          kind?: string
+          link_note?: string | null
+          memory_record_id?: string | null
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5scr_memory_finality_links_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "p5scr_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5scr_subjects: {
+        Row: {
+          created_at: string
+          display_label: string | null
+          id: string
+          organisation_id: string | null
+          party_role: string
+          person_external_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_label?: string | null
+          id?: string
+          organisation_id?: string | null
+          party_role: string
+          person_external_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_label?: string | null
+          id?: string
+          organisation_id?: string | null
+          party_role?: string
+          person_external_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      p5scr_webhook_events_ledger: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          provider_ref: string | null
+          raw_webhook_payload_admin_only: Json | null
+          received_at: string
+          signature_hash: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          provider_ref?: string | null
+          raw_webhook_payload_admin_only?: Json | null
+          received_at?: string
+          signature_hash?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          provider_ref?: string | null
+          raw_webhook_payload_admin_only?: Json | null
+          received_at?: string
+          signature_hash?: string | null
+        }
+        Relationships: []
+      }
       payment_dispute_affected_burns: {
         Row: {
           billing_review_required: boolean
