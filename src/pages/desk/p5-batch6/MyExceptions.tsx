@@ -27,21 +27,19 @@ export default function P5Batch6MyExceptions() {
 
   useEffect(() => {
     let cancelled = false;
-    supabase
-      .rpc("p5b6_list_exceptions_safe" as never, { _limit: 50, _offset: 0 } as never)
-      .then(({ data, error: e }: any) => {
-        if (cancelled) return;
-        if (e) setError(e.message); else setRows((data ?? []) as Row[]);
-        setLoading(false);
-        return;
-      }).then(() => {
-        if (cancelled) return;
-        if (e) setError(e.message);
-        else setRows((data ?? []) as Row[]);
-      })
-      .finally(() => !cancelled && setLoading(false));
+    (async () => {
+      const { data, error: e } = await (supabase.rpc as any)(
+        "p5b6_list_exceptions_safe",
+        { _limit: 50, _offset: 0 },
+      );
+      if (cancelled) return;
+      if (e) setError(e.message);
+      else setRows((data ?? []) as Row[]);
+      setLoading(false);
+    })();
     return () => { cancelled = true; };
   }, []);
+
 
   return (
     <div className="space-y-4 p-6">
