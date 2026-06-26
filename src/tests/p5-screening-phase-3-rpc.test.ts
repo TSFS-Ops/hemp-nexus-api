@@ -30,7 +30,7 @@ describe("P-5 Screening Phase 3 — RPC check engine", () => {
   });
 
   it.each(RPCS)("creates RPC %s with hardened contract", (fn) => {
-    const head = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}\\b[\\s\\S]*?\\$\\$`, "i").exec(sql);
+    const head = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}\\b[\\s\\S]*?AS \\$\\$[\\s\\S]*?\\$\\$;`, "i").exec(sql);
     expect(head, `${fn} not created`).toBeTruthy();
     expect(head![0]).toMatch(/SECURITY DEFINER/);
     expect(head![0]).toMatch(/SET\s+search_path\s*=\s*public/);
@@ -38,6 +38,7 @@ describe("P-5 Screening Phase 3 — RPC check engine", () => {
     expect(sql).toMatch(new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}\\s*\\(`));
     expect(sql).toMatch(new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${fn}\\s*\\([^)]*\\)\\s*TO authenticated`));
   });
+
 
   it("pins deterministic uniqueness on open manual reviews", () => {
     expect(sql).toMatch(/p5scr_manual_reviews_one_open/);
