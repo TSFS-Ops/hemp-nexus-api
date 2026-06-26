@@ -184,6 +184,12 @@ const P5Batch4FunderCaseDetail = lazy(() => import("@/pages/funder/p5-batch4/Cas
 const P5Batch5FinalityMemory = lazy(() => import("@/pages/admin/p5-batch5/FinalityMemory"));
 const P5Batch5OrganisationFinality = lazy(() => import("@/pages/desk/p5-batch5/OrganisationFinality"));
 const P5Batch5FunderFinality = lazy(() => import("@/pages/funder/p5-batch5/FunderFinality"));
+// P-5 Batch 6 — Phase 5: Exceptions, review queues, audit UI
+const P5Batch6Workbench = lazy(() => import("@/pages/admin/p5-batch6/Workbench"));
+const P5Batch6ExceptionDetail = lazy(() => import("@/pages/admin/p5-batch6/ExceptionDetail"));
+const P5Batch6ReportExports = lazy(() => import("@/pages/admin/p5-batch6/ReportExports"));
+const P5Batch6MyExceptions = lazy(() => import("@/pages/desk/p5-batch6/MyExceptions"));
+const P5Batch6FunderExceptions = lazy(() => import("@/pages/funder/p5-batch6/FunderExceptions"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -402,6 +408,14 @@ function App() {
                   <Route path="/admin/p5-batch5/finality-memory" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch5FinalityMemory /></RequireAuth>} />
                   <Route path="/desk/p5-batch5/finality" element={<RequireAuth><P5Batch5OrganisationFinality /></RequireAuth>} />
                   <Route path="/funder/p5-batch5/finality" element={<RequireAuth><P5Batch5FunderFinality /></RequireAuth>} />
+
+                  {/* P-5 Batch 6 — Phase 5: Exceptions, review queues, audit UI */}
+                  <Route path="/admin/p5-batch6" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch6Workbench /></RequireAuth>} />
+                  <Route path="/admin/p5-batch6/exceptions/:exceptionId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch6ExceptionDetail /></RequireAuth>} />
+                  <Route path="/admin/p5-batch6/exports" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch6ReportExports /></RequireAuth>} />
+                  <Route path="/desk/p5-batch6/my-exceptions" element={<RequireAuth><P5Batch6MyExceptions /></RequireAuth>} />
+                  <Route path="/funder/p5-batch6/exceptions" element={<RequireAuth><P5Batch6FunderExceptions /></RequireAuth>} />
+
 
 
 
