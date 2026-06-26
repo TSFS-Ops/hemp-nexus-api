@@ -199,6 +199,8 @@ const P5Batch7AuditDashboard = lazy(() => import("@/pages/admin/p5-batch7/AuditD
 const P5Batch7OrgDashboard = lazy(() => import("@/pages/desk/p5-batch7/OrgDashboard"));
 const P5Batch7FunderDashboard = lazy(() => import("@/pages/funder/p5-batch7/FunderDashboard"));
 const P5Batch8Workbench = lazy(() => import("@/pages/admin/p5-batch8/Workbench"));
+const P5ScreeningWorkbench = lazy(() => import("@/pages/admin/p5-screening/Workbench"));
+
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
