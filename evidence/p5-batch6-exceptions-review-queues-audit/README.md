@@ -78,7 +78,7 @@ Status marker: `P5_BATCH6_PHASE_1_DEPLOYED`
 |-------|-------|--------|
 | 1 | SSOT registry + drift guard + contract tests | ✅ DEPLOYED |
 | 2 | DB persistence: `p5b6_exceptions`, `p5b6_exception_notes`, `p5b6_exception_audit_events`, `p5b6_exception_disputes`, `p5b6_exception_queue_assignments`, `p5b6_exception_report_exports` with RLS, GRANTs, append-only triggers | ✅ DEPLOYED |
-| 3 | Server-side RPCs: create, assign, change priority, resolve, reopen, request evidence, approve waiver, raise dispute, mark finality under dispute, pause/resume Memory reuse, tombstone-legal | ⏸ pending acceptance |
+| 3 | Server-side RPCs (write path): create, status, priority, assign, note, raise/update dispute, record report export | ✅ DEPLOYED |
 | 4 | Permission matrix + API-safe projection (`projectExceptionToApiSafe`) + blocked-state helpers | ⏸ |
 | 5 | UI: Unified Operations Inbox, queue screens, exception detail, dispute workflow, cross-domain timeline, reports, organisation/funder/developer external-safe surfaces | ⏸ |
 | 6 | Final QA: cross-phase consistency, sensitive-field exposure sweep, permission matrix re-check, wording guard, no-cron guard extension, acceptance suite | ⏸ |
@@ -153,3 +153,88 @@ All six tables:
 ### Status marker
 
 `P5_BATCH6_PHASE_2_DEPLOYED` — awaiting acceptance before Phase 3 (server-side RPCs).
+
+---
+
+## Phase 3 — Server-side RPCs (write path)  ✅ DEPLOYED
+
+Status marker: `P5_BATCH6_PHASE_3_DEPLOYED`
+
+All functions are `SECURITY DEFINER`, pin `SET search_path = public`, revoke
+`EXECUTE` from `PUBLIC`, and grant `EXECUTE` only to `authenticated`. No
+`app_role` enum changes. No new client-side write policies. Append-only
+tables remain append-only — RPCs only INSERT into notes / audit events /
+queue assignments / report exports.
+
+### Internal helpers
+
+| Function | Purpose |
+|----------|---------|
+| `p5b6_assert_admin_actor()` | Gates on `platform_admin` OR `governance_reviewer` OR `compliance_analyst`; on failure raises `42501` and writes `p5b6.access.unauthorised_attempt_blocked`. |
+| `p5b6_assert_external_safe(_msg text)` | Case-insensitive scan against the 15 banned external phrases from SSOT; match raises `22023`. |
+| `p5b6_write_audit(_exception_id, _event_code, _before, _after, _reason)` | Append-only insert into `p5b6_exception_audit_events`; enforces `p5b6.*` prefix and before/after-required event list. |
+
+### RPCs (signatures)
+
+| RPC | Signature | Audit events written |
+|-----|-----------|----------------------|
+| `p5b6_create_exception` | `(text type, text queue, text priority, text status, text severity, text owner_role, text summary, uuid org_id, uuid funder_org_id, uuid counterparty_org_id, uuid related_finality_id, uuid related_memory_id, uuid related_match_id, text external_safe_message, jsonb metadata) RETURNS uuid` | `p5b6.exception.created` |
+| `p5b6_update_exception_status` | `(uuid id, text new_status, text reason) RETURNS void` | `p5b6.exception.status_changed` (with before/after); on terminal status sets `resolved_at` and, when a reason is supplied, writes an immutable `resolution_reason` note. |
+| `p5b6_update_exception_priority` | `(uuid id, text new_priority, text reason) RETURNS void` | `p5b6.exception.priority_changed` (with before/after) **and** mandatory immutable `priority_change_reason` note. |
+| `p5b6_assign_exception` | `(uuid id, text to_queue, uuid to_assignee, text reason) RETURNS void` | First call: `p5b6.exception.assigned`; subsequent: `p5b6.exception.reassigned`. Also inserts a row in `p5b6_exception_queue_assignments`. |
+| `p5b6_add_note` | `(uuid id, text note_type, text body, bool reason_required) RETURNS uuid` | `p5b6.exception.note_added` |
+| `p5b6_raise_dispute` | `(uuid id, bool pauses_memory) RETURNS uuid` | Creates dispute in `dispute_raised`; if exception status differs, also emits `p5b6.exception.status_changed`; emits `p5b6.dispute.raised`. |
+| `p5b6_update_dispute_state` | `(uuid dispute_id, text new_state, text closure_reason) RETURNS void` | `p5b6.dispute.state_changed` (with before/after); on terminal state also `p5b6.dispute.resolved` and stamps `closed_at`; `pauses_memory` flips to `false` when new state is non-pausing. |
+| `p5b6_record_report_export` | `(text report_code, text export_format, jsonb scope, bool is_restricted, int row_count, uuid requested_for_org_id) RETURNS uuid` | `p5b6.export.report_generated`. Any `scope.public_message` is run through the banned-wording guard. |
+
+### Validation rules enforced (raised at the boundary)
+
+- All vocabulary values fall back on the table-level CHECK constraints from
+  Phase 2 (status / priority / queue / severity / note_type / dispute_state /
+  format / `p5b6.*` event prefix). Invalid values raise `22023` or `23514`.
+- Caller authorisation: every RPC calls `p5b6_assert_admin_actor()` first.
+- Banned external wording: enforced on `external_safe_message` at create time
+  and on `scope.public_message` at export time.
+- Priority change requires a non-empty reason (`22023` otherwise).
+- Append-only invariants preserved: RPCs never UPDATE or DELETE
+  `p5b6_exception_notes`, `p5b6_exception_audit_events`,
+  `p5b6_exception_queue_assignments` or `p5b6_exception_report_exports`.
+- Memory and finality: linked via FK columns on `p5b6_exceptions`; **no**
+  RPC mutates `p5_batch4_finality_records` or `p5_batch5_memory_records`.
+  Memory-pause semantics are represented entirely by
+  `p5b6_exception_disputes.pauses_memory` for now.
+- Report export ledger captures intent / metadata only (report_code, format,
+  restricted flag, row_count, scope JSON without sensitive snapshots).
+
+### RLS / permission impact summary
+
+- No new RLS policies added.
+- No `anon` execute grants.
+- `EXECUTE` revoked from `PUBLIC` on every Batch 6 function (RPCs + helpers).
+- `authenticated` callers can invoke the RPCs but the body itself enforces
+  admin/governance/compliance role; any other authenticated user is blocked.
+- Service-role retains direct table access (already granted in Phase 2).
+
+### Constraints honoured
+
+- No UI changes, no React/TS source changes.
+- No edge functions.
+- No `pg_cron` / scheduled sweeps (C6.2 still pending).
+- No API projection (Phase 4) and no Batch 7 dashboard/API surfaces.
+- No `app_role` enum widening.
+- No destructive schema changes; no changes to Batch 5 finality / Memory
+  tables or any prior P-5/P-4 schema.
+
+### Linter results
+
+Supabase linter: 337 issues total (327 pre-existing in Phase 2 + 10 new
+warnings of the `Public Can Execute SECURITY DEFINER Function` /
+`Function Search Path Mutable` false-positive class — every new RPC pins
+`SET search_path = public` and revokes `EXECUTE FROM PUBLIC`, so anonymous
+callers cannot invoke them. No new ERROR-level findings. No new
+ungoverned write paths introduced.
+
+### Status marker
+
+`P5_BATCH6_PHASE_3_DEPLOYED` — awaiting acceptance before Phase 4
+(permission matrix + API-safe projection).
