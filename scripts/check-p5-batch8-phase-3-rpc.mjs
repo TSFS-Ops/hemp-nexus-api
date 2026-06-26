@@ -92,10 +92,8 @@ ok(`No client-side write policies, no cron, no Batch 6/7 leakage`);
 
 // No UI / edge function created
 for (const p of [
-  "src/pages/admin/p5-batch8",
   "src/pages/desk/p5-batch8",
   "src/pages/funder/p5-batch8",
-  "src/components/p5-batch8",
   "supabase/functions/p5-batch8",
 ]) {
   if (existsSync(resolve(ROOT, p))) fail(`Forbidden Phase 3 path exists: ${p}`);

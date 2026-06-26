@@ -198,6 +198,7 @@ const P5Batch7ProviderDashboard = lazy(() => import("@/pages/admin/p5-batch7/Pro
 const P5Batch7AuditDashboard = lazy(() => import("@/pages/admin/p5-batch7/AuditDashboard"));
 const P5Batch7OrgDashboard = lazy(() => import("@/pages/desk/p5-batch7/OrgDashboard"));
 const P5Batch7FunderDashboard = lazy(() => import("@/pages/funder/p5-batch7/FunderDashboard"));
+const P5Batch8Workbench = lazy(() => import("@/pages/admin/p5-batch8/Workbench"));
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -432,6 +433,10 @@ function App() {
                   <Route path="/admin/p5-batch7/audit-dashboard" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch7AuditDashboard /></RequireAuth>} />
                   <Route path="/desk/p5-batch7/org-dashboard" element={<RequireAuth><P5Batch7OrgDashboard /></RequireAuth>} />
                   <Route path="/funder/p5-batch7/funder-dashboard" element={<RequireAuth><P5Batch7FunderDashboard /></RequireAuth>} />
+
+                  {/* P-5 Batch 8 — Phase 5: provider dependency workbench (admin / compliance, read-only) */}
+                  <Route path="/admin/p5-batch8" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch8Workbench /></RequireAuth>} />
+
 
 
 
