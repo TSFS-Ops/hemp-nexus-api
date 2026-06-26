@@ -439,6 +439,11 @@ function App() {
                   {/* P-5 Batch 8 — Phase 5: provider dependency workbench (admin / compliance, read-only) */}
                   <Route path="/admin/p5-batch8" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch8Workbench /></RequireAuth>} />
 
+                  {/* P-5 Screening & IDV — Phase 5: admin readiness workbench (platform_admin, read-only) */}
+                  <Route path="/admin/p5-screening" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5ScreeningWorkbench /></RequireAuth>} />
+
+
+
 
 
 
