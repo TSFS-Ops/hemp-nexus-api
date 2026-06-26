@@ -284,8 +284,17 @@ const surface = [
 ];
 for (const p of surface) {
   const src = read(p) ?? "";
+  // Strip comment lines (SQL --, JS //, JSDoc *) before checking — scope
+  // comments are allowed to negatively reference Batch 7/8.
+  const codeOnly = src
+    .split("\n")
+    .filter((line) => {
+      const t = line.trim();
+      return !t.startsWith("--") && !t.startsWith("//") && !t.startsWith("*");
+    })
+    .join("\n");
   for (const tok of ["p5-batch7","p5_batch7","P5_BATCH7","Batch 7","p5-batch8","p5_batch8","P5_BATCH8","Batch 8"]) {
-    if (src.includes(tok)) fail(`${p.split("/").pop()}: leaks "${tok}"`);
+    if (codeOnly.includes(tok)) fail(`${p.split("/").pop()}: leaks "${tok}"`);
   }
 }
 ok("No Batch 7 / Batch 8 leakage in Batch 6 surface");
