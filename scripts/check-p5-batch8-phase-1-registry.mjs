@@ -76,8 +76,15 @@ function walkFiles(dir) {
   return out;
 }
 const migrations = walkFiles(path.join(ROOT, "supabase/migrations"));
+// Allow-list Phase 2+ migrations. Phase 1 only forbids Batch 8 DB
+// artefacts predating the approved Phase 2 persistence migration.
+const PHASE_2_PLUS_ALLOWED_MIGRATIONS = new Set([
+  "20260626165809_816d0395-b66b-4492-84a0-8e7f4fb2a2ef.sql", // Phase 2 DB persistence
+]);
 for (const m of migrations) {
-  const name = path.basename(m).toLowerCase();
+  const base = path.basename(m);
+  if (PHASE_2_PLUS_ALLOWED_MIGRATIONS.has(base)) continue;
+  const name = base.toLowerCase();
   const body = fs.readFileSync(m, "utf8").toLowerCase();
   if (
     name.includes("batch8") ||
