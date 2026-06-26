@@ -37,10 +37,11 @@ const RPCS = [
 ];
 
 for (const fn of RPCS) {
-  const reFn = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}\\b[\\s\\S]*?\\$\\$`, "i");
+  const reFn = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}\\b[\\s\\S]*?AS \\$\\$[\\s\\S]*?\\$\\$;`, "i");
   const m = reFn.exec(src);
   if (!m) { fail(`RPC ${fn} not created`); continue; }
   const head = m[0];
+
   if (!/SECURITY DEFINER/.test(head)) fail(`${fn} missing SECURITY DEFINER`);
   if (!/SET\s+search_path\s*=\s*public/.test(head)) fail(`${fn} missing SET search_path = public`);
   if (!new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}\\s*\\([^)]*\\)\\s*FROM PUBLIC`).test(src))
