@@ -80,6 +80,8 @@ const migrations = walkFiles(path.join(ROOT, "supabase/migrations"));
 // artefacts predating the approved Phase 2 persistence migration.
 const PHASE_2_PLUS_ALLOWED_MIGRATIONS = new Set([
   "20260626165809_816d0395-b66b-4492-84a0-8e7f4fb2a2ef.sql", // Phase 2 DB persistence
+  "20260626170432_6ab9c041-96fe-4429-b0d2-f4c86b3ad931.sql", // Phase 3 RPC write path
+  "20260626171017_5e451b5c-8223-4ca2-a54a-6dd63a43a533.sql", // Phase 4 API-safe read projections
 ]);
 for (const m of migrations) {
   const base = path.basename(m);

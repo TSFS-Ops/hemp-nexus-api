@@ -1,10 +1,108 @@
 # P-5 Batch 8 — Provider-Ready Structures & External Dependency Labelling
 
-Evidence pack — Phases 1, 2 and 3.
+Evidence pack — Phases 1, 2, 3 and 4.
 
-Current status marker: `P5_BATCH8_PHASE_3_DEPLOYED`
+Current status marker: `P5_BATCH8_PHASE_4_DEPLOYED`
 
 ---
+
+## Phase 4 — API-safe read / projection layer (additive only)
+
+Phase 4 adds the minimum robust read/projection surface for the Batch 8
+data. No new tables, no new write paths, no UI, no edge functions, no
+cron, no live provider calls, no provider credentials, no payment-provider
+behaviour changes, no Batch 6/7 changes, no `app_role` widening, no
+destructive schema changes, no client-side write policies, no Memory or
+finality mutation. Phase 2 RLS and Phase 3 RPC write model are unchanged.
+
+### Migration
+
+| File | Purpose |
+| --- | --- |
+| `supabase/migrations/20260626171017_5e451b5c-8223-4ca2-a54a-6dd63a43a533.sql` | Declares two reader-role helpers and 10 `p5b8_read_*` API-safe projection functions over the Batch 8 tables. |
+
+### Projection functions
+
+All functions: `LANGUAGE plpgsql` (or `sql` for the helpers), `STABLE`, `SECURITY DEFINER`, `SET search_path = public`, `REVOKE EXECUTE … FROM PUBLIC`, `GRANT EXECUTE … TO authenticated`, in-body role gate.
+
+| Function | Role gate | Allow-listed fields returned |
+| --- | --- | --- |
+| `p5b8_has_reader_role()` / `p5b8_has_admin_reader_role()` | n/a (helpers) | boolean only |
+| `p5b8_read_provider_config_summary()` | reader (admin/compliance/api_admin) | `provider_category, live_now, hidden_until_live, commercial_owner, technical_contact, approval_owner, activation_signoff_owner, activation_signed_off_at, updated_at` |
+| `p5b8_read_provider_dependency_status_summary(p_provider_category, p_subject_id, p_case_id)` | reader | `provider_category, subject_id, case_id, provider_dependency_status, provider_environment, stale_as_of, is_stale, updated_at` |
+| `p5b8_read_provider_request_summary(p_provider_category, p_case_id, p_limit)` | admin reader (admin/compliance) | `request_id, provider_category, provider_environment, request_reference, case_id, subject_id, requested_at, status` |
+| `p5b8_read_provider_result_summary(p_provider_category, p_request_id, p_limit)` | reader | `result_id, provider_request_id, provider_category, provider_environment, provider_reference, result_status, result_summary, received_at` — raw payload excluded |
+| `p5b8_read_provider_decision_summary(p_provider_category, p_result_id, p_limit)` | reader | `decision_id, provider_result_id, provider_category, provider_decision_state, is_fallback, is_final, reason, evidence_reference, set_by_role, created_at` |
+| `p5b8_read_webhook_ledger_summary(p_provider_category, p_limit)` | admin reader | `webhook_id, provider_category, webhook_event, provider_environment, signature_status, received_at` — raw payload and signature secret excluded |
+| `p5b8_read_audit_timeline_summary(p_provider_category, p_case_id, p_limit)` | admin reader | `audit_id, event_code, provider_category, case_id, subject_id, actor_role, created_at` — internal `details` JSON omitted |
+| `p5b8_read_retry_state_summary(p_provider_category, p_limit)` | admin reader | `retry_id, provider_request_id, provider_category, attempt_count, last_error_class, fallback_status, next_retry_at, updated_at` |
+| `p5b8_read_memory_finality_link_summary(p_provider_decision_id, p_limit)` | admin reader | `link_id, provider_decision_id, link_type, memory_record_id, finality_record_id, created_at` — reference-only, no Batch 4/5 mutation |
+| `p5b8_read_dashboard_queue_summary()` | reader | `provider_category, provider_dependency_status, count` |
+
+### Forbidden fields confirmed excluded
+
+The Phase 4 guard and contract tests assert that **none** of these Phase 1
+forbidden external fields are ever selected by any projection:
+`raw_provider_payload_admin_only`, `raw_webhook_payload_admin_only`,
+`provider_api_key`, `provider_api_secret`, `webhook_signature_secret`,
+`internal_risk_note`, `internal_reviewer_note`, plus the wider Phase 1
+forbidden list (raw provider/webhook payloads, credentials, biometric
+payloads, raw bank/registry/MRV payloads, internal notes, idempotency-key
+internals).
+
+### Provider-ready vs provider-verified safety
+
+- `provider_dependency_status` and `provider_decision_state` are returned
+  **verbatim** from the underlying SSOT-constrained columns — the
+  projection never synthesises a `verified`, `cleared`, `bank verified`,
+  `sanctions cleared`, `kyc passed`, `provider verified` or similar
+  external verdict.
+- Banned-wording guard scans the Phase 4 migration source and fails on
+  any of the Phase 1 banned phrases.
+- Distinction between `provider_ready`, `live_pending`, `live_result_received`,
+  approved fallback (`is_fallback = true` decision) and provider-verified
+  is preserved by exposing the underlying state directly rather than a
+  collapsed boolean.
+
+### Role / permission impact
+
+- No new RLS policies, no new tables, no new triggers.
+- Helpers and projections rely on `public.has_role(...)` to gate visibility:
+  - `platform_admin` and `compliance_analyst` — all 10 projections.
+  - `api_admin` — config, dependency status, result, decision, queue summary.
+  - Other authenticated users — projections return an empty result set.
+  - Service role — full table access via existing GRANTs.
+- `EXECUTE` is revoked from `PUBLIC` on every Phase 4 function and granted
+  only to `authenticated`.
+
+### Memory / finality link-only confirmation
+
+`p5b8_read_memory_finality_link_summary` returns only the IDs and
+`link_type` recorded by Phase 3 — it does not read, join or expose any
+row from `p5_batch5_memory_records` or `p5_batch4_finality_records`. The
+Phase 4 guard fails on any `INSERT/UPDATE/DELETE` targeting those tables.
+
+### Test / linter results
+
+- `node scripts/check-p5-batch8-phase-4-read.mjs` → **OK** (12 functions, role gate, no forbidden columns, no banned wording, no Memory/finality mutation, no new tables, no Batch 6/7 leakage).
+- `bunx vitest run src/tests/p5-batch8-phase-4-read.test.ts` → **20 / 20 pass**.
+- Phase 1 guard + tests re-run → **OK** + **14 / 14 pass** (allow-list updated to include the Phase 4 migration).
+- Phase 2 guard + tests re-run → **OK** + **21 / 21 pass**.
+- Phase 3 guard + tests re-run → **OK** + **20 / 20 pass**.
+- Combined Vitest run: **75 / 75 pass**.
+- Supabase linter findings remain pre-existing/project-wide (function search-path warnings on legacy functions, extension-in-public, etc.). Every new Phase 4 function pins `SET search_path = public`, is `SECURITY DEFINER` and revokes `EXECUTE` from `PUBLIC`.
+
+### Scope confirmation
+
+- ✅ No UI, no new RPC write path, no edge functions, no cron jobs.
+- ✅ No live provider calls, no provider credentials added.
+- ✅ No payment-provider behaviour changes.
+- ✅ No Batch 6 changes, no Batch 7 surfaces introduced.
+- ✅ No `app_role` enum widening.
+- ✅ No destructive schema changes, no client-side write policies.
+- ✅ No Memory / finality mutation.
+
+
 
 ## Phase 3 — Service-role RPC write path (additive only)
 
