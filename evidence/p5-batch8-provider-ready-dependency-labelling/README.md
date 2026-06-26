@@ -1,8 +1,113 @@
 # P-5 Batch 8 — Provider-Ready Structures & External Dependency Labelling
 
-Evidence pack — Phases 1 and 2.
+Evidence pack — Phases 1, 2 and 3.
 
-Current status marker: `P5_BATCH8_PHASE_2_DEPLOYED`
+Current status marker: `P5_BATCH8_PHASE_3_DEPLOYED`
+
+---
+
+## Phase 3 — Service-role RPC write path (additive only)
+
+Phase 3 ships the minimum server-side mutation layer for the Batch 8
+surface. It is additive only — no UI, no API-safe projection, no edge
+functions, no cron, no live provider calls, no provider credentials,
+no payment-provider behaviour changes, no Batch 6 or Batch 7 changes,
+no destructive schema changes, no client-side write policies, no
+Memory or finality table mutation, no `app_role` widening.
+
+### Migration
+
+| File | Purpose |
+| --- | --- |
+| `supabase/migrations/20260626170432_6ab9c041-96fe-4429-b0d2-f4c86b3ad931.sql` | Declares the writer-role assertion helper, the 10 `p5b8_rpc_*` functions and the `p5b8_rs_request_unique` constraint required by the retry upsert. |
+
+### Function signatures
+
+All functions: `LANGUAGE plpgsql`, `SECURITY DEFINER`, `SET search_path = public`, `REVOKE ALL … FROM PUBLIC`, `GRANT EXECUTE … TO authenticated`, in-body call to `p5b8_assert_writer_role()`.
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `p5b8_assert_writer_role()` | `void` | Raises unless caller has `platform_admin` or `compliance_analyst`. |
+| `p5b8_rpc_upsert_provider_config(_provider_category text, _preferred_providers jsonb, _fallback text, _required_result_type text, _commercial_owner text, _technical_contact text, _credential_owner text, _approval_owner text, _activation_signoff_owner text, _hidden_until_live boolean DEFAULT true)` | `uuid` | Insert/update config. **Never sets `live_now = true`** — only the sign-off RPC can. |
+| `p5b8_rpc_record_activation_signoff(_provider_config_id uuid, _signed_off_role text, _note text, _evidence_reference text, _go_live boolean DEFAULT false)` | `uuid` | Appends a sign-off row; rejects empty `_evidence_reference`. Atomically flips `live_now` + records `activation_signed_off_at/by` only when `_go_live = true`. |
+| `p5b8_rpc_set_dependency_status(_provider_category text, _state text, _environment text, _subject_id uuid, _case_id uuid, _reason text, _stale_as_of timestamptz, _is_stale boolean)` | `uuid` | Records a dependency state row. CHECK constraints enforce SSOT vocabulary. |
+| `p5b8_rpc_create_provider_request(_provider_category text, _environment text, _request_reference text, _subject_id uuid, _case_id uuid)` | `uuid` | Idempotent on `(category, request_reference)`. When `_environment='live'` **blocks** unless a live-activated config exists; emits `p5b8.live_check.blocked_attempt`. |
+| `p5b8_rpc_record_provider_result(_provider_request_id uuid, _provider_reference text, _result_status text, _result_summary text, _raw_payload jsonb)` | `uuid` | Stores result and routes `_raw_payload` to `raw_provider_payload_admin_only`. |
+| `p5b8_rpc_record_provider_decision(_provider_result_id uuid, _decision_state text, _reason text, _evidence_reference text, _is_fallback boolean, _is_final boolean)` | `uuid` | Validates state-specific evidence/reason requirements; selects audit event by state. |
+| `p5b8_rpc_record_webhook_event(_provider_category text, _webhook_event text, _environment text, _idempotency_key text, _signature_status text, _raw_payload jsonb)` | `uuid` | Idempotent ledger insert. Emits `duplicate_ignored`, `signature_failed`, `test_received` or `received` accordingly. Raw payload kept admin-only. |
+| `p5b8_rpc_append_audit_event(_event_code text, _provider_category text, _subject_id uuid, _case_id uuid, _details jsonb)` | `uuid` | Convenience append for `p5b8.*` events (validated by table CHECK). |
+| `p5b8_rpc_record_retry_state(_provider_request_id uuid, _last_error_class text, _next_retry_at timestamptz, _fallback_route text, _exhausted boolean)` | `uuid` | Upsert on `provider_request_id`; increments `attempt_count`; selects `timeout` / `retry_attempted` / `retry_exhausted` audit code. |
+| `p5b8_rpc_create_memory_finality_link(_provider_decision_id uuid, _link_type text, _memory_record_id uuid, _finality_record_id uuid, _note text)` | `uuid` | **Link-only.** Rejects `memory_reference` unless the decision is in the SSOT memory-eligible set (`clear`/`confirmed_match`/`false_positive`/`waived`/`blocked`). Never writes to `p5_batch5_memory_records` or `p5_batch4_finality_records`. |
+
+### Validation rules enforced
+
+- Caller role checked in every RPC body via `p5b8_assert_writer_role()`.
+- SSOT vocabulary enforced by the Phase 2 CHECK constraints (state, category, decision, webhook event, audit event).
+- `live_now` cannot be set by config upsert; only via sign-off + evidence + `_go_live`.
+- Live provider requests blocked unless config is live-activated.
+- Decision states `clear` / `potential_match` / `confirmed_match` / `manual_review` / `blocked` / `incomplete` require a non-empty `reason`.
+- Decision states `false_positive` / `waived` require a non-empty `evidence_reference`.
+- Memory link rejected for non-Memory-eligible decision states (audit-logged before raise).
+- Webhook ledger insert idempotent on `(category, idempotency_key)`; duplicates emit `duplicate_ignored` and return `NULL`.
+
+### Audit events written
+
+| RPC | Audit event(s) |
+| --- | --- |
+| `upsert_provider_config` | `p5b8.provider_category.enabled` (insert) / `p5b8.provider_category.configured` (update). |
+| `record_activation_signoff` | `p5b8.provider_live.activation_signed_off`. |
+| `set_dependency_status` | `p5b8.provider_ready.status_created`. |
+| `create_provider_request` | `p5b8.provider_request.initiated` (and `p5b8.live_check.blocked_attempt` on rejection). |
+| `record_provider_result` | `p5b8.provider_response.received`. |
+| `record_provider_decision` | `p5b8.provider_decision.waiver` / `.false_positive` / `.blocked` / `.fallback` / `.manual_set` (selected by state and `_is_fallback`). |
+| `record_webhook_event` | `p5b8.webhook.test_received` / `.signature_failed` / `.received` / `.duplicate_ignored`. |
+| `append_audit_event` | Whatever caller-supplied `_event_code` is (CHECK-constrained to the SSOT vocabulary). |
+| `record_retry_state` | `p5b8.provider.retry_exhausted` / `.timeout` / `.retry_attempted`. |
+| `create_memory_finality_link` | `p5b8.memory.provider_write_blocked` on rejection (else none). |
+
+### Permission / RLS impact summary
+
+- **No new table-level policies.** Phase 2's read-only policies remain authoritative; all writes go through these SECURITY DEFINER functions.
+- `EXECUTE` is revoked from `PUBLIC` and granted to `authenticated` on every function; the in-body role check then narrows access to `platform_admin` or `compliance_analyst`.
+- Service role retains full access (unchanged from Phase 2).
+
+### Sensitive payload handling
+
+- `_raw_payload` parameters land in the `*_admin_only` columns introduced in Phase 2 (`raw_provider_payload_admin_only`, `raw_webhook_payload_admin_only`), which are excluded from the `authenticated` column grant. No new code path projects them to non-admin readers.
+
+### Memory / finality link-only confirmation
+
+- No RPC issues `INSERT`, `UPDATE` or `DELETE` against `p5_batch5_memory_records` or `p5_batch4_finality_records` — verified by guard and test.
+- `create_memory_finality_link` only writes to `p5b8_memory_finality_links` and refuses to create a `memory_reference` for non-eligible decision states.
+
+### Guards / tests / linter results
+
+- `node scripts/check-p5-batch8-phase-3-rpc.mjs` → **OK** (11 functions, full SECURITY DEFINER hardening, role check enforced, no Memory/finality mutation, no client-write policies, no UI/edge/cron, no Batch 6/7 leakage).
+- `bunx vitest run src/tests/p5-batch8-phase-3-rpc.test.ts` → **20 / 20 pass**.
+- `bunx vitest run src/tests/p5-batch8-phase-2-db.test.ts` → **21 / 21 pass** (Phase 2 unaffected).
+- `bunx vitest run src/tests/p5-batch8-phase-1-registry.test.ts` → **14 / 14 pass** (Phase 1 unaffected).
+- `node scripts/check-p5-batch8-phase-2-db.mjs` → **OK**.
+- `node scripts/check-p5-batch8-phase-1-registry.mjs` → **OK**.
+- Supabase linter: 377 findings, all pre-existing and project-wide (function search-path warnings on other modules, `Extension in public`, `Public Can Execute SECURITY DEFINER Function` from prior helpers). All Phase 3 functions correctly pin `search_path = public` and `REVOKE EXECUTE FROM PUBLIC`; no new linter findings attributable to Phase 3.
+
+### Non-scope confirmation (Phase 3)
+
+- No UI routes, pages or components.
+- No API-safe projection / read layer.
+- No edge functions.
+- No `pg_cron` schedules.
+- No live provider calls.
+- No provider credentials or secrets handled.
+- No payment-provider behaviour changes.
+- No Batch 6 or Batch 7 surfaces modified.
+- No Memory or finality mutation.
+- No `app_role` widening.
+- No destructive schema changes.
+- No client-side write policies.
+
+### Status marker
+
+`P5_BATCH8_PHASE_3_DEPLOYED`
 
 ---
 
