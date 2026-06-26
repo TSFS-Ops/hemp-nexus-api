@@ -11709,6 +11709,305 @@ export type Database = {
           },
         ]
       }
+      p5b6_exception_audit_events: {
+        Row: {
+          actor_role: string | null
+          actor_user_id: string | null
+          after_snapshot: Json | null
+          before_snapshot: Json | null
+          created_at: string
+          event_code: string
+          exception_id: string
+          id: string
+          reason: string | null
+          schema_version: string
+        }
+        Insert: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          after_snapshot?: Json | null
+          before_snapshot?: Json | null
+          created_at?: string
+          event_code: string
+          exception_id: string
+          id?: string
+          reason?: string | null
+          schema_version?: string
+        }
+        Update: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          after_snapshot?: Json | null
+          before_snapshot?: Json | null
+          created_at?: string
+          event_code?: string
+          exception_id?: string
+          id?: string
+          reason?: string | null
+          schema_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b6_exception_audit_events_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "p5b6_exceptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b6_exception_disputes: {
+        Row: {
+          closed_at: string | null
+          closure_reason: string | null
+          created_at: string
+          dispute_state: string
+          exception_id: string
+          id: string
+          pauses_memory: boolean
+          raised_at: string
+          raised_by: string | null
+          schema_version: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closure_reason?: string | null
+          created_at?: string
+          dispute_state?: string
+          exception_id: string
+          id?: string
+          pauses_memory?: boolean
+          raised_at?: string
+          raised_by?: string | null
+          schema_version?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closure_reason?: string | null
+          created_at?: string
+          dispute_state?: string
+          exception_id?: string
+          id?: string
+          pauses_memory?: boolean
+          raised_at?: string
+          raised_by?: string | null
+          schema_version?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b6_exception_disputes_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "p5b6_exceptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b6_exception_notes: {
+        Row: {
+          author_user_id: string | null
+          body: string
+          created_at: string
+          exception_id: string
+          id: string
+          note_type: string
+          reason_required: boolean
+          schema_version: string
+        }
+        Insert: {
+          author_user_id?: string | null
+          body: string
+          created_at?: string
+          exception_id: string
+          id?: string
+          note_type: string
+          reason_required?: boolean
+          schema_version?: string
+        }
+        Update: {
+          author_user_id?: string | null
+          body?: string
+          created_at?: string
+          exception_id?: string
+          id?: string
+          note_type?: string
+          reason_required?: boolean
+          schema_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b6_exception_notes_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "p5b6_exceptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b6_exception_queue_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          exception_id: string
+          from_assignee_user_id: string | null
+          from_queue: string | null
+          id: string
+          reason: string | null
+          schema_version: string
+          to_assignee_user_id: string | null
+          to_queue: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          exception_id: string
+          from_assignee_user_id?: string | null
+          from_queue?: string | null
+          id?: string
+          reason?: string | null
+          schema_version?: string
+          to_assignee_user_id?: string | null
+          to_queue: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          exception_id?: string
+          from_assignee_user_id?: string | null
+          from_queue?: string | null
+          id?: string
+          reason?: string | null
+          schema_version?: string
+          to_assignee_user_id?: string | null
+          to_queue?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b6_exception_queue_assignments_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "p5b6_exceptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b6_exception_report_exports: {
+        Row: {
+          created_at: string
+          export_format: string
+          id: string
+          is_restricted: boolean
+          report_code: string
+          requested_by: string | null
+          requested_for_org_id: string | null
+          row_count: number | null
+          schema_version: string
+          scope: Json
+        }
+        Insert: {
+          created_at?: string
+          export_format: string
+          id?: string
+          is_restricted?: boolean
+          report_code: string
+          requested_by?: string | null
+          requested_for_org_id?: string | null
+          row_count?: number | null
+          schema_version?: string
+          scope?: Json
+        }
+        Update: {
+          created_at?: string
+          export_format?: string
+          id?: string
+          is_restricted?: boolean
+          report_code?: string
+          requested_by?: string | null
+          requested_for_org_id?: string | null
+          row_count?: number | null
+          schema_version?: string
+          scope?: Json
+        }
+        Relationships: []
+      }
+      p5b6_exceptions: {
+        Row: {
+          assignee_user_id: string | null
+          counterparty_org_id: string | null
+          created_at: string
+          created_by: string | null
+          exception_type: string
+          external_safe_message: string | null
+          funder_org_id: string | null
+          id: string
+          metadata: Json
+          org_id: string | null
+          owner_role: string
+          priority: string
+          related_finality_id: string | null
+          related_match_id: string | null
+          related_memory_id: string | null
+          resolved_at: string | null
+          review_queue: string
+          schema_version: string
+          severity: string
+          status: string
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_user_id?: string | null
+          counterparty_org_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          exception_type: string
+          external_safe_message?: string | null
+          funder_org_id?: string | null
+          id?: string
+          metadata?: Json
+          org_id?: string | null
+          owner_role: string
+          priority: string
+          related_finality_id?: string | null
+          related_match_id?: string | null
+          related_memory_id?: string | null
+          resolved_at?: string | null
+          review_queue: string
+          schema_version?: string
+          severity: string
+          status: string
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_user_id?: string | null
+          counterparty_org_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          exception_type?: string
+          external_safe_message?: string | null
+          funder_org_id?: string | null
+          id?: string
+          metadata?: Json
+          org_id?: string | null
+          owner_role?: string
+          priority?: string
+          related_finality_id?: string | null
+          related_match_id?: string | null
+          related_memory_id?: string | null
+          resolved_at?: string | null
+          review_queue?: string
+          schema_version?: string
+          severity?: string
+          status?: string
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_dispute_affected_burns: {
         Row: {
           billing_review_required: boolean
