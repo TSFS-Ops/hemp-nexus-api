@@ -4,9 +4,9 @@
  * Read-only presentational pieces. No data fetching here; data is loaded by
  * the page via @/lib/p5-batch8/api and passed in.
  *
- * Wording is constrained: no "verified / cleared / bank verified / sanctions
- * cleared / KYC passed" labels are introduced — the dependency-status and
- * decision-state strings are rendered verbatim from the projection.
+ * Wording is constrained by the Phase 1 SSOT banned-wording list — only
+ * the dependency-status and decision-state strings are rendered verbatim
+ * from the projection; no external verdict is synthesised here.
  */
 import { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
