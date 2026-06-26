@@ -1,280 +1,156 @@
-## P-5 Batch 5 — Finality, Memory & Outcome History
+# P-5 Batch 7 — API, Dashboards & Visibility — Phased Plan
 
-Batch 5 is a governed record layer, not a status field. This plan proposes a phased delivery and flags two hard preconditions before any code lands.
+**Status:** Plan only. No code until approved.
+**Scope lock:** Batch 7 only. No Batch 8 leakage. No cron. No new write models for Batch 6 surfaces. Reuse Batch 5 finality/Memory and Batch 6 exceptions as read-only sources.
 
-### Preconditions (must clear first)
+---
 
-1. **C6.2 still pending tick.** `CRON_INVOKE_CORRELATION_HARDENING_PHASE_1_DEPLOYED_PENDING_TICK` is unresolved. Batch 5 will add new cron-eligible surfaces (memory pause sweeps, dispute SLA, supersession reconciliation). I recommend waiting for the post-hardening outreach tick to confirm before adding any new scheduled jobs in Batch 5.
-2. **Existing overlaps to reconcile, not duplicate:**
-  - `public.p5_batch4_finality_records` (15 cols) already exists. Batch 5's `finality_records` must **extend** this table or sit alongside it with a documented relationship — not be a parallel table.
-  - `public.basic_memory_records` has a v1 closed vocab (3 triggers / 3 outcomes / 3 reasons) protected by `scripts/check-basic-memory-vocab-drift.mjs`. Batch 5 expands this to 11 outcomes + memory_status enum + dispute/correction trail. The drift guard, TS SSOT (`src/lib/basic-memory/outcomes.ts`) and DB CHECK constraints must all move together in one migration or the build fails.
-  - `p5_batch4_audit_events`, `p5_batch4_blockers`, `p5_batch4_evidence_items`, `p5_batch4_execution_milestones`, `p5_batch4_funder_releases` already cover much of the readiness → finality pipeline. Batch 5 should build the **Memory + supersession + dispute + API-safe** layers on top, not re-implement readiness.
+## Phase 1 — SSOT / Status / Visibility Registry
 
-### Phased delivery (six phases, each independently reviewable)
+**Deliverable:** A single TypeScript registry file (`src/lib/p5-batch7/registry.ts`) plus a drift guard, with zero runtime side effects.
 
-**Phase 1 — Schema SSOT + vocab expansion (migration + TS only, no UI)**
+Locks:
 
-- Extend `basic_memory_records` vocab (or create `memory_records_v2` if v1 must stay frozen) to the 11 Batch 5 outcome codes, `memory_status`, `dispute_status`, `correction_status`, `provider_dependency_status`, `evidence_completeness_status`.
-- Add `finality_status` enum (`none`, `ready_for_finality`, `final`, `under_dispute`, `corrected`, `superseded`, `invalid_test`).
-- Extend `p5_batch4_finality_records` with: snapshot JSON columns (evidence/rating/compliance/funder/approvals/waivers/exceptions/provider/payment/webhook/reconciliation), `is_current_effective_record`, `superseded_by_finality_record_id`, `audit_hash_reference`, `hash_chain_reference`, `schema_version`, `outcome_code_version`.
-- Lock policy: `UPDATE` blocked by trigger after `finality_status='final'` except for the controlled `is_current_effective_record` / `superseded_by_finality_record_id` columns.
-- Update `src/lib/basic-memory/outcomes.ts` SSOT + the drift-guard script in lockstep.
-- GRANTs + RLS per project rules.
+- The seven approved dashboards and their routes
+- Role → dashboard access matrix (platform_admin, operations_admin, compliance_owner, reviewer, org_user, funder_user, api_client, auditor)
+- API-visible field allow-list (stable, versioned `v1`)
+- Hidden / internal-only field block-list (raw provider payloads, internal notes, private risk commentary, credentials, unapproved AI output, hidden audit metadata, sensitive Memory internals)
+- Status vocabulary (case, evidence, blocker, exception, hold, finality, Memory, API key, export)
+- Approved external wording + banned wording list
+- Audit event names for dashboard actions, exports, overrides, key actions, config changes, finality events
+- Export/report types and their allowed roles
+- Stale-data thresholds and refresh rules
+- Saved-view shapes
 
-**Phase 2 — Correction / Dispute / Supersession records**
+Guards added: `scripts/check-p5-batch7-registry-parity.mjs`, `scripts/check-p5-batch7-forbidden-wording.mjs`, `scripts/check-p5-batch7-no-batch8.mjs`.
 
-- New tables: `finality_corrections`, `finality_disputes`, `finality_supersessions`, `finality_administrative_reclassifications`.
-- Append-only; original always retained; before/after JSON snapshots.
-- Server-side RPCs: `p5b5_add_correction`, `p5b5_mark_under_dispute`, `p5b5_resolve_dispute`, `p5b5_supersede_finality`, `p5b5_reclassify_finality`. All security-definer, role-gated via `has_role`, audit-emitting.
-- Cascade: marking dispute flips `memory_status` to `paused`; resolution writes corrected memory or restores active.
+No DB, no UI.
 
-**Phase 3 — Memory writer + exclusion rules (pure logic + RPC)**
+---
 
-- Pure module `src/lib/p5-batch5/memory-writer.ts` mirroring section 7 (what feeds) and section 8 (exclusions).
-- DB-side writer `p5b5_write_memory_from_finality` invoked from finality RPC; idempotent on `finality_record_id`.
-- Repeated-pattern detector gated by the 2-event / 1-compliance-approved threshold.
-- Defence-in-depth strip of forbidden fields (extends `P5B4_MEMORY_FORBIDDEN_FIELDS`).
+## Phase 2 — DB / RLS / Audit / Visibility Foundations
 
-**Phase 4 — Permission matrix + API-safe projection**
+**Deliverable:** One additive migration. No changes to prior-batch tables.
 
-- `src/lib/p5-batch5/permissions.ts` for the 9 roles in section 9 with the 14 capability flags in section 15.
-- `src/lib/p5-batch5/api-safe.ts` projection function — strict allowlist of the 12 fields in section 12.1; all other fields stripped.
-- Blocked-state response shapes (`permission_denied`, `memory_paused_due_to_dispute`, etc.).
-- `schema_version` + `outcome_code_version` constants.
+New tables (all `public.p5b7_*`, all RLS enabled, all with explicit GRANTs):
 
-**Phase 5 — UI surfaces (admin + org + funder + counterparty + memory panel)**
+- `p5b7_saved_views` — per-user saved dashboard filters
+- `p5b7_dashboard_actions_audit` — append-only audit of dashboard actions
+- `p5b7_export_jobs` — controlled export records (metadata only, no payload)
+- `p5b7_export_audit` — append-only export audit
+- `p5b7_api_field_visibility` — registry mirror, for runtime API enforcement
+- `p5b7_provider_dependencies` — provider/dependency status snapshot (read source for admin dashboard)
+- `p5b7_stale_data_thresholds` — config table seeded from registry
 
-- `src/pages/admin/p5-batch5/FinalityMemory.tsx` — admin list + actions (Create Finality, Add Correction, Mark Dispute, Supersede, Reclassify, Export, API-safe preview).
-- `src/pages/desk/p5-batch5/` — organisation finality view.
-- `src/pages/funder/p5-batch5/` — funder lane view.
-- `src/components/p5-batch5/MemoryHistoryPanel.tsx` — permission-aware timeline with filters, banners (Under Dispute / Corrected / Superseded / Excluded / Provider Failure / Test/Invalid), drill-down.
-- Reasoned-action dialogs reused from Batch 1 pattern.
-- Wording guard: extend `P5_FORBIDDEN_WORDS` with the 14 banned terms in section 13.2 and add copy tests.
+All write paths through `SECURITY DEFINER` RPCs with pinned `search_path=public`, `REVOKE EXECUTE FROM PUBLIC`, GRANT to `authenticated` (or `service_role` for admin-only).
 
-**Phase 6 — Tests + acceptance + evidence**
+Append-only triggers on audit/export tables. No new finality / Memory / dispute tables — Batch 5 + Batch 6 remain authoritative.
 
-- Vitest suites covering sections 17.1–17.8 (finality creation gates, all 11 outcome codes, evidence linkage, correction/dispute/supersession, memory writer + exclusions, 9-role permission matrix, API scoping, blocked states, wording guard).
-- Append `evidence/p5-batch5-finality-memory-outcome-history/README.md` with acceptance walkthrough per section 18.
-- No new cron jobs unless C6.2 is runtime-confirmed first.
+---
 
-### Technical details
+## Phase 3 — API Visibility Layer (v1)
 
-- **Lock enforcement:** trigger `prevent_finality_mutation()` raises on any UPDATE/DELETE of a `final`-status row except whitelisted columns; same for correction/dispute/supersession rows (append-only).
-- **Audit:** every RPC writes to `p5_batch4_audit_events` (already exists, 21 cols) with `event_type` prefixed `p5b5.*`, including `before_state`/`after_state`/`hash_reference`.
-- **Memory pause semantics:** `memory_status='paused'` is read by all scoring / matching / readiness consumers via a single `is_memory_reliance_allowed(finality_record_id)` SQL function — single chokepoint to enforce.
-- **Hash chain:** continue the existing `audit_hash_reference` pattern; no new chain.
-- **API versioning:** `schema_version='p5b5.v1'`, `outcome_code_version='p5b5-outcomes.v1'` as constants in `src/lib/p5-batch5/version.ts`.
+**Deliverable:** Versioned read-only projection layer for API clients.
 
-### What I will NOT do without explicit go-ahead
+- `p5b7_api_v1_*` SECURITY DEFINER read functions returning only the Phase 1 allow-listed fields
+- Stable status values mapped from internal vocab to external vocab
+- Stale-data flagging in API response (`is_stale`, `as_of`)
+- Error envelope for not-found / forbidden / stale / unavailable-provider
+- Scope enforcement: api_client sees only own org's cases; funder_user sees only granted scope
+- Tests proving zero internal-only fields appear in any v1 RPC output
 
-- Touch C6 cron jobs (still paused per your last instruction).
-- Replace `p5_batch4_finality_records` — I will extend it.
-- Break the `basic_memory_records` v1 drift guard silently — vocab expansion will move SSOT + DB + guard in one migration.
-- One-shot all six phases. Each phase is a separate apply batch with its own approval.
+No edge functions added beyond what already exists for API surface. No auto-send. No write endpoints.
 
-### Open questions before Phase 1
+---
 
-1. **Memory table strategy:** extend `basic_memory_records` v1 vocab (and bump the drift guard to v2), or create `p5_batch5_memory_records` as a parallel v2 table and leave v1 frozen?
-2. **Finality table strategy:** extend `p5_batch4_finality_records` in place, or create `p5_batch5_finality_records` and migrate Batch 4 rows forward?
-3. **Auto-finality:** section 4 mentions "approved auto-finality rule" as an exception. Is any auto-finality in scope for Batch 5, or human-only this batch?
-4. **C6.2 gate:** do I wait for the post-hardening outreach tick before starting Phase 1, or proceed with Phase 1 (schema only, no cron) now?
+## Phase 4 — Dashboard Shells & Role-Based Routes
 
-I will not start Phase 1 until these four are answered and the plan is approved.  
+**Deliverable:** Seven dashboards registered in `src/App.tsx`, all wrapped in `RequireAuth` with role guards.
+
+Routes:
+
+- `/admin/p5-batch7/control-dashboard` — platform_admin, operations_admin, compliance_owner
+- `/admin/p5-batch7/compliance-dashboard` — compliance_owner, reviewer
+- `/admin/p5-batch7/api-dashboard` — platform_admin
+- `/admin/p5-batch7/provider-dashboard` — platform_admin, operations_admin
+- `/desk/p5-batch7/org-dashboard` — org_user
+- `/funder/p5-batch7/funder-dashboard` — funder_user
+- `/admin/p5-batch7/audit-dashboard` — auditor, platform_admin
+
+Shared components: summary cards, filter bar, saved-view selector, detail-section frame, safe empty/loading/error states, stale-data banner, sensitive-field masked renderer.
+
+Reads only via Phase 3 projections + Batch 4/5/6 safe projections. Zero direct `p5b7_*` table reads.
+
+---
+
+## Phase 5 — Dashboard Actions, Exports & Audit
+
+**Deliverable:** Permitted actions wired through Phase 2 SECURITY DEFINER RPCs.
+
+- Save / load / delete saved views (per-user only)
+- Trigger export (metadata only; allowed types per role; reason required for admin exports ≥10 chars)
+- Sensitive-field reveal (audited, role-gated)
+- Acknowledge stale-data warning (audited)
+- No bulk overrides, no waiver mutations, no finality mutations, no Memory mutations (Batch 5/6 remain authoritative)
+
+Every action writes a `p5b7_dashboard_actions_audit` row. Every export writes a `p5b7_export_audit` row plus the existing generic export audit.
+
+---
+
+## Phase 6 — Cross-Consistency QA & Final Guards
+
+**Deliverable:** Test + guard suite, all green, plus evidence README.
+
+- `scripts/check-p5-batch7-phase-6-qa.mjs` — aggregate guard (no cron, no edge-fn additions, no Batch 8 tokens, all 7 routes registered & role-wrapped, zero direct `p5b7_*` UI reads, zero forbidden-field references in UI, zero banned wording)
+- `src/tests/p5-batch7-*.test.ts` — vitest suite covering registry parity, RBAC matrix, API non-leakage (every internal field absent from v1 output), export role gating, stale-data behaviour, audit coverage
+- `.github/workflows/batch-7-guards.yml` — extend existing workflow to include Phase 6 guard + new tests
+- Evidence folder `evidence/p5-batch7-api-dashboards-visibility/README.md` with phase-by-phase artefact list
+- Final status marker `P5_BATCH7_DEPLOYED`
+
+Stop after Phase 6. No Batch 8 work.
+
+---
+
+## Non-goals (explicit)
+
+- No changes to Batch 1–5 behaviour
+- No changes to Batch 6 write paths
+- No new cron jobs
+- No new edge functions for auto-send / provider calls
+- No duplicate finality / Memory / dispute systems
+- No raw payloads, credentials, internal notes, private risk commentary or hidden audit metadata in any API or dashboard surface
+- No Batch 8 dashboards, RPCs, tables or routes
+
+---
+
+## Approval requested
+
+Please reply **"approved — start Phase 1"** to begin, or send edits to any phase.  
   
-Yes — this is a strong plan. I would approve it with a few firm decisions so Lovable is not left choosing architecture.
+I would reply with this:
 
-Here are the answers I would give before Phase 1.
+approved — start Phase 1
 
----
+Please proceed with **Phase 1 — SSOT / Status / Visibility Registry** only.
 
-## **Approval position**
+The phased plan is approved on the basis that:
 
-Approved, with one important constraint:
+- Batch 7 remains strictly limited to API, Dashboards and Visibility;
+- no Batch 8 work is started;
+- no cron jobs are added;
+- no new edge functions are added unless explicitly approved later;
+- Batch 5 finality/Memory remains authoritative;
+- Batch 6 exceptions remain authoritative;
+- Batch 7 must not create duplicate finality, Memory, dispute or exception systems;
+- all dashboard/API/export/status/wording rules must be locked into the Phase 1 registry first;
+- all later phases must derive from that registry to prevent drift.
 
-**Proceed with Phase 1 now only because it is schema / SSOT / guard work and does not introduce new cron jobs. Do not add scheduled jobs until C6.2 is runtime-confirmed.**
+Please begin with the Phase 1 registry and guards, then report back with:
 
-The plan is correct to treat Batch 5 as a governed record layer, not a simple status field. It also correctly identifies the two main risks: accidentally duplicating Batch 4 finality infrastructure, and breaking the existing `basic_memory_records` vocabulary guard.
+1. files created/changed;
+2. registry contents summary;
+3. guard scripts added;
+4. test/guard results;
+5. any conflicts found between the client’s answers and existing P-5 Batch 1–6 structures.
 
----
-
-# **Answers to the four open questions**
-
-## **1. Memory table strategy**
-
-**Decision: create** `p5_batch5_memory_records` **as the v2 Memory table. Do not overload** `basic_memory_records`**.**
-
-Reason:
-
-`basic_memory_records` already has a protected v1 closed vocabulary and a drift guard. Batch 5 is materially more advanced: it introduces finality-backed Memory, correction trails, dispute pause semantics, supersession, provider dependency history, API-safe reliance status and role-scoped visibility.
-
-That is too much to force into a “basic” table without turning the table into something it was not designed to be.
-
-Recommended approach:
-
-- Keep `basic_memory_records` intact for existing/basic Memory behaviour.
-- Add `p5_batch5_memory_records` for governed Memory.
-- Update the SSOT to clearly distinguish:
-  - `basic_memory_records` = basic v1 Memory;
-  - `p5_batch5_memory_records` = governed finality-backed Memory.
-- Do not silently expand the old guard. Instead, add a new Batch 5 guard:
-  - `scripts/check-p5-batch5-memory-vocab-drift.mjs`
-- Keep the old guard intact unless there is a direct dependency requiring a shared outcome list.
-
-This is cleaner, safer and easier to audit.
-
-**Instruction to Lovable:**
-
-Create a new governed Memory table for Batch 5. Do not mutate `basic_memory_records` beyond what is strictly necessary for compatibility. Maintain v1 guard stability and add a Batch 5-specific SSOT and drift guard.
-
----
-
-## **2. Finality table strategy**
-
-**Decision: extend** `p5_batch4_finality_records` **in place. Do not create a competing finality table.**
-
-Reason:
-
-Batch 4 already introduced finality infrastructure. Creating `p5_batch5_finality_records` would split the source of truth and create confusion across dashboards, audit, API responses and Memory writes.
-
-Batch 5 should be the governed expansion of Batch 4 finality, not a replacement.
-
-Recommended approach:
-
-- Extend `p5_batch4_finality_records`.
-- Add Batch 5 columns for:
-  - locked snapshots;
-  - outcome-code version;
-  - schema version;
-  - Memory write status;
-  - dispute status;
-  - correction status;
-  - provider dependency status;
-  - hash/audit references;
-  - supersession link;
-  - current effective record marker.
-- Add clear comments in the migration stating that Batch 5 extends the Batch 4 table as the canonical finality table.
-- Do not create a duplicate `p5_batch5_finality_records` table.
-
-**Instruction to Lovable:**
-
-Treat `p5_batch4_finality_records` as the canonical finality table. Batch 5 must extend it, not replace it.
-
----
-
-## **3. Auto-finality**
-
-**Decision: no auto-finality in Batch 5. Human-only finality for this batch.**
-
-Reason:
-
-The client’s answers allow the system to automatically mark a case as `Ready for Finality`, but the actual final outcome selection and finality creation require authorised human approval unless a specific approved auto-finality rule exists. There is no client-approved auto-finality rule yet.  
-
-So for Batch 5:
-
-- system may propose `Ready for Finality`;
-- system may show the readiness checklist;
-- system may pre-fill snapshots;
-- system may recommend the eligible outcome options;
-- but finality creation must require authorised human confirmation.
-
-Auto-finality can be left as a future extension point, but it should not be implemented now.
-
-**Instruction to Lovable:**
-
-Build support for the concept of an approved auto-finality rule, but set it to disabled / not implemented for Batch 5. All Batch 5 finality creation must be human-approved.
-
----
-
-## **4. C6.2 gate**
-
-**Decision: proceed with Phase 1 now, but do not create or modify cron jobs until C6.2 is runtime-confirmed.**
-
-Reason:
-
-Phase 1 is schema, SSOT and guard work only. It does not need scheduled execution. Waiting for C6.2 before doing schema work would unnecessarily block progress.
-
-However, anything involving:
-
-- memory pause sweeps;
-- dispute SLA jobs;
-- supersession reconciliation jobs;
-- scheduled reminders;
-- scheduled cleanup;
-- cron-based state correction;
-
-must wait until the post-hardening tick confirms the cron invocation path.
-
-**Instruction to Lovable:**
-
-Phase 1 may proceed now. No new cron jobs, scheduled functions or scheduled reconciliation tasks may be added until C6.2 is confirmed by a successful runtime tick.
-
----
-
-# **Final approved direction to send back to Lovable**
-
-You can paste the following directly.
-
-Approved, with the following decisions and constraints.
-
-1. Memory table strategy
-
-Create a new governed Batch 5 Memory table, preferably `p5_batch5_memory_records`.
-
-Do not force the expanded Batch 5 vocabulary into `basic_memory_records` unless there is a hard existing dependency. `basic_memory_records` should remain the basic v1 Memory surface. Batch 5 Memory is materially more advanced because it includes finality-backed Memory, dispute pause semantics, correction records, supersession, provider dependency history, API-safe reliance status and role-scoped visibility.
-
-Keep the existing `basic_memory_records` drift guard intact. Add a new Batch 5-specific SSOT and drift guard, for example:
-
-- `src/lib/p5-batch5/outcomes.ts`
-- `src/lib/p5-batch5/version.ts`
-- `scripts/check-p5-batch5-memory-vocab-drift.mjs`
-
-The v1 guard must not be broken silently.
-
-2. Finality table strategy
-
-Extend `public.p5_batch4_finality_records` in place.
-
-Do not create a competing `p5_batch5_finality_records` table. Batch 4 already introduced the finality surface, so Batch 5 must expand that canonical table rather than splitting the source of truth.
-
-Add the Batch 5 fields required for locked snapshots, finality status, outcome code version, schema version, Memory write status, dispute status, correction status, provider dependency status, supersession linkage, current effective record marker and audit/hash references.
-
-The migration should clearly document that `p5_batch4_finality_records` remains the canonical finality table and that Batch 5 extends it.
-
-3. Auto-finality
-
-No auto-finality in Batch 5.
-
-The system may automatically calculate and propose `Ready for Finality`, show the readiness checklist and prepare the finality snapshot, but actual finality creation must require authorised human approval.
-
-Build only an extension point for future approved auto-finality rules. Do not activate auto-finality now.
-
-For Batch 5, the final outcome selection and `Create Finality Record` action must be human-approved.
-
-4. C6.2 gate
-
-Proceed with Phase 1 now because it is schema / SSOT / guard work only.
-
-Do not add, modify or enable any new cron jobs until C6.2 is runtime-confirmed by a successful post-hardening tick.
-
-This means no scheduled jobs yet for Memory pause sweeps, dispute SLA checks, supersession reconciliation or any other Batch 5 scheduled process. Those can be planned but must not land until the cron hardening confirmation is complete.
-
-5. General implementation rule
-
-Batch 5 must build on top of the existing Batch 4 readiness/finality infrastructure. It must not re-implement Batch 4 readiness, blockers, evidence items, execution milestones or audit events.
-
-Use the existing Batch 4 tables where appropriate, especially:
-
-- `p5_batch4_finality_records`
-- `p5_batch4_audit_events`
-- `p5_batch4_blockers`
-- `p5_batch4_evidence_items`
-- `p5_batch4_execution_milestones`
-- `p5_batch4_funder_releases`
-
-Batch 5 should add the governed Memory, correction, dispute, supersession and API-safe reliance layers on top.
-
-6. Approval
-
-Phase 1 is approved on the basis above.
-
-Please proceed only with Phase 1 as a separate apply batch. Do not one-shot all six phases. Each phase must remain independently reviewable, with tests and evidence for that phase before moving to the next.
+Do not proceed to Phase 2 until Phase 1 has been reported and accepted.
