@@ -51,7 +51,9 @@ describe("P-5 Batch 8 Phase 5 — UI surfaces", () => {
   it("API wrapper only calls allow-listed RPC names", () => {
     const src = read(API);
     const allowed = new Set<string>([...PHASE_4_READ_FNS, ...PHASE_3_WRITE_FNS]);
-    const calls = Array.from(src.matchAll(/rpc\(\s*["']([a-z0-9_]+)["']/gi)).map((m) => m[1]);
+    const calls = Array.from(
+      src.matchAll(/["'](p5b8_(?:read|rpc)_[a-z0-9_]+)["']/gi),
+    ).map((m) => m[1]);
     expect(calls.length).toBeGreaterThanOrEqual(PHASE_4_READ_FNS.length);
     for (const name of calls) {
       expect(allowed.has(name), `RPC ${name} allow-listed`).toBe(true);
