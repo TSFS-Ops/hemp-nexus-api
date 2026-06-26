@@ -12244,6 +12244,442 @@ export type Database = {
         }
         Relationships: []
       }
+      p5b8_audit_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          case_id: string | null
+          created_at: string
+          details: Json
+          event_code: string
+          id: string
+          provider_category: string | null
+          subject_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          case_id?: string | null
+          created_at?: string
+          details?: Json
+          event_code: string
+          id?: string
+          provider_category?: string | null
+          subject_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          case_id?: string | null
+          created_at?: string
+          details?: Json
+          event_code?: string
+          id?: string
+          provider_category?: string | null
+          subject_id?: string | null
+        }
+        Relationships: []
+      }
+      p5b8_memory_finality_links: {
+        Row: {
+          created_at: string
+          finality_record_id: string | null
+          id: string
+          link_type: string
+          memory_record_id: string | null
+          note: string | null
+          provider_decision_id: string
+        }
+        Insert: {
+          created_at?: string
+          finality_record_id?: string | null
+          id?: string
+          link_type: string
+          memory_record_id?: string | null
+          note?: string | null
+          provider_decision_id: string
+        }
+        Update: {
+          created_at?: string
+          finality_record_id?: string | null
+          id?: string
+          link_type?: string
+          memory_record_id?: string | null
+          note?: string | null
+          provider_decision_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b8_memory_finality_links_provider_decision_id_fkey"
+            columns: ["provider_decision_id"]
+            isOneToOne: false
+            referencedRelation: "p5b8_provider_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b8_provider_activation_signoffs: {
+        Row: {
+          created_at: string
+          evidence_reference: string | null
+          id: string
+          note: string | null
+          provider_config_id: string
+          signed_off_at: string
+          signed_off_by: string
+          signed_off_role: string
+        }
+        Insert: {
+          created_at?: string
+          evidence_reference?: string | null
+          id?: string
+          note?: string | null
+          provider_config_id: string
+          signed_off_at?: string
+          signed_off_by: string
+          signed_off_role: string
+        }
+        Update: {
+          created_at?: string
+          evidence_reference?: string | null
+          id?: string
+          note?: string | null
+          provider_config_id?: string
+          signed_off_at?: string
+          signed_off_by?: string
+          signed_off_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b8_provider_activation_signoffs_provider_config_id_fkey"
+            columns: ["provider_config_id"]
+            isOneToOne: false
+            referencedRelation: "p5b8_provider_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b8_provider_configs: {
+        Row: {
+          activation_signed_off_at: string | null
+          activation_signed_off_by: string | null
+          activation_signoff_owner: string
+          approval_owner: string
+          commercial_owner: string
+          created_at: string
+          credential_owner: string
+          fallback: string | null
+          hidden_until_live: boolean
+          id: string
+          live_now: boolean
+          preferred_providers: Json
+          provider_category: string
+          required_result_type: string | null
+          technical_contact: string
+          updated_at: string
+        }
+        Insert: {
+          activation_signed_off_at?: string | null
+          activation_signed_off_by?: string | null
+          activation_signoff_owner: string
+          approval_owner: string
+          commercial_owner: string
+          created_at?: string
+          credential_owner: string
+          fallback?: string | null
+          hidden_until_live?: boolean
+          id?: string
+          live_now?: boolean
+          preferred_providers?: Json
+          provider_category: string
+          required_result_type?: string | null
+          technical_contact: string
+          updated_at?: string
+        }
+        Update: {
+          activation_signed_off_at?: string | null
+          activation_signed_off_by?: string | null
+          activation_signoff_owner?: string
+          approval_owner?: string
+          commercial_owner?: string
+          created_at?: string
+          credential_owner?: string
+          fallback?: string | null
+          hidden_until_live?: boolean
+          id?: string
+          live_now?: boolean
+          preferred_providers?: Json
+          provider_category?: string
+          required_result_type?: string | null
+          technical_contact?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      p5b8_provider_decisions: {
+        Row: {
+          created_at: string
+          decision_state: string
+          evidence_reference: string | null
+          id: string
+          is_fallback: boolean
+          is_final: boolean
+          provider_category: string
+          provider_result_id: string | null
+          reason: string | null
+          set_by: string | null
+          set_by_role: string | null
+        }
+        Insert: {
+          created_at?: string
+          decision_state: string
+          evidence_reference?: string | null
+          id?: string
+          is_fallback?: boolean
+          is_final?: boolean
+          provider_category: string
+          provider_result_id?: string | null
+          reason?: string | null
+          set_by?: string | null
+          set_by_role?: string | null
+        }
+        Update: {
+          created_at?: string
+          decision_state?: string
+          evidence_reference?: string | null
+          id?: string
+          is_fallback?: boolean
+          is_final?: boolean
+          provider_category?: string
+          provider_result_id?: string | null
+          reason?: string | null
+          set_by?: string | null
+          set_by_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b8_provider_decisions_provider_result_id_fkey"
+            columns: ["provider_result_id"]
+            isOneToOne: false
+            referencedRelation: "p5b8_provider_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b8_provider_dependency_status: {
+        Row: {
+          case_id: string | null
+          created_at: string
+          environment: string
+          id: string
+          is_stale: boolean
+          last_transition_by: string | null
+          last_transition_reason: string | null
+          provider_category: string
+          stale_as_of: string | null
+          state: string
+          subject_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          case_id?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          is_stale?: boolean
+          last_transition_by?: string | null
+          last_transition_reason?: string | null
+          provider_category: string
+          stale_as_of?: string | null
+          state?: string
+          subject_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          is_stale?: boolean
+          last_transition_by?: string | null
+          last_transition_reason?: string | null
+          provider_category?: string
+          stale_as_of?: string | null
+          state?: string
+          subject_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      p5b8_provider_requests: {
+        Row: {
+          case_id: string | null
+          created_at: string
+          environment: string
+          id: string
+          provider_category: string
+          request_reference: string
+          requested_at: string
+          requested_by: string | null
+          status: string
+          subject_id: string | null
+        }
+        Insert: {
+          case_id?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          provider_category: string
+          request_reference: string
+          requested_at?: string
+          requested_by?: string | null
+          status?: string
+          subject_id?: string | null
+        }
+        Update: {
+          case_id?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          provider_category?: string
+          request_reference?: string
+          requested_at?: string
+          requested_by?: string | null
+          status?: string
+          subject_id?: string | null
+        }
+        Relationships: []
+      }
+      p5b8_provider_results: {
+        Row: {
+          created_at: string
+          environment: string
+          id: string
+          provider_category: string
+          provider_reference: string | null
+          provider_request_id: string | null
+          raw_provider_payload_admin_only: Json | null
+          received_at: string
+          result_status: string
+          result_summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          id?: string
+          provider_category: string
+          provider_reference?: string | null
+          provider_request_id?: string | null
+          raw_provider_payload_admin_only?: Json | null
+          received_at?: string
+          result_status: string
+          result_summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          id?: string
+          provider_category?: string
+          provider_reference?: string | null
+          provider_request_id?: string | null
+          raw_provider_payload_admin_only?: Json | null
+          received_at?: string
+          result_status?: string
+          result_summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b8_provider_results_provider_request_id_fkey"
+            columns: ["provider_request_id"]
+            isOneToOne: false
+            referencedRelation: "p5b8_provider_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b8_provider_retry_state: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          exhausted: boolean
+          fallback_route: string | null
+          id: string
+          last_attempted_at: string | null
+          last_error_class: string | null
+          next_retry_at: string | null
+          provider_request_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          exhausted?: boolean
+          fallback_route?: string | null
+          id?: string
+          last_attempted_at?: string | null
+          last_error_class?: string | null
+          next_retry_at?: string | null
+          provider_request_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          exhausted?: boolean
+          fallback_route?: string | null
+          id?: string
+          last_attempted_at?: string | null
+          last_error_class?: string | null
+          next_retry_at?: string | null
+          provider_request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p5b8_provider_retry_state_provider_request_id_fkey"
+            columns: ["provider_request_id"]
+            isOneToOne: false
+            referencedRelation: "p5b8_provider_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p5b8_webhook_events_ledger: {
+        Row: {
+          created_at: string
+          environment: string
+          id: string
+          idempotency_key: string
+          provider_category: string
+          raw_webhook_payload_admin_only: Json | null
+          received_at: string
+          signature_status: string
+          webhook_event: string
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          id?: string
+          idempotency_key: string
+          provider_category: string
+          raw_webhook_payload_admin_only?: Json | null
+          received_at?: string
+          signature_status?: string
+          webhook_event: string
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          id?: string
+          idempotency_key?: string
+          provider_category?: string
+          raw_webhook_payload_admin_only?: Json | null
+          received_at?: string
+          signature_status?: string
+          webhook_event?: string
+        }
+        Relationships: []
+      }
       payment_dispute_affected_burns: {
         Row: {
           billing_review_required: boolean
