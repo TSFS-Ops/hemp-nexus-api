@@ -174,5 +174,47 @@ Scope confirmation (Phase 4):
 
 Awaiting acceptance before proceeding to Phase 5 (admin review queues / UI).
 
+## Phase 5 — admin readiness workbench (deployed)
+
+Status marker: `P5_SCREENING_PHASE_5_DEPLOYED`
+
+Files:
+
+- `src/lib/p5-screening/api.ts` — typed wrapper over Phase 4 projections
+- `src/pages/admin/p5-screening/Workbench.tsx` — admin readiness workbench
+- `src/App.tsx` — `/admin/p5-screening` route, lazy-loaded, `platform_admin`
+- `scripts/check-p5-screening-phase-5-ui.mjs` — UI guard
+- `src/tests/p5-screening-phase-5-ui.test.ts` — vitest coverage
+
+Hard contracts:
+
+- Workbench is read-only: no write controls, no direct table access, no edge
+  function invocation.
+- API wrapper only calls `p5scr_api_subject_status` and `p5scr_api_gate_readiness`
+  from Phase 4 — no `supabase.from('p5scr_*')` anywhere in UI.
+- SSOT banned wording (`sanctions hit`, `pep hit`, `match score`, `list name`,
+  etc.) never appears in any screening UI file.
+- SSOT API-forbidden fields (`raw_provider_payload`, `provider_api_secret`,
+  `id_image`, `selfie`, `biometric_template`, `match_score`, `list_name`,
+  `raw_adverse_media`) never referenced in any screening UI file.
+- Mandatory disclaimer rendered on every load:
+  *"Provider-ready is not provider-verified. No live provider calls have been
+  made; status reflects internal screening state only."*
+
+Scope confirmation (Phase 5):
+
+- UI surfaces only — no DB migrations, no new RPC write path
+- No edge functions, no cron, no live provider calls, no provider credentials
+- No payment-provider changes
+- No Batch 6 / Batch 7 / Batch 8 surfaces touched
+- No `app_role` enum widening, no destructive schema changes
+- No client-side write policies; reads go through Phase 4 projections only
+- No Memory / finality mutation
+- No P-4 POI/WaD/Trading-Engine changes
+- No tenant or funder surfaces; admin (`platform_admin`) only
+
+Awaiting acceptance before proceeding to Phase 6 (Memory/audit rules / final QA).
+
+
 
 
