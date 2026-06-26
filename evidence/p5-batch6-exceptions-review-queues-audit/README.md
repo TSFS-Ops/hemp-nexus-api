@@ -78,7 +78,7 @@ Status marker: `P5_BATCH6_PHASE_1_DEPLOYED`
 |-------|-------|--------|
 | 1 | SSOT registry + drift guard + contract tests | ✅ DEPLOYED |
 | 2 | DB persistence: `p5b6_exceptions`, `p5b6_exception_notes`, `p5b6_exception_audit_events`, `p5b6_exception_disputes`, `p5b6_exception_queue_assignments`, `p5b6_exception_report_exports` with RLS, GRANTs, append-only triggers | ✅ DEPLOYED |
-| 3 | Server-side RPCs: create, assign, change priority, resolve, reopen, request evidence, approve waiver, raise dispute, mark finality under dispute, pause/resume Memory reuse, tombstone-legal | ⏸ pending acceptance |
+| 3 | Server-side RPCs (write path): create, status, priority, assign, note, raise/update dispute, record report export | ✅ DEPLOYED |
 | 4 | Permission matrix + API-safe projection (`projectExceptionToApiSafe`) + blocked-state helpers | ⏸ |
 | 5 | UI: Unified Operations Inbox, queue screens, exception detail, dispute workflow, cross-domain timeline, reports, organisation/funder/developer external-safe surfaces | ⏸ |
 | 6 | Final QA: cross-phase consistency, sensitive-field exposure sweep, permission matrix re-check, wording guard, no-cron guard extension, acceptance suite | ⏸ |
