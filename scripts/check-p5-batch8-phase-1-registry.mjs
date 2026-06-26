@@ -118,7 +118,6 @@ for (const d of uiDirs) {
     fail(`Phase 1 leaked into UI surface: ${d}`);
   }
 }
-}
 
 // 4. Banned wording / forbidden fields must not appear in any Batch 8 source
 //    surface other than the SSOT itself (which defines them) and tests.
