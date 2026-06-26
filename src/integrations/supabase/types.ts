@@ -24722,6 +24722,151 @@ export type Database = {
         Returns: string
       }
       p5b8_assert_writer_role: { Args: never; Returns: undefined }
+      p5b8_has_admin_reader_role: { Args: never; Returns: boolean }
+      p5b8_has_reader_role: { Args: never; Returns: boolean }
+      p5b8_read_audit_timeline_summary: {
+        Args: {
+          p_case_id?: string
+          p_limit?: number
+          p_provider_category?: string
+        }
+        Returns: {
+          actor_role: string
+          audit_id: string
+          case_id: string
+          created_at: string
+          event_code: string
+          provider_category: string
+          subject_id: string
+        }[]
+      }
+      p5b8_read_dashboard_queue_summary: {
+        Args: never
+        Returns: {
+          count: number
+          provider_category: string
+          provider_dependency_status: string
+        }[]
+      }
+      p5b8_read_memory_finality_link_summary: {
+        Args: { p_limit?: number; p_provider_decision_id?: string }
+        Returns: {
+          created_at: string
+          finality_record_id: string
+          link_id: string
+          link_type: string
+          memory_record_id: string
+          provider_decision_id: string
+        }[]
+      }
+      p5b8_read_provider_config_summary: {
+        Args: never
+        Returns: {
+          activation_signed_off_at: string
+          activation_signoff_owner: string
+          approval_owner: string
+          commercial_owner: string
+          hidden_until_live: boolean
+          live_now: boolean
+          provider_category: string
+          technical_contact: string
+          updated_at: string
+        }[]
+      }
+      p5b8_read_provider_decision_summary: {
+        Args: {
+          p_limit?: number
+          p_provider_category?: string
+          p_result_id?: string
+        }
+        Returns: {
+          created_at: string
+          decision_id: string
+          evidence_reference: string
+          is_fallback: boolean
+          is_final: boolean
+          provider_category: string
+          provider_decision_state: string
+          provider_result_id: string
+          reason: string
+          set_by_role: string
+        }[]
+      }
+      p5b8_read_provider_dependency_status_summary: {
+        Args: {
+          p_case_id?: string
+          p_provider_category?: string
+          p_subject_id?: string
+        }
+        Returns: {
+          case_id: string
+          is_stale: boolean
+          provider_category: string
+          provider_dependency_status: string
+          provider_environment: string
+          stale_as_of: string
+          subject_id: string
+          updated_at: string
+        }[]
+      }
+      p5b8_read_provider_request_summary: {
+        Args: {
+          p_case_id?: string
+          p_limit?: number
+          p_provider_category?: string
+        }
+        Returns: {
+          case_id: string
+          provider_category: string
+          provider_environment: string
+          request_id: string
+          request_reference: string
+          requested_at: string
+          status: string
+          subject_id: string
+        }[]
+      }
+      p5b8_read_provider_result_summary: {
+        Args: {
+          p_limit?: number
+          p_provider_category?: string
+          p_request_id?: string
+        }
+        Returns: {
+          provider_category: string
+          provider_environment: string
+          provider_reference: string
+          provider_request_id: string
+          received_at: string
+          result_id: string
+          result_status: string
+          result_summary: string
+        }[]
+      }
+      p5b8_read_retry_state_summary: {
+        Args: { p_limit?: number; p_provider_category?: string }
+        Returns: {
+          attempt_count: number
+          fallback_status: string
+          last_error_class: string
+          next_retry_at: string
+          provider_category: string
+          provider_request_id: string
+          retry_id: string
+          updated_at: string
+        }[]
+      }
+      p5b8_read_webhook_ledger_summary: {
+        Args: { p_limit?: number; p_provider_category?: string }
+        Returns: {
+          provider_category: string
+          provider_environment: string
+          received_at: string
+          signature_status: string
+          webhook_event: string
+          webhook_id: string
+        }[]
+      }
       p5b8_rpc_append_audit_event: {
         Args: {
           _case_id?: string
