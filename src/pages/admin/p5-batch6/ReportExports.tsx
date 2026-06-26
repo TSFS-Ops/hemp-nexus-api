@@ -31,6 +31,11 @@ export default function P5Batch6ReportExports() {
       .rpc("p5b6_list_report_exports_safe" as never, { _limit: 100, _offset: 0 } as never)
       .then(({ data, error: e }: any) => {
         if (cancelled) return;
+        if (e) setError(e.message); else setRows((data ?? []) as Row[]);
+        setLoading(false);
+        return;
+      }).then(() => {
+        if (cancelled) return;
         if (e) setError(e.message);
         else setRows((data ?? []) as Row[]);
       })
