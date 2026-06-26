@@ -25363,6 +25363,14 @@ export type Database = {
         }
         Returns: string
       }
+      p5scr_api_gate_readiness: {
+        Args: { p_gate: string; p_subject_id: string }
+        Returns: Json
+      }
+      p5scr_api_subject_status: {
+        Args: { p_subject_id: string }
+        Returns: Json
+      }
       p5scr_decide_manual_review: {
         Args: {
           p_decision: string

@@ -125,4 +125,54 @@ Scope confirmation (Phase 3):
 
 Awaiting acceptance before proceeding to Phase 4 (API-safe read/projection).
 
+## Phase 4 — API-safe read projections (deployed)
+
+Status marker: `P5_SCREENING_PHASE_4_DEPLOYED`
+
+Files:
+
+- `supabase/migrations/20260626181931_*.sql` — single additive read-only migration
+- `scripts/check-p5-screening-phase-4-projection.mjs` — projection guard
+- `src/tests/p5-screening-phase-4-projection.test.ts` — vitest coverage
+
+2 read RPCs (`p5scr_api_subject_status`, `p5scr_api_gate_readiness`) — all
+`SECURITY DEFINER`, `STABLE`, `SET search_path = public`,
+`REVOKE EXECUTE FROM PUBLIC`, `GRANT EXECUTE TO authenticated`, inline
+`has_role(auth.uid(), 'platform_admin')` guard.
+
+Projection envelope returns only SSOT API-safe fields: `ready`,
+`readiness_status`, `blockers`, `affected_party`, `affected_check`,
+`last_checked_at`, `expires_at`, `admin_review_required`, `provider_pending`,
+`retry_pending`.
+
+`readiness_status` values are emitted verbatim from the SSOT allowed-wording
+set only: `Screening pending`, `Provider pending`, `Manual review required`,
+`Identity verification required`, `Screening expired`,
+`Not ready - counterparty checks pending`.
+
+Hard contracts:
+
+- SSOT banned-wording set never appears in projection SQL.
+- SSOT API-forbidden field names (`raw_provider_payload`, `provider_api_secret`,
+  `id_image`, `selfie`, `biometric_template`, `match_score`, `list_name`,
+  `raw_adverse_media`) are never selected or returned.
+- POI gates (`poi_create`, `poi_accept`, `wad_create`) only surface blockers
+  for confirmed-block states (`failed`/`rejected`), matching the SSOT block
+  matrix from Phase 1 and the Phase 3 evaluator.
+
+Scope confirmation (Phase 4):
+
+- API-safe read/projection layer only — read-only, no INSERT/UPDATE/DELETE
+- No new tables, no destructive schema changes
+- No UI (Phase 5), no edge functions, no cron
+- No live provider calls, no provider credentials
+- No payment-provider changes
+- No Batch 6 / Batch 7 / Batch 8 surfaces touched
+- No `app_role` enum widening, no client-side write policies
+- No Memory / finality access or mutation
+- No P-4 POI/WaD/Trading-Engine changes
+
+Awaiting acceptance before proceeding to Phase 5 (admin review queues / UI).
+
+
 
