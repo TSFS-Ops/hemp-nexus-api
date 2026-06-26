@@ -61,7 +61,8 @@ for (const block of blocks) {
   const m = block.match(/^(p5b7_\w+)/);
   if (!m) continue;
   const name = m[1];
-  const head = block.slice(0, Math.max(0, block.toLowerCase().indexOf(" as $$")));
+  const asIdx = block.toLowerCase().search(/\bas\s+\$\$/);
+  const head = block.slice(0, asIdx > 0 ? asIdx : block.length);
   if (!/SECURITY DEFINER/i.test(head)) continue;
   secdef++;
   if (!/SET\s+search_path\s*=\s*public/i.test(head))
