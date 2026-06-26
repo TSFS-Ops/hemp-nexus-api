@@ -77,8 +77,79 @@ Status marker: `P5_BATCH6_PHASE_1_DEPLOYED`
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 1 | SSOT registry + drift guard + contract tests | ✅ DEPLOYED |
-| 2 | DB persistence: `p5b6_exceptions`, `p5b6_exception_notes`, `p5b6_exception_audit_events`, `p5b6_exception_disputes`, `p5b6_exception_queue_assignments`, `p5b6_exception_report_exports` with RLS, GRANTs, append-only triggers | ⏸ pending acceptance |
-| 3 | Server-side RPCs: create, assign, change priority, resolve, reopen, request evidence, approve waiver, raise dispute, mark finality under dispute, pause/resume Memory reuse, tombstone-legal | ⏸ |
+| 2 | DB persistence: `p5b6_exceptions`, `p5b6_exception_notes`, `p5b6_exception_audit_events`, `p5b6_exception_disputes`, `p5b6_exception_queue_assignments`, `p5b6_exception_report_exports` with RLS, GRANTs, append-only triggers | ✅ DEPLOYED |
+| 3 | Server-side RPCs: create, assign, change priority, resolve, reopen, request evidence, approve waiver, raise dispute, mark finality under dispute, pause/resume Memory reuse, tombstone-legal | ⏸ pending acceptance |
 | 4 | Permission matrix + API-safe projection (`projectExceptionToApiSafe`) + blocked-state helpers | ⏸ |
 | 5 | UI: Unified Operations Inbox, queue screens, exception detail, dispute workflow, cross-domain timeline, reports, organisation/funder/developer external-safe surfaces | ⏸ |
 | 6 | Final QA: cross-phase consistency, sensitive-field exposure sweep, permission matrix re-check, wording guard, no-cron guard extension, acceptance suite | ⏸ |
+
+---
+
+## Phase 2 — DB persistence  ✅ DEPLOYED
+
+Status marker: `P5_BATCH6_PHASE_2_DEPLOYED`
+
+### Tables created (all `public` schema, `schema_version = 'p5b6.v1'`)
+
+| Table | Purpose | Append-only |
+|-------|---------|-------------|
+| `p5b6_exceptions` | Core exception record (type, queue, priority, status, severity, owner role, assignee, org/funder/counterparty scope, links to finality/memory/match, external-safe message) | No (mutable lifecycle) |
+| `p5b6_exception_notes` | Immutable governance notes (10 note_types) | Yes |
+| `p5b6_exception_audit_events` | Append-only audit ledger; all event_code values must start with `p5b6.` | Yes |
+| `p5b6_exception_disputes` | Dispute lifecycle (13 dispute_states) with `pauses_memory` flag | No (state advances) |
+| `p5b6_exception_queue_assignments` | Historical assignment trail | Yes |
+| `p5b6_exception_report_exports` | Report export ledger (`csv`/`json`/`pdf`, restricted flag, scope) | Yes |
+
+### CHECK constraints mirror Phase 1 SSOT
+
+- 12 exception types, 10 queues, 5 priorities, 21 statuses, 13 dispute states, 10 note types — values match `src/lib/p5-batch6-exception-registry.ts` exactly.
+- Every table enforces `schema_version = 'p5b6.v1'`.
+- Audit event_code must match `p5b6.%`.
+
+### Functions / triggers
+
+- `public.p5b6_block_mutation_append_only()` — SECURITY DEFINER, `search_path = public`. Raises `42501` on any UPDATE/DELETE attempted by a non-`service_role`/non-`postgres` caller. Attached to notes, audit, queue assignments and report exports.
+- `update_updated_at_column` reused for mutable tables (`p5b6_exceptions`, `p5b6_exception_disputes`).
+
+### RLS + GRANTs
+
+All six tables:
+- `GRANT SELECT ... TO authenticated`
+- `GRANT ALL ... TO service_role`
+- `ENABLE ROW LEVEL SECURITY`
+- Admin SELECT policy: `platform_admin` OR `governance_reviewer` OR `compliance_analyst` (canonical roles present in `app_role` enum).
+- `p5b6_exceptions` additionally has a tenant-scoped SELECT policy: rows where `org_id`, `funder_org_id` or `counterparty_org_id` matches the caller's `profiles.org_id`.
+- No `anon` grants. No client-side INSERT/UPDATE/DELETE policies — all writes go through service-role RPCs added in Phase 3.
+
+### Indexes
+
+- `p5b6_exceptions_queue_status_idx (review_queue, status)`
+- `p5b6_exceptions_org_idx (org_id)`
+- `p5b6_exceptions_assignee_idx (assignee_user_id)`
+- `p5b6_notes_exception_idx (exception_id)`
+- `p5b6_audit_exception_idx (exception_id, created_at)`
+- `p5b6_audit_event_code_idx (event_code)`
+- `p5b6_disputes_exception_idx (exception_id)`
+- `p5b6_disputes_state_idx (dispute_state)`
+- `p5b6_qassign_exception_idx (exception_id, created_at)`
+- `p5b6_reports_code_idx (report_code, created_at)`
+
+### Constraints honoured
+
+- Additive migration only — no schema changes to Batch 5 finality, Memory or any earlier P-5/P-4 table.
+- No UI routes, no React/TS source changes.
+- No edge functions.
+- No `pg_cron` jobs or scheduled sweeps (C6.2 still pending).
+- No RPC endpoints (Phase 3).
+- No API projection (Phase 4).
+- No Batch 7 dashboard/API tokens.
+- Sensitive fields (`metadata`, `before_snapshot`, `after_snapshot`, internal `reason` notes) remain server-side only — never exposed to a future external projection; Phase 4 allowlist will enforce.
+
+### Test / linter results
+
+- Migration applied cleanly (single transaction).
+- Supabase linter: 327 issues reported, all pre-existing (no new errors introduced by Batch 6 Phase 2). The new function `p5b6_block_mutation_append_only` already pins `search_path = public` so it does not add a `Function Search Path Mutable` warning.
+
+### Status marker
+
+`P5_BATCH6_PHASE_2_DEPLOYED` — awaiting acceptance before Phase 3 (server-side RPCs).
