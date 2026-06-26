@@ -106,17 +106,18 @@ if (fs.existsSync(fnDir)) {
   }
 }
 
-// 3. No UI routes / pages for Batch 8 yet
+// 3. No Phase 5 UI surfaces outside the approved admin workbench path.
+//    Phase 5 introduces src/pages/admin/p5-batch8 and src/components/p5-batch8.
+//    Desk and funder Batch 8 surfaces remain forbidden in this phase.
 const uiDirs = [
-  "src/pages/admin/p5-batch8",
   "src/pages/desk/p5-batch8",
   "src/pages/funder/p5-batch8",
-  "src/components/p5-batch8",
 ];
 for (const d of uiDirs) {
   if (fs.existsSync(path.join(ROOT, d))) {
     fail(`Phase 1 leaked into UI surface: ${d}`);
   }
+}
 }
 
 // 4. Banned wording / forbidden fields must not appear in any Batch 8 source
