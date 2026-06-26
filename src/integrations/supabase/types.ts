@@ -12638,7 +12638,7 @@ export type Database = {
           {
             foreignKeyName: "p5b8_provider_retry_state_provider_request_id_fkey"
             columns: ["provider_request_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "p5b8_provider_requests"
             referencedColumns: ["id"]
           },
@@ -24718,6 +24718,117 @@ export type Database = {
           p_sort_by: string
           p_sort_dir: string
           p_view_id: string
+        }
+        Returns: string
+      }
+      p5b8_assert_writer_role: { Args: never; Returns: undefined }
+      p5b8_rpc_append_audit_event: {
+        Args: {
+          _case_id?: string
+          _details?: Json
+          _event_code: string
+          _provider_category?: string
+          _subject_id?: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_create_memory_finality_link: {
+        Args: {
+          _finality_record_id?: string
+          _link_type: string
+          _memory_record_id?: string
+          _note?: string
+          _provider_decision_id: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_create_provider_request: {
+        Args: {
+          _case_id?: string
+          _environment: string
+          _provider_category: string
+          _request_reference: string
+          _subject_id?: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_record_activation_signoff: {
+        Args: {
+          _evidence_reference: string
+          _go_live?: boolean
+          _note: string
+          _provider_config_id: string
+          _signed_off_role: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_record_provider_decision: {
+        Args: {
+          _decision_state: string
+          _evidence_reference: string
+          _is_fallback?: boolean
+          _is_final?: boolean
+          _provider_result_id: string
+          _reason: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_record_provider_result: {
+        Args: {
+          _provider_reference: string
+          _provider_request_id: string
+          _raw_payload?: Json
+          _result_status: string
+          _result_summary: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_record_retry_state: {
+        Args: {
+          _exhausted?: boolean
+          _fallback_route: string
+          _last_error_class: string
+          _next_retry_at: string
+          _provider_request_id: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_record_webhook_event: {
+        Args: {
+          _environment: string
+          _idempotency_key: string
+          _provider_category: string
+          _raw_payload?: Json
+          _signature_status: string
+          _webhook_event: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_set_dependency_status: {
+        Args: {
+          _case_id?: string
+          _environment: string
+          _is_stale?: boolean
+          _provider_category: string
+          _reason?: string
+          _stale_as_of?: string
+          _state: string
+          _subject_id?: string
+        }
+        Returns: string
+      }
+      p5b8_rpc_upsert_provider_config: {
+        Args: {
+          _activation_signoff_owner: string
+          _approval_owner: string
+          _commercial_owner: string
+          _credential_owner: string
+          _fallback: string
+          _hidden_until_live?: boolean
+          _preferred_providers: Json
+          _provider_category: string
+          _required_result_type: string
+          _technical_contact: string
         }
         Returns: string
       }
