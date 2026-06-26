@@ -23699,6 +23699,7 @@ export type Database = {
         }
         Returns: string
       }
+      p5b6_actor_scope: { Args: never; Returns: string }
       p5b6_add_note: {
         Args: {
           _body: string
@@ -23719,6 +23720,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      p5b6_can_view_exception: {
+        Args: {
+          _exception: Database["public"]["Tables"]["p5b6_exceptions"]["Row"]
+        }
+        Returns: boolean
+      }
       p5b6_create_exception: {
         Args: {
           _counterparty_org_id?: string
@@ -23738,6 +23745,87 @@ export type Database = {
           _summary: string
         }
         Returns: string
+      }
+      p5b6_get_dispute_safe: {
+        Args: { _exception_id: string }
+        Returns: {
+          created_at: string
+          dispute_state: string
+          exception_id: string
+          id: string
+          pauses_memory: boolean
+          updated_at: string
+        }[]
+      }
+      p5b6_get_exception_safe: {
+        Args: { _id: string }
+        Returns: {
+          assigned_to_role: string
+          created_at: string
+          exception_type: string
+          external_safe_summary: string
+          id: string
+          linked_finality_ref: string
+          linked_memory_ref: string
+          org_id: string
+          priority: string
+          queue: string
+          resolved_at: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      p5b6_get_queue_summary_safe: {
+        Args: never
+        Returns: {
+          open_count: number
+          priority: string
+          queue: string
+          status: string
+        }[]
+      }
+      p5b6_get_timeline_safe: {
+        Args: { _exception_id: string }
+        Returns: {
+          actor_role: string
+          body_visible: string
+          event_at: string
+          event_code: string
+          kind: string
+        }[]
+      }
+      p5b6_list_exceptions_safe: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _priority?: string
+          _queue?: string
+          _status?: string
+        }
+        Returns: {
+          assigned_to_role: string
+          created_at: string
+          exception_type: string
+          external_safe_summary: string
+          id: string
+          org_id: string
+          priority: string
+          queue: string
+          resolved_at: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      p5b6_list_report_exports_safe: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: {
+          completed_at: string
+          id: string
+          report_code: string
+          requested_at: string
+          requested_by_role: string
+          status: string
+        }[]
       }
       p5b6_raise_dispute: {
         Args: { _exception_id: string; _pauses_memory?: boolean }
