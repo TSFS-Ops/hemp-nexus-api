@@ -25363,6 +25363,109 @@ export type Database = {
         }
         Returns: string
       }
+      p5scr_decide_manual_review: {
+        Args: {
+          p_decision: string
+          p_notes_admin_only?: string
+          p_review_id: string
+        }
+        Returns: undefined
+      }
+      p5scr_evaluate_gate: {
+        Args: { p_gate: string; p_subject_id: string }
+        Returns: Json
+      }
+      p5scr_invalidate: {
+        Args: {
+          p_category?: string
+          p_reason?: string
+          p_subject_id: string
+          p_trigger: string
+        }
+        Returns: string
+      }
+      p5scr_link_memory_finality: {
+        Args: {
+          p_finality_record_id?: string
+          p_kind: string
+          p_link_note?: string
+          p_memory_record_id?: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      p5scr_log_webhook: {
+        Args: {
+          p_event: string
+          p_provider_ref?: string
+          p_raw_webhook_payload_admin_only?: Json
+          p_signature_hash?: string
+        }
+        Returns: string
+      }
+      p5scr_open_manual_review: {
+        Args: { p_category: string; p_reason?: string; p_subject_id: string }
+        Returns: string
+      }
+      p5scr_record_idv: {
+        Args: {
+          p_activation_signed_off_at?: string
+          p_expires_at?: string
+          p_provider_live_now?: boolean
+          p_provider_ref?: string
+          p_raw_provider_payload_admin_only?: Json
+          p_state: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      p5scr_record_provider_pending: {
+        Args: {
+          p_category: string
+          p_provider_ref?: string
+          p_subject_id: string
+        }
+        Returns: undefined
+      }
+      p5scr_record_result: {
+        Args: {
+          p_activation_signed_off_at?: string
+          p_category: string
+          p_expires_at?: string
+          p_provider_live_now?: boolean
+          p_provider_ref?: string
+          p_raw_provider_payload_admin_only?: Json
+          p_source: string
+          p_state: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      p5scr_request_check: {
+        Args: {
+          p_category: string
+          p_pending_state?: string
+          p_subject_id: string
+        }
+        Returns: undefined
+      }
+      p5scr_reuse_result: {
+        Args: {
+          p_category: string
+          p_source_result_id: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      p5scr_upsert_subject: {
+        Args: {
+          p_display_label?: string
+          p_organisation_id?: string
+          p_party_role: string
+          p_person_external_ref?: string
+        }
+        Returns: string
+      }
       platform_admin_break_glass_progress:
         | {
             Args: {
