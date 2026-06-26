@@ -82,5 +82,47 @@ Scope confirmation (Phase 2):
 - No `app_role` enum widening, no destructive schema changes
 - No Memory / finality mutation, no P-4 POI/WaD/Trading-Engine changes
 
-Awaiting acceptance before proceeding to Phase 3 (RPC check engine).
+## Phase 3 — RPC check engine (deployed)
+
+Status marker: `P5_SCREENING_PHASE_3_DEPLOYED`
+
+Files:
+
+- `supabase/migrations/20260626181548_*.sql` — single additive migration
+- `scripts/check-p5-screening-phase-3-rpc.mjs` — RPC guard
+- `src/tests/p5-screening-phase-3-rpc.test.ts` — vitest coverage
+
+12 RPCs (`p5scr_upsert_subject`, `p5scr_request_check`,
+`p5scr_record_provider_pending`, `p5scr_record_result`, `p5scr_reuse_result`,
+`p5scr_open_manual_review`, `p5scr_decide_manual_review`, `p5scr_record_idv`,
+`p5scr_invalidate`, `p5scr_log_webhook`, `p5scr_link_memory_finality`,
+`p5scr_evaluate_gate`) — all `SECURITY DEFINER`, `SET search_path = public`,
+`REVOKE EXECUTE FROM PUBLIC`, `GRANT EXECUTE TO authenticated`, inline
+`has_role(auth.uid(), 'platform_admin')` guard, matching audit-event insert.
+
+Hard contracts:
+
+- One open manual review per `(subject_id, category)` enforced by partial
+  unique index `p5scr_manual_reviews_one_open`.
+- `p5scr_reuse_result` enforces the 90-day reuse window server-side.
+- `p5scr_evaluate_gate` is read-only; POI gates only block on confirmed-block
+  states (`failed`/`rejected`), matching the SSOT block matrix.
+- Live-provider sign-off CHECKs from Phase 2 still enforced; RPCs pass
+  `provider_live_now` + `activation_signed_off_at` straight through.
+- Append-only triggers on the ledger tables remain in force.
+
+Scope confirmation (Phase 3):
+
+- Service-role / platform_admin RPC write path only
+- No new tables, no destructive schema changes
+- No UI, no API projection (Phase 4)
+- No edge functions, no cron, no live provider calls, no provider credentials
+- No payment-provider changes
+- No Batch 6 / Batch 7 / Batch 8 surfaces touched
+- No `app_role` enum widening, no client-side write policies
+- No Memory / finality mutation; link-only references only
+- No P-4 POI/WaD/Trading-Engine changes
+
+Awaiting acceptance before proceeding to Phase 4 (API-safe read/projection).
+
 
