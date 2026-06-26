@@ -1,8 +1,154 @@
 # P-5 Batch 8 — Provider-Ready Structures & External Dependency Labelling
 
-Evidence pack — Phases 1, 2, 3 and 4.
+Evidence pack — Phases 1, 2, 3, 4, 5 and 6.
 
-Current status marker: `P5_BATCH8_PHASE_4_DEPLOYED`
+Current status marker: `P5_BATCH8_PHASE_6_DEPLOYED`
+
+---
+
+## Phase 6 — Final QA / cross-phase guard / professional acceptance report
+
+Phase 6 introduces **no new features**: no DB migrations, no new RPC write
+path, no edge functions, no cron, no live provider calls, no provider
+credentials, no payment-provider behaviour changes, no Batch 6 changes,
+no Batch 7 surfaces, no `app_role` enum widening, no destructive schema
+changes, no client-side write policies, no Memory/finality mutation, no
+direct UI table access, no tenant/funder Batch 8 surfaces. It ships only
+a cross-phase QA guard, a vitest wrapper, and this final acceptance report.
+
+### Phase 6 artefacts
+
+| File | Purpose |
+| --- | --- |
+| `scripts/check-p5-batch8-phase-6-qa.mjs` | Cross-phase consistency / security / wording audit covering Phases 1–5. |
+| `src/tests/p5-batch8-phase-6-qa.test.ts` | CI wrapper that executes the guard and fails the suite if any invariant breaks. |
+
+### Phase 6 invariants verified (all pass)
+
+1. **SSOT vocabulary counts stable** — 9 categories, 10 dependency states, 10 decision states, 17 webhook events, 30 audit events, 16 allowed wording phrases, 20 banned wording phrases, 17 API-safe fields, 24 forbidden external fields, 18 owner roles, 14 hidden-until-live items.
+2. **Phase 1 ↔ Phase 2 mirror** — every category / dependency state / decision state / webhook event / audit event literal from the SSOT appears as a CHECK-constraint literal in the Phase 2 migration.
+3. **Phase 2 persistence intact** — all 10 `p5b8_*` tables created with RLS enabled; all 4 append-only tables (`activation_signoffs`, `webhook_events_ledger`, `audit_events`, `memory_finality_links`) still carry the `p5b8_block_mutation_append_only` trigger.
+4. **Phase 3 RPC write path intact** — 11 functions (`p5b8_assert_writer_role` + 10 `p5b8_rpc_*`) declared.
+5. **Phase 4 read projection layer intact** — 12 functions (2 reader-role helpers + 10 `p5b8_read_*` projections) declared.
+6. **SECURITY DEFINER hardening** — every Phase 3 + Phase 4 `p5b8_` function is `SECURITY DEFINER`, pins `SET search_path = public`, `REVOKE`s execute from `PUBLIC` and `GRANT`s execute to `authenticated`.
+7. **Provider-ready ≠ provider-verified at the DB layer** — Phase 2 `p5b8_pc_live_requires_signoff` CHECK; Phase 3 `upsert_provider_config` never sets `live_now = true`; `record_activation_signoff` validates evidence; live-environment requests emit `p5b8.live_check.blocked_attempt` until activation; Phase 4 returns dependency/decision states verbatim with no synthesised "verified" boolean.
+8. **Raw payloads remain admin-only** — Phase 3 routes provider/webhook payloads into `raw_provider_payload_admin_only` / `raw_webhook_payload_admin_only`; Phase 4 projections never reference those columns or any forbidden Phase 1 field.
+9. **Memory / finality safety** — zero `INSERT/UPDATE/DELETE` against `p5_batch5_memory_records` or `p5_batch4_finality_records` across Phase 2/3/4; Phase 3 `create_memory_finality_link` rejects links for non-Memory-eligible decisions; UI link tab reads reference IDs only.
+10. **UI never bypasses the api wrapper** — no `supabase.from('p5b8_…')` and no `supabase.rpc(…)` in any `src/pages/admin/p5-batch8` or `src/components/p5-batch8` file.
+11. **API wrapper allowlist enforced** — exactly the 10 Phase 4 read projections + 2 Phase 3 write RPCs (`record_activation_signoff`, `set_dependency_status`) are called from `src/lib/p5-batch8/api.ts`; no direct table reads.
+12. **Mandatory disclaimer** — "Provider-ready is not provider-verified" rendered by `WorkbenchShell`.
+13. **Route registration** — `/admin/p5-batch8` registered in `src/App.tsx` under `RequireAuth role="platform_admin"`.
+14. **Forbidden fields and banned wording** — none of the 24 Phase 1 forbidden external fields and none of the 20 banned external wording phrases appear in any Batch 8 surface outside the SSOT file itself (UI + components + api + Phase 4 migration scanned).
+15. **No Batch 6 / Batch 7 leakage** — no `p5b6_` / `p5b7_` token in any Batch 8 file or migration.
+16. **No edge functions, no cron** — `supabase/functions/p5-batch8` does not exist; no `cron.schedule(` in any Batch 8 migration.
+17. **No tenant/funder Batch 8 surfaces** — `src/pages/desk/p5-batch8` and `src/pages/funder/p5-batch8` do not exist.
+
+### Tests / guards run (Phase 6 acceptance batch)
+
+| Check | Result |
+| --- | --- |
+| `node scripts/check-p5-batch8-phase-6-qa.mjs` | **OK** (25 invariants pass) |
+| `node scripts/check-p5-batch8-phase-1-registry.mjs` | **OK** |
+| `node scripts/check-p5-batch8-phase-2-db.mjs` | **OK** |
+| `node scripts/check-p5-batch8-phase-3-rpc.mjs` | **OK** |
+| `node scripts/check-p5-batch8-phase-4-read.mjs` | **OK** |
+| `node scripts/check-p5-batch8-phase-5-ui.mjs` | **OK** |
+| `bunx vitest run src/tests/p5-batch8-phase-1-registry.test.ts` | **14 / 14 pass** |
+| `bunx vitest run src/tests/p5-batch8-phase-2-db.test.ts` | **21 / 21 pass** |
+| `bunx vitest run src/tests/p5-batch8-phase-3-rpc.test.ts` | **20 / 20 pass** |
+| `bunx vitest run src/tests/p5-batch8-phase-4-read.test.ts` | **20 / 20 pass** |
+| `bunx vitest run src/tests/p5-batch8-phase-5-ui.test.ts` | **9 / 9 pass** |
+| `bunx vitest run src/tests/p5-batch8-phase-6-qa.test.ts` | **1 / 1 pass** |
+| **Combined Batch 8 vitest run** | **85 / 85 pass** |
+
+### Route verification
+
+- `src/App.tsx:201` — `const P5Batch8Workbench = lazy(() => import("@/pages/admin/p5-batch8/Workbench"));`
+- `src/App.tsx:438` — `<Route path="/admin/p5-batch8" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch8Workbench /></RequireAuth>} />`
+- Single registered Batch 8 route. No additional Batch 8 paths.
+
+### Security / RLS verification
+
+- No new RLS policies, no widened grants, no widened roles introduced after Phase 2.
+- Phase 2 grants reviewed: every `p5b8_*` table grants `SELECT, INSERT, UPDATE, DELETE` to `service_role` only; `authenticated` is restricted to API-safe columns via the read projections; no `anon` grants.
+- All 23 `p5b8_*` SECURITY DEFINER functions pin `SET search_path = public` and `REVOKE EXECUTE … FROM PUBLIC`, then `GRANT EXECUTE … TO authenticated`. Caller-role narrowing is enforced in-body (`p5b8_assert_writer_role` for writes, `p5b8_has_reader_role` / `p5b8_has_admin_reader_role` for reads).
+- Append-only tables retain their block-mutation triggers (verified by Phase 6 invariant 3).
+- Supabase linter findings are unchanged from Phase 4: every legacy warning is pre-existing and project-wide; no new finding is attributable to Batch 8.
+
+### Forbidden-field and banned-wording verification
+
+- All 24 Phase 1 forbidden external fields scanned across `src/lib/p5-batch8`, `src/components/p5-batch8`, `src/pages/admin/p5-batch8`, and the Phase 4 migration. **Zero hits** outside the SSOT file.
+- All 20 Phase 1 banned external wording phrases scanned across the same surfaces plus the Phase 4 migration. **Zero hits** outside the SSOT.
+
+### Provider-ready vs provider-verified verification
+
+- DB layer: `p5b8_pc_live_requires_signoff` CHECK rejects `live_now = true` without `activation_signed_off_at` / `activation_signed_off_by`.
+- RPC layer: `upsert_provider_config` cannot set `live_now`; only `record_activation_signoff` with `_go_live = true` and non-empty `_evidence_reference` can flip it.
+- Request layer: `create_provider_request` rejects `_environment = 'live'` unless the matching config is live-activated, and emits `p5b8.live_check.blocked_attempt`.
+- Result layer: `live_result_received` only on stored provider result rows; final/provider-verified state still requires a real provider result row **or** an approved manual fallback decision (`is_fallback = true`) with reason/evidence + audit event.
+- Projection layer: dependency status and decision state are returned verbatim — no synthesised "verified", "cleared" or "passed" flag.
+- UI layer: status badges render the raw projection value; mandatory disclaimer "Provider-ready is not provider-verified" appears on every workbench page.
+
+### Memory / finality safety verification
+
+- No `INSERT/UPDATE/DELETE` statement targets `p5_batch5_memory_records` or `p5_batch4_finality_records` across Phase 2, Phase 3 or Phase 4.
+- `p5b8_rpc_create_memory_finality_link` writes only to `p5b8_memory_finality_links` and refuses to create a `memory_reference` for non-Memory-eligible decision states, emitting `p5b8.memory.provider_write_blocked` on rejection.
+- UI's memory/finality tab calls only `p5b8_read_memory_finality_link_summary`, which returns reference IDs only and never joins the Batch 4/5 tables.
+- Test mode and webhook test events explicitly cannot feed Memory or finality (`P5_BATCH8_MEMORY_AND_FINALITY_GATING.test_mode_can_feed_memory = false`).
+
+### Non-scope confirmation (Phase 6)
+
+- ✅ No new features.
+- ✅ No DB migrations.
+- ✅ No new RPC write path.
+- ✅ No edge functions.
+- ✅ No `pg_cron` schedules.
+- ✅ No live provider calls.
+- ✅ No real provider credentials handled.
+- ✅ No payment-provider behaviour changes.
+- ✅ No Batch 6 changes.
+- ✅ No Batch 7 surfaces.
+- ✅ No `app_role` enum widening.
+- ✅ No destructive schema changes.
+- ✅ No client-side write policies.
+- ✅ No Memory / finality mutation.
+- ✅ No direct UI table access.
+- ✅ No provider/provider-live implementation beyond the provider-ready dependency layer already delivered in Phases 1–5.
+
+### Final professional QA report
+
+Across Phases 1–6 the P-5 Batch 8 provider-ready / external-dependency
+labelling surface ships as a single coherent, contract-locked module:
+
+- **SSOT-first.** A single registry (`src/lib/p5-batch8/registry.ts`) is
+  the authoritative source for every category, state, vocabulary, field
+  allow-list and banned phrase; every downstream layer mirrors it.
+- **Defence in depth.** SSOT → CHECK constraints → RPC validation → API
+  projection allow-list → UI allow-list — each layer independently
+  enforces the same contract and is independently guarded in CI.
+- **Provider-ready is not provider-verified.** Enforced at the DB, RPC,
+  projection and UI layers, and asserted by the Phase 6 cross-phase
+  invariants. No code path can synthesise a "verified" claim from a
+  provider-ready state.
+- **Raw payloads stay admin-only.** Provider and webhook raw bodies are
+  routed to `*_admin_only` columns, excluded from `authenticated` grants,
+  and never selected by any API-safe projection.
+- **Memory / finality untouched.** Batch 5 Memory and Batch 4 finality
+  records remain reference-only from Batch 8; the link table records
+  pointers only and refuses non-eligible decision states.
+- **No live provider calls, no credentials, no cron, no edge functions,
+  no payment-provider behaviour changes, no tenant surfaces** were
+  introduced in any phase of Batch 8.
+- **No regression** in Batch 6 or Batch 7: zero `p5b6_` / `p5b7_` token
+  references across Batch 8, and prior-batch guards continue to pass.
+
+All Batch 8 guards (`check-p5-batch8-phase-{1..6}-*.mjs`) pass; all
+Batch 8 vitest suites pass (85/85); the supabase linter shows no new
+findings attributable to Batch 8.
+
+### Status marker
+
+`P5_BATCH8_PHASE_6_DEPLOYED`
 
 ---
 
