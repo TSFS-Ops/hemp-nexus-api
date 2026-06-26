@@ -434,6 +434,10 @@ function App() {
                   <Route path="/desk/p5-batch7/org-dashboard" element={<RequireAuth><P5Batch7OrgDashboard /></RequireAuth>} />
                   <Route path="/funder/p5-batch7/funder-dashboard" element={<RequireAuth><P5Batch7FunderDashboard /></RequireAuth>} />
 
+                  {/* P-5 Batch 8 — Phase 5: provider dependency workbench (admin / compliance, read-only) */}
+                  <Route path="/admin/p5-batch8" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch8Workbench /></RequireAuth>} />
+
+
 
 
 
