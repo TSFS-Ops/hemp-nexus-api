@@ -45,7 +45,7 @@ export default function P5Batch7OrgDashboard() {
       banner={
         <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
           You are viewing only cases linked to your organisation. Other organisations'
-          records, internal notes and raw evidence are not shown.
+          records, reviewer-only commentary and raw evidence are not shown.
         </div>
       }
     >

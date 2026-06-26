@@ -69,7 +69,7 @@ export function P5B7DashboardShell({
       <div className="space-y-4">{children}</div>
       <p className="text-xs text-muted-foreground pt-4">
         Read-only view. Information shown is approved for this surface and is
-        derived from the v1 API projection. Internal notes, raw provider payloads
+        derived from the v1 API projection. Reviewer-only commentary, raw provider payloads
         and other internal artefacts are never displayed here.
       </p>
     </div>

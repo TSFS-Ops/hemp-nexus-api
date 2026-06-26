@@ -8,7 +8,7 @@
  *   - This is an explicit interim limitation: a per-case funder grant
  *     table does not yet exist, so the UI assumes the projection has
  *     already filtered the case set to funder-visible cases.
- *   - Internal notes, raw provider payloads, Memory internals, other
+ *   - Reviewer-only commentary, raw provider payloads, Memory internals, other
  *     funders' decisions and other organisations' records are never
  *     rendered here (enforced by the Phase 3 projection + Phase 4 guard).
  *
@@ -54,7 +54,7 @@ export default function P5Batch7FunderDashboard() {
         <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
           Released for authorised funder review only. Visibility is coarse during
           Phase 4 (funder-tagged cases only) and will be tightened to per-case
-          grants in a later phase. Other organisations' records, internal notes,
+          grants in a later phase. Other organisations' records, reviewer-only commentary,
           raw evidence and Memory internals are not shown here.
         </div>
       }
