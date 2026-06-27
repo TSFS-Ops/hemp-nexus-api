@@ -92,8 +92,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       { provider: "payfast", mode: "sandbox", packageId: "single" },
       baseDeps({ supabase: mock.client, gateEnabled: false }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("gate_disabled");
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("gate_disabled");
     expect(mock.calls.find((c) => c.table === "token_purchases")).toBeUndefined();
   });
 
@@ -103,8 +103,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       { provider: "payfast", mode: "sandbox", packageId: "single" },
       baseDeps({ supabase: mock.client, isPlatformAdmin: false }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("not_admin");
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("not_admin");
     expect(mock.calls.find((c) => c.table === "token_purchases")).toBeUndefined();
   });
 
@@ -114,8 +114,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       { provider: "paystack", mode: "sandbox", packageId: "single" },
       baseDeps({ supabase: mock.client }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("wrong_provider");
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("wrong_provider");
     expect(mock.calls.find((c) => c.table === "token_purchases")).toBeUndefined();
   });
 
@@ -125,8 +125,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       { provider: "payfast", mode: "live", packageId: "single" },
       baseDeps({ supabase: mock.client }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("wrong_mode");
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("wrong_mode");
     expect(mock.calls.find((c) => c.table === "token_purchases")).toBeUndefined();
   });
 
@@ -136,8 +136,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       { provider: "payfast", mode: "sandbox", packageId: "single" },
       baseDeps({ supabase: mock.client, merchantKey: "" }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("merchant_config_missing");
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("merchant_config_missing");
   });
 
   it("rejects unknown package", async () => {
@@ -146,8 +146,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       { provider: "payfast", mode: "sandbox", packageId: "mystery" },
       baseDeps({ supabase: mock.client }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("invalid_package");
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("invalid_package");
   });
 
   it("rejects missing org", async () => {
@@ -156,8 +156,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       { provider: "payfast", mode: "sandbox", packageId: "single" },
       baseDeps({ supabase: mock.client, orgId: null }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("missing_org");
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("missing_org");
   });
 
   it("rejects package with non-positive price (defence in depth)", async () => {
@@ -169,8 +169,8 @@ describe("Phase 2C: gates block initiation safely", () => {
         packages: { single: { id: "single", credits: 1, price_zar: 0, label: "Zero" } },
       }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("amount_invalid");
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("amount_invalid");
   });
 });
 
