@@ -93,7 +93,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       baseDeps({ supabase: mock.client, gateEnabled: false }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("gate_disabled");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("gate_disabled");
     expect(mock.calls.find((c) => c.table === "token_purchases")).toBeUndefined();
   });
 
@@ -104,7 +105,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       baseDeps({ supabase: mock.client, isPlatformAdmin: false }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("not_admin");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("not_admin");
     expect(mock.calls.find((c) => c.table === "token_purchases")).toBeUndefined();
   });
 
@@ -115,7 +117,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       baseDeps({ supabase: mock.client }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("wrong_provider");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("wrong_provider");
     expect(mock.calls.find((c) => c.table === "token_purchases")).toBeUndefined();
   });
 
@@ -126,7 +129,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       baseDeps({ supabase: mock.client }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("wrong_mode");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("wrong_mode");
     expect(mock.calls.find((c) => c.table === "token_purchases")).toBeUndefined();
   });
 
@@ -137,7 +141,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       baseDeps({ supabase: mock.client, merchantKey: "" }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("merchant_config_missing");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("merchant_config_missing");
   });
 
   it("rejects unknown package", async () => {
@@ -147,7 +152,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       baseDeps({ supabase: mock.client }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("invalid_package");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("invalid_package");
   });
 
   it("rejects missing org", async () => {
@@ -157,7 +163,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       baseDeps({ supabase: mock.client, orgId: null }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("missing_org");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("missing_org");
   });
 
   it("rejects package with non-positive price (defence in depth)", async () => {
@@ -170,7 +177,8 @@ describe("Phase 2C: gates block initiation safely", () => {
       }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("amount_invalid");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("amount_invalid");
   });
 });
 
@@ -304,7 +312,8 @@ describe("Phase 2C: successful sandbox initiation", () => {
       baseDeps({ supabase: mock.client }),
     );
     if (out.ok) throw new Error("expected rejection");
-    expect(out.reason).toBe("purchase_insert_failed");
+    const rej = out as Extract<typeof out, { ok: false }>;
+    expect(rej.reason).toBe("purchase_insert_failed");
     expect(out.status).toBe(500);
   });
 });
