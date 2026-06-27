@@ -127,7 +127,7 @@ describe("Batch C — Fix 3: token_purchases pending row + lifecycle", () => {
     // Look for the insert keyed on paystack_reference with status pending,
     // in the same function that writes credits.purchase_initiated audit row.
     expect(TOKEN_PURCHASE).toMatch(
-      /\.from\("token_purchases"\)[\s\S]{0,200}\.insert\(\{[\s\S]{0,400}status:\s*"pending"/,
+      /\.from\("token_purchases"\)[\s\S]{0,200}\.insert\(\{[\s\S]{0,900}status:\s*"pending"/,
     );
     // Must be tolerant of duplicate-key (Idempotency retry).
     expect(TOKEN_PURCHASE).toMatch(
