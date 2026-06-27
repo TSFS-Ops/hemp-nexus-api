@@ -20737,6 +20737,8 @@ export type Database = {
           org_id: string
           package_id: string
           paystack_reference: string
+          provider: string | null
+          provider_reference: string | null
           status: string
           token_amount: number
           updated_at: string
@@ -20751,6 +20753,8 @@ export type Database = {
           org_id: string
           package_id: string
           paystack_reference: string
+          provider?: string | null
+          provider_reference?: string | null
           status?: string
           token_amount: number
           updated_at?: string
@@ -20765,6 +20769,8 @@ export type Database = {
           org_id?: string
           package_id?: string
           paystack_reference?: string
+          provider?: string | null
+          provider_reference?: string | null
           status?: string
           token_amount?: number
           updated_at?: string

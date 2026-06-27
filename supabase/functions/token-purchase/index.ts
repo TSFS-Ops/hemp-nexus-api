@@ -852,6 +852,13 @@ async function _serve(req: Request): Promise<Response> {
           org_id: profile.org_id,
           user_id: userData.user.id,
           paystack_reference: paystackData.data.reference,
+          // PayFast Phase 2A — provider identity hardening.
+          // Paystack continues to populate the historical
+          // `paystack_reference` column (UNIQUE, preserved), and
+          // additionally writes provider-agnostic identity so PayFast
+          // (Phase 2B+) can land without abusing the Paystack column.
+          provider: "paystack",
+          provider_reference: paystackData.data.reference,
           package_id: packageId,
           token_amount: pkg.credits,
           amount_usd: pkg.price_usd,
@@ -861,6 +868,8 @@ async function _serve(req: Request): Promise<Response> {
             fx_basis: "native_usd",
             client_ip: clientIp,
             package_label: pkg.label,
+            provider: "paystack",
+            provider_reference: paystackData.data.reference,
           },
         });
       if (pendingErr && pendingErr.code !== "23505") {

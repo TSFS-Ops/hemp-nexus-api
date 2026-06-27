@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
   const { data: pageRows, count, error: pErr } = await admin
     .from("token_purchases")
     .select(
-      "id, package_id, token_amount, amount_usd, status, created_at, paystack_reference",
+      "id, package_id, token_amount, amount_usd, status, created_at, paystack_reference, provider, provider_reference",
       { count: "exact" },
     )
     .eq("org_id", orgId)
@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
     const { data: extraRows, error: extraErr } = await admin
       .from("token_purchases")
       .select(
-        "id, package_id, token_amount, amount_usd, status, created_at, paystack_reference",
+        "id, package_id, token_amount, amount_usd, status, created_at, paystack_reference, provider, provider_reference",
       )
       .eq("org_id", orgId)
       .in("id", relevantUnpaged);
