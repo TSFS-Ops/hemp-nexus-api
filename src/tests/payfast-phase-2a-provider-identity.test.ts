@@ -166,6 +166,11 @@ describe("Phase 2A boundary: no PayFast live surface is introduced", () => {
   });
 
   it("no PayFast checkout button / call-to-action is rendered from PurchasesList", () => {
-    expect(PANEL).not.toMatch(/payfast/i);
+    // Strip comments before scanning so the Phase 2A explanatory
+    // comments don't count as a user-visible PayFast surface.
+    const stripped = PANEL
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+    expect(stripped).not.toMatch(/payfast/i);
   });
 });
