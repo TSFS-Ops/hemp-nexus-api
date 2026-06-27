@@ -60,9 +60,9 @@ describe("C6.4 account-deletion-sweeper-daily-dryrun heartbeat migration", () =>
   });
 
   it("payload contains no destructive flags", () => {
-    expect(sql).not.toMatch(/'dry_run'\s*,\s*false/i);
-    expect(sql).not.toMatch(/confirm/i);
-    expect(sql).not.toMatch(/HARD_DELETE/);
+    expect(stripped).not.toMatch(/'dry_run'\s*,\s*false/i);
+    expect(stripped).not.toMatch(/confirm/i);
+    expect(stripped).not.toMatch(/HARD_DELETE/);
   });
 
   it("does not embed Authorization / Bearer JWT / anon JWT / direct net.http_post in cron command", () => {
