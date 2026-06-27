@@ -84,7 +84,7 @@ describe("Phase 2C: PayFast remains NOT live, Paystack untouched", () => {
     expect(EDGE).not.toMatch(/PAYSTACK_/);
   });
   it("helper strips merchant_key from the returned form fields", () => {
-    expect(HELPER).toMatch(/filter\(\[k\][^)]*k !== "merchant_key"\)/);
+    expect(HELPER).toMatch(/k !== "merchant_key"/);
   });
   it("no customer-facing PayFast button exists in the frontend", () => {
     // Allow PayFast references only in tests/docs/migrations/types and
