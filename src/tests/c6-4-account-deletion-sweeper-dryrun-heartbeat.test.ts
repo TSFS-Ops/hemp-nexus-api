@@ -10,20 +10,12 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const MIGRATIONS_DIR = resolve("supabase/migrations");
-const migrationFile = readdirSync(MIGRATIONS_DIR)
-  .filter((f) => /c6[-_]?4|account[-_]?deletion[-_]?sweeper[-_]?dryrun[-_]?heartbeat/i.test(f))
-  .sort()
-  .pop();
-
-if (!migrationFile) {
-  throw new Error("C6.4 migration file not found in supabase/migrations/");
-}
-
-const MIGRATION = resolve(MIGRATIONS_DIR, migrationFile);
+const MIGRATION = resolve(
+  "supabase/migrations/20260627213919_53d698b6-f460-4139-a000-da000ca9eb75.sql",
+);
 const sql = readFileSync(MIGRATION, "utf8");
 const stripped = sql.split("\n").map((l) => l.replace(/--.*$/, "")).join("\n");
 
