@@ -87,6 +87,9 @@ describe("Phase 2B: PayFast is NOT customer-facing live", () => {
       "supabase/functions/_shared/payments/reference.ts",
       "supabase/functions/_shared/payments/paystack.ts",
       "supabase/functions/payfast-itn/index.ts",
+      // Phase 2C: sandbox-only checkout initiation surfaces.
+      "supabase/functions/_shared/payments/payfast-checkout.ts",
+      "supabase/functions/payfast-checkout-sandbox/index.ts",
       "supabase/functions/token-purchase/index.ts", // Phase 2A audit refs only
       "supabase/functions/transaction-reconciliation/index.ts",
       "src/integrations/supabase/types.ts", // generated
