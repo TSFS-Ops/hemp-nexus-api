@@ -12,11 +12,14 @@
 import type { PaymentProvider, PaymentProviderId } from "./provider.ts";
 import { PAYSTACK_PROVIDER } from "./paystack.ts";
 
+// Phase 2B note: the PayFast descriptor exists in `./payfast.ts` (the
+// sandbox ITN edge function imports it directly), but it is NOT
+// registered here. Keeping `payfast: undefined` means any code path
+// that resolves a "live customer-facing provider" via this registry
+// still fails loudly for PayFast, which is the Phase 2B contract:
+// no customer-facing PayFast checkout yet.
 const REGISTRY: Record<PaymentProviderId, PaymentProvider | undefined> = {
   paystack: PAYSTACK_PROVIDER,
-  // Phase 2 will register the PayFast provider here behind a sandbox
-  // flag. Intentionally `undefined` in Phase 1 so any accidental
-  // `selectProvider("payfast")` call fails loudly during build/tests.
   payfast: undefined,
 };
 
