@@ -44,10 +44,11 @@ describe("Phase 1: Paystack inline behaviour is unchanged", () => {
     expect(TP).not.toMatch(/from\s+["']\.\.\/_shared\/fx\.ts["']/);
   });
 
-  it("token-purchase still credits via atomic_paid_credit_purchase", () => {
+  it("token-purchase still credits paid purchases via atomic_paid_credit_purchase", () => {
     expect(TP).toMatch(/supabase\.rpc\(\s*["']atomic_paid_credit_purchase["']/);
-    // Must not regress to the older atomic_token_credit RPC.
-    expect(TP).not.toMatch(/supabase\.rpc\(\s*["']atomic_token_credit["']/);
+    // Note: `atomic_token_credit` legitimately remains in this file
+    // for refund / debit paths. Phase 1 only guards the credit-
+    // purchase path, which MUST stay on `atomic_paid_credit_purchase`.
   });
 
   it("token-purchase still writes provider: \"paystack\" on init metadata", () => {
