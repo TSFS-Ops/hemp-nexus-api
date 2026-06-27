@@ -161,7 +161,17 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(p.created_at).toLocaleString()} · Ref{" "}
-                        <code className="font-mono text-xs">{p.paystack_reference}</code>
+                        <code
+                          className="font-mono text-xs"
+                          data-testid={`billing-purchase-ref-${p.id}`}
+                          title={
+                            p.provider
+                              ? `Payment provider: ${p.provider}`
+                              : "Payment provider: paystack"
+                          }
+                        >
+                          {p.provider_reference || p.paystack_reference}
+                        </code>
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
