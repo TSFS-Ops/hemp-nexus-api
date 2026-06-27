@@ -303,10 +303,8 @@ describe("Phase 2C: successful sandbox initiation", () => {
       { provider: "payfast", mode: "sandbox", packageId: "single" },
       baseDeps({ supabase: mock.client }),
     );
-    expect(out.ok).toBe(false);
-    if (!out.ok) {
-      expect(out.reason).toBe("purchase_insert_failed");
-      expect(out.status).toBe(500);
-    }
+    if (out.ok) throw new Error("expected rejection");
+    expect(out.reason).toBe("purchase_insert_failed");
+    expect(out.status).toBe(500);
   });
 });
