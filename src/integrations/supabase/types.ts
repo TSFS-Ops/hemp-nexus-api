@@ -25798,6 +25798,10 @@ export type Database = {
         }
         Returns: Json
       }
+      run_cleanup_expired_unsubscribe_tokens_with_heartbeat: {
+        Args: never
+        Returns: number
+      }
       run_data_integrity_checks: { Args: never; Returns: Json }
       run_reconcile_acceptance_notifications_with_heartbeat: {
         Args: never
