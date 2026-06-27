@@ -25,6 +25,10 @@ interface PurchaseRow {
   status: string;
   created_at: string;
   paystack_reference: string;
+  // PayFast Phase 2A — provider-agnostic identity. Both nullable so
+  // historical rows that pre-date the migration still render correctly.
+  provider?: string | null;
+  provider_reference?: string | null;
 }
 
 interface PendingRefundRow {
