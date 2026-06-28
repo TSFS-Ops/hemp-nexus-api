@@ -369,12 +369,22 @@ Deno.serve(async (req) => {
   // Detect matches whose state says POI was minted but for which no
   // ledger_events.poi.minted row exists. This is *state-vs-ledger drift*
   // and is distinct from BURN_WITHOUT_POI / POI_WITHOUT_BURN above.
+  //
+  // Schema note: public.matches has NO canonical `updated_at` column.
+  // State transitions are captured by per-event columns
+  // (buyer_committed_at, seller_committed_at, counterparty_sighted_at,
+  // settled_at, ai_last_run_at) and append-only `match_events` rows,
+  // not a single mutable timestamp. We therefore window this drift
+  // detector on `created_at` — it is the only row-level timestamp
+  // present on every match and is sufficient for the reconciliation
+  // lookback horizon (LOOKBACK_DAYS).
   const { data: mintedMatches, error: mintedErr } = await admin
     .from("matches")
-    .select("id, org_id, state, status, updated_at, created_at")
+    .select("id, org_id, state, status, created_at")
     .in("state", ["intent_declared", "counterparty_sighted", "committed", "completed"])
-    .gte("updated_at", sinceIso)
-    .order("updated_at", { ascending: false })
+    .gte("created_at", sinceIso)
+    .order("created_at", { ascending: false })
+
     .limit(ROW_LIMIT);
 
   if (mintedErr) {
