@@ -108,6 +108,8 @@ describe("Phase 2C: PayFast remains NOT live, Paystack untouched", () => {
       "supabase/functions/transaction-reconciliation/index.ts",
       "src/integrations/supabase/types.ts",
       "src/components/desk/billing/PurchasesList.tsx",
+      "src/components/desk/billing/PayfastSandboxTestButton.tsx", // Phase 2F admin-only
+      "src/pages/Billing.tsx", // Phase 2F: hosts admin-only sandbox button
     ]);
     const unexpected = matches
       .split("\n")
