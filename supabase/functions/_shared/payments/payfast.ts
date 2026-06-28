@@ -429,10 +429,13 @@ export async function processPayfastItn(
       ...extraMetadata,
     };
     try {
+      // entity_id is uuid in schema; provider_reference is a text token
+      // ("izpf_…"), so it goes in metadata, not entity_id. Leave entity_id
+      // null when we cannot resolve a purchase row.
       await deps.supabase.from("audit_logs").insert({
         action: "credits.purchase_rejected",
         entity_type: "token_purchase",
-        entity_id: lookupRef ?? null,
+        entity_id: null,
         metadata,
         created_at: now().toISOString(),
       });
