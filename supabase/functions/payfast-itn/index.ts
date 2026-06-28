@@ -38,19 +38,20 @@ function resolveMode(): PayfastMode {
   return raw === "live" ? "live" : "sandbox";
 }
 
-// Read the merchant passphrase ONLY if provided. PayFast accounts that
-// have not configured a passphrase sign without one; both branches are
-// supported by `verifyPayfastSignature`.
-function resolvePassphrase(): string | null {
-  const v = Deno.env.get("PAYFAST_PASSPHRASE");
-  return v && v.length > 0 ? v : null;
+// Read the merchant passphrase. Supports both the sandbox-specific name
+// (set by the Phase 2F unblocker) and the legacy generic name.
+function resolvePassphrase(mode: PayfastMode): string | null {
+  const candidates =
+    mode === "sandbox"
+      ? ["PAYFAST_PASSPHRASE_SANDBOX", "PAYFAST_PASSPHRASE"]
+      : ["PAYFAST_PASSPHRASE", "PAYFAST_PASSPHRASE_LIVE"];
+  for (const name of candidates) {
+    const v = Deno.env.get(name);
+    if (v && v.length > 0) return v;
+  }
+  return null;
 }
 
-// Resolve PayFast source IPs. In Phase 2B we accept a comma-separated
-// list from `PAYFAST_ALLOWED_IPS` for sandbox testing. Production
-// hardening (DNS lookup of PayFast's published hostnames + caching)
-// is a Phase 2C/2D requirement, documented in the report. We never
-// implicitly trust the request IP without the allowlist being set.
 function resolveAllowedIps(): string[] {
   const raw = Deno.env.get("PAYFAST_ALLOWED_IPS") ?? "";
   return raw
@@ -59,13 +60,16 @@ function resolveAllowedIps(): string[] {
     .filter((s) => s.length > 0);
 }
 
-// Sandbox bypass: explicit, named, and only honoured when both the mode
-// is sandbox AND the env flag is set. Production deploys MUST NOT set
-// this. The report documents the requirement.
-function resolveSandboxBypass(mode: PayfastMode): boolean {
+// Sandbox bypass: honoured only when mode === "sandbox". Either the
+// explicit env flag is set, OR no allowlist has been configured yet
+// (Phase 2F sandbox foundation — production hardening adds the
+// resolved IP set in a later phase). Live mode NEVER bypasses.
+function resolveSandboxBypass(mode: PayfastMode, allowedIps: string[]): boolean {
   if (mode !== "sandbox") return false;
-  return (Deno.env.get("PAYFAST_SANDBOX_SKIP_IP_CHECK") ?? "").toLowerCase() === "true";
+  if ((Deno.env.get("PAYFAST_SANDBOX_SKIP_IP_CHECK") ?? "").toLowerCase() === "true") return true;
+  return allowedIps.length === 0;
 }
+
 
 function clientIp(req: Request): string | null {
   // Supabase edge gateway forwards origin IP via x-forwarded-for.
