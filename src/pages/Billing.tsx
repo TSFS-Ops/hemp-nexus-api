@@ -22,6 +22,7 @@ import { TokenBalanceDisplay } from "@/components/TokenBalanceDisplay";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
 import { PurchasesList } from "@/components/desk/billing/PurchasesList";
+import { PayfastSandboxTestButton } from "@/components/desk/billing/PayfastSandboxTestButton";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { cn } from "@/lib/utils";
 import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
