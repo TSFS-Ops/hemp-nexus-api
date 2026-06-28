@@ -113,9 +113,27 @@ Deno.serve(async (req) => {
   // are logged — only the decision, reason, mapped status, and the
   // provider reference (which is our own m_payment_id token).
   try {
+    // Body diagnostics: lengths + field key names only. No values, no
+    // signature, no PII. Helps identify cases where PayFast sends an
+    // empty / non-form-encoded body (which surfaces as missing_signature).
+    let fieldKeys: string[] = [];
+    let hasSignatureField = false;
+    try {
+      const params = new URLSearchParams(rawBody);
+      for (const [k] of params) {
+        if (!fieldKeys.includes(k)) fieldKeys.push(k);
+        if (k === "signature") hasSignatureField = true;
+      }
+    } catch { /* ignore parse error in diagnostics */ }
     console.log(JSON.stringify({
       tag: "payfast-itn",
       mode,
+      method: req.method,
+      contentType: req.headers.get("content-type") ?? null,
+      rawBodyLength: rawBody.length,
+      fieldKeys,
+      hasSignatureField,
+      remoteIp: clientIp(req),
       decision: outcome.decision,
       reason: outcome.reason ?? null,
       mappedStatus: outcome.mappedStatus ?? null,

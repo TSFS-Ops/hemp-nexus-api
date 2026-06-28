@@ -1,6 +1,6 @@
 # PayFast Phase 2F — Controlled Sandbox Round-Trip Report
 
-Status: **STILL BLOCKED — THIRD RESEND PRODUCED NO INFORMATIVE EVIDENCE; OBSERVABILITY + AUDIT-INSERT FIX DEPLOYED, AWAITING FOURTH RESEND**
+Status: **STILL BLOCKED — FOURTH RESEND REJECTED AT `missing_signature`; BODY DIAGNOSTICS DEPLOYED, AWAITING FIFTH RESEND**
 
 PayFast remains sandbox/admin-only. No live credentials added, no
 customer-facing surface exposed, no Paystack change, no FX revival.
@@ -125,19 +125,77 @@ Redeployed.
 - ✅ Paystack runtime unchanged — `token-purchase` still settles in USD using `PAYSTACK_SECRET_KEY`, `paystack-webhook` still uses HMAC SHA-512.
 - ✅ No FX code revived — neither helper imports `_shared/fx.ts`.
 
-## 10. Phase 2F verdict
+## 10. Fourth resend (2026-06-28 23:20:22 UTC = 01:20:22 SAST)
+
+The fourth resend reached the deployed function. The new structured
+log line was emitted exactly once:
+
+```json
+{"tag":"payfast-itn","mode":"sandbox","decision":"rejected",
+ "reason":"missing_signature","mappedStatus":null,
+ "providerReference":null,"creditReference":null,"detail":null}
+```
+
+Verified Izenzo-side state:
+
+| Check | Result |
+| --- | --- |
+| ITN reached `payfast-itn` | ✅ yes (200 returned, structured log emitted) |
+| Signature verification passed | ❌ no — function reports `missing_signature` |
+| PayFast post-back returned VALID | ⏭ never reached (gated on signature) |
+| amount / currency / package / org / user matched | ⏭ never reached |
+| Wallet credited exactly once | ❌ no — 0 PayFast credits for any `izpf_*` |
+| `token_ledger` PayFast credit row | ❌ no — 0 rows |
+| `audit_logs` rejection row written | ❌ still 0 new payfast rejection rows |
+| `admin_risk_items` rejection row written | ❌ still 0 |
+| `token_purchases` row status | still `pending` (`5f40aede-…`) |
+| Replay protection | intact (no duplicate credit possible because no credit happened) |
+
+`providerReference: null` is the smoking gun: the function did not
+even recover an `m_payment_id`, which means the parsed form body had
+no usable fields at all — not just a missing `signature`. The most
+likely explanations are (a) PayFast's "Resend" delivers an empty /
+non-form-encoded body to the notify URL, or (b) a proxy is stripping
+the body before our handler sees it. The existing structured log
+cannot distinguish these.
+
+## 11. Fourth fix — body diagnostics (this turn)
+
+`supabase/functions/payfast-itn/index.ts` now also logs, per ITN:
+
+- `method`, `contentType`
+- `rawBodyLength`
+- `fieldKeys` (names only, never values)
+- `hasSignatureField` (boolean)
+- `remoteIp`
+
+No secret value, no field value, no signature is logged. Redeployed
+via `supabase--deploy_edge_functions`.
+
+The next resend will tell us unambiguously whether PayFast is
+delivering a populated form body or an empty/garbled one, and we can
+either fix the parser or report the upstream PayFast bug.
+
+## 12. Confirmations (still true)
+
+- ✅ PayFast remains sandbox-only (`liveEnabled: false`, `select.ts` keeps `payfast: undefined`).
+- ✅ No live PayFast credentials added.
+- ✅ No customer-facing PayFast checkout — admin-gated sandbox card only.
+- ✅ Paystack runtime unchanged.
+- ✅ No FX code revived.
+
+## 13. Phase 2F verdict
 
 **Phase 2F is STILL BLOCKED. Not PASS.**
 
-The PayFast sandbox payment + ITN delivery half is green. The Izenzo
-crediting half has never been observed: zero ledger rows, zero credit
-to the wallet, `token_purchases` still `pending`. With the new
-observability deployed, the next resend will pinpoint the exact gate
-that fails (signature, validate post-back, amount/currency/package
-match, or RPC error), at which point we can either confirm the
-specific cause or, if it reveals the rejection has gone away,
-re-verify §7 and flip to PASS.
+Exact remaining reason: `payfast-itn` is rejecting with
+`missing_signature` and `providerReference: null`, indicating the
+parsed body contains no recognised PayFast fields. Body-level
+diagnostics have been deployed to identify whether the resend
+delivers an empty/non-form-encoded body or a populated one missing
+only the signature field. Awaiting one more resend.
 
 Current status:
-`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_OBSERVABILITY_ADDED_AWAITING_FOURTH_RESEND`
+`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_MISSING_SIGNATURE_BODY_DIAGNOSTICS_DEPLOYED_AWAITING_FIFTH_RESEND`
+
 
