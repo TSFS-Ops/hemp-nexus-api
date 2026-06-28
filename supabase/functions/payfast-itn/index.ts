@@ -108,6 +108,23 @@ Deno.serve(async (req) => {
   );
 
 
+  // Phase 2F observability: log the decision + reason so operators can
+  // diagnose without depending on audit_logs writes. No secret values
+  // are logged — only the decision, reason, mapped status, and the
+  // provider reference (which is our own m_payment_id token).
+  try {
+    console.log(JSON.stringify({
+      tag: "payfast-itn",
+      mode,
+      decision: outcome.decision,
+      reason: outcome.reason ?? null,
+      mappedStatus: outcome.mappedStatus ?? null,
+      providerReference: outcome.providerReference,
+      creditReference: outcome.creditReference,
+      detail: outcome.detail ?? null,
+    }));
+  } catch { /* never block the ITN response on logging */ }
+
   // Always 200 to PayFast (except hard method-not-allowed). The body
   // is for our own observability — PayFast itself only inspects the
   // status code.
