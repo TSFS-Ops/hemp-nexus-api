@@ -1,113 +1,100 @@
 # PayFast Phase 2F — Controlled Sandbox Round-Trip Report
 
-Status: **STOPPED SAFELY — AWAITING HUMAN-DRIVEN SANDBOX EXECUTION**
+Status: **BLOCKED — PAYFAST SANDBOX ITN NEVER REACHED IZENZO**
 
 PayFast remains sandbox/admin-only. No live credentials added, no
 customer-facing surface exposed, no Paystack change, no FX revival.
 
 ---
 
-## 1. Pre-flight (verified)
+## 1. Human-side result (PayFast sandbox dashboard)
 
-Confirmed by `secrets--fetch_secrets` and source-text scan:
+Operator: `joshtkruger@gmail.com` (Izenzo) using sandbox merchant
+identity `contact@vericro.com` (PayFast).
 
-| Item | Status | Evidence |
-| --- | --- | --- |
-| `PAYFAST_MODE=sandbox` | ✅ stored | secret present; `payfast-itn/index.ts` only opts in to live when `raw === "live"` |
-| Sandbox merchant credentials available by name | ✅ | `PAYFAST_MERCHANT_ID_SANDBOX`, `PAYFAST_MERCHANT_KEY_SANDBOX`, `PAYFAST_PASSPHRASE_SANDBOX` listed (values not echoed) |
-| `PAYFAST_SANDBOX_CHECKOUT_ENABLED=true` | ✅ stored | secret present |
-| PayFast live disabled | ✅ | `PAYFAST_PROVIDER.liveEnabled: false` in `_shared/payments/payfast.ts` |
-| `select.ts` does not expose PayFast as live selectable | ✅ | `payfast: undefined` in registry |
-| Customers cannot initiate PayFast checkout | ✅ | helper rejects unless `gateEnabled && isPlatformAdmin && mode === "sandbox"`; no `src/components` or `src/pages` button (Phase 2C/2D allow-list guard green) |
-| Paystack unchanged | ✅ | `token-purchase` still USD-native (`currency: "USD"`, `fx_basis: "native_usd"`), still reads `PAYSTACK_SECRET_KEY`; `paystack-webhook` still HMAC SHA-512 |
-| No FX revival | ✅ | `scripts/check-fx-no-importers.mjs` → OK |
-
-## 2. Sandbox URLs (configured in our env; PayFast dashboard config unverifiable from here)
-
-Stored:
-
-- Notify / ITN: `https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/payfast-itn`
-- Return: `https://trade.izenzo.co.za/billing?payfast=return`
-- Cancel: `https://trade.izenzo.co.za/billing?payfast=cancel`
-
-These URLs are present as `PAYFAST_NOTIFY_URL`, `PAYFAST_RETURN_URL`,
-`PAYFAST_CANCEL_URL` secrets and will be used by the sandbox checkout
-helper. **Confirming they are also pasted into the PayFast sandbox
-merchant dashboard requires manual review by an operator with PayFast
-sandbox dashboard access — not performable from this environment.**
-
-## 3–6. Controlled checkout, ITN completion, visibility & negative checks
-
-**Not executed. Stopped safely.**
-
-Reason: A genuine Phase 2F round-trip requires:
-
-1. A human signed in as `james@izenzo.co.za` clicking through the
-   admin-gated sandbox checkout in the live preview.
-2. Completing the hosted PayFast sandbox payment on PayFast's own
-   sandbox UI with sandbox card details.
-3. PayFast's sandbox servers POSTing an ITN back to
-   `https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/payfast-itn`.
-
-None of those three are something the build agent can perform — there
-is no headless way to drive the PayFast sandbox payment page from here,
-and no way to forge an authentic signed ITN that would also pass the
-PayFast validate post-back. Attempting to fabricate ITN POSTs would
-either fail validation (no proof) or, worse, bypass the post-back check
-and produce a false positive that does not reflect real provider
-behaviour.
-
-What is ready for the operator to execute:
-
-- Admin-gated edge function `payfast-checkout-sandbox` is deployed.
-- ITN endpoint `payfast-itn` is deployed and defaults to sandbox.
-- Secrets, URLs, and admin email are stored.
-- Atomic credit path (`atomic_paid_credit_purchase`) and idempotency
-  guards exist on the success path.
-
-## 7. Tests run
-
-| Suite | Result |
+| Field | Value |
 | --- | --- |
-| `payfast-phase-2b-no-regression` (16 tests) | ✅ passed |
-| `payfast-phase-2c-no-regression` (15 tests) | ✅ passed |
-| `payfast-phase-2d-no-regression` (12 tests) | ✅ passed |
-| `scripts/check-fx-no-importers.mjs` (FX no-import guard) | ✅ OK |
-| Customer-facing PayFast no-surface guard | ✅ green (enforced inside 2C/2D suites via `rg` allow-list) |
+| Date | 2026-06-29 |
+| Item | Izenzo Credits — 1 Credit (Sandbox) |
+| Gross | R20.00 |
+| PayFast m_payment_id | `izpf_mqycj2cj_3bnxo2pa` |
+| PayFast sandbox dashboard | shows payment as completed |
 
-A full payments / billing / refund / reconciliation re-run was not
-triggered in this turn because no source code was modified — the green
-state from prior phases is unchanged.
+## 2. Izenzo-side verification (queried directly)
 
-## 8. Defects
+| Check | Result | Evidence |
+| --- | --- | --- |
+| ITN received by `payfast-itn`? | ❌ **No** | No edge-function logs for `payfast-itn` in the 24h window; the function `list-org-purchases` and `payfast-checkout-sandbox` log normally in the same window, so this is specific to PayFast not POSTing. |
+| Signature verification pass? | n/a | No ITN to verify. |
+| PayFast validate-postback VALID? | n/a | Never invoked. |
+| Amount/currency/package/org/user match? | n/a | Never invoked. |
+| `atomic_paid_credit_purchase` called? | ❌ No | 0 ledger rows for `request_id = 'izpf_mqycj2cj_3bnxo2pa'`. |
+| Wallet credited exactly once? | ❌ No | `token_balances` for org `1be6cffa-d1d2-425e-b190-5c42ef14a8f0` still `268`, `updated_at = 2026-04-30` — unchanged. |
+| `token_ledger` credit row created with PayFast reference? | ❌ No | 0 rows. |
+| `audit_logs` row with provider `payfast` for the credit? | ❌ No | Only the `credits.purchase_initiated` row from checkout-init exists. |
+| `token_purchases` row moved from pending → completed? | ❌ No | Row `5f40aede-…` still `status = pending`, reference `payfast_sandbox::izpf_mqycj2cj_3bnxo2pa`. |
+| Duplicate/replay protection intact? | ✅ (unexercised) | Idempotency guard code unchanged; nothing has been credited so there is nothing to double-credit. |
+| Purchase history renders as PayFast (not Paystack)? | ✅ | `PurchasesList.tsx` provider fallback maps `payfast_sandbox::*` references to "PayFast (sandbox)" regardless of credit state. |
 
-- None found in the source/guard layer.
-- Round-trip defects, if any, can only surface once a human completes
-  steps 3–6.
+## 3. Diagnosis
 
-## 9. Confirmations
+PayFast's sandbox accepted the card payment and recorded it in the
+merchant dashboard, but PayFast never POSTed an ITN to
+`https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/payfast-itn`.
 
-- PayFast is still sandbox-only ✅
-- No live PayFast credentials were added ✅
-- No customer-facing PayFast button exists ✅
-- Paystack remains unchanged ✅
-- No FX code was revived ✅
+The form we send already includes `notify_url`, but PayFast sandbox
+typically only emits ITNs when the **Notify URL is also saved in the
+sandbox merchant dashboard** (Settings → Integration). With no Notify
+URL stored on the PayFast side, the per-transaction `notify_url` field
+is commonly ignored. This is a PayFast configuration gap on the
+sandbox merchant account, not an Izenzo code defect.
 
-## 10. Hand-off — what the operator needs to do
+## 4. Classification
 
-To complete Phase 2F:
+**BLOCKER for Phase 2F.** Round-trip cannot be declared observed until
+an ITN actually lands and credits the wallet exactly once.
 
-1. Sign in to the preview as `james@izenzo.co.za`.
-2. Trigger the admin-gated PayFast sandbox checkout (calls
-   `payfast-checkout-sandbox` with `Idempotency-Key`).
-3. Complete the sandbox payment on the returned PayFast URL using
-   PayFast's published sandbox card.
-4. Watch `payfast-itn` edge logs for the inbound ITN, then re-run this
-   report's checks 4/5/6 against `token_purchases`, `token_ledger`,
-   `audit_logs`, and the admin purchase history UI.
+- Not a `must-fix` against code — no code change is required.
+- Not `can-defer` — Phase 2F's whole purpose is the round-trip.
 
-Once that round-trip is observed end-to-end, this report can be
-re-classified to `PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_OBSERVED`.
+## 5. Operator unblock steps
+
+1. Sign in to the **PayFast sandbox merchant dashboard** as
+   `contact@vericro.com`.
+2. Settings → Integration → set **Notify URL** to:
+   `https://ugrfyhwlonlmlcmcpcdm.supabase.co/functions/v1/payfast-itn`
+3. Save.
+4. Either (a) open the existing `izpf_mqycj2cj_3bnxo2pa` transaction
+   and click **"Resend ITN"**, or (b) run a fresh sandbox payment via
+   the admin-only "Start PayFast Sandbox Test" button.
+5. Reply: **"ITN resent"** (or "fresh sandbox payment completed").
+6. We will then re-run the §2 checks and re-classify this report.
+
+## 6. Confirmations (unchanged)
+
+- ✅ PayFast remains sandbox-only (`liveEnabled: false`, `select.ts`
+  keeps `payfast: undefined`).
+- ✅ No live PayFast credentials added.
+- ✅ No customer-facing PayFast button — admin-gated card only.
+- ✅ Paystack runtime unchanged.
+- ✅ No FX code revived.
+
+## 7. Phase 2G — Live Readiness (NOT started)
+
+Recommendation: **do not begin Phase 2G** until §2 is fully green. Once
+ITN, ledger, balance, audit, and `token_purchases.status = completed`
+are all observed for a sandbox payment, Phase 2G can begin with:
+
+1. Collect live PayFast `merchant_id`, `merchant_key`, `passphrase` via
+   the secure secret form only (never pasted in chat).
+2. Configure live PayFast dashboard URLs (notify/return/cancel) — same
+   three URLs, against the live merchant account.
+3. Keep the live PayFast button hidden from normal customers (extend
+   the existing admin-only gate; do not surface in `select.ts`).
+4. Run **one** very small admin-only live payment as a smoke test.
+5. Confirm the live ITN credits the wallet exactly once.
+6. Remove/hide the temporary admin-only live test button.
+7. Only then decide when to expose PayFast to customers.
 
 Current status:
-`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_AWAITING_HUMAN_EXECUTION`
+`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_ON_PAYFAST_NOTIFY_URL`
