@@ -89,3 +89,85 @@ if the run still fails.
 
 Tracker is **not advanced** until runtime confirmation from the next scheduled
 tick.
+
+---
+
+## Follow-up drift: `matches.updated_at` (distinct from `pois.match_id`)
+
+### Root cause
+After the prior `pois.match_id` repair, the next scheduled tick of jobid 31
+(`burn-poi-reconciliation-daily`) failed with:
+
+```
+MINTED_MATCH_FETCH_FAILED: column matches.updated_at does not exist
+```
+
+This is a **separate** schema drift from the previous `pois.match_id` issue.
+`public.matches` has no canonical row-level `updated_at` column. The 41
+columns on the live table include only the following timestamps:
+
+- `created_at`
+- `settled_at`
+- `counterparty_sighted_at`
+- `buyer_committed_at`
+- `seller_committed_at`
+- `ai_last_run_at`
+
+State transitions are captured via per-event timestamp columns and the
+append-only `match_events` table, not a single mutable timestamp.
+
+### Chosen replacement
+Section 3 STATE_WITHOUT_LEDGER now windows on `created_at`.
+
+Why not per-state timestamps:
+- They are sparse — null on rows that have not reached that state.
+- A `coalesce(...)` across them would silently change reconciliation semantics.
+- The detector only needs a lookback horizon (LOOKBACK_DAYS), and
+  `created_at` is the only row-level timestamp present on every match.
+- The downstream `ledger_events.poi.minted` join is unchanged, so coverage
+  semantics are preserved.
+
+### Scope of repair
+Source-only patch to `supabase/functions/burn-poi-reconciliation/index.ts`,
+Section 3 only. **No** changes to:
+
+- cron jobid 31 (schedule, command, payload, auth)
+- database schema, RLS, grants, indexes, config
+- business-state tables (function remains read-only over `pois`,
+  `poi_engagements`, `matches`, `wads`, `ledger_events`, `token_ledger`,
+  balances, payments, refunds, registry, notifications, `email_send_log`,
+  `acceptance_receipts`)
+- function name or `verify_jwt` posture
+- the 3 existing open risk rows
+- C6.5 / C6.6 / C6.7 (cron observability tracks remain untouched)
+
+### Volume context
+Past 7 days: 0 POI mints, 0 `declare_intent` burns. No live money risk was
+masked by the failing cron. This is an observability/reporting failure only.
+
+### Tests / guards added
+`src/tests/burn-poi-reconciliation-schema-drift-guard.test.ts` extended with
+a `matches.updated_at schema-drift guards` block pinning:
+
+- no `matches`-scoped `.select/.gte/.lte/.order/.filter` references `updated_at`
+- Section 3 windows on `.gte("created_at", sinceIso)`
+- Section 3 orders by `.order("created_at", { ascending: false })`
+- Section 3 row-type annotation no longer claims `updated_at`
+- Section 3 payload no longer includes `updated_at: row.updated_at`
+- header docstring documents that matches has no canonical `updated_at`
+
+Existing mutation-safety and cron-posture guards re-asserted.
+
+### Cron / deploy
+- Cron jobid 31 left **active and unchanged**.
+- Function will redeploy under the same name (`burn-poi-reconciliation`).
+- `verify_jwt` posture unchanged.
+- No manual invocation. No reconciliation run triggered by this change.
+
+### Status
+- Before next scheduled tick: `BURN_POI_RECONCILIATION_SCHEMA_DRIFT_MATCHES_UPDATED_AT_SOURCE_REPAIR_DEPLOYED_PENDING_TICK`
+- After clean tick at 03:30 UTC:  `BURN_POI_RECONCILIATION_SCHEMA_DRIFT_MATCHES_UPDATED_AT_REPAIR_RUNTIME_CONFIRMED`
+
+Tracker is **not advanced** until the next scheduled tick succeeds and the
+existing open risk rows are either cleared by the Section 5b sweep or
+re-asserted with fresh detail.
