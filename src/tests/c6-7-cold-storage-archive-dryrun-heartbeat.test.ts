@@ -15,7 +15,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const MIGRATION = resolve(
-  "supabase/migrations/20260628140121_a66fca49-5719-4d25-a798-178343cb7d46.sql",
+  "supabase/migrations/20260628140147_616509b5-660c-4eef-a107-349df70ad4b1.sql",
 );
 const sql = readFileSync(MIGRATION, "utf8");
 const stripped = sql.split("\n").map((l) => l.replace(/--.*$/, "")).join("\n");
