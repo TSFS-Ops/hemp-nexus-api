@@ -720,6 +720,10 @@ function BillingContent() {
         <p className="text-center text-xs text-muted-foreground">
           Payments processed securely by Paystack. All prices shown and charged in USD.
         </p>
+
+        {/* Admin-only Phase 2F PayFast sandbox round-trip button.
+            Renders to null for non-admins; never a customer surface. */}
+        <PayfastSandboxTestButton />
       </div>
     </>
   );
