@@ -1,6 +1,6 @@
 # PayFast Phase 2F — Controlled Sandbox Round-Trip Report
 
-Status: **STILL BLOCKED — AWAITING THIRD ITN RESEND AFTER SECRET-NAME + SANDBOX-IP FIX**
+Status: **STILL BLOCKED — THIRD RESEND PRODUCED NO INFORMATIVE EVIDENCE; OBSERVABILITY + AUDIT-INSERT FIX DEPLOYED, AWAITING FOURTH RESEND**
 
 PayFast remains sandbox/admin-only. No live credentials added, no
 customer-facing surface exposed, no Paystack change, no FX revival.
