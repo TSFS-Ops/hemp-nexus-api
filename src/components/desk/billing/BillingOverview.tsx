@@ -22,6 +22,7 @@ import { BillingUnavailableNotice } from "./BillingUnavailableNotice";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { PurchasesList } from "./PurchasesList";
+import { PayfastSandboxTestButton } from "./PayfastSandboxTestButton";
 
 interface LedgerEntry {
   id: string;
