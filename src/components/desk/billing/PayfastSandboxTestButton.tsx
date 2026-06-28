@@ -55,30 +55,42 @@ export function PayfastSandboxTestButton() {
       if (error) throw error;
       const payload = data as {
         ok?: boolean;
+        reason?: string;
+        detail?: string;
         error?: string;
-        actionUrl?: string;
-        fields?: Record<string, string>;
+        checkoutUrl?: string;
+        formFields?: Array<{ name: string; value: string }>;
       };
-      if (!payload?.ok || !payload.actionUrl || !payload.fields) {
-        toast.error(`Sandbox checkout rejected: ${payload?.error ?? "unknown"}`);
+      if (!payload?.ok || !payload.checkoutUrl || !Array.isArray(payload.formFields)) {
+        const msg =
+          payload?.detail ??
+          payload?.reason ??
+          payload?.error ??
+          "unknown";
+        toast.error(`Sandbox checkout rejected: ${msg}`);
         return;
       }
-      // Build and auto-submit a hidden form to PayFast's sandbox URL.
+      // PayFast's hosted process URL accepts the signed fields as query
+      // params (the checkoutUrl we got back already encodes them), so we
+      // can just open it in a new tab. We still build a POST form as a
+      // belt-and-braces fallback for environments that prefer POST.
+      const url = new URL(payload.checkoutUrl);
       const form = document.createElement("form");
       form.method = "POST";
-      form.action = payload.actionUrl;
+      form.action = `${url.origin}${url.pathname}`;
       form.target = "_blank";
-      for (const [k, v] of Object.entries(payload.fields)) {
+      for (const { name, value } of payload.formFields) {
         const input = document.createElement("input");
         input.type = "hidden";
-        input.name = k;
-        input.value = String(v);
+        input.name = name;
+        input.value = String(value);
         form.appendChild(input);
       }
       document.body.appendChild(form);
       form.submit();
       form.remove();
       toast.success("PayFast sandbox page opened in a new tab");
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sandbox checkout failed");
     } finally {
