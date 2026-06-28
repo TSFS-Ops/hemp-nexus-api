@@ -373,17 +373,14 @@ export async function buildPayfastSandboxCheckout(
     });
   } catch { /* never block init on audit failure */ }
 
-  // 11. Build the safe response. We strip merchant_key from the
-  // returned form fields so it never reaches the browser/test harness.
-  // The signature is computed FROM the full set including merchant_key;
-  // we just don't surface it back. The sandbox checkoutUrl still
-  // contains merchant_key as a query param because that is exactly
-  // how PayFast's hosted process URL expects to receive it — the
-  // sandbox merchant_key is a public, documented test value. We never
-  // surface the passphrase anywhere.
-  const safeFields = signed.fields
-    .filter(([k]) => k !== "merchant_key")
-    .map(([name, value]) => ({ name, value }));
+  // 11. Build the safe response. The sandbox merchant_key is a public,
+  // documented PayFast test value and PayFast REQUIRES it as a form
+  // field on the POST to /eng/process (otherwise it rejects with
+  // "merchant_key: The merchant key field is required."). We therefore
+  // return it in the form fields for sandbox mode. The passphrase is
+  // never surfaced. Live mode is gated off entirely in Phase 2C/2F.
+  const safeFields = signed.fields.map(([name, value]) => ({ name, value }));
+
 
   return {
     ok: true,
