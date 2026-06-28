@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
   const { data: profile } = await service
     .from("profiles")
     .select("org_id")
-    .eq("user_id", userId)
+    .eq("id", userId)
     .maybeSingle();
   const orgId = (profile?.org_id as string | undefined) ?? null;
 
