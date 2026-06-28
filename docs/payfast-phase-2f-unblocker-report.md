@@ -49,68 +49,42 @@ These guards prove, on every run:
 - ✅ Normal customers cannot trigger PayFast — server-side gate requires `gateEnabled && isPlatformAdmin && mode === "sandbox"`, regardless of any client tampering.
 - ✅ Return/cancel pages do **not** credit; only verified ITN credits via `payfast-itn` and `atomic_paid_credit_purchase`.
 
-## D. Operator hand-off (for contact@vericro.com)
+## D. Operator hand-off
 
-**Status check (run this turn):** `contact@vericro.com` does **not yet
-exist** in `auth.users` and therefore holds no roles. Until an auth
-user exists for that email, the sandbox button cannot render for them
-and the edge-function role gate will reject the call as
-`unauthenticated`. The earlier draft of this report named
-james@izenzo.co.za only as a fallback; per current instruction we are
-NOT using james for this test.
+**Two distinct accounts — do not confuse them:**
 
-### Role required
+| Account | Where it logs in | Purpose |
+| --- | --- | --- |
+| `joshtkruger@gmail.com` | Izenzo (`https://trade.izenzo.co.za`) | The human operator who clicks the sandbox test button. Already exists in `auth.users`, already holds `platform_admin` (plus `org_admin`, `org_member`). No signup or role grant needed. |
+| `contact@vericro.com` | PayFast sandbox merchant dashboard (separate, not Izenzo) | The PayFast merchant identity. **Never used to sign in to Izenzo.** Already represented by the stored sandbox merchant credentials. |
 
-The existing `payfast-checkout-sandbox` edge function gates on:
+james@izenzo.co.za is **not** used for this test.
 
-```ts
-has_role(user_id, 'platform_admin')
-```
+### Operator steps (run as joshtkruger@gmail.com on Izenzo)
 
-That literal is the *only* role the gate accepts. There is no narrower
-"sandbox-tester" role today, so for this single controlled sandbox
-round-trip `contact@vericro.com` needs `platform_admin`. Adding a
-narrower role would require changing the gate in
-`payfast-checkout-sandbox/index.ts` and re-running the guard suite —
-out of scope for this unblocker.
-
-### Two-step hand-off
-
-**Step 1 — operator creates the auth user (one-time, ~1 minute):**
-
-1. Open `https://trade.izenzo.co.za/auth` in a private browser window.
-2. Choose **Sign up**.
-3. Enter email **`contact@vericro.com`** and a strong password.
-4. Confirm the verification email if the app sends one.
-5. Reply back with exactly: **"contact@vericro.com signup complete"**.
-
-**Step 2 — platform grants the minimum role (done by us, once Step 1
-confirms):** a single-row insert into `public.user_roles`
-(`user_id = <contact@vericro.com>`, `role = 'platform_admin'`) via the
-migration tool. No password or PII is touched. We will confirm in
-chat when the role is live.
-
-**Step 3 — operator runs the sandbox payment:**
-
-1. Sign in to `https://trade.izenzo.co.za` as **contact@vericro.com**.
-2. Click **Billing** in the left menu.
-3. Scroll to the bottom. You will see an amber-bordered card titled
-   **"PayFast Sandbox Test (Admin Only)"**. If you do not see it,
-   stop and tell us — the role grant has not propagated yet.
+1. Open `https://trade.izenzo.co.za` and sign in as
+   **`joshtkruger@gmail.com`**.
+2. In the left menu, click **Billing**.
+3. Scroll to the bottom of the Billing page. You will see an
+   amber-bordered card titled **"PayFast Sandbox Test (Admin Only)"**.
+   (If you do not see it, you are not signed in as that account —
+   stop and tell us.)
 4. Click **"Start PayFast Sandbox Test"**. A new browser tab opens on
    the PayFast sandbox payment page
    (`https://sandbox.payfast.co.za/eng/process`).
-5. On the PayFast sandbox page, use PayFast's published sandbox card
-   details (PayFast shows them on screen). Click **"Complete Payment"**
-   (or the equivalent green confirm button PayFast shows).
+5. On the PayFast sandbox page, use the sandbox card details PayFast
+   shows on screen, then click **"Complete Payment"** (or the green
+   confirm button PayFast shows). You do **not** log in to PayFast —
+   the sandbox merchant identity (`contact@vericro.com`) is already
+   embedded in the form sent from Izenzo.
 6. After payment, PayFast will redirect you back to
    `https://trade.izenzo.co.za/billing?payfast=return`. You should
    land on the Billing page with `?payfast=return` in the URL.
 7. Reply back with exactly: **"Sandbox payment completed at <time>,
-   reached the return page."** Do not paste any card details or any
-   URL fragments after a `#`.
+   reached the return page."** Do not paste card details or any URL
+   fragment after a `#`.
 
-After Step 3 reply we will:
+After your reply we will:
 
 - check the `payfast-itn` edge function logs for the inbound ITN POST;
 - check `token_purchases` for the new sandbox row;
@@ -122,9 +96,7 @@ If the PayFast sandbox page does not open, or you land on the cancel
 page (`?payfast=cancel`), tell us — do not retry repeatedly, and do
 not enter real card details anywhere.
 
-james@izenzo.co.za is intentionally **not** used for this test.
-
 ---
 
 Current status:
-`PAYFAST_PHASE_2F_AWAITING_CONTACT_AT_VERICRO_SIGNUP_BEFORE_ROLE_GRANT`
+`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_READY_FOR_JOSHTKRUGER_ON_IZENZO`
