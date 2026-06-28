@@ -93,18 +93,20 @@ Deno.serve(async (req) => {
   });
 
   const mode = resolveMode();
+  const allowedIps = resolveAllowedIps();
   const outcome = await processPayfastItn(
     { method: req.method, rawBody },
     {
       supabase,
       mode,
-      passphrase: resolvePassphrase(),
-      allowedIps: resolveAllowedIps(),
+      passphrase: resolvePassphrase(mode),
+      allowedIps,
       remoteIp: clientIp(req),
-      sandboxBypassIp: resolveSandboxBypass(mode),
+      sandboxBypassIp: resolveSandboxBypass(mode, allowedIps),
       validatePostback: defaultPayfastValidatePostback,
     },
   );
+
 
   // Always 200 to PayFast (except hard method-not-allowed). The body
   // is for our own observability — PayFast itself only inspects the
