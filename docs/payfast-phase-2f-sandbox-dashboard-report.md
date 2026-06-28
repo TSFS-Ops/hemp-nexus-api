@@ -77,11 +77,67 @@ body).
 - ✅ Paystack runtime unchanged.
 - ✅ No FX code revived.
 
-## 7. Next step
+## 7. Third resend — result
 
-Operator to resend the same ITN from the PayFast sandbox dashboard
-(three-dot Actions → Resend). After the resend we will re-run §4 and
-flip the status accordingly.
+Operator resent the ITN a third time. PayFast UI reported success
+(it inspects only the HTTP status, and the endpoint always answers 200).
+Izenzo-side state on re-check:
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| ITN reached `payfast-itn`? | ✅ | Edge function booted at 23:13:07 UTC matching the resend window |
+| Signature verified? | ❓ Unknown | No `console.log` of the decision existed; function silently rejected |
+| Validate post-back VALID? | ❓ Unknown | Same — no observability |
+| Amount/currency/package/org/user match? | ❌ Not reached | Earlier gate failed |
+| `atomic_paid_credit_purchase` called? | ❌ | 0 ledger rows for any `izpf_*` `request_id` |
+| Wallet credited exactly once? | ❌ | `token_balances` for org `1be6cffa-…` still `268`, `updated_at = 2026-04-30` |
+| `token_ledger` credit row? | ❌ | 0 rows |
+| `audit_logs` rejection row? | ❌ | Audit insert silently failed — `entity_id` is `uuid` in schema but the code was passing the text token `izpf_…`; the `try/catch` swallowed the type error. Only the original `credits.purchase_initiated` row remains for each attempt. |
+| `token_purchases` row | ❌ Still `pending` | Row `5f40aede-…`, provider=`payfast`, provider_reference=`izpf_mqycj2cj_3bnxo2pa`, amount_usd=`0.00`, currency=`ZAR` |
+| Replay protection intact? | ✅ (unexercised) | Code path unchanged |
+| Purchase history renders as PayFast? | ✅ | `PurchasesList.tsx` provider fallback unchanged |
+
+## 8. Third fix — observability + audit-insert correctness
+
+`supabase/functions/_shared/payments/payfast.ts`:
+
+- Rejection path now writes `entity_id: null` and keeps the
+  `provider_reference` token in `metadata` only. This stops the
+  silent uuid-type insert failure so future rejections become visible
+  in `audit_logs` and `admin_risk_items`.
+
+`supabase/functions/payfast-itn/index.ts`:
+
+- Wrapper now `console.log`s a single structured JSON line per ITN
+  (`tag`, `mode`, `decision`, `reason`, `mappedStatus`,
+  `providerReference`, `creditReference`, `detail`). No secret value
+  is logged. This means the next resend will produce an
+  unambiguous diagnostic line in the edge function logs even if
+  the audit write is somehow blocked.
+
+Redeployed.
+
+## 9. Confirmations (still true)
+
+- ✅ PayFast remains sandbox-only (`liveEnabled: false`, `select.ts` keeps `payfast: undefined`).
+- ✅ No live PayFast credentials added.
+- ✅ No customer-facing PayFast checkout — admin-gated sandbox card only.
+- ✅ Paystack runtime unchanged — `token-purchase` still settles in USD using `PAYSTACK_SECRET_KEY`, `paystack-webhook` still uses HMAC SHA-512.
+- ✅ No FX code revived — neither helper imports `_shared/fx.ts`.
+
+## 10. Phase 2F verdict
+
+**Phase 2F is STILL BLOCKED. Not PASS.**
+
+The PayFast sandbox payment + ITN delivery half is green. The Izenzo
+crediting half has never been observed: zero ledger rows, zero credit
+to the wallet, `token_purchases` still `pending`. With the new
+observability deployed, the next resend will pinpoint the exact gate
+that fails (signature, validate post-back, amount/currency/package
+match, or RPC error), at which point we can either confirm the
+specific cause or, if it reveals the rejection has gone away,
+re-verify §7 and flip to PASS.
 
 Current status:
-`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_ON_ITN_SECRET_NAME_FIXED_AWAITING_THIRD_RESEND`
+`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_OBSERVABILITY_ADDED_AWAITING_FOURTH_RESEND`
+
