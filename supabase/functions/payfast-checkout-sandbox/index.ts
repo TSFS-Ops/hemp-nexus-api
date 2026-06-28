@@ -93,19 +93,34 @@ Deno.serve(async (req) => {
     .maybeSingle();
   const orgId = (profile?.org_id as string | undefined) ?? null;
 
-  const merchantId = (Deno.env.get("PAYFAST_SANDBOX_MERCHANT_ID") ?? "").trim();
-  const merchantKey = (Deno.env.get("PAYFAST_SANDBOX_MERCHANT_KEY") ?? "").trim();
-  const passphrase = Deno.env.get("PAYFAST_SANDBOX_PASSPHRASE") ?? null;
+  // Secret-name reconciliation (Phase 2F unblocker):
+  // Stored secrets use the `*_SANDBOX` suffix and unsuffixed URL names.
+  // Read those first; keep the legacy `PAYFAST_SANDBOX_*` names as a
+  // fallback so either naming style works without re-storing values.
+  const firstNonEmpty = (...names: string[]): string => {
+    for (const n of names) {
+      const v = (Deno.env.get(n) ?? "").trim();
+      if (v) return v;
+    }
+    return "";
+  };
+  const merchantId = firstNonEmpty("PAYFAST_MERCHANT_ID_SANDBOX", "PAYFAST_SANDBOX_MERCHANT_ID");
+  const merchantKey = firstNonEmpty("PAYFAST_MERCHANT_KEY_SANDBOX", "PAYFAST_SANDBOX_MERCHANT_KEY");
+  const passphraseRaw =
+    Deno.env.get("PAYFAST_PASSPHRASE_SANDBOX") ??
+    Deno.env.get("PAYFAST_SANDBOX_PASSPHRASE") ??
+    null;
+  const passphrase = passphraseRaw && passphraseRaw.trim() ? passphraseRaw : null;
 
   const origin = req.headers.get("origin") ?? "";
   const defaultReturnUrl =
-    (Deno.env.get("PAYFAST_SANDBOX_RETURN_URL") ?? "").trim() ||
+    firstNonEmpty("PAYFAST_RETURN_URL", "PAYFAST_SANDBOX_RETURN_URL") ||
     (origin ? `${origin}/desk/billing?payfast=return` : "https://example.invalid/return");
   const defaultCancelUrl =
-    (Deno.env.get("PAYFAST_SANDBOX_CANCEL_URL") ?? "").trim() ||
+    firstNonEmpty("PAYFAST_CANCEL_URL", "PAYFAST_SANDBOX_CANCEL_URL") ||
     (origin ? `${origin}/desk/billing?payfast=cancel` : "https://example.invalid/cancel");
   const notifyUrl =
-    (Deno.env.get("PAYFAST_SANDBOX_NOTIFY_URL") ?? "").trim() ||
+    firstNonEmpty("PAYFAST_NOTIFY_URL", "PAYFAST_SANDBOX_NOTIFY_URL") ||
     `${projectFunctionsBase()}/payfast-itn`;
 
   const outcome = await buildPayfastSandboxCheckout(
