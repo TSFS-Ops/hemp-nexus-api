@@ -94,7 +94,8 @@ describe("Phase 2B: PayFast is NOT customer-facing live", () => {
       "supabase/functions/transaction-reconciliation/index.ts",
       "src/integrations/supabase/types.ts", // generated
       "src/components/desk/billing/PurchasesList.tsx", // Phase 2A display fallback
-      "src/components/desk/billing/PayfastSandboxTestButton.tsx", // Phase 2F admin-only sandbox test button
+      "src/components/desk/billing/PayfastSandboxTestButton.tsx",
+      "src/components/desk/billing/BillingOverview.tsx", // Phase 2F admin-only sandbox test button
       "src/pages/Billing.tsx", // Phase 2F: imports admin-only sandbox test button
     ];
     const files = matches.split("\n").filter(Boolean);

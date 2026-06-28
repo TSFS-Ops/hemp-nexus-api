@@ -89,6 +89,7 @@ describe("Phase 2D: no customer-facing PayFast surface in src/", () => {
       "src/integrations/supabase/types.ts",
       "src/components/desk/billing/PurchasesList.tsx",
       "src/components/desk/billing/PayfastSandboxTestButton.tsx",
+      "src/components/desk/billing/BillingOverview.tsx",
       "src/pages/Billing.tsx",
     ]);
     const unexpected = matches
