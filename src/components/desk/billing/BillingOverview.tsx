@@ -22,6 +22,7 @@ import { BillingUnavailableNotice } from "./BillingUnavailableNotice";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { PurchasesList } from "./PurchasesList";
+import { PayfastSandboxTestButton } from "./PayfastSandboxTestButton";
 
 interface LedgerEntry {
   id: string;
@@ -482,6 +483,10 @@ export function BillingOverview() {
           </div>
         )}
       </section>
+
+      {/* Admin-only Phase 2F PayFast sandbox round-trip button.
+          Renders to null for non-admins; never a customer surface. */}
+      <PayfastSandboxTestButton />
     </>
   );
 }
