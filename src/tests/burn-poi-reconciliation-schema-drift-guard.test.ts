@@ -166,3 +166,40 @@ describe("burn-poi-reconciliation: regression guards", () => {
     expect(SRC).not.toMatch(/cron\.unschedule/);
   });
 });
+
+describe("burn-poi-reconciliation: matches.updated_at schema-drift guards", () => {
+  it("contains no matches-scoped query referencing updated_at", () => {
+    // Any `.from("matches")` block followed within ~12 lines by
+    // .select/.gte/.lte/.order/.filter referencing updated_at is forbidden.
+    const lines = SRC.split("\n");
+    const offenders: Array<{ line: number; text: string }> = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (!/\.from\("matches"\)/.test(lines[i])) continue;
+      const window = lines.slice(i, i + 12).join(" ");
+      const m = window.match(
+        /\.(select|gte|lte|order|filter)\([^)]*updated_at[^)]*\)/,
+      );
+      if (m) offenders.push({ line: i + 1, text: m[0] });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("Section 3 STATE_WITHOUT_LEDGER windows on created_at, not updated_at", () => {
+    const section3 = SRC.match(
+      /STATE_WITHOUT_LEDGER[\s\S]+?(?=\/\/ ── 4\. MINTED_WITHOUT_ENGAGEMENT)/,
+    )?.[0];
+    expect(section3).toBeTruthy();
+    expect(section3!).toMatch(/\.gte\("created_at",\s*sinceIso\)/);
+    expect(section3!).toMatch(/\.order\("created_at",\s*\{\s*ascending:\s*false\s*\}\)/);
+    expect(section3!).not.toMatch(/\.gte\("updated_at"/);
+    expect(section3!).not.toMatch(/\.order\("updated_at"/);
+    expect(section3!).not.toMatch(/updated_at:\s*row\.updated_at/);
+    // row-type annotation no longer claims updated_at on matches
+    expect(section3!).not.toMatch(/updated_at:\s*string/);
+  });
+
+  it("documents matches has no canonical updated_at column", () => {
+    expect(SRC).toMatch(/matches has NO canonical `updated_at`/i);
+  });
+});
+
