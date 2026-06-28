@@ -412,7 +412,7 @@ Deno.serve(async (req) => {
     );
 
     for (const m of mintedMatches ?? []) {
-      const row = m as { id: string; org_id: string; state: string; status: string; updated_at: string; created_at: string };
+      const row = m as { id: string; org_id: string; state: string; status: string; created_at: string };
       if (ledgerMatchIds.has(row.id)) continue;
       stateWithoutLedger.push({
         match_id: row.id,
@@ -420,9 +420,9 @@ Deno.serve(async (req) => {
         state: row.state,
         status: row.status,
         created_at: row.created_at,
-        updated_at: row.updated_at,
       });
     }
+
   }
 
   // ── 4. MINTED_WITHOUT_ENGAGEMENT (AUD-003 Fix 3) ───────────────────
