@@ -483,6 +483,10 @@ export function BillingOverview() {
           </div>
         )}
       </section>
+
+      {/* Admin-only Phase 2F PayFast sandbox round-trip button.
+          Renders to null for non-admins; never a customer surface. */}
+      <PayfastSandboxTestButton />
     </>
   );
 }
