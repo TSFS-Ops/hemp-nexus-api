@@ -157,7 +157,12 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium">
-                        {p.token_amount} credits · ${Number(p.amount_usd).toFixed(2)} USD
+                        {p.token_amount} credits
+                        {p.provider === "payfast" ? (
+                          <span className="text-muted-foreground"> · ZAR via PayFast</span>
+                        ) : (
+                          <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD via Paystack</span>
+                        )}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(p.created_at).toLocaleString()} · Ref{" "}
@@ -165,16 +170,29 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                           className="font-mono text-xs"
                           data-testid={`billing-purchase-ref-${p.id}`}
                           title={
-                            p.provider
-                              ? `Payment provider: ${p.provider}`
+                            p.provider === "payfast"
+                              ? "Payment provider: payfast"
                               : "Payment provider: paystack"
                           }
                         >
-                          {p.provider_reference || p.paystack_reference}
+                          {p.provider === "payfast"
+                            ? (p.provider_reference ?? p.paystack_reference)
+                            : p.paystack_reference}
                         </code>
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      <Badge
+                        variant="outline"
+                        data-testid={`billing-purchase-provider-${p.id}`}
+                        className={
+                          p.provider === "payfast"
+                            ? "border-blue-300 text-blue-700"
+                            : "border-emerald-300 text-emerald-700"
+                        }
+                      >
+                        {p.provider === "payfast" ? "PayFast" : "Paystack"}
+                      </Badge>
                       <Badge variant={p.status === "completed" ? "secondary" : "outline"}>
                         {p.status}
                       </Badge>

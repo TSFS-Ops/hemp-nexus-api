@@ -22,6 +22,8 @@ import { InboundReview } from "@/components/desk/inbound/InboundReview";
 import { EvidencePackView } from "@/components/desk/evidence/EvidencePackView";
 import { ComplianceProfile } from "@/components/desk/compliance/ComplianceProfile";
 import { BillingOverview } from "@/components/desk/billing/BillingOverview";
+import PayfastReturn from "@/pages/desk/billing/PayfastReturn";
+import PayfastCancel from "@/pages/desk/billing/PayfastCancel";
 import { NewTradeInitiation } from "@/components/desk/NewTradeInitiation";
 import { FacilitationCaseIntakeForm } from "@/components/facilitation/FacilitationCaseIntakeForm";
 import { FacilitationCaseMilestoneView } from "@/components/facilitation/FacilitationCaseMilestoneView";
@@ -272,6 +274,8 @@ export default function Desk() {
                 {/* Deep links to a specific deal route through the migrated MatchDetails surface. */}
                 <Route path="compliance" element={<ComplianceProfile />} />
                 <Route path="billing" element={<BillingOverview />} />
+                <Route path="billing/payfast/return" element={<PayfastReturn />} />
+                <Route path="billing/payfast/cancel" element={<PayfastCancel />} />
                 <Route path="settings" element={<DeskSettingsLayout />}>
                   <Route index element={<MyProfileTab />} />
                   <Route path="company" element={<CompanyIdentityTab />} />

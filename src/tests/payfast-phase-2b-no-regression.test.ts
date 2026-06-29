@@ -100,6 +100,16 @@ describe("Phase 2B: PayFast is NOT customer-facing live", () => {
       "supabase/functions/payfast-checkout-live/index.ts", // Phase 2G admin-only live checkout edge fn
       "src/components/desk/billing/BillingOverview.tsx", // Phase 2F admin-only sandbox test button
       "src/pages/Billing.tsx", // Phase 2F: imports admin-only sandbox test button
+      // Phase 2J — customer-facing PayFast alongside Paystack:
+      "supabase/functions/payfast-checkout-public/index.ts",
+      "supabase/functions/_shared/payments/payfast-public-checkout.ts",
+      "supabase/functions/_shared/payments/payfast-customer-packages.ts",
+      "src/hooks/use-payfast-public-availability.ts",
+      "src/lib/credit-checkout-payfast.ts",
+      "src/components/desk/billing/PaymentMethodPicker.tsx",
+      "src/pages/desk/billing/PayfastReturn.tsx",
+      "src/pages/desk/billing/PayfastCancel.tsx",
+      "src/pages/Desk.tsx",
     ];
     const files = matches.split("\n").filter(Boolean);
     const unexpected = files.filter(
