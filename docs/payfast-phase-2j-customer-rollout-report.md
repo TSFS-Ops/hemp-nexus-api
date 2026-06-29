@@ -202,3 +202,25 @@ Earlier-phase regressions also passed:
 ---
 
 **Final status:** `PAYFAST_PHASE_2J_CUSTOMER_ROLLOUT_READY`
+
+---
+
+## 12. Activation (2026-06-29)
+
+- `PAYFAST_PUBLIC_ENABLED=true` set in project secrets.
+- `payfast-checkout-public` edge function deployed; unauthenticated probe responds with `401 unauthenticated` (auth-required surface, no secrets leaked).
+- With a valid session, the GET probe now returns `available=true` (live mode, merchant + URLs configured, public flag on), so `PaymentMethodPicker` renders the PayFast button alongside Paystack with the fixed ZAR price for each pack (`single → R20`, `pack_10 → R190`, `pack_50 → R850`, `pack_200 → R3,000`).
+- Paystack remains the default option (rendered first, USD price unchanged, code path untouched).
+- PayFast continues to credit the wallet **only** via the verified `payfast-itn` handler. Return/cancel pages remain read-only.
+- `PurchasesList` continues to distinguish PayFast vs Paystack rows (provider badge + per-provider reference).
+- No FX code revived; no Paystack file touched in this activation step.
+
+### UI smoke note
+
+A Playwright check against `http://localhost:8080/desk/billing` confirmed:
+
+- Both `Paystack` and `PayFast` strings present in the Billing DOM, both `PaymentMethodPicker` paths registered for every customer pack id (`single`, `pack_10`, `pack_50`, `pack_200`).
+- Picker buttons themselves render only when the **separate** `billing_availability` admin switch (`get_billing_availability` RPC) is `enabled=true`. In the current sandbox state that switch is OFF, so packs render the existing "Unavailable" CTA. This is the pre-existing global billing kill-switch and is independent of `PAYFAST_PUBLIC_ENABLED` — flipping it on is the operator step that exposes both Paystack and PayFast to customers.
+
+**Final status:** `PAYFAST_PHASE_2J_CUSTOMER_ROLLOUT_READY`
+
