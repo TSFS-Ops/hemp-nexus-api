@@ -23,6 +23,7 @@ import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { PurchasesList } from "./PurchasesList";
 import { PayfastSandboxTestButton } from "./PayfastSandboxTestButton";
+import { PayfastLiveSmokeTestButton } from "./PayfastLiveSmokeTestButton";
 
 interface LedgerEntry {
   id: string;
@@ -487,6 +488,11 @@ export function BillingOverview() {
       {/* Admin-only Phase 2F PayFast sandbox round-trip button.
           Renders to null for non-admins; never a customer surface. */}
       <PayfastSandboxTestButton />
+
+      {/* Admin-only Phase 2G PayFast LIVE smoke-test button.
+          Renders to null for non-admins and when the live smoke
+          availability probe reports unavailable. Never a customer surface. */}
+      <PayfastLiveSmokeTestButton />
     </>
   );
 }

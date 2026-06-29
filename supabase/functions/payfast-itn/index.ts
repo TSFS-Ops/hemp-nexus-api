@@ -38,13 +38,19 @@ function resolveMode(): PayfastMode {
   return raw === "live" ? "live" : "sandbox";
 }
 
-// Read the merchant passphrase. Supports both the sandbox-specific name
-// (set by the Phase 2F unblocker) and the legacy generic name.
+// Read the merchant passphrase. Strict per-mode resolution so a live
+// ITN can NEVER accidentally verify against a sandbox or legacy
+// generic passphrase, and vice versa.
 function resolvePassphrase(mode: PayfastMode): string | null {
-  const candidates =
-    mode === "sandbox"
-      ? ["PAYFAST_PASSPHRASE_SANDBOX", "PAYFAST_PASSPHRASE"]
-      : ["PAYFAST_PASSPHRASE", "PAYFAST_PASSPHRASE_LIVE"];
+  if (mode === "live") {
+    // LIVE mode: only PAYFAST_PASSPHRASE_LIVE is accepted. No fallback
+    // to the legacy generic name and no fallback to sandbox.
+    const v = Deno.env.get("PAYFAST_PASSPHRASE_LIVE");
+    return v && v.length > 0 ? v : null;
+  }
+  // SANDBOX mode: prefer the sandbox-suffixed name; allow the legacy
+  // generic `PAYFAST_PASSPHRASE` only as a sandbox-only fallback.
+  const candidates = ["PAYFAST_PASSPHRASE_SANDBOX", "PAYFAST_PASSPHRASE"];
   for (const name of candidates) {
     const v = Deno.env.get(name);
     if (v && v.length > 0) return v;
