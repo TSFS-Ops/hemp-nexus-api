@@ -23,6 +23,7 @@ import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnavailableNotice";
 import { PurchasesList } from "@/components/desk/billing/PurchasesList";
 import { PayfastSandboxTestButton } from "@/components/desk/billing/PayfastSandboxTestButton";
+import { PayfastLiveSmokeTestButton } from "@/components/desk/billing/PayfastLiveSmokeTestButton";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { cn } from "@/lib/utils";
 import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
@@ -724,6 +725,11 @@ function BillingContent() {
         {/* Admin-only Phase 2F PayFast sandbox round-trip button.
             Renders to null for non-admins; never a customer surface. */}
         <PayfastSandboxTestButton />
+
+        {/* Admin-only Phase 2G PayFast LIVE smoke-test button.
+            Renders to null for non-admins and when the live smoke
+            availability probe reports unavailable. Never a customer surface. */}
+        <PayfastLiveSmokeTestButton />
       </div>
     </>
   );
