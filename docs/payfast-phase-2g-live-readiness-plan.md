@@ -1,8 +1,13 @@
 # PayFast Phase 2G — Live Readiness Plan & Pre-Live Hardening
 
-Status: **PAYFAST_PHASE_2G_BLOCKED_ON_CLIENT_DECISION** (awaiting
-explicit go-ahead to (a) collect live credentials via secure form and
-(b) approve the small sandbox/live naming reconciliation in code).
+Status: **PAYFAST_PHASE_2G_READY_FOR_LIVE_CREDENTIAL_COLLECTION**
+
+> Updated after Option C completion (code hardening + stale sandbox
+> row cleanup). See `docs/payfast-phase-2g-hardening-report.md` for
+> the full execution record. The original §1–§11 plan below is
+> retained for traceability; the §11 "exact next instruction" has
+> been actioned (Option C). The next instruction now needed is
+> **"Collect live PayFast credentials."**
 
 PayFast remains sandbox-only and admin-only. No live credentials
 collected. No customer-facing PayFast checkout. Paystack unchanged.
