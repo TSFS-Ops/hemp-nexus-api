@@ -1,46 +1,50 @@
 # PayFast Phase 2H — Live Payment Report
 
-Status: **PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED_ON_INVALID_LIVE_MERCHANT_KEY**
+Status: **PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED_ON_ITN_IP_ALLOWLIST**
 
 ## What happened
-- Operator clicked the red "Start PayFast Live Payment" button on `/desk/billing`.
-- A POST was submitted to PayFast's **live** process URL.
-- PayFast's hosted page returned:
+- Operator clicked the red "Start PayFast Live Payment" button on `/desk/billing` (after the corrected `PAYFAST_MERCHANT_KEY_LIVE` was stored).
+- PayFast accepted the request, took live payment (R5.00 ZAR), showed "Your payment was successful" and emailed a receipt to `contact@vericro.com`.
+- PayFast posted the ITN to `payfast-itn` (live mode).
+- `payfast-itn` rejected the ITN with `reason: "invalid_ip"` because the originating IP `13.245.74.88` (PayFast's AWS af-south-1 ITN sender) is **not in** `PAYFAST_ALLOWED_IPS`.
+- Because the ITN was rejected, **no wallet credit was issued** and the `token_purchases` row remains `pending`.
 
-  > 400 Bad Request — Invalid merchant key
+## Verification (no secret values exposed)
 
-- No payment was taken. The user never reached the card-entry step.
+| # | Check | Result | Evidence |
+|---|---|---|---|
+| 1 | Live ITN reached `payfast-itn` | ✅ | Edge log `2026-06-29T22:45:55Z` — `tag:payfast-itn, mode:live, method:POST, fieldKeys:[…signature]`, `providerReference:izpf_live_mqzswxtv_8cb3pel2`. |
+| 2 | `PAYFAST_MODE=live` | ✅ | Same log line: `mode:"live"`. |
+| 3 | Live signature verification passed | ✅ | `tag:payfast-itn-sig-verify, sigOkRaw:true, hasPassphrase:true`. (Reconstructed form was false; raw signature was valid — passphrase + key match.) |
+| 4 | PayFast post-back returned `VALID` | ❌ NOT REACHED | ITN aborted on IP allowlist before the post-back step. |
+| 5 | amount/currency/package/org/user matched | ❌ NOT REACHED | Same reason. |
+| 6 | wallet credited exactly once | ❌ NOT CREDITED | `token_ledger` has no live payfast row (only the earlier sandbox credit `izpf_mqz3fl2f_fzjbsgfv`, 2026-06-29 10:47Z). |
+| 7 | one `token_ledger` PayFast credit row exists | ❌ | None for `izpf_live_*`. |
+| 8 | audit row with `provider: payfast` + live metadata | ❌ | Not written — credit path never ran. |
+| 9 | `token_purchases` pending → completed | ❌ STILL PENDING | Row `d13ac2a8-…` `status:pending`, `mode:live`, `provider_reference:izpf_live_mqzswxtv_8cb3pel2`. |
+| 10 | replay/idempotency protection intact | ✅ | IP guard ran first, rejected before any DB mutation; replay table untouched. |
+| 11 | Paystack unchanged | ✅ | No Paystack edits this session. |
+| 12 | No FX code revived | ✅ | No FX modules touched; USD-native billing remains. |
 
-## Safe verification (no secret values exposed)
+## Root cause
+`PAYFAST_ALLOWED_IPS` (env, `supabase/functions/payfast-itn/index.ts:62`) does not include `13.245.74.88`, the legitimate PayFast ITN sender IP that delivered this notification. Live mode never bypasses the IP guard (see `resolveSandboxBypass`, line 73 — sandbox only). The signature itself was valid, so this is purely an allowlist gap.
 
-| Check | Result | Evidence |
-|---|---|---|
-| Checkout posts to live PayFast process URL (not sandbox) | ✅ PASS | `supabase/functions/_shared/payments/payfast-live-checkout.ts:53` — `PAYFAST_LIVE_PROCESS_URL = "https://www.payfast.co.za/eng/process"`; used as the form action (line 199). No sandbox URL referenced anywhere in this code path. |
-| `PAYFAST_MODE=live` in edge runtime | ✅ PASS | `GET /payfast-checkout-live` probe → `globalMode: "live"`, `available: true`. |
-| Live checkout uses `PAYFAST_MERCHANT_ID_LIVE` | ✅ PASS | `payfast-checkout-live/index.ts:140` reads `PAYFAST_MERCHANT_ID_LIVE` only. |
-| Live checkout uses `PAYFAST_MERCHANT_KEY_LIVE` | ✅ PASS | `payfast-checkout-live/index.ts:141` reads `PAYFAST_MERCHANT_KEY_LIVE` only. |
-| Sandbox merchant credentials are NOT used in live | ✅ PASS | No `PAYFAST_MERCHANT_ID_SANDBOX` / `_KEY_SANDBOX` reads in `payfast-checkout-live` or `_shared/payments/payfast-live-checkout.ts`. Comment at line 25: *"NEVER usable in sandbox mode. Sandbox creds are NEVER read here."* |
-| Stored live Merchant Key is not empty | ✅ PRESENT | Probe reports `merchantConfigured: true` (server-side `firstNonEmpty("PAYFAST_MERCHANT_KEY_LIVE")` returned truthy). The value is present but **rejected by PayFast as invalid**. |
-| Stored live Merchant Key has no leading/trailing spaces | ❌ UNKNOWN — likely cause | Edge function does not currently `.trim()` the env value before signing/posting. A trailing space, accidental newline, or wrong-environment copy would produce exactly this PayFast response. |
-| Live Merchant ID and live Merchant Key from same business profile | ❌ UNKNOWN | Cannot be verified from this side. PayFast rejects with "Invalid merchant key" when the key does not match the merchant ID's active profile. Must be re-checked in the PayFast merchant dashboard. |
-| No live checkout row marked completed | ✅ PASS | PayFast never accepted the request → no ITN fired → no DB write to `token_purchases.completed`. |
-| No wallet credit issued | ✅ PASS | No ITN → no `token_ledger.credit_purchase` row → no wallet movement. |
-| Paystack unchanged | ✅ PASS | No edits to Paystack code paths in this session. |
-| No FX code revived | ✅ PASS | No FX modules touched; USD-native billing remains. |
+PayFast's published ITN sender ranges include AWS af-south-1 addresses such as `13.245.0.0/16`. The currently configured allowlist is missing this range.
 
-## Root cause (most likely)
-PayFast returned **"Invalid merchant key"** on the live hosted page. Our server posted to the correct live URL with the live merchant id + key from `PAYFAST_MERCHANT_KEY_LIVE`. PayFast's rejection means **the stored `PAYFAST_MERCHANT_KEY_LIVE` value itself is not a valid live key for the configured live Merchant ID**. Common causes:
+## Action required (does not require pasting any key in chat)
+1. Update `PAYFAST_ALLOWED_IPS` to include the full PayFast ITN sender set (including `13.245.74.88` / the broader `13.245.0.0/16` range, plus PayFast's other published ITN IPs).
+2. Re-trigger the ITN. PayFast supports manual ITN re-send from the merchant dashboard for transaction `izpf_live_mqzswxtv_8cb3pel2` (PF id `310955465`). Once the IP is allowed, the ITN will:
+   - pass signature + post-back verification,
+   - move `token_purchases.d13ac2a8-…` from `pending` → `completed`,
+   - insert one `token_ledger.credit_purchase` row (idempotent on `provider_reference`),
+   - write the audit row.
+3. Re-run the verification checklist (rows 4–9 above) and re-issue this report as `PAYFAST_PHASE_2H_LIVE_PAYMENT_PASS`.
 
-1. Whitespace (trailing space / newline) was pasted into the secret.
-2. The key copied was from a different PayFast merchant profile than `PAYFAST_MERCHANT_ID_LIVE`.
-3. The "Merchant Key" field was filled with the wrong value (e.g. passphrase, salt, or sandbox key).
-4. The PayFast live merchant profile is not yet activated / approved for live integration.
-
-## Action required
-- All live payment attempts are stopped at the button by PayFast's own rejection; no money or credit can move.
-- The corrected `PAYFAST_MERCHANT_KEY_LIVE` will be requested via the **secure form** (update_secret). It will not be pasted into chat.
-- After the corrected value is stored, the edge function will be redeployed and we will retry one live payment.
+## Money / safety position
+- Real R5.00 was charged by PayFast (operator confirmed).
+- Izenzo wallet was **not** credited (1 credit owed to org `1be6cffa-…`, user `582fc403-…`).
+- Owed credit will be issued automatically by the standard ITN flow once the allowlist is corrected and PayFast re-sends the ITN — no manual ledger insert required. Idempotency on `provider_reference` prevents double-credit.
 
 ## Final status
 - [ ] PAYFAST_PHASE_2H_LIVE_PAYMENT_PASS
-- [x] PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED_ON_INVALID_LIVE_MERCHANT_KEY
+- [x] **PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED** (sub-classification: `BLOCKED_ON_ITN_IP_ALLOWLIST`)
