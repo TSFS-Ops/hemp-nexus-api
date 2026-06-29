@@ -326,13 +326,56 @@ Fresh sandbox transaction steps:
 
 **Phase 2F is STILL BLOCKED. Not PASS.**
 
-Exact remaining reason: the post-fix resent ITN now parses correctly and
-contains `m_payment_id`, `pf_payment_id`, `payment_status`, and
-`signature`, but signature verification fails with `invalid_signature`.
-Because the signature gate fails, PayFast validate/post-back, matching,
-wallet credit, ledger creation, and purchase completion are not reached.
+### 14.1 Post raw-body-signature-fix resend of ITN 1889264
+
+After the raw-body signature verifier was deployed, the operator was
+asked to resend ITN row `1889264` from the PayFast sandbox dashboard.
+
+Verification at the Izenzo side **after the requested resend**:
+
+| Check | Result |
+| --- | --- |
+| New `payfast-itn` invocation after resend | ❌ none — most recent invocation remains the original 2026-06-29 06:50:33 UTC POST |
+| `payfast-itn-sig-verify` diagnostic (reconstructed vs raw-body) | ❌ never logged — handler not re-entered |
+| Signature verification | n/a — handler not re-entered |
+| PayFast post-back VALID | n/a |
+| amount / currency / package / org / user match | n/a |
+| Wallet credit | ❌ 0 credit rows |
+| `token_ledger` PayFast credit rows | ❌ 0 |
+| `audit_logs` newest PayFast row | unchanged: `credits.purchase_rejected` / `invalid_signature` at 06:50:33 UTC |
+| `admin_risk_items` newest PayFast row | unchanged |
+| `token_purchases` row for `izpf_mqyuxroc_gtq7x20r` | ❌ still `pending` |
+| Replay protection | ✅ intact (no double-credit possible because no credit ran) |
+| PayFast sandbox-only | ✅ unchanged |
+| Live credentials added | ❌ none |
+| Customer-facing PayFast checkout | ❌ none (admin-only sandbox button only) |
+| Paystack runtime | ✅ unchanged |
+| FX code | ✅ still inert, no revival |
+
+The PayFast dashboard may show ITN `1889264` as Completed / Success,
+but no new POST has reached the `payfast-itn` Notify URL since
+06:50:33 UTC. The raw-body signature path therefore did **not** fire,
+and the fix has not yet been exercised end-to-end.
+
+### 14.2 Required next action
+
+Since the PayFast resend did not reach the function, the next
+controlled test must be a **fresh sandbox transaction** (not another
+resend of `1889264`):
+
+1. As `joshtkruger@gmail.com`, open Billing → click
+   "Start PayFast Sandbox Test".
+2. Complete the payment on the PayFast sandbox page.
+3. Return to Izenzo (`/billing?payfast=return`).
+4. Reply: "Fresh PayFast sandbox transaction completed at <time>."
+
+We will then check the new `payfast-itn-sig-verify` log line for
+either `reconstructed=ok` or `rawBody=ok`, confirm the wallet credit,
+the single `token_ledger` row, the audit/risk rows, and that
+`token_purchases` moved from `pending` to `completed`.
 
 Current status:
-`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_POST_FIX_RESEND_INVALID_SIGNATURE_FRESH_SANDBOX_TRANSACTION_REQUIRED`
+`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_RESEND_1889264_DID_NOT_REACH_FUNCTION_RAW_BODY_VERIFIER_NOT_EXERCISED`
+
 
 
