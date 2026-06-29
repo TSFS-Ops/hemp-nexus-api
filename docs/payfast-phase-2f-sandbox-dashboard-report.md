@@ -1,6 +1,49 @@
 # PayFast Phase 2F — Controlled Sandbox Round-Trip Report
 
-Status: **STILL BLOCKED — POST-FIX RESEND PARSED MULTIPART CORRECTLY BUT FAILED SIGNATURE VERIFICATION**
+Status: **✅ PASS — FRESH SANDBOX TRANSACTION CREDITED ONCE AND COMPLETED END-TO-END**
+
+## §15. Final PASS — fresh sandbox transaction after raw-body signature fix
+
+Run after deploying `verifyPayfastSignatureFromRawBody` (PayFast PHP
+reference: strip `&signature=…` from raw body, append
+`&passphrase=<urlencoded>`, MD5). Operator ran a brand-new sandbox
+checkout from Billing → Start PayFast Sandbox Test.
+
+| Check | Result |
+| --- | --- |
+| New PayFast `m_payment_id` | `izpf_mqz3fl2f_fzjbsgfv` |
+| New `pf_payment_id` | `3244718` |
+| New ITN timestamp (UTC) | 2026-06-29 10:47:34 |
+| ITN reached `payfast-itn` | ✅ yes (POST, 563 bytes, `application/x-www-form-urlencoded`, parser `form_urlencoded`, 23 fields, `hasSignatureField: true`, remote IP `144.126.193.139`) |
+| `payfast-itn-sig-verify` log | `{ sigOkReconstructed: false, sigOkRaw: true, hasPassphrase: true }` — **raw-body signature path fired and verified** |
+| Signature verification | ✅ passed (via raw-body path) |
+| PayFast post-back (`/eng/query/validate`) | ✅ `VALID` |
+| Amount / currency / package / org / user match | ✅ all matched (R20.00 ZAR, `single`, org `1be6cffa…`, user `582fc403…`) |
+| Wallet credited | ✅ exactly once (balance `268 → 269`, `atomic_paid_credit_purchase`) |
+| `token_ledger` PayFast credit row | ✅ exactly one: `0899da11-8576-4c0b-a39b-22aad81a909d`, `action_type=credit_purchase`, `request_id=3244718`, `provider=payfast`, `provider_reference=izpf_mqz3fl2f_fzjbsgfv` |
+| `audit_logs` | ✅ `credits.purchase_initiated` (10:47:13) + `credits.purchased` (10:47:34), both `provider: payfast` |
+| `admin_risk_items` | ✅ no new rejection row for this transaction (previous failed/missing-signature rows preserved) |
+| `token_purchases` row | ✅ `72a1a1ba-e90f-4370-983e-390d3bfda1c9` moved `pending → completed` at 10:47:34 |
+| Replay protection | ✅ intact — unique index `token_purchases_provider_reference_uidx` + `request_id_unique` on ledger + idempotency in `atomic_paid_credit_purchase` |
+| Old pending PayFast rows | ✅ remain uncredited (`f2ba5983`, `5f40aede`, `fb705bd1`, `17df8e00` still `pending`, no ledger rows) |
+| PayFast sandbox-only | ✅ `liveEnabled: false`, no `/eng/process` live route reachable |
+| Live credentials added | ✅ none — only `PAYFAST_*_SANDBOX` secrets in use |
+| Customer-facing PayFast checkout | ✅ none — `PayfastSandboxTestButton` returns `null` unless `isAdmin === true` |
+| Paystack unchanged | ✅ `token-purchase` / `paystack-webhook` untouched this round |
+| FX code revived | ✅ no — `_shared/fx.ts` still inert, no helper imports it |
+
+**Verdict: Phase 2F PASS.** The raw-body signature verification path
+(matching PayFast's PHP reference implementation) correctly verified
+the live sandbox ITN, post-back returned `VALID`, and the credit
+landed exactly once via `atomic_paid_credit_purchase`. Replay
+protection, scope (sandbox-only, admin-only), and Paystack isolation
+all intact.
+
+---
+
+## §14. Historical record — previous attempts (kept for traceability)
+
+Status: STILL BLOCKED — superseded by §15 above
 
 PayFast remains sandbox/admin-only. No live credentials added, no
 customer-facing surface exposed, no Paystack change, no FX revival.
