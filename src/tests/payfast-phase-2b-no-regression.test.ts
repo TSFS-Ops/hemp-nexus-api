@@ -95,6 +95,9 @@ describe("Phase 2B: PayFast is NOT customer-facing live", () => {
       "src/integrations/supabase/types.ts", // generated
       "src/components/desk/billing/PurchasesList.tsx", // Phase 2A display fallback
       "src/components/desk/billing/PayfastSandboxTestButton.tsx",
+      "src/components/desk/billing/PayfastLiveSmokeTestButton.tsx", // Phase 2G admin-only live smoke button
+      "supabase/functions/_shared/payments/payfast-live-checkout.ts", // Phase 2G live checkout helper
+      "supabase/functions/payfast-checkout-live/index.ts", // Phase 2G admin-only live checkout edge fn
       "src/components/desk/billing/BillingOverview.tsx", // Phase 2F admin-only sandbox test button
       "src/pages/Billing.tsx", // Phase 2F: imports admin-only sandbox test button
     ];

@@ -109,6 +109,9 @@ describe("Phase 2C: PayFast remains NOT live, Paystack untouched", () => {
       "src/integrations/supabase/types.ts",
       "src/components/desk/billing/PurchasesList.tsx",
       "src/components/desk/billing/PayfastSandboxTestButton.tsx",
+      "src/components/desk/billing/PayfastLiveSmokeTestButton.tsx", // Phase 2G admin-only live smoke button
+      "supabase/functions/_shared/payments/payfast-live-checkout.ts", // Phase 2G live checkout helper
+      "supabase/functions/payfast-checkout-live/index.ts", // Phase 2G admin-only live checkout edge fn
       "src/components/desk/billing/BillingOverview.tsx", // Phase 2F admin-only
       "src/pages/Billing.tsx", // Phase 2F: hosts admin-only sandbox button
     ]);
