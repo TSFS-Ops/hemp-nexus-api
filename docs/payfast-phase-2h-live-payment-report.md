@@ -1,6 +1,12 @@
 # PayFast Phase 2H — Live Payment Report
 
-Status: **PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED_ON_ITN_IP_ALLOWLIST**
+Status: **PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED_ON_ITN_IP_ALLOWLIST** (allowlist updated; awaiting ITN resend from PayFast merchant dashboard for `izpf_live_mqzswxtv_8cb3pel2` / PF id `310955465`)
+
+## Update — allowlist refreshed
+- `PAYFAST_ALLOWED_IPS` was updated via the secure secret form using PayFast's published ITN sender guidance and now includes the live sender IP observed in the real transaction (`13.245.74.88`).
+- `payfast-itn` redeployed to pick up the new env value.
+- IP guard remains enforced in live mode (no bypass, no global weakening). Sandbox bypass logic untouched.
+- Awaiting operator to resend the ITN from PayFast's merchant dashboard. On resend, the normal flow will verify signature + post-back + IP, then atomically credit one wallet entry against `provider_reference = izpf_live_mqzswxtv_8cb3pel2` (idempotent — replay-safe).
 
 ## What happened
 - Operator clicked the red "Start PayFast Live Payment" button on `/desk/billing` (after the corrected `PAYFAST_MERCHANT_KEY_LIVE` was stored).
