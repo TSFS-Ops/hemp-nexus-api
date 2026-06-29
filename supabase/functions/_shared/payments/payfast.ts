@@ -686,7 +686,7 @@ export async function processPayfastItn(
   // 6. Look up purchase by (provider='payfast', provider_reference=m_payment_id).
   const { data: purchase, error: purchaseErr } = await deps.supabase
     .from("token_purchases")
-    .select("id, org_id, user_id, status, credits, currency, package_id, metadata, provider, provider_reference")
+    .select("id, org_id, user_id, status, token_amount, currency, package_id, metadata, provider, provider_reference")
     .eq("provider", "payfast")
     .eq("provider_reference", lookupRef)
     .maybeSingle();
@@ -787,6 +787,8 @@ export async function processPayfastItn(
   }
 
   // 9. COMPLETE path — full validation, then credit.
+
+  const purchaseCredits = Number(purchase.token_amount ?? purchase.metadata?.token_amount);
 
   // Currency must be ZAR — PayFast does not settle in any other currency.
   // (Existing `token_purchases` rows from Paystack carry `currency='USD'`
@@ -897,7 +899,7 @@ export async function processPayfastItn(
     "atomic_paid_credit_purchase",
     {
       p_org_id: purchase.org_id,
-      p_amount: purchase.credits,
+      p_amount: purchaseCredits,
       p_reference_id: creditReference,
       p_endpoint: "payment:payfast:itn",
       p_metadata: {
@@ -951,7 +953,7 @@ export async function processPayfastItn(
         provider: "payfast",
         provider_reference: lookupRef,
         pf_payment_id: fields.pf_payment_id ?? null,
-        credits_added: purchase.credits,
+        credits_added: purchaseCredits,
         new_balance: creditResult?.new_balance ?? null,
         already_credited: alreadyCredited,
         package_id: purchase.package_id,
