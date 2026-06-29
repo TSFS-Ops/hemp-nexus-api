@@ -1,6 +1,20 @@
 # PayFast Phase 2H — Live Payment Report
 
-Status: **PAYFAST_PHASE_2H_LIVE_PAYMENT_PASS**
+Status: **PAYFAST_PHASE_2H_LIVE_PAYMENT_PASS** (final — confirmed)
+
+## Confirmed facts
+- Live transaction: `izpf_live_mqzu2114_ly0374gk`
+- PayFast ID: `310957929`
+- Live ITN reached `payfast-itn`: ✅
+- Source IP accepted (`13.245.74.88` in `PAYFAST_ALLOWED_IPS`): ✅
+- Raw-body signature verified: ✅
+- Decision: `credited`
+- Wallet credited exactly once (org `1be6cffa-…`, balance now 270): ✅
+- Exactly one `token_ledger.credit_purchase` row (`e3272f96-…`, `payfast`/`live`): ✅
+- Audit rows exist (`c1afb037-…` initiated, `d41f7a42-…` purchased): ✅
+- `token_purchases.d0630799-…` moved pending → `completed`: ✅
+- Paystack unchanged: ✅
+- No FX revived: ✅
 
 Newest live transaction verified end-to-end: `provider_reference = izpf_live_mqzu2114_ly0374gk` (PF id `310957929`).
 
