@@ -77,9 +77,8 @@ export function PayfastLiveSmokeTestButton() {
       return;
     }
     const confirmed = window.confirm(
-      "⚠ LIVE PayFast smoke test\n\n" +
-      "This will charge a real, small amount via PayFast LIVE. " +
-      "Continue only if you are running the controlled live smoke test.\n\n" +
+      "⚠ LIVE PayFast payment\n\n" +
+      "This will charge a real amount via PayFast LIVE.\n\n" +
       "Proceed?",
     );
     if (!confirmed) return;
@@ -122,9 +121,9 @@ export function PayfastLiveSmokeTestButton() {
       document.body.appendChild(form);
       form.submit();
       form.remove();
-      toast.success("PayFast LIVE smoke checkout opened in a new tab");
+      toast.success("PayFast LIVE checkout opened in a new tab");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Live smoke failed");
+      toast.error(err instanceof Error ? err.message : "Live payment failed");
     } finally {
       setLoading(false);
     }
@@ -136,12 +135,12 @@ export function PayfastLiveSmokeTestButton() {
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-red-600" />
           <CardTitle className="text-lg text-red-700">
-            PayFast LIVE Smoke Test (Admin Only — REAL MONEY)
+            PayFast Live Payment (Admin Only — REAL MONEY)
           </CardTitle>
         </div>
         <CardDescription>
-          Controlled Phase 2G live smoke test. Charges a real, small
-          amount via PayFast LIVE. Never exposed to normal customers.
+          Live PayFast payment path. Charges a real amount. Admin-only
+          while PayFast is not exposed to normal customers.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -161,7 +160,7 @@ export function PayfastLiveSmokeTestButton() {
               <Loader2 className="h-4 w-4 animate-spin" /> Opening live checkout…
             </>
           ) : (
-            "Start PayFast Live Smoke Test"
+            "Start PayFast Live Payment"
           )}
         </Button>
       </CardContent>
