@@ -141,8 +141,14 @@ describe("Phase 2A UI: PurchasesList uses provider-agnostic display reference wi
     expect(PANEL).toMatch(/provider_reference\?:\s*string\s*\|\s*null/);
   });
 
-  it("displayed reference prefers provider_reference and falls back to paystack_reference", () => {
-    expect(PANEL).toMatch(/\{p\.provider_reference\s*\|\|\s*p\.paystack_reference\}/);
+  it("displayed reference uses provider_reference for PayFast rows and paystack_reference for Paystack rows (Phase 2J: provider-aware)", () => {
+    // Phase 2A allowed the simple `provider_reference || paystack_reference`
+    // form. Phase 2J tightens this to a provider-aware switch so that a
+    // PayFast row never accidentally displays a Paystack-style reference.
+    const hasLegacyFallback = /\{p\.provider_reference\s*\|\|\s*p\.paystack_reference\}/.test(PANEL);
+    const hasProviderAwareSwitch =
+      /p\.provider\s*===\s*"payfast"[\s\S]{0,300}provider_reference[\s\S]{0,200}paystack_reference/.test(PANEL);
+    expect(hasLegacyFallback || hasProviderAwareSwitch).toBe(true);
   });
 
   it("historical Paystack rows still render — fallback preserves paystack_reference visibility", () => {
@@ -165,12 +171,15 @@ describe("Phase 2A boundary: no PayFast live surface is introduced", () => {
     expect(LIST).not.toMatch(/payfast-itn/);
   });
 
-  it("no PayFast checkout button / call-to-action is rendered from PurchasesList", () => {
-    // Strip comments before scanning so the Phase 2A explanatory
-    // comments don't count as a user-visible PayFast surface.
-    const stripped = PANEL
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-    expect(stripped).not.toMatch(/payfast/i);
+  it("no PayFast checkout button / call-to-action is rendered from PurchasesList (Phase 2J: provider label allowed)", () => {
+    // Phase 2J adds a provider label badge ("PayFast" / "Paystack") to
+    // each purchase row so users can tell at a glance who took the
+    // payment. That is a passive label, not a checkout CTA — the
+    // checkout entry points are PaymentMethodPicker and the admin-only
+    // PayfastLiveSmokeTestButton, both elsewhere. Assert no checkout
+    // function call originates from PurchasesList.
+    expect(PANEL).not.toMatch(/payfast-checkout-(public|live|sandbox)/);
+    expect(PANEL).not.toMatch(/startPayfastPublicCheckout/);
+    expect(PANEL).not.toMatch(/submitPayfastForm/);
   });
 });

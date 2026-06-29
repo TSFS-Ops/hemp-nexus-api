@@ -94,6 +94,16 @@ describe("Phase 2D: no customer-facing PayFast surface in src/", () => {
       "supabase/functions/payfast-checkout-live/index.ts", // Phase 2G admin-only live checkout edge fn
       "src/components/desk/billing/BillingOverview.tsx",
       "src/pages/Billing.tsx",
+      // Phase 2J — customer-facing PayFast alongside Paystack:
+      "supabase/functions/payfast-checkout-public/index.ts",
+      "supabase/functions/_shared/payments/payfast-public-checkout.ts",
+      "supabase/functions/_shared/payments/payfast-customer-packages.ts",
+      "src/hooks/use-payfast-public-availability.ts",
+      "src/lib/credit-checkout-payfast.ts",
+      "src/components/desk/billing/PaymentMethodPicker.tsx",
+      "src/pages/desk/billing/PayfastReturn.tsx",
+      "src/pages/desk/billing/PayfastCancel.tsx",
+      "src/pages/Desk.tsx",
     ]);
     const unexpected = matches
       .split("\n")

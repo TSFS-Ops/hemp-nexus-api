@@ -24,6 +24,7 @@ import { TruncationBanner } from "@/components/ui/truncation-banner";
 import { PurchasesList } from "./PurchasesList";
 import { PayfastSandboxTestButton } from "./PayfastSandboxTestButton";
 import { PayfastLiveSmokeTestButton } from "./PayfastLiveSmokeTestButton";
+import { PaymentMethodPicker } from "./PaymentMethodPicker";
 
 interface LedgerEntry {
   id: string;
@@ -54,7 +55,6 @@ const PACKS: Array<{
 
 // Dark institutional green, matches the "Sealed" tone used in compliance.
 const INK_GREEN = "hsl(155 35% 22%)";
-const INK_GREEN_HOVER = "hsl(155 35% 16%)";
 
 export function BillingOverview() {
   const { user } = useAuth();
@@ -300,32 +300,28 @@ export function BillingOverview() {
                     )}
                   </div>
 
-                  {/* Action column */}
+                  {/* Action column — Phase 2J payment method picker */}
                   <div className="col-span-12 sm:col-span-3 sm:text-right">
-                    <button
-                      type="button"
-                      onClick={() => handlePurchase(pack)}
-                      disabled={purchasing !== null || !billingAvailability.enabled}
-                      aria-describedby={error ? `pack-error-${pack.id}` : undefined}
-                      data-testid={`billing-overview-purchase-${pack.id}`}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: INK_GREEN }}
-                      onMouseEnter={(e) => {
-                        if (purchasing === null && billingAvailability.enabled)
-                          e.currentTarget.style.backgroundColor = INK_GREEN_HOVER;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = INK_GREEN;
-                      }}
-                    >
-                      {!billingAvailability.enabled
-                        ? "Unavailable"
-                        : isPending
-                          ? "Redirecting…"
-                          : error
-                            ? "Try again"
-                            : "Purchase"}
-                    </button>
+                    {!billingAvailability.enabled ? (
+                      <button
+                        type="button"
+                        disabled
+                        data-testid={`billing-overview-purchase-${pack.id}`}
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm text-sm font-medium text-white opacity-60 cursor-not-allowed w-full sm:w-auto"
+                        style={{ backgroundColor: INK_GREEN }}
+                      >
+                        Unavailable
+                      </button>
+                    ) : (
+                      <PaymentMethodPicker
+                        packageId={pack.id}
+                        usdPrice={pack.price}
+                        disabled={purchasing !== null}
+                        onError={(msg) =>
+                          setPackErrors((prev) => ({ ...prev, [pack.id]: msg }))
+                        }
+                      />
+                    )}
                   </div>
                 </div>
 
