@@ -79,14 +79,82 @@ function clientIp(req: Request): string | null {
   return req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? null;
 }
 
+interface ParsedBodyDiagnostics {
+  bodyForProcessing: string;
+  fieldKeys: string[];
+  hasSignatureField: boolean;
+  parser: "form_urlencoded" | "multipart" | "empty" | "fallback";
+  parserError: string | null;
+}
+
+async function parsePayfastBody(rawBody: string, rawBuffer: ArrayBuffer, contentType: string | null): Promise<ParsedBodyDiagnostics> {
+  if (!rawBody || rawBody.length === 0) {
+    return {
+      bodyForProcessing: "",
+      fieldKeys: [],
+      hasSignatureField: false,
+      parser: "empty",
+      parserError: null,
+    };
+  }
+
+  const collectUrlEncoded = (body: string, parser: ParsedBodyDiagnostics["parser"], parserError: string | null = null): ParsedBodyDiagnostics => {
+    const fieldKeys: string[] = [];
+    let hasSignatureField = false;
+    const params = new URLSearchParams(body);
+    for (const [k] of params) {
+      if (!fieldKeys.includes(k)) fieldKeys.push(k);
+      if (k === "signature") hasSignatureField = true;
+    }
+    return { bodyForProcessing: body, fieldKeys, hasSignatureField, parser, parserError };
+  };
+
+  if ((contentType ?? "").toLowerCase().includes("multipart/form-data")) {
+    try {
+      const form = await new Response(rawBuffer.slice(0), {
+        headers: { "Content-Type": contentType ?? "multipart/form-data" },
+      }).formData();
+      const params = new URLSearchParams();
+      const fieldKeys: string[] = [];
+      let hasSignatureField = false;
+      for (const [k, v] of form.entries()) {
+        if (typeof v !== "string") continue;
+        params.append(k, v);
+        if (!fieldKeys.includes(k)) fieldKeys.push(k);
+        if (k === "signature") hasSignatureField = true;
+      }
+      return {
+        bodyForProcessing: params.toString(),
+        fieldKeys,
+        hasSignatureField,
+        parser: "multipart",
+        parserError: null,
+      };
+    } catch (e) {
+      return collectUrlEncoded(
+        rawBody,
+        "fallback",
+        e instanceof Error ? e.message : String(e),
+      );
+    }
+  }
+
+  return collectUrlEncoded(rawBody, "form_urlencoded");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   // We always read the body up-front. PayFast ITNs are
-  // application/x-www-form-urlencoded.
-  const rawBody = req.method === "POST" ? await req.text() : "";
+  // normally application/x-www-form-urlencoded, but the sandbox resend UI
+  // can emit multipart/form-data. Normalize both into form-url-encoded
+  // key/value order before signature verification and post-back validation.
+  const rawBuffer = req.method === "POST" ? await req.arrayBuffer() : new ArrayBuffer(0);
+  const rawBody = new TextDecoder().decode(rawBuffer);
+  const contentType = req.headers.get("content-type");
+  const bodyDiagnostics = await parsePayfastBody(rawBody, rawBuffer, contentType);
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -95,7 +163,7 @@ Deno.serve(async (req) => {
   const mode = resolveMode();
   const allowedIps = resolveAllowedIps();
   const outcome = await processPayfastItn(
-    { method: req.method, rawBody },
+    { method: req.method, rawBody: bodyDiagnostics.bodyForProcessing },
     {
       supabase,
       mode,
@@ -116,23 +184,16 @@ Deno.serve(async (req) => {
     // Body diagnostics: lengths + field key names only. No values, no
     // signature, no PII. Helps identify cases where PayFast sends an
     // empty / non-form-encoded body (which surfaces as missing_signature).
-    let fieldKeys: string[] = [];
-    let hasSignatureField = false;
-    try {
-      const params = new URLSearchParams(rawBody);
-      for (const [k] of params) {
-        if (!fieldKeys.includes(k)) fieldKeys.push(k);
-        if (k === "signature") hasSignatureField = true;
-      }
-    } catch { /* ignore parse error in diagnostics */ }
     console.log(JSON.stringify({
       tag: "payfast-itn",
       mode,
       method: req.method,
-      contentType: req.headers.get("content-type") ?? null,
+      contentType,
       rawBodyLength: rawBody.length,
-      fieldKeys,
-      hasSignatureField,
+      bodyParser: bodyDiagnostics.parser,
+      parserError: bodyDiagnostics.parserError,
+      fieldKeys: bodyDiagnostics.fieldKeys,
+      hasSignatureField: bodyDiagnostics.hasSignatureField,
       remoteIp: clientIp(req),
       decision: outcome.decision,
       reason: outcome.reason ?? null,

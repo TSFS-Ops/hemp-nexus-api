@@ -1,6 +1,6 @@
 # PayFast Phase 2F — Controlled Sandbox Round-Trip Report
 
-Status: **STILL BLOCKED — FOURTH RESEND REJECTED AT `missing_signature`; BODY DIAGNOSTICS DEPLOYED, AWAITING FIFTH RESEND**
+Status: **STILL BLOCKED — LATEST RESEND USED `multipart/form-data`; PARSER/AUDIT FIX DEPLOYED, AWAITING POST-FIX RESEND**
 
 PayFast remains sandbox/admin-only. No live credentials added, no
 customer-facing surface exposed, no Paystack change, no FX revival.
@@ -125,56 +125,98 @@ Redeployed.
 - ✅ Paystack runtime unchanged — `token-purchase` still settles in USD using `PAYSTACK_SECRET_KEY`, `paystack-webhook` still uses HMAC SHA-512.
 - ✅ No FX code revived — neither helper imports `_shared/fx.ts`.
 
-## 10. Fourth resend (2026-06-28 23:20:22 UTC = 01:20:22 SAST)
+## 10. Latest resend after body diagnostics (2026-06-29 06:37:51 UTC)
 
-The fourth resend reached the deployed function. The new structured
-log line was emitted exactly once:
+The resent ITN reached the deployed function. Body diagnostics emitted
+the following structured line:
 
 ```json
-{"tag":"payfast-itn","mode":"sandbox","decision":"rejected",
- "reason":"missing_signature","mappedStatus":null,
- "providerReference":null,"creditReference":null,"detail":null}
+{
+  "tag": "payfast-itn",
+  "mode": "sandbox",
+  "method": "POST",
+  "contentType": "multipart/form-data; boundary=------------------------b874a9b20ae59887",
+  "rawBodyLength": 2595,
+  "fieldKeys": ["--------------------------b874a9b20ae59887\r\nContent-Disposition: form-data; name"],
+  "hasSignatureField": false,
+  "remoteIp": "144.126.193.139",
+  "decision": "rejected",
+  "reason": "missing_signature",
+  "mappedStatus": null,
+  "providerReference": null,
+  "creditReference": null,
+  "detail": null
+}
 ```
+
+Interpretation:
+
+- `rawBodyLength = 2595`, so PayFast did **not** resend an empty ITN.
+- `contentType = multipart/form-data`, not the normal
+  `application/x-www-form-urlencoded` shape expected by the handler.
+- The old diagnostics produced one bogus `fieldKeys` entry because
+  `URLSearchParams` was being applied to a multipart body. That means
+  PayFast fields were present in the request body, but the handler did
+  not parse them.
+- The correct branch is therefore: **rawBodyLength > 0 but parsed
+  field keys are invalid/empty → fix parser/content-type handling**.
+- This is not evidence that PayFast sandbox resend omits the signature;
+  the handler never parsed far enough to know whether the multipart
+  payload contained a `signature` part.
 
 Verified Izenzo-side state:
 
 | Check | Result |
 | --- | --- |
 | ITN reached `payfast-itn` | ✅ yes (200 returned, structured log emitted) |
-| Signature verification passed | ❌ no — function reports `missing_signature` |
+| Signature verification passed | ❌ no — old parser treated multipart body as one non-PayFast key and reported `missing_signature` |
 | PayFast post-back returned VALID | ⏭ never reached (gated on signature) |
 | amount / currency / package / org / user matched | ⏭ never reached |
 | Wallet credited exactly once | ❌ no — 0 PayFast credits for any `izpf_*` |
 | `token_ledger` PayFast credit row | ❌ no — 0 rows |
-| `audit_logs` rejection row written | ❌ still 0 new payfast rejection rows |
-| `admin_risk_items` rejection row written | ❌ still 0 |
+| `audit_logs` rejection row written | ❌ no real ITN rejection row yet; old parser could not resolve `m_payment_id` / org |
+| `admin_risk_items` rejection row written | ❌ no new real ITN risk row for this resend; previous duplicate/no-ref handling hid visibility |
 | `token_purchases` row status | still `pending` (`5f40aede-…`) |
 | Replay protection | intact (no duplicate credit possible because no credit happened) |
 
-`providerReference: null` is the smoking gun: the function did not
-even recover an `m_payment_id`, which means the parsed form body had
-no usable fields at all — not just a missing `signature`. The most
-likely explanations are (a) PayFast's "Resend" delivers an empty /
-non-form-encoded body to the notify URL, or (b) a proxy is stripping
-the body before our handler sees it. The existing structured log
-cannot distinguish these.
+`providerReference: null` was caused by a parser/content-type mismatch,
+not an empty request. The old code only parsed URL-encoded bodies; the
+latest PayFast resend arrived as multipart.
 
-## 11. Fourth fix — body diagnostics (this turn)
+## 11. Fifth fix — multipart parser + visible rejection logging
 
-`supabase/functions/payfast-itn/index.ts` now also logs, per ITN:
+`supabase/functions/payfast-itn/index.ts` now:
 
-- `method`, `contentType`
-- `rawBodyLength`
-- `fieldKeys` (names only, never values)
-- `hasSignatureField` (boolean)
-- `remoteIp`
+- reads the request body once as an `ArrayBuffer`;
+- normalizes `multipart/form-data` bodies into URL-encoded key/value
+  data before calling `processPayfastItn`;
+- keeps URL-encoded handling unchanged;
+- logs `bodyParser` and `parserError` in addition to `method`,
+  `contentType`, `rawBodyLength`, `fieldKeys`, `hasSignatureField`,
+  `remoteIp`, `decision`, `reason`, and references.
 
-No secret value, no field value, no signature is logged. Redeployed
-via `supabase--deploy_edge_functions`.
+`supabase/functions/_shared/payments/payfast.ts` now:
 
-The next resend will tell us unambiguously whether PayFast is
-delivering a populated form body or an empty/garbled one, and we can
-either fix the parser or report the upstream PayFast bug.
+- resolves the purchase org for rejection writes when `m_payment_id` is
+  available, because `audit_logs.org_id` is required;
+- writes `audit_logs.entity_id = null` for rejection rows and keeps the
+  text PayFast reference in metadata;
+- logs exact audit/risk write errors as structured diagnostics instead
+  of swallowing them;
+- handles duplicate `admin_risk_items.dedup_key` by updating the open
+  risk item with `last_seen_at` metadata instead of silently losing the
+  rejection;
+- selects and credits `token_amount` from `token_purchases` (with test
+  fallback for older mocks), matching the actual schema.
+
+No secret value, field value, signature, or credential is logged. The
+function has been redeployed and PayFast remains sandbox-only.
+
+Targeted PayFast regression tests pass:
+
+- `src/tests/payfast-itn-phase-2b.test.ts`
+- `src/tests/payfast-phase-2d-end-to-end.test.tsx`
+- `src/tests/payfast-phase-2b-no-regression.test.ts`
 
 ## 12. Confirmations (still true)
 
@@ -188,14 +230,14 @@ either fix the parser or report the upstream PayFast bug.
 
 **Phase 2F is STILL BLOCKED. Not PASS.**
 
-Exact remaining reason: `payfast-itn` is rejecting with
-`missing_signature` and `providerReference: null`, indicating the
-parsed body contains no recognised PayFast fields. Body-level
-diagnostics have been deployed to identify whether the resend
-delivers an empty/non-form-encoded body or a populated one missing
-only the signature field. Awaiting one more resend.
+Exact remaining reason: the latest real PayFast resend reached the
+function with `rawBodyLength = 2595` and `contentType = multipart/form-data`,
+but the old handler parsed only URL-encoded bodies, so it rejected at
+`missing_signature` with `providerReference = null`. The parser and
+rejection visibility fixes are now deployed, but no post-fix PayFast
+ITN has yet credited the wallet or completed the purchase.
 
 Current status:
-`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_MISSING_SIGNATURE_BODY_DIAGNOSTICS_DEPLOYED_AWAITING_FIFTH_RESEND`
+`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_MULTIPART_ITN_PARSER_FIXED_AWAITING_POST_FIX_RESEND`
 
 

@@ -417,6 +417,39 @@ export async function processPayfastItn(
     severity: "low" | "medium" | "high",
     extraMetadata: Record<string, unknown> = {},
   ) => {
+    let auditOrgId: string | null = null;
+    if (lookupRef) {
+      try {
+        const { data, error } = await deps.supabase
+          .from("token_purchases")
+          .select("org_id")
+          .eq("provider", "payfast")
+          .eq("provider_reference", lookupRef)
+          .maybeSingle();
+        if (error) {
+          console.log(JSON.stringify({
+            tag: "payfast-itn-audit-write",
+            target: "token_purchases_lookup",
+            ok: false,
+            reason,
+            providerReference: lookupRef,
+            error: { code: error.code ?? null, message: error.message ?? String(error) },
+          }));
+        } else if (typeof data?.org_id === "string" && data.org_id.length > 0) {
+          auditOrgId = data.org_id;
+        }
+      } catch (e) {
+        console.log(JSON.stringify({
+          tag: "payfast-itn-audit-write",
+          target: "token_purchases_lookup",
+          ok: false,
+          reason,
+          providerReference: lookupRef,
+          error: { message: e instanceof Error ? e.message : String(e) },
+        }));
+      }
+    }
+
     const metadata: Record<string, unknown> = {
       provider: "payfast",
       provider_reference: lookupRef,
@@ -428,20 +461,42 @@ export async function processPayfastItn(
       mode: deps.mode,
       ...extraMetadata,
     };
-    try {
+
+    if (auditOrgId) {
       // entity_id is uuid in schema; provider_reference is a text token
       // ("izpf_…"), so it goes in metadata, not entity_id. Leave entity_id
       // null when we cannot resolve a purchase row.
-      await deps.supabase.from("audit_logs").insert({
+      const { error } = await deps.supabase.from("audit_logs").insert({
+        org_id: auditOrgId,
         action: "credits.purchase_rejected",
         entity_type: "token_purchase",
         entity_id: null,
         metadata,
         created_at: now().toISOString(),
       });
-    } catch { /* never block the ITN response on audit failure */ }
+      if (error) {
+        console.log(JSON.stringify({
+          tag: "payfast-itn-audit-write",
+          target: "audit_logs",
+          ok: false,
+          reason,
+          providerReference: lookupRef,
+          error: { code: error.code ?? null, message: error.message ?? String(error) },
+        }));
+      }
+    } else {
+      console.log(JSON.stringify({
+        tag: "payfast-itn-audit-write",
+        target: "audit_logs",
+        ok: false,
+        reason,
+        providerReference: lookupRef,
+        error: { message: "skipped: no resolved org_id for audit_logs.org_id" },
+      }));
+    }
+
     try {
-      await deps.supabase.from("admin_risk_items").insert({
+      const riskRow = {
         kind: "payfast_itn_rejected",
         severity,
         title: `PayFast ITN rejected: ${reason}`,
@@ -451,8 +506,59 @@ export async function processPayfastItn(
         }`,
         metadata,
         created_at: now().toISOString(),
-      });
-    } catch { /* never block */ }
+        updated_at: now().toISOString(),
+      };
+      const { error } = await deps.supabase.from("admin_risk_items").insert(riskRow);
+      if (error) {
+        const code = (error as { code?: string }).code;
+        const message = String((error as { message?: string }).message ?? error);
+        const duplicate = code === "23505" || /duplicate key value/i.test(message);
+        if (duplicate) {
+          const { error: updateError } = await deps.supabase
+            .from("admin_risk_items")
+            .update({
+              status: "open",
+              severity,
+              title: riskRow.title,
+              description: riskRow.description,
+              metadata: {
+                ...metadata,
+                last_seen_at: now().toISOString(),
+              },
+              updated_at: now().toISOString(),
+            })
+            .eq("dedup_key", riskRow.dedup_key);
+          if (updateError) {
+            console.log(JSON.stringify({
+              tag: "payfast-itn-audit-write",
+              target: "admin_risk_items_update",
+              ok: false,
+              reason,
+              providerReference: lookupRef,
+              error: { code: updateError.code ?? null, message: updateError.message ?? String(updateError) },
+            }));
+          }
+        } else {
+          console.log(JSON.stringify({
+            tag: "payfast-itn-audit-write",
+            target: "admin_risk_items_insert",
+            ok: false,
+            reason,
+            providerReference: lookupRef,
+            error: { code: error.code ?? null, message },
+          }));
+        }
+      }
+    } catch (e) {
+      console.log(JSON.stringify({
+        tag: "payfast-itn-audit-write",
+        target: "admin_risk_items_exception",
+        ok: false,
+        reason,
+        providerReference: lookupRef,
+        error: { message: e instanceof Error ? e.message : String(e) },
+      }));
+    }
   };
 
   // 1. Signature.
@@ -580,7 +686,7 @@ export async function processPayfastItn(
   // 6. Look up purchase by (provider='payfast', provider_reference=m_payment_id).
   const { data: purchase, error: purchaseErr } = await deps.supabase
     .from("token_purchases")
-    .select("id, org_id, user_id, status, credits, currency, package_id, metadata, provider, provider_reference")
+    .select("id, org_id, user_id, status, token_amount, currency, package_id, metadata, provider, provider_reference")
     .eq("provider", "payfast")
     .eq("provider_reference", lookupRef)
     .maybeSingle();
@@ -681,6 +787,8 @@ export async function processPayfastItn(
   }
 
   // 9. COMPLETE path — full validation, then credit.
+
+  const purchaseCredits = Number(purchase.token_amount ?? purchase.credits ?? purchase.metadata?.token_amount);
 
   // Currency must be ZAR — PayFast does not settle in any other currency.
   // (Existing `token_purchases` rows from Paystack carry `currency='USD'`
@@ -791,7 +899,7 @@ export async function processPayfastItn(
     "atomic_paid_credit_purchase",
     {
       p_org_id: purchase.org_id,
-      p_amount: purchase.credits,
+      p_amount: purchaseCredits,
       p_reference_id: creditReference,
       p_endpoint: "payment:payfast:itn",
       p_metadata: {
@@ -845,7 +953,7 @@ export async function processPayfastItn(
         provider: "payfast",
         provider_reference: lookupRef,
         pf_payment_id: fields.pf_payment_id ?? null,
-        credits_added: purchase.credits,
+        credits_added: purchaseCredits,
         new_balance: creditResult?.new_balance ?? null,
         already_credited: alreadyCredited,
         package_id: purchase.package_id,
