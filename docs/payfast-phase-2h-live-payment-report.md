@@ -1,56 +1,46 @@
 # PayFast Phase 2H — Live Payment Report
 
-Status: **AWAITING_OPERATOR_PAYMENT**
+Status: **PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED_ON_INVALID_LIVE_MERCHANT_KEY**
 
-## Configuration enabled
-- `PAYFAST_MODE = live` (updated via secure form)
-- `PAYFAST_LIVE_SMOKE_ENABLED = true` (gate flag retained for code stability; button label no longer says "smoke test")
-- Live secrets present by name only: `PAYFAST_MERCHANT_ID_LIVE`, `PAYFAST_MERCHANT_KEY_LIVE`, `PAYFAST_PASSPHRASE_LIVE`, `PAYFAST_RETURN_URL_LIVE`, `PAYFAST_CANCEL_URL_LIVE`, `PAYFAST_NOTIFY_URL_LIVE`
-- Sandbox secrets untouched and NOT read in live mode (`payfast-itn` reads only `PAYFAST_PASSPHRASE_LIVE` when `PAYFAST_MODE=live`; no fallback)
-- Paystack: unchanged. FX: not revived. Customer-facing PayFast: not exposed (admin-only gate on button + edge function).
+## What happened
+- Operator clicked the red "Start PayFast Live Payment" button on `/desk/billing`.
+- A POST was submitted to PayFast's **live** process URL.
+- PayFast's hosted page returned:
 
-## Visible UI change
-- `PayfastLiveSmokeTestButton.tsx`:
-  - CardTitle: "PayFast Live Payment (Admin Only — REAL MONEY)"
-  - Button label: "Start PayFast Live Payment"
-  - Confirm dialog: "⚠ LIVE PayFast payment — This will charge a real amount via PayFast LIVE."
-- Internal gate flag name `PAYFAST_LIVE_SMOKE_ENABLED` retained as-is (per instruction).
+  > 400 Bad Request — Invalid merchant key
 
-## Operator steps (for joshtkruger@gmail.com)
+- No payment was taken. The user never reached the card-entry step.
 
-1. **Open** https://trade.izenzo.co.za/desk/billing
-   (If redirected to `/auth`, sign in as joshtkruger@gmail.com.)
-2. **Scroll** to the billing page. Two admin-only PayFast cards are visible:
-   - amber "PayFast Sandbox Test (Admin Only)" — *ignore this one*
-   - red-bordered **"PayFast Live Payment (Admin Only — REAL MONEY)"** — this is the live one
-3. **Click** the red "Start PayFast Live Payment" button.
-4. **Amount that will be charged: R5.00 ZAR** (PayFast live documented minimum; credits 1 token on success).
-5. **Confirmation dialog** will appear:
-   `⚠ LIVE PayFast payment — This will charge a real amount via PayFast LIVE. Proceed?`
-   Click **OK**.
-6. **A new tab opens** to PayFast's live hosted page (`https://www.payfast.co.za/eng/process`) showing the R5.00 charge and the Izenzo merchant.
-7. **Complete the payment** with your real card on PayFast's page.
-8. **Return page** — PayFast will redirect to `https://trade.izenzo.co.za/billing?payfast=return`.
-9. **After payment**, send back:
-   `Live PayFast payment completed.`
+## Safe verification (no secret values exposed)
 
-## Verification (filled in after payment)
+| Check | Result | Evidence |
+|---|---|---|
+| Checkout posts to live PayFast process URL (not sandbox) | ✅ PASS | `supabase/functions/_shared/payments/payfast-live-checkout.ts:53` — `PAYFAST_LIVE_PROCESS_URL = "https://www.payfast.co.za/eng/process"`; used as the form action (line 199). No sandbox URL referenced anywhere in this code path. |
+| `PAYFAST_MODE=live` in edge runtime | ✅ PASS | `GET /payfast-checkout-live` probe → `globalMode: "live"`, `available: true`. |
+| Live checkout uses `PAYFAST_MERCHANT_ID_LIVE` | ✅ PASS | `payfast-checkout-live/index.ts:140` reads `PAYFAST_MERCHANT_ID_LIVE` only. |
+| Live checkout uses `PAYFAST_MERCHANT_KEY_LIVE` | ✅ PASS | `payfast-checkout-live/index.ts:141` reads `PAYFAST_MERCHANT_KEY_LIVE` only. |
+| Sandbox merchant credentials are NOT used in live | ✅ PASS | No `PAYFAST_MERCHANT_ID_SANDBOX` / `_KEY_SANDBOX` reads in `payfast-checkout-live` or `_shared/payments/payfast-live-checkout.ts`. Comment at line 25: *"NEVER usable in sandbox mode. Sandbox creds are NEVER read here."* |
+| Stored live Merchant Key is not empty | ✅ PRESENT | Probe reports `merchantConfigured: true` (server-side `firstNonEmpty("PAYFAST_MERCHANT_KEY_LIVE")` returned truthy). The value is present but **rejected by PayFast as invalid**. |
+| Stored live Merchant Key has no leading/trailing spaces | ❌ UNKNOWN — likely cause | Edge function does not currently `.trim()` the env value before signing/posting. A trailing space, accidental newline, or wrong-environment copy would produce exactly this PayFast response. |
+| Live Merchant ID and live Merchant Key from same business profile | ❌ UNKNOWN | Cannot be verified from this side. PayFast rejects with "Invalid merchant key" when the key does not match the merchant ID's active profile. Must be re-checked in the PayFast merchant dashboard. |
+| No live checkout row marked completed | ✅ PASS | PayFast never accepted the request → no ITN fired → no DB write to `token_purchases.completed`. |
+| No wallet credit issued | ✅ PASS | No ITN → no `token_ledger.credit_purchase` row → no wallet movement. |
+| Paystack unchanged | ✅ PASS | No edits to Paystack code paths in this session. |
+| No FX code revived | ✅ PASS | No FX modules touched; USD-native billing remains. |
 
-| Check | Result |
-|---|---|
-| Live PayFast ITN reached `payfast-itn` | _pending_ |
-| `mode = live` recorded | _pending_ |
-| Live signature verification passed (raw-body path) | _pending_ |
-| PayFast post-back returned VALID | _pending_ |
-| amount/currency/package/org/user matched | _pending_ |
-| Wallet credited exactly once | _pending_ |
-| Exactly one `token_ledger.credit_purchase` row | _pending_ |
-| Audit row with `provider: payfast` + live metadata | _pending_ |
-| `token_purchases` row moved pending → completed | _pending_ |
-| Replay/idempotency protection intact | _pending_ |
-| Paystack unchanged | _pending_ |
-| No FX code revived | _pending_ |
+## Root cause (most likely)
+PayFast returned **"Invalid merchant key"** on the live hosted page. Our server posted to the correct live URL with the live merchant id + key from `PAYFAST_MERCHANT_KEY_LIVE`. PayFast's rejection means **the stored `PAYFAST_MERCHANT_KEY_LIVE` value itself is not a valid live key for the configured live Merchant ID**. Common causes:
 
-## Final status (filled in after verification)
+1. Whitespace (trailing space / newline) was pasted into the secret.
+2. The key copied was from a different PayFast merchant profile than `PAYFAST_MERCHANT_ID_LIVE`.
+3. The "Merchant Key" field was filled with the wrong value (e.g. passphrase, salt, or sandbox key).
+4. The PayFast live merchant profile is not yet activated / approved for live integration.
+
+## Action required
+- All live payment attempts are stopped at the button by PayFast's own rejection; no money or credit can move.
+- The corrected `PAYFAST_MERCHANT_KEY_LIVE` will be requested via the **secure form** (update_secret). It will not be pasted into chat.
+- After the corrected value is stored, the edge function will be redeployed and we will retry one live payment.
+
+## Final status
 - [ ] PAYFAST_PHASE_2H_LIVE_PAYMENT_PASS
-- [ ] PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED
+- [x] PAYFAST_PHASE_2H_LIVE_PAYMENT_BLOCKED_ON_INVALID_LIVE_MERCHANT_KEY
