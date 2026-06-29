@@ -1,6 +1,6 @@
 # PayFast Phase 2F — Controlled Sandbox Round-Trip Report
 
-Status: **STILL BLOCKED — LATEST RESEND USED `multipart/form-data`; PARSER/AUDIT FIX DEPLOYED, AWAITING POST-FIX RESEND**
+Status: **STILL BLOCKED — POST-FIX RESEND PARSED MULTIPART CORRECTLY BUT FAILED SIGNATURE VERIFICATION**
 
 PayFast remains sandbox/admin-only. No live credentials added, no
 customer-facing surface exposed, no Paystack change, no FX revival.
@@ -226,18 +226,113 @@ Targeted PayFast regression tests pass:
 - ✅ Paystack runtime unchanged.
 - ✅ No FX code revived.
 
-## 13. Phase 2F verdict
+## 13. Post-fix resend after multipart parser (2026-06-29 06:46:09 UTC)
+
+The same PayFast sandbox ITN was resent after the multipart parser and
+rejection logging fixes were deployed. The function parsed the multipart
+body correctly this time.
+
+Structured log line:
+
+```json
+{
+  "tag": "payfast-itn",
+  "mode": "sandbox",
+  "method": "POST",
+  "contentType": "multipart/form-data; boundary=------------------------ad3f221002657043",
+  "rawBodyLength": 2595,
+  "bodyParser": "multipart",
+  "parserError": null,
+  "fieldKeys": [
+    "m_payment_id",
+    "pf_payment_id",
+    "payment_status",
+    "item_name",
+    "item_description",
+    "amount_gross",
+    "amount_fee",
+    "amount_net",
+    "custom_str1",
+    "custom_str2",
+    "custom_str3",
+    "custom_str4",
+    "custom_str5",
+    "custom_int1",
+    "custom_int2",
+    "custom_int3",
+    "custom_int4",
+    "custom_int5",
+    "name_first",
+    "name_last",
+    "email_address",
+    "merchant_id",
+    "signature"
+  ],
+  "hasSignatureField": true,
+  "remoteIp": "144.126.193.139",
+  "decision": "rejected",
+  "reason": "invalid_signature",
+  "mappedStatus": null,
+  "providerReference": "izpf_mqycj2cj_3bnxo2pa",
+  "creditReference": "3244102",
+  "detail": null
+}
+```
+
+Verification result:
+
+| Check | Result |
+| --- | --- |
+| Multipart body parsed correctly | ✅ yes (`bodyParser=multipart`, `parserError=null`) |
+| `fieldKeys` | ✅ PayFast field names extracted; includes `m_payment_id`, `pf_payment_id`, `payment_status`, and `signature` |
+| `m_payment_id` extracted | ✅ `providerReference=izpf_mqycj2cj_3bnxo2pa` |
+| `pf_payment_id` extracted | ✅ `creditReference=3244102` |
+| `payment_status` extracted | ✅ visible in audit metadata as `COMPLETE` |
+| `signature` extracted | ✅ `hasSignatureField=true` |
+| Decision | ❌ `rejected` |
+| Reason | ❌ `invalid_signature` |
+| Signature verification passed | ❌ no |
+| PayFast post-back VALID | ⏭ not reached; signature gate failed first |
+| Amount/currency/package/org/user matching | ⏭ not reached; signature gate failed first |
+| Wallet credited exactly once | ❌ no; org balance remains `268`, unchanged since 2026-04-30 |
+| `token_ledger` PayFast credit row | ❌ no rows for PayFast / `izpf_*` |
+| `audit_logs` visible record | ✅ yes: `credits.purchase_rejected`, reason `invalid_signature`, provider `payfast`, provider_reference `izpf_mqycj2cj_3bnxo2pa`, pf_payment_id `3244102`, amount `20.00`, payment_status `COMPLETE` |
+| `admin_risk_items` visible record | ✅ yes: `payfast_itn_rejected`, severity `high`, dedup_key `payfast_itn:invalid_signature:izpf_mqycj2cj_3bnxo2pa:3244102` |
+| `token_purchases` status | ❌ still `pending` for row `5f40aede-0943-4ec2-b0c9-47f68f46b78b` |
+
+The rejection logging fix is now confirmed working: both the canonical
+audit row and admin risk row were written for the real PayFast ITN.
+
+This means the old resent ITN payload is now usable enough to parse, but
+it is still not usable for crediting because its `signature` does not
+verify against the backend's configured sandbox passphrase/signature
+base. Since the original transaction has been resent multiple times
+across handler changes, the safest next controlled test is a fresh
+sandbox transaction against the now-fixed endpoint/parser.
+
+Fresh sandbox transaction steps:
+
+1. Start a new admin-only PayFast sandbox checkout for the 1-credit
+   sandbox package.
+2. Complete the payment in PayFast sandbox.
+3. Confirm PayFast sends the ITN to the existing sandbox Notify URL.
+4. Re-check `payfast-itn` logs for `bodyParser=multipart` or
+   `form_urlencoded`, `hasSignatureField=true`, and a decision of
+   `credited` or `already_credited`.
+5. Confirm exactly one wallet credit, one `token_ledger` credit row, one
+   `credits.purchased` audit row, and a completed `token_purchases` row.
+
+## 14. Phase 2F verdict
 
 **Phase 2F is STILL BLOCKED. Not PASS.**
 
-Exact remaining reason: the latest real PayFast resend reached the
-function with `rawBodyLength = 2595` and `contentType = multipart/form-data`,
-but the old handler parsed only URL-encoded bodies, so it rejected at
-`missing_signature` with `providerReference = null`. The parser and
-rejection visibility fixes are now deployed, but no post-fix PayFast
-ITN has yet credited the wallet or completed the purchase.
+Exact remaining reason: the post-fix resent ITN now parses correctly and
+contains `m_payment_id`, `pf_payment_id`, `payment_status`, and
+`signature`, but signature verification fails with `invalid_signature`.
+Because the signature gate fails, PayFast validate/post-back, matching,
+wallet credit, ledger creation, and purchase completion are not reached.
 
 Current status:
-`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_MULTIPART_ITN_PARSER_FIXED_AWAITING_POST_FIX_RESEND`
+`PAYFAST_PHASE_2F_SANDBOX_ROUND_TRIP_BLOCKED_POST_FIX_RESEND_INVALID_SIGNATURE_FRESH_SANDBOX_TRANSACTION_REQUIRED`
 
 
