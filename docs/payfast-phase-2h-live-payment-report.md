@@ -16,6 +16,24 @@ Status: **PAYFAST_PHASE_2H_LIVE_PAYMENT_PASS** (final — confirmed)
 - Paystack unchanged: ✅
 - No FX revived: ✅
 
+## Orphaned R5 — resolved via admin adjustment
+
+Earlier R5 live payment (`izpf_live_mqzswxtv_8cb3pel2` / PF `310955465`) was paid in PayFast but originally not credited because the live ITN was rejected on `PAYFAST_ALLOWED_IPS` before the allowlist was corrected. Since the PayFast live dashboard does not expose an ITN resend, an admin-approved manual credit adjustment was applied (operator-approved).
+
+Applied at the user's explicit instruction:
+
+| Check | Result | Evidence |
+|---|---|---|
+| `token_purchases.d13ac2a8-…` now `completed` | ✅ | `status=completed`, `metadata.resolution=admin_adjustment_due_to_blocked_itn`, `metadata.resolved_by_admin_user_id=582fc403-…`. |
+| Wallet balance moved 270 → 271 | ✅ | `token_balances` for org `1be6cffa-…` → `271`. RPC returned `new_balance: 271, credited: 1, already_credited: false`. |
+| Exactly one `token_ledger.credit_purchase` row for `request_id=izpf_live_mqzswxtv_8cb3pel2` | ✅ | `ledger_rows=1`, `action_type=credit_purchase`, `metadata.resolution_type=admin_adjustment_due_to_blocked_itn`, ledger id `58869fc9-c866-4d5e-a35e-00843c6c9340`, endpoint `payment:payfast:admin_adjustment`. |
+| `audit_logs.credits.admin_adjustment` written | ✅ | Row `5ccefddf-63ce-4d55-b1d7-36fcaf3fa4dc`, `actor_user_id=582fc403-…` (signed-in platform_admin), `entity_type=token_purchase`, `entity_id=d13ac2a8-…`, full metadata with `provider:payfast, mode:live, resolution_type:admin_adjustment_due_to_blocked_itn, provider_reference, pf_payment_id:310955465`. |
+| Duplicate ITN would be blocked by the same `request_id` | ✅ | Credit was written through the canonical `atomic_paid_credit_purchase` RPC with `p_reference_id=izpf_live_mqzswxtv_8cb3pel2`. The partial UNIQUE index on `token_ledger.request_id` (used for ITN idempotency, see `supabase/functions/_shared/payments/payfast.ts:936-956`) means a future PayFast ITN resend will return `already_credited:true` and write no second ledger row; the purchase update is gated `.in("status", ["pending"])` so the completed row is not touched. |
+| Paystack untouched | ✅ | No Paystack tables, code, or secrets modified. |
+| FX not revived | ✅ | No FX modules touched. ZAR amount stored only as audit metadata (`price_zar`, `amount_gross_zar`); no conversion code exists or was added. |
+
+Reason recorded on both ledger and audit rows: *"Live PayFast payment succeeded, but original ITN was blocked before PAYFAST_ALLOWED_IPS was updated"*.
+
 Newest live transaction verified end-to-end: `provider_reference = izpf_live_mqzu2114_ly0374gk` (PF id `310957929`).
 
 ## Verification — newest live PayFast payment
