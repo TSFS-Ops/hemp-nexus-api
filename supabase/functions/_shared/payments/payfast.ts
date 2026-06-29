@@ -149,6 +149,37 @@ export function verifyPayfastSignature(
   return diff === 0;
 }
 
+/**
+ * Raw-body signature verification (PayFast PHP reference approach).
+ *
+ * PayFast signs the ITN by taking the POST body as sent, removing the
+ * trailing `&signature=...` segment, appending
+ * `&passphrase=<urlencoded passphrase>` if configured, and MD5-ing the
+ * result. This avoids any re-encoding drift between PayFast's PHP
+ * urlencode and our reconstruction. Used as a fallback when the
+ * reconstructed-from-parsed-fields signature does not match.
+ */
+export function verifyPayfastSignatureFromRawBody(
+  rawBody: string,
+  providedSignature: string | null | undefined,
+  passphrase?: string | null,
+): boolean {
+  if (!providedSignature || !rawBody) return false;
+  const sigIdx = rawBody.lastIndexOf("&signature=");
+  const head = sigIdx >= 0 ? rawBody.slice(0, sigIdx) : rawBody;
+  const base = passphrase && passphrase.length > 0
+    ? `${head}&passphrase=${pfUrlEncode(passphrase)}`
+    : head;
+  const expected = md5Hex(base);
+  const got = providedSignature.toLowerCase();
+  if (expected.length !== got.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) {
+    diff |= expected.charCodeAt(i) ^ got.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 // ─── Status mapping ───────────────────────────────────────────────────────
 //
 // PayFast `payment_status` values (sandbox + live):
@@ -572,8 +603,17 @@ export async function processPayfastItn(
       creditReference: creditRef,
     };
   }
-  const sigOk = verifyPayfastSignature(ordered, signature, deps.passphrase ?? null);
-  if (!sigOk) {
+  const sigOkReconstructed = verifyPayfastSignature(ordered, signature, deps.passphrase ?? null);
+  const sigOkRaw = sigOkReconstructed
+    ? true
+    : verifyPayfastSignatureFromRawBody(input.rawBody, signature, deps.passphrase ?? null);
+  console.log(JSON.stringify({
+    tag: "payfast-itn-sig-verify",
+    sigOkReconstructed,
+    sigOkRaw,
+    hasPassphrase: !!(deps.passphrase && deps.passphrase.length > 0),
+  }));
+  if (!sigOkReconstructed && !sigOkRaw) {
     await writeAuditAndRisk(
       "invalid_signature",
       "PayFast ITN signature did not verify",
