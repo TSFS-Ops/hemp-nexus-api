@@ -788,7 +788,7 @@ export async function processPayfastItn(
 
   // 9. COMPLETE path — full validation, then credit.
 
-  const purchaseCredits = Number(purchase.token_amount ?? purchase.metadata?.token_amount);
+  const purchaseCredits = Number(purchase.token_amount ?? purchase.credits ?? purchase.metadata?.token_amount);
 
   // Currency must be ZAR — PayFast does not settle in any other currency.
   // (Existing `token_purchases` rows from Paystack carry `currency='USD'`
