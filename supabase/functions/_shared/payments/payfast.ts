@@ -603,8 +603,17 @@ export async function processPayfastItn(
       creditReference: creditRef,
     };
   }
-  const sigOk = verifyPayfastSignature(ordered, signature, deps.passphrase ?? null);
-  if (!sigOk) {
+  const sigOkReconstructed = verifyPayfastSignature(ordered, signature, deps.passphrase ?? null);
+  const sigOkRaw = sigOkReconstructed
+    ? true
+    : verifyPayfastSignatureFromRawBody(input.rawBody, signature, deps.passphrase ?? null);
+  console.log(JSON.stringify({
+    tag: "payfast-itn-sig-verify",
+    sigOkReconstructed,
+    sigOkRaw,
+    hasPassphrase: !!(deps.passphrase && deps.passphrase.length > 0),
+  }));
+  if (!sigOkReconstructed && !sigOkRaw) {
     await writeAuditAndRisk(
       "invalid_signature",
       "PayFast ITN signature did not verify",
