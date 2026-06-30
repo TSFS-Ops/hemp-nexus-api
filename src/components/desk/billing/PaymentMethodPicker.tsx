@@ -299,13 +299,24 @@ export function PaymentMethodPicker({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPayfastSubmittedAt(null)}
+                  onClick={() => {
+                    loggerRef.current?.log("dismiss_clicked");
+                    setPayfastSubmittedAt(null);
+                  }}
                   className="inline-flex items-center px-3 py-1.5 rounded-sm text-[12px] font-medium border border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
                   data-testid={`payfast-dismiss-${packageId}`}
                 >
                   Dismiss
                 </button>
               </div>
+              {payfastRequestId && (
+                <p
+                  className="font-mono text-[10px] text-slate-500 pt-1"
+                  data-testid={`payfast-request-id-${packageId}`}
+                >
+                  Reference for support: {payfastRequestId}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -314,27 +325,3 @@ export function PaymentMethodPicker({
   );
 }
 
-/** Internal — hoisted out to keep the JSX tidy. */
-function submitPayfastForm(
-  checkoutUrl: string,
-  formFields: Array<{ name: string; value: string }>,
-): void {
-  const url = new URL(checkoutUrl);
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = `${url.origin}${url.pathname}`;
-  if (window.self !== window.top) {
-    form.target = "_blank";
-    form.rel = "noopener";
-  }
-  form.style.display = "none";
-  for (const { name, value } of formFields) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = String(value);
-    form.appendChild(input);
-  }
-  document.body.appendChild(form);
-  form.submit();
-}
