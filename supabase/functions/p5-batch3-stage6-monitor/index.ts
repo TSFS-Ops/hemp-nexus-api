@@ -6,13 +6,11 @@
 // ledger, token or business_decision rows. Does NOT expose any /api/v1/funder
 // route.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { webhookCorsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-internal-cron-key",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// Cron-only endpoint — no browser callers. webhookCorsHeaders() emits only
+// `Vary: Origin` and never `Access-Control-Allow-Origin: *`.
+const corsHeaders = webhookCorsHeaders();
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";

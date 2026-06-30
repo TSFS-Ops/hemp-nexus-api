@@ -17,13 +17,8 @@
 //     decision reference is downgraded to "Provider result pending".
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders as buildCorsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Vary": "Origin",
-};
 
 const ALLOWED_FIELDS = new Set([
   "transaction_summary",
@@ -78,7 +73,13 @@ function applyAllowList<T extends Record<string, unknown>>(obj: T): Partial<T> {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+  const corsHeaders = buildCorsHeaders(
+    Deno.env.get("ALLOWED_ORIGINS") ?? "",
+    req.headers.get("origin"),
+  );
+
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), {
       status: 405,

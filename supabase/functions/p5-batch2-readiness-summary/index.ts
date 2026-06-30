@@ -7,13 +7,8 @@
 // provider raw responses, or other counterparties' private documents.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders as buildCorsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-  "Vary": "Origin",
-};
 
 type Viewer = "admin" | "organisation_user" | "counterparty" | "funder" | "api_user";
 
@@ -135,7 +130,13 @@ function deriveViewer(role: string | null): Viewer {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+  const corsHeaders = buildCorsHeaders(
+    Deno.env.get("ALLOWED_ORIGINS") ?? "",
+    req.headers.get("origin"),
+  );
+
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
