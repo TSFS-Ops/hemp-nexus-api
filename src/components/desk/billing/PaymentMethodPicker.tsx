@@ -30,6 +30,7 @@ import {
 } from "@/lib/credit-checkout-payfast";
 import { createPayfastLogger, type PayfastLogger } from "@/lib/payfast-checkout-logger";
 import { usePayfastPublicAvailability } from "@/hooks/use-payfast-public-availability";
+import { usePayfastConnectivity } from "@/hooks/use-payfast-connectivity";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
@@ -77,6 +78,7 @@ export function PaymentMethodPicker({
   onError,
 }: PaymentMethodPickerProps) {
   const payfast = usePayfastPublicAvailability();
+  const connectivity = usePayfastConnectivity();
   const { isAdmin } = useAuth();
   const [busy, setBusy] = useState<"paystack" | "payfast" | null>(null);
   const [payfastSubmittedAt, setPayfastSubmittedAt] = useState<number | null>(null);
@@ -89,6 +91,12 @@ export function PaymentMethodPicker({
   const showPaystack = PAYSTACK_PUBLIC_ENABLED || isAdmin;
   const zar = eligible ? computeDisplayZar(packageId, payfast.usdZarRate) : null;
   const usd = eligible ? PAYFAST_USD_PRICES[packageId] : null;
+
+  const providerUnavailable =
+    !connectivity.loading && connectivity.status === "unavailable";
+  const providerDegraded =
+    !connectivity.loading && connectivity.status === "degraded";
+  const payfastDisabled = !!busy || disabled || providerUnavailable;
 
   // When the user returns to the Izenzo tab after the PayFast tab/redirect,
   // that almost always means PayFast either completed elsewhere OR refused
@@ -123,6 +131,10 @@ export function PaymentMethodPicker({
 
   const handlePayfast = async (kind: "initial" | "retry" = "initial") => {
     if (busy || disabled || !eligible) return;
+    if (providerUnavailable) {
+      toast.error("PayFast is temporarily unreachable. Please try again in a moment.");
+      return;
+    }
     setBusy("payfast");
 
     // Reuse the same requestId on retry so the whole journey correlates.
@@ -135,7 +147,11 @@ export function PaymentMethodPicker({
     setPayfastRequestId(logger.requestId);
 
     logger.log("initiate_start", {
-      extra: { kind, usdZarRate: payfast.usdZarRate ?? null },
+      extra: {
+        kind,
+        usdZarRate: payfast.usdZarRate ?? null,
+        connectivityStatus: connectivity.status,
+      },
     });
 
     try {
@@ -175,12 +191,50 @@ export function PaymentMethodPicker({
       className="space-y-2"
       data-testid={`payment-method-picker-${packageId}`}
     >
+      {showPayfast && (providerUnavailable || providerDegraded) && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid={`payfast-provider-status-${packageId}`}
+          className={`rounded-sm border p-2.5 text-[12px] flex items-start gap-2 ${
+            providerUnavailable
+              ? "border-rose-200 bg-rose-50 text-rose-900"
+              : "border-amber-200 bg-amber-50 text-amber-900"
+          }`}
+        >
+          <AlertCircle className={`h-4 w-4 mt-0.5 shrink-0 ${providerUnavailable ? "text-rose-600" : "text-amber-600"}`} />
+          <div className="flex-1 space-y-1">
+            <p className="font-medium">
+              {providerUnavailable
+                ? "PayFast is temporarily unavailable"
+                : "PayFast is partially reachable"}
+            </p>
+            <p>
+              {providerUnavailable
+                ? "We could not reach PayFast just now. New PayFast payments are paused until it is back online. No credits or charges are affected."
+                : "PayFast's card-capture page is responding slowly or intermittently. You can still try to pay; if the PayFast page does not load, retry after a moment."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void connectivity.refresh()}
+              disabled={connectivity.loading}
+              data-testid={`payfast-provider-recheck-${packageId}`}
+              className="inline-flex items-center gap-1.5 mt-1 text-[11px] underline disabled:opacity-60"
+            >
+              <RefreshCw className={`h-3 w-3 ${connectivity.loading ? "animate-spin" : ""}`} />
+              {connectivity.loading ? "Checking…" : "Check again"}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-2">
         {showPayfast && (
           <button
             type="button"
             onClick={() => handlePayfast("initial")}
-            disabled={!!busy || disabled}
+            disabled={payfastDisabled}
+            title={providerUnavailable ? "PayFast is temporarily unreachable" : undefined}
             data-testid={`pay-payfast-${packageId}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ backgroundColor: INK_GREEN }}
@@ -191,6 +245,8 @@ export function PaymentMethodPicker({
           >
             {busy === "payfast" ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting…</>
+            ) : providerUnavailable ? (
+              <>PayFast unavailable</>
             ) : zar !== null ? (
               <>Pay {formatZar(zar)} via PayFast</>
             ) : (
