@@ -17,13 +17,8 @@
 //     decision reference is downgraded to "Provider result pending".
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders as buildCorsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Vary": "Origin",
-};
 
 const ALLOWED_FIELDS = new Set([
   "transaction_summary",
