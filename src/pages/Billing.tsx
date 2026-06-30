@@ -382,6 +382,8 @@ function BillingContent() {
           description="Purchase credits to use the Izenzo trade infrastructure"
         />
 
+        {isAdmin && <AdminPayfastPricingReview />}
+
         {/* Payment cancellation banner - persists until dismissed */}
         {paymentCancelled && (
           <Alert>
