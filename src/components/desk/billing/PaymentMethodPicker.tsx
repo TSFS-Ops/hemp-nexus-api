@@ -191,6 +191,43 @@ export function PaymentMethodPicker({
       className="space-y-2"
       data-testid={`payment-method-picker-${packageId}`}
     >
+      {showPayfast && (providerUnavailable || providerDegraded) && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid={`payfast-provider-status-${packageId}`}
+          className={`rounded-sm border p-2.5 text-[12px] flex items-start gap-2 ${
+            providerUnavailable
+              ? "border-rose-200 bg-rose-50 text-rose-900"
+              : "border-amber-200 bg-amber-50 text-amber-900"
+          }`}
+        >
+          <AlertCircle className={`h-4 w-4 mt-0.5 shrink-0 ${providerUnavailable ? "text-rose-600" : "text-amber-600"}`} />
+          <div className="flex-1 space-y-1">
+            <p className="font-medium">
+              {providerUnavailable
+                ? "PayFast is temporarily unavailable"
+                : "PayFast is partially reachable"}
+            </p>
+            <p>
+              {providerUnavailable
+                ? "We could not reach PayFast just now. New PayFast payments are paused until it is back online. No credits or charges are affected."
+                : "PayFast's card-capture page is responding slowly or intermittently. You can still try to pay; if the PayFast page does not load, retry after a moment."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void connectivity.refresh()}
+              disabled={connectivity.loading}
+              data-testid={`payfast-provider-recheck-${packageId}`}
+              className="inline-flex items-center gap-1.5 mt-1 text-[11px] underline disabled:opacity-60"
+            >
+              <RefreshCw className={`h-3 w-3 ${connectivity.loading ? "animate-spin" : ""}`} />
+              {connectivity.loading ? "Checking…" : "Check again"}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-2">
         {showPayfast && (
           <button
@@ -208,6 +245,8 @@ export function PaymentMethodPicker({
           >
             {busy === "payfast" ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting…</>
+            ) : providerUnavailable ? (
+              <>PayFast unavailable</>
             ) : zar !== null ? (
               <>Pay {formatZar(zar)} via PayFast</>
             ) : (
