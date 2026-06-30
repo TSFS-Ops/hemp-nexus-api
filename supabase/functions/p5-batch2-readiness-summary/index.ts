@@ -130,7 +130,13 @@ function deriveViewer(role: string | null): Viewer {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+  const corsHeaders = buildCorsHeaders(
+    Deno.env.get("ALLOWED_ORIGINS") ?? "",
+    req.headers.get("origin"),
+  );
+
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
