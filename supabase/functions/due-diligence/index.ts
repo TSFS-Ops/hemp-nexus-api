@@ -1007,11 +1007,14 @@ async function _serve(req: Request): Promise<Response> {
       if (!target_user_id || !ddRole) {
         return json({ error: "target_user_id and role are required" }, 400);
       }
+      // Auditor is intentionally NOT assignable here — it is a read-only
+      // governance role, not a DD approval role. Allowing it would create
+      // a privilege path where future code changes that place 'auditor'
+      // in required_roles could be satisfied by audit-only role holders.
       const VALID_DD_ROLES = new Set([
         "compliance_analyst",
         "legal_reviewer",
         "director",
-        "auditor",
       ]);
       if (typeof ddRole !== "string" || !VALID_DD_ROLES.has(ddRole)) {
         return json({ error: "Invalid DD role" }, 400);
