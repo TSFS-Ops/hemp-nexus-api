@@ -59,7 +59,7 @@ const TRADER_PROFILE: NavItem[] = [
   { path: ROUTES.DASHBOARD_ACCOUNT, label: "Organisation", icon: Building2 },
   { path: ROUTES.DASHBOARD_SETTINGS, label: "Settings", icon: Settings },
   { path: ROUTES.DASHBOARD_COMPLIANCE, label: "Compliance", icon: ShieldCheck },
-  { path: ROUTES.DASHBOARD_BILLING, label: "Credits", icon: Coins },
+  { path: ROUTES.DASHBOARD_BILLING, label: "Billing & Credits", icon: Coins },
   { path: "/governance/triage", label: "Governance Console", icon: Shield },
   { path: "/developer/keys", label: "Developer Terminal", icon: KeyRound },
 ];

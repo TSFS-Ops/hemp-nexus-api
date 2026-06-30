@@ -70,7 +70,7 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
         <Tooltip>
           <TooltipTrigger asChild>
             <Link 
-              to="/billing"
+              to="/desk/billing"
               className={cn(
                 "flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors",
                 isBlocked 
@@ -157,17 +157,17 @@ export function TokenBalanceDisplay({ variant = "compact", className }: TokenBal
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Min: {minimumRequired.toLocaleString()}</span>
         <Link 
-          to="/billing" 
+          to="/desk/billing" 
           className="text-primary hover:underline"
         >
-          Purchase Credits →
+          Buy Credits →
         </Link>
       </div>
 
       {isBlocked && (
         <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-md text-destructive text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>API calls blocked. <a href="/billing" className="underline">Purchase credits</a> to restore access.</span>
+          <span>API calls blocked. <a href="/desk/billing" className="underline">Buy credits</a> to restore access.</span>
         </div>
       )}
     </div>
