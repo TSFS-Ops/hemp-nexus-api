@@ -23333,26 +23333,16 @@ export type Database = {
         }
         Returns: Json
       }
-      atomic_token_burn:
-        | {
-            Args: {
-              p_amount: number
-              p_org_id: string
-              p_reason?: string
-              p_reference_id?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_governance?: Json
-              p_org_id: string
-              p_reason?: string
-              p_reference_id?: string
-            }
-            Returns: Json
-          }
+      atomic_token_burn: {
+        Args: {
+          p_amount: number
+          p_governance?: Json
+          p_org_id: string
+          p_reason?: string
+          p_reference_id?: string
+        }
+        Returns: Json
+      }
       atomic_token_credit:
         | {
             Args: {
