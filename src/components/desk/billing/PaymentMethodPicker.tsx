@@ -67,7 +67,10 @@ export function PaymentMethodPicker({
 }: PaymentMethodPickerProps) {
   const payfast = usePayfastPublicAvailability();
   const [busy, setBusy] = useState<"paystack" | "payfast" | null>(null);
-  const showPayfast = payfast.available && isPayfastEligible(packageId);
+  const showPayfast =
+    PAYFAST_PUBLIC_PRICING_CONFIRMED &&
+    payfast.available &&
+    isPayfastEligible(packageId);
   const zar = isPayfastEligible(packageId) ? PAYFAST_ZAR_PRICES[packageId] : 0;
 
   const handlePaystack = async () => {
