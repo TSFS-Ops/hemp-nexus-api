@@ -10,13 +10,19 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const MIG_DIR = resolve(__dirname, "../../supabase/migrations");
-const migFile = readdirSync(MIG_DIR).find((f) =>
-  f.endsWith("_c10_wad_seal_immutability.sql"),
-);
+// Lovable Cloud auto-names migrations with a uuid suffix, so we locate
+// the C10 migration by its function name rather than by filename.
+const migFile = readdirSync(MIG_DIR)
+  .filter((f) => f.endsWith(".sql"))
+  .find((f) =>
+    readFileSync(resolve(MIG_DIR, f), "utf8").includes(
+      "assert_wad_seal_immutability",
+    ),
+  );
 
 describe("C10 — WaD seal immutability migration", () => {
   it("migration file exists", () => {
-    expect(migFile, "expected a *_c10_wad_seal_immutability.sql file").toBeTruthy();
+    expect(migFile, "expected a migration defining assert_wad_seal_immutability").toBeTruthy();
   });
 
   const sql = migFile ? readFileSync(resolve(MIG_DIR, migFile), "utf8") : "";
