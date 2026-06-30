@@ -14,9 +14,8 @@
  *
  * PayFast credits are issued ONLY by the verified ITN handler.
  */
-import { useState } from "react";
-import { AlertCircle, RefreshCw } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   startCreditCheckout,
@@ -24,10 +23,12 @@ import {
 } from "@/lib/credit-checkout";
 import {
   startPayfastPublicCheckout,
+  submitPayfastForm as submitPayfastFormLib,
   computeDisplayZar,
   PAYFAST_USD_PRICES,
   type PayfastCustomerPackageId,
 } from "@/lib/credit-checkout-payfast";
+import { createPayfastLogger, type PayfastLogger } from "@/lib/payfast-checkout-logger";
 import { usePayfastPublicAvailability } from "@/hooks/use-payfast-public-availability";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -79,6 +80,8 @@ export function PaymentMethodPicker({
   const { isAdmin } = useAuth();
   const [busy, setBusy] = useState<"paystack" | "payfast" | null>(null);
   const [payfastSubmittedAt, setPayfastSubmittedAt] = useState<number | null>(null);
+  const [payfastRequestId, setPayfastRequestId] = useState<string | null>(null);
+  const loggerRef = useRef<PayfastLogger | null>(null);
   const openedInNewTab = typeof window !== "undefined" && window.self !== window.top;
 
   const eligible = isPayfastEligible(packageId);
@@ -86,6 +89,22 @@ export function PaymentMethodPicker({
   const showPaystack = PAYSTACK_PUBLIC_ENABLED || isAdmin;
   const zar = eligible ? computeDisplayZar(packageId, payfast.usdZarRate) : null;
   const usd = eligible ? PAYFAST_USD_PRICES[packageId] : null;
+
+  // When the user returns to the Izenzo tab after the PayFast tab/redirect,
+  // that almost always means PayFast either completed elsewhere OR refused
+  // to connect. Log it as a correlated diagnostic signal.
+  useEffect(() => {
+    if (!payfastSubmittedAt) return;
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && loggerRef.current) {
+        loggerRef.current.log("tab_visibility_returned", {
+          extra: { msSinceSubmit: Date.now() - payfastSubmittedAt },
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [payfastSubmittedAt]);
 
   const handlePaystack = async () => {
     if (busy || disabled) return;
@@ -102,19 +121,49 @@ export function PaymentMethodPicker({
     }
   };
 
-  const handlePayfast = async () => {
+  const handlePayfast = async (kind: "initial" | "retry" = "initial") => {
     if (busy || disabled || !eligible) return;
     setBusy("payfast");
+
+    // Reuse the same requestId on retry so the whole journey correlates.
+    const existing = loggerRef.current;
+    const logger =
+      kind === "retry" && existing
+        ? existing
+        : createPayfastLogger(packageId as PayfastCustomerPackageId);
+    loggerRef.current = logger;
+    setPayfastRequestId(logger.requestId);
+
+    logger.log("initiate_start", {
+      extra: { kind, usdZarRate: payfast.usdZarRate ?? null },
+    });
+
     try {
-      const { checkoutUrl, formFields } = await startPayfastPublicCheckout(
-        packageId,
-      );
-      submitPayfastForm(checkoutUrl, formFields);
+      const result = await startPayfastPublicCheckout(packageId as PayfastCustomerPackageId);
+      const { checkoutUrl, formFields } = result;
+      logger.log("edge_response_ok", {
+        purchaseId: result.purchaseId,
+        providerReference: result.providerReference,
+        amountUsd: result.amountUsd,
+        amountZar: result.amountZar,
+        usdZarRate: result.usdZarRate,
+        credits: result.credits,
+        formFieldCount: formFields.length,
+        checkoutHost: (() => {
+          try { return new URL(checkoutUrl).host; } catch { return undefined; }
+        })(),
+      });
+
+      submitPayfastFormLib(checkoutUrl, formFields, { logger });
       setPayfastSubmittedAt(Date.now());
       setTimeout(() => setBusy(null), 4000);
     } catch (e) {
       const msg =
         e instanceof Error ? e.message : "Could not start PayFast checkout.";
+      logger.log("checkout_error", {
+        errorMessage: msg,
+        errorName: e instanceof Error ? e.name : "UnknownError",
+      });
       onError?.(msg);
       toast.error(msg);
       setBusy(null);
@@ -130,7 +179,7 @@ export function PaymentMethodPicker({
         {showPayfast && (
           <button
             type="button"
-            onClick={handlePayfast}
+            onClick={() => handlePayfast("initial")}
             disabled={!!busy || disabled}
             data-testid={`pay-payfast-${packageId}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
@@ -234,7 +283,12 @@ export function PaymentMethodPicker({
               <div className="flex flex-wrap gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={handlePayfast}
+                  onClick={() => {
+                    loggerRef.current?.log("retry_clicked", {
+                      extra: { msSinceSubmit: payfastSubmittedAt ? Date.now() - payfastSubmittedAt : null },
+                    });
+                    void handlePayfast("retry");
+                  }}
                   disabled={!!busy || disabled}
                   data-testid={`payfast-retry-${packageId}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[12px] font-medium text-white disabled:opacity-60"
@@ -245,13 +299,24 @@ export function PaymentMethodPicker({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPayfastSubmittedAt(null)}
+                  onClick={() => {
+                    loggerRef.current?.log("dismiss_clicked");
+                    setPayfastSubmittedAt(null);
+                  }}
                   className="inline-flex items-center px-3 py-1.5 rounded-sm text-[12px] font-medium border border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
                   data-testid={`payfast-dismiss-${packageId}`}
                 >
                   Dismiss
                 </button>
               </div>
+              {payfastRequestId && (
+                <p
+                  className="font-mono text-[10px] text-slate-500 pt-1"
+                  data-testid={`payfast-request-id-${packageId}`}
+                >
+                  Reference for support: {payfastRequestId}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -260,27 +325,3 @@ export function PaymentMethodPicker({
   );
 }
 
-/** Internal — hoisted out to keep the JSX tidy. */
-function submitPayfastForm(
-  checkoutUrl: string,
-  formFields: Array<{ name: string; value: string }>,
-): void {
-  const url = new URL(checkoutUrl);
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = `${url.origin}${url.pathname}`;
-  if (window.self !== window.top) {
-    form.target = "_blank";
-    form.rel = "noopener";
-  }
-  form.style.display = "none";
-  for (const { name, value } of formFields) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = String(value);
-    form.appendChild(input);
-  }
-  document.body.appendChild(form);
-  form.submit();
-}
