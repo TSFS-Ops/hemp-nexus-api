@@ -14,9 +14,8 @@
  *
  * PayFast credits are issued ONLY by the verified ITN handler.
  */
-import { useState } from "react";
-import { AlertCircle, RefreshCw } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   startCreditCheckout,
@@ -24,10 +23,12 @@ import {
 } from "@/lib/credit-checkout";
 import {
   startPayfastPublicCheckout,
+  submitPayfastForm as submitPayfastFormLib,
   computeDisplayZar,
   PAYFAST_USD_PRICES,
   type PayfastCustomerPackageId,
 } from "@/lib/credit-checkout-payfast";
+import { createPayfastLogger, type PayfastLogger } from "@/lib/payfast-checkout-logger";
 import { usePayfastPublicAvailability } from "@/hooks/use-payfast-public-availability";
 import { useAuth } from "@/contexts/AuthContext";
 
