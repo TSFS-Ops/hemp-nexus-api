@@ -157,8 +157,44 @@ async function _serve(req: Request): Promise<Response> {
       const { org_id, directors } = body;
       const targetOrg = org_id || profile.org_id;
 
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (typeof targetOrg !== "string" || !uuidRegex.test(targetOrg)) {
+        return json({ error: "VALIDATION_ERROR", code: "INVALID_ORG_ID" }, 400);
+      }
+
       if (!directors || !Array.isArray(directors) || directors.length === 0) {
         return json({ error: "directors array is required" }, 400);
+      }
+
+      // SECURITY: cap array to prevent DoS-style bulk insert.
+      if (directors.length > 50) {
+        return json({ error: "VALIDATION_ERROR", code: "TOO_MANY_DIRECTORS", message: "Maximum 50 directors per request" }, 400);
+      }
+
+      // Per-field validation
+      const ALLOWED_ROLES = new Set(["director", "officer", "ubo", "shareholder", "secretary", "trustee"]);
+      for (const d of directors) {
+        if (!d || typeof d !== "object") {
+          return json({ error: "VALIDATION_ERROR", code: "INVALID_DIRECTOR" }, 400);
+        }
+        if (typeof d.full_name !== "string" || d.full_name.trim().length === 0 || d.full_name.length > 200) {
+          return json({ error: "VALIDATION_ERROR", code: "INVALID_FULL_NAME" }, 400);
+        }
+        if (d.role != null && (typeof d.role !== "string" || !ALLOWED_ROLES.has(d.role))) {
+          return json({ error: "VALIDATION_ERROR", code: "INVALID_ROLE" }, 400);
+        }
+        if (d.nationality != null && (typeof d.nationality !== "string" || d.nationality.length > 2)) {
+          return json({ error: "VALIDATION_ERROR", code: "INVALID_NATIONALITY" }, 400);
+        }
+        if (d.ownership_percentage != null) {
+          const pct = Number(d.ownership_percentage);
+          if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+            return json({ error: "VALIDATION_ERROR", code: "INVALID_OWNERSHIP_PERCENTAGE" }, 400);
+          }
+        }
+        if (d.is_pep != null && typeof d.is_pep !== "boolean") {
+          return json({ error: "VALIDATION_ERROR", code: "INVALID_IS_PEP" }, 400);
+        }
       }
 
       const rows = await Promise.all(directors.map(async (d: any) => ({
@@ -172,7 +208,10 @@ async function _serve(req: Request): Promise<Response> {
       })));
 
       const { data, error } = await admin.from("org_directors").insert(rows).select();
-      if (error) return json({ error: error.message }, 500);
+      if (error) {
+        console.error("[due-diligence] register_directors insert failed:", error.message);
+        return json({ error: "DB_WRITE_FAILED", code: "DIRECTOR_INSERT_FAILED" }, 500);
+      }
 
       // Audit
       await admin.from("audit_logs").insert({
@@ -251,7 +290,7 @@ async function _serve(req: Request): Promise<Response> {
         extracted_metadata: { doc_type, issuing_country, expiry_date },
       }).select().single();
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       // Update KYC status
       const { data: existingStatus } = await admin
@@ -348,7 +387,7 @@ async function _serve(req: Request): Promise<Response> {
       }
 
       const { data: inserted, error } = await admin.from("screening_results").insert(results).select();
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       await admin.from("audit_logs").insert({
         org_id: targetOrg,
@@ -456,7 +495,7 @@ async function _serve(req: Request): Promise<Response> {
         computed_by: user.id,
       }).select().single();
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       await admin.from("audit_logs").insert({
         org_id: targetOrg,
@@ -522,7 +561,7 @@ async function _serve(req: Request): Promise<Response> {
         status: "pending",
       }).select().single();
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       await admin.from("audit_logs").insert({
         org_id: profile.org_id,
@@ -946,7 +985,7 @@ async function _serve(req: Request): Promise<Response> {
         override_approved_by: user.id,
       }, { onConflict: "org_id" }).select().single();
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       await admin.from("audit_logs").insert({
         org_id: profile.org_id,
@@ -996,7 +1035,7 @@ async function _serve(req: Request): Promise<Response> {
 
       if (error) {
         if (error.code === "23505") return json({ error: "Role already assigned" }, 409);
-        return json({ error: error.message }, 500);
+        console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500);
       }
 
       await admin.from("audit_logs").insert({

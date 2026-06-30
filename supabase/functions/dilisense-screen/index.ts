@@ -337,6 +337,18 @@ Deno.serve(async (req: Request) => {
       throw new ApiException("VALIDATION_ERROR", "org_id and name are required", 400);
     }
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(org_id)) {
+      throw new ApiException("VALIDATION_ERROR", "org_id must be a valid UUID", 400);
+    }
+
+    // SECURITY: prevent cross-org screening writes / API cost abuse.
+    // Only allow callers who belong to the target org or hold platform_admin.
+    const isPlatformAdmin = (authCtx.roles || []).includes("platform_admin");
+    if (org_id !== authCtx.orgId && !isPlatformAdmin) {
+      throw new ApiException("FORBIDDEN", "Cannot screen a different organisation", 403);
+    }
+
     const type = screen_type === "entity" ? "entity" : "individual";
 
     // ── OPS-010 Phase 2A: demo orgs never call live sanctions provider ──

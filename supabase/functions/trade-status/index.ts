@@ -48,6 +48,14 @@ Deno.serve(async (req: Request) => {
       throw new ApiException("VALIDATION_ERROR", "org_id must be a valid UUID", 400);
     }
 
+    // SECURITY: prevent cross-org IDOR. Caller may only query their own org
+    // unless they hold platform_admin role (JWT) or the API key is scoped
+    // to that org (orgId already === authCtx.orgId by key design).
+    const isPlatformAdmin = (authCtx.roles || []).includes("platform_admin");
+    if (orgId !== authCtx.orgId && !isPlatformAdmin) {
+      throw new ApiException("FORBIDDEN", "Cannot read trade status for another organisation", 403);
+    }
+
     const admin = createClient(supabaseUrl, serviceKey);
 
     const { data, error } = await admin
@@ -57,7 +65,8 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (error) {
-      throw new ApiException("INTERNAL_ERROR", error.message, 500);
+      console.error(`[${requestId}] trade_approvals query failed:`, error.message);
+      throw new ApiException("INTERNAL_ERROR", "Trade status lookup failed", 500);
     }
 
     return new Response(
