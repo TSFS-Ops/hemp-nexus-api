@@ -29,12 +29,50 @@ interface HostProbe {
   error: string | null;
 }
 
+/**
+ * Targets resolve from env overrides, then fall back to PayFast's
+ * documented defaults. Override env vars (set via project secrets):
+ *
+ *   PAYFAST_PROBE_PROCESS_URL   default: https://www.payfast.co.za/eng/process
+ *   PAYFAST_PROBE_HOSTED_URL    default: https://payment.payfast.io/
+ *   PAYFAST_PROBE_TIMEOUT_MS    default: 5000  (min 500, max 30000)
+ *
+ * `PAYFAST_PROCESS_URL_LIVE` is honoured as a fallback so the probe and
+ * checkout point at the same host without configuring twice.
+ */
+function envFirst(...names: string[]): string {
+  for (const n of names) {
+    const v = (Deno.env.get(n) ?? "").trim();
+    if (v) return v;
+  }
+  return "";
+}
+
+function hostOf(url: string, fallback: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return fallback;
+  }
+}
+
+const PROCESS_URL =
+  envFirst("PAYFAST_PROBE_PROCESS_URL", "PAYFAST_PROCESS_URL_LIVE", "PAYFAST_PROCESS_URL")
+  || "https://www.payfast.co.za/eng/process";
+const HOSTED_URL =
+  envFirst("PAYFAST_PROBE_HOSTED_URL", "PAYFAST_HOSTED_URL")
+  || "https://payment.payfast.io/";
+
 const TARGETS: ReadonlyArray<{ host: string; url: string }> = [
-  { host: "www.payfast.co.za", url: "https://www.payfast.co.za/eng/process" },
-  { host: "payment.payfast.io", url: "https://payment.payfast.io/" },
+  { host: hostOf(PROCESS_URL, "www.payfast.co.za"), url: PROCESS_URL },
+  { host: hostOf(HOSTED_URL, "payment.payfast.io"), url: HOSTED_URL },
 ];
 
-const TIMEOUT_MS = 5000;
+const TIMEOUT_MS = (() => {
+  const raw = Number.parseInt(Deno.env.get("PAYFAST_PROBE_TIMEOUT_MS") ?? "", 10);
+  if (!Number.isFinite(raw)) return 5000;
+  return Math.min(30000, Math.max(500, raw));
+})();
 
 async function probeHost(target: { host: string; url: string }): Promise<HostProbe> {
   const started = performance.now();
@@ -93,15 +131,16 @@ Deno.serve(async (req) => {
 
   const probes = await Promise.all(TARGETS.map(probeHost));
   const reachable = probes.every((p) => p.ok);
-  // The card-capture host is the one that drives the customer-facing
-  // "refused to connect" surface. If it fails, surface that distinctly
-  // so the UI can be specific.
-  const cardCapture = probes.find((p) => p.host === "payment.payfast.io") ?? null;
-  const processHost = probes.find((p) => p.host === "www.payfast.co.za") ?? null;
+  // TARGETS[0] is the form-POST process host, TARGETS[1] is the
+  // hosted card-capture host (the user-visible "refused to connect"
+  // surface). Use the resolved hosts so env overrides classify
+  // correctly.
+  const processHost = probes[0] ?? null;
+  const cardCapture = probes[1] ?? null;
 
   const status: "ok" | "degraded" | "unavailable" = reachable
     ? "ok"
-    : processHost?.ok && !cardCapture?.ok
+    : processHost?.ok && cardCapture && !cardCapture.ok
       ? "degraded"
       : "unavailable";
 
