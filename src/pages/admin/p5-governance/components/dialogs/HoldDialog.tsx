@@ -111,7 +111,7 @@ export function HoldDialog({
           <DialogTitle>Apply hold</DialogTitle>
           <DialogDescription>
             Releasing a hold from blocked/escalated states requires admin role.
-            All hold actions are recorded in the immutable audit timeline.
+            All hold actions are recorded in the tamper-evident audit timeline.
           </DialogDescription>
         </DialogHeader>
 
