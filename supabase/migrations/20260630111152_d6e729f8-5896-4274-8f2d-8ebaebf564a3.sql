@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.atomic_token_burn(uuid, integer, text, text);
