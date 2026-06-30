@@ -45,6 +45,20 @@ const RECONCILERS: Record<string, Array<{ table: string; column: string }>> = {
   ],
 };
 
+// In-memory IP rate limiter — best-effort, per-isolate. Caps a single IP
+// to RATE_LIMIT_MAX requests per RATE_LIMIT_WINDOW_MS to prevent flooding
+// `storage_deletion_queue` with junk rows from the unauthenticated path.
+const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const ipHits = new Map<string, number[]>();
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const arr = (ipHits.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  arr.push(now);
+  ipHits.set(ip, arr);
+  return arr.length > RATE_LIMIT_MAX;
+}
+
 Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || '';
@@ -57,6 +71,31 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), {
       status: 405,
+      headers: { ...headers, "Content-Type": "application/json" },
+    });
+  }
+
+  // SECURITY: caller must present either a Supabase JWT/anon Bearer
+  // token OR the INTERNAL_CRON_KEY. This narrows the unauthenticated
+  // surface while still allowing dead-session SPA callers (they retain
+  // the publishable anon key in `Authorization`).
+  const auth = req.headers.get("authorization") || "";
+  const internalKey = req.headers.get("x-internal-key") || "";
+  const expectedInternal = Deno.env.get("INTERNAL_CRON_KEY") || "";
+  const hasBearer = /^Bearer\s+.+/i.test(auth);
+  const hasInternal = expectedInternal.length > 0 && internalKey === expectedInternal;
+  if (!hasBearer && !hasInternal) {
+    return new Response(JSON.stringify({ error: "unauthorized", request_id: requestId }), {
+      status: 401,
+      headers: { ...headers, "Content-Type": "application/json" },
+    });
+  }
+
+  // Per-IP rate limit
+  const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
+  if (!hasInternal && rateLimited(ip)) {
+    return new Response(JSON.stringify({ error: "rate_limited", request_id: requestId }), {
+      status: 429,
       headers: { ...headers, "Content-Type": "application/json" },
     });
   }
