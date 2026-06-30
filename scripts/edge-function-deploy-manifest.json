@@ -4,6 +4,7 @@
     "match-named-contacts-assign",
     "balance-drift-reconciliation",
     "side-effect-reconciliation",
+    "burn-poi-reconciliation",
     "seed-mt009-controlled-prod",
     "unseed-mt009-controlled-prod",
     "seed-cp002-controlled-prod",
