@@ -290,7 +290,7 @@ async function _serve(req: Request): Promise<Response> {
         extracted_metadata: { doc_type, issuing_country, expiry_date },
       }).select().single();
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       // Update KYC status
       const { data: existingStatus } = await admin
@@ -387,7 +387,7 @@ async function _serve(req: Request): Promise<Response> {
       }
 
       const { data: inserted, error } = await admin.from("screening_results").insert(results).select();
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       await admin.from("audit_logs").insert({
         org_id: targetOrg,
@@ -495,7 +495,7 @@ async function _serve(req: Request): Promise<Response> {
         computed_by: user.id,
       }).select().single();
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       await admin.from("audit_logs").insert({
         org_id: targetOrg,
@@ -561,7 +561,7 @@ async function _serve(req: Request): Promise<Response> {
         status: "pending",
       }).select().single();
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       await admin.from("audit_logs").insert({
         org_id: profile.org_id,
@@ -985,7 +985,7 @@ async function _serve(req: Request): Promise<Response> {
         override_approved_by: user.id,
       }, { onConflict: "org_id" }).select().single();
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) { console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500); }
 
       await admin.from("audit_logs").insert({
         org_id: profile.org_id,
@@ -1035,7 +1035,7 @@ async function _serve(req: Request): Promise<Response> {
 
       if (error) {
         if (error.code === "23505") return json({ error: "Role already assigned" }, 409);
-        return json({ error: error.message }, 500);
+        console.error("[due-diligence] DB error:", error.message); return json({ error: "DB_WRITE_FAILED" }, 500);
       }
 
       await admin.from("audit_logs").insert({
