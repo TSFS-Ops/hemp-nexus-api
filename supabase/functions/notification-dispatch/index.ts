@@ -188,12 +188,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Email dispatch via Resend (if configured)
+    // Email dispatch — C7.2: routed through the platform email queue
+    // (`send-transactional-email` → pgmq `transactional_emails`)
+    // instead of a direct Resend POST. The previous direct Resend path
+    // failed with http_403 and is no longer the primary admin-alert
+    // route. Old failed http_403 rows are NOT automatically retried.
     if (settings.emailAlerts) {
       // Batch M Fix 5: resolve recipients by role policy. Never hardcode
       // admin@izenzo.co.za. Never route platform-admin alerts to org_member.
       const routing = await resolveAdminRecipients(supabase, event_type);
-      const resendKey = Deno.env.get("RESEND_API_KEY");
 
       if (routing.routingFailed || routing.recipients.length === 0) {
         await recordNotificationSkipped(supabase, {
@@ -209,42 +212,46 @@ Deno.serve(async (req) => {
           },
         });
         skipped.push({ channel: "email", reason: "admin_routing_failed" });
-      } else if (!resendKey) {
-        await recordNotificationSkipped(supabase, {
-          reason: "dispatcher_unavailable",
-          sourceFunction: "notification-dispatch",
-          sourceEventType: event_type,
-          channel: "email",
-          orgId: orgIdForAudit,
-          extra: { detail: "RESEND_API_KEY not configured" },
-        });
-        skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
       } else {
+        const occurredAt = new Date().toISOString();
+        const metadataJson = metadata
+          ? JSON.stringify(metadata, null, 2).slice(0, 4000)
+          : undefined;
+        const queueSubject = subject || `[Alert] ${event_type}`;
+
         for (const recip of routing.recipients) {
           if (!recip.email) continue;
           let dispatchStatus: "dispatched" | "failed" = "failed";
           let errMsg: string | null = null;
+
+          // Idempotency: stable per (event_type, recipient, minute) so
+          // accidental double-fires inside the same minute collapse.
+          const idemBase = `admin-alert-${event_type}-${recip.email}-${occurredAt.slice(0, 16)}`;
+          const idempotencyKey = idemBase.toLowerCase().replace(/[^a-z0-9-]+/g, '-').slice(0, 120);
+
           try {
-            const emailRes = await fetch("https://api.resend.com/emails", {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${resendKey}`,
-                "Content-Type": "application/json",
+            const { error: invokeErr } = await supabase.functions.invoke(
+              "send-transactional-email",
+              {
+                body: {
+                  templateName: "admin-alert",
+                  recipientEmail: recip.email,
+                  idempotencyKey,
+                  templateData: {
+                    subject: queueSubject,
+                    message,
+                    eventType: event_type,
+                    occurredAt,
+                    metadataJson,
+                  },
+                },
               },
-              body: JSON.stringify({
-                from: "Izenzo Alerts <alerts@notify.izenzo.co.za>",
-                to: [recip.email],
-                subject: subject || `[Alert] ${event_type}`,
-                text:
-                  `${message}\n\nEvent: ${event_type}\nTime: ${new Date().toISOString()}\n` +
-                  (metadata ? `\nDetails: ${JSON.stringify(metadata, null, 2)}` : ""),
-              }),
-            });
-            if (emailRes.ok) {
+            );
+            if (!invokeErr) {
               dispatchStatus = "dispatched";
               dispatched.push("email");
             } else {
-              errMsg = `http_${emailRes.status}`;
+              errMsg = invokeErr.message || "queue_invoke_failed";
               await recordNotificationSkipped(supabase, {
                 reason: "dispatcher_unavailable",
                 sourceFunction: "notification-dispatch",
@@ -253,7 +260,11 @@ Deno.serve(async (req) => {
                 orgId: orgIdForAudit,
                 recipientId: recip.userId,
                 recipientEmail: recip.email,
-                extra: { http_status: emailRes.status, role: recip.role },
+                extra: {
+                  dispatcher: "platform_email_queue",
+                  error: errMsg,
+                  role: recip.role,
+                },
               });
               skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
             }
@@ -267,7 +278,11 @@ Deno.serve(async (req) => {
               orgId: orgIdForAudit,
               recipientId: recip.userId,
               recipientEmail: recip.email,
-              extra: { error: errMsg, role: recip.role },
+              extra: {
+                dispatcher: "platform_email_queue",
+                error: errMsg,
+                role: recip.role,
+              },
             });
             skipped.push({ channel: "email", reason: "dispatcher_unavailable" });
           }
@@ -290,6 +305,9 @@ Deno.serve(async (req) => {
               metadata: {
                 policy_fallback: recip.fallback,
                 event_type,
+                dispatcher: "platform_email_queue",
+                template_name: "admin-alert",
+                idempotency_key: idempotencyKey,
               },
             });
           } catch (insErr) {
