@@ -503,7 +503,7 @@ function BillingContent() {
         <div>
           <h2 className="text-lg font-semibold mb-1">Purchase Credits</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            All prices in USD. Charged in USD at checkout via Paystack.
+            Prices in USD ($10 per credit). PayFast charges the equivalent ZAR amount at the rate Izenzo locks in when checkout starts.
           </p>
           {!billingAvailability.enabled && (
             <div className="mb-4">
