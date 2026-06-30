@@ -36,7 +36,7 @@ import { usePayfastPublicAvailability } from "@/hooks/use-payfast-public-availab
  * customer-facing PayFast button is hidden so users cannot buy at the
  * old ZAR amounts. ITN/webhook crediting paths are unchanged.
  */
-const PAYFAST_PUBLIC_PRICING_CONFIRMED = false;
+export const PAYFAST_PUBLIC_PRICING_CONFIRMED = false;
 
 const INK_GREEN = "hsl(155 35% 22%)";
 const INK_GREEN_HOVER = "hsl(155 35% 16%)";
