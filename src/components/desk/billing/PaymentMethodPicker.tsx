@@ -152,19 +152,15 @@ export function PaymentMethodPicker({
             onClick={handlePaystack}
             disabled={!!busy || disabled}
             data-testid={`pay-paystack-${packageId}`}
-            className={
-              showPayfast
-                ? "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm text-sm font-medium border transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
-                : "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
-            }
-            style={
-              showPayfast
-                ? { borderColor: INK_GREEN, color: INK_GREEN, backgroundColor: "transparent" }
-                : { backgroundColor: INK_GREEN }
-            }
+            data-admin-only={!PAYSTACK_PUBLIC_ENABLED && isAdmin ? "true" : undefined}
+            title={!PAYSTACK_PUBLIC_ENABLED && isAdmin ? "Admin-only / internal — not visible to customers" : undefined}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm text-sm font-medium border border-dashed transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{ borderColor: "#94a3b8", color: "#475569", backgroundColor: "transparent" }}
           >
             {busy === "paystack" ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting…</>
+            ) : !PAYSTACK_PUBLIC_ENABLED && isAdmin ? (
+              <>[Admin only] Pay {usdPrice} via Paystack</>
             ) : (
               <>Pay {usdPrice} via Paystack</>
             )}
