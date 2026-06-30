@@ -80,6 +80,8 @@ export function PaymentMethodPicker({
   const { isAdmin } = useAuth();
   const [busy, setBusy] = useState<"paystack" | "payfast" | null>(null);
   const [payfastSubmittedAt, setPayfastSubmittedAt] = useState<number | null>(null);
+  const [payfastRequestId, setPayfastRequestId] = useState<string | null>(null);
+  const loggerRef = useRef<PayfastLogger | null>(null);
   const openedInNewTab = typeof window !== "undefined" && window.self !== window.top;
 
   const eligible = isPayfastEligible(packageId);
@@ -87,6 +89,22 @@ export function PaymentMethodPicker({
   const showPaystack = PAYSTACK_PUBLIC_ENABLED || isAdmin;
   const zar = eligible ? computeDisplayZar(packageId, payfast.usdZarRate) : null;
   const usd = eligible ? PAYFAST_USD_PRICES[packageId] : null;
+
+  // When the user returns to the Izenzo tab after the PayFast tab/redirect,
+  // that almost always means PayFast either completed elsewhere OR refused
+  // to connect. Log it as a correlated diagnostic signal.
+  useEffect(() => {
+    if (!payfastSubmittedAt) return;
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && loggerRef.current) {
+        loggerRef.current.log("tab_visibility_returned", {
+          extra: { msSinceSubmit: Date.now() - payfastSubmittedAt },
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [payfastSubmittedAt]);
 
   const handlePaystack = async () => {
     if (busy || disabled) return;
@@ -103,19 +121,49 @@ export function PaymentMethodPicker({
     }
   };
 
-  const handlePayfast = async () => {
+  const handlePayfast = async (kind: "initial" | "retry" = "initial") => {
     if (busy || disabled || !eligible) return;
     setBusy("payfast");
+
+    // Reuse the same requestId on retry so the whole journey correlates.
+    const existing = loggerRef.current;
+    const logger =
+      kind === "retry" && existing
+        ? existing
+        : createPayfastLogger(packageId as PayfastCustomerPackageId);
+    loggerRef.current = logger;
+    setPayfastRequestId(logger.requestId);
+
+    logger.log("initiate_start", {
+      extra: { kind, usdZarRate: payfast.usdZarRate ?? null },
+    });
+
     try {
-      const { checkoutUrl, formFields } = await startPayfastPublicCheckout(
-        packageId,
-      );
-      submitPayfastForm(checkoutUrl, formFields);
+      const result = await startPayfastPublicCheckout(packageId as PayfastCustomerPackageId);
+      const { checkoutUrl, formFields } = result;
+      logger.log("edge_response_ok", {
+        purchaseId: result.purchaseId,
+        providerReference: result.providerReference,
+        amountUsd: result.amountUsd,
+        amountZar: result.amountZar,
+        usdZarRate: result.usdZarRate,
+        credits: result.credits,
+        formFieldCount: formFields.length,
+        checkoutHost: (() => {
+          try { return new URL(checkoutUrl).host; } catch { return undefined; }
+        })(),
+      });
+
+      submitPayfastFormLib(checkoutUrl, formFields, { logger });
       setPayfastSubmittedAt(Date.now());
       setTimeout(() => setBusy(null), 4000);
     } catch (e) {
       const msg =
         e instanceof Error ? e.message : "Could not start PayFast checkout.";
+      logger.log("checkout_error", {
+        errorMessage: msg,
+        errorName: e instanceof Error ? e.name : "UnknownError",
+      });
       onError?.(msg);
       toast.error(msg);
       setBusy(null);
