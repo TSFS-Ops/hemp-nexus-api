@@ -23594,7 +23594,12 @@ export type Database = {
         Returns: Json
       }
       cron_invoke: {
-        Args: { p_body?: Json; p_job_name: string; p_url: string }
+        Args: {
+          p_body?: Json
+          p_job_name: string
+          p_timeout_milliseconds?: number
+          p_url: string
+        }
         Returns: number
       }
       cron_reconcile_heartbeats: { Args: never; Returns: undefined }
