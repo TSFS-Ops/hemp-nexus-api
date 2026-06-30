@@ -179,7 +179,7 @@ export function PaymentMethodPicker({
         {showPayfast && (
           <button
             type="button"
-            onClick={handlePayfast}
+            onClick={() => handlePayfast("initial")}
             disabled={!!busy || disabled}
             data-testid={`pay-payfast-${packageId}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-sm text-sm font-medium text-white transition-colors w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
@@ -283,7 +283,12 @@ export function PaymentMethodPicker({
               <div className="flex flex-wrap gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={handlePayfast}
+                  onClick={() => {
+                    loggerRef.current?.log("retry_clicked", {
+                      extra: { msSinceSubmit: payfastSubmittedAt ? Date.now() - payfastSubmittedAt : null },
+                    });
+                    void handlePayfast("retry");
+                  }}
                   disabled={!!busy || disabled}
                   data-testid={`payfast-retry-${packageId}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[12px] font-medium text-white disabled:opacity-60"
