@@ -45,12 +45,13 @@ const PACKS: Array<{
 }> = [
   // USD-native settlement (cutover 2026-05-01). Paystack charges
   // Izenzo customers directly in USD - no FX conversion at checkout.
-  // Display only USD here - drift between this list and the backend
-  // `TOKEN_PACKAGES` registry will charge the wrong amount.
-  { id: "single", credits: 1, price: "$1", unit: "$1.00 / credit" },
-  { id: "pack_10", credits: 10, price: "$10", unit: "$1.00 / credit" },
-  { id: "pack_50", credits: 50, price: "$45", unit: "$0.90 / credit", saving: "10% saving" },
-  { id: "pack_200", credits: 200, price: "$160", unit: "$0.80 / credit", saving: "20% saving" },
+  // 1 credit = $10.00 USD (David pricing correction, 2026-06 — flat
+  // per-credit, no volume discount). Drift between this list and the
+  // backend `TOKEN_PACKAGES` registry will charge the wrong amount.
+  { id: "single", credits: 1, price: "$10", unit: "$10.00 / credit" },
+  { id: "pack_10", credits: 10, price: "$100", unit: "$10.00 / credit" },
+  { id: "pack_50", credits: 50, price: "$500", unit: "$10.00 / credit" },
+  { id: "pack_200", credits: 200, price: "$2,000", unit: "$10.00 / credit" },
 ];
 
 // Dark institutional green, matches the "Sealed" tone used in compliance.

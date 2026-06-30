@@ -21,9 +21,9 @@ type Tier = {
 // USD is the native settlement currency end-to-end (Daniel Davies
 // decision, 2026-05-01). Paystack settles in USD; no FX layer.
 const TIERS: Tier[] = [
-  { id: "pack_10", credits: 10, priceUsd: 10, label: "10 credits · $1.00 / credit" },
-  { id: "pack_50", credits: 50, priceUsd: 45, label: "50 credits · $0.90 / credit · 10% saving", recommended: true },
-  { id: "pack_200", credits: 200, priceUsd: 160, label: "200 credits · $0.80 / credit · 20% saving" },
+  { id: "pack_10", credits: 10, priceUsd: 100, label: "10 credits · $10.00 / credit" },
+  { id: "pack_50", credits: 50, priceUsd: 500, label: "50 credits · $10.00 / credit", recommended: true },
+  { id: "pack_200", credits: 200, priceUsd: 2000, label: "200 credits · $10.00 / credit" },
 ];
 
 interface CreditProvisioningPanelProps {
