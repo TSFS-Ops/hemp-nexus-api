@@ -14,6 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useRegistryBase } from "@/lib/use-registry-base";
+import {
+  formatReadinessLabel,
+  formatClaimStatus,
+  formatAuthorityStatus,
+  formatProfileVerificationStatus,
+} from "@/lib/registry-status-labels";
 
 
 interface ProfileResponse {
@@ -96,11 +102,21 @@ export default function CompanyProfile() {
     <main className="max-w-3xl mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-semibold mb-1">{r.company_name}</h1>
       <div className="flex flex-wrap gap-1 mb-3">
-        <Badge variant="secondary" className="text-[10px] font-mono">{profile.readiness_label}</Badge>
-        <Badge variant="secondary" className="text-[10px] font-mono">{profile.claim_status}</Badge>
-        <Badge variant="secondary" className="text-[10px] font-mono">{profile.authority_status}</Badge>
-        <Badge variant="secondary" className="text-[10px] font-mono">{profile.profile_verification_status}</Badge>
-        <Badge variant="secondary" className="text-[10px] font-mono">{profile.bank_detail_status_label}</Badge>
+        <Badge variant="secondary" className="text-[10px]" data-testid="readiness-label">
+          {formatReadinessLabel(profile.readiness_label)}
+        </Badge>
+        <Badge variant="secondary" className="text-[10px]" data-testid="claim-status-label">
+          {formatClaimStatus(profile.claim_status)}
+        </Badge>
+        <Badge variant="secondary" className="text-[10px]" data-testid="authority-status-label">
+          {formatAuthorityStatus(profile.authority_status)}
+        </Badge>
+        <Badge variant="secondary" className="text-[10px]" data-testid="profile-review-status-label">
+          {formatProfileVerificationStatus(profile.profile_verification_status)}
+        </Badge>
+        <Badge variant="secondary" className="text-[10px]" data-testid="bank-detail-status-label">
+          {profile.bank_detail_status_label ?? "Status pending"}
+        </Badge>
       </div>
 
       {/* Batch 22 — Profile-level "Is this your company?" claim panel.

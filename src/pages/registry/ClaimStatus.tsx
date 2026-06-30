@@ -17,6 +17,10 @@ import {
   REGISTRY_CLAIM_APPROVAL_PUBLIC_WORDING,
   REGISTRY_CLAIM_REJECTION_PUBLIC_WORDING,
 } from "@/lib/registry-claim-workflow";
+import {
+  formatClaimWorkflowStatus,
+  formatEvidenceState,
+} from "@/lib/registry-status-labels";
 
 export default function RegistryClaimStatus() {
   const { claimId } = useParams();
@@ -58,7 +62,7 @@ export default function RegistryClaimStatus() {
         <CardHeader>
           <CardTitle>{c.company_name}</CardTitle>
           <div className="flex gap-2 mt-2">
-            <Badge variant="outline">{c.workflow_status}</Badge>
+            <Badge variant="outline" data-testid="claim-workflow-status">{formatClaimWorkflowStatus(c.workflow_status)}</Badge>
             {c.sla_due_at && <Badge variant="secondary">SLA: {new Date(c.sla_due_at).toLocaleDateString()}</Badge>}
           </div>
         </CardHeader>
@@ -96,7 +100,7 @@ export default function RegistryClaimStatus() {
             <div key={e.id} className="border rounded p-2 text-sm">
               <div className="flex justify-between">
                 <span className="font-medium">{e.document_name || e.category}</span>
-                <Badge variant="outline">{e.evidence_state}</Badge>
+                <Badge variant="outline" data-testid="evidence-state">{formatEvidenceState(e.evidence_state)}</Badge>
               </div>
               <div className="text-xs text-muted-foreground">{e.category}{e.sensitive ? " · sensitive" : ""}</div>
             </div>

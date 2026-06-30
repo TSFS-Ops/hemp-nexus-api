@@ -1,7 +1,19 @@
 /**
  * Batch 1 — Readiness state badge. Reads label copy from the registry-readiness SSOT.
+ *
+ * C8 hardening — the `state` prop now accepts any string. Known module
+ * readiness states render with their SSOT label; unknown values (e.g.
+ * record-lifecycle values such as `imported_unverified` coming from the
+ * search edge function) fall back to the C8 readiness display map, and
+ * any still-unknown value uses a neutral title-cased fallback. No raw
+ * snake_case is ever rendered.
  */
-import { REGISTRY_READINESS_LABEL, type RegistryReadinessState } from "@/lib/registry-readiness";
+import {
+  REGISTRY_READINESS_LABEL,
+  REGISTRY_READINESS_STATES,
+  type RegistryReadinessState,
+} from "@/lib/registry-readiness";
+import { formatReadinessLabel } from "@/lib/registry-status-labels";
 
 const TONE: Record<RegistryReadinessState, string> = {
   not_started: "bg-muted text-muted-foreground border-border",
@@ -16,14 +28,25 @@ const TONE: Record<RegistryReadinessState, string> = {
   disabled: "bg-muted text-muted-foreground border-border",
 };
 
-export function ReadinessBadge({ state }: { state: RegistryReadinessState }) {
+const NEUTRAL_TONE = "bg-muted text-foreground border-border";
+
+function isModuleReadinessState(value: string): value is RegistryReadinessState {
+  return (REGISTRY_READINESS_STATES as readonly string[]).includes(value);
+}
+
+export function ReadinessBadge({ state }: { state: RegistryReadinessState | string }) {
+  const known = typeof state === "string" && isModuleReadinessState(state);
+  const tone = known ? TONE[state as RegistryReadinessState] : NEUTRAL_TONE;
+  const label = known
+    ? REGISTRY_READINESS_LABEL[state as RegistryReadinessState]
+    : formatReadinessLabel(state);
   return (
     <span
       data-testid="readiness-badge"
       data-state={state}
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${TONE[state]}`}
+      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${tone}`}
     >
-      {REGISTRY_READINESS_LABEL[state]}
+      {label}
     </span>
   );
 }

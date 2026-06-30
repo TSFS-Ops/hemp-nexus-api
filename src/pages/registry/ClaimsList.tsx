@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   REGISTRY_CLAIM_APPROVAL_NON_VERIFICATION_DISCLOSURE,
 } from "@/lib/registry-claim-workflow";
+import { formatClaimWorkflowStatus } from "@/lib/registry-status-labels";
 
 type Row = {
   id: string;
@@ -73,7 +74,7 @@ export default function RegistryClaimsList() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline">{r.workflow_status}</Badge>
+                <Badge variant="outline" data-testid="claim-workflow-status">{formatClaimWorkflowStatus(r.workflow_status)}</Badge>
                 <Button asChild size="sm" variant="ghost">
                   <Link to={`/registry/claims/${r.id}`}>View</Link>
                 </Button>
