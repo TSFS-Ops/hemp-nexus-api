@@ -108,6 +108,10 @@ for (let i = 0; i < migrationFiles.length; i++) {
 //    rollback-only proof file is the only allowed reference.
 const ALLOW_TRUNCATE_REFS = new Set([
   "supabase/tests/batch_b1_truncate_guards_proof.sql",
+  "supabase/tests/match_events_append_only_freeze_proof.sql",
+  "supabase/tests/poi_events_append_only_freeze_proof.sql",
+  "supabase/tests/event_ledger_append_only_convention_proof.sql",
+  "supabase/tests/audit_log_immutability_freeze_proof.sql",
   "scripts/check-batch-b1-truncate-guards.mjs",
   "evidence/batch-b-append-only-immutability/truncate-guards/README.md",
 ]);
