@@ -33,7 +33,7 @@ const settingsNavItems = [
   { path: ROUTES.DASHBOARD_SETTINGS, title: "Settings", icon: Settings },
   { path: ROUTES.DASHBOARD_ACCOUNT, title: "Organisation", icon: Building2 },
   { path: ROUTES.DASHBOARD_COMPLIANCE, title: "Compliance", icon: ShieldCheck },
-  { path: ROUTES.BILLING, title: "Credits", icon: Coins },
+  { path: ROUTES.BILLING, title: "Billing & Credits", icon: Coins },
 ];
 
 export function AppSidebar({ isAdmin }: AppSidebarProps) {

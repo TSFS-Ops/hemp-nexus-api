@@ -66,8 +66,12 @@ export const ROUTES = {
   ADMIN_USERS_ORGS: '/admin/users',
   ADMIN_INFRASTRUCTURE: '/admin/infrastructure',
   PRICING: '/pricing',
-  DASHBOARD_BILLING: '/dashboard/billing',
-  BILLING: '/dashboard/billing',
+  // Canonical billing route is the Trade Desk surface; the /dashboard/billing
+  // and /billing paths still exist as LegacyRedirect entries in App.tsx, but
+  // every in-app link should send users straight to /desk/billing so they
+  // never see the legacy-redirect banner.
+  DASHBOARD_BILLING: '/desk/billing',
+  BILLING: '/desk/billing',
   DOCS: '/docs',
   WALKTHROUGH: '/walkthrough',
 } as const;
