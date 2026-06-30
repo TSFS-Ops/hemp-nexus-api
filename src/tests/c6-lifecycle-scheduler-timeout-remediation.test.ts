@@ -96,9 +96,13 @@ describe("C6 lifecycle-scheduler timeout remediation migration", () => {
     for (const pat of forbidden) expect(sql).not.toMatch(pat);
   });
 
-  it("guards against accidental global timeout increase (no other 15000-arg cron command appears in migration)", () => {
-    // Only the lifecycle-scheduler block should mention 15000.
-    const occurrences = sql.match(/15000/g) ?? [];
+  it("guards against accidental global timeout increase (15000 ms is wired into exactly one cron command)", () => {
+    // Strip line comments so prose mentions of 15000 do not count.
+    const code = sql
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n");
+    const occurrences = code.match(/\b15000\b/g) ?? [];
     expect(occurrences.length).toBe(1);
   });
 
