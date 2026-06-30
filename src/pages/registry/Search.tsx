@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { IMPORTED_UNVERIFIED_NOTICE } from "@/lib/registry-record-model";
 import { useRegistryBase, rebaseRegistryPath } from "@/lib/use-registry-base";
 import { CompanyTypeahead } from "@/components/registry/CompanyTypeahead";
+import { ReadinessBadge } from "@/components/registry/ReadinessBadge";
 
 
 
@@ -237,7 +238,7 @@ export default function RegistrySearch() {
               <CardHeader>
                 <CardTitle className="text-base flex items-start justify-between gap-3">
                   <span>{r.company_name}</span>
-                  <Badge variant="secondary" className="text-[10px] font-mono">{r.readiness_label}</Badge>
+                  <ReadinessBadge state={r.readiness_label} />
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm space-y-2">

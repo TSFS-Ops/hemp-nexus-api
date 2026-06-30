@@ -95,7 +95,7 @@ function IdentityMockup() {
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--emerald-muted))] ring-1 ring-emerald-200 px-3 py-1 shrink-0">
               <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--emerald))]" strokeWidth={2} />
-              <span className="text-[11px] font-medium text-[hsl(var(--emerald))]">Verified</span>
+              <span className="text-[11px] font-medium text-[hsl(var(--emerald))]">KYB reviewed</span>
             </div>
           </div>
         </header>
@@ -368,7 +368,7 @@ export default function ComplianceEngineProductPage() {
               duration: 0.7,
               delay: 0.3
             }} className="mt-10 font-mono text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
-                OFAC · EU · UK HMT · DPL · Continuous screening
+                OFAC · EU · UK HMT · DPL · Periodic screening
               </motion.p>
             </div>
 
@@ -388,7 +388,7 @@ export default function ComplianceEngineProductPage() {
               The system
             </p>
             <h2 className="mt-5 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tighter leading-[1.05] text-foreground">
-              Three primitives. One verified counterparty.
+              Three primitives. One reviewed counterparty.
             </h2>
             <p className="mt-6 text-lg text-muted-foreground leading-relaxed"> Document intelligence, ownership graphing, and periodic sanctions screening on configured cadence: composed into a single auditable record. </p>
           </div>
@@ -407,7 +407,7 @@ export default function ComplianceEngineProductPage() {
               <h3 className="text-3xl lg:text-4xl font-semibold tracking-tighter text-foreground">
                 AI document extraction.
               </h3>
-              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> Upload a Certificate of Incorporation. Within seconds, the engine reads, structures, and SHA-256 seals the contents, ready to bind to an entity record. </p>
+              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md"> Upload a Certificate of Incorporation. The engine reads, structures, and SHA-256 seals the contents, ready to bind to an entity record. </p>
 
               <div className="mt-12">
                 <OcrExtractionVisual />
@@ -532,7 +532,7 @@ export default function ComplianceEngineProductPage() {
             Compliance, as infrastructure.
           </h2>
           <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            One verified counterparty record, reused across every deal. Bind it
+            One reviewed counterparty record, reused across every deal. Bind it
             to the Trade Desk and seal cross-border transactions in minutes.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-4">

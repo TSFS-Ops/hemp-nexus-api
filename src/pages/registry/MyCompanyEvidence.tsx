@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BackButton } from "@/components/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { PORTAL_BLOCKED_LABEL } from "@/lib/registry-company-portal-ssot";
+import { formatEvidenceState } from "@/lib/registry-status-labels";
 
 interface EvidenceItem {
   id: string;
@@ -96,7 +97,7 @@ export default function MyCompanyEvidence() {
                 <Badge variant="outline" className="mr-2">{e.source === "claim" ? "Claim" : "Bank detail"}</Badge>
                 {e.evidence_kind}
               </span>
-              <span className="text-muted-foreground">{e.evidence_state ?? "submitted"}</span>
+              <span className="text-muted-foreground" data-testid="evidence-state">{formatEvidenceState(e.evidence_state)}</span>
             </div>
           ))}
         </CardContent>
