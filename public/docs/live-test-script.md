@@ -755,7 +755,7 @@ Before you start: Sign in.
 
 Do this:
 1. Go to the Billing page.
-2. You should see a list of credit packages with prices in US Dollars (USD). The standard tiers are: 1 credit for $1, 10 credits for $10, 50 credits for $45 (a 10% saving), and 200 credits for $160 (a 20% saving).
+2. You should see a list of credit packages with prices in US Dollars (USD). The standard tiers are: 1 credit for $10, 10 credits for $100, 50 credits for $500, and 200 credits for $2,000 (flat $10.00 per credit).
 3. Each package should clearly say how many credits you get and what it costs in USD.
 
 What good looks like: Packages are listed clearly with Buy buttons.

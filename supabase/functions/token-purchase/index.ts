@@ -88,8 +88,9 @@ const CHARGING_ENTITY = {
 // and the ledger / audit row records `currency='USD'` and
 // `fx_basis='native_usd'`. Legacy ZAR fields are no longer written.
 //
-// `single` ($1) is the in-app one-credit top-up; `pack_10`, `pack_50`,
-// `pack_200` are the headline tiers (1 credit = $1.00 USD).
+// `single` ($10) is the in-app one-credit top-up; `pack_10`, `pack_50`,
+// `pack_200` are the headline tiers (1 credit = $10.00 USD — David,
+// 2026-06 pricing correction; flat per-credit, no volume discount).
 // ==============================================
 const TOKEN_PACKAGES: Record<string, {
   credits: number;
@@ -100,29 +101,27 @@ const TOKEN_PACKAGES: Record<string, {
 }> = {
   single: {
     credits: 1,
-    price_usd: 1,
+    price_usd: 10,
     label: "Single Credit",
-    pricePerCredit: "1.00",
+    pricePerCredit: "10.00",
   },
   pack_10: {
     credits: 10,
-    price_usd: 10,
+    price_usd: 100,
     label: "10 Credits",
-    pricePerCredit: "1.00",
+    pricePerCredit: "10.00",
   },
   pack_50: {
     credits: 50,
-    price_usd: 45,
+    price_usd: 500,
     label: "50 Credits",
-    pricePerCredit: "0.90",
-    saving: "10% saving",
+    pricePerCredit: "10.00",
   },
   pack_200: {
     credits: 200,
-    price_usd: 160,
+    price_usd: 2000,
     label: "200 Credits",
-    pricePerCredit: "0.80",
-    saving: "20% saving",
+    pricePerCredit: "10.00",
   },
 };
 

@@ -33,45 +33,46 @@ import { publish as publishCrossTab } from "@/lib/cross-tab-bus";
 // CREDIT PACKAGES - USD-native settlement (cutover 2026-05-01)
 // ==============================================
 // Paystack charges Izenzo customers directly in USD. There is no FX
-// conversion at checkout. 1 credit = $1.00 USD. Drift between this
-// list and `TOKEN_PACKAGES` in
+// conversion at checkout. 1 credit = $10.00 USD (David pricing
+// correction, 2026-06 — flat per-credit, no volume discount). Drift
+// between this list and `TOKEN_PACKAGES` in
 // `supabase/functions/token-purchase/index.ts` will charge the wrong
 // amount.
 const CREDIT_PACKAGES = [
   {
     id: 'single',
     credits: 1,
-    priceUsd: 1,
+    priceUsd: 10,
     label: 'Single Credit',
-    pricePerCredit: '1.00',
+    pricePerCredit: '10.00',
     description: 'One credit - pay as you go',
     popular: false,
   },
   {
     id: 'pack_10',
     credits: 10,
-    priceUsd: 10,
+    priceUsd: 100,
     label: '10 Credits',
-    pricePerCredit: '1.00',
+    pricePerCredit: '10.00',
     description: 'Standard rate',
     popular: false,
   },
   {
     id: 'pack_50',
     credits: 50,
-    priceUsd: 45,
+    priceUsd: 500,
     label: '50 Credits',
-    pricePerCredit: '0.90',
-    description: '10% saving vs standard',
+    pricePerCredit: '10.00',
+    description: 'Standard rate',
     popular: true,
   },
   {
     id: 'pack_200',
     credits: 200,
-    priceUsd: 160,
+    priceUsd: 2000,
     label: '200 Credits',
-    pricePerCredit: '0.80',
-    description: '20% saving vs standard',
+    pricePerCredit: '10.00',
+    description: 'Standard rate',
     popular: false,
   },
 ];

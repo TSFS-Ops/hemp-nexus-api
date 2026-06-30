@@ -32,12 +32,14 @@ const PACKS: Array<{
   cta: string;
   highlight?: boolean;
 }> = [
-  // Prices in USD ($1 / credit canonical). Paystack settles natively
-  // in USD as of cutover 2026-05-01 - no FX conversion at checkout.
+  // Prices in USD ($10 / credit canonical — David pricing correction,
+  // 2026-06; flat per-credit, no volume discount). Paystack settles
+  // natively in USD as of cutover 2026-05-01 — no FX conversion at
+  // checkout.
   {
     id: "single",
     name: "Pay-as-you-go",
-    price: "$1",
+    price: "$10",
     unit: "per credit",
     credits: 1,
     description: "Buy a single credit on demand. No commitment, no expiry.",
@@ -46,8 +48,8 @@ const PACKS: Array<{
   {
     id: "pack_50",
     name: "Starter Pack",
-    price: "$45",
-    unit: "50 credits · 10% saving",
+    price: "$500",
+    unit: "50 credits · $10.00 / credit",
     credits: 50,
     description: "For desks running multiple trades each week.",
     cta: "Purchase Starter",
@@ -56,8 +58,8 @@ const PACKS: Array<{
   {
     id: "pack_200",
     name: "Professional Pack",
-    price: "$160",
-    unit: "200 credits · 20% saving",
+    price: "$2,000",
+    unit: "200 credits · $10.00 / credit",
     credits: 200,
     description: "For high-volume institutional desks.",
     cta: "Purchase Professional",

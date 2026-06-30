@@ -67,7 +67,7 @@ const BLOCKS: Block[] = [
   { kind: "p", text: "Errors return JSON: { code, message, request_id }. Always log the request_id - it is the fastest path to a useful support response. Common codes: VALIDATION_ERROR (400), UNAUTHORIZED (401), FORBIDDEN_SCOPE (403), NOT_FOUND (404), DISPUTE_ACTIVE (409), ENGAGEMENT_PENDING (409), WEBHOOK_REPLAY (409), RATE_LIMITED (429)." },
 
   { kind: "h2", text: "8. Billing" },
-  { kind: "p", text: "Calls made with this key burn credits at the same rate as a manual operator. One credit costs one US dollar. Tiers: pack_10 ($10), pack_50 ($45, ten percent off), pack_200 ($160, twenty percent off). Top up via the billing page. Sandbox calls never burn credits." },
+  { kind: "p", text: "Calls made with this key burn credits at the same rate as a manual operator. One credit costs ten US dollars. Tiers: pack_10 ($100), pack_50 ($500), pack_200 ($2,000). Top up via the billing page. Sandbox calls never burn credits." },
 
   { kind: "h2", text: "9. Support" },
   { kind: "p", text: "Engineering support: api@izenzo.co.za. Service level: four business hours, twenty-four hours over weekends. Always include the request_id from any failing response and the timestamp in UTC." },
