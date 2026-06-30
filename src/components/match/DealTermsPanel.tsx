@@ -338,7 +338,7 @@ export function DealTermsPanel({ matchId, orgId, onMatchUpdated }: DealTermsPane
         if (Object.keys(matchUpdate).length > 0) {
           const { error: matchErr } = await supabase
             .from("matches")
-            .update(matchUpdate)
+            .update(matchUpdate as any)
             .eq("id", matchId);
 
           if (matchErr) {

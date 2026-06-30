@@ -158,14 +158,14 @@ export function NewTradeInitiation() {
         poi_state: "DRAFT" as const,
         match_type: "search" as const,
         hash,
+        buyer_org_id: parsed.data.side === "buyer" ? orgId : null,
+        seller_org_id: parsed.data.side === "seller" ? orgId : null,
         // Side semantics: the initiating org takes the chosen role; the
         // counterparty slot is left null until they accept the engagement.
         ...(parsed.data.side === "buyer" ? {
-          buyer_org_id: orgId,
           buyer_name: orgName ?? null,
           seller_name: selectedCounterparty?.company_name ?? parsed.data.counterpartyLabel
         } : {
-          seller_org_id: orgId,
           seller_name: orgName ?? null,
           buyer_name: selectedCounterparty?.company_name ?? parsed.data.counterpartyLabel
         }),
@@ -179,7 +179,7 @@ export function NewTradeInitiation() {
       const {
         data,
         error
-      } = await supabase.from("matches").insert(insertRow).select("id").single();
+      } = await supabase.from("matches").insert(insertRow as any).select("id").single();
       if (error) throw error;
       if (!data?.id) throw new Error("Match created but no id returned");
       draft.clearDraft();
