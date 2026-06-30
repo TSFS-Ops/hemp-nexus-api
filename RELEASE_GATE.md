@@ -1656,3 +1656,12 @@ coverage guard pins them and they remain live.
   that expected `notifications` / `email_send_log` fan-out rows exist
   and opens `admin_risk_items` of kind `missing_side_effect`. Never
   resends or replays. Auth: same as sibling.
+- `burn-poi-reconciliation` — P0 daily read-only burn/POI reconciliation
+  report. Scheduled by `cron.job` row `burn-poi-reconciliation-daily`
+  (`30 3 * * *`). Was returning HTTP 404 `NOT_FOUND_FUNCTION_BLOB`
+  because the function blob was missing from the active edge runtime
+  and the function was absent from this deploy manifest. Wiring it in
+  here so the deploy coverage guard pins it. Read-only: opens
+  `admin_risk_items` only; never mutates `pois`, `token_ledger`,
+  `matches`, `wads`, `ledger_events`, `balances`, `payments`, or
+  `refunds`. Auth: `INTERNAL_CRON_KEY` / service_role / platform_admin.
