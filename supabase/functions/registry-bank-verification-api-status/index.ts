@@ -97,6 +97,10 @@ Deno.serve(async (req) => {
     let apiFlag = mapVerificationStatusToApiFlag(verificationStatus);
     if (apiFlag === "verified" && !bdApproved) apiFlag = "not_verified";
 
+    // Internal audit row keeps the full raw verification_status for
+    // admin/operator review. The public API response below intentionally
+    // does NOT include verification_status — external consumers receive
+    // only the safe `payment_detail_status` flag and `safe_label`.
     await svc.from("registry_bank_detail_verification_events").insert({
       submission_id: submission?.id ?? null,
       audit_event_name: "registry_bank_verification_api_status_checked",
@@ -104,16 +108,18 @@ Deno.serve(async (req) => {
       payload: { company_reference, api_flag: apiFlag, verification_status: verificationStatus, request_id: requestId, client_id: auth.client_id },
     }).catch(() => {});
 
+    // C9 F-API-01: public response shape — safe fields only.
+    // Removed `verification_status` (raw internal provider/pipeline vocab).
     return json(req, 200, {
       ok: true,
       request_id: requestId,
       company_reference,
       payment_detail_status: apiFlag,
-      verification_status: verificationStatus,
       safe_label: REGISTRY_BANK_VERIFICATION_PUBLIC_LABELS[verificationStatus],
-      // No raw or masked bank fields returned in Batch 14.
+      // No raw verification_status. No raw or masked bank fields.
       audit_reference: requestId,
     });
+
   } catch (err) {
     console.error("registry-bank-verification-api-status error", err);
     return json(req, 500, { ok: false, request_id: requestId, error: "internal_error" });
