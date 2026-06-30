@@ -29,6 +29,15 @@ import {
 } from "@/lib/credit-checkout-payfast";
 import { usePayfastPublicAvailability } from "@/hooks/use-payfast-public-availability";
 
+/**
+ * PAYFAST_PUBLIC_PRICING_CONFIRMED — flip to `true` only once the
+ * client has signed off the fixed ZAR price table that corresponds to
+ * the $10/credit USD correction (David, 2026-06). While `false`, the
+ * customer-facing PayFast button is hidden so users cannot buy at the
+ * old ZAR amounts. ITN/webhook crediting paths are unchanged.
+ */
+const PAYFAST_PUBLIC_PRICING_CONFIRMED = false;
+
 const INK_GREEN = "hsl(155 35% 22%)";
 const INK_GREEN_HOVER = "hsl(155 35% 16%)";
 
