@@ -122,6 +122,9 @@ Deno.serve(async (req) => {
   const notifyUrl =
     firstNonEmpty("PAYFAST_NOTIFY_URL", "PAYFAST_SANDBOX_NOTIFY_URL") ||
     `${projectFunctionsBase()}/payfast-itn`;
+  // Optional override for the PayFast SANDBOX process URL.
+  const processUrlSandbox =
+    firstNonEmpty("PAYFAST_PROCESS_URL_SANDBOX", "PAYFAST_SANDBOX_PROCESS_URL") || undefined;
 
   const outcome = await buildPayfastSandboxCheckout(
     {
@@ -143,6 +146,7 @@ Deno.serve(async (req) => {
       notifyUrl,
       defaultReturnUrl,
       defaultCancelUrl,
+      processUrl: processUrlSandbox,
     },
   );
 

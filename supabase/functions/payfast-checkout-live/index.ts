@@ -145,6 +145,9 @@ Deno.serve(async (req) => {
     firstNonEmpty("PAYFAST_NOTIFY_URL_LIVE") || `${projectFunctionsBase()}/payfast-itn`;
   const defaultReturnUrlLive = firstNonEmpty("PAYFAST_RETURN_URL_LIVE");
   const defaultCancelUrlLive = firstNonEmpty("PAYFAST_CANCEL_URL_LIVE");
+  // Optional override for the PayFast LIVE process URL.
+  const processUrlLive =
+    firstNonEmpty("PAYFAST_PROCESS_URL_LIVE", "PAYFAST_PROCESS_URL") || undefined;
 
   const outcome = await buildPayfastLiveCheckout(
     {
@@ -167,6 +170,7 @@ Deno.serve(async (req) => {
       notifyUrlLive,
       defaultReturnUrlLive,
       defaultCancelUrlLive,
+      processUrl: processUrlLive,
     },
   );
 
