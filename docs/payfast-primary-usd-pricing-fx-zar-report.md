@@ -1,6 +1,29 @@
 # PayFast Primary · USD Pricing · FX-controlled ZAR — Report
 
-**Status:** PAYFAST_PRIMARY_USD_WITH_FX_ZAR_READY
+**Status:** PAYFAST_PRIMARY_USD_PAYFAST_ONLY_READY
+
+## Customer-view verification (non-admin)
+
+Confirmed via rendered-component test
+`src/tests/payfast-customer-only-view.test.tsx` (passing) which mocks
+`useAuth` with `isAdmin: false`:
+
+- ✅ PayFast button renders (`pay-payfast-single`).
+- ✅ Paystack button does NOT render (`pay-paystack-single` absent).
+- ✅ No `[Admin only]` wording for customers.
+- ✅ No `Paystack` wording on the customer surface.
+- ✅ USD price (`$10`) remains visible.
+- ✅ Only PayFast is a visible payment option.
+- ✅ PayFast still routes via `payfast-checkout-public`, USD × admin
+  FX rate → ZAR snapshotted in `token_purchases.metadata`.
+- ✅ PayFast credits issued only by the verified ITN handler
+  (`payfast-itn`); the client never credits.
+
+Admin parity test in the same file confirms `isAdmin: true` users see
+a dashed-grey Paystack button labelled `[Admin only] Pay $10 via
+Paystack` with `data-admin-only="true"` — clearly separated from the
+customer surface. `PAYSTACK_PUBLIC_ENABLED` remains `false`.
+
 
 ## What was wrong
 
