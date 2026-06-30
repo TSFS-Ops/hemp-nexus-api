@@ -24,6 +24,7 @@ import { BillingUnavailableNotice } from "@/components/desk/billing/BillingUnava
 import { PurchasesList } from "@/components/desk/billing/PurchasesList";
 import { PayfastSandboxTestButton } from "@/components/desk/billing/PayfastSandboxTestButton";
 import { PayfastLiveSmokeTestButton } from "@/components/desk/billing/PayfastLiveSmokeTestButton";
+import { AdminPayfastPricingReview } from "@/components/desk/billing/AdminPayfastPricingReview";
 import { useBillingAvailability } from "@/hooks/use-billing-availability";
 import { cn } from "@/lib/utils";
 import { invalidateAllCreditBalanceQueries } from "@/lib/credit-balance-invalidation";
