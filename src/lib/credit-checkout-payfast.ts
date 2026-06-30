@@ -141,26 +141,54 @@ export async function startPayfastPublicCheckout(
  * signed fields. This mirrors what the admin live smoke button does,
  * but with a same-tab navigation (customers expect that).
  */
+export interface SubmitPayfastFormOptions {
+  /** Optional structured logger from `createPayfastLogger`. */
+  logger?: {
+    log: (
+      phase:
+        | "form_submit"
+        | "form_submit_error",
+      fields?: Record<string, unknown>,
+    ) => unknown;
+  };
+}
+
 export function submitPayfastForm(
   checkoutUrl: string,
   formFields: Array<{ name: string; value: string }>,
+  options: SubmitPayfastFormOptions = {},
 ): void {
-  const url = new URL(checkoutUrl);
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = `${url.origin}${url.pathname}`;
-  if (window.self !== window.top) {
-    form.target = "_blank";
-    form.rel = "noopener";
+  try {
+    const url = new URL(checkoutUrl);
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = `${url.origin}${url.pathname}`;
+    const inIframe = window.self !== window.top;
+    if (inIframe) {
+      form.target = "_blank";
+      form.rel = "noopener";
+    }
+    form.style.display = "none";
+    for (const { name, value } of formFields) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = String(value);
+      form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    options.logger?.log("form_submit", {
+      checkoutHost: url.host,
+      formFieldCount: formFields.length,
+      extra: { target: inIframe ? "_blank" : "_self" },
+    });
+    form.submit();
+  } catch (err) {
+    options.logger?.log("form_submit_error", {
+      errorMessage: err instanceof Error ? err.message : String(err),
+      errorName: err instanceof Error ? err.name : "UnknownError",
+    });
+    throw err;
   }
-  form.style.display = "none";
-  for (const { name, value } of formFields) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = String(value);
-    form.appendChild(input);
-  }
-  document.body.appendChild(form);
-  form.submit();
 }
+
