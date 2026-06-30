@@ -235,7 +235,7 @@ export function AdminVerificationQueuePanel() {
       };
       const { error } = await supabase
         .from("operator_verification_requests")
-        .update(patch)
+        .update(patch as any)
         .eq("id", acting.id);
       if (error) {
         // Detect billing rejection raised by bill_clip_on_request /
