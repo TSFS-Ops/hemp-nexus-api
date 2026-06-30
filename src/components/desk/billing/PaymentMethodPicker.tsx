@@ -131,6 +131,10 @@ export function PaymentMethodPicker({
 
   const handlePayfast = async (kind: "initial" | "retry" = "initial") => {
     if (busy || disabled || !eligible) return;
+    if (providerUnavailable) {
+      toast.error("PayFast is temporarily unreachable. Please try again in a moment.");
+      return;
+    }
     setBusy("payfast");
 
     // Reuse the same requestId on retry so the whole journey correlates.
@@ -143,7 +147,11 @@ export function PaymentMethodPicker({
     setPayfastRequestId(logger.requestId);
 
     logger.log("initiate_start", {
-      extra: { kind, usdZarRate: payfast.usdZarRate ?? null },
+      extra: {
+        kind,
+        usdZarRate: payfast.usdZarRate ?? null,
+        connectivityStatus: connectivity.status,
+      },
     });
 
     try {
