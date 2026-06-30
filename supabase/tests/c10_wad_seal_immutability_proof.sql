@@ -113,12 +113,8 @@ BEGIN
     RAISE NOTICE 'sealed DELETE: blocked by sealed_wad_immutable (PASS)';
   END;
 
-  -- (5) Allowlisted updates must succeed. Use a savepoint so the changes
-  -- to a real existing sealed WaD don't bleed past this proof (the outer
-  -- ROLLBACK will discard them anyway, but the savepoint keeps the proof
-  -- composable if extended later).
-  SAVEPOINT allowlist_check;
-
+  -- (5) Allowlisted updates must succeed. The outer ROLLBACK at the end
+  -- of this script discards them; nothing persists.
   UPDATE public.wads
      SET certificate_generated_at = now(),
          certificate_path         = 'wads/proof.pdf'
@@ -131,8 +127,6 @@ BEGIN
          revoked_reason = 'c10 proof — rollback only'
    WHERE id = v_wad;
   RAISE NOTICE 'allowlisted revoke fields: allowed (PASS)';
-
-  ROLLBACK TO SAVEPOINT allowlist_check;
 
   SELECT count(*) INTO v_count_post FROM public.wads;
   IF v_count_post != v_count_pre + CASE WHEN v_ephemeral THEN 1 ELSE 0 END THEN
