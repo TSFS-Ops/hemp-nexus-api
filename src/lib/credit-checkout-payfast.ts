@@ -149,6 +149,10 @@ export function submitPayfastForm(
   const form = document.createElement("form");
   form.method = "POST";
   form.action = `${url.origin}${url.pathname}`;
+  if (window.self !== window.top) {
+    form.target = "_blank";
+    form.rel = "noopener";
+  }
   form.style.display = "none";
   for (const { name, value } of formFields) {
     const input = document.createElement("input");
