@@ -131,15 +131,16 @@ Deno.serve(async (req) => {
 
   const probes = await Promise.all(TARGETS.map(probeHost));
   const reachable = probes.every((p) => p.ok);
-  // The card-capture host is the one that drives the customer-facing
-  // "refused to connect" surface. If it fails, surface that distinctly
-  // so the UI can be specific.
-  const cardCapture = probes.find((p) => p.host === "payment.payfast.io") ?? null;
-  const processHost = probes.find((p) => p.host === "www.payfast.co.za") ?? null;
+  // TARGETS[0] is the form-POST process host, TARGETS[1] is the
+  // hosted card-capture host (the user-visible "refused to connect"
+  // surface). Use the resolved hosts so env overrides classify
+  // correctly.
+  const processHost = probes[0] ?? null;
+  const cardCapture = probes[1] ?? null;
 
   const status: "ok" | "degraded" | "unavailable" = reachable
     ? "ok"
-    : processHost?.ok && !cardCapture?.ok
+    : processHost?.ok && cardCapture && !cardCapture.ok
       ? "degraded"
       : "unavailable";
 
