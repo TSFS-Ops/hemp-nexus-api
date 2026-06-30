@@ -17,13 +17,11 @@
 // wording only.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { webhookCorsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-internal-key, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  Vary: "Origin",
-};
+// Cron-only endpoint — no browser callers. webhookCorsHeaders() emits only
+// `Vary: Origin` and never `Access-Control-Allow-Origin: *`.
+const corsHeaders = webhookCorsHeaders();
 
 const MS_DAY = 24 * 60 * 60 * 1000;
 const MS_HOUR = 60 * 60 * 1000;
