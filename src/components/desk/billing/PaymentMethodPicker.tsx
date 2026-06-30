@@ -15,6 +15,7 @@
  * PayFast credits are issued ONLY by the verified ITN handler.
  */
 import { useState } from "react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -77,6 +78,8 @@ export function PaymentMethodPicker({
   const payfast = usePayfastPublicAvailability();
   const { isAdmin } = useAuth();
   const [busy, setBusy] = useState<"paystack" | "payfast" | null>(null);
+  const [payfastSubmittedAt, setPayfastSubmittedAt] = useState<number | null>(null);
+  const openedInNewTab = typeof window !== "undefined" && window.self !== window.top;
 
   const eligible = isPayfastEligible(packageId);
   const showPayfast = payfast.available && eligible;
@@ -107,6 +110,7 @@ export function PaymentMethodPicker({
         packageId,
       );
       submitPayfastForm(checkoutUrl, formFields);
+      setPayfastSubmittedAt(Date.now());
       setTimeout(() => setBusy(null), 4000);
     } catch (e) {
       const msg =
@@ -194,6 +198,63 @@ export function PaymentMethodPicker({
           before payment. The rate is set by Izenzo and locked when
           checkout starts.
         </p>
+      )}
+
+      {showPayfast && payfastSubmittedAt !== null && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid={`payfast-connection-notice-${packageId}`}
+          className="mt-2 rounded-sm border border-amber-200 bg-amber-50 p-3 text-[12px] text-slate-800"
+        >
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 text-amber-600 shrink-0" />
+            <div className="space-y-2">
+              <p className="font-medium text-slate-900">
+                {openedInNewTab
+                  ? "PayFast opened in a new tab."
+                  : "Redirecting to PayFast…"}
+              </p>
+              <p>
+                If you see{" "}
+                <span className="font-mono">payment.payfast.io refused to connect</span>
+                {" "}or the page does not load, it is usually a temporary
+                network issue between your device and PayFast. Try the
+                following, then retry the payment:
+              </p>
+              <ul className="list-disc pl-5 space-y-0.5">
+                <li>Disable any ad-blocker, VPN, or strict tracking-protection for this site.</li>
+                <li>Try a different browser, or switch from Wi-Fi to mobile data.</li>
+                <li>Wait 30–60 seconds — PayFast may be briefly unavailable.</li>
+              </ul>
+              <p className="text-slate-600">
+                No credits are issued until PayFast confirms your payment,
+                so it is safe to retry.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handlePayfast}
+                  disabled={!!busy || disabled}
+                  data-testid={`payfast-retry-${packageId}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[12px] font-medium text-white disabled:opacity-60"
+                  style={{ backgroundColor: INK_GREEN }}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${busy === "payfast" ? "animate-spin" : ""}`} />
+                  Retry PayFast
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayfastSubmittedAt(null)}
+                  className="inline-flex items-center px-3 py-1.5 rounded-sm text-[12px] font-medium border border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
+                  data-testid={`payfast-dismiss-${packageId}`}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
