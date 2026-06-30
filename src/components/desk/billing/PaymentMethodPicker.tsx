@@ -30,6 +30,7 @@ import {
 } from "@/lib/credit-checkout-payfast";
 import { createPayfastLogger, type PayfastLogger } from "@/lib/payfast-checkout-logger";
 import { usePayfastPublicAvailability } from "@/hooks/use-payfast-public-availability";
+import { usePayfastConnectivity } from "@/hooks/use-payfast-connectivity";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
