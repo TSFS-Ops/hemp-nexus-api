@@ -224,3 +224,28 @@ A Playwright check against `http://localhost:8080/desk/billing` confirmed:
 
 **Final status:** `PAYFAST_PHASE_2J_CUSTOMER_ROLLOUT_READY`
 
+---
+
+## 13. Global billing availability switch — ON (2026-06-29)
+
+Operator-approved flip of the existing `billing_availability` admin setting (no code, no schema, no policy change; routed through the existing `admin_settings` admin RLS policy `Admins can manage settings`).
+
+- `admin_settings.billing_availability` updated from `{enabled:false, reason:"usd_settlement_pending", message:"Credit purchases are temporarily unavailable…"}` to `{enabled:true, reason:"enabled", message:null}`.
+- `get_billing_availability` RPC now returns `enabled=true`. The generic `admin_settings.changed` audit trigger captured the transition in `event_store`.
+- Paystack code untouched. PayFast code untouched. No FX revived. No new edge function, no bypass of the billing availability system.
+
+### Live UI verification (Playwright against `http://localhost:8080/desk/billing`)
+
+- `Unavailable` CTA is gone for every pack.
+- Per pack, exactly one Paystack button and one PayFast button render, in that order:
+  - `single` → `Pay $1 via Paystack` + `Pay R20 via PayFast`
+  - `pack_10` → `Pay $10 via Paystack` + `Pay R190 via PayFast`
+  - `pack_50` → `Pay $45 via Paystack` + `Pay R850 via PayFast`
+  - `pack_200` → `Pay $160 via Paystack` + `Pay R3,000 via PayFast`
+- Paystack prices remain USD; PayFast prices are the fixed ZAR table (R20 / R190 / R850 / R3,000).
+- PayFast button still routes through `payfast-checkout-public`; credits still issued only by the verified `payfast-itn` handler; `PayfastReturn` / `PayfastCancel` remain read-only.
+- `PurchasesList` continues to render Provider badges and per-provider references.
+
+**Final status:** `PAYFAST_PHASE_2J_CUSTOMER_ROLLOUT_READY`
+
+
