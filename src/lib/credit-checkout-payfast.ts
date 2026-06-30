@@ -1,10 +1,15 @@
 /**
  * credit-checkout-payfast — client helper for the customer-facing
- * `payfast-checkout-public` edge function (Phase 2J).
+ * `payfast-checkout-public` edge function.
  *
- * Sits alongside (does NOT replace) `credit-checkout.ts`, which still
- * handles the Paystack path. PayFast credits are issued ONLY by the
- * verified ITN handler (`payfast-itn`); this client does not credit.
+ * USD is the source of truth. PayFast settles in ZAR, so the edge
+ * function computes the ZAR amount from the platform-admin-managed
+ * USD/ZAR rate at checkout-start, snapshots it into purchase metadata
+ * and returns it for display. Izenzo never performs live FX lookups
+ * and never lets a client-supplied amount dictate the charge.
+ *
+ * PayFast credits are issued ONLY by the verified ITN handler
+ * (`payfast-itn`); this client does not credit.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,14 +19,35 @@ export type PayfastCustomerPackageId =
   | "pack_50"
   | "pack_200";
 
-export const PAYFAST_ZAR_PRICES: Readonly<
+/** USD price table — single source of truth on the customer surface. */
+export const PAYFAST_USD_PRICES: Readonly<
   Record<PayfastCustomerPackageId, number>
 > = Object.freeze({
-  single: 20,
-  pack_10: 190,
-  pack_50: 850,
-  pack_200: 3000,
+  single: 10,
+  pack_10: 100,
+  pack_50: 500,
+  pack_200: 2000,
 });
+
+export const PAYFAST_PACK_CREDITS: Readonly<
+  Record<PayfastCustomerPackageId, number>
+> = Object.freeze({
+  single: 1,
+  pack_10: 10,
+  pack_50: 50,
+  pack_200: 200,
+});
+
+/** Display-only helper. The authoritative ZAR amount is the one
+ * returned by the edge function (snapshotted into purchase metadata). */
+export function computeDisplayZar(
+  packageId: PayfastCustomerPackageId,
+  usdZarRate: number | null | undefined,
+): number | null {
+  if (!Number.isFinite(usdZarRate as number) || (usdZarRate as number) <= 0) return null;
+  const usd = PAYFAST_USD_PRICES[packageId];
+  return Math.round(usd * (usdZarRate as number) * 100) / 100;
+}
 
 export interface StartPayfastCheckoutResult {
   checkoutUrl: string;
@@ -29,6 +55,8 @@ export interface StartPayfastCheckoutResult {
   providerReference: string;
   formFields: Array<{ name: string; value: string }>;
   amountZar: number;
+  amountUsd: number;
+  usdZarRate: number;
   credits: number;
   packageId: PayfastCustomerPackageId;
 }
@@ -38,7 +66,8 @@ export interface StartPayfastCheckoutResult {
  * pack. Returns the signed form fields + a checkoutUrl. The caller is
  * responsible for posting the signed form to PayFast's process URL.
  *
- * Throws an Error with a user-readable message on failure.
+ * Throws an Error with a user-readable message on failure (including
+ * when the platform-admin USD/ZAR rate is unset).
  */
 export async function startPayfastPublicCheckout(
   packageId: PayfastCustomerPackageId,
@@ -77,6 +106,8 @@ export async function startPayfastPublicCheckout(
     providerReference?: string;
     formFields?: Array<{ name: string; value: string }>;
     amountZar?: number;
+    amountUsd?: number;
+    usdZarRate?: number;
     credits?: number;
     packageId?: PayfastCustomerPackageId;
   } | null;
@@ -97,8 +128,10 @@ export async function startPayfastPublicCheckout(
     purchaseId: payload.purchaseId,
     providerReference: payload.providerReference,
     formFields: payload.formFields,
-    amountZar: payload.amountZar ?? PAYFAST_ZAR_PRICES[packageId],
-    credits: payload.credits ?? 0,
+    amountZar: payload.amountZar ?? 0,
+    amountUsd: payload.amountUsd ?? PAYFAST_USD_PRICES[packageId],
+    usdZarRate: payload.usdZarRate ?? 0,
+    credits: payload.credits ?? PAYFAST_PACK_CREDITS[packageId],
     packageId: (payload.packageId ?? packageId),
   };
 }

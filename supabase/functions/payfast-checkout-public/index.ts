@@ -78,6 +78,24 @@ Deno.serve(async (req) => {
   const globalMode = resolveGlobalMode();
   const publicEnabled = envBool("PAYFAST_PUBLIC_ENABLED");
 
+  // Resolve the admin-managed USD->ZAR rate. No live FX API.
+  async function loadUsdZarRate(): Promise<number | null> {
+    try {
+      const { data, error } = await service
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "payfast_usd_zar_rate")
+        .maybeSingle();
+      if (error || !data) return null;
+      const raw = (data as { value: { rate?: unknown } }).value?.rate;
+      const n = typeof raw === "number" ? raw : Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    } catch {
+      return null;
+    }
+  }
+  const usdZarRate = await loadUsdZarRate();
+
   // GET = availability probe. No secrets, no side effects.
   if (req.method === "GET") {
     const merchantConfigured =
@@ -88,8 +106,13 @@ Deno.serve(async (req) => {
       !!firstNonEmpty("PAYFAST_NOTIFY_URL_LIVE") &&
       !!firstNonEmpty("PAYFAST_RETURN_URL_LIVE") &&
       !!firstNonEmpty("PAYFAST_CANCEL_URL_LIVE");
+    const fxRateConfigured = usdZarRate !== null;
     const available =
-      publicEnabled && globalMode === "live" && merchantConfigured && urlsConfigured;
+      publicEnabled &&
+      globalMode === "live" &&
+      merchantConfigured &&
+      urlsConfigured &&
+      fxRateConfigured;
     return new Response(
       JSON.stringify({
         ok: true,
@@ -98,6 +121,8 @@ Deno.serve(async (req) => {
         globalMode,
         merchantConfigured,
         urlsConfigured,
+        fxRateConfigured,
+        usdZarRate,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
@@ -151,6 +176,7 @@ Deno.serve(async (req) => {
       orgId,
       publicEnabled,
       globalMode,
+      usdZarRate,
       merchantIdLive,
       merchantKeyLive,
       passphraseLive,
