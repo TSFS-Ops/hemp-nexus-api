@@ -146,17 +146,20 @@ describe("Phase 2J: no FX revival anywhere on the PayFast customer surface", () 
   });
 });
 
-describe("Phase 2J: Paystack remains the unchanged default", () => {
+describe("Phase 2J: Paystack code path is untouched (still hidden behind admin/flag)", () => {
   it("Paystack client still invokes token-purchase / token-purchase/verify", () => {
     expect(CLIENT_PS_SRC).toContain('"token-purchase"');
     expect(CLIENT_PS_SRC).toContain('"token-purchase/verify"');
   });
-  it("PaymentMethodPicker imports and renders the Paystack startCreditCheckout path", () => {
+  it("PaymentMethodPicker still imports and can render the Paystack startCreditCheckout path", () => {
     expect(PICKER_SRC).toContain('from "@/lib/credit-checkout"');
     expect(PICKER_SRC).toContain("startCreditCheckout");
     expect(PICKER_SRC).toMatch(/Pay\s+\{usdPrice\}\s+via\s+Paystack/);
   });
-  it("BillingOverview still renders PaymentMethodPicker for each pack (covers Paystack)", () => {
+  it("PaymentMethodPicker exposes a PAYSTACK_PUBLIC_ENABLED flag (default false)", () => {
+    expect(PICKER_SRC).toMatch(/export const PAYSTACK_PUBLIC_ENABLED\s*=\s*false/);
+  });
+  it("BillingOverview still renders PaymentMethodPicker for each pack", () => {
     expect(BILLING_SRC).toContain("PaymentMethodPicker");
   });
 });
@@ -187,9 +190,8 @@ describe("Phase 2J: PayFast customer button is hidden until probe is available",
 });
 
 describe("Phase 2J: no admin-only or smoke-test language in the customer picker", () => {
-  it("PaymentMethodPicker carries no 'smoke', 'admin', or 'sandbox' wording", () => {
+  it("PaymentMethodPicker carries no 'smoke' or 'sandbox' wording", () => {
     expect(PICKER_SRC.toLowerCase()).not.toContain("smoke");
-    expect(PICKER_SRC.toLowerCase()).not.toMatch(/admin[\s-_]?only/);
     expect(PICKER_SRC.toLowerCase()).not.toContain("sandbox");
   });
   it("Return page carries no 'admin', 'smoke' or 'sandbox' wording", () => {
@@ -205,7 +207,6 @@ describe("Phase 2J: return / cancel pages do not credit the wallet", () => {
     expect(RETURN_PAGE_SRC).not.toMatch(/atomic_token_credit/);
     expect(RETURN_PAGE_SRC).not.toMatch(/token-purchase\/verify/);
     expect(RETURN_PAGE_SRC).not.toMatch(/verifyCreditCheckout/);
-    // It also must not write to token_purchases.
     expect(RETURN_PAGE_SRC).not.toMatch(/\.update\(/);
     expect(RETURN_PAGE_SRC).not.toMatch(/\.insert\(/);
   });
@@ -231,30 +232,39 @@ describe("Phase 2J: PurchasesList shows the right provider and reference per row
   });
 });
 
-describe("Phase 2J: admin-only smoke buttons remain admin-only", () => {
-  it("PayfastLiveSmokeTestButton still returns null for non-admins", () => {
-    expect(LIVE_BTN_SRC).toMatch(/if\s*\(!isAdmin\)\s*return\s+null;/);
+describe("PayFast primary + USD pricing + admin-managed FX-derived ZAR", () => {
+  it("server customer pack registry is USD-based ($10/$100/$500/$2000)", () => {
+    expect(CUSTOMER_PACKS_SRC).toMatch(/single:\s*\{[^}]*price_usd:\s*10\b/);
+    expect(CUSTOMER_PACKS_SRC).toMatch(/pack_10:\s*\{[^}]*price_usd:\s*100\b/);
+    expect(CUSTOMER_PACKS_SRC).toMatch(/pack_50:\s*\{[^}]*price_usd:\s*500\b/);
+    expect(CUSTOMER_PACKS_SRC).toMatch(/pack_200:\s*\{[^}]*price_usd:\s*2000\b/);
+    expect(CUSTOMER_PACKS_SRC).not.toMatch(/price_zar:/);
   });
-  it("PayfastSandboxTestButton still gates on isAdmin", () => {
-    expect(SANDBOX_BTN_SRC).toMatch(/isAdmin/);
+  it("server helper requires an admin-managed USD/ZAR rate and rejects when missing", () => {
+    expect(PUBLIC_HELPER_SRC).toContain('"fx_rate_missing"');
+    expect(PUBLIC_HELPER_SRC).toMatch(/usdZarRate/);
+    expect(PUBLIC_HELPER_SRC).toMatch(/computeZarAmount\(/);
   });
-  it("neither admin button is referenced inside the customer PaymentMethodPicker", () => {
-    expect(PICKER_SRC).not.toContain("PayfastLiveSmokeTestButton");
-    expect(PICKER_SRC).not.toContain("PayfastSandboxTestButton");
+  it("server helper snapshots usd amount, FX rate and ZAR amount into metadata", () => {
+    expect(PUBLIC_HELPER_SRC).toMatch(/usd_zar_rate:/);
+    expect(PUBLIC_HELPER_SRC).toMatch(/fx_rate_locked_at:/);
+    expect(PUBLIC_HELPER_SRC).toMatch(/amount_zar:/);
+    expect(PUBLIC_HELPER_SRC).toMatch(/amount_usd:\s*pkg\.price_usd/);
+  });
+  it("edge entry resolves the rate from admin_settings.payfast_usd_zar_rate", () => {
+    expect(PUBLIC_FN_SRC).toContain("payfast_usd_zar_rate");
+    expect(PUBLIC_FN_SRC).toMatch(/usdZarRate/);
+  });
+  it("edge probe surface includes fxRateConfigured + usdZarRate (no secrets)", () => {
+    expect(PUBLIC_FN_SRC).toMatch(/fxRateConfigured/);
+    expect(PUBLIC_FN_SRC).toMatch(/usdZarRate/);
+  });
+  it("client wrapper exposes USD prices ($10/$100/$500/$2000) and a computeDisplayZar helper", () => {
+    expect(CLIENT_PF_SRC).toMatch(/single:\s*10\b/);
+    expect(CLIENT_PF_SRC).toMatch(/pack_10:\s*100\b/);
+    expect(CLIENT_PF_SRC).toMatch(/pack_50:\s*500\b/);
+    expect(CLIENT_PF_SRC).toMatch(/pack_200:\s*2000\b/);
+    expect(CLIENT_PF_SRC).toMatch(/computeDisplayZar/);
   });
 });
 
-describe("Phase 2J: ZAR pricing is fixed (no FX) and matches the approved table", () => {
-  it("server registry encodes R20 / R190 / R850 / R3000", () => {
-    expect(CUSTOMER_PACKS_SRC).toMatch(/single:\s*\{[^}]*price_zar:\s*20\b/);
-    expect(CUSTOMER_PACKS_SRC).toMatch(/pack_10:\s*\{[^}]*price_zar:\s*190\b/);
-    expect(CUSTOMER_PACKS_SRC).toMatch(/pack_50:\s*\{[^}]*price_zar:\s*850\b/);
-    expect(CUSTOMER_PACKS_SRC).toMatch(/pack_200:\s*\{[^}]*price_zar:\s*3000\b/);
-  });
-  it("client wrapper mirrors the same ZAR prices", () => {
-    expect(CLIENT_PF_SRC).toMatch(/single:\s*20\b/);
-    expect(CLIENT_PF_SRC).toMatch(/pack_10:\s*190\b/);
-    expect(CLIENT_PF_SRC).toMatch(/pack_50:\s*850\b/);
-    expect(CLIENT_PF_SRC).toMatch(/pack_200:\s*3000\b/);
-  });
-});

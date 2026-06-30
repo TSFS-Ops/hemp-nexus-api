@@ -249,3 +249,15 @@ Operator-approved flip of the existing `billing_availability` admin setting (no 
 **Final status:** `PAYFAST_PHASE_2J_CUSTOMER_ROLLOUT_READY`
 
 
+
+---
+
+## Addendum — superseded by USD-primary + FX-controlled ZAR
+
+The Phase-2J fixed-ZAR table (R20 / R190 / R850 / R3,000) has been
+**retired**. PayFast is now the primary customer payment option, with
+USD as the source of truth ($10 / $100 / $500 / $2,000) and the ZAR
+amount computed from a platform-admin-managed USD/ZAR rate stored in
+`admin_settings.payfast_usd_zar_rate`. See
+`docs/payfast-primary-usd-pricing-fx-zar-report.md` for the full
+record. ITN crediting and Paystack code paths remain unchanged.

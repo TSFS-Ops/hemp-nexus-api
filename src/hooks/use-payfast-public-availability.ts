@@ -1,13 +1,17 @@
 /**
- * usePayfastPublicAvailability — Phase 2J.
+ * usePayfastPublicAvailability — customer-facing PayFast probe.
  *
  * Calls the `payfast-checkout-public` GET probe to decide whether the
- * customer-facing PayFast option should be rendered. The probe returns
- * only boolean flags and the resolved global mode — never secrets.
+ * customer-facing PayFast option should be rendered, and to read the
+ * current admin-managed USD/ZAR rate for inline display. The probe
+ * returns only boolean flags + the resolved global mode + the rate —
+ * never secrets.
  *
  * The customer button must be HIDDEN whenever the probe is not
- * available, so PayFast can be turned off instantly by flipping the
- * `PAYFAST_PUBLIC_ENABLED` env flag without a deploy.
+ * available (gate off, wrong mode, merchant creds missing, URLs
+ * missing, or FX rate unset), so PayFast can be turned off instantly
+ * by flipping the `PAYFAST_PUBLIC_ENABLED` env flag or unsetting the
+ * rate.
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,12 +24,15 @@ export interface PayfastPublicProbe {
   globalMode: "sandbox" | "live";
   merchantConfigured: boolean;
   urlsConfigured: boolean;
+  fxRateConfigured: boolean;
+  usdZarRate: number | null;
 }
 
 export interface UsePayfastPublicAvailabilityResult {
   loading: boolean;
   probe: PayfastPublicProbe | null;
   available: boolean;
+  usdZarRate: number | null;
 }
 
 export function usePayfastPublicAvailability(): UsePayfastPublicAvailabilityResult {
@@ -69,5 +76,6 @@ export function usePayfastPublicAvailability(): UsePayfastPublicAvailabilityResu
     loading,
     probe,
     available: probe?.available === true,
+    usdZarRate: probe?.usdZarRate ?? null,
   };
 }

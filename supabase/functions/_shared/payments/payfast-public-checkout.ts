@@ -33,6 +33,7 @@
 import { buildSignedLiveFormPayload } from "./payfast-live-checkout.ts";
 import type { PayfastMode } from "./payfast.ts";
 import {
+  computeZarAmount,
   getPayfastCustomerPackage,
   type PayfastCustomerPackage,
 } from "./payfast-customer-packages.ts";
@@ -46,6 +47,7 @@ export type PublicCheckoutRejectReason =
   | "missing_org"
   | "merchant_config_missing"
   | "urls_missing"
+  | "fx_rate_missing"
   | "purchase_insert_failed";
 
 export interface PublicCheckoutOk {
@@ -59,6 +61,8 @@ export interface PublicCheckoutOk {
   formFields: Array<{ name: string; value: string }>;
   status_text: "pending";
   amountZar: number;
+  amountUsd: number;
+  usdZarRate: number;
   packageId: PayfastCustomerPackage["id"];
   credits: number;
 }
@@ -93,6 +97,12 @@ export interface PublicCheckoutDeps {
   publicEnabled: boolean;
   /** Global mode — must be "live". */
   globalMode: PayfastMode;
+  /**
+   * Admin-managed USD->ZAR rate. Must be > 0; otherwise checkout is
+   * rejected with `fx_rate_missing`. Sourced from
+   * `admin_settings.payfast_usd_zar_rate` by the edge entry point.
+   */
+  usdZarRate: number | null;
   merchantIdLive: string;
   merchantKeyLive: string;
   passphraseLive?: string | null;
@@ -187,12 +197,34 @@ export async function buildPayfastPublicCheckout(
     );
   }
 
-  // 8. Mint ids and the safe ZAR amount string.
-  const mPaymentId = (deps.mintMPaymentId ?? (() => defaultMint(now)))();
-  const amountStr = pkg.price_zar.toFixed(2);
-  const itemName = `Izenzo Credits — ${pkg.label}`;
+  // 8. FX rate sanity — required. No silent fallback, no live API.
+  const usdZarRate = deps.usdZarRate;
+  if (!Number.isFinite(usdZarRate as number) || (usdZarRate as number) <= 0) {
+    return rejected(
+      "fx_rate_missing",
+      "PayFast customer checkout is unavailable: USD/ZAR rate is not set. A platform admin must set admin_settings.payfast_usd_zar_rate.",
+      503,
+    );
+  }
+  const rate = usdZarRate as number;
+  const amountZar = computeZarAmount(pkg.price_usd, rate);
+  if (amountZar <= 0) {
+    return rejected(
+      "fx_rate_missing",
+      "PayFast customer checkout is unavailable: computed ZAR amount is invalid.",
+      503,
+    );
+  }
 
-  // 9. Insert pending purchase row.
+  // 9. Mint ids and the safe ZAR amount string.
+  const mPaymentId = (deps.mintMPaymentId ?? (() => defaultMint(now)))();
+  const amountStr = amountZar.toFixed(2);
+  const itemName = `Izenzo Credits — ${pkg.label}`;
+  const rateLockedAt = now().toISOString();
+
+  // 10. Insert pending purchase row. The exact USD price, FX rate and
+  // ZAR amount are snapshotted into metadata so later background rate
+  // changes cannot affect an already-started checkout.
   const insertPayload = {
     org_id: deps.orgId,
     user_id: deps.userId,
@@ -201,7 +233,7 @@ export async function buildPayfastPublicCheckout(
     provider_reference: mPaymentId,
     package_id: pkg.id,
     token_amount: pkg.credits,
-    amount_usd: 0,
+    amount_usd: pkg.price_usd,
     currency: "ZAR",
     status: "pending",
     metadata: {
@@ -215,8 +247,13 @@ export async function buildPayfastPublicCheckout(
       package_id: pkg.id,
       package_label: pkg.label,
       token_amount: pkg.credits,
-      amount_zar: pkg.price_zar,
-      price_zar: pkg.price_zar,
+      amount_usd: pkg.price_usd,
+      price_usd: pkg.price_usd,
+      usd_zar_rate: rate,
+      fx_rate_locked_at: rateLockedAt,
+      fx_rate_source: "admin_settings:payfast_usd_zar_rate",
+      amount_zar: amountZar,
+      price_zar: amountZar,
       currency: "ZAR",
       user_id: deps.userId,
       org_id: deps.orgId,
@@ -242,7 +279,7 @@ export async function buildPayfastPublicCheckout(
     );
   }
 
-  // 10. Build signed PayFast LIVE form payload.
+  // 11. Build signed PayFast LIVE form payload.
   const returnUrl = input.callbackUrl?.trim() || deps.defaultReturnUrlLive;
   const cancelUrl = input.cancelUrl?.trim() || deps.defaultCancelUrlLive;
   const signed = buildSignedLiveFormPayload({
@@ -262,7 +299,7 @@ export async function buildPayfastPublicCheckout(
     processUrl: deps.processUrl,
   });
 
-  // 11. Audit (best-effort).
+  // 12. Audit (best-effort).
   try {
     await deps.supabase.from("audit_logs").insert({
       org_id: deps.orgId,
@@ -278,14 +315,16 @@ export async function buildPayfastPublicCheckout(
         customer_facing: true,
         package_id: pkg.id,
         credits: pkg.credits,
-        amount_zar: pkg.price_zar,
+        amount_usd: pkg.price_usd,
+        usd_zar_rate: rate,
+        amount_zar: amountZar,
         currency: "ZAR",
         gate: "PAYFAST_PUBLIC_ENABLED",
       },
     });
   } catch { /* never block init on audit failure */ }
 
-  // 12. Build the safe response. merchant_key is required as a form
+  // 13. Build the safe response. merchant_key is required as a form
   // field by PayFast itself, but the passphrase is NEVER returned.
   const safeFields = signed.fields.map(([name, value]) => ({ name, value }));
 
@@ -299,7 +338,9 @@ export async function buildPayfastPublicCheckout(
     checkoutUrl: signed.checkoutUrl,
     formFields: safeFields,
     status_text: "pending",
-    amountZar: pkg.price_zar,
+    amountZar,
+    amountUsd: pkg.price_usd,
+    usdZarRate: rate,
     packageId: pkg.id,
     credits: pkg.credits,
   };
