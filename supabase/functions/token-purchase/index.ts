@@ -38,6 +38,10 @@ import {
   ProviderFetchTimeoutError,
   ProviderFetchNetworkError,
 } from "../_shared/provider-fetch.ts";
+import {
+  recordProviderSecretMissing,
+  recordWebhookSignatureInvalid,
+} from "../_shared/payment-observability.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
