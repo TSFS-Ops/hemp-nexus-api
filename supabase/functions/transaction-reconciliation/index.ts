@@ -7,6 +7,10 @@ import {
   ProviderFetchNetworkError,
 } from "../_shared/provider-fetch.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
+import {
+  recordProviderSecretMissing,
+  recordLedgerLabelRepairFailed,
+} from "../_shared/payment-observability.ts";
 
 // --- Inconclusive-failure tracking ---------------------------------
 // Opens a deduped admin_risk_items row only after the SAME provider
@@ -636,6 +640,14 @@ Deno.serve(async (req) => {
       }
     } else if (!paystackKey) {
       results.errors.push("PAYSTACK_SECRET_KEY not configured - skipping payment reconciliation");
+      // Batch I1 (#56) — observability only. No provider call attempted.
+      if (!dryRun) {
+        await recordProviderSecretMissing(adminClient, {
+          provider: "paystack",
+          source: "transaction-reconciliation",
+          requestId: req.headers.get("x-request-id"),
+        });
+      }
     }
 
     // --- 2. Stale email queue entries ---
@@ -691,6 +703,12 @@ Deno.serve(async (req) => {
       if (repairErr) {
         results.skeletal_paid_credit_error = repairErr.message;
         results.errors.push(`Skeletal paid-credit repair: ${repairErr.message}`);
+        // Batch I1 (#46/#54 residual) — observability only. Balances not changed.
+        await recordLedgerLabelRepairFailed(adminClient, {
+          source: "transaction-reconciliation",
+          errorMessage: repairErr.message,
+          reconRunId: req.headers.get("x-request-id"),
+        });
       } else if (Array.isArray(repaired)) {
         results.skeletal_paid_credit_promoted = repaired.length;
         for (const r of repaired) {

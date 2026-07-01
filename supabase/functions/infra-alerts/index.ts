@@ -683,6 +683,75 @@ Deno.serve(async (req) => {
   }
 
 
+  // ── 19. Batch I1 (#56) — Paystack secret missing (1 hr) ──────────
+  try {
+    const oneHrAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: secretMissingCount } = await supabase
+      .from('audit_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('action', 'payment.provider_secret_missing')
+      .gte('created_at', oneHrAgo);
+    const s = secretMissingCount ?? 0;
+    if (s >= 1) {
+      alerts.push({
+        metric: 'Paystack Secret Missing (1 hr)',
+        threshold: 'warning >=1, critical >=1',
+        actual: `${s} payment.provider_secret_missing event(s) in last hour`,
+        severity: 'critical',
+        details:
+          "PAYSTACK_SECRET_KEY is absent in at least one payment-adjacent function (paystack-webhook / token-purchase / transaction-reconciliation). Payment receipt and verification paths cannot complete. Inspect admin_risk_items (kind='paystack_secret_missing') and audit_logs (action='payment.provider_secret_missing'). Read-only alert; no crediting or provider calls performed.",
+      });
+    }
+  } catch (err) {
+    console.error('Paystack secret missing check failed:', err);
+  }
+
+  // ── 20. Batch I1 (#78) — Paystack webhook signature invalid (1 hr) ─
+  try {
+    const oneHrAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: sigInvalidCount } = await supabase
+      .from('audit_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('action', 'payment.webhook_signature_invalid')
+      .gte('created_at', oneHrAgo);
+    const s = sigInvalidCount ?? 0;
+    if (s >= 5) {
+      alerts.push({
+        metric: 'Paystack Webhook Signature Invalid (1 hr)',
+        threshold: 'warning >=5, critical >=20',
+        actual: `${s} payment.webhook_signature_invalid event(s) in last hour`,
+        severity: s >= 20 ? 'critical' : 'warning',
+        details:
+          "paystack-webhook / token-purchase/webhook rejected repeated deliveries with invalid HMAC. May indicate secret rotation drift or spoofing attempts. Read-only alert; nothing was acknowledged or credited.",
+      });
+    }
+  } catch (err) {
+    console.error('Paystack webhook signature invalid check failed:', err);
+  }
+
+  // ── 21. Batch I1 (#46/#54 residual) — Ledger label repair failed (24 hr) ─
+  try {
+    const twentyFourHrAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: repairFailCount } = await supabase
+      .from('admin_risk_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('kind', 'payment_ledger_label_repair_failed')
+      .gte('created_at', twentyFourHrAgo);
+    const r = repairFailCount ?? 0;
+    if (r >= 1) {
+      alerts.push({
+        metric: 'Ledger Label Repair Failed (24 hr)',
+        threshold: 'warning >=1, critical >=5',
+        actual: `${r} payment_ledger_label_repair_failed risk item(s) in last 24 hours`,
+        severity: r >= 5 ? 'critical' : 'warning',
+        details:
+          "transaction-reconciliation could not promote skeletal paid-credit ledger rows via repair_skeletal_paid_credit RPC. Balances are unaffected but ledger-label honesty is degraded until resolved. Inspect admin_risk_items (kind='payment_ledger_label_repair_failed').",
+      });
+    }
+  } catch (err) {
+    console.error('Ledger label repair failure check failed:', err);
+  }
+
 
 
   if (alerts.length === 0) {

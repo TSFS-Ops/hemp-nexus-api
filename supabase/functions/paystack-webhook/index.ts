@@ -38,6 +38,10 @@
  */
 import { tryDemoShortCircuit } from "../_shared/demo-mode-entry.ts";
 import { createClient as _createDemoAdmin } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import {
+  recordProviderSecretMissing,
+  recordWebhookSignatureInvalid,
+} from "../_shared/payment-observability.ts";
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -46,20 +50,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // OPS-010: demo orgs must never reach Paystack. Best-effort short-circuit
   // (the inbound webhook normally carries no demo org id, so this is a
   // defence-in-depth shim; the canonical block is in token-purchase).
+  const _obsAdmin = _createDemoAdmin(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
   try {
-    const _demoAdmin = _createDemoAdmin(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false } },
-    );
-    const _demoBlocked = await tryDemoShortCircuit(_demoAdmin, req, { op: "paystack-webhook", artefact: false });
+    const _demoBlocked = await tryDemoShortCircuit(_obsAdmin, req, { op: "paystack-webhook", artefact: false });
     if (_demoBlocked) return _demoBlocked;
   } catch (_e) { /* OPS-010 best-effort */ }
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+  const _requestId = req.headers.get("x-request-id");
   if (!PAYSTACK_SECRET_KEY) {
     console.error("[paystack-webhook] PAYSTACK_SECRET_KEY not configured");
+    // Batch I1 (#56) — observability only. Preserves 500 response.
+    await recordProviderSecretMissing(_obsAdmin, {
+      provider: "paystack",
+      source: "paystack-webhook",
+      requestId: _requestId,
+    });
     return new Response("Not configured", { status: 500 });
   }
 
@@ -89,6 +100,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .join("");
   if (signature !== expected) {
     console.error("[paystack-webhook] Invalid signature");
+    // Batch I1 (#78) — observability only. Preserves 401 response and
+    // never acknowledges as success.
+    await recordWebhookSignatureInvalid(_obsAdmin, {
+      provider: "paystack",
+      source: "paystack-webhook",
+      requestId: _requestId,
+    });
     return new Response("Invalid signature", { status: 401 });
   }
 

@@ -38,6 +38,10 @@ import {
   ProviderFetchTimeoutError,
   ProviderFetchNetworkError,
 } from "../_shared/provider-fetch.ts";
+import {
+  recordProviderSecretMissing,
+  recordWebhookSignatureInvalid,
+} from "../_shared/payment-observability.ts";
 // USD-native settlement (cutover 2026-05-01). Paystack now charges in USD
 // directly; the legacy USD→ZAR FX layer (_shared/fx.ts) is retired for the
 // purchase flow and intentionally NOT imported here.
@@ -160,6 +164,15 @@ async function _serve(req: Request): Promise<Response> {
   try {
     if (!PAYSTACK_SECRET_KEY) {
       console.error("PAYSTACK_SECRET_KEY is not configured");
+      // Batch I1 (#56) — observability only. Preserves 500 response.
+      try {
+        const _obs = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        await recordProviderSecretMissing(_obs, {
+          provider: "paystack",
+          source: isWebhook ? "token-purchase/webhook" : "token-purchase",
+          requestId: req.headers.get("x-request-id"),
+        });
+      } catch (_obsErr) { /* observability best-effort */ }
       return new Response(
         JSON.stringify({
           error: "Payment provider is not configured",
@@ -953,8 +966,15 @@ async function handleWebhook(req: Request): Promise<Response> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    const _requestId = req.headers.get("x-request-id");
     if (!PAYSTACK_SECRET_KEY) {
       console.error("PAYSTACK_SECRET_KEY is not configured");
+      // Batch I1 (#56) — observability only. Preserves 500 response.
+      await recordProviderSecretMissing(supabase, {
+        provider: "paystack",
+        source: "token-purchase/webhook",
+        requestId: _requestId,
+      });
       return new Response("Not configured", { status: 500 });
     }
 
@@ -983,6 +1003,13 @@ async function handleWebhook(req: Request): Promise<Response> {
 
     if (signature !== expectedSignature) {
       console.error("Invalid Paystack signature");
+      // Batch I1 (#78) — observability only. Preserves 401 response and
+      // never acknowledges as success or credits tokens.
+      await recordWebhookSignatureInvalid(supabase, {
+        provider: "paystack",
+        source: "token-purchase/webhook",
+        requestId: _requestId,
+      });
       return new Response("Invalid signature", { status: 401 });
     }
 
