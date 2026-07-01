@@ -703,6 +703,12 @@ Deno.serve(async (req) => {
       if (repairErr) {
         results.skeletal_paid_credit_error = repairErr.message;
         results.errors.push(`Skeletal paid-credit repair: ${repairErr.message}`);
+        // Batch I1 (#46/#54 residual) — observability only. Balances not changed.
+        await recordLedgerLabelRepairFailed(adminClient, {
+          source: "transaction-reconciliation",
+          errorMessage: repairErr.message,
+          reconRunId: req.headers.get("x-request-id"),
+        });
       } else if (Array.isArray(repaired)) {
         results.skeletal_paid_credit_promoted = repaired.length;
         for (const r of repaired) {
