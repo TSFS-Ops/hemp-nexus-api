@@ -129,3 +129,104 @@ export async function recordLedgerLabelRepairFailed(
     metadata,
   )
 }
+
+// -------------------------------------------------------------------
+// Batch I2 — verify-path post-credit audit/event/notification parity.
+//
+// These helpers are called ONLY after `atomic_paid_credit_purchase`
+// has already succeeded in the verify/return branch of `token-purchase`.
+// Credit is real; these calls exist so admins are not blind if the
+// post-credit audit/event/notification writes fail. They never mutate
+// balances, ledger, or provider state.
+// -------------------------------------------------------------------
+
+interface VerifyPostCreditArgs {
+  provider: 'paystack'
+  reference: string
+  orgId: string
+  packageId?: string | null
+  credits?: number | null
+  errorMessage: string
+}
+
+export async function recordVerifyPostCreditAuditFailed(
+  admin: Admin,
+  args: VerifyPostCreditArgs,
+): Promise<void> {
+  const metadata = {
+    provider: args.provider,
+    source_function: 'token-purchase/verify',
+    payment_reference: args.reference,
+    org_id: args.orgId,
+    package_id: args.packageId ?? null,
+    credits: args.credits ?? null,
+    error_message: args.errorMessage,
+    at: new Date().toISOString(),
+    note: 'credit already succeeded; audit row insert failed after credit',
+  }
+  await safeAudit(admin, 'payment.verify_post_credit_audit_failed', metadata)
+  await safeUpsertRisk(
+    admin,
+    'payment_verify_post_credit_audit_failed',
+    `payment_verify_post_credit_audit_failed:${args.reference}`,
+    'high',
+    `Verify path: credits.purchased audit failed after credit (${args.reference})`,
+    `atomic_paid_credit_purchase succeeded but the credits.purchased audit insert failed in token-purchase/verify. Credit is real; the audit trail is incomplete. Error: ${args.errorMessage}`,
+    metadata,
+  )
+}
+
+export async function recordVerifyPostCreditEventFailed(
+  admin: Admin,
+  args: VerifyPostCreditArgs,
+): Promise<void> {
+  const metadata = {
+    provider: args.provider,
+    source_function: 'token-purchase/verify',
+    payment_reference: args.reference,
+    org_id: args.orgId,
+    package_id: args.packageId ?? null,
+    credits: args.credits ?? null,
+    error_message: args.errorMessage,
+    at: new Date().toISOString(),
+    note: 'credit already succeeded; payment.event_created write failed after credit',
+  }
+  await safeAudit(admin, 'payment.verify_post_credit_event_failed', metadata)
+  await safeUpsertRisk(
+    admin,
+    'payment_verify_post_credit_event_failed',
+    `payment_verify_post_credit_event_failed:${args.reference}`,
+    'high',
+    `Verify path: payment.event_created failed after credit (${args.reference})`,
+    `atomic_paid_credit_purchase succeeded but the canonical payment.event_created write failed in token-purchase/verify. Credit is real; the governance event row is missing. Error: ${args.errorMessage}`,
+    metadata,
+  )
+}
+
+export async function recordVerifyRevenueNotificationFailed(
+  admin: Admin,
+  args: VerifyPostCreditArgs,
+): Promise<void> {
+  const metadata = {
+    provider: args.provider,
+    source_function: 'token-purchase/verify',
+    payment_reference: args.reference,
+    org_id: args.orgId,
+    package_id: args.packageId ?? null,
+    credits: args.credits ?? null,
+    error_message: args.errorMessage,
+    at: new Date().toISOString(),
+    note: 'credit already succeeded; revenue notification emit failed',
+  }
+  await safeAudit(admin, 'payment.verify_revenue_notification_failed', metadata)
+  await safeUpsertRisk(
+    admin,
+    'payment_verify_revenue_notification_failed',
+    `payment_verify_revenue_notification_failed:${args.reference}`,
+    'medium',
+    `Verify path: revenue notification failed after credit (${args.reference})`,
+    `emitRevenueNotification threw in token-purchase/verify after credit succeeded. Credit is real; support may not have been notified. Error: ${args.errorMessage}`,
+    metadata,
+  )
+}
+

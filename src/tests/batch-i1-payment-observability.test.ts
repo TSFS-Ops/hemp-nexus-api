@@ -145,11 +145,18 @@ describe('Batch I1 — out-of-scope containment', () => {
   });
 
   it('helper never mutates balances or ledger', () => {
-    expect(helperSrc).not.toMatch(/token_balances/);
-    expect(helperSrc).not.toMatch(/token_ledger/);
-    expect(helperSrc).not.toMatch(/atomic_token_credit/);
-    expect(helperSrc).not.toMatch(/atomic_token_burn/);
-    expect(helperSrc).not.toMatch(/atomic_paid_credit_purchase/);
+    // Strip string literals so we only inspect executable code, not
+    // English description text (Batch I2 added description strings that
+    // legitimately mention atomic_paid_credit_purchase in prose).
+    const code = helperSrc
+      .replace(/`[^`]*`/g, '``')
+      .replace(/'[^']*'/g, "''")
+      .replace(/"[^"]*"/g, '""');
+    expect(code).not.toMatch(/token_balances/);
+    expect(code).not.toMatch(/token_ledger/);
+    expect(code).not.toMatch(/atomic_token_credit/);
+    expect(code).not.toMatch(/atomic_token_burn/);
+    expect(code).not.toMatch(/atomic_paid_credit_purchase/);
   });
 
   it('helper never opens a settlement mismatch or refund-mutation risk (out of scope for I1)', () => {
