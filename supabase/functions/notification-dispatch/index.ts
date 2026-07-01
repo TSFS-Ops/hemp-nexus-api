@@ -364,6 +364,7 @@ Deno.serve(async (req) => {
         });
         if (slackRes.ok) {
           dispatched.push("slack");
+          slackStatus = "sent";
         } else {
           console.error("[notification-dispatch] Slack error:", await slackRes.text());
           await recordNotificationSkipped(supabase, {
@@ -375,6 +376,7 @@ Deno.serve(async (req) => {
             extra: { http_status: slackRes.status },
           });
           skipped.push({ channel: "slack", reason: "dispatcher_unavailable" });
+          slackStatus = "failed";
         }
       } catch (slackErr) {
         console.error("[notification-dispatch] Slack dispatch failed:", slackErr);
@@ -387,6 +389,7 @@ Deno.serve(async (req) => {
           extra: { error: slackErr instanceof Error ? slackErr.message : String(slackErr) },
         });
         skipped.push({ channel: "slack", reason: "dispatcher_unavailable" });
+        slackStatus = "failed";
       }
     } else {
       // No Slack webhook configured
@@ -398,7 +401,9 @@ Deno.serve(async (req) => {
         orgId: orgIdForAudit,
       });
       skipped.push({ channel: "slack", reason: "slack_not_configured" });
+      slackStatus = "skipped_not_configured";
     }
+
     // Audit log the dispatch
     await supabase.from("audit_logs").insert({
       org_id: (metadata?.org_id as string) || "00000000-0000-0000-0000-000000000000",
