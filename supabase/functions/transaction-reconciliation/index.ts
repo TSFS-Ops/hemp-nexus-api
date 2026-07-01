@@ -7,6 +7,10 @@ import {
   ProviderFetchNetworkError,
 } from "../_shared/provider-fetch.ts";
 import { emitRevenueNotification } from "../_shared/revenue-notify.ts";
+import {
+  recordProviderSecretMissing,
+  recordLedgerLabelRepairFailed,
+} from "../_shared/payment-observability.ts";
 
 // --- Inconclusive-failure tracking ---------------------------------
 // Opens a deduped admin_risk_items row only after the SAME provider
