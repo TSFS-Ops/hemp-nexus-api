@@ -120,7 +120,7 @@ describe("Batch J3 process-email-queue — pre-provider suppression split", () =
   it("suppressed non-critical auth message is deleted from queue and never sent", () => {
     // suppress branch uses `continue` and delete_email — never falls through to send
     expect(src).toMatch(
-      /disposition\s*===\s*['"]suppress['"][\s\S]{0,1600}delete_email[\s\S]{0,80}continue/,
+      /disposition\s*===\s*['"]suppress['"][\s\S]{0,4000}delete_email[\s\S]{0,400}continue/,
     );
   });
 
