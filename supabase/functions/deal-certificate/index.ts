@@ -614,26 +614,40 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Batch L (tracker #26) ──
+    // Overlay the sealed WaD's frozen POI snapshot on top of the live match
+    // row for all certificate-critical commercial fields. The seal hash
+    // formula, payload field names, and payload key ordering are UNCHANGED —
+    // only the source of values is switched when a sealed WaD is linked.
+    const poiSource = pickCertifiedFields(match, linkedWad ?? null);
+    const certifiedMatch: Record<string, unknown> = { ...match, ...poiSource.fields };
+    log("info", "Certificate POI source resolved", {
+      matchId,
+      source: poiSource.source,
+      wadId: linkedWad?.id ?? null,
+      wadStatus: linkedWad?.status ?? null,
+    });
+
     // Build seal hash
     const sealPayload = {
-      match_id: match.id,
-      buyer_name: match.buyer_name,
-      buyer_org_id: match.buyer_org_id,
-      seller_name: match.seller_name,
-      seller_org_id: match.seller_org_id,
-      commodity: match.commodity,
-      quantity_amount: match.quantity_amount,
-      quantity_unit: match.quantity_unit,
-      price_amount: match.price_amount,
-      price_currency: match.price_currency,
-      terms: match.terms,
-      settled_at: match.settled_at,
+      match_id: certifiedMatch.id,
+      buyer_name: certifiedMatch.buyer_name,
+      buyer_org_id: certifiedMatch.buyer_org_id,
+      seller_name: certifiedMatch.seller_name,
+      seller_org_id: certifiedMatch.seller_org_id,
+      commodity: certifiedMatch.commodity,
+      quantity_amount: certifiedMatch.quantity_amount,
+      quantity_unit: certifiedMatch.quantity_unit,
+      price_amount: certifiedMatch.price_amount,
+      price_currency: certifiedMatch.price_currency,
+      terms: certifiedMatch.terms,
+      settled_at: certifiedMatch.settled_at,
     };
     const sealHash = await sha256Hex(canonicalStringify(sealPayload));
 
     const lastEvent = events.length > 0 ? events[events.length - 1] : null;
     const prevHash = lastEvent?.payload_hash || "genesis";
-    const signingTimestamp = collapseRecord?.client_timestamp || match.settled_at || match.updated_at;
+    const signingTimestamp = collapseRecord?.client_timestamp || certifiedMatch.settled_at || match.updated_at;
     const ledgerEntryHash = await sha256Hex(prevHash + sealHash + (signingTimestamp || ""));
 
     const generatedAt = new Date().toISOString().replace("T", " ").replace("Z", " UTC");
@@ -646,11 +660,18 @@ Deno.serve(async (req) => {
       action: "deal-certificate.generated",
       entity_type: "match",
       entity_id: matchId,
-      metadata: { sealHash, ledgerEntryHash, chainValid, requestId },
+      metadata: {
+        sealHash,
+        ledgerEntryHash,
+        chainValid,
+        requestId,
+        poi_source: poiSource.source,
+        wad_id: linkedWad?.id ?? null,
+      },
     });
 
     const html = generateCertificateHtml(
-      match, events, documents, collapseRecord,
+      certifiedMatch, events, documents, collapseRecord,
       sealHash, ledgerEntryHash, chainValid, generatedAt
     );
 
