@@ -61,6 +61,8 @@ export const V1_ERROR_CODES = [
   "forbidden_scope",
   "api_key_environment_mismatch",
   "internal_error_simulated",
+  // Batch C2 — unrecognised-host gating (item #48).
+  "unrecognised_host",
 ] as const;
 export type V1ErrorCode = typeof V1_ERROR_CODES[number];
 
