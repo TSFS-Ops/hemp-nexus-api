@@ -23663,6 +23663,7 @@ export type Database = {
         Returns: boolean
       }
       dry_run_legacy_reconciliation: { Args: never; Returns: Json }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
