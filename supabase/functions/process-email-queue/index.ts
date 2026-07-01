@@ -113,6 +113,11 @@ function parseJwtClaims(token: string): Record<string, unknown> | null {
 }
 
 // Move a message to the dead letter queue and log the reason.
+// Batch H (#18) — also emits idempotent observability rows:
+//   • audit_logs action='email.dead_lettered' for every DLQ event
+//   • admin_risk_items kind='auth_email_dead_lettered' for auth/critical
+// Idempotency keyed on (message_id, action/kind) so replays are no-ops.
+// Never carries email HTML/text bodies into metadata; recipient is masked.
 async function moveToDlq(
   supabase: any,
   queue: string,
@@ -136,7 +141,79 @@ async function moveToDlq(
   if (error) {
     console.error('Failed to move message to DLQ', { queue, msg_id: msg.msg_id, reason, error })
   }
+
+  // ── Batch H (#18) DLQ observability ─────────────────────────────────
+  // Non-fatal: an observability failure must never break the queue path.
+  try {
+    const messageId =
+      typeof payload.message_id === 'string' ? payload.message_id : null
+    const templateName = (payload.label || queue) as string
+    const ttlExpired = reason.startsWith('TTL exceeded')
+    const auditMetadata = {
+      queue,
+      msg_id: msg.msg_id,
+      message_id: messageId,
+      template_name: templateName,
+      recipient_email_masked: maskEmail(payload.to),
+      last_error: reason,
+      ttl_expired: ttlExpired,
+      moved_at: new Date().toISOString(),
+    }
+
+    // Idempotency: skip if we already recorded this DLQ event for this message.
+    let alreadyAudited = false
+    if (messageId) {
+      const { data: existing } = await supabase
+        .from('audit_logs')
+        .select('id')
+        .eq('action', 'email.dead_lettered')
+        .filter('metadata->>message_id', 'eq', messageId)
+        .limit(1)
+        .maybeSingle()
+      alreadyAudited = Boolean(existing)
+    }
+
+    if (!alreadyAudited) {
+      await supabase.from('audit_logs').insert({
+        action: 'email.dead_lettered',
+        entity_type: 'email_send_log',
+        entity_id: null,
+        actor_id: null,
+        metadata: auditMetadata,
+      })
+    }
+
+    if (isAuthTemplate(queue, payload.label)) {
+      let alreadyRisked = false
+      if (messageId) {
+        const { data: existingRisk } = await supabase
+          .from('admin_risk_items')
+          .select('id')
+          .eq('kind', 'auth_email_dead_lettered')
+          .filter('metadata->>message_id', 'eq', messageId)
+          .limit(1)
+          .maybeSingle()
+        alreadyRisked = Boolean(existingRisk)
+      }
+      if (!alreadyRisked) {
+        await supabase.from('admin_risk_items').insert({
+          kind: 'auth_email_dead_lettered',
+          severity: 'high',
+          title: `Auth email dead-lettered (${templateName})`,
+          description: `Auth/critical email (${templateName}) reached DLQ: ${reason}`,
+          metadata: auditMetadata,
+        })
+      }
+    }
+  } catch (obsErr) {
+    console.warn('DLQ observability write failed (non-fatal)', {
+      queue,
+      msg_id: msg.msg_id,
+      error: obsErr instanceof Error ? obsErr.message : String(obsErr),
+    })
+  }
 }
+
 
 Deno.serve(async (req) => {
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
