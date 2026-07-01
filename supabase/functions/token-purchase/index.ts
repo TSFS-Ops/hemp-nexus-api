@@ -164,6 +164,15 @@ async function _serve(req: Request): Promise<Response> {
   try {
     if (!PAYSTACK_SECRET_KEY) {
       console.error("PAYSTACK_SECRET_KEY is not configured");
+      // Batch I1 (#56) — observability only. Preserves 500 response.
+      try {
+        const _obs = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        await recordProviderSecretMissing(_obs, {
+          provider: "paystack",
+          source: isWebhook ? "token-purchase/webhook" : "token-purchase",
+          requestId: req.headers.get("x-request-id"),
+        });
+      } catch (_obsErr) { /* observability best-effort */ }
       return new Response(
         JSON.stringify({
           error: "Payment provider is not configured",
