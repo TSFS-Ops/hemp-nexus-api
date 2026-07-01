@@ -23921,6 +23921,7 @@ export type Database = {
         Args: { p_match_id: string }
         Returns: boolean
       }
+      is_match_document_sealed: { Args: { _doc_id: string }; Returns: boolean }
       is_match_participant: {
         Args: { _match_id: string; _user_id: string }
         Returns: boolean
