@@ -92,6 +92,8 @@ const ERROR_HTTP_STATUS: Record<V1ErrorCode, number> = {
   forbidden_scope: 403,
   api_key_environment_mismatch: 403,
   internal_error_simulated: 500,
+  // Batch C2 — request reached an unrecognised public host.
+  unrecognised_host: 421,
 };
 
 // Public-safe messages — never embed internal exception text.
