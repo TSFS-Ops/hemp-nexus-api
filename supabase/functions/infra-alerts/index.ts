@@ -561,9 +561,63 @@ Deno.serve(async (req) => {
     console.error("cron_heartbeat_stale check failed:", err);
   }
 
+  // ── 15. Webhook Auto-Disable (1 hr) ──────────────────────────────
+  // Batch G — surfaces customer webhook endpoints that were auto-disabled
+  // by the circuit breaker in the last hour. Read-only; does not re-enable
+  // or retry the endpoint. Uses admin_risk_items with kind='webhook_auto_disabled'
+  // (written atomically by public.webhook_record_failure on the trip edge).
+  try {
+    const oneHrAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: adCount } = await supabase
+      .from("admin_risk_items")
+      .select("*", { count: "exact", head: true })
+      .eq("kind", "webhook_auto_disabled")
+      .gte("created_at", oneHrAgo);
+
+    const ad = adCount ?? 0;
+    if (ad >= 1) {
+      alerts.push({
+        metric: "Webhook Auto-Disable (1 hr)",
+        threshold: "warning >=1, critical >=5",
+        actual: `${ad} endpoint auto-disable event(s) in last hour`,
+        severity: ad >= 5 ? "critical" : "warning",
+        details:
+          "One or more customer webhook endpoints were auto-disabled by the circuit breaker after 10 consecutive delivery failures. Investigate admin_risk_items (kind='webhook_auto_disabled') and audit_logs (action='webhook.endpoint.auto_disabled'). Read-only alert; does not re-enable endpoints.",
+      });
+    }
+  } catch (err) {
+    console.error("Webhook auto-disable check failed:", err);
+  }
+
+  // ── 16. Slack Dispatcher Unavailable (1 hr) ──────────────────────
+  // Batch G — surfaces Slack channel failures recorded by
+  // notification-dispatch so they don't stay silent. Read-only; does not
+  // retry Slack or dispatch anything to Slack itself.
+  try {
+    const oneHrAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: slackFails } = await supabase
+      .from("notification_channel_skipped_events")
+      .select("*", { count: "exact", head: true })
+      .eq("channel", "slack")
+      .eq("reason", "dispatcher_unavailable")
+      .gte("created_at", oneHrAgo);
+
+    const sf = slackFails ?? 0;
+    if (sf >= 5) {
+      alerts.push({
+        metric: "Slack Dispatcher Unavailable (1 hr)",
+        threshold: "warning >=5, critical >=20",
+        actual: `${sf} slack dispatch failures in last hour`,
+        severity: sf >= 20 ? "critical" : "warning",
+        details:
+          "notification-dispatch recorded repeated Slack dispatcher failures (channel='slack', reason='dispatcher_unavailable'). Inspect notification_channel_skipped_events for http_status/error metadata. Read-only alert; does not retry Slack.",
+      });
+    }
+  } catch (err) {
+    console.error("Slack dispatcher unavailable check failed:", err);
+  }
 
 
-  // ── Dispatch alerts ──────────────────────────────────────────────
   if (alerts.length === 0) {
     return new Response(
       JSON.stringify({ ok: true, message: "All metrics within thresholds", checked_at: now.toISOString() }),
