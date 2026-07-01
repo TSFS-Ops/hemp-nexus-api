@@ -399,12 +399,24 @@ export async function runGateway(
   ctx: V1RequestCtx,
   requiredScope: string,
 ): Promise<GatewayResult> {
-  // 1. Environment (host-derived wins; header is back-compat only)
+  // 1. Environment (Batch C2: recognised host wins; unrecognised host is
+  //    rejected unless the PUBLIC_API_ALLOW_HEADER_ENV=1 dev opt-in is set).
   const detected = detectEnvironmentDetailed(req);
   if (!detected.env) {
-    throw new V1Error("missing_required_field");
+    // Unrecognised host: no environment could be resolved safely. Record and
+    // reject before running any auth/scope/rate-limit logic.
+    await audit(supabase, "api.v1.unrecognised_host_rejected", ctx, {
+      header_env: detected.headerEnv,
+      host_recognised: detected.hostRecognised,
+    });
+    throw new V1Error("unrecognised_host");
   }
   ctx.environment = detected.env;
+  if (detected.headerOptInUsed) {
+    await audit(supabase, "api.v1.header_env_opt_in_used", ctx, {
+      header_env: detected.headerEnv,
+    });
+  }
   if (detected.mismatch) {
     // Host-derived env wins, but the header/host disagreement is recorded
     // so it can be triaged by ops. Never blocks the request.
