@@ -7,6 +7,66 @@ const DEFAULT_SEND_DELAY_MS = 200
 const DEFAULT_AUTH_TTL_MINUTES = 15
 const DEFAULT_TRANSACTIONAL_TTL_MINUTES = 60
 
+// Batch H (#47) — explicit per-message send timeout. Must be strictly less
+// than the pgmq visibility timeout (30s) used in read_email_batch so a hung
+// provider call cannot outlive VT and cause a duplicate send by the next tick.
+const SEND_TIMEOUT_MS = 20_000
+const SEND_TIMEOUT_MARKER = 'send_timeout'
+
+// Batch H (#18) — auth/critical templates that MUST surface an
+// admin_risk_items row on dead-letter. Matched against payload.label
+// (Supabase auth email action type) or the source queue name.
+const AUTH_TEMPLATE_LABELS = new Set([
+  'signup',
+  'magiclink',
+  'recovery',
+  'invite',
+  'email_change',
+  'reauthentication',
+])
+
+class SendTimeoutError extends Error {
+  constructor() {
+    super(SEND_TIMEOUT_MARKER)
+    this.name = 'SendTimeoutError'
+  }
+}
+
+// Race a promise against a hard timeout. Resolves/rejects with the underlying
+// promise if it settles first, otherwise rejects with SendTimeoutError. We do
+// NOT abort the underlying fetch — the email-js client does not accept a
+// signal — but the worker will not await it past the deadline, so the batch
+// continues and pgmq VT (30s) will re-surface the message for retry.
+function withSendTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: number | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new SendTimeoutError()), ms) as unknown as number
+  })
+  return Promise.race([p, timeout]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer)
+  }) as Promise<T>
+}
+
+function isSendTimeout(error: unknown): boolean {
+  return error instanceof SendTimeoutError
+}
+
+// Local-part masking so DLQ audit metadata never carries a full recipient.
+function maskEmail(email: unknown): string | null {
+  if (typeof email !== 'string' || !email.includes('@')) return null
+  const [local, domain] = email.split('@')
+  if (!local || !domain) return null
+  const head = local.slice(0, 2)
+  return `${head}${'*'.repeat(Math.max(1, local.length - 2))}@${domain}`
+}
+
+function isAuthTemplate(queue: string, label: unknown): boolean {
+  if (queue === 'auth_emails') return true
+  if (typeof label === 'string' && AUTH_TEMPLATE_LABELS.has(label)) return true
+  return false
+}
+
+
 // Check if an error is a rate-limit (429) response.
 // Uses EmailAPIError.status when available (email-js >=0.x with structured errors),
 // falls back to parsing the error message for older versions.
@@ -53,6 +113,11 @@ function parseJwtClaims(token: string): Record<string, unknown> | null {
 }
 
 // Move a message to the dead letter queue and log the reason.
+// Batch H (#18) — also emits idempotent observability rows:
+//   • audit_logs action='email.dead_lettered' for every DLQ event
+//   • admin_risk_items kind='auth_email_dead_lettered' for auth/critical
+// Idempotency keyed on (message_id, action/kind) so replays are no-ops.
+// Never carries email HTML/text bodies into metadata; recipient is masked.
 async function moveToDlq(
   supabase: any,
   queue: string,
@@ -76,7 +141,79 @@ async function moveToDlq(
   if (error) {
     console.error('Failed to move message to DLQ', { queue, msg_id: msg.msg_id, reason, error })
   }
+
+  // ── Batch H (#18) DLQ observability ─────────────────────────────────
+  // Non-fatal: an observability failure must never break the queue path.
+  try {
+    const messageId =
+      typeof payload.message_id === 'string' ? payload.message_id : null
+    const templateName = (payload.label || queue) as string
+    const ttlExpired = reason.startsWith('TTL exceeded')
+    const auditMetadata = {
+      queue,
+      msg_id: msg.msg_id,
+      message_id: messageId,
+      template_name: templateName,
+      recipient_email_masked: maskEmail(payload.to),
+      last_error: reason,
+      ttl_expired: ttlExpired,
+      moved_at: new Date().toISOString(),
+    }
+
+    // Idempotency: skip if we already recorded this DLQ event for this message.
+    let alreadyAudited = false
+    if (messageId) {
+      const { data: existing } = await supabase
+        .from('audit_logs')
+        .select('id')
+        .eq('action', 'email.dead_lettered')
+        .filter('metadata->>message_id', 'eq', messageId)
+        .limit(1)
+        .maybeSingle()
+      alreadyAudited = Boolean(existing)
+    }
+
+    if (!alreadyAudited) {
+      await supabase.from('audit_logs').insert({
+        action: 'email.dead_lettered',
+        entity_type: 'email_send_log',
+        entity_id: null,
+        actor_id: null,
+        metadata: auditMetadata,
+      })
+    }
+
+    if (isAuthTemplate(queue, payload.label)) {
+      let alreadyRisked = false
+      if (messageId) {
+        const { data: existingRisk } = await supabase
+          .from('admin_risk_items')
+          .select('id')
+          .eq('kind', 'auth_email_dead_lettered')
+          .filter('metadata->>message_id', 'eq', messageId)
+          .limit(1)
+          .maybeSingle()
+        alreadyRisked = Boolean(existingRisk)
+      }
+      if (!alreadyRisked) {
+        await supabase.from('admin_risk_items').insert({
+          kind: 'auth_email_dead_lettered',
+          severity: 'high',
+          title: `Auth email dead-lettered (${templateName})`,
+          description: `Auth/critical email (${templateName}) reached DLQ: ${reason}`,
+          metadata: auditMetadata,
+        })
+      }
+    }
+  } catch (obsErr) {
+    console.warn('DLQ observability write failed (non-fatal)', {
+      queue,
+      msg_id: msg.msg_id,
+      error: obsErr instanceof Error ? obsErr.message : String(obsErr),
+    })
+  }
 }
+
 
 Deno.serve(async (req) => {
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
@@ -267,26 +404,31 @@ Deno.serve(async (req) => {
       }
 
       try {
-        await sendLovableEmail(
-          {
-            run_id: payload.run_id,
-            to: payload.to,
-            from: payload.from,
-            sender_domain: payload.sender_domain,
-            subject: payload.subject,
-            html: payload.html,
-            text: payload.text,
-            purpose: payload.purpose,
-            label: payload.label,
-            idempotency_key: payload.idempotency_key,
-            unsubscribe_token: payload.unsubscribe_token,
-            message_id: payload.message_id,
-          },
-          // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
-          // falls back to the default Lovable API endpoint (https://api.lovable.dev).
-          // Set LOVABLE_SEND_URL as a Supabase secret to override (e.g. for local dev).
-          { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
+        // Batch H (#47) — hard per-message send timeout. Must stay < pgmq VT (30s).
+        await withSendTimeout(
+          sendLovableEmail(
+            {
+              run_id: payload.run_id,
+              to: payload.to,
+              from: payload.from,
+              sender_domain: payload.sender_domain,
+              subject: payload.subject,
+              html: payload.html,
+              text: payload.text,
+              purpose: payload.purpose,
+              label: payload.label,
+              idempotency_key: payload.idempotency_key,
+              unsubscribe_token: payload.unsubscribe_token,
+              message_id: payload.message_id,
+            },
+            // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
+            // falls back to the default Lovable API endpoint (https://api.lovable.dev).
+            // Set LOVABLE_SEND_URL as a Supabase secret to override (e.g. for local dev).
+            { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
+          ),
+          SEND_TIMEOUT_MS
         )
+
 
         // Log success. Persist subject_length so the 200-char platform
         // contract is forensically auditable from email_send_log alone.
