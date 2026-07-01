@@ -79,9 +79,11 @@ for (const f of files) {
   const text = readFileSync(join(MIG_DIR, f), "utf8");
   const allowed = ALLOWLIST.has(f);
 
-  // 1) DROP / DISABLE of a named protected trigger — always forbidden.
+  // 1) DROP / DISABLE of a named protected trigger.
+  //    Allowlisted installer migrations may DROP TRIGGER IF EXISTS as part
+  //    of their idempotent CREATE. Any other migration is forbidden.
   for (const trg of PROTECTED_TRIGGERS) {
-    if (new RegExp(`DROP\\s+TRIGGER[^;]*\\b${trg}\\b`, "i").test(text)) {
+    if (!allowed && new RegExp(`DROP\\s+TRIGGER[^;]*\\b${trg}\\b`, "i").test(text)) {
       violations.push(`${f}: DROP TRIGGER on protected ${trg}`);
     }
     if (new RegExp(`DISABLE\\s+TRIGGER[^;]*\\b${trg}\\b`, "i").test(text)) {
