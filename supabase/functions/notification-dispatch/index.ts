@@ -96,7 +96,15 @@ Deno.serve(async (req) => {
 
     const dispatched: string[] = [];
     const skipped: Array<{ channel: string; reason: string }> = [];
+    // Batch G — explicit Slack disposition so callers can distinguish
+    // "sent", "skipped_not_configured", "failed", "not_requested" without
+    // parsing the free-form skipped[] array. Slack channel is always evaluated
+    // by this dispatcher today, so default to skipped_not_configured until
+    // one of the branches below overrides it.
+    let slackStatus: "sent" | "skipped_not_configured" | "failed" | "not_requested" =
+      "skipped_not_configured";
     const orgIdForAudit = (metadata?.org_id as string) || undefined;
+
 
     // ── Batch C Phase 3A: progression notification suppression ──
     // Any notification whose event_type begins with `progression.` and is
@@ -356,6 +364,7 @@ Deno.serve(async (req) => {
         });
         if (slackRes.ok) {
           dispatched.push("slack");
+          slackStatus = "sent";
         } else {
           console.error("[notification-dispatch] Slack error:", await slackRes.text());
           await recordNotificationSkipped(supabase, {
@@ -367,6 +376,7 @@ Deno.serve(async (req) => {
             extra: { http_status: slackRes.status },
           });
           skipped.push({ channel: "slack", reason: "dispatcher_unavailable" });
+          slackStatus = "failed";
         }
       } catch (slackErr) {
         console.error("[notification-dispatch] Slack dispatch failed:", slackErr);
@@ -379,6 +389,7 @@ Deno.serve(async (req) => {
           extra: { error: slackErr instanceof Error ? slackErr.message : String(slackErr) },
         });
         skipped.push({ channel: "slack", reason: "dispatcher_unavailable" });
+        slackStatus = "failed";
       }
     } else {
       // No Slack webhook configured
@@ -390,7 +401,9 @@ Deno.serve(async (req) => {
         orgId: orgIdForAudit,
       });
       skipped.push({ channel: "slack", reason: "slack_not_configured" });
+      slackStatus = "skipped_not_configured";
     }
+
     // Audit log the dispatch
     await supabase.from("audit_logs").insert({
       org_id: (metadata?.org_id as string) || "00000000-0000-0000-0000-000000000000",
@@ -408,9 +421,10 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ ok: true, dispatched, skipped, event_type }),
+      JSON.stringify({ ok: true, dispatched, skipped, slack_status: slackStatus, event_type }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
+
 
   } catch (error) {
     console.error("[notification-dispatch] Error:", error);
