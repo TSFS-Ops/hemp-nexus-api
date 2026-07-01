@@ -109,19 +109,34 @@ async function computeForOrg(
   supabase: ReturnType<typeof createClient>,
   orgId: string,
   methodology: Methodology,
+  demoOrgIds: Set<string>,
 ): Promise<{ ok: true; band: string; overall: number | null } | { ok: false; reason: string }> {
   const recentCutoff = new Date(Date.now() - methodology.recent_window_days * 86_400_000).toISOString();
 
-  // Pull every match where this org is buyer or seller.
+  // Batch K′ / tracker #45 — refuse to rate demo/sample-fixture subject orgs.
+  if (demoOrgIds.has(orgId)) {
+    return { ok: false, reason: "sample_or_demo_org_excluded" };
+  }
+
+  // Pull every match where this org is buyer or seller. Exclude matches flagged
+  // as demo/fixture rows at the row level. Counterparty-side demo exclusion is
+  // applied below via `demoOrgIds`.
   const { data: matches, error: matchErr } = await supabase
     .from("matches")
     .select(
-      "id, status, state, created_at, settled_at, buyer_org_id, seller_org_id, counterparty_sighted_at, buyer_committed_at, seller_committed_at",
+      "id, status, state, created_at, settled_at, buyer_org_id, seller_org_id, counterparty_sighted_at, buyer_committed_at, seller_committed_at, is_demo, demo_dataset_id",
     )
-    .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId}`);
+    .or(`buyer_org_id.eq.${orgId},seller_org_id.eq.${orgId}`)
+    .eq("is_demo", false)
+    .is("demo_dataset_id", null);
   if (matchErr) throw matchErr;
 
-  const allMatches = matches ?? [];
+  // Belt-and-braces: also drop any match whose counterparty org is a
+  // demo/sample-only fixture, even if the match row itself was not flagged.
+  const allMatches = (matches ?? []).filter((m: any) => {
+    const counterparty = m.buyer_org_id === orgId ? m.seller_org_id : m.buyer_org_id;
+    return counterparty && !demoOrgIds.has(counterparty);
+  });
   const matchIds = allMatches.map((m: any) => m.id);
 
   // Disputes — only count admin-resolved adverse outcomes.
