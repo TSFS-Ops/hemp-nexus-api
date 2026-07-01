@@ -11,6 +11,14 @@ import { RecoveryEmail } from '../_shared/email-templates/recovery.tsx'
 import { EmailChangeEmail } from '../_shared/email-templates/email-change.tsx'
 import { ReauthenticationEmail } from '../_shared/email-templates/reauthentication.tsx'
 import { handleCorsPreflight, withCors, webhookCorsHeaders } from '../_shared/cors.ts'
+import {
+  evaluateAuthEmailSuppression,
+  injectSecurityDisclaimerHtml,
+  injectSecurityDisclaimerText,
+  AUDIT_ACTION_AUTH_SUPPRESSED,
+  AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER,
+  RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT,
+} from '../_shared/auth-email-suppression.ts'
 
 // Webhook handler — Supabase Auth posts here with HMAC signature.
 // Browser preflight is not expected; emit only Vary: Origin (no Allow-Origin).
@@ -292,8 +300,8 @@ async function handleWebhook(req: Request): Promise<Response> {
   }
 
   // Render React Email to HTML and plain text
-  const html = await renderAsync(React.createElement(EmailTemplate, templateProps))
-  const text = await renderAsync(React.createElement(EmailTemplate, templateProps), {
+  let html = await renderAsync(React.createElement(EmailTemplate, templateProps))
+  let text = await renderAsync(React.createElement(EmailTemplate, templateProps), {
     plainText: true,
   })
 
@@ -305,12 +313,79 @@ async function handleWebhook(req: Request): Promise<Response> {
 
   const messageId = crypto.randomUUID()
 
+  // ── Batch J3 / #22 — Auth email suppression split disposition ────────
+  // security-critical (recovery / email_change / reauthentication) always
+  // sends WITH a disclaimer; non-critical (signup / invite / magiclink)
+  // is DROPPED when recipient is on suppressed_emails. Both branches emit
+  // audit + risk observability. No provider call happens on the suppress
+  // branch.
+  const suppression = await evaluateAuthEmailSuppression(
+    supabase,
+    emailType,
+    payload.data.email,
+  )
+
+  if (suppression.disposition === 'suppress') {
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: emailType,
+      recipient_email: payload.data.email,
+      status: 'suppressed',
+      metadata: {
+        disposition: 'suppress',
+        auth_split: true,
+        reason: suppression.suppressionReason ?? 'recipient_suppressed',
+      },
+    })
+    try {
+      await supabase.from('audit_logs').insert({
+        action: AUDIT_ACTION_AUTH_SUPPRESSED,
+        entity_type: 'email_send_log',
+        entity_id: null,
+        actor_id: null,
+        metadata: {
+          message_id: messageId,
+          template_name: emailType,
+          disposition: 'suppress',
+          recipient_suppressed: true,
+        },
+      })
+      await supabase.from('admin_risk_items').insert({
+        kind: RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT,
+        severity: 'medium',
+        title: `Auth email suppressed (${emailType})`,
+        description: `Non-critical auth email (${emailType}) blocked because recipient is on suppressed_emails.`,
+        metadata: {
+          message_id: messageId,
+          template_name: emailType,
+          disposition: 'suppress',
+          run_id,
+        },
+      })
+    } catch (obsErr) {
+      console.warn('[auth-email-hook] suppression observability failed (non-fatal)', obsErr)
+    }
+    return new Response(
+      JSON.stringify({ success: true, queued: false, disposition: 'suppress' }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  }
+
+  const withDisclaimer = suppression.disposition === 'send_with_disclaimer'
+  if (withDisclaimer) {
+    html = injectSecurityDisclaimerHtml(html)
+    text = injectSecurityDisclaimerText(text)
+  }
+
   // Log pending BEFORE enqueue so we have a record even if enqueue crashes
   await supabase.from('email_send_log').insert({
     message_id: messageId,
     template_name: emailType,
     recipient_email: payload.data.email,
     status: 'pending',
+    metadata: withDisclaimer
+      ? { disposition: 'send_with_disclaimer', auth_split: true }
+      : { disposition: 'send' },
   })
 
   const { error: enqueueError } = await supabase.rpc('enqueue_email', {
@@ -327,8 +402,41 @@ async function handleWebhook(req: Request): Promise<Response> {
       purpose: 'transactional',
       label: emailType,
       queued_at: new Date().toISOString(),
+      auth_disposition: withDisclaimer ? 'send_with_disclaimer' : 'send',
     },
   })
+
+  if (withDisclaimer) {
+    try {
+      await supabase.from('audit_logs').insert({
+        action: AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER,
+        entity_type: 'email_send_log',
+        entity_id: null,
+        actor_id: null,
+        metadata: {
+          message_id: messageId,
+          template_name: emailType,
+          disposition: 'send_with_disclaimer',
+          recipient_suppressed: true,
+        },
+      })
+      await supabase.from('admin_risk_items').insert({
+        kind: RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT,
+        severity: 'low',
+        title: `Security-critical auth email sent with disclaimer (${emailType})`,
+        description: `Security-critical auth email (${emailType}) delivered to a suppressed recipient with disclaimer per client decision (#22).`,
+        metadata: {
+          message_id: messageId,
+          template_name: emailType,
+          disposition: 'send_with_disclaimer',
+          run_id,
+        },
+      })
+    } catch (obsErr) {
+      console.warn('[auth-email-hook] disclaimer observability failed (non-fatal)', obsErr)
+    }
+  }
+
 
   if (enqueueError) {
     console.error('Failed to enqueue auth email', { error: enqueueError, run_id, emailType })

@@ -155,16 +155,10 @@ describe("Batch H — infra-alerts windows", () => {
   });
 });
 
-describe("Batch H — deferred scope (#22 must NOT be applied)", () => {
-  it("auth-email-hook still does not check suppressed_emails pre-enqueue", () => {
-    // #22 is deferred pending a client decision on send-with-disclaimer vs
-    // suppress. Guard against accidental inclusion in this batch.
-    const src = read("supabase/functions/auth-email-hook/index.ts");
-    expect(src).not.toMatch(/suppressed_emails/);
-  });
-
-  it("process-email-queue does not add pre-send suppression check", () => {
-    const src = read("supabase/functions/process-email-queue/index.ts");
-    expect(src).not.toMatch(/suppressed_emails/);
+describe("Batch H — deferred scope superseded by Batch J3 (#22)", () => {
+  it("#22 now lives in Batch J3 shared helper; Batch H #18/#47 changes remain isolated", () => {
+    const shared = read("supabase/functions/_shared/auth-email-suppression.ts");
+    expect(shared).toMatch(/Batch J3/);
+    expect(shared).toMatch(/AUTH_SECURITY_CRITICAL_TEMPLATES/);
   });
 });
