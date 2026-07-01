@@ -456,9 +456,73 @@ async function _serve(req: Request): Promise<Response> {
             verification_fallback: true,
           },
         });
-        if (auditErr && auditErr.code !== "23505") throw auditErr;
         if (auditErr?.code === "23505") {
           console.log(`[Verify] credits.purchased audit row already exists for ${reference} (webhook won)`);
+        } else if (auditErr) {
+          // Batch I2: credit already succeeded — do NOT throw and 500 the
+          // customer. Surface an admin risk item so the audit gap is
+          // visible, then continue.
+          console.error(`[Verify] credits.purchased audit insert failed (credit already applied):`, auditErr);
+          await recordVerifyPostCreditAuditFailed(supabase, {
+            provider: "paystack",
+            reference,
+            orgId,
+            packageId: meta.package_id ?? null,
+            credits,
+            errorMessage: auditErr.message ?? String(auditErr),
+          });
+        }
+      }
+
+      // Batch I2 — canonical governance event parity with the webhook path.
+      // Idempotency key uses the Paystack reference so a webhook↔verify race
+      // dedupes at the writer. Duplicate/idempotent conflicts are tolerated.
+      // Credit is already applied; hard event failures surface via
+      // admin_risk_items instead of a 5xx to the customer.
+      try {
+        await writeCriticalEventWithPosture(supabase, {
+          event_type: "payment.event_created",
+          org_id: orgId,
+          aggregate_type: "payment",
+          aggregate_id: reference,
+          actor_user_id: userData.user.id,
+          actor_role: "billing_user",
+          system_actor: null,
+          source_function: "token-purchase/verify",
+          payment_reference: reference,
+          allowed_or_blocked: "allowed",
+          reason_code: "charge.success",
+          posture: buildPostureSnapshot("Standard", {
+            policy_version: PAYMENT_POLICY_VERSION,
+            check_status: { paystack_event: "charge.success", credits_added: credits, source: "verify-fallback" },
+          }),
+          metadata: {
+            package_id: meta.package_id,
+            credits_added: credits,
+            new_balance: newBalance,
+            price_usd: meta.price_usd ?? null,
+            currency: "USD",
+            fx_basis: "native_usd",
+            verification_fallback: true,
+            policy_version: PAYMENT_POLICY_VERSION,
+          },
+          idempotency_extra: reference,
+        });
+      } catch (govErr) {
+        const msg = (govErr as Error)?.message ?? String(govErr);
+        // Tolerate duplicate/idempotent conflict from webhook↔verify race.
+        if (/duplicate|23505|already exists|idempoten/i.test(msg)) {
+          console.log(`[Verify] payment.event_created already recorded for ${reference} (webhook won)`);
+        } else {
+          console.error(`[Verify] payment.event_created failed (credit already applied):`, govErr);
+          await recordVerifyPostCreditEventFailed(supabase, {
+            provider: "paystack",
+            reference,
+            orgId,
+            packageId: meta.package_id ?? null,
+            credits,
+            errorMessage: msg,
+          });
         }
       }
 
@@ -473,7 +537,11 @@ async function _serve(req: Request): Promise<Response> {
       // the Paystack reference, so if the webhook path also fires for the
       // same payment the email queue dedupes — support gets exactly one
       // notification per real charge.
-      {
+      //
+      // Batch I2: wrapped in try/catch — credit is already applied, so a
+      // notification failure must not return 500 to the customer. Surface
+      // as an admin risk item instead.
+      try {
         const { data: orgRow } = await supabase
           .from("organizations")
           .select("name")
@@ -499,7 +567,19 @@ async function _serve(req: Request): Promise<Response> {
           consoleUrl: `https://api.trade.izenzo.co.za/admin/billing`,
           consoleLabel: "Open billing console",
         });
+      } catch (notifyErr) {
+        const msg = (notifyErr as Error)?.message ?? String(notifyErr);
+        console.error(`[Verify] revenue notification failed (credit already applied):`, notifyErr);
+        await recordVerifyRevenueNotificationFailed(supabase, {
+          provider: "paystack",
+          reference,
+          orgId,
+          packageId: meta.package_id ?? null,
+          credits,
+          errorMessage: msg,
+        });
       }
+
 
       console.log(`[Verify] Credited ${credits} credits to org ${orgId} (atomic). New balance: ${newBalance}`);
 
