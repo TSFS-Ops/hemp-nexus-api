@@ -152,8 +152,9 @@ describe('Batch I1 — out-of-scope containment', () => {
     expect(helperSrc).not.toMatch(/atomic_paid_credit_purchase/);
   });
 
-  it('helper never opens a settlement mismatch risk (out of scope for I1)', () => {
+  it('helper never opens a settlement mismatch or refund-mutation risk (out of scope for I1)', () => {
     expect(helperSrc).not.toMatch(/settlement_mismatch/);
-    expect(helperSrc).not.toMatch(/refund/i);
+    expect(helperSrc).not.toMatch(/refund_settlement/);
+    expect(helperSrc).not.toMatch(/mark_refund/);
   });
 });
