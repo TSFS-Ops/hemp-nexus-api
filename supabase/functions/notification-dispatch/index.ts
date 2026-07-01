@@ -96,7 +96,15 @@ Deno.serve(async (req) => {
 
     const dispatched: string[] = [];
     const skipped: Array<{ channel: string; reason: string }> = [];
+    // Batch G — explicit Slack disposition so callers can distinguish
+    // "sent", "skipped_not_configured", "failed", "not_requested" without
+    // parsing the free-form skipped[] array. Slack channel is always evaluated
+    // by this dispatcher today, so default to skipped_not_configured until
+    // one of the branches below overrides it.
+    let slackStatus: "sent" | "skipped_not_configured" | "failed" | "not_requested" =
+      "skipped_not_configured";
     const orgIdForAudit = (metadata?.org_id as string) || undefined;
+
 
     // ── Batch C Phase 3A: progression notification suppression ──
     // Any notification whose event_type begins with `progression.` and is
