@@ -60,6 +60,48 @@ function escapeHtml(str: string | null | undefined): string {
     .replace(/"/g, "&quot;");
 }
 
+// ── Batch L (tracker #26) — POI sealed-snapshot drift fix ──
+// When a sealed, non-revoked WaD is linked to this match, the certificate's
+// commercial/POI fields MUST be sourced from wads.evidence_bundle.poi_snapshot
+// (frozen at seal by the C10 immutability trigger) instead of the live matches
+// row, which can legitimately continue to mutate after sealing. Falls back to
+// the live matches row when no sealed WaD exists, when the WaD is
+// revoked/superseded, or when the snapshot is missing/malformed. The hash
+// formula and payload field names/ordering are unchanged — only the source of
+// values is overlaid.
+type CertifiedFieldSource = "sealed_wad_poi_snapshot" | "live_match_fallback";
+function pickCertifiedFields(
+  match: Record<string, unknown>,
+  linkedWad: { id?: string; status?: string; evidence_bundle?: unknown } | null,
+): { source: CertifiedFieldSource; fields: Record<string, unknown> } {
+  const fallback = { source: "live_match_fallback" as const, fields: {} };
+  if (!linkedWad || linkedWad.status !== "sealed") return fallback;
+  const bundle = linkedWad.evidence_bundle as Record<string, unknown> | null | undefined;
+  const snap = bundle && typeof bundle === "object"
+    ? (bundle as Record<string, unknown>).poi_snapshot as Record<string, unknown> | undefined
+    : undefined;
+  if (!snap || typeof snap !== "object") return fallback;
+  const quantity = snap.quantity as Record<string, unknown> | undefined;
+  const price = snap.price as Record<string, unknown> | undefined;
+  const buyer = snap.buyer as Record<string, unknown> | undefined;
+  const seller = snap.seller as Record<string, unknown> | undefined;
+  // Minimum viability: at least commodity + one of quantity/price must be present.
+  if (typeof snap.commodity !== "string" || (!quantity && !price)) return fallback;
+  const fields: Record<string, unknown> = {
+    commodity: snap.commodity,
+    quantity_amount: quantity?.amount ?? match.quantity_amount,
+    quantity_unit: quantity?.unit ?? match.quantity_unit,
+    price_amount: price?.amount ?? match.price_amount,
+    price_currency: price?.currency ?? match.price_currency,
+    terms: snap.terms ?? match.terms,
+    buyer_name: buyer?.name ?? match.buyer_name,
+    seller_name: seller?.name ?? match.seller_name,
+    settled_at: snap.settled_at ?? match.settled_at,
+    hash: snap.hash ?? match.hash,
+  };
+  return { source: "sealed_wad_poi_snapshot", fields };
+}
+
 /**
  * Generate the certificate HTML with clinical, professional styling.
  * Uses JetBrains Mono (via Google Fonts) for all cryptographic hashes.
