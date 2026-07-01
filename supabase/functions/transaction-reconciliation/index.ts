@@ -640,6 +640,14 @@ Deno.serve(async (req) => {
       }
     } else if (!paystackKey) {
       results.errors.push("PAYSTACK_SECRET_KEY not configured - skipping payment reconciliation");
+      // Batch I1 (#56) — observability only. No provider call attempted.
+      if (!dryRun) {
+        await recordProviderSecretMissing(adminClient, {
+          provider: "paystack",
+          source: "transaction-reconciliation",
+          requestId: req.headers.get("x-request-id"),
+        });
+      }
     }
 
     // --- 2. Stale email queue entries ---
