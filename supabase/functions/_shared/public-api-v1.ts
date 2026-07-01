@@ -205,14 +205,20 @@ export class V1Error extends Error {
 
 // ─── Environment detection ───────────────────────────────────────────────
 //
-// Sandbox/Production Separation · Batch 2 (Decision #1):
-//   Host-derived environment WINS over any submitted X-Izenzo-Environment
-//   header. The header remains accepted for backward compatibility and for
-//   local/dev contexts where the public hostname is not in play, but it
-//   is never trusted over the hostname.
+// Sandbox/Production Separation · Batch 2 (Decision #1) +
+// Batch C2 (item #48) — unrecognised-host gating:
 //
-//     api-sandbox.trade.izenzo.co.za → environment=sandbox
-//     api.trade.izenzo.co.za         → environment=production
+//   Host-derived environment WINS over any submitted X-Izenzo-Environment
+//   header. Unrecognised hosts (e.g. raw <ref>.functions.supabase.co) are
+//   REJECTED by default — the header can no longer decide environment
+//   silently on an unknown host. A local/dev opt-in escape hatch keeps the
+//   old header-derived behaviour available for iteration only.
+//
+//     api-sandbox.trade.izenzo.co.za  → environment=sandbox   (host wins)
+//     api.trade.izenzo.co.za          → environment=production (host wins)
+//     any other host                  → env=null, hostRecognised=false
+//                                       (gateway throws unrecognised_host
+//                                        unless PUBLIC_API_ALLOW_HEADER_ENV=1)
 //
 const SANDBOX_HOSTNAMES = new Set([
   "api-sandbox.trade.izenzo.co.za",
@@ -231,11 +237,24 @@ function deriveHostEnvironment(req: Request): "sandbox" | "production" | null {
   return null;
 }
 
+/** Batch C2: local/dev escape hatch. Only when explicitly opted in. */
+function headerEnvOptInAllowed(): boolean {
+  try {
+    return Deno.env.get("PUBLIC_API_ALLOW_HEADER_ENV") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export interface DetectedEnvironment {
   env: "sandbox" | "production" | null;
   hostEnv: "sandbox" | "production" | null;
   headerEnv: "sandbox" | "production" | null;
   mismatch: boolean;
+  /** Batch C2: true iff request host matched a canonical V1 hostname. */
+  hostRecognised: boolean;
+  /** Batch C2: true iff env was resolved via the local/dev header opt-in. */
+  headerOptInUsed: boolean;
 }
 
 export function detectEnvironmentDetailed(req: Request): DetectedEnvironment {
@@ -243,9 +262,36 @@ export function detectEnvironmentDetailed(req: Request): DetectedEnvironment {
   const headerEnv = raw === "sandbox" || raw === "production" ? (raw as "sandbox" | "production") : null;
   const hostEnv = deriveHostEnvironment(req);
   if (hostEnv) {
-    return { env: hostEnv, hostEnv, headerEnv, mismatch: headerEnv !== null && headerEnv !== hostEnv };
+    return {
+      env: hostEnv,
+      hostEnv,
+      headerEnv,
+      mismatch: headerEnv !== null && headerEnv !== hostEnv,
+      hostRecognised: true,
+      headerOptInUsed: false,
+    };
   }
-  return { env: headerEnv, hostEnv: null, headerEnv, mismatch: false };
+  // Unrecognised host: header is NOT trusted by default. Only honour it when
+  // the local/dev opt-in flag is set. Otherwise return env=null so the
+  // gateway rejects with unrecognised_host.
+  if (headerEnvOptInAllowed() && headerEnv) {
+    return {
+      env: headerEnv,
+      hostEnv: null,
+      headerEnv,
+      mismatch: false,
+      hostRecognised: false,
+      headerOptInUsed: true,
+    };
+  }
+  return {
+    env: null,
+    hostEnv: null,
+    headerEnv,
+    mismatch: false,
+    hostRecognised: false,
+    headerOptInUsed: false,
+  };
 }
 
 // Back-compat shim — existing callers receive the final env decision only.
