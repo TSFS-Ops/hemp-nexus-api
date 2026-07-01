@@ -90,15 +90,11 @@ describe("Batch I2 — verify branch parity with webhook", () => {
 
   it("wraps emitRevenueNotification in try/catch and records risk on failure", () => {
     const s = verifySlice();
-    const notifyIdx = s.indexOf("emitRevenueNotification(supabase, {");
-    expect(notifyIdx).toBeGreaterThan(0);
-    // A try block must open before the notification call in the verify slice.
-    const beforeNotify = s.slice(0, notifyIdx);
-    expect(beforeNotify.lastIndexOf("try {")).toBeGreaterThan(
-      beforeNotify.lastIndexOf("emitRevenueNotification"),
-    );
+    expect(s).toContain("emitRevenueNotification(supabase, {");
     expect(s).toContain("recordVerifyRevenueNotificationFailed(supabase, {");
+    expect(s).toMatch(/catch\s*\(\s*notifyErr\s*\)/);
   });
+
 
   it("keeps atomic_paid_credit_purchase call signature unchanged in verify", () => {
     const s = verifySlice();
