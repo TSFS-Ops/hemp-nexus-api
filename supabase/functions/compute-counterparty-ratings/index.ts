@@ -425,6 +425,16 @@ Deno.serve(async (req) => {
       min_sample_size: method.min_sample_size,
     };
 
+    // Batch K′ / tracker #45 — pre-load the demo/sample-fixture organisation
+    // id set from the source of truth on `organizations` (is_demo=true or
+    // demo_dataset_id IS NOT NULL). No name-based inference.
+    const { data: demoOrgRows, error: demoOrgErr } = await supabase
+      .from("organizations")
+      .select("id")
+      .or("is_demo.eq.true,demo_dataset_id.not.is.null");
+    if (demoOrgErr) throw demoOrgErr;
+    const demoOrgIds = new Set<string>((demoOrgRows ?? []).map((r: any) => r.id));
+
     // Single-org mode
     if (body.orgId) {
       const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -436,7 +446,7 @@ Deno.serve(async (req) => {
       if (!isPlatformAdmin && !isOwnOrg) {
         throw new ApiException("FORBIDDEN", "Cannot recompute another org's rating", 403);
       }
-      const result = await computeForOrg(supabase, body.orgId, methodology);
+      const result = await computeForOrg(supabase, body.orgId, methodology, demoOrgIds);
       return new Response(JSON.stringify({ requestId, methodology_version: methodology.version, ...result }), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },
@@ -448,20 +458,25 @@ Deno.serve(async (req) => {
       throw new ApiException("FORBIDDEN", "Bulk recompute requires platform admin", 403);
     }
 
+    // Batch K′ / tracker #45 — do not enumerate demo/sample-fixture orgs as
+    // rating subjects. Filter at the query so we never even attempt compute.
     const { data: orgs, error: orgsErr } = await supabase
       .from("organizations")
-      .select("id");
+      .select("id")
+      .eq("is_demo", false)
+      .is("demo_dataset_id", null);
     if (orgsErr) throw orgsErr;
 
     const results: Array<{ org_id: string; band: string; overall: number | null }> = [];
     for (const o of orgs ?? []) {
       try {
-        const r = await computeForOrg(supabase, o.id, methodology);
+        const r = await computeForOrg(supabase, o.id, methodology, demoOrgIds);
         if (r.ok) results.push({ org_id: o.id, band: r.band, overall: r.overall });
       } catch (err) {
         console.error(`[${requestId}] failed for org ${o.id}:`, err);
       }
     }
+
 
     return new Response(
       JSON.stringify({
