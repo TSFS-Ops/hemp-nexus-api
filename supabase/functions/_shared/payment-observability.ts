@@ -42,7 +42,7 @@ async function safeUpsertRisk(
       .from('admin_risk_items')
       .select('id')
       .eq('kind', kind)
-      .filter('metadata->>dedup_key', 'eq', dedupKey)
+      .eq('dedup_key', dedupKey)
       .gte('created_at', cutoff)
       .limit(1)
       .maybeSingle()
@@ -52,7 +52,8 @@ async function safeUpsertRisk(
       severity,
       title,
       description,
-      metadata: { ...metadata, dedup_key: dedupKey },
+      dedup_key: dedupKey,
+      metadata,
     })
   } catch (err) {
     console.warn(`[payment-observability] risk ${kind} upsert failed`, err)
