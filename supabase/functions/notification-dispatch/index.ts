@@ -421,9 +421,10 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ ok: true, dispatched, skipped, event_type }),
+      JSON.stringify({ ok: true, dispatched, skipped, slack_status: slackStatus, event_type }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
+
 
   } catch (error) {
     console.error("[notification-dispatch] Error:", error);
