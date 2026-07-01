@@ -1,5 +1,13 @@
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2.39.3'
+import {
+  evaluateAuthEmailSuppression,
+  injectSecurityDisclaimerHtml,
+  injectSecurityDisclaimerText,
+  AUDIT_ACTION_AUTH_SUPPRESSED,
+  AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER,
+  RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT,
+} from '../_shared/auth-email-suppression.ts'
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
