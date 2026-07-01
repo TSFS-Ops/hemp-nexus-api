@@ -55,6 +55,21 @@ const ALLOW_MENTIONS = new Set([
   "evidence/batch-d-backdoor-admin-bypass/static-guards/README.md",
 ]);
 
+// Known-safe staging/fixture seeders. Each was reviewed and confirmed to:
+//   - scope every seeded account to the @test.izenzo.co.za fixture domain
+//     and/or refuse on production tier, AND
+//   - require a service-role bearer or INTERNAL_CRON_KEY / platform_admin.
+// Adding a new file to this list requires the same review.
+const KNOWN_FIXTURE_SEEDERS = new Set([
+  "supabase/functions/seed-smoke-a-d-fixtures/index.ts",
+  "supabase/functions/seed-smoke-ai-review-fixtures/index.ts",
+  "supabase/functions/seed-smoke-batch-7-fixtures/index.ts",
+  "supabase/functions/seed-uat-facilitation-accounts/index.ts",
+  "supabase/functions/staging-set-fixture-password/index.ts",
+  "supabase/functions/uat-facilitation-phase-1/index.ts",
+  "supabase/functions/seed-ai-light-intel-uat/index.ts",
+]);
+
 const files = walk(FN_DIR).filter((f) => /\.(ts|tsx|js|mjs|json|sql)$/.test(f));
 
 for (const f of files) {
