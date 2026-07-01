@@ -100,6 +100,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .join("");
   if (signature !== expected) {
     console.error("[paystack-webhook] Invalid signature");
+    // Batch I1 (#78) — observability only. Preserves 401 response and
+    // never acknowledges as success.
+    await recordWebhookSignatureInvalid(_obsAdmin, {
+      provider: "paystack",
+      source: "paystack-webhook",
+      requestId: _requestId,
+    });
     return new Response("Invalid signature", { status: 401 });
   }
 
