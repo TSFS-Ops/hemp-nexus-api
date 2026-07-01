@@ -7,6 +7,66 @@ const DEFAULT_SEND_DELAY_MS = 200
 const DEFAULT_AUTH_TTL_MINUTES = 15
 const DEFAULT_TRANSACTIONAL_TTL_MINUTES = 60
 
+// Batch H (#47) — explicit per-message send timeout. Must be strictly less
+// than the pgmq visibility timeout (30s) used in read_email_batch so a hung
+// provider call cannot outlive VT and cause a duplicate send by the next tick.
+const SEND_TIMEOUT_MS = 20_000
+const SEND_TIMEOUT_MARKER = 'send_timeout'
+
+// Batch H (#18) — auth/critical templates that MUST surface an
+// admin_risk_items row on dead-letter. Matched against payload.label
+// (Supabase auth email action type) or the source queue name.
+const AUTH_TEMPLATE_LABELS = new Set([
+  'signup',
+  'magiclink',
+  'recovery',
+  'invite',
+  'email_change',
+  'reauthentication',
+])
+
+class SendTimeoutError extends Error {
+  constructor() {
+    super(SEND_TIMEOUT_MARKER)
+    this.name = 'SendTimeoutError'
+  }
+}
+
+// Race a promise against a hard timeout. Resolves/rejects with the underlying
+// promise if it settles first, otherwise rejects with SendTimeoutError. We do
+// NOT abort the underlying fetch — the email-js client does not accept a
+// signal — but the worker will not await it past the deadline, so the batch
+// continues and pgmq VT (30s) will re-surface the message for retry.
+function withSendTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: number | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new SendTimeoutError()), ms) as unknown as number
+  })
+  return Promise.race([p, timeout]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer)
+  }) as Promise<T>
+}
+
+function isSendTimeout(error: unknown): boolean {
+  return error instanceof SendTimeoutError
+}
+
+// Local-part masking so DLQ audit metadata never carries a full recipient.
+function maskEmail(email: unknown): string | null {
+  if (typeof email !== 'string' || !email.includes('@')) return null
+  const [local, domain] = email.split('@')
+  if (!local || !domain) return null
+  const head = local.slice(0, 2)
+  return `${head}${'*'.repeat(Math.max(1, local.length - 2))}@${domain}`
+}
+
+function isAuthTemplate(queue: string, label: unknown): boolean {
+  if (queue === 'auth_emails') return true
+  if (typeof label === 'string' && AUTH_TEMPLATE_LABELS.has(label)) return true
+  return false
+}
+
+
 // Check if an error is a rate-limit (429) response.
 // Uses EmailAPIError.status when available (email-js >=0.x with structured errors),
 // falls back to parsing the error message for older versions.
