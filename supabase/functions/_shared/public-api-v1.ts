@@ -123,6 +123,7 @@ const ERROR_PUBLIC_MESSAGE: Record<V1ErrorCode, string> = {
   forbidden_scope: "The API key carries a scope that is not permitted on the public API.",
   api_key_environment_mismatch: "The API key cannot be used in this environment.",
   internal_error_simulated: "Simulated internal error (sandbox).",
+  unrecognised_host: "This host does not serve the Izenzo Public API V1. Use api.trade.izenzo.co.za or api-sandbox.trade.izenzo.co.za.",
 };
 
 // ─── Standard V1 response envelopes ──────────────────────────────────────
