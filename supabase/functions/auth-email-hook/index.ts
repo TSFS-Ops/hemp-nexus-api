@@ -11,6 +11,14 @@ import { RecoveryEmail } from '../_shared/email-templates/recovery.tsx'
 import { EmailChangeEmail } from '../_shared/email-templates/email-change.tsx'
 import { ReauthenticationEmail } from '../_shared/email-templates/reauthentication.tsx'
 import { handleCorsPreflight, withCors, webhookCorsHeaders } from '../_shared/cors.ts'
+import {
+  evaluateAuthEmailSuppression,
+  injectSecurityDisclaimerHtml,
+  injectSecurityDisclaimerText,
+  AUDIT_ACTION_AUTH_SUPPRESSED,
+  AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER,
+  RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT,
+} from '../_shared/auth-email-suppression.ts'
 
 // Webhook handler — Supabase Auth posts here with HMAC signature.
 // Browser preflight is not expected; emit only Vary: Origin (no Allow-Origin).
