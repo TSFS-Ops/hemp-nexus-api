@@ -121,13 +121,13 @@ describe("Batch I2 — webhook branch unchanged", () => {
 
 describe("Batch I2 — non-change guarantees", () => {
   it("adds no new Paystack provider fetch URLs", () => {
-    const provider = TP.match(/https:\/\/api\.paystack\.co\/[^"'\s`)]+/g) ?? [];
-    // Existing surfaces: transaction/initialize + transaction/verify/. Nothing new.
-    const unique = Array.from(new Set(provider.map((u) => u.replace(/\/[A-Za-z0-9_-]+$/, "/"))));
-    expect(unique.sort()).toEqual([
-      "https://api.paystack.co/transaction/",
+    const urls = TP.match(/https:\/\/api\.paystack\.co\/[A-Za-z0-9/_-]+/g) ?? [];
+    const unique = Array.from(new Set(urls)).sort();
+    // Existing surfaces only: transaction/initialize + transaction/verify/{ref}.
+    expect(unique).toEqual([
+      "https://api.paystack.co/transaction/initialize",
       "https://api.paystack.co/transaction/verify/",
-    ].sort());
+    ]);
   });
 
   it("does not introduce refund or settlement-mismatch mutation in the helper", () => {
