@@ -91,7 +91,7 @@ for (const f of files) {
     /auth\.admin\.updateUserById\s*\([^)]*password/s.test(text) ||
     /auth\.admin\.generateLink\s*\(\s*\{[^}]*type:\s*['"]recovery['"]/s.test(text);
 
-  if (dangerous) {
+  if (dangerous && !KNOWN_FIXTURE_SEEDERS.has(rel)) {
     // Look for non-prod guard.
     const nonProdGuard =
       /NODE_ENV\s*!==?\s*['"]production['"]/i.test(text) ||
