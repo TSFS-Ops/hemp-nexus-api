@@ -179,10 +179,12 @@ Deno.serve(async (req) => {
       const rawBody = await req.json();
       const body = webhookUpdateSchema.parse(rawBody);
 
-      // Verify webhook belongs to org
+      // Verify webhook belongs to org — capture prior status so we can emit
+      // a distinct audit event when it flips from inactive back to active
+      // (Batch G — webhook re-enable observability).
       const { data: existing } = await supabase
         .from("webhook_endpoints")
-        .select("id")
+        .select("id, status, disabled_at")
         .eq("id", webhookId)
         .eq("org_id", authCtx.orgId)
         .single();
@@ -191,13 +193,23 @@ Deno.serve(async (req) => {
         throw new ApiException("NOT_FOUND", "Webhook not found", 404);
       }
 
+      // Clear disabled_at when the caller re-enables the endpoint, so the
+      // circuit-breaker view no longer reports it as auto-disabled.
+      const patchPayload: Record<string, unknown> = { ...body };
+      const isReenable =
+        existing.status === "inactive" && body.status === "active";
+      if (isReenable) {
+        patchPayload.disabled_at = null;
+        patchPayload.consecutive_failures = 0;
+      }
+
       // Security fix: explicit column allowlist. Never return secret_hash or
       // previous_secret_hash to API callers (encrypted ciphertext is still
       // sensitive; compromise of WEBHOOK_ENCRYPTION_KEY would retroactively
       // decrypt captured responses). Mirrors the GET endpoint column list.
       const { data: webhook, error } = await supabase
         .from("webhook_endpoints")
-        .update(body)
+        .update(patchPayload)
         .eq("id", webhookId)
         .select("id, url, events, status, last_delivery_at, created_at, updated_at")
         .single();
@@ -214,11 +226,30 @@ Deno.serve(async (req) => {
         metadata: { ...body, actor_ip: authCtx.actorIp ?? null, user_agent: authCtx.userAgent ?? null },
       });
 
+      if (isReenable) {
+        await supabase.from("audit_logs").insert({
+          org_id: authCtx.orgId,
+          actor_user_id: authCtx.isApiKey ? null : authCtx.userId,
+          actor_api_key_id: authCtx.isApiKey ? authCtx.userId : null,
+          action: "webhook.endpoint.reenabled",
+          entity_type: "webhook",
+          entity_id: webhookId,
+          metadata: {
+            previous_status: existing.status,
+            new_status: "active",
+            previous_disabled_at: existing.disabled_at ?? null,
+            actor_ip: authCtx.actorIp ?? null,
+            user_agent: authCtx.userAgent ?? null,
+          },
+        });
+      }
+
       return new Response(
         JSON.stringify(webhook),
         { status: 200, headers: { "Content-Type": "application/json", ...headers } }
       );
     }
+
 
     // POST /:id/rotate - Rotate webhook signing secret
     // Batch D — secret rotation with bounded grace window.
