@@ -411,6 +411,92 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Batch J3 / #22 — Auth suppression split (defense-in-depth) ──
+      // Auth-email-hook already applies the split before enqueue, but a
+      // direct queue producer could bypass that. Re-check here for any
+      // auth_emails message and honour the same disposition. Non-auth
+      // transactional messages are left to send-transactional-email's
+      // existing suppression path.
+      let sendHtml = payload.html
+      let sendText = payload.text
+      if (isAuthTemplate(queue, payload.label) && typeof payload.to === 'string' && typeof payload.label === 'string') {
+        const authDisposition = await evaluateAuthEmailSuppression(
+          supabase,
+          payload.label,
+          payload.to,
+        )
+        if (authDisposition.disposition === 'suppress') {
+          await supabase.from('email_send_log').insert({
+            message_id: payload.message_id,
+            template_name: payload.label || queue,
+            recipient_email: payload.to,
+            status: 'suppressed',
+            metadata: {
+              disposition: 'suppress',
+              auth_split: true,
+              source: 'process-email-queue',
+              reason: authDisposition.suppressionReason ?? 'recipient_suppressed',
+            },
+          })
+          try {
+            await supabase.from('audit_logs').insert({
+              action: AUDIT_ACTION_AUTH_SUPPRESSED,
+              entity_type: 'email_send_log',
+              entity_id: null,
+              actor_id: null,
+              metadata: {
+                message_id: payload.message_id,
+                template_name: payload.label,
+                disposition: 'suppress',
+                source: 'process-email-queue',
+              },
+            })
+            await supabase.from('admin_risk_items').insert({
+              kind: RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT,
+              severity: 'medium',
+              title: `Auth email suppressed at queue (${payload.label})`,
+              description: `Non-critical auth email (${payload.label}) blocked at process-email-queue because recipient is on suppressed_emails.`,
+              metadata: {
+                message_id: payload.message_id,
+                template_name: payload.label,
+                disposition: 'suppress',
+                source: 'process-email-queue',
+              },
+            })
+          } catch (obsErr) {
+            console.warn('process-email-queue suppression observability failed (non-fatal)', obsErr)
+          }
+          const { error: supDelError } = await supabase.rpc('delete_email', {
+            queue_name: queue,
+            message_id: msg.msg_id,
+          })
+          if (supDelError) {
+            console.error('Failed to delete suppressed auth message from queue', { queue, msg_id: msg.msg_id, error: supDelError })
+          }
+          continue
+        }
+        if (authDisposition.disposition === 'send_with_disclaimer') {
+          sendHtml = injectSecurityDisclaimerHtml(payload.html)
+          sendText = injectSecurityDisclaimerText(payload.text)
+          try {
+            await supabase.from('audit_logs').insert({
+              action: AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER,
+              entity_type: 'email_send_log',
+              entity_id: null,
+              actor_id: null,
+              metadata: {
+                message_id: payload.message_id,
+                template_name: payload.label,
+                disposition: 'send_with_disclaimer',
+                source: 'process-email-queue',
+              },
+            })
+          } catch (obsErr) {
+            console.warn('process-email-queue disclaimer audit failed (non-fatal)', obsErr)
+          }
+        }
+      }
+
       try {
         // Batch H (#47) — hard per-message send timeout. Must stay < pgmq VT (30s).
         await withSendTimeout(
