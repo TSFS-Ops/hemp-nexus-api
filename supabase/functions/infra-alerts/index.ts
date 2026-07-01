@@ -617,6 +617,73 @@ Deno.serve(async (req) => {
     console.error("Slack dispatcher unavailable check failed:", err);
   }
 
+  // ── 17. Auth Email Dead-Letter (1 hr) ────────────────────────────
+  // Batch H (#18) — surfaces auth/critical emails that reached the DLQ.
+  // Auth templates (signup, magiclink, recovery, invite, email_change,
+  // reauthentication) are treated as critical because a dead-lettered
+  // auth email means a user is locked out silently.
+  try {
+    const oneHrAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const AUTH_TEMPLATES = [
+      'signup',
+      'magiclink',
+      'recovery',
+      'invite',
+      'email_change',
+      'reauthentication',
+      'auth_emails',
+    ];
+    const { count: authDlq } = await supabase
+      .from('email_send_log')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'dlq')
+      .in('template_name', AUTH_TEMPLATES)
+      .gte('created_at', oneHrAgo);
+
+    const a = authDlq ?? 0;
+    if (a >= 1) {
+      alerts.push({
+        metric: 'Auth Email Dead-Letter (1 hr)',
+        threshold: 'warning >=1, critical >=5',
+        actual: `${a} auth email(s) reached DLQ in last hour`,
+        severity: a >= 5 ? 'critical' : 'warning',
+        details:
+          "One or more auth/critical emails (signup/magiclink/recovery/invite/email_change/reauthentication) reached the dead-letter queue. Users may be locked out. Inspect admin_risk_items (kind='auth_email_dead_lettered') and audit_logs (action='email.dead_lettered'). Read-only alert; does not retry sends.",
+      });
+    }
+  } catch (err) {
+    console.error('Auth email DLQ check failed:', err);
+  }
+
+  // ── 18. Email Send Timeout (1 hr) ────────────────────────────────
+  // Batch H (#47) — surfaces process-email-queue send-timeout failures.
+  // A hung provider send is now bounded at SEND_TIMEOUT_MS (< pgmq VT) and
+  // recorded as error_message='send_timeout'.
+  try {
+    const oneHrAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const { count: toCount } = await supabase
+      .from('email_send_log')
+      .select('*', { count: 'exact', head: true })
+      .eq('error_message', 'send_timeout')
+      .gte('created_at', oneHrAgo);
+
+    const t = toCount ?? 0;
+    if (t >= 3) {
+      alerts.push({
+        metric: 'Email Send Timeout (1 hr)',
+        threshold: 'warning >=3, critical >=10',
+        actual: `${t} email send timeout(s) in last hour`,
+        severity: t >= 10 ? 'critical' : 'warning',
+        details:
+          "process-email-queue recorded repeated send timeouts (error_message='send_timeout'). Provider may be degraded. Read-only alert; timeouts are retried via pgmq visibility timeout expiry until MAX_RETRIES.",
+      });
+    }
+  } catch (err) {
+    console.error('Email send timeout check failed:', err);
+  }
+
+
+
 
   if (alerts.length === 0) {
     return new Response(
