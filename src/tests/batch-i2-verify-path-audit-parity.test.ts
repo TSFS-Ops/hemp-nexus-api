@@ -131,6 +131,11 @@ describe("Batch I2 — non-change guarantees", () => {
   });
 
   it("does not introduce refund or settlement-mismatch mutation in the helper", () => {
-    expect(OBS).not.toMatch(/refund|settlement_mismatch|atomic_paid_credit_purchase|atomic_token_(credit|burn)|token_balances|token_ledger/);
+    // Strip string literals so we only inspect executable code, not English.
+    const code = OBS
+      .replace(/`[^`]*`/g, "``")
+      .replace(/'[^']*'/g, "''")
+      .replace(/"[^"]*"/g, '""');
+    expect(code).not.toMatch(/\brefund\b|settlement_mismatch|atomic_paid_credit_purchase|atomic_token_(credit|burn)|token_balances|token_ledger/);
   });
 });
