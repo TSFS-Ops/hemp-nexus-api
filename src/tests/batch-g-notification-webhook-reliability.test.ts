@@ -22,9 +22,13 @@ import { join } from "node:path";
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf-8");
 
 const migrationFile = readdirSync("supabase/migrations")
-  .filter((f) => f.endsWith("_batch_g_webhook_auto_disable_observability.sql"))
+  .filter((f) => f.endsWith(".sql"))
+  .map((f) => ({ f, body: read(`supabase/migrations/${f}`) }))
+  .filter((x) => /webhook_record_failure/.test(x.body) && /webhook_auto_disabled/.test(x.body))
+  .map((x) => x.f)
   .sort()
   .pop();
+
 
 describe("Batch G — webhook_record_failure observability migration", () => {
   it("migration file exists", () => {
