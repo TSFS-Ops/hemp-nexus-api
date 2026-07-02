@@ -135,8 +135,13 @@ describe("Batch V — IDV route table", () => {
     }
     // Placeholder countries must appear as the array literal in the mirror.
     expect(server).toContain(`"GH", "KE", "UG", "ZM", "CI"`);
-    // Same total entry count.
-    const serverEntries = (server.match(/document_country:/g) || []).length;
-    expect(serverEntries).toBe(IDV_ROUTE_TABLE.length);
+    // Sanity: mirror has the same non-placeholder entry count as the SSOT.
+    const clientNonPlaceholder = IDV_ROUTE_TABLE.filter(
+      (r) => r.document_type !== "national_id_placeholder",
+    ).length;
+    const serverNonPlaceholder = (
+      server.match(/document_type:\s*"(?!national_id_placeholder)/g) || []
+    ).length;
+    expect(serverNonPlaceholder).toBe(clientNonPlaceholder);
   });
 });
