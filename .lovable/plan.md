@@ -1,197 +1,215 @@
-# Phase 2J — Customer-facing PayFast alongside Paystack
+# Batch V — VerifyNow Multi-Country IDV Routing
 
-## Decision recorded
+Enterprise-grade IDV build. Read-only for existing schema; no migrations, no live provider calls, no production data mutation. Preserves Batch O / O-Remainder trust-signal guards.
 
-PayFast sits **alongside** Paystack, not replacing it. Paystack stays the default; both providers credit through the existing verified ITN/webhook paths.
+## What will be built
 
-## Critical no-FX policy
+### 1. IDV Route Registry (SSOT)
 
-Izenzo prices credits in USD on the existing packs. PayFast settles in ZAR. With FX explicitly forbidden, the cleanest answer is a **fixed ZAR price list per pack**, declared once in code (no runtime conversion, no rate fetch). Proposed ZAR prices (drop-in for the existing packs):
+`src/lib/idv/route-table.ts` + mirror `supabase/functions/_shared/idv-route-table.ts`
+
+- Central registry keyed by `(document_issuing_country, document_type)`.
+- Live: **ZA** (SAID, Home Affairs Enhanced IDV), **NG** (NIN, Virtual NIN, NIN Slip — full IDV; BVN, voter ID, phone, bank — supporting only).
+- Placeholders (live_enabled=false): **GH, KE, UG, ZM, CI** → resolve to `provider_not_available`.
+- Each entry: `provider`, `live_enabled`, `api_supported`, `full_idv` vs `supporting_only`, `can_unlock_controlled_actions`, `required_fields`, `user_wording`, `admin_wording`.
+- Pure function `resolveIdvRoute({ document_country, document_type })` — no IO.
+- Explicitly does NOT read nationality / residence / company country.
+
+### 2. VerifyNow server-side adapter
+
+`supabase/functions/_shared/verifynow/adapter.ts`
+
+- Reads `VERIFYNOW_API_KEY`, `VERIFYNOW_BASE_URL` (default `https://www.verifynow.co.za/api/external`), `VERIFYNOW_MODE` (sandbox default).
+- `x-api-key` header. Production calls require `Idempotency-Key` (UUID v4, persisted alongside request).
+- Same-key/different-payload conflict → `provider_error` → manual review + audit.
+- Never imported by any `src/**` file (guard test).
+- No new secrets requested in this batch — adapter fails closed with `PROVIDER_MISCONFIGURED` when keys absent (mirrors Batch O pattern).
+
+### 3. Result mapping
+
+`supabase/functions/_shared/verifynow/result-mapping.ts`
+
+Table mapping VerifyNow raw outcomes → internal status → user-safe wording → controlled-action gate:
 
 
-| Pack       | Credits | USD  | ZAR (fixed) |
-| ---------- | ------- | ---- | ----------- |
-| `single`   | 1       | $1   | R20         |
-| `pack_10`  | 10      | $10  | R190        |
-| `pack_50`  | 50      | $45  | R850        |
-| `pack_200` | 200     | $160 | R3,000      |
+| Raw                          | Internal                         | User wording                                   | Unlock |
+| ---------------------------- | -------------------------------- | ---------------------------------------------- | ------ |
+| clear match (full IDV)       | `idv_completed`                  | Identity verification completed                | yes    |
+| possible mismatch            | `manual_review_required`         | Manual review required                         | no     |
+| clear mismatch               | `manual_review_required`         | Manual review required                         | no     |
+| not found                    | `retry_required`                 | Retry required / Alternative document required | no     |
+| source unavailable / timeout | `provider_pending`               | Provider pending                               | no     |
+| provider error               | `provider_error`                 | Manual review required                         | no     |
+| unsupported country/doc      | `provider_not_available`         | Manual review required                         | no     |
+| blocked/deceased/fraud       | `blocked_pending_admin_decision` | Manual review required                         | no     |
 
 
-These are static constants — operator-tunable later via a single registry edit, never via FX. If you want different numbers I'll use yours instead before building.
+No auto final rejection.
 
-## Scope (what changes)
+### 4. Manual review fallback
 
-### 1. New backend: `payfast-checkout-public` edge function
+`src/lib/idv/manual-review.ts` (pure record shape + decision enum) plus a thin edge function `supabase/functions/idv-manual-review/index.ts` scaffolded to accept admin decisions. Decisions: `manual_review_accepted`, `manual_review_rejected`, `more_information_required`, `alternative_document_required`, `provider_retry_required`, `blocked_pending_admin_decision`, `waived_with_reason`.
 
-A second live-only PayFast checkout endpoint, separate from the existing admin-only `payfast-checkout-live`:
+No new tables in this batch — persist onto existing `p5scr_manual_reviews` shape where compatible; if fields don't align, the edge function returns 501 with `MANUAL_REVIEW_STORE_NOT_WIRED` so we surface the gap without silent success.
 
-- Gated by `**PAYFAST_PUBLIC_ENABLED=true**` (new env flag, independent of `PAYFAST_LIVE_SMOKE_ENABLED`).
-- Requires `PAYFAST_MODE=live`.
-- Requires authenticated user with an `org_id`.
-- Accepts only the customer pack ids (`single` / `pack_10` / `pack_50` / `pack_200`); rejects `live_smoke`.
-- Reuses the proven signed-form builder (`buildSignedLiveFormPayload`) and live merchant creds.
-- Inserts `token_purchases` with `provider='payfast'`, `provider_reference=m_payment_id`, `currency='ZAR'`, `status='pending'`, `paystack_reference='payfast_live::<id>'` (existing NOT NULL parking pattern, isolated from Paystack reporting), `package_id` set to the customer pack id, ZAR price in `metadata.price_zar`.
-- Writes a `credits.purchase_initiated` audit row tagged `mode:live, provider:payfast, gate:PAYFAST_PUBLIC_ENABLED`.
-- Returns `{ checkoutUrl, purchaseId, providerReference, amountZar, packageId, credits }` — never returns merchant_key or passphrase.
+### 5. Controlled-action gate helper
 
-Existing `payfast-checkout-live` (admin smoke) and `payfast-itn` are not touched.
+`src/lib/idv/controlled-action-gate.ts` — `isIdvBlocking(status)` returns true for any of: pending, provider_pending, provider_not_available, retry_required, alternative_document_required, manual_review_required, blocked_pending_admin_decision, failed, expired, unsupported, error. Server mirror in `_shared/`. To be consumed by existing gate stacks; no rewrite of existing gates in this batch.
 
-### 2. Customer payment-method picker UI
+### 6. Person-only scope
 
-In `BillingOverview.tsx`, replace the single "Purchase" button per pack with a method picker that appears only after the user clicks the pack:
+Adapter result surfaces `person_idv_completed` only. Explicit guard test that success does NOT set `entities.status='verified'`, `counterparties.verified`, funder-ready, finality, or API ready=true.
 
-- **Paystack (USD)** — default, unchanged path via `startCreditCheckout`.
-- **PayFast (ZAR)** — visible only when `PAYFAST_PUBLIC_ENABLED` probe returns available.
+### 7. Old-provider decommissioning (feature-flag only)
 
-Each pack row shows both prices side by side so the customer sees the actual amount each provider will charge: "$10 via Paystack · R190 via PayFast". A small note states: *"PayFast charges in ZAR. Paystack charges in USD. Izenzo performs no currency conversion — the price you see is the price charged."*
+`src/lib/idv/provider-registry.ts` — `getActiveIdvProviders()` returns `['verifynow']`. Dilisense/Onfido/Sumsub/Didit/ComplyCube/Sanctions.io excluded for new IDV. Historical data untouched.
 
-A new tiny hook `usePayfastPublicAvailability()` calls a GET probe on the new function (no secrets returned, just `{ available: boolean }`).
+### 8. Wording guards
 
-### 3. PayFast return / cancel routes
+Extends existing Batch O guard test to scan new IDV surfaces for banned phrases and require the safe-wording catalogue.
 
-Two new lightweight routes:
+## What will NOT be built (per prompt)
 
-- `**/desk/billing/payfast/return**` — polls `token_purchases` by `provider_reference` for up to ~60s. Shows:
-  - "Confirming payment with PayFast…" while `status='pending'` (no credit claim).
-  - "Credits applied. New balance: N" only when `status='completed'` and the wallet reflects the credit.
-  - "Payment was not successful" if `status` becomes `failed` / `cancelled`.
-  - Never calls the credit RPC. Never mutates anything. The wallet is only credited by `payfast-itn`.
-- `**/desk/billing/payfast/cancel**` — static "Payment cancelled. No charge was made." with a "Try again" link back to `/desk/billing`. No DB writes.
+OMB, full KYB, bank verification, CIPC, Dilisense/Sanctions.io/Sumsub/Didit/ComplyCube/Onfido fallback, provider secret changes, schema migrations, production calls, Memory writes of raw payloads.
 
-### 4. `PurchasesList` provider columns
+## Tests (Vitest + Deno)
 
-Add a "Provider" column showing `Paystack` / `PayFast` badges and pick the reference field per provider (`paystack_reference` for Paystack rows, `provider_reference` for PayFast rows). Status stays the existing `pending / completed / cancelled / failed / abandoned` set. No PayFast row will ever render as Paystack.
+- `src/tests/batch-v-idv-routing.test.ts` — route table: ZA/NG live, 5 placeholders disabled, unsupported → manual review, doc-country-only routing (nationality/residence/company-country ignored), reroute on change.
+- `src/tests/batch-v-verifynow-client-boundary.test.ts` — scan src/** to prove `VERIFYNOW_API_KEY` not referenced client-side and adapter file not imported from src.
+- `src/tests/batch-v-result-mapping.test.ts` — full mapping table.
+- `src/tests/batch-v-controlled-action-gate.test.ts` — every non-completed status blocks.
+- `src/tests/batch-v-person-only.test.ts` — success does not flip company/funder/API/finality flags (source scan + unit).
+- `src/tests/batch-v-wording.test.ts` — banned phrases absent from new surfaces; Batch O suite still passes.
+- `supabase/functions/_shared/verifynow/adapter_smoke_test.ts` — fetch tripwire proves zero network egress; production mode requires Idempotency-Key; missing key → PROVIDER_MISCONFIGURED; unsupported route never calls adapter.
 
-### 5. Admin visibility
+All tests run offline. No provider calls. No DB mutation. No secrets set.
 
-The existing admin billing dashboards already join `token_purchases` and `audit_logs`. Add a small `provider` + `mode` chip to the admin purchase row view so admins can distinguish at a glance. No new admin pages.
+## Evidence
 
-### 6. Admin-only smoke buttons
+`evidence/batch-v-verifynow-multicountry-idv-routing/README.md` with sections mandated by the prompt (files changed, route table, mapping, fallback, gate, old-provider handling, data/Memory, tests, commands+results, residual risks, next batch).
 
-- `PayfastSandboxTestButton` — keep, still gated by `isAdmin` and the sandbox availability probe.
-- `PayfastLiveSmokeTestButton` — keep, still gated by `isAdmin` + `PAYFAST_LIVE_SMOKE_ENABLED`. It now lives next to (not instead of) the customer flow. Useful for future operator diagnostics.
-- Neither button can render for non-admins; we keep the existing `if (!isAdmin) return null` guard verbatim and add a Vitest that snapshots it.
+## Residual risks (called out up front)
 
-### 7. Tests (Vitest)
+1. Manual-review persistence edge function returns 501 until table shape is confirmed — no silent success.
+2. Controlled-action gate helper is provided but existing gate call-sites are not rewired in this batch (deliberate scope limit — separate wiring batch recommended so we don't touch WaD/finality/API logic under the "no-overbuild" constraint).
+3. No new secrets requested; adapter fails closed until VerifyNow credentials are provisioned in a follow-up.
 
-New file `src/tests/payfast-phase-2j-customer-rollout.test.ts(x)` proving:
+## Recommended follow-up batch
 
-1. Paystack `startCreditCheckout` path is unchanged (regression against `payments-paystack-no-regression-phase1.test.ts` baseline).
-2. PayFast customer button is hidden when `PAYFAST_PUBLIC_ENABLED` probe is unavailable.
-3. PayFast customer button is shown when the probe is available and the user is non-admin.
-4. The customer PayFast click posts to `payfast-checkout-public` with `provider:"payfast"`, `mode:"live"`, customer `packageId`, and never to `payfast-checkout-live`.
-5. `payfast-checkout-public` rejects `packageId="live_smoke"`.
-6. `payfast-checkout-public` rejects when `PAYFAST_PUBLIC_ENABLED!=true`.
-7. `payfast-checkout-public` rejects when `PAYFAST_MODE!=live`.
-8. Return route does not call any credit RPC and does not flip purchase status.
-9. Cancel route writes nothing.
-10. `PurchasesList` renders PayFast rows with provider `PayFast` and the PayFast reference, not the Paystack one.
-11. Admin smoke buttons return null for non-admins (snapshot).
-12. No FX import: grep guard test ensures `_shared/fx.ts` is not imported anywhere under `supabase/functions/payfast-*` or the new customer files.
-13. `payfast-itn` idempotency unchanged — duplicate ITN returns `already_credited:true` and writes no second ledger row (existing test, re-asserted as part of the suite).
+**Batch V-Wire** — wire `isIdvBlocking` into existing POI/WaD/finality/funder-ready/API-ready gate sites; provision VerifyNow secrets; wire manual-review persistence; add e2e reroute test.
 
-### 8. Secrets / config (request only — no values pasted in chat)
+---
 
-A single new env flag:
-
-- `PAYFAST_PUBLIC_ENABLED` — set to `true` to expose the customer PayFast button. Default is unset/false. Toggling this off instantly removes PayFast from the customer surface without code changes.
-
-All other PayFast secrets already exist (live merchant id / key / passphrase / URLs / `PAYFAST_ALLOWED_IPS`).
-
-## Files
-
-**New**
-
-- `supabase/functions/payfast-checkout-public/index.ts`
-- `supabase/functions/_shared/payments/payfast-public-checkout.ts` (pure orchestrator; tested)
-- `supabase/functions/_shared/payments/payfast-customer-packages.ts` (the fixed ZAR table)
-- `src/components/desk/billing/PayfastPublicCheckoutButton.tsx`
-- `src/components/desk/billing/PaymentMethodPicker.tsx`
-- `src/hooks/use-payfast-public-availability.ts`
-- `src/pages/desk/billing/PayfastReturn.tsx`
-- `src/pages/desk/billing/PayfastCancel.tsx`
-- `src/lib/credit-checkout-payfast.ts` (client wrapper that calls the new function)
-- `src/tests/payfast-phase-2j-customer-rollout.test.tsx`
-- `docs/payfast-phase-2j-customer-rollout-report.md`
-
-**Edited (minimal)**
-
-- `src/components/desk/billing/BillingOverview.tsx` — pack rows now render `PaymentMethodPicker` instead of a single Purchase button. Existing Paystack code path preserved verbatim behind the Paystack option.
-- `src/components/desk/billing/PurchasesList.tsx` — add Provider column + per-provider reference.
-- `src/App.tsx` (or router) — register `/desk/billing/payfast/return` and `/desk/billing/payfast/cancel`.
-
-**Untouched (asserted by tests)**
-
-- `supabase/functions/payfast-itn/*`
-- `supabase/functions/payfast-checkout-live/*`
-- `supabase/functions/payfast-checkout-sandbox/*`
-- `supabase/functions/paystack-webhook/*`
-- `supabase/functions/_shared/payments/paystack.ts`
-- `src/lib/credit-checkout.ts` (Paystack path)
-- `PayfastSandboxTestButton.tsx`, `PayfastLiveSmokeTestButton.tsx` — still admin-only.
-- Anything FX. No file under `_shared/fx*` is touched, imported, or revived.
-
-## Refund / dispute readiness (reported, not built)
-
-PayFast refunds are issued from the PayFast merchant dashboard. Today, `payfast-itn` only handles credit notifications — there is no PayFast refund-ITN branch yet. Phase 2J **does not** build refund handling. The report will state this explicitly as a known limitation, with the recommended Phase 2K shape (refund-ITN branch → `token_ledger.credit_refund` negative row, idempotent on `provider_reference + refund_id`, mirroring Paystack's existing refund handling). Existing Paystack refund flow is unchanged.
-
-## Final status options in the report
-
-- `PAYFAST_PHASE_2J_CUSTOMER_ROLLOUT_READY` — when all the tests above pass and `PAYFAST_PUBLIC_ENABLED` is set true by an operator.
-- `PAYFAST_PHASE_2J_BLOCKED` — if any guard test fails or if you reject the fixed-ZAR price table proposed above.
-
-## What I need from you before building
-
-1. **Approve or override the fixed ZAR prices** above (R20 / R190 / R850 / R3000). Without your numbers I'll use those.
-2. **Confirm the new env flag name `PAYFAST_PUBLIC_ENABLED**` is acceptable.
-
-Once approved I'll build, run the Vitest suite, write the report, and end with the final status line.  
+Confirm to proceed, or tell me to adjust scope (e.g. include the gate-wiring in this batch, or wire manual-review persistence to a specific existing table).  
   
-Approve both.
+I would **adjust scope before proceeding**.
 
-The proposed fixed ZAR prices are sensible and keep us safely away from FX. `PAYFAST_PUBLIC_ENABLED` is also a clear flag name.
+The proposed Batch V is good, but it stops one step too early.
 
-Send Lovable this:
+The biggest issue is this line:
 
-Approved.
+“Controlled-action gate helper is provided but existing gate call-sites are not rewired in this batch.”
 
-1. Fixed ZAR prices approved:
+That means we would build the routing and adapter, but the platform may still not actually block WaD/finality/funder/API correctly from the new VerifyNow statuses.
 
-- `single` — 1 credit — R20
-- `pack_10` — 10 credits — R190
-- `pack_50` — 50 credits — R850
-- `pack_200` — 200 credits — R3,000
+Given your “one-shot plus one refinement” limit, I would not accept a batch that only creates helpers and leaves gate wiring for later.
 
-These are fixed ZAR prices, not FX conversions.
+## **My recommendation**
 
-Do not add runtime FX.  
-Do not fetch rates.  
-Do not revive FX code.
+Proceed, but change scope to include **minimum gate wiring now**.
 
-2. Env flag approved:
+Not a huge rewrite.
 
-`PAYFAST_PUBLIC_ENABLED`
+Just wire the new IDV blocking status into the existing controlled-action gates that matter:
 
-Use this as the single switch for exposing the customer-facing PayFast option.
+- WaD sealing;
+- finality;
+- funder-ready;
+- API `ready=true`;
+- POI action only where the person binds a party.
 
-Proceed with Phase 2J exactly as scoped:
+Also, manual-review persistence should not return 501 if there is already a compatible P-5 manual-review table. The P-5 screening spine already has manual review structures, so the prompt should ask them to wire to the existing compatible table if available, and only fail closed if truly incompatible.
 
-- PayFast alongside Paystack;
-- Paystack remains default and unchanged;
-- PayFast charges fixed ZAR prices;
-- PayFast credits only through verified ITN;
-- return/cancel pages do not credit;
-- purchase history clearly shows PayFast vs Paystack;
-- admin smoke buttons remain admin-only;
-- no FX;
-- no Paystack changes.
+## **The revised instruction I would send back**
 
-Please build, run the full relevant Vitest suite and guards, write:
+```text
+Please proceed with Batch V, but adjust the scope before implementation.
 
-`docs/payfast-phase-2j-customer-rollout-report.md`
+The current plan is strong, but it stops too early in two places.
 
-Final status should be:
+1. Controlled-action gate wiring
 
-`PAYFAST_PHASE_2J_CUSTOMER_ROLLOUT_READY`
+Do not only create `isIdvBlocking()` as a helper.
 
-unless a real blocker is found.
+Wire the new VerifyNow IDV statuses into the existing controlled-action gates for the key launch blockers:
+
+- WaD sealing;
+- finality;
+- funder-ready status;
+- API ready=true;
+- POI action where the person binds a party.
+
+This does not need to be a broad rewrite of the gate stack. Keep the wiring minimal and additive.
+
+Acceptance rule:
+
+If required IDV is pending, provider_pending, provider_not_available, retry_required, alternative_document_required, manual_review_required, blocked_pending_admin_decision, failed, expired, unsupported or error, then:
+
+- WaD sealing must be blocked;
+- finality must be blocked;
+- funder-ready must be blocked;
+- API ready=true must be blocked;
+- binding POI action must be blocked where that person is acting for a party.
+
+Non-sensitive work must remain allowed.
+
+2. Manual-review persistence
+
+Do not return 501 by default if an existing P-5 manual-review table can safely support this.
+
+First inspect the existing P-5 screening/manual-review structures, especially the existing `p5scr_manual_reviews` shape or equivalent.
+
+If the existing table can safely store the manual review record, wire to it.
+
+If fields are missing but can be safely stored in a metadata/details JSON field without schema changes, use that.
+
+Only return `MANUAL_REVIEW_STORE_NOT_WIRED` if the existing schema truly cannot safely store the required manual-review record.
+
+Do not create a new migration in this batch.
+
+3. Evidence and tests
+
+Add tests proving that the new IDV blocking status is actually consumed by the existing gate call-sites, not merely present as an unused helper.
+
+The evidence README must clearly state:
+
+- which gate call-sites were wired;
+- which were not touched;
+- what still remains for Batch V-Wire, if anything;
+- whether manual-review persistence is wired or fail-closed;
+- whether any production data was mutated;
+- whether any provider was called.
+
+Everything else in the Batch V plan is approved.
+
+Do not add OMB.
+Do not add full KYB.
+Do not add bank verification.
+Do not add CIPC/company verification.
+Do not add Dilisense/Sanctions.io/Sumsub/Didit/ComplyCube/Onfido fallback.
+Do not call production providers.
+Do not expose VerifyNow secrets client-side.
+Do not weaken Batch O / Batch O Remainder wording and trust-signal protections.
+```
+
+## **Why this adjustment matters**
+
+Without gate wiring, Batch V is mostly infrastructure.
+
+With minimal gate wiring, Batch V becomes operational.
+
+That matters because the client’s confirmed rule is not just “route to VerifyNow”. The confirmed rule is:
+
+**If IDV is unresolved, controlled actions must stay blocked.**
+
+So I would not spend the first opportunity on a build that does not enforce that rule.
