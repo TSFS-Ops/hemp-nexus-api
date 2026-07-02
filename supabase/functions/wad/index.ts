@@ -31,6 +31,7 @@ import {
   writeGovernanceEventBestEffort,
 } from "../_shared/governance-audit-integration.ts";
 import { WAD_POLICY_VERSION } from "../_shared/governance-policy-versions.ts";
+import { assertWadSealIdvGate } from "../_shared/idv-wad-seal-gate.ts";
 
 type BypassedGateRecord = {
   gate: "screening_recentness" | "risk_scoring" | "webhook_connectivity";
@@ -1123,7 +1124,27 @@ Deno.serve(async (req) => {
               },
             );
           }
+      }
+
+      // Batch V: IDV controlled-action gate for WaD seal.
+      // Fail-closed if any party signatory has a blocking IDV state.
+      // Non-fatal when no p5scr subject id is wired for the party — that
+      // wiring is Batch V-Wire scope, and Batch O already prevents any
+      // "verified" trust signal from leaking absent live provenance.
+      {
+        const idvGate = await assertWadSealIdvGate(supabase, {
+          buyer_org_id: (wad as { buyer_org_id?: string | null }).buyer_org_id ?? null,
+          seller_org_id: (wad as { seller_org_id?: string | null }).seller_org_id ?? null,
+        });
+        if (!idvGate.allowed) {
+          throw new ApiException(
+            idvGate.code,
+            idvGate.message,
+            409,
+            { blocking_party: idvGate.party, status: idvGate.status },
+          );
         }
+      }
       }
 
       // Fetch attestations + documents in parallel
