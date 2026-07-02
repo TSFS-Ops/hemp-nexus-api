@@ -45,7 +45,7 @@ import {
 // Network tripwire — any real fetch during a test is a hard failure.
 // ---------------------------------------------------------------------
 const REAL_FETCH = globalThis.fetch;
-function installFetchTripwire(): { calls: string[] } {
+function installFetchTripwire(): string[] {
   const calls: string[] = [];
   globalThis.fetch = ((input: RequestInfo | URL): Promise<Response> => {
     const url = typeof input === "string"
