@@ -694,16 +694,29 @@ export default function CounterpartySearch() {
 
         {/* Results */}
         {!isSearching && !searchError && results.length > 0 && (() => {
-          // Live source-tier chip counts - mirrors the Desk's "Requires Your Attention" header language
+          // Live source-tier chip counts.
+          //
+          // Batch O Remainder — trust-signal correction:
+          //   The legacy green "verified" count chip has been removed.
+          //   `search/index.ts` now emits every registry row as
+          //   `registry_record` (with `verified_registry` and
+          //   `counterparty_registry` kept as legacy aliases in the
+          //   reducer for cached results); all of them collapse into
+          //   the neutral `registered` count, rendered with a sky/blue
+          //   chip that does NOT imply provider verification.
           const counts = results.reduce(
             (acc, r) => {
-              if (r.source === "verified_registry") acc.verified += 1;
-              else if (r.source === "counterparty_registry") acc.registered += 1;
-              else if (r.source === "order_book") acc.orderBook += 1;
+              if (
+                r.source === "registry_record" ||
+                r.source === "verified_registry" ||
+                r.source === "counterparty_registry"
+              ) {
+                acc.registered += 1;
+              } else if (r.source === "order_book") acc.orderBook += 1;
               else if (r.source === "web_discovery" || r.metadata?.web_discovered) acc.web += 1;
               return acc;
             },
-            { verified: 0, registered: 0, orderBook: 0, web: 0 },
+            { registered: 0, orderBook: 0, web: 0 },
           );
           return (
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -717,16 +730,10 @@ export default function CounterpartySearch() {
                     <h3 className="text-base sm:text-lg font-semibold text-slate-900 tracking-tight">
                       {results.length} Counterpart{results.length !== 1 ? "ies" : "y"}
                     </h3>
-                    {counts.verified > 0 && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-mono tracking-wider uppercase">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--emerald))]" />
-                        {counts.verified} verified
-                      </span>
-                    )}
                     {counts.registered > 0 && (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 text-[10px] font-mono tracking-wider uppercase">
                         <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                        {counts.registered} registered
+                        {counts.registered} registry
                       </span>
                     )}
                     {counts.orderBook > 0 && (
@@ -738,6 +745,7 @@ export default function CounterpartySearch() {
                     {counts.web > 0 && (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-mono tracking-wider uppercase">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+
                         {counts.web} web
                       </span>
                     )}

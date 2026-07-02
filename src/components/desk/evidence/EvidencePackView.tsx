@@ -65,7 +65,7 @@ interface EvidencePack {
     collapse?: Record<string, unknown> | null;
   };
 }
-type GateStatus = "verified" | "pending" | "blocked";
+type GateStatus = "verified" | "evidence_recorded" | "pending" | "blocked";
 interface Gate {
   id: string;
   label: string;
@@ -74,7 +74,20 @@ interface Gate {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Gate derivation, maps real match/event state to the 9-gate WaD model
+// Gate derivation, maps real match/event state to the 9-gate WaD model.
+//
+// Batch O Remainder — trust-signal correction:
+//   - KYB (GATE_03), jurisdiction/sanctions (GATE_04), and UBO/authority
+//     (GATE_05) gates NEVER show the green "verified" badge based on
+//     `match.status === "settled" / "completed"` alone. A settled match
+//     is proof of settlement, not proof of a live provider check.
+//   - When a heuristic KYB / sanctions / jurisdiction / UBO event is
+//     present in the audit chain we downgrade the visual to the neutral
+//     "evidence_recorded" state (grey dot, text "recorded", no check
+//     icon). We only escalate to the green "verified" badge for hashes
+//     and signatures that are cryptographically verifiable from the
+//     pack itself (bilateral signatures, commercial-terms hash lock,
+//     document integrity, audit-trail chain, WaD certificate).
 
 function deriveGates(pack: EvidencePack | null): Gate[] {
   const match = (pack?.canonical?.match ?? {}) as Record<string, unknown>;
@@ -89,7 +102,7 @@ function deriveGates(pack: EvidencePack | null): Gate[] {
   const sigValid = pack?.signatureValidation?.signatureValid === true;
   const docCount = documents.length;
   const chainValid = pack?.chainVerification?.valid === true;
-  const gateOf = (status: GateStatus, hashSeed?: string): GateStatus => status;
+  const gateOf = (status: GateStatus, _hashSeed?: string): GateStatus => status;
   const hashFor = (idx: number) => events[idx]?.payload_hash;
   return [{
     id: "GATE_01",
@@ -104,17 +117,39 @@ function deriveGates(pack: EvidencePack | null): Gate[] {
     status: gateOf(isSettled ? "verified" : "pending"),
     hash: hashFor(0)
   }, {
+    // GATE_03 — KYB: neutral "recorded" when a `kyc_verified` event is
+    // present in the audit chain, otherwise "pending". No settlement
+    // fallback. No green "verified" badge — the platform cannot prove
+    // from an evidence pack alone that the underlying check was a live
+    // provider result rather than a manual/internal review.
     id: "GATE_03",
     label: "KYB evidence recorded",
-    status: gateOf(eventTypes.has("kyc_verified") || isSettled ? "verified" : "pending")
+    status: gateOf(eventTypes.has("kyc_verified") ? "evidence_recorded" : "pending"),
   }, {
+    // GATE_04 — Jurisdiction & sanctions: same treatment as GATE_03.
+    // Downgraded to neutral "recorded" whenever the audit chain shows
+    // a screening/jurisdiction event; no settlement fallback; no green
+    // "verified" badge.
     id: "GATE_04",
     label: "Jurisdiction and sanctions evidence recorded",
-    status: gateOf(eventTypes.has("sanctions_screened") || eventTypes.has("jurisdiction_resolved") || isSettled ? "verified" : "pending")
+    status: gateOf(
+      eventTypes.has("sanctions_screened") || eventTypes.has("jurisdiction_resolved")
+        ? "evidence_recorded"
+        : "pending",
+    ),
   }, {
+    // GATE_05 — UBO / authority binding: downgraded to neutral
+    // "recorded" when the audit chain shows the corresponding event.
+    // No green "verified" badge (the underlying UBO tree is built from
+    // org-mutable `ubo_links` and does not carry live-provider
+    // provenance in the evidence pack).
     id: "GATE_05",
-    label: "UBO & Authority Records Bound",
-    status: gateOf(eventTypes.has("authority_bound") || eventTypes.has("ubo_verified") ? "verified" : "pending")
+    label: "UBO and authority records bound",
+    status: gateOf(
+      eventTypes.has("authority_bound") || eventTypes.has("ubo_verified")
+        ? "evidence_recorded"
+        : "pending",
+    ),
   }, {
     id: "GATE_06",
     label: "Commercial Terms Hash-Locked",
@@ -138,6 +173,7 @@ function deriveGates(pack: EvidencePack | null): Gate[] {
     status: gateOf(matchState === "completed" ? "verified" : "pending")
   }];
 }
+
 
 // ──────────────────────────────────────────────────────────────────────
 // Term derivation, maps real match row to verified-terms grid
@@ -421,8 +457,26 @@ export function EvidencePackView({
             )}
             <ul className="space-y-3">
               {gates.map((gate, idx) => {
+              // Batch O Remainder: the green "verified" badge and the
+              // filled check icon are ONLY shown for cryptographically
+              // verifiable gates. "evidence_recorded" renders as a
+              // neutral slate dot with the text "recorded" — it never
+              // shows the green success styling and never renders the
+              // literal text "verified" in the hash column.
               const isVerified = gate.status === "verified";
-              const colour = isVerified ? "hsl(155 35% 28%)" : "hsl(215 16% 70%)";
+              const isEvidenceRecorded = gate.status === "evidence_recorded";
+              const colour = isVerified
+                ? "hsl(155 35% 28%)"
+                : isEvidenceRecorded
+                  ? "hsl(215 16% 50%)"
+                  : "hsl(215 16% 70%)";
+              const trailingLabel = gate.hash
+                ? gate.hash.slice(0, 40)
+                : isVerified
+                  ? "verified"
+                  : isEvidenceRecorded
+                    ? "recorded"
+                    : "pending";
               return <li key={gate.id} className="flex items-start gap-4 py-2 border-b border-border last:border-b-0">
                     <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full shrink-0" style={{
                   backgroundColor: isVerified ? colour : "transparent",
@@ -443,10 +497,11 @@ export function EvidencePackView({
                       </div>
                       <div className="col-span-12 sm:col-span-4 text-right">
                         <p className="font-mono text-[8px] text-muted-foreground/70 break-all">
-                          {gate.hash ? gate.hash.slice(0, 40) : isVerified ? "verified" : "pending"}
+                          {trailingLabel}
                         </p>
                       </div>
                     </div>
+
                     <span className="font-mono text-[8px] text-muted-foreground/50 tabular-nums shrink-0">
                       {String(idx + 1).padStart(2, "0")}/09
                     </span>

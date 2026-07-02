@@ -1,25 +1,28 @@
 /**
- * Batch O — IDV/KYB critical lockout local smoke tests.
+ * Batch O + Batch O Remainder — IDV/KYB critical lockout smoke tests.
  *
- * Covers tracker items:
- *   Batch O Part 1 — production lockout for the generic "stub" fallback
- *                    in `idv-verify` (fails closed with
- *                    PROVIDER_MISCONFIGURED + audit + admin_risk_items).
- *   Batch O Part 2 — neutral wording in `EvidencePackView.tsx` (guarded
- *                    in the sibling Vitest suite
- *                    `src/tests/batch-o-idv-kyb-lockout-guard.test.ts`).
+ * Covers:
+ *   Batch O Part 1 (production lockout, source-level).
+ *   Batch O Remainder (Scope D):
+ *     - `idv-verify` strict provider allow-list;
+ *     - unknown / mock / demo / stub / empty / null provider strings
+ *       are ALL rejected up-front with PROVIDER_MISCONFIGURED (not
+ *       only in production);
+ *     - non-production behaviour remains available only through the
+ *       audited test-mode bypass path;
+ *     - the generic `verifyWithStub` helper is deleted so no dispatch
+ *       branch can silently fall through to a stub.
  *
- * Strategy (mirrors the token-purchase and Cluster A/B smoke patterns):
+ * Strategy (mirrors the token-purchase and Cluster A/B smoke pattern):
  *   - Runtime coverage of the shared `isProductionTier()` env-tier
- *     detector — the exact primitive that gates the lockout branch.
- *   - Source-level guards for the `idv-verify` production-lockout branch,
- *     the P010 named-stub-provider branch, the audited test-mode bypass
- *     path, the demo short-circuit, and the untouched Companies House
- *     live provider path. A runtime call into `idv-verify` itself would
- *     require live SUPABASE_URL / SERVICE_ROLE_KEY / auth context and
- *     mutate `entities` — explicitly out of scope for a smoke test.
- *   - `globalThis.fetch` is replaced with a tripwire that fails any test
- *     that touches the network.
+ *     detector — the exact primitive that gates the production-vs-
+ *     non-production audit action name.
+ *   - Source-level guards for the allow-list branch, the P010 named-
+ *     stub-provider branch, the audited test-mode bypass path, the
+ *     demo short-circuit, the untouched Companies House live provider
+ *     path, and the deletion of `verifyWithStub`.
+ *   - `globalThis.fetch` is replaced with a tripwire that fails any
+ *     test that touches the network.
  *
  * Explicit non-goals: no real Onfido / CIPC / Dow Jones / Refinitiv /
  * Companies House / Dilisense call, no real entity mutation, no DB
@@ -97,11 +100,11 @@ Deno.test("Batch O — isProductionTier() returns false for sandbox/test/dev/abs
 });
 
 // =====================================================================
-// Source-level guards — wiring proof for the Batch O lockout branch.
+// Source-level guards — wiring proof for the allow-list branch.
 // A runtime call into idv-verify would need a live Supabase, an auth
 // context, and would mutate `entities` — explicitly out of scope. The
-// guards below prove the exact hardened contract is present in the
-// committed source.
+// guards below prove the hardened contract is present in the committed
+// source.
 // =====================================================================
 
 const HERE = new URL(".", import.meta.url).pathname;
@@ -110,86 +113,112 @@ async function read(rel: string): Promise<string> {
   return await Deno.readTextFile(`${PROJECT_ROOT}/${rel}`);
 }
 
-Deno.test("Batch O Part 1 — idv-verify fails closed for generic 'stub' or absent provider in production", async () => {
+Deno.test("Batch O Remainder — idv-verify declares a strict provider allow-list", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
 
-  // The gate must import and consult isProductionTier from the shared helper.
-  assertStringIncludes(src, `isProductionTier`);
+  // Explicit constants for company + individual providers.
   assert(
-    /from\s+"\.\.\/_shared\/test-mode-bypass\.ts"/.test(src),
-    "idv-verify must import isProductionTier from _shared/test-mode-bypass.ts",
+    /const\s+COMPANY_ALLOWED_PROVIDERS\s*=\s*\[\s*"companies_house"\s*,\s*"cipc"\s*\]\s*as\s+const/.test(src),
+    "COMPANY_ALLOWED_PROVIDERS must be exactly [companies_house, cipc]",
   );
+  assert(
+    /const\s+INDIVIDUAL_ALLOWED_PROVIDERS\s*=\s*\[\s*"onfido"\s*\]\s*as\s+const/.test(src),
+    "INDIVIDUAL_ALLOWED_PROVIDERS must be exactly [onfido]",
+  );
+});
 
-  // The lockout branch must cover both generic "stub" AND absent provider,
-  // and only fire when isProductionTier() is true.
-  assert(
-    /if\s*\(\s*resolvedProvider\s*===\s*"stub"\s*\|\|\s*!resolvedProvider\s*\)/.test(src),
-    "lockout branch must cover generic 'stub' OR absent provider",
-  );
-  assert(
-    /if\s*\(\s*isProductionTier\(\)\s*\)/.test(src),
-    "lockout branch must be guarded by isProductionTier()",
-  );
+Deno.test("Batch O Remainder — allow-list rejects unknown / stub / mock / demo / empty providers up-front", async () => {
+  const src = await read("supabase/functions/idv-verify/index.ts");
 
-  // Canonical audit action name.
+  // The guard must consult the allow-list AND treat a null/empty
+  // provider as misconfigured.
+  assert(
+    /if\s*\(\s*!resolvedProvider\s*\|\|\s*!allowedForRequest\.includes\(resolvedProvider\)\s*\)/.test(src),
+    "allow-list guard must reject !resolvedProvider OR non-allow-listed",
+  );
+  // Canonical audit action names.
   assertStringIncludes(src, `"idv.provider_misconfigured_production_lockout"`);
-  // Admin risk item is written.
-  assertStringIncludes(src, `admin_risk_items`);
-  assertStringIncludes(src, `"idv_provider_misconfigured"`);
-  assertStringIncludes(src, `severity: "high"`);
-  // Fail-closed response: 503 with stable error code.
+  assertStringIncludes(src, `"idv.provider_misconfigured"`);
+  // Fail-closed response.
   assertStringIncludes(src, `"PROVIDER_MISCONFIGURED"`);
   assert(
-    /status:\s*503/.test(
-      src.slice(src.indexOf("idv.provider_misconfigured_production_lockout")),
-    ),
-    "lockout branch must return HTTP 503",
+    /allowed_providers:\s*allowedForRequest/.test(src),
+    "the fail-closed response must expose allowed_providers to the client",
   );
-
-  // The entity MUST NOT be promoted inside the lockout branch. The
-  // "entities … update({ status: 'verified' })" happy-path writes must
-  // sit AFTER the lockout branch (line-order proof).
-  const lockoutIdx = src.indexOf("idv.provider_misconfigured_production_lockout");
-  const stubVerifiedIdx = src.indexOf(
-    `.from("entities").update({ status: "verified" })`,
-  );
-  assert(lockoutIdx > 0, "lockout audit marker must be present");
-  assert(stubVerifiedIdx > 0, "happy-path entities update must be present");
+  // 503 return code.
+  const guardIdx = src.indexOf("provider_not_in_allowlist");
+  assert(guardIdx > 0, "provider_not_in_allowlist marker must be present");
   assert(
-    stubVerifiedIdx > lockoutIdx,
-    "entities.update({status:'verified'}) must live AFTER the lockout branch (branch returns early)",
-  );
-
-  // The lockout branch itself must NOT contain an entities.update call.
-  const lockoutBlock = src.slice(
-    lockoutIdx,
-    src.indexOf("// Non-production", lockoutIdx),
-  );
-  assert(lockoutBlock.length > 0, "lockout block delimiter must be present");
-  assert(
-    !/entities[\s\S]*?\.update\(/.test(lockoutBlock),
-    "lockout branch must not touch entities table",
+    /status:\s*503/.test(src.slice(guardIdx)),
+    "allow-list guard must return HTTP 503",
   );
 });
 
-Deno.test("Batch O Part 1 — non-production path preserves existing dev/test stub behaviour", async () => {
+Deno.test("Batch O Remainder — resolvedProvider default is `null`, not the generic 'stub' string", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
-  // The comment marker documenting that non-prod behaviour is unchanged.
-  assertStringIncludes(
-    src,
-    "Non-production: existing dev/test stub behaviour is preserved below.",
-  );
-  // The generic stub helper still exists and is only reachable outside the
-  // production-lockout branch.
   assert(
-    /async function verifyWithStub\(/.test(src),
-    "generic stub helper must still exist for non-production",
+    /providerConfig\.company_provider\s*\|\|\s*null/.test(src),
+    "company_provider must default to null (not 'stub')",
+  );
+  assert(
+    /providerConfig\.individual_provider\s*\|\|\s*null/.test(src),
+    "individual_provider must default to null (not 'stub')",
   );
 });
 
-Deno.test("Batch O Part 1 — P010 named stub providers (CIPC/Onfido/Dow Jones/Refinitiv) remain blocked with STUB_PROVIDER_NOT_LIVE", async () => {
+Deno.test("Batch O Remainder — verifyWithStub helper is deleted and no call site remains", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
-  // The isStubProvider() branch must remain and short-circuit to 503.
+  assert(
+    !/async\s+function\s+verifyWithStub\s*\(/.test(src),
+    "verifyWithStub helper must be deleted",
+  );
+  assert(
+    !/verifyWithStub\s*\(/.test(src),
+    "no remaining call to verifyWithStub allowed",
+  );
+});
+
+Deno.test("Batch O Remainder — dispatch fails closed for any unknown provider (defence in depth)", async () => {
+  const src = await read("supabase/functions/idv-verify/index.ts");
+  // Both company and individual dispatch else-branches must throw
+  // PROVIDER_MISCONFIGURED rather than fall through to a stub.
+  const companyDispatch = src.match(
+    /if\s*\(\s*isCompany\s*\)\s*\{[\s\S]*?\}\s*else\s*\{[\s\S]*?\}/,
+  );
+  assert(companyDispatch, "dispatch block must be present");
+  const block = companyDispatch![0];
+  const throwCount = (block.match(/throw\s+new\s+ApiException\(\s*[\r\n]?\s*"PROVIDER_MISCONFIGURED"/g) ?? []).length;
+  assertEquals(
+    throwCount,
+    2,
+    "both company and individual dispatch else-branches must throw PROVIDER_MISCONFIGURED",
+  );
+});
+
+Deno.test("Batch O Remainder — audit_logs write is unconditional; admin_risk_items only in production", async () => {
+  const src = await read("supabase/functions/idv-verify/index.ts");
+  const guardStart = src.indexOf("provider_not_in_allowlist");
+  const guardEnd = src.indexOf("status: 503", guardStart);
+  const block = src.slice(guardStart, guardEnd);
+  // audit_logs.insert is not inside an `if (inProduction)` — it runs
+  // for BOTH tiers. admin_risk_items.insert IS wrapped in the tier
+  // check to keep the risk queue for prod-only.
+  assert(
+    /if\s*\(\s*inProduction\s*\)\s*\{[\s\S]*?admin_risk_items[\s\S]*?\}/.test(block),
+    "admin_risk_items insert must be inside if(inProduction){}",
+  );
+  // audit_logs insert must precede the admin_risk_items guard so it
+  // fires on every misconfigured request, not just prod ones.
+  const auditIdx = block.indexOf("audit_logs");
+  const prodBranchIdx = block.indexOf("if (inProduction)");
+  assert(
+    auditIdx > 0 && (prodBranchIdx === -1 || auditIdx < prodBranchIdx),
+    "audit_logs insert must fire unconditionally before the prod-only risk-item branch",
+  );
+});
+
+Deno.test("Batch O — P010 named stub providers (CIPC/Onfido/Dow Jones/Refinitiv) remain blocked with STUB_PROVIDER_NOT_LIVE", async () => {
+  const src = await read("supabase/functions/idv-verify/index.ts");
   assertStringIncludes(src, "isStubProvider(resolvedProvider)");
   assertStringIncludes(src, "STUB_PROVIDER_AUDIT.NOT_LIVE");
   assertStringIncludes(src, "STUB_PROVIDER_ERROR_CODE");
@@ -200,53 +229,49 @@ Deno.test("Batch O Part 1 — P010 named stub providers (CIPC/Onfido/Dow Jones/R
   );
 });
 
-Deno.test("Batch O Part 1 — audited test-mode bypass path is preserved and precedes the lockout branch", async () => {
+Deno.test("Batch O — audited test-mode bypass path is preserved and precedes the allow-list guard", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
-  // The three canonical bypass primitives.
   assertStringIncludes(src, "isBypassEnabled(admin,");
   assertStringIncludes(src, "recordBypassUsage(admin,");
   assertStringIncludes(src, "bypassEnvelope(");
 
-  // Bypass must be evaluated BEFORE the production lockout branch —
-  // otherwise a production tenant could not use the audited bypass at
-  // all (the design says bypass is separately production-locked via
-  // isBypassEnabled → isProductionTier, not via this lockout branch).
   const bypassIdx = src.indexOf("isBypassEnabled(admin,");
-  const lockoutIdx = src.indexOf("idv.provider_misconfigured_production_lockout");
-  assert(bypassIdx > 0 && lockoutIdx > 0, "bypass + lockout markers must both exist");
+  const allowlistIdx = src.indexOf("provider_not_in_allowlist");
+  assert(bypassIdx > 0 && allowlistIdx > 0, "bypass + allow-list markers must both exist");
   assert(
-    bypassIdx < lockoutIdx,
-    "test-mode bypass must be evaluated before the lockout branch",
+    bypassIdx < allowlistIdx,
+    "test-mode bypass must be evaluated before the allow-list guard so audited bypass still works",
   );
 });
 
-Deno.test("Batch O Part 1 — demo short-circuit remains distinct and runs first", async () => {
+Deno.test("Batch O — demo short-circuit remains distinct and runs first", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
   assertStringIncludes(src, "tryDemoShortCircuit");
   const demoIdx = src.indexOf("tryDemoShortCircuit");
-  const lockoutIdx = src.indexOf("idv.provider_misconfigured_production_lockout");
-  assert(demoIdx > 0 && demoIdx < lockoutIdx, "demo short-circuit must run before lockout branch");
+  const allowlistIdx = src.indexOf("provider_not_in_allowlist");
+  assert(demoIdx > 0 && demoIdx < allowlistIdx, "demo short-circuit must run before allow-list guard");
 });
 
-Deno.test("Batch O Part 1 — Companies House live provider path is unchanged", async () => {
+Deno.test("Batch O — Companies House live provider path is unchanged", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
-  // The live provider helper and its bounded fetch still exist.
   assertStringIncludes(src, "async function verifyWithCompaniesHouse(");
   assertStringIncludes(src, "https://api.company-information.service.gov.uk/company/");
   assertStringIncludes(src, `fetchWithTimeout(\n      "companies_house"`);
-  // The dispatch site still routes companies_house to the live helper.
   assert(
     /resolvedProvider\s*===\s*"companies_house"[\s\S]*?verifyWithCompaniesHouse\(/.test(src),
     "companies_house dispatch must still call verifyWithCompaniesHouse",
   );
 });
 
-Deno.test("Batch O Part 1 — lockout branch does not attempt any provider fetch", async () => {
+Deno.test("Batch O Remainder — allow-list guard does not attempt any provider fetch", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
-  const lockoutIdx = src.indexOf("if (resolvedProvider === \"stub\" || !resolvedProvider)");
-  const nonProdComment = src.indexOf("Non-production: existing dev/test stub behaviour is preserved below.");
-  assert(lockoutIdx > 0 && nonProdComment > lockoutIdx);
-  const block = src.slice(lockoutIdx, nonProdComment);
-  assert(!/fetchWithTimeout\(/.test(block), "lockout block must not call fetchWithTimeout");
-  assert(!/verifyWith(Onfido|CIPC|CompaniesHouse|Stub)\(/.test(block), "lockout block must not call provider helpers");
+  const guardStart = src.indexOf("provider_not_in_allowlist");
+  const guardEnd = src.indexOf("status: 503", guardStart);
+  assert(guardStart > 0 && guardEnd > guardStart);
+  const block = src.slice(guardStart, guardEnd);
+  assert(!/fetchWithTimeout\(/.test(block), "allow-list guard must not call fetchWithTimeout");
+  assert(
+    !/verifyWith(Onfido|CIPC|CompaniesHouse|Stub)\(/.test(block),
+    "allow-list guard must not call provider helpers",
+  );
 });

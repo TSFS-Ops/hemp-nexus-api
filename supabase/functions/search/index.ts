@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     if (tsQuery) {
       let cpQuery = supabase
         .from("counterparties")
-        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, verified, org_id, created_at")
+        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, org_id, created_at")
         .textSearch("fts", tsQuery, { type: "plain", config: "english" })
         .neq("org_id", authCtx.orgId)
         .limit(limit);
@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
       ilikeFallbackUsed = true;
       let fallbackQuery = supabase
         .from("counterparties")
-        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, verified, org_id, created_at")
+        .select("id, company_name, website, jurisdiction, registration_number, product_categories, description, org_id, created_at")
         .neq("org_id", authCtx.orgId)
         .or(`company_name.ilike.%${product.replace(/[%_\\]/g, "")}%,description.ilike.%${product.replace(/[%_\\]/g, "")}%`)
         .limit(limit);
@@ -157,7 +157,17 @@ Deno.serve(async (req) => {
 
     console.log(`[search] Trading Partners table returned ${counterpartyResults.length} results`);
 
-    // Map trading partners to search result shape
+    // Map trading partners to search result shape.
+    //
+    // Batch O Remainder — trust-signal correction:
+    //   The counterparty registry's `verifi` boolean column is bare,
+    //   org-mutable, and unaudited. It is NOT tied to any live-provider
+    //   check and MUST NOT drive a customer-facing trust label, a score
+    //   boost, a coherence factor, or a metadata field. Every row is
+    //   surfaced with the neutral `registry_record` source, a uniform
+    //   score, and no trust-signal metadata. Downstream renderers treat
+    //   this as a neutral registry record, not a provider-checked entity.
+
     const cpResults = counterpartyResults.map((cp: any) => ({
       id: cp.id,
       title: cp.company_name,
@@ -168,27 +178,26 @@ Deno.serve(async (req) => {
         cp.product_categories?.length > 0 ? `Products: ${cp.product_categories.join(", ")}` : null,
       ].filter(Boolean).join(" · "),
       url: cp.website || "#",
-      source: cp.verified ? "verified_registry" : "counterparty_registry",
-      score: cp.verified ? 0.9 : 0.7,
+      source: "registry_record",
+      score: 0.7,
       isEnriched: false,
       enrichmentReason: null,
       whySurfaced: "Matched from counterparty registry via full-text search",
       coherence: {
-        score: cp.verified ? 0.95 : 0.7,
+        score: 0.7,
         passed: true,
         factors: [
-          ...(cp.verified ? ["Verified entity"] : []),
           ...(cp.jurisdiction ? [`Jurisdiction: ${cp.jurisdiction}`] : []),
           ...(cp.product_categories?.length > 0 ? ["Product match"] : []),
         ],
       },
       metadata: {
         org_id: cp.org_id,
-        verified: cp.verified,
         registration_number: cp.registration_number,
         jurisdiction: cp.jurisdiction,
       },
     }));
+
 
     // ── 2. Order Book Augmentation ──
     const orderSide = signalType === "buyer" ? "offer" : "bid";
