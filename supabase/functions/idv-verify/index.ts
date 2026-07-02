@@ -151,15 +151,19 @@ async function verifyWithCompaniesHouse(regNumber: string, name: string): Promis
   };
 }
 
-// ── Provider: Stub ──
-async function verifyWithStub(entityId: string, entityType: string, name: string): Promise<VerificationResult> {
-  return {
-    provider: "stub",
-    status: "verified",
-    provider_reference: `stub-${entityId}`,
-    details: { name, entity_type: entityType, note: "Stub verification - dev/test only" },
-  };
-}
+// ── Provider allow-list (Batch O Remainder) ──
+// The only providers that may ever be dispatched. Every other string,
+// including the generic dev "stub", "mock", "demo", empty, null, or a
+// typo, is rejected up-front with PROVIDER_MISCONFIGURED. The audited
+// test-mode bypass path above is the ONLY way to complete a
+// verification without a live provider.
+const COMPANY_ALLOWED_PROVIDERS = ["companies_house", "cipc"] as const;
+const INDIVIDUAL_ALLOWED_PROVIDERS = ["onfido"] as const;
+
+// NOTE: `verifyWithStub` was deleted in Batch O Remainder. Any code path
+// that previously fell through to a stub verifier now fails closed via
+// the allow-list check below (see line ~300).
+
 
 Deno.serve(async (req: Request) => {
   // OPS-010: short-circuit live side effects for demo data.
@@ -287,61 +291,80 @@ Deno.serve(async (req: Request) => {
       const providerConfig = (providerSetting?.value as any) || {};
       const isCompany = entity.entity_type === "company" || entity.entity_type === "corporate" || verification_type === "company";
       const resolvedProvider = isCompany
-        ? (providerConfig.company_provider || "stub")
-        : (providerConfig.individual_provider || "stub");
+        ? (providerConfig.company_provider || null)
+        : (providerConfig.individual_provider || null);
 
-      // ── Batch O: Production lockout for the generic "stub" fallback. ──
-      // The dev/test stub returns status="verified" and would otherwise
-      // promote entities.status to "verified" in production if no real
-      // provider is configured. Fail closed, audit, do NOT touch the entity.
-      // Real test-mode verification MUST go through the audited bypass path
-      // above (isBypassEnabled → recordBypassUsage → bypassEnvelope), which
-      // is already production-locked by isProductionTier() inside the helper.
-      if (resolvedProvider === "stub" || !resolvedProvider) {
-        if (isProductionTier()) {
-          await admin.from("audit_logs").insert({
-            org_id: orgId,
-            actor_user_id: actorUserId,
-            action: "idv.provider_misconfigured_production_lockout",
-            entity_type: "entity",
-            entity_id,
-            metadata: {
-              provider: resolvedProvider || null,
-              verification_type: isCompany ? "company" : "individual",
-              request_id: requestId,
-              reason: "generic_stub_blocked_in_production",
-              hint: "Configure a live provider in admin_settings.idv_provider (e.g. companies_house for UK KYB) or use the audited test-mode bypass in a non-production tier.",
-            },
-          });
+      // ── Batch O Remainder: Strict provider allow-list. ──
+      // Any unknown / unsupported provider string (including generic
+      // "stub", "mock", "demo", empty string, null, typos, or an
+      // unsupported vendor name) MUST fail closed here with
+      // PROVIDER_MISCONFIGURED. In production this is additionally
+      // recorded as a high-severity admin_risk_items row and audited
+      // with the canonical
+      // `idv.provider_misconfigured_production_lockout` action; in
+      // non-production it still fails closed but is audited under
+      // `idv.provider_misconfigured` without a risk item. The ONLY way
+      // to complete a verification without a live provider is the
+      // audited test-mode bypass path above
+      // (isBypassEnabled → recordBypassUsage → bypassEnvelope), which
+      // is itself production-locked by isProductionTier() inside the
+      // helper.
+      const allowedForRequest: readonly string[] = isCompany
+        ? COMPANY_ALLOWED_PROVIDERS
+        : INDIVIDUAL_ALLOWED_PROVIDERS;
+      if (!resolvedProvider || !allowedForRequest.includes(resolvedProvider)) {
+        const inProduction = isProductionTier();
+        const auditAction = inProduction
+          ? "idv.provider_misconfigured_production_lockout"
+          : "idv.provider_misconfigured";
+        await admin.from("audit_logs").insert({
+          org_id: orgId,
+          actor_user_id: actorUserId,
+          action: auditAction,
+          entity_type: "entity",
+          entity_id,
+          metadata: {
+            provider: resolvedProvider || null,
+            verification_type: isCompany ? "company" : "individual",
+            allowed_providers: allowedForRequest,
+            request_id: requestId,
+            reason: "provider_not_in_allowlist",
+            hint: "Configure a supported live provider in admin_settings.idv_provider or use the audited test-mode bypass.",
+            environment_tier: inProduction ? "production" : "non_production",
+          },
+        });
+        if (inProduction) {
           await admin.from("admin_risk_items").insert({
             org_id: orgId,
             kind: "idv_provider_misconfigured",
             severity: "high",
-            title: "IDV provider misconfigured (generic stub blocked in production)",
+            title: "IDV provider misconfigured (unsupported/generic-stub provider blocked)",
             description:
-              "idv-verify was invoked in production but admin_settings.idv_provider resolved to the generic dev/test 'stub'. The entity was NOT promoted to verified. Configure a real provider before retrying.",
+              "idv-verify was invoked but admin_settings.idv_provider resolved to a value outside the supported allow-list (companies_house, cipc, onfido). The entity was NOT promoted to verified. Configure a real provider before retrying.",
             metadata: {
               entity_id,
               verification_type: isCompany ? "company" : "individual",
               provider: resolvedProvider || null,
+              allowed_providers: allowedForRequest,
               request_id: requestId,
             },
           }).then(() => {}, () => {}); // best-effort; do not fail the request if the risk table isn't reachable
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: "PROVIDER_MISCONFIGURED",
-              provider: resolvedProvider || null,
-              message:
-                "Identity/company verification cannot run: no live provider is configured for this tier. The entity remains unverified.",
-              entity_id,
-              requestId,
-            }),
-            { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
-          );
         }
-        // Non-production: existing dev/test stub behaviour is preserved below.
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "PROVIDER_MISCONFIGURED",
+            provider: resolvedProvider || null,
+            allowed_providers: allowedForRequest,
+            message:
+              "Identity/company verification cannot run: the configured provider is not in the supported allow-list. The entity remains unverified.",
+            entity_id,
+            requestId,
+          }),
+          { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+        );
       }
+
 
       // ── P010: named stub providers (CIPC, Onfido, Dow Jones, Refinitiv) must never run. ──
       // Audit-only event; entity is NOT promoted; no verification result is created.
@@ -406,21 +429,38 @@ Deno.serve(async (req: Request) => {
       let result: VerificationResult;
 
       try {
+        // Strict dispatch — the allow-list check above guarantees that
+        // `resolvedProvider` is a known, supported provider for the
+        // requested verification type. No stub / mock / demo fallback
+        // exists here; if a supposedly-live provider is added to the
+        // allow-list without a dispatch branch, we fail closed rather
+        // than silently promote via a generic stub.
         if (isCompany) {
           if (resolvedProvider === "companies_house") {
             result = await verifyWithCompaniesHouse(entity.registration_number || "", entity.legal_name);
           } else if (resolvedProvider === "cipc") {
             result = await verifyWithCIPC(entity_id, entity.registration_number || "", entity.legal_name);
           } else {
-            result = await verifyWithStub(entity_id, entity.entity_type, entity.legal_name);
+            throw new ApiException(
+              "PROVIDER_MISCONFIGURED",
+              `Unsupported company provider dispatch for '${resolvedProvider}'.`,
+              503,
+              { provider: resolvedProvider },
+            );
           }
         } else {
           if (resolvedProvider === "onfido") {
             result = await verifyWithOnfido(entity_id, entity.entity_type, entity.legal_name);
           } else {
-            result = await verifyWithStub(entity_id, entity.entity_type, entity.legal_name);
+            throw new ApiException(
+              "PROVIDER_MISCONFIGURED",
+              `Unsupported individual provider dispatch for '${resolvedProvider}'.`,
+              503,
+              { provider: resolvedProvider },
+            );
           }
         }
+
       } catch (err) {
         // Batch F: provider-down → audit, do NOT promote entity, return typed envelope.
         if (err instanceof IdvProviderError) {

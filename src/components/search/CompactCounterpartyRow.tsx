@@ -4,9 +4,16 @@
  * Mirrors the AttentionPipeline row anatomy:
  *  [priority dot] [initials avatar] [title + metadata stack] [right-aligned CTA]
  *
- * Source tiers drive the priority dot colour (verified > registered >
- * order_book > web_discovery). All copy and behaviour from the legacy
- * CounterpartyResultCard is preserved - only the visual layout changes.
+ * Batch O Remainder — trust-signal correction:
+ *   The legacy provider-trust tier has been removed. The counterparty
+ *   registry's org-mutable boolean is a bare, unaudited flag that is
+ *   NOT tied to any live-provider check and MUST NOT be surfaced with
+ *   green success styling or a provider-trust label. `search/index.ts`
+ *   now emits every counterparty registry row as the neutral
+ *   `registry_record` source; the two legacy source strings are
+ *   mapped to the same neutral "Registry record" tier for backward
+ *   safety with cached results.
+
  */
 
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +42,11 @@ interface SearchResult {
     web_discovered?: boolean;
     has_contact?: boolean;
     contact_masked?: boolean;
-    verified?: boolean;
+    // NOTE: any provider-trust boolean is intentionally NOT part of
+    // this interface — it must never be surfaced from a bare counterparty
+    // registry column to customer-facing UI. See
+    // src/tests/batch-o-idv-kyb-lockout-guard.test.ts.
+
     [key: string]: any;
   };
 }
@@ -49,14 +60,17 @@ interface CompactCounterpartyRowProps {
   userSide?: "buyer" | "seller";
 }
 
-type Tier = "verified" | "registered" | "order_book" | "web" | "unknown";
+type Tier = "registry" | "order_book" | "web" | "unknown";
 
 function tierFromSource(source: string): Tier {
   switch (source) {
+    // Batch O Remainder: `verified_registry` (legacy) and
+    // `counterparty_registry` (legacy) both collapse to the neutral
+    // `registry` tier. `registry_record` is the new canonical source.
+    case "registry_record":
     case "verified_registry":
-      return "verified";
     case "counterparty_registry":
-      return "registered";
+      return "registry";
     case "order_book":
       return "order_book";
     case "web_discovery":
@@ -68,10 +82,8 @@ function tierFromSource(source: string): Tier {
 
 function tierLabel(tier: Tier): string {
   switch (tier) {
-    case "verified":
-      return "Verified registry";
-    case "registered":
-      return "Registered counterparty";
+    case "registry":
+      return "Registry record";
     case "order_book":
       return "Order book";
     case "web":
@@ -83,11 +95,12 @@ function tierLabel(tier: Tier): string {
 
 function tierDotClass(tier: Tier): string {
   // Solid dot + ring for visual weight, matches AttentionPipeline language.
+  // Batch O Remainder: registry tier uses a neutral slate dot, NOT the
+  // legacy emerald "verified" dot — the underlying signal is a bare
+  // org-mutable boolean, not a live-provider verification.
   switch (tier) {
-    case "verified":
-      return "bg-[hsl(var(--emerald))] ring-emerald-200";
-    case "registered":
-      return "bg-sky-500 ring-sky-200";
+    case "registry":
+      return "bg-slate-500 ring-slate-200";
     case "order_book":
       return "bg-violet-500 ring-violet-200";
     case "web":
@@ -96,6 +109,7 @@ function tierDotClass(tier: Tier): string {
       return "bg-slate-400 ring-slate-200";
   }
 }
+
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
