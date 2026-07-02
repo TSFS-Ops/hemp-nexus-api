@@ -4,6 +4,7 @@ import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { assertAal2 } from "../_shared/aal.ts";
+import { assertActorIdvGate, IdvGateError } from "../_shared/idv-actor-gate.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
@@ -57,6 +58,25 @@ Deno.serve(async (req: Request) => {
     const authCtx = await authenticateRequest(req, supabaseUrl, serviceKey);
     const orgId = authCtx.orgId;
     if (!orgId) throw new ApiException("FORBIDDEN", "No organisation found", 403);
+
+    // Batch V-Wire — transaction_approval gate. Human callers taking a
+    // recorded trade-approval action must have a resolved IDV state.
+    if (!authCtx.isApiKey && req.method === "POST") {
+      try {
+        await assertActorIdvGate(admin, { user_id: authCtx.userId, org_id: orgId }, "transaction_approval");
+      } catch (e) {
+        if (e instanceof IdvGateError) {
+          throw new ApiException(
+            "IDV_REQUIRED_TRANSACTION_APPROVAL",
+            "Identity verification required before transaction approval",
+            409,
+            { blocker_code: "IDV_REQUIRED_TRANSACTION_APPROVAL", idv_gate_code: e.code },
+          );
+        }
+        throw e;
+      }
+    }
+
 
     const correlationId = req.headers.get("X-Correlation-ID") || crypto.randomUUID();
     const url = new URL(req.url);

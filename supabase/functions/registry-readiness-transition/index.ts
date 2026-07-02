@@ -6,6 +6,8 @@ import {
   REGISTRY_READINESS_STATES,
   type RegistryReadinessState,
 } from "../_shared/registry-readiness.ts";
+import { assertActorIdvGate, IdvGateError } from "../_shared/idv-actor-gate.ts";
+import { buildApiIdvProjection } from "../_shared/idv-gate.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -60,6 +62,24 @@ Deno.serve(async (req) => {
         status: 403, headers: { "Content-Type": "application/json" },
       }));
     }
+
+    // Batch V-Wire — api_ready_true gate. A readiness transition that
+    // would flip a module to a ready state is a controlled action; the
+    // caller's IDV must not be blocking. Returns a projection-shaped 409
+    // payload with ready=false and a safe blocker code.
+    try {
+      await assertActorIdvGate(svc, { user_id: user.id }, "api_ready_true");
+    } catch (e) {
+      if (e instanceof IdvGateError) {
+        const projection = buildApiIdvProjection(e.status);
+        return withCors(req, new Response(JSON.stringify({
+          error: "IDV_REQUIRED",
+          ...projection,
+        }), { status: 409, headers: { "Content-Type": "application/json" } }));
+      }
+      throw e;
+    }
+
 
     const { data: moduleRow, error: modErr } = await svc
       .from("registry_modules")
