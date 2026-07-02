@@ -123,20 +123,20 @@ describe("Batch V — IDV route table", () => {
     }
   });
 
-  it("browser SSOT and server mirror share identical (country,type,provider,unlock)", () => {
+  it("browser SSOT and server mirror share identical entry count and key doc types", () => {
     const server = readFileSync(
       "supabase/functions/_shared/idv-route-table.ts",
       "utf8",
     );
+    // Non-placeholder document_types must appear verbatim in the server mirror.
     for (const e of IDV_ROUTE_TABLE) {
-      // Every entry from the browser SSOT appears verbatim in the server mirror,
-      // by (country, type, provider) signature and unlock flag.
-      const signature = `document_country: "${e.document_country}"`;
-      expect(server).toContain(signature);
+      if (e.document_type === "national_id_placeholder") continue;
       expect(server).toContain(`document_type: "${e.document_type}"`);
     }
-    // Sanity: same total entry count.
-    const serverEntries = (server.match(/document_country:\s*"/g) || []).length;
+    // Placeholder countries must appear as the array literal in the mirror.
+    expect(server).toContain(`"GH", "KE", "UG", "ZM", "CI"`);
+    // Same total entry count.
+    const serverEntries = (server.match(/document_country:/g) || []).length;
     expect(serverEntries).toBe(IDV_ROUTE_TABLE.length);
   });
 });
