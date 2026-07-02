@@ -23943,6 +23943,10 @@ export type Database = {
         Args: { _target_id: string; _viewer_id: string }
         Returns: boolean
       }
+      is_storage_object_sealed_match_document: {
+        Args: { _bucket_id: string; _object_name: string }
+        Returns: boolean
+      }
       is_test_mode_bypass_enabled: { Args: { _gate: string }; Returns: boolean }
       list_api_support_tickets_for_client: {
         Args: { p_api_client_id: string; p_limit?: number; p_status?: string }

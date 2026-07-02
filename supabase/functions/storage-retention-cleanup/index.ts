@@ -97,6 +97,60 @@ Deno.serve(async (req) => {
       skippedLegalHold++;
       continue;
     }
+
+    // Batch M: sealed match-document storage guard. Even though the storage
+    // RLS DELETE policy is seal-aware for authenticated users, the service
+    // role bypasses RLS — so re-check here defensively. Malformed paths and
+    // failed seal checks skip (do NOT delete) rather than delete blindly.
+    if (item.bucket_id === "match-documents") {
+      try {
+        const segments = String(item.file_path ?? "").split("/").filter(Boolean);
+        const last = segments[segments.length - 1] ?? "";
+        const docId = (last.includes(".") ? last.split(".")[0] : last).trim();
+        const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRe.test(docId)) {
+          const { data: sealed, error: sealErr } = await supabase.rpc(
+            "is_match_document_sealed",
+            { _doc_id: docId },
+          );
+          if (sealErr) {
+            console.warn(
+              `[storage-retention-cleanup] sealed_storage_delete_blocked (seal_check_failed) queue_id=${item.id} bucket=${item.bucket_id} doc_id=${docId} err=${sealErr.message}`,
+            );
+            failed++;
+            await supabase
+              .from("storage_deletion_queue")
+              .update({ status: "failed", error_message: `sealed_storage_delete_blocked:seal_check_failed:${sealErr.message.slice(0, 200)}` })
+              .eq("id", item.id);
+            continue;
+          }
+          if (sealed === true) {
+            console.log(
+              `[storage-retention-cleanup] sealed_storage_delete_blocked queue_id=${item.id} bucket=${item.bucket_id} doc_id=${docId}`,
+            );
+            await supabase
+              .from("storage_deletion_queue")
+              .update({ status: "failed", error_message: "sealed_storage_delete_blocked" })
+              .eq("id", item.id);
+            failed++;
+            continue;
+          }
+        }
+        // Non-UUID final segment → not a canonical match-document path; fall through.
+      } catch (guardErr) {
+        const msg = guardErr instanceof Error ? guardErr.message : String(guardErr);
+        console.warn(
+          `[storage-retention-cleanup] sealed_storage_delete_blocked (guard_error) queue_id=${item.id} err=${msg}`,
+        );
+        failed++;
+        await supabase
+          .from("storage_deletion_queue")
+          .update({ status: "failed", error_message: `sealed_storage_delete_blocked:guard_error:${msg.slice(0, 200)}` })
+          .eq("id", item.id);
+        continue;
+      }
+    }
+
     try {
       // Remove file from storage bucket
       const { error: removeError } = await supabase.storage

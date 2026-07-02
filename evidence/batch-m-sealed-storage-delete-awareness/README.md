@@ -1,151 +1,107 @@
-# Batch M — Sealed storage file deletion / bucket delete seal-awareness
+# Batch M — Sealed storage file delete awareness (tracker #11, #70)
 
-**Tracker items:** #11 (underlying sealed document files can be deleted), #70 (storage bucket delete path has no seal awareness).
-**Status:** `BATCH_M_SEALED_STORAGE_DELETE_AWARENESS_READY_TO_APPLY_BOTH`
-**Mode:** Inspection only — no code, migrations, deploys, RLS/grants/policies/schema, storage policies, buckets, triggers, cron, payments, refunds, ledger, email, legal-hold, or data mutations.
+**Status:** `BATCH_M_SEALED_STORAGE_DELETE_AWARENESS_DEPLOYED_PENDING_VERIFICATION`
 
----
+## Scope
+Prevent physical `storage.objects` deletion for files whose `match_documents`
+row is referenced by a sealed, non-revoked WaD evidence bundle (Batch J2
+protects the metadata row; C10 protects the WaD; neither previously
+protected the storage object).
 
-## 1. Buckets inspected
+## In scope
+- Bucket: `match-documents` (private).
+- Path shape: `{org}/{match}/{kind}/{doc_id}` — final segment = `match_documents.id`.
 
-Match-document-linked buckets (from `supabase/functions/storage-orphan-cleanup/index.ts:14-19` and prior migrations):
+## Migration
+`supabase/migrations/20260702105905_a0f3362e-94bc-40bd-96d4-821f9096b021.sql`
 
-| Bucket | Public | Purpose | DB table (path source) |
-| --- | --- | --- | --- |
-| `match-documents` | private | Sealed evidence documents referenced by WaD bundles | `match_documents.storage_path` |
-| `match-challenge-evidence` | private | Challenge evidence | `match_challenge_evidence.storage_path` |
-| `kyc-documents` | private | KYC uploads | `kyc_documents.storage_path` |
+### Helper
+`public.is_storage_object_sealed_match_document(_bucket_id text, _object_name text) RETURNS boolean`
+- `LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, storage`
+- Returns `false` unless `_bucket_id = 'match-documents'`.
+- Parses final `/`-segment of `_object_name`, strips optional extension,
+  casts to `uuid`. Non-UUID / malformed / empty → returns `false`
+  (never raises).
+- Delegates to `public.is_match_document_sealed(_doc_id)` (Batch J2 helper).
+- Never uses filename, hash, match-level, or org-folder inference.
 
-Only `match-documents` is in-scope for sealed-WaD linkage; `is_match_document_sealed(_doc_id uuid)` (Batch J2) operates on `match_documents.id`.
+### Storage DELETE policy rewrite
+Policy: `"Org members can delete own match documents"` on `storage.objects`.
 
-**Path shape confirmed** (`supabase/functions/finalise-match-document-upload/index.ts:133`):
-`{org_id}/{match_id}/{kind}/{doc_id}` — the final segment IS the `match_documents.id`, so mapping `(bucket_id, object_name) → match_documents.id` is trivial and does not require a JOIN through `storage_path` (though `storage_path` lookup also works).
+Existing allowed deleters preserved verbatim:
+- Org member whose profile `org_id` matches the first path segment.
+- `platform_admin`.
 
-## 2. Storage policies inspected
-
-`supabase/migrations/20260408181338_308d92bb-cf69-411d-908a-4698401aa7ce.sql` (lines 41-54) — current `match-documents` DELETE policy:
-
-```sql
-CREATE POLICY "Org members can delete own match documents"
-ON storage.objects FOR DELETE TO authenticated
-USING (
-  bucket_id = 'match-documents'
-  AND (
-    (storage.foldername(name))[1] IN (
-      SELECT p.org_id::text FROM public.profiles p WHERE p.id = auth.uid()
-    )
-    OR public.has_role(auth.uid(), 'platform_admin'::public.app_role)
-  )
-);
+Added seal guard:
+```
+AND NOT public.is_storage_object_sealed_match_document(bucket_id, name)
 ```
 
-No `is_match_document_sealed(...)` check. **Any org member (or platform_admin) can `storage.from('match-documents').remove([...])` a file that is referenced by a sealed, non-revoked WaD** even though the `match_documents` row itself is frozen by J2's `match_documents_sealed_immutability_trg`.
+No other bucket policies (`kyc-documents`, others) touched. No `SELECT` /
+`INSERT` / `UPDATE` policies touched. No grants changed.
 
-The `match-documents` UPDATE policy (lines 27-39) has the same shape and same gap, though UPDATE on `storage.objects` is not the sealed-file exposure path #11/#70 target.
+## Service-role cleanup guard
+`supabase/functions/storage-retention-cleanup/index.ts`
 
-Same missing seal check exists on `kyc-documents` DELETE (lines 71-83) — out of scope for #11/#70 (KYC files are not WaD-bundle-referenced), noted for completeness only.
+Before removing a queued file, when `item.bucket_id === "match-documents"`:
+1. Split `file_path` on `/`, take last segment, strip extension.
+2. UUID-validate; if not a UUID → fall through (non-canonical path).
+3. Call `supabase.rpc("is_match_document_sealed", { _doc_id })`.
+4. If `sealed === true`: **do not delete**; mark queue row `failed` with
+   `error_message = 'sealed_storage_delete_blocked'`, log
+   `sealed_storage_delete_blocked` marker, increment `failed`, `continue`.
+5. If seal RPC errors: **do not delete** (defensive); mark row `failed` with
+   `sealed_storage_delete_blocked:seal_check_failed:...`, log, `continue`.
+6. Any exception around the guard: **do not delete**; mark row `failed`
+   with `sealed_storage_delete_blocked:guard_error:...`, log, `continue`.
 
-## 3. Application delete paths inspected
+Existing legal-hold batch + per-file assertions retained. Non-`match-documents`
+paths unchanged.
 
-Grep on `.remove(` and `storage.from(` under `supabase/functions` and `src`:
+## Tests / guards run
+- `scripts/check-batch-m-sealed-storage-delete-awareness.mjs` — **PASS**
+  - helper signature, SECURITY DEFINER, `search_path = public, storage`
+  - bucket-gated on `'match-documents'`
+  - final segment cast `::uuid`
+  - delegates to `is_match_document_sealed`
+  - helper block does not use sha256 or match_id shortcuts
+  - old DELETE policy dropped and recreated with seal guard
+  - seal guard clause present: `AND NOT public.is_storage_object_sealed_match_document(bucket_id, name)`
+  - org-folder + platform_admin allow-list preserved
+  - migration does not touch other buckets or non-DELETE ops
+  - cleanup calls `is_match_document_sealed`, emits `sealed_storage_delete_blocked`
+  - cleanup retains legal-hold logic
+  - cleanup guard region does not reference providers/email/payments/tokens/poi/wad
+- `scripts/check-batch-j2-sealed-match-document-freeze.mjs` — **PASS** (J2 regression)
 
-| Path | Deletes storage object? | Seal check? | Verdict |
-| --- | --- | --- | --- |
-| `finalise-match-document-upload/index.ts:72` — `admin.storage.from("match-documents").remove([body.storage_path])` inside `cleanup()` | Yes, service-role | No | **Safe:** only runs when the finaliser INSERT fails, i.e. before any `match_documents` row exists (therefore not sealed). |
-| `storage-orphan-cleanup/index.ts:176` — `adminClient.storage.from(cfg.bucket).remove([file.path])` | Yes, service-role | Implicit | **Safe:** the sweeper only removes files whose path has **no** corresponding DB row (`existsIn(..., "match_documents", "storage_path", p)` filter). A sealed file always has its `match_documents` row present (row frozen by J2), so it is never classified as orphan. |
-| `storage-retention-cleanup/index.ts:100-108` — `supabase.storage.from(item.bucket_id).remove([item.file_path])` for every due `storage_deletion_queue` row | Yes, service-role | **No** | **Exposed (defence-in-depth gap):** the queue is populated by `enqueue-storage-cleanup`, which today refuses paths with a live DB row (`has_db_row` check). That relies on the enqueuer being correct; the deleter itself performs no `is_match_document_sealed` check and no cross-reference to `match_documents` before removing. Any future bug/race that lands a sealed-doc path in the queue would silently delete the sealed file. |
-| `document-revoke/index.ts`, `document-share/index.ts`, `document-review/index.ts`, `document-download/index.ts` | No `.remove(` calls | n/a | Safe — metadata-only paths; J2 already prevents sealed-row mutation. |
-| `data-retention/index.ts:68` | `match_documents: "quarantine"` — no storage deletion | n/a | Safe. |
-| `delete-account/index.ts` | No `match-documents` `.remove` | n/a | Safe (does not touch sealed evidence bucket). |
-| `enqueue-storage-cleanup/index.ts:37-44` | Enqueues only, refuses paths with existing DB row | Indirect | Enqueue-side guard is present, but it is not a **seal** guard — it is a "has any row" guard. |
-| Client `src/lib/upload-cleanup.ts`, `src/components/match/MatchDocuments.tsx`, `src/components/match/GovernanceDocSubmit.tsx` | Direct `supabase.storage.from(...).remove([...])` on failed uploads only | No | Safe: run before finaliser writes a row; storage RLS DELETE policy (see §2) is the actual gate — and that gate is what is missing the seal check. |
+## Live proof status
+- Static guard: PASS.
+- Live storage DELETE proof against the seal-guarded policy requires an
+  authenticated role and privileges to insert/seal a WaD referencing a
+  storage object, which the sandbox roles do not have. Marked
+  **pending privileged verification**, consistent with J2's proof posture.
+- Migration `linter` completed without introducing new WARN/ERROR entries
+  tied to the new helper (SECURITY DEFINER + explicit `search_path` set).
 
-## 4. Existing J2 / C10 protection confirmation
+## Data mutation confirmation
+- **Zero storage objects deleted.**
+- **Zero rows** mutated in `match_documents`, `wads`, `storage.objects`,
+  `storage_deletion_queue`, or any other table by this batch.
+- No files moved. No historical data purged.
 
-- **J2** — `match_documents_sealed_immutability_trg` (`supabase/migrations/20260701213053_*.sql`) blocks UPDATE/DELETE on the `match_documents` **metadata row** when linked to a sealed, non-revoked WaD. Confirmed via `is_match_document_sealed(_doc_id uuid)` helper and static guard `scripts/check-batch-j2-sealed-match-document-freeze.mjs`.
-- **C10** — `wads_seal_immutability_trg` freezes `wads.evidence_bundle` post-seal (revocation allowlist does not include the bundle).
-- **Storage layer:** no existing policy calls `is_match_document_sealed(...)` or any equivalent. The J2/C10 immutability freezes the *pointer* (metadata row and bundle reference) but **not the pointed-to storage object**.
+## Out-of-scope untouched
+- WaD sealing (C10 trigger).
+- `match_documents` immutability (J2 trigger).
+- Legal-hold behaviour (batch + per-file assertions retained).
+- Upload path shape.
+- Document share / review / download semantics.
+- Payments, refunds, token ledger, email, POI, lifecycle, reconciliation.
+- Other buckets and other storage operations.
+- No provider called, no email/notification sent.
 
-## 5. Direct-storage-delete exposure
-
-**Confirmed exposed.** With a session for any user whose `profiles.org_id` matches the first folder segment (or any `platform_admin`), a plain `supabase.storage.from('match-documents').remove([path])` will succeed and silently delete the byte content of a sealed-WaD-referenced file. Signed URLs, hashes, and audit trails would then point at nothing.
-
-## 6. Service-role cleanup exposure
-
-**Marginally exposed (defence-in-depth).** The only service-role delete path that could touch a sealed file is `storage-retention-cleanup`, which trusts the enqueuer. It does not itself verify:
-1. that `bucket_id = 'match-documents'` and last-segment doc id is not sealed; or
-2. that no `match_documents` row currently references `file_path`.
-
-`storage-orphan-cleanup` and `finalise-match-document-upload` cleanup are structurally safe as documented above.
-
-## 7. Classification
-
-**D — Needs both** a storage-policy seal guard AND a service-role cleanup guard.
-
-## 8. Recommended smallest safe fix (NOT applied)
-
-Two narrow changes, no file movement, no historical deletion, no WaD mutation, legal-hold behaviour untouched:
-
-**(a) DB — new helper + tightened storage DELETE policy for `match-documents`**
-
-```sql
--- Helper: resolve (bucket, object name) → sealed status.
--- Uses the confirmed path shape `{org}/{match}/{kind}/{doc_id}`.
-CREATE OR REPLACE FUNCTION public.is_storage_object_sealed_match_document(
-  _bucket_id text,
-  _object_name text
-) RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT CASE
-    WHEN _bucket_id <> 'match-documents' THEN false
-    ELSE public.is_match_document_sealed(
-      NULLIF(split_part(_object_name, '/', 4), '')::uuid
-    )
-  END;
-$$;
-
-DROP POLICY "Org members can delete own match documents" ON storage.objects;
-CREATE POLICY "Org members can delete own match documents"
-ON storage.objects FOR DELETE TO authenticated
-USING (
-  bucket_id = 'match-documents'
-  AND NOT public.is_storage_object_sealed_match_document(bucket_id, name)
-  AND (
-    (storage.foldername(name))[1] IN (
-      SELECT p.org_id::text FROM public.profiles p WHERE p.id = auth.uid()
-    )
-    OR public.has_role(auth.uid(), 'platform_admin'::public.app_role)
-  )
-);
-```
-
-Optional mirror on the UPDATE policy for the same bucket (J2 already blocks the metadata side, but symmetry is cheap).
-
-**(b) Code — service-role cleanup guard in `storage-retention-cleanup`**
-
-Before `supabase.storage.from(item.bucket_id).remove([item.file_path])`:
-
-```ts
-if (item.bucket_id === "match-documents") {
-  const docId = item.file_path.split("/")[3];
-  if (docId) {
-    const { data: sealed } = await supabase.rpc("is_match_document_sealed", { _doc_id: docId });
-    if (sealed === true) {
-      await supabase.from("storage_deletion_queue")
-        .update({ status: "skipped_sealed", error_message: "sealed_storage_delete_blocked" })
-        .eq("id", item.id);
-      continue;
-    }
-  }
-}
-```
-
-Emit an `audit_logs` row with `action = 'sealed_storage_delete_blocked'` for observability. Legal-hold checks remain unchanged and run first.
-
-## 9. Confirmation — no changes applied
-
-No files edited. No migrations authored. No edge functions deployed. No RLS/grants/policies/schema/storage-policies/buckets/triggers/cron/payments/refunds/token ledger/email/legal-hold changes. No data mutated, no files removed, no providers called, no notifications sent. Only `rg` and `code--view` reads under `supabase/`, `src/`, and this evidence directory.
+## Deployment
+- Migration applied via Supabase migration tool.
+- Edge function `storage-retention-cleanup` deployed.
 
 ## Final status
-
-`BATCH_M_SEALED_STORAGE_DELETE_AWARENESS_READY_TO_APPLY_BOTH`
+`BATCH_M_SEALED_STORAGE_DELETE_AWARENESS_DEPLOYED_PENDING_VERIFICATION`
