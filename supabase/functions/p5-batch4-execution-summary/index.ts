@@ -133,6 +133,27 @@ Deno.serve(async (req) => {
     if (userErr || !userRes?.user) return json({ error: "invalid_session" }, 401);
     const userId = userRes.user.id;
 
+    // Batch V-Wire — finality_action gate. Fail-closed when the actor
+    // has a blocking IDV state. Soft no-op when no p5scr subject exists
+    // (matches WaD-seal boundary; subject enrolment is a separate batch).
+    try {
+      await assertActorIdvGate(
+        createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!),
+        { user_id: userId },
+        "finality_action",
+      );
+    } catch (e) {
+      if (e instanceof IdvGateError) {
+        return json({
+          error: "IDV_REQUIRED_FINALITY",
+          blocker_code: "IDV_REQUIRED_FINALITY",
+          blocker_label: "Identity verification required before finality",
+          idv_gate_code: e.code,
+        }, 409);
+      }
+      throw e;
+    }
+
     if (audience === "admin") {
       const { data: isAdmin } = await supabase.rpc("p5b4_is_platform_admin");
       if (!isAdmin) return json({ error: "platform_admin_required" }, 403);
