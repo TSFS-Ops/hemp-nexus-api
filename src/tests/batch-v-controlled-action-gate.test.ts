@@ -45,13 +45,15 @@ describe("Batch V — controlled-action gate", () => {
     }
   });
 
-  it("controlled-action list covers WaD seal, finality, funder-ready, API ready=true, POI-bind", () => {
+  it("controlled-action list covers all V-Wire sites", () => {
     expect(CONTROLLED_ACTIONS).toEqual([
       "wad_seal",
       "finality_action",
       "funder_ready_grant",
       "api_ready_true",
       "poi_bind_party",
+      "evidence_approval",
+      "transaction_approval",
     ]);
   });
 
