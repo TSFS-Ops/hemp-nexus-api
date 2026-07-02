@@ -105,11 +105,11 @@ function deriveGates(pack: EvidencePack | null): Gate[] {
     hash: hashFor(0)
   }, {
     id: "GATE_03",
-    label: "KYB Status Cleared (Both Parties)",
+    label: "KYB evidence recorded",
     status: gateOf(eventTypes.has("kyc_verified") || isSettled ? "verified" : "pending")
   }, {
     id: "GATE_04",
-    label: "Jurisdiction & Sanctions Reviewed",
+    label: "Jurisdiction and sanctions evidence recorded",
     status: gateOf(eventTypes.has("sanctions_screened") || eventTypes.has("jurisdiction_resolved") || isSettled ? "verified" : "pending")
   }, {
     id: "GATE_05",
