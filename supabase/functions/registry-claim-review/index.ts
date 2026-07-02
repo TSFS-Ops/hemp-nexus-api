@@ -11,6 +11,7 @@ import {
   REGISTRY_CLAIM_APPROVAL_PUBLIC_WORDING,
   REGISTRY_CLAIM_EXPIRY_DAYS,
 } from "../_shared/registry-claim-workflow.ts";
+import { assertActorIdvGate, IdvGateError } from "../_shared/idv-actor-gate.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
