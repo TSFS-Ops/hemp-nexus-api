@@ -6,6 +6,8 @@ import {
   REGISTRY_READINESS_STATES,
   type RegistryReadinessState,
 } from "../_shared/registry-readiness.ts";
+import { assertActorIdvGate, IdvGateError } from "../_shared/idv-actor-gate.ts";
+import { buildApiIdvProjection } from "../_shared/idv-gate.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
