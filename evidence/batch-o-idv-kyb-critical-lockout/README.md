@@ -1,7 +1,102 @@
 # Batch O — IDV/KYB Critical Production Lockout + Unsafe Wording Repair
 
-Status: **BATCH_O_IDV_KYB_CRITICAL_LOCKOUT_DEPLOYED_PENDING_VERIFICATION**
+Status: **BATCH_O_IDV_KYB_CRITICAL_LOCKOUT_DEPLOYED_AND_LOCAL_SMOKE_TESTED**
 (with a client-decision note on Part 3 — see below)
+
+## Smoke-test appendix (added post-deploy)
+
+Deno smoke tests + Vitest guards added to prove the Batch O contract
+without calling any provider or mutating any data.
+
+- `supabase/functions/idv-verify/o_production_lockout_smoke_test.ts` — 9 Deno tests:
+  - `isProductionTier()` returns true for `production` / `live` / `prod`
+    (case-insensitive) and false for `sandbox` / `test` / `development` /
+    `staging` / empty / absent.
+  - Source-level guards proving:
+    - lockout branch covers `resolvedProvider === "stub" || !resolvedProvider`;
+    - lockout branch is guarded by `isProductionTier()`;
+    - lockout writes audit action `idv.provider_misconfigured_production_lockout`;
+    - lockout writes `admin_risk_items` with `kind: "idv_provider_misconfigured"`
+      and `severity: "high"`;
+    - lockout returns HTTP 503 with `error: "PROVIDER_MISCONFIGURED"`;
+    - lockout branch does NOT touch `entities` (line-order proof that the
+      happy-path `entities.update({status:'verified'})` lives strictly
+      after the lockout branch);
+    - lockout branch does NOT call `fetchWithTimeout` or any
+      `verifyWith*` provider helper;
+    - non-production comment marker is present (dev/test stub still works
+      outside production);
+    - P010 named stubs (CIPC / Onfido / Dow Jones / Refinitiv) still
+      short-circuit with `STUB_PROVIDER_ERROR_CODE` / 503 /
+      `STUB_PROVIDER_STATUS.STUB_NOT_LIVE`;
+    - audited test-mode bypass path (`isBypassEnabled` →
+      `recordBypassUsage` → `bypassEnvelope`) is preserved and runs
+      before the lockout branch;
+    - demo short-circuit (`tryDemoShortCircuit`) runs before the lockout
+      branch;
+    - Companies House live provider path (helper + `fetchWithTimeout` to
+      `api.company-information.service.gov.uk`) is unchanged and still
+      dispatched when `resolvedProvider === "companies_house"`.
+  - `globalThis.fetch` is replaced with a tripwire — any real network
+    call during the suite is a hard failure.
+
+- `src/tests/batch-o-idv-kyb-lockout-guard.test.ts` — 5 Vitest tests:
+  - `EvidencePackView` no longer contains `KYB Status Cleared` or
+    `Jurisdiction & Sanctions Reviewed`.
+  - `EvidencePackView` uses the neutral `KYB evidence recorded` and
+    `Jurisdiction and sanctions evidence recorded` labels.
+  - No customer-facing component under `src/components/**` or
+    `src/pages/**` (admin / developer / governance surfaces exempt)
+    reads `counterparty.verified` / `counterparties.verified` / `cp.verified`
+    as a truthiness signal. Guards against UI drift re-introducing the
+    Part 3 risk while the schema-level REVOKE decision remains deferred.
+
+### Commands run and results
+
+| Command | Result |
+| --- | --- |
+| `supabase--test_edge_functions { functions: ["idv-verify"] }` | ✓ 9 Deno tests passed (exit 0) |
+| `bunx vitest run src/tests/batch-o-idv-kyb-lockout-guard.test.ts` | ✓ 5 tests passed |
+| `node scripts/check-stub-providers-parity.mjs` | ✓ 42/42 pins across 2 files |
+| `node scripts/check-stub-provider-copy-drift.mjs` | ✓ 618 files scanned, no offences |
+
+### Marker names asserted
+
+- Audit action: `idv.provider_misconfigured_production_lockout`
+- Admin risk kind: `idv_provider_misconfigured`, severity `high`
+- API error code: `PROVIDER_MISCONFIGURED` (HTTP 503)
+- P010 named-stub error code: `STUB_PROVIDER_ERROR_CODE` (HTTP 503)
+- P010 named-stub status: `STUB_PROVIDER_STATUS.STUB_NOT_LIVE`
+- P010 named-stub audit: `STUB_PROVIDER_AUDIT.NOT_LIVE`
+- Bypass primitives: `isBypassEnabled`, `recordBypassUsage`, `bypassEnvelope`
+- Demo primitive: `tryDemoShortCircuit`
+
+### Side-effect confirmation
+
+- No provider call (Onfido / CIPC / Dow Jones / Refinitiv / Companies
+  House / Dilisense) executed — `globalThis.fetch` tripwire fails any
+  suite that touches the network.
+- No entity / counterparty / audit / risk row mutated — the Deno suite
+  is pure source-level inspection plus a runtime call to the pure
+  `isProductionTier()` helper.
+- No payment / refund / storage / email / notification / cron / WaD /
+  POI / token-ledger / legal-hold surface touched.
+- No secret required or read.
+
+### Recommended tracker status
+
+| Item | Status |
+| --- | --- |
+| Batch O Part 1 (production lockout) | `DEPLOYED_AND_LOCAL_SMOKE_TESTED` |
+| Batch O Part 2 (EvidencePackView wording) | `DEPLOYED_AND_LOCAL_SMOKE_TESTED` |
+| Batch O Part 3 (`counterparties.verified` schema REVOKE) | `CLIENT_DECISION_REQUIRED` — UI-drift guard added; schema hardening still deferred |
+
+Final status: **BATCH_O_IDV_KYB_CRITICAL_LOCKOUT_DEPLOYED_AND_LOCAL_SMOKE_TESTED**
+
+---
+
+## Original deploy record follows
+
 
 ## Scope
 
