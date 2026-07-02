@@ -113,6 +113,29 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: `Bearer ${jwt}` } },
   });
 
+  // Batch V-Wire — funder_ready_grant gate. Blocks a funder-ready
+  // consumption when the caller has an unresolved IDV state. Fail-closed
+  // on error; soft no-op when no p5scr subject is enrolled.
+  try {
+    const { data: userRes } = await supabase.auth.getUser();
+    await assertActorIdvGate(
+      createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ANON),
+      { user_id: userRes?.user?.id ?? null },
+      "funder_ready_grant",
+    );
+  } catch (e) {
+    if (e instanceof IdvGateError) {
+      return new Response(JSON.stringify({
+        denied: true,
+        reason: "IDV_REQUIRED_FUNDER_READY",
+        blocker_code: "IDV_REQUIRED_FUNDER_READY",
+        blocker_label: "Not ready — identity verification required",
+        data: null,
+      }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    throw e;
+  }
+
   // 1. Validate active grant for the caller. RLS on funder_access_grants
   //    enforces org + user + active + non-expired + non-revoked.
   const { data: grants, error: grantErr } = await supabase
