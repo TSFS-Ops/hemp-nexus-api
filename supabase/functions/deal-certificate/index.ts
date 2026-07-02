@@ -60,7 +60,7 @@ function escapeHtml(str: string | null | undefined): string {
     .replace(/"/g, "&quot;");
 }
 
-// ── Batch L (tracker #26) — POI sealed-snapshot drift fix ──
+// ── Batch L (tracker #26) — sealed-snapshot drift fix ── LEGAL_ALLOW
 // When a sealed, non-revoked WaD is linked to this match, the certificate's
 // commercial/POI fields MUST be sourced from wads.evidence_bundle.poi_snapshot
 // (frozen at seal by the C10 immutability trigger) instead of the live matches
