@@ -70,6 +70,7 @@ describe("Batch V — controlled-action gate", () => {
   it("WaD seal path in the edge function calls the IDV gate", () => {
     const wad = readFileSync("supabase/functions/wad/index.ts", "utf8");
     expect(wad).toContain("assertWadSealIdvGate");
-    expect(wad).toContain("IDV_REQUIRED_WAD_SEAL");
+    const gate = readFileSync("supabase/functions/_shared/idv-wad-seal-gate.ts", "utf8");
+    expect(gate).toContain("IDV_REQUIRED_WAD_SEAL");
   });
 });
