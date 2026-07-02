@@ -77,6 +77,33 @@ Deno.serve(async (req) => {
       return withCors(req, new Response(JSON.stringify({ error: "reason_required" }), { status: 400 }));
     }
 
+    // Batch V-Wire — evidence_approval gate. Controlled evidence-review
+    // actions (approve/reject/accept/reject_evidence_item) block when the
+    // reviewer has an unresolved IDV state. Non-controlled actions
+    // (start_review, add_internal_note, assign_reviewer) pass through.
+    const CONTROLLED_REVIEW_ACTIONS = new Set([
+      "approve_claim",
+      "reject_claim",
+      "accept_evidence_item",
+      "reject_evidence_item",
+      "escalate_claim",
+    ]);
+    if (CONTROLLED_REVIEW_ACTIONS.has(action)) {
+      try {
+        await assertActorIdvGate(svc, { user_id: user.id }, "evidence_approval");
+      } catch (e) {
+        if (e instanceof IdvGateError) {
+          return withCors(req, new Response(JSON.stringify({
+            error: "IDV_REQUIRED_EVIDENCE_APPROVAL",
+            blocker_code: "IDV_REQUIRED_EVIDENCE_APPROVAL",
+            blocker_label: "Identity verification required before evidence approval",
+            idv_gate_code: e.code,
+          }), { status: 409 }));
+        }
+        throw e;
+      }
+    }
+
     if (action === "approve_claim" && parsed.data.acknowledged_not_verification !== true) {
       return withCors(req, new Response(JSON.stringify({ error: "approval_acknowledgement_required" }), { status: 400 }));
     }
