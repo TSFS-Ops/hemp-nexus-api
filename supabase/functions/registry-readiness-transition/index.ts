@@ -63,6 +63,24 @@ Deno.serve(async (req) => {
       }));
     }
 
+    // Batch V-Wire — api_ready_true gate. A readiness transition that
+    // would flip a module to a ready state is a controlled action; the
+    // caller's IDV must not be blocking. Returns a projection-shaped 409
+    // payload with ready=false and a safe blocker code.
+    try {
+      await assertActorIdvGate(svc, { user_id: user.id }, "api_ready_true");
+    } catch (e) {
+      if (e instanceof IdvGateError) {
+        const projection = buildApiIdvProjection(e.status);
+        return withCors(req, new Response(JSON.stringify({
+          error: "IDV_REQUIRED",
+          ...projection,
+        }), { status: 409, headers: { "Content-Type": "application/json" } }));
+      }
+      throw e;
+    }
+
+
     const { data: moduleRow, error: modErr } = await svc
       .from("registry_modules")
       .select("module_code, current_state")
