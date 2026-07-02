@@ -181,13 +181,12 @@ Deno.test("Batch O Remainder — verifyWithStub helper is deleted and no call si
 Deno.test("Batch O Remainder — dispatch fails closed for any unknown provider (defence in depth)", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
   // Both company and individual dispatch else-branches must throw
-  // PROVIDER_MISCONFIGURED rather than fall through to a stub.
-  const companyDispatch = src.match(
-    /if\s*\(\s*isCompany\s*\)\s*\{[\s\S]*?\}\s*else\s*\{[\s\S]*?\}/,
-  );
-  assert(companyDispatch, "dispatch block must be present");
-  const block = companyDispatch![0];
-  const throwCount = (block.match(/throw\s+new\s+ApiException\(\s*[\r\n]?\s*"PROVIDER_MISCONFIGURED"/g) ?? []).length;
+  // PROVIDER_MISCONFIGURED rather than fall through to a stub. Count
+  // occurrences file-wide (the two dispatch throws are the only place
+  // ApiException("PROVIDER_MISCONFIGURED") is thrown).
+  const throwCount = (src.match(
+    /throw\s+new\s+ApiException\(\s*[\r\n]?\s*"PROVIDER_MISCONFIGURED"/g,
+  ) ?? []).length;
   assertEquals(
     throwCount,
     2,
@@ -197,25 +196,30 @@ Deno.test("Batch O Remainder — dispatch fails closed for any unknown provider 
 
 Deno.test("Batch O Remainder — audit_logs write is unconditional; admin_risk_items only in production", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
-  const guardStart = src.indexOf("provider_not_in_allowlist");
+  // Anchor on the guard's opening `if(...)` so the block includes the
+  // audit_logs insert. `provider_not_in_allowlist` alone appears mid
+  // audit_logs metadata and would skip past the audit_logs write.
+  const guardStart = src.indexOf(
+    "if (!resolvedProvider || !allowedForRequest.includes(resolvedProvider))",
+  );
   const guardEnd = src.indexOf("status: 503", guardStart);
+  assert(guardStart > 0 && guardEnd > guardStart, "allow-list guard block must be locatable");
   const block = src.slice(guardStart, guardEnd);
-  // audit_logs.insert is not inside an `if (inProduction)` — it runs
-  // for BOTH tiers. admin_risk_items.insert IS wrapped in the tier
-  // check to keep the risk queue for prod-only.
+  // audit_logs.insert is NOT inside `if (inProduction)` — it runs for
+  // BOTH tiers. admin_risk_items.insert IS wrapped in the tier check
+  // to keep the risk queue prod-only.
   assert(
     /if\s*\(\s*inProduction\s*\)\s*\{[\s\S]*?admin_risk_items[\s\S]*?\}/.test(block),
     "admin_risk_items insert must be inside if(inProduction){}",
   );
-  // audit_logs insert must precede the admin_risk_items guard so it
-  // fires on every misconfigured request, not just prod ones.
   const auditIdx = block.indexOf("audit_logs");
   const prodBranchIdx = block.indexOf("if (inProduction)");
   assert(
-    auditIdx > 0 && (prodBranchIdx === -1 || auditIdx < prodBranchIdx),
+    auditIdx > 0 && prodBranchIdx > 0 && auditIdx < prodBranchIdx,
     "audit_logs insert must fire unconditionally before the prod-only risk-item branch",
   );
 });
+
 
 Deno.test("Batch O — P010 named stub providers (CIPC/Onfido/Dow Jones/Refinitiv) remain blocked with STUB_PROVIDER_NOT_LIVE", async () => {
   const src = await read("supabase/functions/idv-verify/index.ts");
