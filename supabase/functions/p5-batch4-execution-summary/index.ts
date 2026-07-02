@@ -15,6 +15,7 @@
  */
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { assertActorIdvGate, IdvGateError } from "../_shared/idv-actor-gate.ts";
 
 const ADMIN_SAFE_FIELDS = [
   "id",
