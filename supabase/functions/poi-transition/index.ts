@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { assertActorIdvGate, IdvGateError } from "../_shared/idv-actor-gate.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import {
   lookupIdempotentResponse,
