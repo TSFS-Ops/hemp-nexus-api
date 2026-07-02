@@ -298,11 +298,13 @@ describe("Batch O Remainder — search/index.ts trust-signal correction", () => 
   });
 
   it("does not include `verified` in the returned metadata block", () => {
-    // Match the metadata block in the counterparty mapper.
-    const metaBlock = src.match(/metadata:\s*\{[\s\S]*?org_id:\s*cp\.org_id[\s\S]*?\},/);
+    // Anchor tightly on the cp mapper's metadata block so we don't
+    // accidentally sweep unrelated audit_logs metadata objects.
+    const metaBlock = src.match(/metadata:\s*\{\s*org_id:\s*cp\.org_id[\s\S]*?\},/);
     expect(metaBlock, "counterparty metadata block must be present").not.toBeNull();
     expect(metaBlock![0]).not.toMatch(/\bverified\b/);
   });
+
 
   it("uses the neutral `registry_record` source with a uniform score (no cp.verified boost)", () => {
     expect(src).toMatch(/source:\s*["']registry_record["']/);
