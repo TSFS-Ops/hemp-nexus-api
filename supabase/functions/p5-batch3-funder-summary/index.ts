@@ -18,6 +18,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders as buildCorsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
+import { assertActorIdvGate, IdvGateError } from "../_shared/idv-actor-gate.ts";
 
 
 const ALLOWED_FIELDS = new Set([
