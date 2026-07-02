@@ -42,9 +42,11 @@ interface SearchResult {
     web_discovered?: boolean;
     has_contact?: boolean;
     contact_masked?: boolean;
-    // NOTE: `verified` is intentionally NOT part of this interface —
-    // it must never be surfaced from `counterparties.verified` to
-    // customer-facing UI. See src/tests/batch-o-idv-kyb-lockout-guard.test.ts.
+    // NOTE: any provider-trust boolean is intentionally NOT part of
+    // this interface — it must never be surfaced from a bare counterparty
+    // registry column to customer-facing UI. See
+    // src/tests/batch-o-idv-kyb-lockout-guard.test.ts.
+
     [key: string]: any;
   };
 }
