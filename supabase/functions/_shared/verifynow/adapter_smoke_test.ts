@@ -51,8 +51,9 @@ Deno.test("Batch V — missing API key fails closed with PROVIDER_MISCONFIGURED"
     { apiKey: undefined, mode: "sandbox" },
   );
   assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
-  assertEquals(out.resolved?.internal_status, "manual_review_required");
+  assertEquals(out.resolved?.internal_status, "provider_error");
   assertEquals(out.resolved?.unlocks_controlled_actions, false);
+  assertEquals(out.resolved?.user_wording, "Manual review required");
 });
 
 Deno.test("Batch V — production requires Idempotency-Key (fail-closed)", async () => {
