@@ -63,12 +63,24 @@ Deno.serve(async (req) => {
   const isOwner = (kase as { case_owner_id: string | null }).case_owner_id === userId;
   if (!(isPlatformAdmin || isComplianceAnalyst || isOwner)) return json(req, { error: "Forbidden" }, 403);
 
-  const q = parsed.data.query.replace(/[%_]/g, (m) => "\\" + m);
+  // Escape all PostgREST filter-syntax delimiters, not just LIKE wildcards.
+  // Commas separate .or() clauses, parentheses group them, and %/_ are LIKE
+  // wildcards. Backslash-escaping these prevents a crafted `query` value from
+  // injecting extra filter clauses or malforming the filter tree (this call
+  // runs with the service-role client, so RLS provides no backstop).
+  const q = parsed.data.query.replace(/[\\%_,()]/g, (m) => "\\" + m);
+  const pattern = `%${q}%`;
   const limit = parsed.data.limit ?? 10;
   const { data, error } = await admin
     .from("organizations")
     .select("id,name,legal_name,registration_number,jurisdictions,status")
-    .or(`name.ilike.%${q}%,legal_name.ilike.%${q}%,registration_number.ilike.%${q}%`)
+    .or(
+      [
+        `name.ilike.${pattern}`,
+        `legal_name.ilike.${pattern}`,
+        `registration_number.ilike.${pattern}`,
+      ].join(","),
+    )
     .limit(limit);
   if (error) return json(req, { error: error.message }, 500);
 
