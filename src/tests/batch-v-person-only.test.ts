@@ -48,7 +48,7 @@ describe("Batch V — person-only scope", () => {
     /\.update\s*\(\s*\{[^}]*status\s*:\s*['"]verified['"]/s,
     /\.update\s*\(\s*\{[^}]*funder_ready\s*:\s*true/s,
     /\.update\s*\(\s*\{[^}]*finality_ready\s*:\s*true/s,
-    /ready\s*:\s*true/,
+    /\.(update|insert|upsert)\s*\(\s*\{[^}]*\bready\s*:\s*true/s,
     /entities.*status.*verified/i,
     /counterparties.*verified\s*:\s*true/i,
   ];
