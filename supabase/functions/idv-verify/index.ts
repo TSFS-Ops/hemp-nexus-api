@@ -290,7 +290,60 @@ Deno.serve(async (req: Request) => {
         ? (providerConfig.company_provider || "stub")
         : (providerConfig.individual_provider || "stub");
 
-      // ── P010: stub providers (CIPC, Onfido, Dow Jones, Refinitiv) must never run. ──
+      // ── Batch O: Production lockout for the generic "stub" fallback. ──
+      // The dev/test stub returns status="verified" and would otherwise
+      // promote entities.status to "verified" in production if no real
+      // provider is configured. Fail closed, audit, do NOT touch the entity.
+      // Real test-mode verification MUST go through the audited bypass path
+      // above (isBypassEnabled → recordBypassUsage → bypassEnvelope), which
+      // is already production-locked by isProductionTier() inside the helper.
+      if (resolvedProvider === "stub" || !resolvedProvider) {
+        if (isProductionTier()) {
+          await admin.from("audit_logs").insert({
+            org_id: orgId,
+            actor_user_id: actorUserId,
+            action: "idv.provider_misconfigured_production_lockout",
+            entity_type: "entity",
+            entity_id,
+            metadata: {
+              provider: resolvedProvider || null,
+              verification_type: isCompany ? "company" : "individual",
+              request_id: requestId,
+              reason: "generic_stub_blocked_in_production",
+              hint: "Configure a live provider in admin_settings.idv_provider (e.g. companies_house for UK KYB) or use the audited test-mode bypass in a non-production tier.",
+            },
+          });
+          await admin.from("admin_risk_items").insert({
+            org_id: orgId,
+            kind: "idv_provider_misconfigured",
+            severity: "high",
+            title: "IDV provider misconfigured (generic stub blocked in production)",
+            description:
+              "idv-verify was invoked in production but admin_settings.idv_provider resolved to the generic dev/test 'stub'. The entity was NOT promoted to verified. Configure a real provider before retrying.",
+            metadata: {
+              entity_id,
+              verification_type: isCompany ? "company" : "individual",
+              provider: resolvedProvider || null,
+              request_id: requestId,
+            },
+          }).then(() => {}, () => {}); // best-effort; do not fail the request if the risk table isn't reachable
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "PROVIDER_MISCONFIGURED",
+              provider: resolvedProvider || null,
+              message:
+                "Identity/company verification cannot run: no live provider is configured for this tier. The entity remains unverified.",
+              entity_id,
+              requestId,
+            }),
+            { status: 503, headers: { ...headers, "Content-Type": "application/json" } },
+          );
+        }
+        // Non-production: existing dev/test stub behaviour is preserved below.
+      }
+
+      // ── P010: named stub providers (CIPC, Onfido, Dow Jones, Refinitiv) must never run. ──
       // Audit-only event; entity is NOT promoted; no verification result is created.
       if (isStubProvider(resolvedProvider)) {
         await admin.from("audit_logs").insert({
