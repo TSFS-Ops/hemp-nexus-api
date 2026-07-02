@@ -45,13 +45,15 @@ describe("Batch V — controlled-action gate", () => {
     }
   });
 
-  it("controlled-action list covers WaD seal, finality, funder-ready, API ready=true, POI-bind", () => {
+  it("controlled-action list covers all V-Wire sites", () => {
     expect(CONTROLLED_ACTIONS).toEqual([
       "wad_seal",
       "finality_action",
       "funder_ready_grant",
       "api_ready_true",
       "poi_bind_party",
+      "evidence_approval",
+      "transaction_approval",
     ]);
   });
 
@@ -68,6 +70,7 @@ describe("Batch V — controlled-action gate", () => {
   it("WaD seal path in the edge function calls the IDV gate", () => {
     const wad = readFileSync("supabase/functions/wad/index.ts", "utf8");
     expect(wad).toContain("assertWadSealIdvGate");
-    expect(wad).toContain("IDV_REQUIRED_WAD_SEAL");
+    const gate = readFileSync("supabase/functions/_shared/idv-wad-seal-gate.ts", "utf8");
+    expect(gate).toContain("IDV_REQUIRED_WAD_SEAL");
   });
 });
