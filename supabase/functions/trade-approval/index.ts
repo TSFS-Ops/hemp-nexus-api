@@ -4,6 +4,7 @@ import { errorResponse, ApiException } from "../_shared/errors.ts";
 import { authenticateRequest, requireRole } from "../_shared/auth.ts";
 import { assertIdempotencyKey } from "../_shared/idempotency.ts";
 import { assertAal2 } from "../_shared/aal.ts";
+import { assertActorIdvGate, IdvGateError } from "../_shared/idv-actor-gate.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
