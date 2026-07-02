@@ -143,24 +143,37 @@ async function readSrc(path: string): Promise<string> {
   return await Deno.readTextFile(url)
 }
 
+// Both call-sites reference the markers by their exported *constant
+// identifier* rather than the literal string; assert the identifier is
+// both imported from the shared helper and used at a call-site.
 Deno.test('#22 auth-email-hook wiring: pre-enqueue gate + markers', async () => {
   const src = await readSrc('../auth-email-hook/index.ts')
+  assertStringIncludes(src, "from '../_shared/auth-email-suppression.ts'")
   assertStringIncludes(src, 'evaluateAuthEmailSuppression')
   assertStringIncludes(src, 'injectSecurityDisclaimerHtml')
   assertStringIncludes(src, 'injectSecurityDisclaimerText')
-  assertStringIncludes(src, AUDIT_ACTION_AUTH_SUPPRESSED)
-  assertStringIncludes(src, AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER)
-  assertStringIncludes(src, RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT)
+  assertStringIncludes(src, 'AUDIT_ACTION_AUTH_SUPPRESSED')
+  assertStringIncludes(src, 'AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER')
+  assertStringIncludes(src, 'RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT')
+  assertStringIncludes(src, 'action: AUDIT_ACTION_AUTH_SUPPRESSED')
+  assertStringIncludes(src, 'action: AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER')
+  assertStringIncludes(src, 'kind: RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT')
+  // Marker constant values themselves are pinned by the helper import
+  // path — assert them here so wording cannot drift silently.
+  assertEquals(AUDIT_ACTION_AUTH_SUPPRESSED, 'email.auth_suppressed')
+  assertEquals(AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER, 'email.auth_security_sent_with_disclaimer')
+  assertEquals(RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT, 'auth_email_to_suppressed_recipient')
 })
 
 Deno.test('#22 process-email-queue wiring: defense-in-depth gate + markers', async () => {
   const src = await readSrc('../process-email-queue/index.ts')
+  assertStringIncludes(src, "from '../_shared/auth-email-suppression.ts'")
   assertStringIncludes(src, 'evaluateAuthEmailSuppression')
   assertStringIncludes(src, 'injectSecurityDisclaimerHtml')
   assertStringIncludes(src, 'injectSecurityDisclaimerText')
-  assertStringIncludes(src, AUDIT_ACTION_AUTH_SUPPRESSED)
-  assertStringIncludes(src, AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER)
-  assertStringIncludes(src, RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT)
+  assertStringIncludes(src, 'action: AUDIT_ACTION_AUTH_SUPPRESSED')
+  assertStringIncludes(src, 'action: AUDIT_ACTION_AUTH_SECURITY_SENT_WITH_DISCLAIMER')
+  assertStringIncludes(src, 'kind: RISK_KIND_AUTH_EMAIL_TO_SUPPRESSED_RECIPIENT')
   // Non-critical suppressed messages are removed from the queue via
   // delete_email — never sent, never DLQ'd.
   assertStringIncludes(src, 'delete_email')
