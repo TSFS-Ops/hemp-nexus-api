@@ -129,6 +129,32 @@ async function _serve(req: Request): Promise<Response> {
       );
     }
 
+    // Batch V-Wire — poi_bind_party gate. POI preparation (DRAFT →
+    // PENDING_APPROVAL) stays commercially light. Binding transitions
+    // (ELIGIBLE, COMPLETION_REQUESTED, COMPLETED) require the caller's
+    // IDV to be resolved.
+    const BINDING_TO_STATES = new Set(["ELIGIBLE", "COMPLETION_REQUESTED", "COMPLETED"]);
+    if (BINDING_TO_STATES.has(String(toState))) {
+      try {
+        await assertActorIdvGate(
+          createClient(supabaseUrl, serviceKey),
+          { user_id: user.id, org_id: callerOrgId },
+          "poi_bind_party",
+        );
+      } catch (e) {
+        if (e instanceof IdvGateError) {
+          return new Response(JSON.stringify({
+            error: "IDV_REQUIRED_BINDING_POI",
+            blocker_code: "IDV_REQUIRED_BINDING_POI",
+            blocker_label: "Identity verification required before this action",
+            idv_gate_code: e.code,
+          }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        throw e;
+      }
+    }
+
+
     const adminClient = createClient(supabaseUrl, serviceKey);
 
     // ── Idempotency: short-circuit duplicate transitions ──
