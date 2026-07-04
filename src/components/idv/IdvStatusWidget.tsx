@@ -24,12 +24,14 @@ interface IdvWidgetState {
 }
 
 export function IdvStatusWidget({ className }: { className?: string }) {
+  const navigate = useNavigate();
   const [state, setState] = useState<IdvWidgetState>({
     loading: true,
     status: "no_subject",
     document_label: null,
     updated_at: null,
   });
+  const [resubmitting, setResubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
