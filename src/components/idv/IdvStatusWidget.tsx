@@ -21,6 +21,9 @@ interface IdvWidgetState {
   status: string;
   document_label: string | null;
   updated_at: string | null;
+  resubmit_reason: string | null;
+  resubmit_source: string | null;
+  resubmit_at: string | null;
 }
 
 export function IdvStatusWidget({ className }: { className?: string }) {
