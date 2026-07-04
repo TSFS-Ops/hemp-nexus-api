@@ -93,6 +93,12 @@ export interface ConsequenceResult<T> {
   errorKind?: "auth_required" | "client_error" | "server_error" | "network_error" | "unknown";
   /** Raw HTTP status (when known) - useful for telemetry/tests. */
   errorStatus?: number;
+  /**
+   * Batch V-UI-Fix — When set, the server blocked this controlled action
+   * because identity verification is unresolved. UIs MUST render the
+   * shared `<IdvBlockerNotice />` instead of the raw `error` message.
+   */
+  idvBlocker?: { blocker_code: string; user_message: string | null };
 }
 
 // ─── State Derivation ───────────────────────────────────────────────
