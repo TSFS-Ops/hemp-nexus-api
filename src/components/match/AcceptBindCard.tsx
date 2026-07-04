@@ -30,6 +30,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Match } from "@/hooks/use-match-details";
+import { IdvBlockerNotice } from "@/components/idv/IdvBlockerNotice";
+import { extractIdvBlockerFromError } from "@/lib/idv/blocker-from-error";
 
 interface AcceptBindCardProps {
   match: Match;
@@ -41,6 +43,9 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [userProfile, setUserProfile] = useState<{ org_id: string; full_name: string | null } | null>(null);
+  const [idvBlocker, setIdvBlocker] = useState<
+    { blocker_code: string; user_message: string | null } | null
+  >(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -115,6 +120,12 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
         });
       } catch (e) {
         const err = e as { status?: number; message?: string };
+        // Batch V-UI-Fix — surface IDV blockers with a friendly notice.
+        const blocker = extractIdvBlockerFromError(e);
+        if (blocker) {
+          setIdvBlocker(blocker);
+          return;
+        }
         if (err.status === 409) {
           toast.warning("This match has already been updated. Refreshing…");
           onAccepted();
@@ -150,6 +161,12 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {idvBlocker && (
+            <IdvBlockerNotice
+              blocker_code={idvBlocker.blocker_code}
+              user_message={idvBlocker.user_message}
+            />
+          )}
           <div className="flex items-start gap-3 p-3 rounded-md border border-primary/20 bg-background">
             <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="text-sm text-muted-foreground space-y-1">

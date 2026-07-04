@@ -131,9 +131,14 @@ export async function sealWad(wadId: string): Promise<ConsequenceResult<void>> {
     await apiFetch(`wad/${wadId}/seal`, { method: "POST" });
     return { success: true };
   } catch (err) {
+    // Batch V-UI-Fix — surface IDV controlled-action blocks so callers
+    // can render the friendly notice instead of a raw error toast.
+    const { extractIdvBlockerFromError } = await import("@/lib/idv/blocker-from-error");
+    const idvBlocker = extractIdvBlockerFromError(err) ?? undefined;
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to seal Signed Deal",
+      idvBlocker,
     };
   }
 }

@@ -13,6 +13,7 @@ import { fetchFunderSummary, type P5B3FunderSummaryResponse } from "@/lib/p5-bat
 import { P5B3FunderShell } from "./components/P5B3FunderShell";
 import { P5B3FunderSafeLabel } from "./components/P5B3FunderSafeLabel";
 import { P5B3FunderUnavailable } from "./components/P5B3FunderUnavailable";
+import { FunderIdvSummary } from "@/components/idv/FunderIdvSummary";
 
 export default function P5Batch3FunderReadiness() {
   const { grantId } = useParams();
@@ -62,6 +63,11 @@ export default function P5Batch3FunderReadiness() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Batch V-UI-Fix — funder-safe IDV summary. Per-case identity
+          status is not exposed on this shared readiness view; the safe
+          default renders "Not ready — identity verification required". */}
+      <FunderIdvSummary status={null} />
 
       {denial ? <P5B3FunderUnavailable reason={denial.reason} message={denial.message} /> : null}
 

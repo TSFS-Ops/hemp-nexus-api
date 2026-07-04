@@ -37,6 +37,7 @@ import {
   type CopyRefSurface,
 } from "@/lib/client-analytics";
 import { generateIdempotencyKey } from "@/lib/api-client";
+import { IdvBlockerNotice } from "@/components/idv/IdvBlockerNotice";
 
 type Match = Tables<"matches">;
 
@@ -65,6 +66,10 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
+  // Batch V-UI-Fix — IDV blocker captured from the last seal attempt.
+  const [sealIdvBlocker, setSealIdvBlocker] = useState<
+    { blocker_code: string; user_message: string | null } | null
+  >(null);
   const attestationAttemptRef = useRef<{
     key: string;
     wadId: string;
@@ -288,12 +293,16 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
 
   const handleSeal = async () => {
     setSealing(true);
+    setSealIdvBlocker(null);
     const result = await sealWad(wad.id);
     setSealing(false);
 
     if (result.success) {
       toast.success("Signed Deal sealed successfully");
       onUpdate();
+    } else if (result.idvBlocker) {
+      // Batch V-UI-Fix — render friendly IDV notice instead of a raw error.
+      setSealIdvBlocker(result.idvBlocker);
     } else {
       toast.error(result.error || "Failed to seal");
     }
@@ -494,6 +503,12 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               {canSeal && (
                 <>
                   <Separator />
+                  {sealIdvBlocker && (
+                    <IdvBlockerNotice
+                      blocker_code={sealIdvBlocker.blocker_code}
+                      user_message={sealIdvBlocker.user_message}
+                    />
+                  )}
                   <Button onClick={handleSeal} disabled={sealing} className="w-full">
                     {sealing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     <Lock className="h-4 w-4 mr-2" />

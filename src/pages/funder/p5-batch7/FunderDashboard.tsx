@@ -28,6 +28,7 @@ import {
   P5B7ErrorState,
 } from "@/components/p5-batch7/DashboardShell";
 import { p5b7ApiV1ListCases, type P5Batch7ApiV1Envelope, type P5Batch7ApiV1Row } from "@/lib/p5-batch7/api-v1";
+import { FunderIdvSummary } from "@/components/idv/FunderIdvSummary";
 
 export default function P5Batch7FunderDashboard() {
   const [q, setQ] = useState("");
@@ -60,6 +61,11 @@ export default function P5Batch7FunderDashboard() {
       }
     >
       <P5B7StaleDataBanner dashboard="funder_dashboard" asOf={env?.as_of ?? null} isStale={env?.is_stale ?? false} />
+      {/* Batch V-UI-Fix — funder-safe IDV summary. Status is intentionally
+          null at the dashboard level: per-case identity status is surfaced
+          only inside case detail. This card shows the safe "Not ready —
+          identity verification required" wording as a default. */}
+      <FunderIdvSummary status={null} />
       <P5B7SummaryCards
         cards={[
           { label: "Visible cases", value: rows.length },
