@@ -55,7 +55,7 @@ describe("Batch V-UI — retry / resubmit flow", () => {
     expect(src).toContain('source: "start_screen"');
   });
 
-  it("idv-resubmit edge function enforces safe reason list and never returns raw provider data", () => {
+  it("idv-resubmit edge function persists intent and appends audit event", () => {
     const src = readFileSync(
       join(process.cwd(), "supabase/functions/idv-resubmit/index.ts"),
       "utf8",
@@ -66,8 +66,18 @@ describe("Batch V-UI — retry / resubmit flow", () => {
     expect(src).toContain('"user_initiated"');
     expect(src).toContain("p5scr_audit_events");
     expect(src).toContain("p5_screening.idv_required");
+    expect(src).toContain("idv_resubmit_intents");
     // The function must never surface raw provider payloads or secrets.
     expect(src).not.toContain("raw_provider_payload");
     expect(src).not.toContain("VERIFYNOW_API_KEY");
+  });
+
+  it("status widget reads idv_resubmit_intents and prefers the latest reason", () => {
+    const src = readFileSync(
+      join(process.cwd(), "src/components/idv/IdvStatusWidget.tsx"),
+      "utf8",
+    );
+    expect(src).toContain('idv_resubmit_intents');
+    expect(src).toContain("preferIntent");
   });
 });
