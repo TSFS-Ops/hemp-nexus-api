@@ -56,18 +56,27 @@ async function resolveSubjectId(
 
 /**
  * Enforce the IDV gate for a controlled action performed by `actor`.
- * Throws `IdvGateError` when the actor has a blocking IDV state.
- *
- * @returns `"released"` (allowed), `"no_subject"` (no subject row —
- *   soft-allow per boundary), or throws.
+ * Throws `IdvGateError` when the actor has a blocking IDV state OR when
+ * no subject row exists for the actor (Batch V-UI fail-closed
+ * hardening — non-sensitive work remains allowed elsewhere, but every
+ * controlled action must have an identifiable subject to gate against).
  */
 export async function assertActorIdvGate(
   admin: AdminClient,
   actor: ActorRef,
   action: ControlledAction,
-): Promise<"released" | "no_subject"> {
+): Promise<"released"> {
   const subjectId = await resolveSubjectId(admin, actor);
-  if (!subjectId) return "no_subject";
+  if (!subjectId) {
+    // Fail-closed. Blocker code is stringified via IdvGateError.code and
+    // exposed by upstream 409 handlers; user wording is provider-neutral.
+    throw new IdvGateError(
+      "IDV_REQUIRED",
+      "Identity verification required before this action",
+      "no_subject",
+      action,
+    );
+  }
   await assertControlledActionIdvGate(admin, subjectId, action);
   return "released";
 }
