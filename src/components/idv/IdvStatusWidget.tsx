@@ -122,15 +122,48 @@ export function IdvStatusWidget({ className }: { className?: string }) {
           </div>
         )}
         {!isTerminal && (showResubmit || showStart) && (
-          <Button
-            asChild
-            size="sm"
-            variant={showResubmit ? "default" : "outline"}
-            className="mt-2"
-            data-testid={showResubmit ? "idv-resubmit-cta" : "idv-start-cta"}
-          >
-            <Link to={startHref}>{ctaLabel}</Link>
-          </Button>
+          showResubmit ? (
+            <Button
+              size="sm"
+              variant="default"
+              className="mt-2"
+              disabled={resubmitting}
+              data-testid="idv-resubmit-cta"
+              onClick={async () => {
+                setResubmitting(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke(
+                    "idv-resubmit",
+                    { body: { reason: state.status, source: "status_widget" } },
+                  );
+                  if (error) {
+                    toast.error("Could not start a resubmission. Please try again.");
+                    return;
+                  }
+                  const next = (data as { next_route?: string } | null)?.next_route
+                    ?? `/desk/idv/start?resubmit=1&reason=${encodeURIComponent(state.status)}`;
+                  toast.success("Resubmission started. Please complete the form.");
+                  navigate(next);
+                } catch {
+                  toast.error("Could not start a resubmission. Please try again.");
+                } finally {
+                  setResubmitting(false);
+                }
+              }}
+            >
+              {resubmitting ? "Starting…" : ctaLabel}
+            </Button>
+          ) : (
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="mt-2"
+              data-testid="idv-start-cta"
+            >
+              <Link to={startHref}>{ctaLabel}</Link>
+            </Button>
+          )
         )}
       </CardContent>
     </Card>
