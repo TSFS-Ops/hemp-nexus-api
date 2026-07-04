@@ -33,6 +33,9 @@ export function IdvStatusWidget({ className }: { className?: string }) {
     status: "no_subject",
     document_label: null,
     updated_at: null,
+    resubmit_reason: null,
+    resubmit_source: null,
+    resubmit_at: null,
   });
   const [resubmitting, setResubmitting] = useState(false);
 
@@ -51,8 +54,25 @@ export function IdvStatusWidget({ className }: { className?: string }) {
           .select("id, display_label, updated_at")
           .eq("person_external_ref", uid)
           .maybeSingle();
+
+        // Latest user-visible resubmission intent (RLS scopes to auth.uid()).
+        const { data: intent } = await supabase
+          .from("idv_resubmit_intents")
+          .select("reason, source, created_at")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
         if (!subject) {
-          if (!cancelled) setState({ loading: false, status: "no_subject", document_label: null, updated_at: null });
+          if (!cancelled) setState({
+            loading: false,
+            status: intent?.reason ? (intent.reason as string) : "no_subject",
+            document_label: null,
+            updated_at: (intent?.created_at as string) ?? null,
+            resubmit_reason: (intent?.reason as string) ?? null,
+            resubmit_source: (intent?.source as string) ?? null,
+            resubmit_at: (intent?.created_at as string) ?? null,
+          });
           return;
         }
         const { data: check } = await supabase
@@ -62,12 +82,30 @@ export function IdvStatusWidget({ className }: { className?: string }) {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        // Prefer the resubmit intent when it is newer than the last check,
+        // so the widget reflects the reason the user just acted on.
+        const checkAt = (check?.decided_at as string) ?? (check?.created_at as string) ?? null;
+        const intentAt = (intent?.created_at as string) ?? null;
+        const preferIntent =
+          !!intentAt && (!checkAt || new Date(intentAt).getTime() > new Date(checkAt).getTime());
+
+        const resolvedStatus = preferIntent
+          ? (intent!.reason as string)
+          : ((check?.state as string) ?? "pending");
+        const resolvedUpdatedAt = preferIntent
+          ? intentAt
+          : (checkAt ?? (subject.updated_at as string) ?? null);
+
         if (!cancelled) {
           setState({
             loading: false,
-            status: (check?.state as string) ?? "pending",
+            status: resolvedStatus,
             document_label: (subject.display_label as string) ?? null,
-            updated_at: (check?.decided_at as string) ?? (subject.updated_at as string) ?? null,
+            updated_at: resolvedUpdatedAt,
+            resubmit_reason: (intent?.reason as string) ?? null,
+            resubmit_source: (intent?.source as string) ?? null,
+            resubmit_at: intentAt,
           });
         }
       } catch {
