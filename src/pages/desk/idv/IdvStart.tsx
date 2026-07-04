@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -74,6 +74,9 @@ function buildCountries(): CountryOption[] {
 
 export default function IdvStart() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isResubmit = searchParams.get("resubmit") === "1";
+  const resubmitReason = searchParams.get("reason");
   const countries = useMemo(buildCountries, []);
   const [country, setCountry] = useState<string>("");
   const [docType, setDocType] = useState<string>("");
@@ -198,6 +201,18 @@ export default function IdvStart() {
       </div>
 
       <IdvStatusWidget />
+
+      {isResubmit && (
+        <Alert data-testid="idv-resubmit-banner">
+          <AlertTitle>{idvSafeLabel(resubmitReason).label}</AlertTitle>
+          <AlertDescription>
+            {idvSafeLabel(resubmitReason).next_action} Please submit a fresh
+            identity check below.
+          </AlertDescription>
+        </Alert>
+      )}
+
+
 
       <Card>
         <CardHeader>
