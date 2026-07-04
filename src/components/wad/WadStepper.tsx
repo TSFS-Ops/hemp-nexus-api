@@ -66,6 +66,10 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
   const [downloading, setDownloading] = useState(false);
   const [attestedName, setAttestedName] = useState("");
   const [attestConfirmed, setAttestConfirmed] = useState(false);
+  // Batch V-UI-Fix — IDV blocker captured from the last seal attempt.
+  const [sealIdvBlocker, setSealIdvBlocker] = useState<
+    { blocker_code: string; user_message: string | null } | null
+  >(null);
   const attestationAttemptRef = useRef<{
     key: string;
     wadId: string;
