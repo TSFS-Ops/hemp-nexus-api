@@ -30,29 +30,26 @@ async function resolveSubjectId(
   admin: AdminClient,
   actor: ActorRef,
 ): Promise<string | null> {
-  // Try user_id first — most common actor identity.
+  // Batch V-UI: existing p5scr_subjects schema exposes
+  //   organisation_id + person_external_ref (NOT user_id / org_id).
+  // Query by the real columns and stop swallowing schema errors.
   if (actor.user_id) {
-    try {
-      const { data } = await admin
-        .from("p5scr_subjects")
-        .select("id")
-        .eq("user_id", actor.user_id)
-        .limit(1)
-        .maybeSingle();
-      if (data?.id) return data.id as string;
-    } catch { /* schema may not carry user_id column yet */ }
+    const { data } = await admin
+      .from("p5scr_subjects")
+      .select("id")
+      .eq("person_external_ref", actor.user_id)
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) return data.id as string;
   }
-  // Fall back to org_id linkage (matches WaD gate lookup).
   if (actor.org_id) {
-    try {
-      const { data } = await admin
-        .from("p5scr_subjects")
-        .select("id")
-        .eq("org_id", actor.org_id)
-        .limit(1)
-        .maybeSingle();
-      if (data?.id) return data.id as string;
-    } catch { /* absent */ }
+    const { data } = await admin
+      .from("p5scr_subjects")
+      .select("id")
+      .eq("organisation_id", actor.org_id)
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) return data.id as string;
   }
   return null;
 }
