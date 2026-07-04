@@ -55,7 +55,7 @@ describe("Batch V-UI — retry / resubmit flow", () => {
     expect(src).toContain('source: "start_screen"');
   });
 
-  it("idv-resubmit edge function persists intent and appends audit event", () => {
+  it("idv-resubmit edge function persists intent, appends screening audit, and writes a compliance audit_log", () => {
     const src = readFileSync(
       join(process.cwd(), "supabase/functions/idv-resubmit/index.ts"),
       "utf8",
@@ -67,6 +67,16 @@ describe("Batch V-UI — retry / resubmit flow", () => {
     expect(src).toContain("p5scr_audit_events");
     expect(src).toContain("p5_screening.idv_required");
     expect(src).toContain("idv_resubmit_intents");
+
+    // Structured compliance audit — actor, action, entity, reason, states.
+    expect(src).toContain('from("audit_logs")');
+    expect(src).toContain('"idv.resubmit_requested"');
+    expect(src).toContain('entity_type: "idv_subject"');
+    expect(src).toContain("actor_user_id: user.id");
+    expect(src).toContain("prior_state");
+    expect(src).toContain("resulting_state");
+    expect(src).toContain("audit_logged");
+
     // The function must never surface raw provider payloads or secrets.
     expect(src).not.toContain("raw_provider_payload");
     expect(src).not.toContain("VERIFYNOW_API_KEY");
