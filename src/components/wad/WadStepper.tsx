@@ -293,12 +293,16 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
 
   const handleSeal = async () => {
     setSealing(true);
+    setSealIdvBlocker(null);
     const result = await sealWad(wad.id);
     setSealing(false);
 
     if (result.success) {
       toast.success("Signed Deal sealed successfully");
       onUpdate();
+    } else if (result.idvBlocker) {
+      // Batch V-UI-Fix — render friendly IDV notice instead of a raw error.
+      setSealIdvBlocker(result.idvBlocker);
     } else {
       toast.error(result.error || "Failed to seal");
     }
