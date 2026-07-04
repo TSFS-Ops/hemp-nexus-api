@@ -74,6 +74,9 @@ function buildCountries(): CountryOption[] {
 
 export default function IdvStart() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isResubmit = searchParams.get("resubmit") === "1";
+  const resubmitReason = searchParams.get("reason");
   const countries = useMemo(buildCountries, []);
   const [country, setCountry] = useState<string>("");
   const [docType, setDocType] = useState<string>("");
