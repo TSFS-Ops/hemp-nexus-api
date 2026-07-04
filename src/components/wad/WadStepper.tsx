@@ -37,6 +37,7 @@ import {
   type CopyRefSurface,
 } from "@/lib/client-analytics";
 import { generateIdempotencyKey } from "@/lib/api-client";
+import { IdvBlockerNotice } from "@/components/idv/IdvBlockerNotice";
 
 type Match = Tables<"matches">;
 
