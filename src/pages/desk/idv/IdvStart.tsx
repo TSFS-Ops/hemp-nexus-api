@@ -221,7 +221,7 @@ export default function IdvStart() {
         </p>
       </div>
 
-      <IdvStatusWidget />
+      <IdvStatusWidget pollOnMount={isResubmit} key={outcomeStatus ?? "initial"} />
 
       {isResubmit && (
         <Alert data-testid="idv-resubmit-banner">
