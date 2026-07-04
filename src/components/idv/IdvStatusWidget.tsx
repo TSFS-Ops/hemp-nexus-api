@@ -73,6 +73,27 @@ export function IdvStatusWidget({ className }: { className?: string }) {
 
   const safe = idvSafeLabel(state.status);
 
+  const RESUBMIT_STATES = new Set([
+    "retry_required",
+    "alternative_document_required",
+    "failed",
+    "expired",
+    "error",
+    "provider_error",
+  ]);
+  const START_STATES = new Set(["no_subject"]);
+  const showResubmit = RESUBMIT_STATES.has(state.status);
+  const showStart = START_STATES.has(state.status);
+  const isTerminal = state.status === "idv_completed" || state.status === "manual_review_accepted";
+  const startHref = showResubmit
+    ? `/desk/idv/start?resubmit=1&reason=${encodeURIComponent(state.status)}`
+    : "/desk/idv/start";
+  const ctaLabel = showResubmit
+    ? state.status === "alternative_document_required"
+      ? "Submit alternative document"
+      : "Retry identity verification"
+    : "Start identity verification";
+
   return (
     <Card className={className} data-testid="idv-status-widget">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -97,9 +118,15 @@ export function IdvStatusWidget({ className }: { className?: string }) {
             Last updated {new Date(state.updated_at).toLocaleString()}
           </div>
         )}
-        {state.status !== "idv_completed" && state.status !== "manual_review_accepted" && (
-          <Button asChild size="sm" variant="outline" className="mt-2">
-            <Link to="/desk/idv/start">Start identity verification</Link>
+        {!isTerminal && (showResubmit || showStart) && (
+          <Button
+            asChild
+            size="sm"
+            variant={showResubmit ? "default" : "outline"}
+            className="mt-2"
+            data-testid={showResubmit ? "idv-resubmit-cta" : "idv-start-cta"}
+          >
+            <Link to={startHref}>{ctaLabel}</Link>
           </Button>
         )}
       </CardContent>
