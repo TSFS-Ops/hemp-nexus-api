@@ -13,6 +13,7 @@ import { fetchFunderSummary, type P5B3FunderSummaryResponse } from "@/lib/p5-bat
 import { P5B3FunderShell } from "./components/P5B3FunderShell";
 import { P5B3FunderSafeLabel } from "./components/P5B3FunderSafeLabel";
 import { P5B3FunderUnavailable } from "./components/P5B3FunderUnavailable";
+import { FunderIdvSummary } from "@/components/idv/FunderIdvSummary";
 
 export default function P5Batch3FunderReadiness() {
   const { grantId } = useParams();
