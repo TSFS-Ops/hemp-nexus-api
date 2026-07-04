@@ -120,6 +120,12 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
         });
       } catch (e) {
         const err = e as { status?: number; message?: string };
+        // Batch V-UI-Fix — surface IDV blockers with a friendly notice.
+        const blocker = extractIdvBlockerFromError(e);
+        if (blocker) {
+          setIdvBlocker(blocker);
+          return;
+        }
         if (err.status === 409) {
           toast.warning("This match has already been updated. Refreshing…");
           onAccepted();
