@@ -202,6 +202,18 @@ export default function IdvStart() {
 
       <IdvStatusWidget />
 
+      {isResubmit && (
+        <Alert data-testid="idv-resubmit-banner">
+          <AlertTitle>{idvSafeLabel(resubmitReason).label}</AlertTitle>
+          <AlertDescription>
+            {idvSafeLabel(resubmitReason).next_action} Please submit a fresh
+            identity check below.
+          </AlertDescription>
+        </Alert>
+      )}
+
+
+
       <Card>
         <CardHeader>
           <CardTitle>New identity check</CardTitle>
