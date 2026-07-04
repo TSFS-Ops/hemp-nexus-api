@@ -503,6 +503,12 @@ export function WadStepper({ wad, match, consequenceState, userOrgId, onUpdate }
               {canSeal && (
                 <>
                   <Separator />
+                  {sealIdvBlocker && (
+                    <IdvBlockerNotice
+                      blocker_code={sealIdvBlocker.blocker_code}
+                      user_message={sealIdvBlocker.user_message}
+                    />
+                  )}
                   <Button onClick={handleSeal} disabled={sealing} className="w-full">
                     {sealing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     <Lock className="h-4 w-4 mr-2" />
