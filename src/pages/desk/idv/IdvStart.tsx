@@ -94,6 +94,27 @@ export default function IdvStart() {
     setDocType("");
   }, [country]);
 
+  // Batch V-UI: when the user lands here via the resubmit CTA (widget or
+  // deep-link), record the resubmission intent server-side exactly once.
+  const [resubmitRecorded, setResubmitRecorded] = useState(false);
+  useEffect(() => {
+    if (!isResubmit || resubmitRecorded) return;
+    (async () => {
+      try {
+        await supabase.functions.invoke("idv-resubmit", {
+          body: {
+            reason: resubmitReason || "user_initiated",
+            source: "start_screen",
+          },
+        });
+      } catch (err) {
+        console.error("[IdvStart] resubmit intent failed", err);
+      } finally {
+        setResubmitRecorded(true);
+      }
+    })();
+  }, [isResubmit, resubmitReason, resubmitRecorded]);
+
   const chosenRoute = useMemo(() => {
     if (!country || country === "OTHER") return null;
     if (!docType) return null;

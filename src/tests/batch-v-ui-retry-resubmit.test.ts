@@ -32,26 +32,42 @@ describe("Batch V-UI — retry / resubmit flow", () => {
     }
   });
 
-  it("status widget wires resubmit CTA to /desk/idv/start with reason", () => {
+  it("status widget resubmit CTA invokes the idv-resubmit edge function", () => {
     const src = readFileSync(
       join(process.cwd(), "src/components/idv/IdvStatusWidget.tsx"),
       "utf8",
     );
-    expect(src).toContain("resubmit=1");
-    expect(src).toContain("idv-resubmit-cta");
-    expect(src).toContain("idv-start-cta");
-    for (const s of RESUBMIT_STATES) {
-      expect(src).toContain(`"${s}"`);
-    }
+    expect(src).toContain('supabase.functions.invoke');
+    expect(src).toContain('"idv-resubmit"');
+    expect(src).toContain('source: "status_widget"');
+    // Widget navigates programmatically after the API call succeeds.
+    expect(src).toContain("useNavigate");
   });
 
-  it("start screen renders a resubmit banner when resubmit=1", () => {
+  it("start screen renders a resubmit banner and fires idv-resubmit on mount", () => {
     const src = readFileSync(
       join(process.cwd(), "src/pages/desk/idv/IdvStart.tsx"),
       "utf8",
     );
     expect(src).toContain("idv-resubmit-banner");
     expect(src).toContain("useSearchParams");
-    expect(src).toContain('resubmit') ;
+    expect(src).toContain('"idv-resubmit"');
+    expect(src).toContain('source: "start_screen"');
+  });
+
+  it("idv-resubmit edge function enforces safe reason list and never returns raw provider data", () => {
+    const src = readFileSync(
+      join(process.cwd(), "supabase/functions/idv-resubmit/index.ts"),
+      "utf8",
+    );
+    for (const s of RESUBMIT_STATES) {
+      expect(src).toContain(`"${s}"`);
+    }
+    expect(src).toContain('"user_initiated"');
+    expect(src).toContain("p5scr_audit_events");
+    expect(src).toContain("p5_screening.idv_required");
+    // The function must never surface raw provider payloads or secrets.
+    expect(src).not.toContain("raw_provider_payload");
+    expect(src).not.toContain("VERIFYNOW_API_KEY");
   });
 });
