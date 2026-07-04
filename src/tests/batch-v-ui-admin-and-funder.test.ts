@@ -28,7 +28,11 @@ const BANNED_FIELDS = [
 describe("Batch V-UI — private-data leakage guard", () => {
   for (const file of FILES) {
     it(`does not render banned admin-only fields in ${file}`, () => {
-      const src = readFileSync(file, "utf8");
+      const raw = readFileSync(file, "utf8");
+      // Strip comments — banned field names are legitimate in policy docs.
+      const src = raw
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/.*$/gm, "");
       for (const field of BANNED_FIELDS) {
         expect(src.includes(field), `${field} appears in ${file}`).toBe(false);
       }

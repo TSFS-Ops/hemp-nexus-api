@@ -28,6 +28,7 @@ function walk(dir: string, out: string[] = []): string[] {
 describe("Batch V-UI — VerifyNow client boundary", () => {
   it("no frontend file references VERIFYNOW_API_KEY", () => {
     for (const f of walk(ROOT)) {
+      if (f.includes("batch-v-ui-client-boundary.test.ts")) continue; // self
       const src = readFileSync(f, "utf8");
       expect(src.includes("VERIFYNOW_API_KEY"), `Secret ref in ${f}`).toBe(false);
     }
