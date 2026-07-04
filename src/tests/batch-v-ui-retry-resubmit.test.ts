@@ -80,4 +80,40 @@ describe("Batch V-UI — retry / resubmit flow", () => {
     expect(src).toContain('idv_resubmit_intents');
     expect(src).toContain("preferIntent");
   });
+
+  it("status widget polls until the run reaches a terminal / actionable state", () => {
+    const src = readFileSync(
+      join(process.cwd(), "src/components/idv/IdvStatusWidget.tsx"),
+      "utf8",
+    );
+    expect(src).toContain("ACTIVE_POLL_STATES");
+    expect(src).toContain("POLL_INTERVAL_MS");
+    expect(src).toContain("POLL_MAX_ATTEMPTS");
+    expect(src).toContain("startPolling");
+    expect(src).toContain("idv-polling-indicator");
+    expect(src).toContain("pollOnMount");
+    // Terminal / actionable states must NOT be in the active-poll set.
+    const activeLine = src.split("\n").find((l) => l.includes("ACTIVE_POLL_STATES = new Set")) ?? "";
+    for (const terminal of [
+      "idv_completed",
+      "manual_review_accepted",
+      "manual_review_required",
+      "failed",
+      "expired",
+      "retry_required",
+      "alternative_document_required",
+      "provider_error",
+      "blocked_pending_admin_decision",
+    ]) {
+      expect(activeLine.includes(`"${terminal}"`)).toBe(false);
+    }
+  });
+
+  it("start screen mounts the widget in poll-on-mount mode when resubmitting", () => {
+    const src = readFileSync(
+      join(process.cwd(), "src/pages/desk/idv/IdvStart.tsx"),
+      "utf8",
+    );
+    expect(src).toContain("pollOnMount={isResubmit}");
+  });
 });
