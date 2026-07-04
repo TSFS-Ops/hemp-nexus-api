@@ -1,215 +1,209 @@
-# Batch V — VerifyNow Multi-Country IDV Routing
+# Batch V-UI — VerifyNow IDV Client-Facing Screens & Admin Review
 
-Enterprise-grade IDV build. Read-only for existing schema; no migrations, no live provider calls, no production data mutation. Preserves Batch O / O-Remainder trust-signal guards.
+Purpose: make the Batch V backend usable by David/Daniel/James through the UI so the client smoke test is runnable. No backend routing logic changes; only the surfaces and one narrow fail-closed hardening on the gate.
 
-## What will be built
+## Deliverables
 
-### 1. IDV Route Registry (SSOT)
+### 1. User IDV start screen — `/desk/idv/start`
 
-`src/lib/idv/route-table.ts` + mirror `supabase/functions/_shared/idv-route-table.ts`
+New page `src/pages/desk/idv/IdvStart.tsx` (registered in `src/App.tsx` under `/desk/*` via Desk router, or as a top-level `RequireAuth` route).
 
-- Central registry keyed by `(document_issuing_country, document_type)`.
-- Live: **ZA** (SAID, Home Affairs Enhanced IDV), **NG** (NIN, Virtual NIN, NIN Slip — full IDV; BVN, voter ID, phone, bank — supporting only).
-- Placeholders (live_enabled=false): **GH, KE, UG, ZM, CI** → resolve to `provider_not_available`.
-- Each entry: `provider`, `live_enabled`, `api_supported`, `full_idv` vs `supporting_only`, `can_unlock_controlled_actions`, `required_fields`, `user_wording`, `admin_wording`.
-- Pure function `resolveIdvRoute({ document_country, document_type })` — no IO.
-- Explicitly does NOT read nationality / residence / company country.
+Fields, using existing SSOT `src/lib/idv/route-table.ts`:
 
-### 2. VerifyNow server-side adapter
+- Country selector labelled "Select the country that issued your ID document" — reads countries from `IDV_ROUTE_TABLE` plus placeholders (GH/KE/UG/ZM/CI) plus "Other".
+- Document type selector — filtered by chosen country from the route table; disabled until country picked.
+- Details textarea (document number etc.) — plain text, no validation beyond length.
+- Consent checkbox: "I confirm that I have permission to submit this identity check".
+- Submit button: "Submit identity check".
 
-`supabase/functions/_shared/verifynow/adapter.ts`
+On submit:
 
-- Reads `VERIFYNOW_API_KEY`, `VERIFYNOW_BASE_URL` (default `https://www.verifynow.co.za/api/external`), `VERIFYNOW_MODE` (sandbox default).
-- `x-api-key` header. Production calls require `Idempotency-Key` (UUID v4, persisted alongside request).
-- Same-key/different-payload conflict → `provider_error` → manual review + audit.
-- Never imported by any `src/**` file (guard test).
-- No new secrets requested in this batch — adapter fails closed with `PROVIDER_MISCONFIGURED` when keys absent (mirrors Batch O pattern).
+- Resolves route via `resolveIdvRoute({ document_country, document_type })`.
+- If `provider_not_available` → posts to `idv-manual-review` to open a `manual_review_required` case (no live provider call), then shows safe status.
+- Otherwise → posts to `idv-verify` (existing edge function).
+- Renders safe status wording from `IDV_OUTCOME_MAP` and never displays raw provider payload.
 
-### 3. Result mapping
+Banned wording guard: unit test scans page source for verified/cleared/approved/passed/risk-free/KYB cleared/company verified/sanctions clear/live-provider verified.
 
-`supabase/functions/_shared/verifynow/result-mapping.ts`
+### 2. IDV status widget — `IdvStatusWidget.tsx`
 
-Table mapping VerifyNow raw outcomes → internal status → user-safe wording → controlled-action gate:
+Component under `src/components/idv/IdvStatusWidget.tsx`. Reads latest `p5scr_subjects` + latest check for the current user. Shows: document country, document type, current safe status label, next action, last updated. Never renders full ID number, provider payload, photos, selfies, biometrics, private notes.
 
+Mounted on:
 
-| Raw                          | Internal                         | User wording                                   | Unlock |
-| ---------------------------- | -------------------------------- | ---------------------------------------------- | ------ |
-| clear match (full IDV)       | `idv_completed`                  | Identity verification completed                | yes    |
-| possible mismatch            | `manual_review_required`         | Manual review required                         | no     |
-| clear mismatch               | `manual_review_required`         | Manual review required                         | no     |
-| not found                    | `retry_required`                 | Retry required / Alternative document required | no     |
-| source unavailable / timeout | `provider_pending`               | Provider pending                               | no     |
-| provider error               | `provider_error`                 | Manual review required                         | no     |
-| unsupported country/doc      | `provider_not_available`         | Manual review required                         | no     |
-| blocked/deceased/fraud       | `blocked_pending_admin_decision` | Manual review required                         | no     |
+- `/desk` landing (top of user dashboard).
+- User profile/settings sidebar entry.
 
+### 3. Subject provisioning + fail-closed hardening
 
-No auto final rejection.
+Two-pronged fix for the "no subject → soft allow" gap:
 
-### 4. Manual review fallback
+- On IDV start submit, call a new edge function `idv-subject-provision` (or extend `idv-verify`) that upserts a `p5scr_subjects` row for the actor (`user_id`, `org_id`).
+- Harden `supabase/functions/_shared/idv-actor-gate.ts` so `no_subject` becomes fail-closed for all 7 controlled actions. Blocker code `IDV_REQUIRED_NO_SUBJECT`, user wording "Identity verification required before this action".
+- Add DB migration only if needed to allow upsert; existing table has `user_id`/`org_id` columns per current code.
 
-`src/lib/idv/manual-review.ts` (pure record shape + decision enum) plus a thin edge function `supabase/functions/idv-manual-review/index.ts` scaffolded to accept admin decisions. Decisions: `manual_review_accepted`, `manual_review_rejected`, `more_information_required`, `alternative_document_required`, `provider_retry_required`, `blocked_pending_admin_decision`, `waived_with_reason`.
+### 4. Friendly blocker messages on controlled actions
 
-No new tables in this batch — persist onto existing `p5scr_manual_reviews` shape where compatible; if fields don't align, the edge function returns 501 with `MANUAL_REVIEW_STORE_NOT_WIRED` so we surface the gap without silent success.
+Shared component `src/components/idv/IdvBlockerNotice.tsx` — renders a warning banner given a blocker code, using SSOT wording from `controlled-action-gate.ts`.
 
-### 5. Controlled-action gate helper
+Wire into the six client-triggered action buttons/screens:
 
-`src/lib/idv/controlled-action-gate.ts` — `isIdvBlocking(status)` returns true for any of: pending, provider_pending, provider_not_available, retry_required, alternative_document_required, manual_review_required, blocked_pending_admin_decision, failed, expired, unsupported, error. Server mirror in `_shared/`. To be consumed by existing gate stacks; no rewrite of existing gates in this batch.
+- WaD seal (WaD detail page).
+- Finality (`/desk/p5-batch4/…`).
+- Funder-ready (`/funder/p5-batch3/…`).
+- POI binding action (POI detail page).
+- Evidence approval (registry claim review admin/desk page).
+- Transaction approval (trade approval page).
 
-### 6. Person-only scope
+Each caller catches HTTP 409 with `blocker_code` starting `IDV_` and renders `IdvBlockerNotice`. No raw JSON, no stack traces.
 
-Adapter result surfaces `person_idv_completed` only. Explicit guard test that success does NOT set `entities.status='verified'`, `counterparties.verified`, funder-ready, finality, or API ready=true.
+### 5. Admin manual-review queue — `/admin/idv-review`
 
-### 7. Old-provider decommissioning (feature-flag only)
+New page `src/pages/admin/idv/IdvReviewQueue.tsx` + detail `IdvReviewCase.tsx`. `RequireAuth role="platform_admin"`.
 
-`src/lib/idv/provider-registry.ts` — `getActiveIdvProviders()` returns `['verifynow']`. Dilisense/Onfido/Sumsub/Didit/ComplyCube/Sanctions.io excluded for new IDV. Historical data untouched.
+- List view: cases where `p5scr_subjects.status ∈ {manual_review_required, blocked_pending_admin_decision, provider_error, provider_pending, provider_not_available}`. Filter by category `idv_person`.
+- Detail view: person, document country/type, provider state, reason, admin note textarea, decision dropdown (existing enum from `idv-manual-review-shape.ts`). Save → calls existing `idv-manual-review` edge function.
+- Post-decision: safe status displayed ("Identity review completed" for `manual_review_accepted`).
 
-### 8. Wording guards
+### 6. Funder-safe IDV summary
 
-Extends existing Batch O guard test to scan new IDV surfaces for banned phrases and require the safe-wording catalogue.
+Component `src/components/idv/FunderIdvSummary.tsx`. Mounted in `src/pages/funder/p5-batch3/components/P5B3FunderShell.tsx` (existing shell). Uses same status label whitelist as user widget. Never renders private data.
 
-## What will NOT be built (per prompt)
+### 7. Person-only wording on company screens
 
-OMB, full KYB, bank verification, CIPC, Dilisense/Sanctions.io/Sumsub/Didit/ComplyCube/Onfido fallback, provider secret changes, schema migrations, production calls, Memory writes of raw payloads.
+Add small "Representative identity review completed — Company readiness still depends on other requirements" note wherever a representative IDV status is shown on a company profile. Reuse existing `P5B4ProviderSafeLabel` / `P5B3FunderSafeLabel` for label safety.
 
-## Tests (Vitest + Deno)
+### 8. Tests — `src/tests/batch-v-ui-*.test.ts`
 
-- `src/tests/batch-v-idv-routing.test.ts` — route table: ZA/NG live, 5 placeholders disabled, unsupported → manual review, doc-country-only routing (nationality/residence/company-country ignored), reroute on change.
-- `src/tests/batch-v-verifynow-client-boundary.test.ts` — scan src/** to prove `VERIFYNOW_API_KEY` not referenced client-side and adapter file not imported from src.
-- `src/tests/batch-v-result-mapping.test.ts` — full mapping table.
-- `src/tests/batch-v-controlled-action-gate.test.ts` — every non-completed status blocks.
-- `src/tests/batch-v-person-only.test.ts` — success does not flip company/funder/API/finality flags (source scan + unit).
-- `src/tests/batch-v-wording.test.ts` — banned phrases absent from new surfaces; Batch O suite still passes.
-- `supabase/functions/_shared/verifynow/adapter_smoke_test.ts` — fetch tripwire proves zero network egress; production mode requires Idempotency-Key; missing key → PROVIDER_MISCONFIGURED; unsupported route never calls adapter.
+- `batch-v-ui-idv-start.test.ts` — renders start screen; ZA/NG routes visible; placeholders route to provider_not_available; nationality/residence/company country are not present as inputs; consent + submit exist.
+- `batch-v-ui-blocker-notice.test.ts` — six controlled actions render `IdvBlockerNotice` on 409 with `IDV_*` blocker codes; no raw JSON/stack trace.
+- `batch-v-ui-admin-queue.test.ts` — queue renders, decision form submits to `idv-manual-review`, safe status shown.
+- `batch-v-ui-funder-summary.test.ts` — funder view only shows whitelisted status labels; no private fields.
+- `batch-v-ui-wording-guard.test.ts` — scans all new UI files for banned wording.
+- `batch-v-ui-no-subject-fail-closed.test.ts` — updated `idv-actor-gate.ts` returns/raises fail-closed when no subject row.
+- `batch-v-ui-client-boundary.test.ts` — no VerifyNow secret/adapter referenced in new UI files.
 
-All tests run offline. No provider calls. No DB mutation. No secrets set.
+All existing Batch V, V-Wire, and Batch O tests must remain green.
 
-## Evidence
+### 9. Evidence
 
-`evidence/batch-v-verifynow-multicountry-idv-routing/README.md` with sections mandated by the prompt (files changed, route table, mapping, fallback, gate, old-provider handling, data/Memory, tests, commands+results, residual risks, next batch).
+`evidence/batch-v-ui-idv-smoke-test-readiness/README.md` — what shipped, where each user role clicks, subject-provisioning behaviour, smoke-test coverage (which of the 15 items are now UI-runnable vs dev-only, expected Test 7 API + Test 15 log check remain dev-only), files changed, test results, residual risks, final marker `BATCH_V_UI_CLIENT_SMOKE_TEST_READY`.
 
-## Residual risks (called out up front)
-
-1. Manual-review persistence edge function returns 501 until table shape is confirmed — no silent success.
-2. Controlled-action gate helper is provided but existing gate call-sites are not rewired in this batch (deliberate scope limit — separate wiring batch recommended so we don't touch WaD/finality/API logic under the "no-overbuild" constraint).
-3. No new secrets requested; adapter fails closed until VerifyNow credentials are provisioned in a follow-up.
-
-## Recommended follow-up batch
-
-**Batch V-Wire** — wire `isIdvBlocking` into existing POI/WaD/finality/funder-ready/API-ready gate sites; provision VerifyNow secrets; wire manual-review persistence; add e2e reroute test.
-
----
-
-Confirm to proceed, or tell me to adjust scope (e.g. include the gate-wiring in this batch, or wire manual-review persistence to a specific existing table).  
-  
-I would **adjust scope before proceeding**.
-
-The proposed Batch V is good, but it stops one step too early.
-
-The biggest issue is this line:
-
-“Controlled-action gate helper is provided but existing gate call-sites are not rewired in this batch.”
-
-That means we would build the routing and adapter, but the platform may still not actually block WaD/finality/funder/API correctly from the new VerifyNow statuses.
-
-Given your “one-shot plus one refinement” limit, I would not accept a batch that only creates helpers and leaves gate wiring for later.
-
-## **My recommendation**
-
-Proceed, but change scope to include **minimum gate wiring now**.
-
-Not a huge rewrite.
-
-Just wire the new IDV blocking status into the existing controlled-action gates that matter:
-
-- WaD sealing;
-- finality;
-- funder-ready;
-- API `ready=true`;
-- POI action only where the person binds a party.
-
-Also, manual-review persistence should not return 501 if there is already a compatible P-5 manual-review table. The P-5 screening spine already has manual review structures, so the prompt should ask them to wire to the existing compatible table if available, and only fail closed if truly incompatible.
-
-## **The revised instruction I would send back**
+## Technical notes
 
 ```text
-Please proceed with Batch V, but adjust the scope before implementation.
+src/
+  pages/desk/idv/IdvStart.tsx                    (new)
+  pages/admin/idv/IdvReviewQueue.tsx             (new)
+  pages/admin/idv/IdvReviewCase.tsx              (new)
+  components/idv/IdvStatusWidget.tsx             (new)
+  components/idv/IdvBlockerNotice.tsx            (new)
+  components/idv/FunderIdvSummary.tsx            (new)
+  components/idv/idv-status-labels.ts            (SSOT label whitelist)
+  App.tsx                                        (register /desk/idv/start and /admin/idv/*)
+  tests/batch-v-ui-*.test.ts                     (7 files)
 
-The current plan is strong, but it stops too early in two places.
+supabase/functions/
+  _shared/idv-actor-gate.ts                      (fail-closed on no_subject)
+  idv-subject-provision/index.ts                 (new, or fold into idv-verify)
 
-1. Controlled-action gate wiring
-
-Do not only create `isIdvBlocking()` as a helper.
-
-Wire the new VerifyNow IDV statuses into the existing controlled-action gates for the key launch blockers:
-
-- WaD sealing;
-- finality;
-- funder-ready status;
-- API ready=true;
-- POI action where the person binds a party.
-
-This does not need to be a broad rewrite of the gate stack. Keep the wiring minimal and additive.
-
-Acceptance rule:
-
-If required IDV is pending, provider_pending, provider_not_available, retry_required, alternative_document_required, manual_review_required, blocked_pending_admin_decision, failed, expired, unsupported or error, then:
-
-- WaD sealing must be blocked;
-- finality must be blocked;
-- funder-ready must be blocked;
-- API ready=true must be blocked;
-- binding POI action must be blocked where that person is acting for a party.
-
-Non-sensitive work must remain allowed.
-
-2. Manual-review persistence
-
-Do not return 501 by default if an existing P-5 manual-review table can safely support this.
-
-First inspect the existing P-5 screening/manual-review structures, especially the existing `p5scr_manual_reviews` shape or equivalent.
-
-If the existing table can safely store the manual review record, wire to it.
-
-If fields are missing but can be safely stored in a metadata/details JSON field without schema changes, use that.
-
-Only return `MANUAL_REVIEW_STORE_NOT_WIRED` if the existing schema truly cannot safely store the required manual-review record.
-
-Do not create a new migration in this batch.
-
-3. Evidence and tests
-
-Add tests proving that the new IDV blocking status is actually consumed by the existing gate call-sites, not merely present as an unused helper.
-
-The evidence README must clearly state:
-
-- which gate call-sites were wired;
-- which were not touched;
-- what still remains for Batch V-Wire, if anything;
-- whether manual-review persistence is wired or fail-closed;
-- whether any production data was mutated;
-- whether any provider was called.
-
-Everything else in the Batch V plan is approved.
-
-Do not add OMB.
-Do not add full KYB.
-Do not add bank verification.
-Do not add CIPC/company verification.
-Do not add Dilisense/Sanctions.io/Sumsub/Didit/ComplyCube/Onfido fallback.
-Do not call production providers.
-Do not expose VerifyNow secrets client-side.
-Do not weaken Batch O / Batch O Remainder wording and trust-signal protections.
+evidence/batch-v-ui-idv-smoke-test-readiness/README.md   (new)
 ```
 
-## **Why this adjustment matters**
+Hard rules honoured:
 
-Without gate wiring, Batch V is mostly infrastructure.
+- No new provider; VerifyNow adapter untouched.
+- `VERIFYNOW_MODE=sandbox` unchanged; no secret ever imported into `src/**`.
+- All new UI reads status from server; no client-side gate decisions.
+- Company/funder/finality/API-ready remain untouched by IDV alone.
+- Banned wording enforced by test.
 
-With minimal gate wiring, Batch V becomes operational.
+## Out of scope
 
-That matters because the client’s confirmed rule is not just “route to VerifyNow”. The confirmed rule is:
+- Any real live VerifyNow call.
+- KYB, CIPC, Companies House, Onfido, Sumsub, Didit, ComplyCube, Dilisense, Sanctions.io, OMB, bank verification.
+- Changes to Batch O trust-signal containment or Batch V routing rules.
+- Production mode switch.  
+  
+This is the right scope.
+  It is clean, practical, and it solves the exact problem Lovable found: **the backend exists, but the client cannot click through it yet.**
+  I would proceed with this, but I would make **three small changes before giving final approval**.
+  ## **1. Be careful with “DB migration only if needed”**
+  I would avoid giving permission for a migration unless absolutely unavoidable.
+  Change this:
+  Add DB migration only if needed to allow upsert.
+  To this:
+  ```text
+  Do not add a migration unless the existing schema makes subject provisioning impossible.
 
-**If IDV is unresolved, controlled actions must stay blocked.**
+  First use the existing `p5scr_subjects` structure.
 
-So I would not spend the first opportunity on a build that does not enforce that rule.
+  If the existing table cannot safely support the required subject upsert, stop and report the exact missing field or constraint before adding a migration.
+  ```
+  Reason: you are trying to avoid new schema risk right before client smoke testing.
+  ## **2. Funder-ready UI path may be admin-side, not funder-side**
+  This part may be slightly confused:
+  Funder-ready (`/funder/p5-batch3/…`)
+  A funder view usually **sees** readiness. It should not necessarily **grant** funder-ready status.
+  I would change it to:
+  ```text
+  Funder-ready gate:
+  - wire friendly blocker rendering wherever an admin/internal user attempts to grant or expose funder-ready status;
+  - on funder-facing pages, show only the safe not-ready/readiness summary.
+  ```
+  Reason: funders should not be controlling readiness unless the platform already works that way.
+  ## **3. Evidence approval path needs to be specific**
+  “registry claim review admin/desk page” may be correct, but if there are several evidence approval paths, they may only wire one.
+  Add:
+  ```text
+  Search for every existing evidence approval / accept / review-complete action that changes readiness or accepts evidence.
+
+  Wire the IDV blocker notice on each user/admin screen that can trigger a controlled evidence approval.
+
+  If any approval path is not wired, list it clearly in evidence with the reason.
+  ```
+  Reason: you do not want hidden approval paths left untested.
+  ## **Final approval note to send**
+  Use this:
+  ```text
+  Please proceed with Batch V-UI, subject to these three clarifications.
+
+  1. Subject provisioning / schema
+
+  Do not add a migration unless the existing schema makes subject provisioning impossible.
+
+  First use the existing `p5scr_subjects` structure.
+
+  If the existing table cannot safely support the required subject upsert, stop and report the exact missing field or constraint before adding a migration.
+
+  2. Funder-ready wording
+
+  Please distinguish between the internal/admin action that grants or exposes funder-ready status and the external funder view.
+
+  Wire friendly blocker rendering wherever an admin/internal user attempts to grant or expose funder-ready status.
+
+  On funder-facing pages, show only the safe not-ready/readiness summary.
+
+  Do not give funders raw provider detail or readiness-control powers unless such powers already exist.
+
+  3. Evidence approval coverage
+
+  Search for every existing evidence approval / accept / review-complete action that changes readiness or accepts evidence.
+
+  Wire the IDV blocker notice on each user/admin screen that can trigger a controlled evidence approval.
+
+  If any approval path is not wired, list it clearly in the evidence README with the reason.
+
+  Everything else in the Batch V-UI scope is approved.
+
+  The goal remains:
+
+  - make the client smoke test runnable by normal users and admins;
+  - keep VerifyNow in sandbox;
+  - do not add new providers;
+  - do not change routing logic;
+  - do not weaken Batch O / Batch V protections;
+  - keep person IDV separate from company verification;
+  - no raw provider/private data leakage;
+  - final evidence marker should only be `BATCH_V_UI_CLIENT_SMOKE_TEST_READY` if the UI is actually runnable.
+  ```
