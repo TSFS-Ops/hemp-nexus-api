@@ -43,6 +43,9 @@ export function AcceptBindCard({ match, onAccepted }: AcceptBindCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [userProfile, setUserProfile] = useState<{ org_id: string; full_name: string | null } | null>(null);
+  const [idvBlocker, setIdvBlocker] = useState<
+    { blocker_code: string; user_message: string | null } | null
+  >(null);
 
   useEffect(() => {
     if (!session?.user?.id) return;
