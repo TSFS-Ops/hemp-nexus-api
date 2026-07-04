@@ -72,6 +72,10 @@ const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/Counte
 const Status = lazy(() => import("@/pages/Status"));
 const Trust = lazy(() => import("@/pages/Trust"));
 
+// Batch V-UI — IDV client-facing screens (person-only IDV)
+const IdvStart = lazy(() => import("@/pages/desk/idv/IdvStart"));
+const IdvReviewQueue = lazy(() => import("@/pages/admin/idv/IdvReviewQueue"));
+
 // Batch 1 — Business Registry shell (M001) + admin readiness (M019) + decisions (M018)
 const RegistryLanding = lazy(() => import("@/pages/registry/Landing"));
 const RegistrySearch = lazy(() => import("@/pages/registry/Search"));
@@ -294,6 +298,9 @@ function App() {
                   {/* Catch-all: any other /dashboard/* path lands on the Desk overview */}
                   <Route path="/dashboard/*" element={<LegacyRedirect to="/desk" label="Dashboard" />} />
 
+                  {/* Batch V-UI — IDV client-facing surfaces */}
+                  <Route path="/desk/idv/start" element={<RequireAuth><IdvStart /></RequireAuth>} />
+                  <Route path="/admin/idv/review" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><IdvReviewQueue /></RequireAuth>} />
                   <Route path="/desk/*" element={<Desk />} />
                   {/* Batch 1 — Business Registry shell (M001) */}
                   <Route path="/registry" element={<RegistryLanding />} />
