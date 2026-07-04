@@ -87,6 +87,18 @@ Deno.serve(async (req) => {
       return json({ error: "AUDIT_WRITE_FAILED", detail: auditErr.message }, 500);
     }
 
+    // Persist a user-readable resubmit intent so the status widget can
+    // render the correct messaging on subsequent visits.
+    const { error: intentErr } = await admin.from("idv_resubmit_intents").insert({
+      user_id: user.id,
+      subject_id: subjectId,
+      reason,
+      source,
+    });
+    if (intentErr) {
+      return json({ error: "INTENT_WRITE_FAILED", detail: intentErr.message }, 500);
+    }
+
     return json({
       ok: true,
       subject_id: subjectId,
