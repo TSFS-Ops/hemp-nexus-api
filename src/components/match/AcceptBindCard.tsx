@@ -30,6 +30,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Match } from "@/hooks/use-match-details";
+import { IdvBlockerNotice } from "@/components/idv/IdvBlockerNotice";
+import { extractIdvBlockerFromError } from "@/lib/idv/blocker-from-error";
 
 interface AcceptBindCardProps {
   match: Match;
