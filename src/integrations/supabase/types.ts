@@ -6557,6 +6557,41 @@ export type Database = {
           },
         ]
       }
+      idv_resubmit_intents: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          source: string
+          subject_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          source?: string
+          subject_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          source?: string
+          subject_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idv_resubmit_intents_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "p5scr_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interests: {
         Row: {
           context: string | null
