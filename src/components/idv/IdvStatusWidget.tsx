@@ -83,16 +83,10 @@ export function IdvStatusWidget({ className }: { className?: string }) {
         <Badge variant="secondary" data-testid="idv-status-badge">{safe.label}</Badge>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
-        {state.document_country && (
+        {state.document_label && (
           <div>
-            <span className="text-muted-foreground">Document country:</span>{" "}
-            <span className="font-medium">{state.document_country}</span>
-          </div>
-        )}
-        {state.document_type && (
-          <div>
-            <span className="text-muted-foreground">Document type:</span>{" "}
-            <span className="font-medium">{state.document_type}</span>
+            <span className="text-muted-foreground">Submission:</span>{" "}
+            <span className="font-medium">{state.document_label}</span>
           </div>
         )}
         {safe.next_action && (
