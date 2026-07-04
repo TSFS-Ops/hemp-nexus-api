@@ -64,6 +64,11 @@ export default function P5Batch3FunderReadiness() {
         </CardContent>
       </Card>
 
+      {/* Batch V-UI-Fix — funder-safe IDV summary. Per-case identity
+          status is not exposed on this shared readiness view; the safe
+          default renders "Not ready — identity verification required". */}
+      <FunderIdvSummary status={null} />
+
       {denial ? <P5B3FunderUnavailable reason={denial.reason} message={denial.message} /> : null}
 
       {data ? (
