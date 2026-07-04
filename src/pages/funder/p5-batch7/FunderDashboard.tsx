@@ -61,6 +61,11 @@ export default function P5Batch7FunderDashboard() {
       }
     >
       <P5B7StaleDataBanner dashboard="funder_dashboard" asOf={env?.as_of ?? null} isStale={env?.is_stale ?? false} />
+      {/* Batch V-UI-Fix — funder-safe IDV summary. Status is intentionally
+          null at the dashboard level: per-case identity status is surfaced
+          only inside case detail. This card shows the safe "Not ready —
+          identity verification required" wording as a default. */}
+      <FunderIdvSummary status={null} />
       <P5B7SummaryCards
         cards={[
           { label: "Visible cases", value: rows.length },
