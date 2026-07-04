@@ -30,47 +30,53 @@ async function resolveSubjectId(
   admin: AdminClient,
   actor: ActorRef,
 ): Promise<string | null> {
-  // Try user_id first — most common actor identity.
+  // Batch V-UI: existing p5scr_subjects schema exposes
+  //   organisation_id + person_external_ref (NOT user_id / org_id).
+  // Query by the real columns and stop swallowing schema errors.
   if (actor.user_id) {
-    try {
-      const { data } = await admin
-        .from("p5scr_subjects")
-        .select("id")
-        .eq("user_id", actor.user_id)
-        .limit(1)
-        .maybeSingle();
-      if (data?.id) return data.id as string;
-    } catch { /* schema may not carry user_id column yet */ }
+    const { data } = await admin
+      .from("p5scr_subjects")
+      .select("id")
+      .eq("person_external_ref", actor.user_id)
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) return data.id as string;
   }
-  // Fall back to org_id linkage (matches WaD gate lookup).
   if (actor.org_id) {
-    try {
-      const { data } = await admin
-        .from("p5scr_subjects")
-        .select("id")
-        .eq("org_id", actor.org_id)
-        .limit(1)
-        .maybeSingle();
-      if (data?.id) return data.id as string;
-    } catch { /* absent */ }
+    const { data } = await admin
+      .from("p5scr_subjects")
+      .select("id")
+      .eq("organisation_id", actor.org_id)
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) return data.id as string;
   }
   return null;
 }
 
 /**
  * Enforce the IDV gate for a controlled action performed by `actor`.
- * Throws `IdvGateError` when the actor has a blocking IDV state.
- *
- * @returns `"released"` (allowed), `"no_subject"` (no subject row —
- *   soft-allow per boundary), or throws.
+ * Throws `IdvGateError` when the actor has a blocking IDV state OR when
+ * no subject row exists for the actor (Batch V-UI fail-closed
+ * hardening — non-sensitive work remains allowed elsewhere, but every
+ * controlled action must have an identifiable subject to gate against).
  */
 export async function assertActorIdvGate(
   admin: AdminClient,
   actor: ActorRef,
   action: ControlledAction,
-): Promise<"released" | "no_subject"> {
+): Promise<"released"> {
   const subjectId = await resolveSubjectId(admin, actor);
-  if (!subjectId) return "no_subject";
+  if (!subjectId) {
+    // Fail-closed. Blocker code is stringified via IdvGateError.code and
+    // exposed by upstream 409 handlers; user wording is provider-neutral.
+    throw new IdvGateError(
+      "IDV_REQUIRED",
+      "Identity verification required before this action",
+      "no_subject",
+      action,
+    );
+  }
   await assertControlledActionIdvGate(admin, subjectId, action);
   return "released";
 }
