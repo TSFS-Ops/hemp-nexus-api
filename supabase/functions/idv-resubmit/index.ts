@@ -69,8 +69,38 @@ Deno.serve(async (req) => {
 
     const subjectId = (subject?.id as string) ?? null;
 
-    // Append audit event. The p5scr_audit_events payload key-guard trigger
-    // rejects banned keys — we only send safe scalars: reason + source.
+    // Compliance snapshot: capture prior_state (the state we're moving away
+    // from) and resulting_state (the state after recording the intent). A
+    // resubmission itself doesn't fire a provider call, so resulting_state
+    // is the safe reason label unless there's a newer check row.
+    let priorState: string | null = null;
+    if (subjectId) {
+      const { data: latestCheck } = await admin
+        .from("p5scr_check_results")
+        .select("state, decided_at, created_at")
+        .eq("subject_id", subjectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      priorState = (latestCheck?.state as string) ?? null;
+    }
+    const resultingState = "awaiting_resubmission";
+
+    // Resolve org_id for the compliance audit trail (audit_logs.org_id is
+    // NOT NULL). If the user has no profile.organization_id we still record
+    // the p5scr audit + intent, but skip the org-scoped audit_logs row and
+    // surface a flag on the response for observability.
+    let orgId: string | null = null;
+    try {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      orgId = (profile?.organization_id as string) ?? null;
+    } catch { /* best-effort */ }
+
+    // 1) Append screening audit event (append-only, admin-scoped).
     const { error: auditErr } = await admin.from("p5scr_audit_events").insert({
       event: "p5_screening.idv_required",
       subject_id: subjectId,
@@ -81,14 +111,15 @@ Deno.serve(async (req) => {
         reason,
         source,
         trigger: "user_resubmit",
+        prior_state: priorState,
+        resulting_state: resultingState,
       },
     });
     if (auditErr) {
       return json({ error: "AUDIT_WRITE_FAILED", detail: auditErr.message }, 500);
     }
 
-    // Persist a user-readable resubmit intent so the status widget can
-    // render the correct messaging on subsequent visits.
+    // 2) Persist the user-readable resubmit intent (drives the widget).
     const { error: intentErr } = await admin.from("idv_resubmit_intents").insert({
       user_id: user.id,
       subject_id: subjectId,
@@ -99,11 +130,44 @@ Deno.serve(async (req) => {
       return json({ error: "INTENT_WRITE_FAILED", detail: intentErr.message }, 500);
     }
 
+    // 3) Compliance audit_logs entry — structured, org-scoped, queryable
+    //    alongside the rest of the platform's compliance events.
+    let auditLogged = false;
+    if (orgId) {
+      const { error: logErr } = await admin.from("audit_logs").insert({
+        org_id: orgId,
+        actor_user_id: user.id,
+        action: "idv.resubmit_requested",
+        entity_type: "idv_subject",
+        entity_id: subjectId,
+        metadata: {
+          reason,
+          source,
+          trigger: "user_resubmit",
+          prior_state: priorState,
+          resulting_state: resultingState,
+          subject_provisioned: Boolean(subjectId),
+          user_agent: req.headers.get("user-agent") ?? null,
+        },
+      });
+      if (logErr) {
+        // Do NOT fail the request; return audit_logged=false so the caller
+        // (and downstream monitoring) can flag the compliance gap.
+        console.error("[idv-resubmit] audit_logs insert failed", logErr.message);
+      } else {
+        auditLogged = true;
+      }
+    }
+
     return json({
       ok: true,
       subject_id: subjectId,
       subject_provisioned: Boolean(subjectId),
       reason,
+      prior_state: priorState,
+      resulting_state: resultingState,
+      audit_logged: auditLogged,
+      audit_skipped_reason: auditLogged ? null : (orgId ? "audit_logs_write_failed" : "no_org_for_user"),
       next_route: `/desk/idv/start?resubmit=1&reason=${encodeURIComponent(reason)}`,
     }, 200);
   } catch (e) {
