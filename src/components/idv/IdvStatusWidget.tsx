@@ -18,8 +18,7 @@ import { idvSafeLabel } from "./idv-status-labels";
 interface IdvWidgetState {
   loading: boolean;
   status: string;
-  document_country: string | null;
-  document_type: string | null;
+  document_label: string | null;
   updated_at: string | null;
 }
 
@@ -27,8 +26,7 @@ export function IdvStatusWidget({ className }: { className?: string }) {
   const [state, setState] = useState<IdvWidgetState>({
     loading: true,
     status: "no_subject",
-    document_country: null,
-    document_type: null,
+    document_label: null,
     updated_at: null,
   });
 
@@ -42,19 +40,18 @@ export function IdvStatusWidget({ className }: { className?: string }) {
           if (!cancelled) setState((s) => ({ ...s, loading: false }));
           return;
         }
-        // Find subject row via person_external_ref = user id.
         const { data: subject } = await supabase
           .from("p5scr_subjects")
-          .select("id, updated_at")
+          .select("id, display_label, updated_at")
           .eq("person_external_ref", uid)
           .maybeSingle();
         if (!subject) {
-          if (!cancelled) setState({ loading: false, status: "no_subject", document_country: null, document_type: null, updated_at: null });
+          if (!cancelled) setState({ loading: false, status: "no_subject", document_label: null, updated_at: null });
           return;
         }
         const { data: check } = await supabase
           .from("p5scr_check_results")
-          .select("status, document_country, document_type, updated_at, created_at")
+          .select("state, decided_at, created_at")
           .eq("subject_id", subject.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -62,10 +59,9 @@ export function IdvStatusWidget({ className }: { className?: string }) {
         if (!cancelled) {
           setState({
             loading: false,
-            status: (check?.status as string) ?? "pending",
-            document_country: (check?.document_country as string) ?? null,
-            document_type: (check?.document_type as string) ?? null,
-            updated_at: (check?.updated_at as string) ?? subject.updated_at,
+            status: (check?.state as string) ?? "pending",
+            document_label: (subject.display_label as string) ?? null,
+            updated_at: (check?.decided_at as string) ?? (subject.updated_at as string) ?? null,
           });
         }
       } catch {
