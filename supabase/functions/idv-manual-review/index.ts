@@ -171,8 +171,10 @@ Deno.serve(async (req) => {
 });
 
 function json(body: unknown, status: number): Response {
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "";
+  const cors = buildCorsHeaders(allowedOrigins, null);
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "content-type": "application/json" },
+    headers: { ...cors, "content-type": "application/json" },
   });
 }
