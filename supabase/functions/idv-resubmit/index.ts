@@ -31,7 +31,8 @@ const RESUBMIT_REASONS = new Set([
 ]);
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const pre = handleCors(req, Deno.env.get("ALLOWED_ORIGINS") || "");
+  if (pre) return pre;
   if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405, req);
 
   try {
