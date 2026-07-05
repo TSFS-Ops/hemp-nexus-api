@@ -32,17 +32,17 @@ const RESUBMIT_REASONS = new Set([
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405, req);
 
   try {
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) return json({ error: "UNAUTHORIZED" }, 401);
+    if (!token) return json({ error: "UNAUTHORIZED" }, 401, req);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!supabaseUrl || !serviceKey || !anonKey) return json({ error: "MISCONFIGURED" }, 500);
+    if (!supabaseUrl || !serviceKey || !anonKey) return json({ error: "MISCONFIGURED" }, 500, req);
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
     const authed = createClient(supabaseUrl, anonKey, {
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
     const { data: userRes, error: userErr } = await authed.auth.getUser();
-    if (userErr || !userRes?.user) return json({ error: "UNAUTHORIZED" }, 401);
+    if (userErr || !userRes?.user) return json({ error: "UNAUTHORIZED" }, 401, req);
     const user = userRes.user;
 
     const body = await req.json().catch(() => ({}));
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       },
     });
     if (auditErr) {
-      return json({ error: "AUDIT_WRITE_FAILED", detail: auditErr.message }, 500);
+      return json({ error: "AUDIT_WRITE_FAILED", detail: auditErr.message }, 500, req);
     }
 
     // 2) Persist the user-readable resubmit intent (drives the widget).
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       source,
     });
     if (intentErr) {
-      return json({ error: "INTENT_WRITE_FAILED", detail: intentErr.message }, 500);
+      return json({ error: "INTENT_WRITE_FAILED", detail: intentErr.message }, 500, req);
     }
 
     // 3) Compliance audit_logs entry — structured, org-scoped, queryable
@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
       next_route: `/desk/idv/start?resubmit=1&reason=${encodeURIComponent(reason)}`,
     }, 200);
   } catch (e) {
-    return json({ error: "INTERNAL", message: e instanceof Error ? e.message : "unknown" }, 500);
+    return json({ error: "INTERNAL", message: e instanceof Error ? e.message : "unknown" }, 500, req);
   }
 });
 
