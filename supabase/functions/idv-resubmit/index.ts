@@ -18,7 +18,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders as buildCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 const RESUBMIT_REASONS = new Set([
   "retry_required",
