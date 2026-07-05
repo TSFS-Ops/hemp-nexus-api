@@ -301,6 +301,7 @@ function App() {
                   {/* Batch V-UI — IDV client-facing surfaces */}
                   <Route path="/desk/idv/start" element={<RequireAuth><IdvStart /></RequireAuth>} />
                   <Route path="/admin/idv/review" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><IdvReviewQueue /></RequireAuth>} />
+                  <Route path="/desk/admin/idv/review" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><LegacyRedirect to="/admin/idv/review" label="Admin IDV Review" /></RequireAuth>} />
                   <Route path="/desk/*" element={<Desk />} />
                   {/* Batch 1 — Business Registry shell (M001) */}
                   <Route path="/registry" element={<RegistryLanding />} />
