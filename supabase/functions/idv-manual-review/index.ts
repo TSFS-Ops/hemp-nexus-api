@@ -164,15 +164,16 @@ Deno.serve(async (req) => {
       subject_id,
       recorded_decision: decision,
       stored_column_decision: mapped,
-    }, 200);
+    }, 200, req);
   } catch (e) {
-    return json({ error: "INTERNAL_ERROR", detail: String(e) }, 500);
+    return json({ error: "INTERNAL_ERROR", detail: String(e) }, 500, req);
   }
 });
 
-function json(body: unknown, status: number): Response {
+function json(body: unknown, status: number, req: Request): Response {
   const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "";
-  const cors = buildCorsHeaders(allowedOrigins, null);
+  const origin = req.headers.get("origin");
+  const cors = buildCorsHeaders(allowedOrigins, origin);
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...cors, "content-type": "application/json" },
