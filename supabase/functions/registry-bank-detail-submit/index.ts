@@ -181,6 +181,7 @@ Deno.serve(async (req) => {
           previous_status: null, new_status: null, actor_id: user.id, payload: { scope: c.scope },
         });
       }
+    }
 
     for (const ev of [
       "registry_bank_detail_capture_started",
