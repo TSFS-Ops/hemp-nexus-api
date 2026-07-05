@@ -1,0 +1,2 @@
+ALTER TABLE public.p5scr_subjects DROP CONSTRAINT IF EXISTS p5scr_subjects_party_role_check;
+ALTER TABLE public.p5scr_subjects ADD CONSTRAINT p5scr_subjects_party_role_check CHECK (party_role = ANY (ARRAY['buyer_company','seller_company','buyer_authorised_representative','seller_authorised_representative','funder_representative','admin_user','agent_or_introducer','required_counterparty','director_if_relied','ubo_if_acting','authorised_representative']));
