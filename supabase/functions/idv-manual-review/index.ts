@@ -11,26 +11,30 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders as buildCorsHeaders, handleCors } from "../_shared/cors.ts";
 import {
   mapToP5ScrDecisionColumn,
 } from "../_shared/idv-manual-review-shape.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "";
+  const origin = req.headers.get("origin");
+  const corsH = buildCorsHeaders(allowedOrigins, origin);
+  const pre = handleCors(req, allowedOrigins);
+  if (pre) return pre;
   if (req.method !== "POST") {
-    return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+    return json({ error: "METHOD_NOT_ALLOWED" }, 405, req);
   }
   try {
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) return json({ error: "UNAUTHORIZED" }, 401);
+    if (!token) return json({ error: "UNAUTHORIZED" }, 401, req);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     if (!supabaseUrl || !serviceKey || !anonKey) {
-      return json({ error: "MISCONFIGURED" }, 500);
+      return json({ error: "MISCONFIGURED" }, 500, req);
     }
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
     const authed = createClient(supabaseUrl, anonKey, {
@@ -38,17 +42,17 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
     const { data: userRes, error: userErr } = await authed.auth.getUser();
-    if (userErr || !userRes?.user) return json({ error: "UNAUTHORIZED" }, 401);
+    if (userErr || !userRes?.user) return json({ error: "UNAUTHORIZED" }, 401, req);
     const userId = userRes.user.id;
 
     const { data: isAdmin } = await admin.rpc("has_role", {
       _user_id: userId,
       _role: "platform_admin",
     });
-    if (!isAdmin) return json({ error: "FORBIDDEN" }, 403);
+    if (!isAdmin) return json({ error: "FORBIDDEN" }, 403, req);
 
     const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") return json({ error: "BAD_REQUEST" }, 400);
+    if (!body || typeof body !== "object") return json({ error: "BAD_REQUEST" }, 400, req);
 
     const {
       subject_id,
@@ -61,10 +65,10 @@ Deno.serve(async (req) => {
     } = body as Record<string, unknown>;
 
     if (!subject_id || typeof subject_id !== "string") {
-      return json({ error: "subject_id required" }, 400);
+      return json({ error: "subject_id required" }, 400, req);
     }
     if (!decision || typeof decision !== "string") {
-      return json({ error: "decision required" }, 400);
+      return json({ error: "decision required" }, 400, req);
     }
     const validDecisions = [
       "manual_review_accepted",
@@ -76,7 +80,7 @@ Deno.serve(async (req) => {
       "waived_with_reason",
     ];
     if (!validDecisions.includes(decision)) {
-      return json({ error: "invalid decision" }, 400);
+      return json({ error: "invalid decision" }, 400, req);
     }
     const mapped = mapToP5ScrDecisionColumn(
       decision as Parameters<typeof mapToP5ScrDecisionColumn>[0],
@@ -118,7 +122,7 @@ Deno.serve(async (req) => {
         .select("id")
         .single();
       if (openErr || !opened) {
-        return json({ error: "MANUAL_REVIEW_STORE_NOT_WIRED", detail: openErr?.message ?? null }, 501);
+        return json({ error: "MANUAL_REVIEW_STORE_NOT_WIRED", detail: openErr?.message ?? null }, 501, req);
       }
       reviewId = opened.id;
     }
@@ -135,7 +139,7 @@ Deno.serve(async (req) => {
       .eq("id", reviewId);
 
     if (updErr) {
-      return json({ error: "MANUAL_REVIEW_STORE_NOT_WIRED", detail: updErr.message }, 501);
+      return json({ error: "MANUAL_REVIEW_STORE_NOT_WIRED", detail: updErr.message }, 501, req);
     }
 
     // Audit event — best-effort, non-fatal if audit table absent.
@@ -160,15 +164,18 @@ Deno.serve(async (req) => {
       subject_id,
       recorded_decision: decision,
       stored_column_decision: mapped,
-    }, 200);
+    }, 200, req);
   } catch (e) {
-    return json({ error: "INTERNAL_ERROR", detail: String(e) }, 500);
+    return json({ error: "INTERNAL_ERROR", detail: String(e) }, 500, req);
   }
 });
 
-function json(body: unknown, status: number): Response {
+function json(body: unknown, status: number, req: Request): Response {
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "";
+  const origin = req.headers.get("origin");
+  const cors = buildCorsHeaders(allowedOrigins, origin);
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "content-type": "application/json" },
+    headers: { ...cors, "content-type": "application/json" },
   });
 }

@@ -151,7 +151,10 @@ export default function IdvStart() {
         },
       );
       if (provisionErr) {
-        toast.error("Could not start identity verification. Please try again.");
+        console.error("[IdvStart] subject provision failed", provisionErr);
+        toast.error(
+          "We could not prepare your identity check. Please try again or contact support if this persists.",
+        );
         return;
       }
       const subjectId = (provisionRes as { subject_id?: string } | null)?.subject_id;
@@ -159,17 +162,22 @@ export default function IdvStart() {
       // If unsupported / placeholder / no route, open a manual review case.
       if (!chosenRoute || chosenRoute.kind === "provider_not_available" || !subjectId) {
         if (subjectId) {
-          await supabase.functions.invoke("idv-manual-review", {
+          const { error: openErr } = await supabase.functions.invoke("idv-open-manual-review", {
             body: {
               subject_id: subjectId,
-              decision: "blocked_pending_admin_decision",
               reason: "provider_not_available_from_ui",
-              decision_reason: "Provider not available for the selected document country / type",
               document_country: country,
               document_type: docType || null,
-              provider_status: "provider_not_available",
             },
           });
+          if (openErr) {
+            console.error("[IdvStart] open manual review failed", openErr);
+            toast.error(
+              "Manual review could not be opened automatically. Please contact support so an administrator can review your submission.",
+            );
+            setOutcomeStatus("manual_review_required");
+            return;
+          }
         }
         setOutcomeStatus("provider_not_available");
         toast.success("Manual review has been opened");
@@ -189,9 +197,22 @@ export default function IdvStart() {
         },
       );
       if (verifyErr) {
-        setOutcomeStatus("provider_pending");
-        toast.message("Submission received", {
-          description: "Your identity check is being processed.",
+        // Live provider is not wired for direct subject-based calls yet.
+        // Fall back to a safe "manual review required" outcome so the
+        // client never sees a generic unexplained failure.
+        console.warn("[IdvStart] verify path returned error, falling back to manual review", verifyErr);
+        await supabase.functions.invoke("idv-open-manual-review", {
+          body: {
+            subject_id: subjectId,
+            reason: "provider_pending_or_unavailable",
+            document_country: country,
+            document_type: docType || null,
+          },
+        });
+        setOutcomeStatus("manual_review_required");
+        toast.message("Manual review required", {
+          description:
+            "Your submission has been queued for an administrator to review.",
         });
         return;
       }

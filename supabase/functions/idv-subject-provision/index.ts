@@ -13,21 +13,25 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders as buildCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+  const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "";
+  const origin = req.headers.get("origin");
+  const cors = buildCorsHeaders(allowedOrigins, origin);
+  const pre = handleCors(req, allowedOrigins);
+  if (pre) return pre;
+  if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405, cors);
 
   try {
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) return json({ error: "UNAUTHORIZED" }, 401);
+    if (!token) return json({ error: "UNAUTHORIZED" }, 401, cors);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!supabaseUrl || !serviceKey || !anonKey) return json({ error: "MISCONFIGURED" }, 500);
+    if (!supabaseUrl || !serviceKey || !anonKey) return json({ error: "MISCONFIGURED" }, 500, cors);
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
     const authed = createClient(supabaseUrl, anonKey, {
@@ -35,7 +39,7 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
     const { data: userRes, error: userErr } = await authed.auth.getUser();
-    if (userErr || !userRes?.user) return json({ error: "UNAUTHORIZED" }, 401);
+    if (userErr || !userRes?.user) return json({ error: "UNAUTHORIZED" }, 401, cors);
     const user = userRes.user;
 
     const body = await req.json().catch(() => ({}));
@@ -48,7 +52,7 @@ Deno.serve(async (req) => {
       .eq("person_external_ref", user.id)
       .maybeSingle();
     if (existing?.id) {
-      return json({ subject_id: existing.id, provisioned: false }, 200);
+      return json({ subject_id: existing.id, provisioned: false }, 200, cors);
     }
 
     // Resolve organisation for this user (best-effort; nullable).
@@ -77,18 +81,21 @@ Deno.serve(async (req) => {
       .select("id")
       .single();
     if (insErr || !inserted?.id) {
-      return json({ error: "PROVISION_FAILED", detail: insErr?.message ?? null }, 500);
+      console.error("[idv-subject-provision] insert failed", insErr?.message);
+      return json({ error: "PROVISION_FAILED", detail: insErr?.message ?? null }, 500, cors);
     }
 
-    return json({ subject_id: inserted.id, provisioned: true }, 200);
+    return json({ subject_id: inserted.id, provisioned: true }, 200, cors);
   } catch (e) {
-    return json({ error: "INTERNAL", message: e instanceof Error ? e.message : "unknown" }, 500);
+    console.error("[idv-subject-provision] internal error", e);
+    return json({ error: "INTERNAL", message: e instanceof Error ? e.message : "unknown" }, 500, cors);
   }
 });
 
-function json(payload: unknown, status: number) {
+function json(payload: unknown, status: number, cors: Record<string, string> = {}) {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...cors, "Content-Type": "application/json" },
   });
 }
+
