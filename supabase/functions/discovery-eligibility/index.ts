@@ -27,19 +27,19 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
  * Thresholds: PASS ≥65, REVIEW 45-64, FAIL <45
  */
 
+// SECURITY: Verification signals (id_verified, company_exists, contact_verified,
+// email_domain_match, operating_footprint_score, authority_document_present,
+// sanctions_status) MUST be derived server-side from KYC/screening/entity/
+// authority records. Any client-supplied value for these fields is ignored to
+// prevent a caller from self-attesting a PASS and bypassing the compliance
+// gate. Only `declared_role` remains discretionary.
 const EvalRequestSchema = z.object({
   entity_id: z.string().uuid(),
   signals: z.object({
-    id_verified: z.boolean().optional().default(false),
-    contact_verified: z.boolean().optional().default(false),
-    company_exists: z.boolean().optional().default(false),
-    email_domain_match: z.boolean().optional().default(false),
-    operating_footprint_score: z.number().min(0).max(10).optional().default(0),
-    declared_role: z.string().optional(),
-    authority_document_present: z.boolean().optional().default(false),
-    sanctions_status: z.enum(["CLEAR", "POTENTIAL_MATCH", "CONFIRMED_MATCH"]).optional().default("CLEAR"),
+    declared_role: z.string().max(200).optional(),
   }).optional(),
 });
+
 
 function calculatePublicPresenceScore(news: number, social: number, web: number): number {
   const R = news + social + web;
