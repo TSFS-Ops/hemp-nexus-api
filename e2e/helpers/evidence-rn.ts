@@ -94,6 +94,7 @@ export const test = base.extend<{ ev: EvidenceCtx }>({
     const set: EvidenceCtx["set"] = (p) => { row = { ...row, ...p }; };
 
     try {
+      // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture callback param named "use", not a React Hook
       await use({ set, networkBodies, dir, runId: RUN_ID });
     } finally {
       try {

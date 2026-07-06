@@ -114,6 +114,7 @@ export const test = base.extend<{ ev: Evidence }>({
 
     const started = Date.now();
     try {
+      // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture callback param named "use", not a React Hook
       await use({ snapshot, dir });
     } finally {
       // Auto final snapshot — captures pass AND fail states.

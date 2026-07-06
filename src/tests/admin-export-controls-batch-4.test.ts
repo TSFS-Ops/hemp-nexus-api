@@ -10,7 +10,7 @@
  *   - audit emission on success + every denial path
  *   - panel renders no download / signed-URL / prepare / destroy controls
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 
@@ -39,15 +39,13 @@ const MOUNT_SRC = readFileSync(
 );
 const MIGRATION_SRC = (() => {
   // Find the most recent Batch 4 migration by scanning supabase/migrations.
-  const fs = require("node:fs") as typeof import("node:fs");
   const dir = join(REPO_ROOT, "supabase/migrations");
-  const files = fs
-    .readdirSync(dir)
+  const files = readdirSync(dir)
     .filter((f) => f.endsWith(".sql"))
     .sort();
   // Pick the newest migration that references approve_admin_governance_export.
   for (let i = files.length - 1; i >= 0; i--) {
-    const body = fs.readFileSync(join(dir, files[i]), "utf8");
+    const body = readFileSync(join(dir, files[i]), "utf8");
     if (body.includes("approve_admin_governance_export")) return body;
   }
   throw new Error("Batch 4 migration not found");

@@ -13,8 +13,8 @@
  */
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { resolve, join, basename } from "node:path";
 
 const ROOT = resolve(__dirname, "..", "..");
 
@@ -199,14 +199,12 @@ describe("DATA-004 Phase 3.2 / Phase 4 — scheduled dry-run only (live purge NO
   });
 
   it("any migration that schedules the sweeper must pin dry_run=true and never dry_run=false", () => {
-    const fs = require("node:fs") as typeof import("node:fs");
-    const path = require("node:path") as typeof import("node:path");
     const migDir = resolve(ROOT, "supabase/migrations");
     const walk = (dir: string): string[] => {
-      if (!fs.existsSync(dir)) return [];
-      return fs.readdirSync(dir).flatMap((n) => {
-        const p = path.join(dir, n);
-        return fs.statSync(p).isDirectory()
+      if (!existsSync(dir)) return [];
+      return readdirSync(dir).flatMap((n) => {
+        const p = join(dir, n);
+        return statSync(p).isDirectory()
           ? walk(p)
           : p.endsWith(".sql") ? [p] : [];
       });
@@ -221,7 +219,7 @@ describe("DATA-004 Phase 3.2 / Phase 4 — scheduled dry-run only (live purge NO
         })
         .join("\n");
     for (const file of walk(migDir)) {
-      const code = strip(fs.readFileSync(file, "utf8"));
+      const code = strip(readFileSync(file, "utf8"));
       if (!code.includes("purge-email-send-log-daily")) continue;
       const schedules =
         /cron\.schedule\s*\([^)]*purge-email-send-log-daily/.test(code) ||
@@ -361,14 +359,12 @@ describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path",
     //   files; any other cold-storage-archive* jobname (e.g. the legacy
     //   'cold-storage-archive-weekly') remains forbidden. No migration
     //   or cron entry is modified by this re-pin.
-    const fs = require("node:fs") as typeof import("node:fs");
-    const path = require("node:path") as typeof import("node:path");
     const migDir = resolve(ROOT, "supabase/migrations");
     const walk = (dir: string): string[] => {
-      if (!fs.existsSync(dir)) return [];
-      return fs.readdirSync(dir).flatMap((n) => {
-        const p = path.join(dir, n);
-        return fs.statSync(p).isDirectory()
+      if (!existsSync(dir)) return [];
+      return readdirSync(dir).flatMap((n) => {
+        const p = join(dir, n);
+        return statSync(p).isDirectory()
           ? walk(p)
           : p.endsWith(".sql") ? [p] : [];
       });
@@ -403,7 +399,7 @@ describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path",
 
     const seen: Record<string, Set<string>> = {};
     for (const file of walk(migDir)) {
-      const code = strip(fs.readFileSync(file, "utf8"));
+      const code = strip(readFileSync(file, "utf8"));
       if (!code.includes("cold-storage-archive")) continue;
       const names = new Set<string>();
       for (const m of code.matchAll(scheduleRe)) names.add(m[1]);
@@ -420,21 +416,19 @@ describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path",
     // Each allowed jobname must be scheduled by its canonical migration.
     for (const [name, canonical] of Object.entries(CANONICAL_FILES)) {
       expect(
-        seen[name] && [...seen[name]].some((f) => f.endsWith(path.basename(canonical))),
+        seen[name] && [...seen[name]].some((f) => f.endsWith(basename(canonical))),
         `expected canonical migration ${canonical} to schedule '${name}'`,
       ).toBe(true);
     }
   });
 
   it("other deferred destructive sweepers remain unscheduled", () => {
-    const fs = require("node:fs") as typeof import("node:fs");
-    const path = require("node:path") as typeof import("node:path");
     const migDir = resolve(ROOT, "supabase/migrations");
     const walk = (dir: string): string[] => {
-      if (!fs.existsSync(dir)) return [];
-      return fs.readdirSync(dir).flatMap((n) => {
-        const p = path.join(dir, n);
-        return fs.statSync(p).isDirectory()
+      if (!existsSync(dir)) return [];
+      return readdirSync(dir).flatMap((n) => {
+        const p = join(dir, n);
+        return statSync(p).isDirectory()
           ? walk(p)
           : p.endsWith(".sql") ? [p] : [];
       });
@@ -454,7 +448,7 @@ describe("DATA-004 Batch 7 — cold-storage-archive dry-run-only evidence path",
       "email-log-anonymise",
     ]) {
       for (const file of walk(migDir)) {
-        const code = strip(fs.readFileSync(file, "utf8"));
+        const code = strip(readFileSync(file, "utf8"));
         if (!code.includes(name)) continue;
         expect(
           new RegExp(`cron\\.schedule\\s*\\([^)]*${name}`).test(code),

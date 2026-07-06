@@ -4,7 +4,7 @@
  * batch suite presence guard via the filename glob.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 const tsClaims = readFileSync("src/lib/registry-claims.ts", "utf8");
 const denoClaims = readFileSync("supabase/functions/_shared/registry-claims.ts", "utf8");
@@ -85,9 +85,8 @@ describe("Batch 3 — Public registry search / profile / claim", () => {
 
   it("claim status transitions table-mutation trigger string is present in migration", () => {
     // sanity check via grep — only proves the migration directory has the trigger.
-    const fs = require("node:fs") as typeof import("node:fs");
-    const dirs = fs.readdirSync("supabase/migrations").filter((f) => f.endsWith(".sql"));
-    const joined = dirs.map((f) => fs.readFileSync(`supabase/migrations/${f}`, "utf8")).join("\n");
+    const dirs = readdirSync("supabase/migrations").filter((f) => f.endsWith(".sql"));
+    const joined = dirs.map((f) => readFileSync(`supabase/migrations/${f}`, "utf8")).join("\n");
     expect(joined).toContain("registry_company_claims_block_status_mutation");
   });
 
