@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
@@ -171,7 +171,7 @@ describe("P5 Batch 3 Stage 5 — backend allow-list (Stage 6 surfaces now permit
   it("edge functions are limited to the Batch 3 allow-list", () => {
     const dir = join(ROOT, "supabase/functions");
     const names = existsSync(dir)
-      ? require("node:fs").readdirSync(dir).filter((n: string) => /p5-?batch-?3|funder/i.test(n))
+      ? readdirSync(dir).filter((n: string) => /p5-?batch-?3|funder/i.test(n))
       : [];
     for (const n of names) {
       expect(["p5-batch3-funder-summary", "p5-batch3-stage6-monitor"]).toContain(n);
