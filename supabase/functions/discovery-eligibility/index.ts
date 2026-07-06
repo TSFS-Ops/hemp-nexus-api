@@ -220,7 +220,9 @@ Deno.serve(async (req: Request) => {
       // ── Review triggers ──
       const reviewReasons: string[] = [];
       if (sanctionsStatus === "POTENTIAL_MATCH") reviewReasons.push("SANCTIONS_STATUS == POTENTIAL_MATCH");
+      if (sanctionsStatus === "UNKNOWN") reviewReasons.push("SANCTIONS_STATUS == UNKNOWN (no server-side screening on file)");
       if (entityMatchConfidence < 0.70 && latestCrawl) reviewReasons.push(`ENTITY_MATCH_CONFIDENCE < 0.70 (${entityMatchConfidence})`);
+
 
       // ── Determine status ──
       let eligibilityStatus: "PASS" | "REVIEW" | "FAIL";
