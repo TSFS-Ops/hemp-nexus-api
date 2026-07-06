@@ -107,10 +107,12 @@ describe("Batch V-UI-Fix-4 -- idv-person-verify function boundaries", () => {
            });
 
            it("returns only safe fields to the UI (no raw provider payload)", () => {
-                 const returnBlockStart = src.indexOf("ok: true,\n      subject_id: subjectId,");
-                 expect(returnBlockStart).toBeGreaterThan(-1);
-                 const returnBlock = src.slice(returnBlockStart, returnBlockStart + 300);
-                 expect(returnBlock.includes("raw_provider_payload")).toBe(false);
+                const returnBlockMatch = src.match(/ok:\s*true,\s*subject_id:\s*subjectId,/);
+                expect(returnBlockMatch).not.toBeNull();
+                const returnBlockStart = returnBlockMatch ? src.indexOf(returnBlockMatch[0]) : -1;
+                expect(returnBlockStart).toBeGreaterThan(-1);
+                const returnBlock = src.slice(returnBlockStart, returnBlockStart + 300);
+                expect(returnBlock.includes("raw_provider_payload")).toBe(false);
            });
 
            it("VerifyNow secrets are not referenced directly in this function (adapter-only)", () => {
@@ -155,11 +157,18 @@ describe("Batch V-UI-Fix-4 -- admin decisions project into the gate-readable sta
            });
 
            it("does not expose private notes, raw payloads or biometric data in the response", () => {
-                 const returnIdx = src.lastIndexOf("return json({\n      ok: true,");
-                 expect(returnIdx).toBeGreaterThan(-1);
-                 const returnBlock = src.slice(returnIdx, returnIdx + 300);
-                 expect(returnBlock.includes("notes_admin_only")).toBe(false);
-                 expect(returnBlock.includes("raw_provider_payload")).toBe(false);
+                const returnBlockRegex = /return\s+json\(\{\s*ok:\s*true,/g;
+                let match;
+                let lastMatch = null;
+                while ((match = returnBlockRegex.exec(src)) !== null) {
+                    lastMatch = match;
+                }
+                expect(lastMatch).not.toBeNull();
+                const returnIdx = lastMatch ? lastMatch.index : -1;
+                expect(returnIdx).toBeGreaterThan(-1);
+                const returnBlock = src.slice(returnIdx, returnIdx + 300);
+                expect(returnBlock.includes("notes_admin_only")).toBe(false);
+                expect(returnBlock.includes("raw_provider_payload")).toBe(false);
            });
 });
 
