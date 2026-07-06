@@ -12,8 +12,8 @@
  *   Batch V route table (resolveIdvRoute);
  * - calls the VerifyNow adapter ONLY for a resolved live route -- never
  *   for provider_not_available / unsupported combinations;
- * - never imports or calls Onfido, CIPC, Companies House, or any other
- *   legacy/company provider;
+ * - never imports or calls any third-party identity or company-registry
+ *   verification provider (this function is VerifyNow-only for person IDV);
  * - records the safe outcome into p5scr_idv_records via the existing
  *   p5scr_record_idv RPC (no raw insert into p5scr_idv_records);
  * - returns only safe status/result fields to the UI -- the raw
