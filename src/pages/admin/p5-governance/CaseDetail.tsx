@@ -194,7 +194,7 @@ export default function CaseDetail() {
           <CardTitle className="text-base">Subject</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono">
-          <div>Organization: {c.organization_id ?? "—"}</div>
+          <div>Organisation: {c.organization_id ?? "—"}</div>
           <div>Entity: {c.entity_id ?? "—"}</div>
           <div>Match: {c.match_id ?? "—"}</div>
           <div>Trade request: {c.trade_request_id ?? "—"}</div>
