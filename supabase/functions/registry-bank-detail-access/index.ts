@@ -81,17 +81,26 @@ Deno.serve(async (req) => {
       event_name: "registry_bank_detail_unmasked_viewed", aggregate_id: input.submission_id, aggregate_type: "registry_bank_detail_submission", actor_id: user.id, payload: { reason: input.reason },
     }).catch(() => {});
 
+    const [u_holder, u_bank, u_acct, u_branch, u_swift, u_iban] = await Promise.all([
+      deobfuscate(row.enc_account_holder_name as string | null),
+      deobfuscate(row.enc_bank_name as string | null),
+      deobfuscate(row.enc_account_number as string | null),
+      deobfuscate(row.enc_branch_code as string | null),
+      deobfuscate(row.enc_swift_bic as string | null),
+      deobfuscate(row.enc_iban as string | null),
+    ]);
     return withCors(req, new Response(JSON.stringify({
       ok: true,
       unmasked: {
-        account_holder_name: deobfuscate(row.enc_account_holder_name as string | null),
-        bank_name: deobfuscate(row.enc_bank_name as string | null),
-        account_number: deobfuscate(row.enc_account_number as string | null),
-        branch_code: deobfuscate(row.enc_branch_code as string | null),
-        swift_bic: deobfuscate(row.enc_swift_bic as string | null),
-        iban: deobfuscate(row.enc_iban as string | null),
+        account_holder_name: u_holder,
+        bank_name: u_bank,
+        account_number: u_acct,
+        branch_code: u_branch,
+        swift_bic: u_swift,
+        iban: u_iban,
       },
     }), { status: 200, headers: { "Content-Type": "application/json" } }));
+
   } catch (err) {
     console.error("registry-bank-detail-access error", err);
     return withCors(req, new Response(JSON.stringify({ error: "internal_error" }), { status: 500, headers: { "Content-Type": "application/json" } }));
