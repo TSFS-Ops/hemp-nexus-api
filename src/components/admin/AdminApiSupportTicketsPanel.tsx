@@ -94,15 +94,21 @@ export function AdminApiSupportTicketsPanel() {
 
   useEffect(() => { if (canRead) load(); /* eslint-disable-next-line */ }, [statusFilter, severityFilter, envFilter, canRead]);
 
-  if (!canRead) {
-    return <div className="text-sm text-muted-foreground">Internal API support tickets are restricted to platform admins, API admins and auditors. Internal notes are never shown to client users.</div>;
-  }
-
+  // NOTE: this useMemo must stay unconditional (called on every render,
+  // regardless of canRead) to satisfy React's Rules of Hooks. Do not move
+  // it below the `if (!canRead)` early return below — canRead can change
+  // between renders of the same mounted instance (e.g. roles resolving
+  // asynchronously after auth loads), and a hook that is sometimes skipped
+  // and sometimes called will break React's hook-order matching.
   const summary = useMemo(() => ({
     total: rows.length,
     open: rows.filter((r) => ["open", "triaged", "in_progress", "waiting_on_client"].includes(r.status)).length,
     urgent: rows.filter((r) => r.severity === "urgent").length,
   }), [rows]);
+
+  if (!canRead) {
+    return <div className="text-sm text-muted-foreground">Internal API support tickets are restricted to platform admins, API admins and auditors. Internal notes are never shown to client users.</div>;
+  }
 
   return (
     <div className="space-y-4">
