@@ -28,7 +28,7 @@
  *  23.  admin_audit_logs writes from key admin paths carry ip + user_agent
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import {
@@ -41,11 +41,9 @@ function read(p: string): string {
 
 const MIGRATION_GLOB = "supabase/migrations";
 function findMigration(snippet: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const fs = require("node:fs") as typeof import("node:fs");
-  const files = fs.readdirSync(MIGRATION_GLOB).filter((f) => f.endsWith(".sql"));
+  const files = readdirSync(MIGRATION_GLOB).filter((f) => f.endsWith(".sql"));
   for (const f of files) {
-    const body = fs.readFileSync(resolve(MIGRATION_GLOB, f), "utf8");
+    const body = readFileSync(resolve(MIGRATION_GLOB, f), "utf8");
     if (body.includes(snippet)) return body;
   }
   return "";
