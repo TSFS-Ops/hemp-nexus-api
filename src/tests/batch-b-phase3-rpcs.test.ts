@@ -200,8 +200,6 @@ describe("Batch B Phase 3 — atomic_engagement_transition hard rejections", () 
 describe("Batch B Phase 3 — renewed child expires_at = now() + 14 days (Daniel 2026-05-09)", () => {
   it("the latest reconfirm-RPC migration sets expires_at = now() + interval '14 days'", () => {
     const sql = (() => {
-      const { readFileSync, readdirSync } = require("node:fs") as typeof import("node:fs");
-      const { join } = require("node:path") as typeof import("node:path");
       const dir = join(process.cwd(), "supabase", "migrations");
       const files = readdirSync(dir).filter((f: string) => f.endsWith(".sql")).sort();
       const matches = files.filter((f: string) =>
@@ -220,8 +218,6 @@ describe("Batch B Phase 3 — renewed child expires_at = now() + 14 days (Daniel
 // ─── Issue 3 — initiator authority gating ─────────────────────────────
 describe("Batch B Phase 3 — initiator reconfirm/decline authority gate (Issue 3)", () => {
   const src = (() => {
-    const { readFileSync } = require("node:fs") as typeof import("node:fs");
-    const { join } = require("node:path") as typeof import("node:path");
     return readFileSync(
       join(process.cwd(), "supabase", "functions", "poi-engagements", "index.ts"),
       "utf8",
@@ -251,8 +247,6 @@ describe("Batch B Phase 3 — initiator reconfirm/decline authority gate (Issue 
 // are kept as defence-in-depth but no longer the user-facing surface.
 describe("Batch B Phase 3 patch — route-level early rejection of resolved states", () => {
   const src = (() => {
-    const { readFileSync } = require("node:fs") as typeof import("node:fs");
-    const { join } = require("node:path") as typeof import("node:path");
     return readFileSync(
       join(process.cwd(), "supabase", "functions", "poi-engagements", "index.ts"),
       "utf8",
@@ -285,8 +279,6 @@ describe("Batch B Phase 3 patch — route-level early rejection of resolved stat
   it("keeps the RPC hard rejections in place as defence-in-depth (Phase 3 migration is unchanged)", () => {
     // The RPC still rejects accepted/declined as engagement_already_resolved.
     // We only require that the route never reaches it for those states.
-    const { readFileSync, readdirSync } = require("node:fs") as typeof import("node:fs");
-    const { join } = require("node:path") as typeof import("node:path");
     const dir = join(process.cwd(), "supabase", "migrations");
     const files = readdirSync(dir)
       .filter((f: string) => f.endsWith(".sql"))

@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     if (!sub) return json(req, { error: "not_found" }, 404);
 
     const flags: { type: RegistryBankDetailB13RiskFlagType; level: RegistryBankDetailB13RiskLevel; details: Record<string, unknown> }[] = [];
-    const holder = deobfuscate(sub.enc_account_holder_name as string | null);
+    const holder = await deobfuscate(sub.enc_account_holder_name as string | null);
     const companyName = String(sub.company_name ?? "");
 
     if (holder && companyName && accountHolderLikelyMismatch(holder, companyName)) {

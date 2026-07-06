@@ -7,7 +7,7 @@
  * DB / edge-fn execution in the local Vitest runner.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 
 import {
   OPS_010_AUDIT,
@@ -81,11 +81,10 @@ describe("OPS-010 deterministic seeder", () => {
 
 describe("OPS-010 demo/live boundary enforcement", () => {
   it("retains DEMO_BOUNDARY_VIOLATION in the trigger migration", () => {
-    const fs = require("node:fs") as typeof import("node:fs");
     const dir = "supabase/migrations";
-    const found = fs.readdirSync(dir).some((f) => {
+    const found = readdirSync(dir).some((f) => {
       if (!f.endsWith(".sql")) return false;
-      const src = fs.readFileSync(`${dir}/${f}`, "utf8");
+      const src = readFileSync(`${dir}/${f}`, "utf8");
       return (
         src.includes("enforce_demo_inheritance_trg") &&
         src.includes("DEMO_BOUNDARY_VIOLATION")
@@ -95,11 +94,10 @@ describe("OPS-010 demo/live boundary enforcement", () => {
   });
 
   it("reset_demo_workspace scopes by BOTH is_demo AND demo_dataset_id", () => {
-    const fs = require("node:fs") as typeof import("node:fs");
     const dir = "supabase/migrations";
-    const found = fs.readdirSync(dir).some((f) => {
+    const found = readdirSync(dir).some((f) => {
       if (!f.endsWith(".sql")) return false;
-      const src = fs.readFileSync(`${dir}/${f}`, "utf8");
+      const src = readFileSync(`${dir}/${f}`, "utf8");
       if (!src.includes("reset_demo_workspace")) return false;
       const block = (src.match(/reset_demo_workspace[\s\S]+?\$fn\$;/i) || [""])[0];
       return /is_demo[\s\S]+demo_dataset_id/i.test(block);

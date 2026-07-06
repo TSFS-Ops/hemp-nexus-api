@@ -54,14 +54,23 @@ Deno.serve(async (req) => {
     if (!row) return json(req, { error: "not_found" }, 404);
 
     const requested = parsed.data.fields ?? Array.from(FIELDS);
+    const [_holder, _bank, _acct, _branch, _swift, _iban] = await Promise.all([
+      deobfuscate(row.enc_account_holder_name as string | null),
+      deobfuscate(row.enc_bank_name as string | null),
+      deobfuscate(row.enc_account_number as string | null),
+      deobfuscate(row.enc_branch_code as string | null),
+      deobfuscate(row.enc_swift_bic as string | null),
+      deobfuscate(row.enc_iban as string | null),
+    ]);
     const all: Record<string, string> = {
-      account_holder_name: deobfuscate(row.enc_account_holder_name as string | null),
-      bank_name: deobfuscate(row.enc_bank_name as string | null),
-      account_number: deobfuscate(row.enc_account_number as string | null),
-      branch_code: deobfuscate(row.enc_branch_code as string | null),
-      swift_bic: deobfuscate(row.enc_swift_bic as string | null),
-      iban: deobfuscate(row.enc_iban as string | null),
+      account_holder_name: _holder,
+      bank_name: _bank,
+      account_number: _acct,
+      branch_code: _branch,
+      swift_bic: _swift,
+      iban: _iban,
     };
+
     const unmasked: Record<string, string> = {};
     for (const f of requested) unmasked[f] = all[f];
 

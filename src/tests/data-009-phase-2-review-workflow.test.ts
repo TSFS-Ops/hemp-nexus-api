@@ -8,7 +8,7 @@
  * migration's CHECK constraints + the prebuild guards.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import {
   DATA_RESIDENCY_REQUIREMENT_DETECTED,
   DATA_UNAPPROVED_RESIDENCY_CLAIM_BLOCKED,
@@ -126,10 +126,9 @@ describe("DATA-009 Phase 2 — edge function error contract", () => {
 describe("DATA-009 Phase 2 — migration contract", () => {
   it("creates data_residency_reviews with all required Phase 2 columns and unique open-review index", () => {
     // Find the migration file containing the table definition.
-    const fs = require("node:fs") as typeof import("node:fs");
-    const files = fs.readdirSync("supabase/migrations").filter((f) => f.endsWith(".sql"));
+    const files = readdirSync("supabase/migrations").filter((f) => f.endsWith(".sql"));
     const hit = files
-      .map((f) => fs.readFileSync(`supabase/migrations/${f}`, "utf8"))
+      .map((f) => readFileSync(`supabase/migrations/${f}`, "utf8"))
       .find((s) => s.includes("CREATE TABLE IF NOT EXISTS public.data_residency_reviews"));
     expect(hit, "DATA-009 Phase 2 migration file not found").toBeTruthy();
     const sql = hit as string;

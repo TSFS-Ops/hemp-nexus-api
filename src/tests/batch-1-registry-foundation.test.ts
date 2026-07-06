@@ -3,7 +3,7 @@
  * SSOT integrity, parity, and forbidden-word coverage.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import {
   REGISTRY_READINESS_STATES,
   REGISTRY_READINESS_COPY,
@@ -167,7 +167,6 @@ describe("Batch 1 — shell copy forbidden-word hygiene", () => {
 
 describe("Batch 1 — migration grants and RLS", () => {
   it("migration grants the registry tables to authenticated + service_role and enables RLS", () => {
-    const { readdirSync } = require("node:fs");
     const files = readdirSync("supabase/migrations").sort().reverse();
     const target = files.find((f: string) => f.includes("batch_1") || /20260620132/.test(f) || true);
     // Find any migration that references the new tables; pick most recent.

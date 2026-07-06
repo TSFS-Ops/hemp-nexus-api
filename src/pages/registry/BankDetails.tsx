@@ -68,7 +68,13 @@ export default function RegistryBankDetails() {
   useEffect(() => { load(); }, []);
 
   function toggleScope(s: RegistryBankDetailConsentScope) {
-    const n = new Set(scopes); n.has(s) ? n.delete(s) : n.add(s); setScopes(n);
+    const n = new Set(scopes);
+    if (n.has(s)) {
+      n.delete(s);
+    } else {
+      n.add(s);
+    }
+    setScopes(n);
   }
 
   async function submit() {

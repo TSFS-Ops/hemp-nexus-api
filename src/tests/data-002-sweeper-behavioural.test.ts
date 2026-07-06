@@ -10,8 +10,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { resolve, join } from "node:path";
 
 const read = (p: string) => readFileSync(resolve(p), "utf8");
 const SWEEPER = read("supabase/functions/account-deletion-sweeper/index.ts");
@@ -168,21 +168,19 @@ describe("DATA-002 — idempotency", () => {
 describe("DATA-002 Phase 1 — destructive cron remains disabled", () => {
   it("repo contains no checked-in cron migration with dry_run:false for account-deletion-sweeper", () => {
     // Mirrors the prebuild guard; defence in depth.
-    const fs = require("node:fs");
-    const path = require("node:path");
     const walk = (dir: string): string[] => {
-      if (!fs.existsSync(dir)) return [];
+      if (!existsSync(dir)) return [];
       const out: string[] = [];
-      for (const e of fs.readdirSync(dir)) {
-        const p = path.join(dir, e);
-        const s = fs.statSync(p);
+      for (const e of readdirSync(dir)) {
+        const p = join(dir, e);
+        const s = statSync(p);
         if (s.isDirectory()) out.push(...walk(p));
         else if (/\.(sql|json|toml)$/.test(e)) out.push(p);
       }
       return out;
     };
     for (const f of walk("supabase/migrations")) {
-      const t = fs.readFileSync(f, "utf8");
+      const t = readFileSync(f, "utf8");
       if (t.includes("account-deletion-sweeper")) {
         expect(t).not.toMatch(/dry_run["']?\s*[:=]\s*false/i);
       }

@@ -124,6 +124,15 @@ Deno.serve(async (req) => {
       iban: input.iban ?? null,
     });
 
+    const [enc_holder, enc_bank, enc_acct, enc_branch, enc_swift, enc_iban] = await Promise.all([
+      obfuscate(input.account_holder_name),
+      obfuscate(input.bank_name),
+      input.account_number ? obfuscate(input.account_number) : Promise.resolve(null),
+      input.branch_code ? obfuscate(input.branch_code) : Promise.resolve(null),
+      input.swift_bic ? obfuscate(input.swift_bic) : Promise.resolve(null),
+      input.iban ? obfuscate(input.iban) : Promise.resolve(null),
+    ]);
+
     const { data: row, error } = await svc.from("registry_bank_detail_submissions").insert({
       submitter_user_id: user.id,
       claim_id: input.claim_id ?? null,
@@ -133,12 +142,13 @@ Deno.serve(async (req) => {
       country_code: input.country_code,
       currency_code: input.currency_code,
       account_type: input.account_type ?? null,
-      enc_account_holder_name: obfuscate(input.account_holder_name),
-      enc_bank_name: obfuscate(input.bank_name),
-      enc_account_number: input.account_number ? obfuscate(input.account_number) : null,
-      enc_branch_code: input.branch_code ? obfuscate(input.branch_code) : null,
-      enc_swift_bic: input.swift_bic ? obfuscate(input.swift_bic) : null,
-      enc_iban: input.iban ? obfuscate(input.iban) : null,
+      enc_account_holder_name: enc_holder,
+      enc_bank_name: enc_bank,
+      enc_account_number: enc_acct,
+      enc_branch_code: enc_branch,
+      enc_swift_bic: enc_swift,
+      enc_iban: enc_iban,
+
       masked_account_holder: input.account_holder_name.slice(0, 1) + "•••",
       masked_bank_name: input.bank_name,
       masked_account_number: input.account_number ? maskAccountToken(input.account_number) : null,
@@ -181,6 +191,7 @@ Deno.serve(async (req) => {
           previous_status: null, new_status: null, actor_id: user.id, payload: { scope: c.scope },
         });
       }
+    }
 
     for (const ev of [
       "registry_bank_detail_capture_started",

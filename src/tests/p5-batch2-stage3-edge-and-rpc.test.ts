@@ -7,7 +7,7 @@
  * is applied before responding.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const EDGE_PATH = resolve(__dirname, "../../supabase/functions/p5-batch2-readiness-summary/index.ts");
@@ -101,8 +101,7 @@ describe("p5-batch2 Stage 3 — SQL proof presence", () => {
 describe("p5-batch2 Stage 3 — migration RPC contract", () => {
   it("Stage 3 migration defines all RPCs as SECURITY DEFINER + SET search_path", () => {
     // Pull in any migration file that defines p5b2_create_kyc_record
-    const fs = require("node:fs") as typeof import("node:fs");
-    const files = fs.readdirSync(MIGRATION_GLOB_DIR).filter(f => f.endsWith(".sql"));
+    const files = readdirSync(MIGRATION_GLOB_DIR).filter(f => f.endsWith(".sql"));
     const hit = files.map(f => readFileSync(resolve(MIGRATION_GLOB_DIR, f), "utf8"))
       .find(s => s.includes("CREATE OR REPLACE FUNCTION public.p5b2_create_kyc_record"));
     expect(hit, "Stage 3 RPC migration not found").toBeTruthy();

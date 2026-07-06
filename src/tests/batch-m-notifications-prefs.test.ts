@@ -8,7 +8,7 @@
  * integration env (DB migration applied, trigger active).
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const read = (p: string) => readFileSync(p, 'utf8');
 
@@ -106,7 +106,7 @@ describe('Batch M — preference-change audit + AAL2', () => {
 
 describe('Batch M — DB migration (entity link + resolver + audit trigger)', () => {
   // Migration filename embeds a hash, so glob via fs
-  const files = require('node:fs').readdirSync('supabase/migrations') as string[];
+  const files = readdirSync('supabase/migrations') as string[];
   const recent = files.filter((f) => f.startsWith('20260516161'));
   const body = recent.map((f) => read(`supabase/migrations/${f}`)).join('\n');
   it('adds entity_type/entity_id/resolved_at to notifications', () => {

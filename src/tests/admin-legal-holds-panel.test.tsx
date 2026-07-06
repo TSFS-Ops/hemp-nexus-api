@@ -18,6 +18,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const APPLY_COPY = "Legal hold applied — deletion/anonymisation suspended for this scope.";
 const RELEASE_COPY = "Legal hold released — deletion/anonymisation may resume where otherwise permitted.";
@@ -207,8 +209,8 @@ describe("AdminLegalHoldsPanel — render + scope selector", () => {
   it("scope_type selector lists all 10 signed scope types", () => {
     // The select is a native Radix Select; assert the options are
     // declared in the source so the user has every signed scope available.
-    const src = require("fs").readFileSync(
-      require("path").resolve(__dirname, "..", "components/admin/AdminLegalHoldsPanel.tsx"),
+    const src = readFileSync(
+      resolve(__dirname, "..", "components/admin/AdminLegalHoldsPanel.tsx"),
       "utf8",
     );
     for (const s of [

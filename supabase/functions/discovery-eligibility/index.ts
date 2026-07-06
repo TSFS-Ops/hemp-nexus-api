@@ -27,19 +27,19 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
  * Thresholds: PASS ≥65, REVIEW 45-64, FAIL <45
  */
 
+// SECURITY: Verification signals (id_verified, company_exists, contact_verified,
+// email_domain_match, operating_footprint_score, authority_document_present,
+// sanctions_status) MUST be derived server-side from KYC/screening/entity/
+// authority records. Any client-supplied value for these fields is ignored to
+// prevent a caller from self-attesting a PASS and bypassing the compliance
+// gate. Only `declared_role` remains discretionary.
 const EvalRequestSchema = z.object({
   entity_id: z.string().uuid(),
   signals: z.object({
-    id_verified: z.boolean().optional().default(false),
-    contact_verified: z.boolean().optional().default(false),
-    company_exists: z.boolean().optional().default(false),
-    email_domain_match: z.boolean().optional().default(false),
-    operating_footprint_score: z.number().min(0).max(10).optional().default(0),
-    declared_role: z.string().optional(),
-    authority_document_present: z.boolean().optional().default(false),
-    sanctions_status: z.enum(["CLEAR", "POTENTIAL_MATCH", "CONFIRMED_MATCH"]).optional().default("CLEAR"),
+    declared_role: z.string().max(200).optional(),
   }).optional(),
 });
+
 
 function calculatePublicPresenceScore(news: number, social: number, web: number): number {
   const R = news + social + web;
@@ -114,7 +114,8 @@ Deno.serve(async (req: Request) => {
 
       if (!entity) throw new ApiException("NOT_FOUND", "Entity not found or not owned by org", 404);
 
-      // Gather signals from various sources
+      // Only `declared_role` is caller-supplied. Every other signal must be
+      // derived from server-side records — never trust the client.
       const signals = parsed.signals || {};
 
       // Get latest crawl results (DISC-002/003)
@@ -145,7 +146,8 @@ Deno.serve(async (req: Request) => {
         .eq("entity_id", entityId)
         .eq("org_id", orgId);
 
-      // Get screening results (DISC-005)
+      // Get screening results (DISC-005). If no row exists, sanctions status
+      // stays UNKNOWN — it is NOT assumed CLEAR from client input.
       const { data: latestScreening } = await admin
         .from("screening_results")
         .select("*")
@@ -154,30 +156,50 @@ Deno.serve(async (req: Request) => {
         .limit(1)
         .maybeSingle();
 
-      let sanctionsStatus = signals.sanctions_status || "CLEAR";
+      let sanctionsStatus: "CLEAR" | "POTENTIAL_MATCH" | "CONFIRMED_MATCH" | "UNKNOWN" = "UNKNOWN";
       if (latestScreening) {
         if (latestScreening.match_type === "confirmed") sanctionsStatus = "CONFIRMED_MATCH";
-        else if (latestScreening.match_type === "potential" || (latestScreening.similarity_score && latestScreening.similarity_score >= 0.92)) {
+        else if (
+          latestScreening.match_type === "potential" ||
+          (latestScreening.similarity_score && latestScreening.similarity_score >= 0.92)
+        ) {
           sanctionsStatus = "POTENTIAL_MATCH";
+        } else {
+          sanctionsStatus = "CLEAR";
         }
       }
 
-      // Get authority records
+      // Authority document: derived from verified authority_records only.
       const { data: authorityRecs } = await admin
         .from("authority_records")
         .select("id, status")
         .eq("company_entity_id", entityId)
         .eq("status", "verified")
         .limit(1);
+      const authorityDocPresent = !!(authorityRecs && authorityRecs.length > 0);
 
-      const authorityDocPresent = signals.authority_document_present || (authorityRecs && authorityRecs.length > 0);
+      // KYC status — id_verified requires a verified kyc_status row for the
+      // acting user, not merely an "active" entity flag.
+      const { data: kycRow } = await admin
+        .from("kyc_status")
+        .select("status")
+        .eq("user_id", actorUserId)
+        .maybeSingle();
+      const idVerified = kycRow?.status === "verified" || kycRow?.status === "VERIFIED";
 
-      // ── Compute eligibility score (DISC-006) ──
-      const idVerified = signals.id_verified || entity.status === "active" || entity.status === "ACTIVE";
-      const companyExists = signals.company_exists || entity.entity_type === "company";
-      const contactVerified = signals.contact_verified || false;
-      const emailDomainMatch = signals.email_domain_match || false;
-      const operatingFootprintScore = signals.operating_footprint_score || 0;
+      // Company existence: entity must be a company and status active. No
+      // client override.
+      const companyExists =
+        entity.entity_type === "company" &&
+        (entity.status === "active" || entity.status === "ACTIVE");
+
+      // Contact / email-domain / operating-footprint signals require verified
+      // server-side data sources. Until those pipelines are wired, they are
+      // treated as false rather than trusted from the client.
+      const contactVerified = false;
+      const emailDomainMatch = false;
+      const operatingFootprintScore = 0;
+
 
       let baseScore = 0;
       if (idVerified) baseScore += 20;
@@ -198,7 +220,9 @@ Deno.serve(async (req: Request) => {
       // ── Review triggers ──
       const reviewReasons: string[] = [];
       if (sanctionsStatus === "POTENTIAL_MATCH") reviewReasons.push("SANCTIONS_STATUS == POTENTIAL_MATCH");
+      if (sanctionsStatus === "UNKNOWN") reviewReasons.push("SANCTIONS_STATUS == UNKNOWN (no server-side screening on file)");
       if (entityMatchConfidence < 0.70 && latestCrawl) reviewReasons.push(`ENTITY_MATCH_CONFIDENCE < 0.70 (${entityMatchConfidence})`);
+
 
       // ── Determine status ──
       let eligibilityStatus: "PASS" | "REVIEW" | "FAIL";

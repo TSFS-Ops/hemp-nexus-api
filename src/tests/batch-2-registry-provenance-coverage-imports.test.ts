@@ -3,7 +3,7 @@
  * SSOT integrity, parity, state-machine and forbidden-word coverage.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import {
   REGISTRY_SOURCE_TYPES,
   REGISTRY_LICENCE_STATUSES,
@@ -172,10 +172,9 @@ describe("Batch 2 — admin UI hygiene", () => {
 
 describe("Batch 2 — migration grants and RLS", () => {
   it("migration grants all 9 new tables and enables RLS with admin write policies", () => {
-    const fs = require("node:fs");
-    const files = fs.readdirSync("supabase/migrations").sort();
+    const files = readdirSync("supabase/migrations").sort();
     const migration = files
-      .map((f: string) => fs.readFileSync(`supabase/migrations/${f}`, "utf8"))
+      .map((f: string) => readFileSync(`supabase/migrations/${f}`, "utf8"))
       .find((src: string) => src.includes("registry_data_sources") && src.includes("registry_import_batches"));
     expect(migration).toBeTruthy();
     const tables = [
