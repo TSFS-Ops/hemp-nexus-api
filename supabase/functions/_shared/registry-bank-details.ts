@@ -90,24 +90,26 @@ let cachedKey: CryptoKey | null = null;
 async function getEncryptionKey(): Promise<CryptoKey> {
   if (cachedKey) return cachedKey;
   const raw = (globalThis as any).Deno?.env?.get?.("BANK_DETAIL_ENCRYPTION_KEY");
-  if (!raw) {
+  if (!raw || String(raw).length < 32) {
     throw new Error(
-      "BANK_DETAIL_ENCRYPTION_KEY is not configured. Generate 32 random bytes and store as base64.",
+      "BANK_DETAIL_ENCRYPTION_KEY is not configured (min 32 chars of entropy required).",
     );
   }
-  const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
-  if (bytes.length !== 32) {
-    throw new Error("BANK_DETAIL_ENCRYPTION_KEY must decode to exactly 32 bytes.");
-  }
+  // Accept either a raw high-entropy string or base64. Normalise to 32 bytes
+  // by hashing the input with SHA-256 — this makes the key length always
+  // valid for AES-256-GCM regardless of secret-generator format.
+  const seed = new TextEncoder().encode(String(raw));
+  const digest = await crypto.subtle.digest("SHA-256", seed);
   cachedKey = await crypto.subtle.importKey(
     "raw",
-    bytes,
+    new Uint8Array(digest),
     { name: "AES-GCM" },
     false,
     ["encrypt", "decrypt"],
   );
   return cachedKey;
 }
+
 
 function b64encode(bytes: Uint8Array): string {
   let s = "";
