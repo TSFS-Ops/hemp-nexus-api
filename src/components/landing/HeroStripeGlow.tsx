@@ -17,12 +17,13 @@ const AURORA = [
   { className: "top-40 -right-24 w-[520px] h-[520px] opacity-25",   color: "224 76% 82% / 0.45" },
 ] as const;
 
-const TELEMETRY = [
-  { icon: null,        label: "LEDGER: TAMPER-EVIDENT",        dot: true },
-  { icon: ShieldCheck, label: "LEDGER: SHA-256" },
-  { icon: Globe2,      label: "REGION: SINGLE APPROVED POLICY" },
-  { icon: Database,    label: "STATE: ATOMIC" },
-] as const;
+type TelemetryItem = { label: string; icon?: typeof ShieldCheck; dot?: boolean };
+const TELEMETRY: TelemetryItem[] = [
+  { label: "LEDGER: TAMPER-EVIDENT", dot: true },
+  { label: "LEDGER: SHA-256", icon: ShieldCheck },
+  { label: "REGION: SINGLE APPROVED POLICY", icon: Globe2 },
+  { label: "STATE: ATOMIC", icon: Database },
+];
 
 export function HeroStripeGlow({ onGetStarted, onContactSales }: HeroStripeGlowProps) {
   return (
