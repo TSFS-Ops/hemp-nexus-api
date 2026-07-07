@@ -778,3 +778,22 @@ $$;
 
 REVOKE ALL ON FUNCTION public.surface_unsettled_refunds(int, int) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.surface_unsettled_refunds(int, int) TO service_role;
+
+
+-- 9. Batch Q fix: token_ledger_action_type_check does not currently allow
+-- an action_type value for the refund-hold audit marker written by
+-- approve_refund (step 4 above uses action_type='refund_hold', tokens_burned=0,
+-- to record that a reservation was created WITHOUT performing a real
+-- deduction). Without this widening, approve_refund would fail at
+-- execution time with a check-constraint violation. This additively
+-- extends the existing whitelist (see migration
+-- 20260503195606_c0d1533f-b4c9-4be8-bec9-b3c7552eb285.sql) by exactly one
+-- value; no existing allowed value is removed or altered.
+ALTER TABLE public.token_ledger DROP CONSTRAINT IF EXISTS token_ledger_action_type_check;
+ALTER TABLE public.token_ledger ADD CONSTRAINT token_ledger_action_type_check
+CHECK (action_type = ANY (ARRAY[
+    'api_call', 'system_adjustment', 'declare_intent', 'credit',
+    'counterparty_sighting', 'transaction_complete', 'buyer_commit',
+    'credit_purchase', 'poi_generation', 'refund', 'administrative_adjustment',
+    'legacy_pre_production_poi_generation', 'refund_hold'
+  ]));
