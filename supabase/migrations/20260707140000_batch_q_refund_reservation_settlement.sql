@@ -88,9 +88,10 @@ CREATE OR REPLACE FUNCTION public.approve_refund(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_rr RECORD;
-  v_bal RECORD;
+  v_cur_balance integer;
+  v_cur_reserved integer;
   v_reserve_amount integer;
-  v_available integer;
+v_available integer;
   v_hold_ledger_id UUID;
   v_reservation_id UUID;
   v_existing_reservation RECORD;
@@ -124,13 +125,15 @@ BEGIN
 
   v_correlation := 'refund_req_' || v_rr.id::text;
 
-  SELECT balance, reserved_refund_tokens INTO v_bal
-    FROM public.token_balances WHERE org_id = v_rr.org_id FOR UPDATE;
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'code', 'TOKEN_BALANCE_NOT_FOUND');
-  END IF;
+  SELECT balance, reserved_refund_tokens INTO v_cur_balance, v_cur_reserved
+        FROM public.token_balances WHERE org_id = v_rr.org_id FOR UPDATE;
+  -- Tolerate a missing token_balances row (treated as balance=0), matching
+  -- the pre-Batch-Q approve_refund's silent-tolerance behaviour rather than
+  -- introducing a new hard-failure mode not present before this migration.
+  v_cur_balance := COALESCE(v_cur_balance, 0);
+  v_cur_reserved := COALESCE(v_cur_reserved, 0);
 
-  v_available := GREATEST(0, v_bal.balance - COALESCE(v_bal.reserved_refund_tokens, 0));
+  v_available := GREATEST(0, v_cur_balance - v_cur_reserved);
   -- Cannot reserve more credits than are currently available. If the org has
   -- since spent below the requested amount, reserve what remains available
   -- and flag it -- do not block the admin decision, mirroring the previous
@@ -165,7 +168,7 @@ BEGIN
         org_id, endpoint, tokens_burned, outcome, remaining_balance,
         request_id, action_type, entity_id, metadata
       ) VALUES (
-        v_rr.org_id, 'refund_hold', 0, 'allowed', v_bal.balance,
+        v_rr.org_id, 'refund_hold', 0, 'allowed', v_cur_balance,
         v_correlation, 'refund_hold', v_rr.id,
         jsonb_build_object(
           'refund_request_id', v_rr.id,
