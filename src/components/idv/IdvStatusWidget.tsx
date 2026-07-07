@@ -1,5 +1,5 @@
 /**
- * Batch V-UI — user-facing IDV status widget.
+ * Batch V-UI -- user-facing IDV status widget.
  *
  * Reads the current user's latest IDV subject state (safe wording only).
  * Never displays raw ID numbers, provider payloads, photos, selfies,
@@ -8,6 +8,12 @@
  * Polling: after a resubmission (widget CTA or start-screen `?resubmit=1`),
  * the widget polls the server every few seconds until the status reaches
  * a terminal or actionable state, or until POLL_MAX_ATTEMPTS is reached.
+ *
+ * Batch V-UI-Fix-4: reads the latest state from `p5scr_idv_records`
+ * (the gate-readable table that `idv-person-verify` and
+ * `idv-manual-review` both write to) instead of `p5scr_check_results`,
+ * which nothing in the person-IDV flow writes to. This is the fix for
+ * "widget reading from a table that nothing writes to".
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -103,25 +109,27 @@ export function IdvStatusWidget({ className, pollOnMount = false }: IdvStatusWid
         return resolved;
       }
 
-      const { data: check } = await supabase
-        .from("p5scr_check_results")
+      // Batch V-UI-Fix-4: read the gate-readable p5scr_idv_records table,
+      // not p5scr_check_results (which nothing in this flow writes to).
+      const { data: record } = await supabase
+        .from("p5scr_idv_records")
         .select("state, decided_at, created_at")
         .eq("subject_id", subject.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      const checkAt = (check?.decided_at as string) ?? (check?.created_at as string) ?? null;
+      const recordAt = (record?.decided_at as string) ?? (record?.created_at as string) ?? null;
       const intentAt = (intent?.created_at as string) ?? null;
       const preferIntent =
-        !!intentAt && (!checkAt || new Date(intentAt).getTime() > new Date(checkAt).getTime());
+        !!intentAt && (!recordAt || new Date(intentAt).getTime() > new Date(recordAt).getTime());
 
       const resolvedStatus = preferIntent
         ? (intent!.reason as string)
-        : ((check?.state as string) ?? "pending");
+        : ((record?.state as string) ?? "pending");
       const resolvedUpdatedAt = preferIntent
         ? intentAt
-        : (checkAt ?? (subject.updated_at as string) ?? null);
+        : (recordAt ?? (subject.updated_at as string) ?? null);
 
       if (!cancelledRef.current) {
         setState({

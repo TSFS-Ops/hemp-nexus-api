@@ -1,9 +1,15 @@
 /**
- * Batch V-UI — User-facing IDV start screen.
+ * Batch V-UI -- User-facing IDV start screen.
  *
  * Routes strictly by (document_issuing_country, document_type) via the
  * shared route table. Nationality, residence, company country and
  * transaction country are NEVER captured here.
+ *
+ * Batch V-UI-Fix-4: the live South Africa / Nigeria full-IDV routes now
+ * call the dedicated `idv-person-verify` function (VerifyNow person-IDV)
+ * instead of the legacy `idv-verify` entity/KYB function. `idv-verify`
+ * is untouched. The manual-review / provider-not-available path is
+ * unchanged.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -70,6 +76,15 @@ function buildCountries(): CountryOption[] {
   }
   out.push({ code: "OTHER", name: "Other country", live: false });
   return out;
+}
+
+// Batch V-UI-Fix-4: label suffix driven by the route table's own
+// document_class field -- no per-country/per-document hardcoding, so
+// adding a new route never requires touching this screen.
+function docTypeLabelSuffix(r: IdvRouteEntry): string {
+  return r.document_class === "full_idv"
+    ? " (Recommended -- full identity verification)"
+    : " (Supporting only -- does not unlock controlled actions)";
 }
 
 export default function IdvStart() {
@@ -184,9 +199,11 @@ export default function IdvStart() {
         return;
       }
 
-      // Live route: sandbox verify.
+      // Live route: Batch V-UI-Fix-4 -- call the dedicated person-IDV
+      // function (VerifyNow), never the legacy idv-verify entity/KYB
+      // function.
       const { data: verifyRes, error: verifyErr } = await supabase.functions.invoke(
-        "idv-verify",
+        "idv-person-verify",
         {
           body: {
             subject_id: subjectId,
@@ -197,9 +214,9 @@ export default function IdvStart() {
         },
       );
       if (verifyErr) {
-        // Live provider is not wired for direct subject-based calls yet.
-        // Fall back to a safe "manual review required" outcome so the
-        // client never sees a generic unexplained failure.
+        // Live provider call failed. Fall back to a safe "manual review
+        // required" outcome so the client never sees a generic unexplained
+        // failure and never sees a false pass.
         console.warn("[IdvStart] verify path returned error, falling back to manual review", verifyErr);
         await supabase.functions.invoke("idv-open-manual-review", {
           body: {
@@ -254,8 +271,6 @@ export default function IdvStart() {
         </Alert>
       )}
 
-
-
       <Card>
         <CardHeader>
           <CardTitle>New identity check</CardTitle>
@@ -304,6 +319,7 @@ export default function IdvStart() {
                   {docTypes.map((r) => (
                     <SelectItem key={r.document_type} value={r.document_type}>
                       {r.user_wording.label}
+                      {docTypeLabelSuffix(r)}
                     </SelectItem>
                   ))}
                 </SelectContent>

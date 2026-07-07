@@ -1,8 +1,16 @@
 /**
- * Batch V-UI — Admin IDV manual-review case detail.
+ * Batch V-UI -- Admin IDV manual-review case detail.
  *
  * Renders safe context and records a decision via the existing
  * `idv-manual-review` edge function.
+ *
+ * Batch V-UI-Fix-4: "Current status" now reads from the gate-readable
+ * `p5scr_idv_records` table (what the user widget and every
+ * controlled-action gate actually read) instead of `p5scr_check_results`,
+ * which nothing in the person-IDV flow writes to. The post-decision
+ * status shown after saving is now the `projected_gate_state` returned
+ * by `idv-manual-review` itself, rather than a client-side guess -- so
+ * the admin always sees the same state the gate/user will see.
  */
 
 import { useEffect, useState } from "react";
@@ -51,17 +59,18 @@ export function IdvReviewCase({ subjectId, onBack }: { subjectId: string; onBack
         .eq("id", subjectId)
         .maybeSingle();
       setSubjectLabel((subj?.display_label as string) ?? null);
-      const { data: check } = await supabase
-        .from("p5scr_check_results")
+      // Batch V-UI-Fix-4: read the gate-readable status, not
+      // p5scr_check_results (which nothing in this flow writes to).
+      const { data: record } = await supabase
+        .from("p5scr_idv_records")
         .select("state, provider_ref")
         .eq("subject_id", subjectId)
-        .eq("category", "idv_person")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       setLatest(
-        check
-          ? { state: (check.state as string), provider_ref: (check.provider_ref as string) ?? null }
+        record
+          ? { state: (record.state as string), provider_ref: (record.provider_ref as string) ?? null }
           : null,
       );
     })();
@@ -74,7 +83,7 @@ export function IdvReviewCase({ subjectId, onBack }: { subjectId: string; onBack
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase.functions.invoke("idv-manual-review", {
+      const { data, error } = await supabase.functions.invoke("idv-manual-review", {
         body: {
           subject_id: subjectId,
           decision,
@@ -87,14 +96,11 @@ export function IdvReviewCase({ subjectId, onBack }: { subjectId: string; onBack
         toast.error("Failed to save decision");
         return;
       }
-      const projected =
-        decision === "manual_review_accepted"
-          ? "manual_review_accepted"
-          : decision === "manual_review_rejected"
-            ? "failed"
-            : decision === "waived_with_reason"
-              ? "manual_review_accepted"
-              : decision;
+      // Batch V-UI-Fix-4: use the server-projected gate state (the same
+      // value written to p5scr_idv_records) instead of guessing it on
+      // the client, so the admin never sees a status that could drift
+      // from what the gate/user actually reads.
+      const projected = (data as { projected_gate_state?: string } | null)?.projected_gate_state ?? null;
       setPostDecisionStatus(projected);
       toast.success("Decision recorded");
     } finally {

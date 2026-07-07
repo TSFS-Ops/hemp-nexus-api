@@ -1,9 +1,19 @@
 /**
- * Batch V-UI — Admin manual-review queue for IDV cases.
+ * Batch V-UI -- Admin manual-review queue for IDV cases.
  *
  * platform_admin only. Lists idv_person cases requiring review; opening
  * a case shows document context and lets the admin record a decision via
  * the existing `idv-manual-review` edge function.
+ *
+ * Batch V-UI-Fix-4: `p5scr_manual_reviews` is the source of truth for
+ * user-opened IDV manual-review cases. This queue now reads OPEN
+ * (undecided) idv_person cases directly from that table instead of
+ * `p5scr_check_results`, which nothing in the person-IDV flow writes to.
+ * Admin decisions still go through `idv-manual-review`, which now also
+ * projects the resolved state into the gate-readable `p5scr_idv_records`
+ * table -- so there is a single source of truth end-to-end and no
+ * split-brain between what the admin sees/approves and what the user/
+ * gate reads.
  */
 
 import { useEffect, useState } from "react";
@@ -22,14 +32,6 @@ interface QueueRow {
   updated_at: string | null;
 }
 
-const REVIEWABLE_STATES = new Set([
-  "manual_review_required",
-  "blocked_pending_admin_decision",
-  "provider_error",
-  "provider_pending",
-  "provider_not_available",
-]);
-
 export default function IdvReviewQueue() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<QueueRow[] | null>(null);
@@ -39,32 +41,36 @@ export default function IdvReviewQueue() {
   async function load() {
     setError(null);
     try {
-      const { data: subjects, error: sErr } = await supabase
-        .from("p5scr_subjects")
-        .select("id, display_label, updated_at")
+      // Batch V-UI-Fix-4: read OPEN idv_person cases from
+      // p5scr_manual_reviews -- the true source of truth for
+      // user-opened manual-review cases. decided_at IS NULL means the
+      // case is still awaiting an admin decision.
+      const { data: reviews, error: rErr } = await supabase
+        .from("p5scr_manual_reviews")
+        .select("id, subject_id, reason, opened_at, updated_at")
+        .eq("category", "idv_person")
+        .is("decided_at", null)
         .order("updated_at", { ascending: false })
         .limit(100);
-      if (sErr) throw sErr;
+      if (rErr) throw rErr;
 
       const results: QueueRow[] = [];
-      for (const s of subjects ?? []) {
-        const { data: check } = await supabase
-          .from("p5scr_check_results")
-          .select("state, decided_at, category")
-          .eq("subject_id", s.id)
-          .eq("category", "idv_person")
-          .order("created_at", { ascending: false })
-          .limit(1)
+      for (const r of reviews ?? []) {
+        const subjectId = r.subject_id as string;
+        const { data: subj } = await supabase
+          .from("p5scr_subjects")
+          .select("display_label")
+          .eq("id", subjectId)
           .maybeSingle();
-        const state = (check?.state as string) ?? "pending";
-        if (REVIEWABLE_STATES.has(state)) {
-          results.push({
-            subject_id: s.id,
-            display_label: (s.display_label as string) ?? null,
-            latest_state: state,
-            updated_at: (check?.decided_at as string) ?? (s.updated_at as string),
-          });
-        }
+        results.push({
+          subject_id: subjectId,
+          display_label: (subj?.display_label as string) ?? null,
+          // An open, undecided case is always "manual review required"
+          // from the admin's perspective -- this is the safe, generic
+          // status for anything still awaiting a decision.
+          latest_state: "manual_review_required",
+          updated_at: (r.updated_at as string) ?? (r.opened_at as string) ?? null,
+        });
       }
       setRows(results);
     } catch (e) {
