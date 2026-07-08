@@ -160,3 +160,22 @@ Other failing checks on this run: Schema drift check (pre-existing violations in
 The atomic_token_burn regex mismatch above is a real, newly-exposed discrepancy in the Batch Q PR's own test or migration, not a JSX issue. Per this pass's explicit scope (fix only the JSX corruption; do not change refund business logic, SQL, migrations, RPCs, or ledger logic), it was not investigated further or fixed here and needs a separate decision.
 
 Final status: BATCH_Q_PR_NEEDS_FIXES
+
+## PR #22 Batch-Q-specific test fixes (this session)
+
+Scope of this pass: continue autonomously from the single known Batch-Q-specific failure (atomic_token_burn regex mismatch) left open by the JSX-fix pass above, fixing only issues clearly caused by Batch Q within the approved refund-reservation policy.
+
+Fix 1 — atomic_token_burn regex mismatch (commit 3b18a25). Root cause: the migration SQL's WHERE clause already contained the correct guard, (balance - COALESCE(reserved_refund_tokens, 0)) >= p_amount, confirmed by direct inspection of the migration file. The only discrepancy was whitespace: the SQL formats COALESCE with a space after the comma, while the test's regex required no space. Seven of the other 57 toMatch assertions in the same test file already use whitespace-tolerant regex, establishing this as the file's own house style. Per the decision framework ("if SQL is correct but the test is too brittle: update the test"), the regex was widened to tolerate optional whitespace. No SQL, RPC, or accounting behaviour was changed; the reserved-refund-tokens spend-gating guard was already correct before this fix.
+
+Fix 2 — stale pre-Batch-Q wording assertion in src/tests/purchases-list-resolved-refunds.test.tsx (commit 53fe1a7). This test predates Batch Q but exercises PurchasesList.tsx, which Batch Q rewrote. It expected the old wording "Refund approved — provider settlement pending", present on main before this PR. The current component correctly renders "Refund approved for processing" via customerRefundLabel(), matching the client-approved label set. Confirmed via diff against main that the old wording is what the stale test was written against. Updated the test's regex accordingly; no production wording was changed.
+
+Fix 3 — whitespace-sensitive source-inspection regex in src/tests/payfast-phase-2j-customer-rollout.test.ts (commit 8e797e9). This pre-existing static guard checks that PurchasesList.tsx ties p.provider === "payfast" to provider_reference within 160 raw characters. Batch Q's deeper JSX indentation pushed the raw character distance to roughly 188 chars, though the whitespace-normalised distance is only about 30 chars — a formatting artefact, not a logic change. Fixed by normalising whitespace in both the source and the assertion before matching, keeping the same 160-char threshold. No PurchasesList.tsx logic was touched.
+
+CI status after all three fixes (commit 8e797e9): Test Files: 46 failed | 444 passed | 2 skipped (492 total). Tests: 26 failed | 7108 passed | 9 skipped (7143 total). All three previously Batch-Q-specific failing tests now show zero FAIL entries. This is an improvement of exactly 2 failed files / 2 failed tests versus the prior run, consistent with fixing exactly the two newly-identified Batch-Q-caused failures with no regressions elsewhere.
+
+The remaining 46 failing test files were cross-checked against every Batch-Q-touched file name and none of their error output references any Batch Q file. Sampled failures include a missing-Supabase-secrets error, an ITN signature-verification mismatch, and merchant_key-stripping assertion failures in payfast checkout tests — none of these files were touched by this PR. These are classified as pre-existing/environmental and out of this pass's approved scope. Schema drift check, E2E POI mint soft-route, and Dependency audit (HIGH/CRITICAL gate) continue to fail identically to the prior review pass for the same pre-existing/environmental reasons. Batch 7 Guards and Governance rollback proof both passed.
+
+Not fixed in this pass, per the explicit "do not touch" list: schema drift violations, E2E secret-configuration failures, dependency audit findings, and the unrelated payfast-itn/checkout test failures above were left untouched, as pre-existing/environmental and outside the approved Batch-Q-specific scope.
+
+Final status: BATCH_Q_PR_BATCH_SPECIFIC_TESTS_PASS_CI_HAS_PREEXISTING_FAILURES
+
