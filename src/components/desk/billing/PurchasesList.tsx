@@ -286,6 +286,6 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                               onSuccess={onRefundSuccess}
                             />
                 )}
-        </>>
+        </>
       );
-}</>
+}
