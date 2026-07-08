@@ -179,3 +179,58 @@ Not fixed in this pass, per the explicit "do not touch" list: schema drift viola
 
 Final status: BATCH_Q_PR_BATCH_SPECIFIC_TESTS_PASS_CI_HAS_PREEXISTING_FAILURES
 
+## Merge decision required
+
+This section is a decision pack only. No code was changed to produce it. It synthesises the evidence already recorded above for whoever approves or holds PR #22.
+
+### PR summary
+
+PR #22, branch batch-q-refund-reservation-settlement, latest commit 8e797e9. 10 files changed: the migration supabase/migrations/20260707140000_batch_q_refund_reservation_settlement.sql, supabase/functions/_shared/dec-007-policy.ts, src/lib/policy/dec-007-refund-policy.ts, src/lib/policy/refund-settlement.ts, src/components/desk/billing/PurchasesList.tsx, supabase/functions/list-org-purchases/index.ts, supabase/tests/refund_provider_settlement_proof.sql, src/tests/batch-q-refund-reservation-settlement.test.ts, src/tests/refund-settlement-status-ssot.test.ts, and this evidence README.
+
+Batch Q implements the client-approved refund policy: admin approval of a refund reserves credits (reserved_refund_tokens) instead of finally deducting them; final deduction happens only once, at whichever settlement path closes first — provider-confirmed settlement (existing Paystack webhook, unchanged) or an authorised manual offline settlement (currently the only close-out path for PayFast, since no automated PayFast refund-status checker exists in this codebase). It was needed because the pre-Batch-Q behaviour finally deducted credits at admin approval, before any provider or manual confirmation that the refund had actually been settled — meaning credits could be permanently removed for a refund that was never actually paid out. This directly implements the client's questionnaire decision that "admin approval" means "approved for refund processing," not "refund completed."
+
+### Batch Q-specific status
+
+Confirmed clean. The JSX corruption in PurchasesList.tsx (duplicated closing tags) was fixed in commits 1d46c57/7666bfe. The atomic_token_burn reserved-credit guard test was fixed in 3b18a25 (the migration SQL was already correct; only the test's regex was too brittle on whitespace). The stale pre-Batch-Q refund wording test was fixed in 53fe1a7 (test still expected old wording that Batch Q correctly replaced with the approved customer label). The PayFast Phase 2J static guard's whitespace brittleness was fixed in 8e797e9 (raw-character-distance threshold was tripped by indentation, not a logic change). No SQL, RPC, migration, or accounting logic was changed during this final test-fix session — only three test files were edited. All Batch-Q-specific tests now pass, and none of the 46 remaining failing test files in the latest CI run reference any Batch-Q file (migration, RPC, refund policy, refund settlement, PurchasesList, or list-org-purchases) in their error output.
+
+### Repository-wide CI status (commit 8e797e9)
+
+Lint → Typecheck → Test → Build: fails overall because of 46 pre-existing test-file failures unrelated to Batch Q (down from 49 before this PR's JSX fix, purely because the JSX fix let the suite run at all — Batch Q did not introduce any of the 46). Broad failure families visible in the list: permission/RBAC and role-isolation tests (useChallengePermissions, p5-batch1/2/3/7 permission and isolation suites, role-ownership-no-silent-default, role-no-silent-inversion); the wider P5 workstream (admin actions/dashboard, RPC contracts, screening); PayFast checkout and ITN tests unrelated to refunds (payfast-customer-only-view, payfast-checkout-phase-2c, payfast-itn-phase-2b, payfast-phase-2c-no-regression); notifications (batch-m-notifications-prefs, NOT-002/008 suites); WAD/IDV UI (Accessibility, WadStepper, batch-v-ui-fix-idv-mount); governance/audit-ledger convention guards; public API v1 tests; and a long tail of one-off batch-lettered UI tests (batch-a, b, g, i, j, k). This spread across many unrelated workstreams is consistent with a pre-existing repository CI health problem rather than anything Batch Q introduced. Does it reproduce on main: yes, per the earlier review pass, main's own unit-test step was already failing before this PR existed. Did Batch Q touch related files: no. Should it block Batch Q specifically: no. Recommended owner: a general test/CI-health maintenance workstream, not Batch Q.
+
+Schema drift check: fails identically on main (confirmed against main run #1958 in the earlier review pass). Violations are in src/pages/Auth.tsx, Landing.tsx, Trust.tsx, products/ComplianceEngine.tsx, products/TradeDesk.tsx, solutions/Traders.tsx — none touched by Batch Q. Should not block Batch Q. Recommended owner: whichever team owns those pages/schema conventions.
+
+E2E POI mint soft-route (422 → 202): fails because VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, and SUPABASE_SERVICE_ROLE_KEY are not configured as repository secrets — an environment/secrets gap, reproduces identically on main, unrelated to refunds or POI logic itself. Should not block Batch Q. Recommended owner: whoever manages repo/CI secrets configuration.
+
+Dependency audit (HIGH/CRITICAL gate): fails on pre-existing vulnerable packages already in the lockfile (vitest UI file-read; glob, minimatch, picomatch, react-router, undici, ws). Batch Q does not touch package.json or package-lock.json. Reproduces identically on main. Should not block Batch Q. Recommended owner: a dependency-upgrade/security maintenance workstream.
+
+Governance rollback proof and Batch 7 Guards: both currently pass on this commit.
+
+Staging smoke A–D: skipped by design (secrets missing), not a failure.
+
+### Risk assessment
+
+Refund/accounting risk: real and non-trivial — this PR changes when credits move for every refund going forward, from "at approval" to "at settlement." That is exactly the point of the change, but it means any subtle bug would affect live customer balances, which is why runtime verification after merge matters more than usual. Migration risk: low — the migration is purely additive (new column with a default, new table with RLS, nullable FK columns, an additive widening of a check constraint); nothing is dropped or destructively altered, and it was traced line-by-line with no destructive statements found. UI wording risk: low — the new customer-facing labels were checked against the exact client-approved vocabulary and the hardcoded "(Paystack)" wording removal was confirmed provider-neutral. Provider risk: low — no new provider calls are made; Paystack's existing webhook path is unchanged, and PayFast explicitly remains manual/offline with a fail-closed constant rather than a fabricated automated check. CI-baseline risk: this is the main open question — merging into a repository whose CI is already broadly red makes it harder to notice a future regression specifically caused by this change, since "some checks fail" will already be the normal state. Rollback risk: moderate — Postgres migrations in this repo are forward-only, so reverting mid-flight after refunds have already been reserved under the new model would strand those reservations; a rollback plan should exist before merge, not be improvised after. Runtime verification need: high — nothing in this PR has been executed against a live database or a real UI render; all verification to date is static source/test inspection, so the post-merge checklist below is not optional.
+
+In plain terms: Batch Q's own implementation and its own tests are now clean, and the change is exactly what the client approved. But because it touches live refund/credit accounting, it should not be merged casually just because its own checks are green — the surrounding CI being red for unrelated reasons is a separate, real problem that deserves its own decision, not a silent workaround.
+
+### Merge options
+
+Option A — Merge Batch Q now despite known unrelated CI failures. Appropriate only if the team already accepts that the current CI baseline is red for reasons unconnected to this PR, and is comfortable relying on Batch Q's own targeted checks (all passing) rather than a fully green pipeline.
+
+Option B — Hold Batch Q until the unrelated main-branch CI failures are separately repaired. The strictest, safest option from a governance standpoint (never merge into red CI), but it delays a client-approved accounting correction for a problem this PR did not create and cannot itself fix without turning into an unrelated repo-health cleanup.
+
+Option C — Temporarily create a documented CI exception for Batch Q. Merge only once it is recorded that: Batch-Q-specific tests pass; the unrelated failures are already tracked as pre-existing (which they now are, in this README); a post-merge runtime verification plan is accepted (see below); and owners are assigned for the broader CI repair.
+
+### Recommended option
+
+Option C, if the team is comfortable with a documented exception: Batch Q resolves a real client-approved accounting issue, and every remaining failure has been traced and confirmed as pre-existing/unrelated rather than introduced by this PR. Option B is the stricter choice and should be preferred instead if the team holds a hard "no merge into red CI" rule, since that rule exists precisely to avoid the kind of case-by-case judgment call Option C requires.
+
+### Post-merge runtime verification plan
+
+Before relying on this in production, verify in a safe/staging environment: a new refund request shows "Refund requested"; admin approval creates a reservation/hold and does not finally deduct credits; the spendable balance shown to the customer excludes reserved refund credits; the customer sees "Refund approved for processing" and then "Awaiting provider confirmation" as appropriate; a Paystack provider-confirmed settlement consumes the reservation and finally deducts credits exactly once; a duplicate/retried provider settlement callback does not deduct a second time; PayFast refund completion remains manual/offline (no automated status check fires); an authorised manual settlement requires reason, reference, timestamp, and admin identity, and is recorded in the audit/governance trail; manual settlement consumes the reservation and finally deducts credits exactly once; a settlement mismatch opens an admin-review item and does not auto-credit or auto-refund; the customer sees "Refund completed" only once real settlement evidence exists, never before; and the hardcoded "(Paystack)" tooltip wording no longer appears on PayFast rows.
+
+### Final status
+
+BATCH_Q_READY_FOR_MERGE_DECISION_WITH_PREEXISTING_CI_FAILURES
+
+
