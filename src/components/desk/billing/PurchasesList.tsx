@@ -117,20 +117,20 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                                 <CardTitle className="flex items-center gap-2">
                                             <Receipt className="h-5 w-5" />
                                             Your Purchases
-                                </CardTitle>CardTitle>
+                                </CardTitle>
                                 <CardDescription>
                                             Recent credit purchases. You can request a refund on a completed
                                             purchase below - your request will be reviewed before any credits
                                             are adjusted. Approval is an internal decision and does not by
                                             itself confirm that funds have been returned by the payment
                                             provider.
-                                </CardDescription>CardDescription>
-                      </CardHeader>CardHeader>
+                                </CardDescription>
+                      </CardHeader>
                       <CardContent>
                         {!purchases || purchases.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">
                                     No purchases yet.
-                      </p>p>
+                      </p>
                     ) : (
                       <div className="space-y-2">
                         {purchases.map((p) => {
@@ -173,11 +173,11 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                                                                                                       <p className="text-sm font-medium">
                                                                                                         {p.token_amount} credits
                                                                                                         {p.provider === "payfast" ? (
-                                                                                                            <span className="text-muted-foreground"> · ZAR via PayFast</span>span>
+                                                                                                            <span className="text-muted-foreground"> · ZAR via PayFast</span>
                                                                                                           ) : (
-                                                                                                            <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD via Paystack</span>span>
+                                                                                                            <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD via Paystack</span>
                                                                                                                               )}
-                                                                                                        </p>p>
+                                                                                                        </p>
                                                                                                       <p className="text-xs text-muted-foreground">
                                                                                                         {new Date(p.created_at).toLocaleString()} · Ref{" "}
                                                                                                                               <code
@@ -192,9 +192,9 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                                                                                                                                 {p.provider === "payfast"
                                                                                                                                                               ? (p.provider_reference ?? p.paystack_reference)
                                                                                                                                                               : p.paystack_reference}
-                                                                                                                                </code>code>
-                                                                                                        </p>p>
-                                                                                  </div>div>
+                                                                                                                                </code>
+                                                                                                        </p>
+                                                                                  </div>
                                                                                 <div className="flex items-center gap-2 shrink-0">
                                                                                                       <Badge
                                                                                                                                 variant="outline"
@@ -206,17 +206,17 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                                                                                                                                   }
                                                                                                                               >
                                                                                                         {p.provider === "payfast" ? "PayFast" : "Paystack"}
-                                                                                                        </Badge>Badge>
+                                                                                                        </Badge>
                                                                                                       <Badge variant={p.status === "completed" ? "secondary" : "outline"}>
                                                                                                         {p.status}
-                                                                                                        </Badge>Badge>
+                                                                                                        </Badge>
                                                                                   {hasPending ? (
                                                                                                           <Badge
                                                                                                                                       variant="outline"
                                                                                                                                       data-testid={`refund-pending-${p.id}`}
                                                                                                                                     >
                                                                                                                                     Refund request pending
-                                                                                                            </Badge>Badge>
+                                                                                                            </Badge>
                                                                                                         ) : blockedLabel ? (
                                                                                                           <Badge
                                                                                                                                       variant="outline"
@@ -225,7 +225,7 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                                                                                                                                       title={blockedLabel}
                                                                                                                                     >
                                                                                                             {blockedLabel}
-                                                                                                            </Badge>Badge>
+                                                                                                            </Badge>
                                                                                                         ) : resolvedLabel ? (
                                                                                                           <Badge
                                                                                                                                       variant="outline"
@@ -242,7 +242,7 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                                                                                                                                         }
                                                                                                                                     >
                                                                                                             {resolvedLabel}
-                                                                                                            </Badge>Badge>
+                                                                                                            </Badge>
                                                                                                         ) : eligible ? (
                                                                                                           <Button
                                                                                                                                       variant="outline"
@@ -251,13 +251,13 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                                                                                                                                       data-testid={`refund-request-button-${p.id}`}
                                                                                                                                     >
                                                                                                                                     Request refund
-                                                                                                            </Button>Button>
+                                                                                                            </Button>
                                                                                                         ) : null}
-                                                                                  </div>div>
-                                                            </div>div>
+                                                                                  </div>
+                                                            </div>
                                                           );
                       })}
-                      </div>div>
+                      </div>
                                 )}
                         {pagination && pagination.has_more && (
                       <p
@@ -268,10 +268,10 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                         {pagination.total_count} purchases. Older rows are not shown
                                     here, but any purchase with an open or blocked refund request is
                                     always included above.
-                      </p>p>
+                      </p>
                                 )}
-                      </CardContent>CardContent>
-              </Card>Card>
+                      </CardContent>
+              </Card>
         
           {activePurchase && (
                   <RefundRequestDialog
