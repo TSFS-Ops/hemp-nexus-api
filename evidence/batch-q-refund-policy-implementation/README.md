@@ -234,3 +234,20 @@ Before relying on this in production, verify in a safe/staging environment: a ne
 BATCH_Q_READY_FOR_MERGE_DECISION_WITH_PREEXISTING_CI_FAILURES
 
 
+
+
+## Closing tracker snapshot
+
+### Batch Q tracker update
+
+Workstream: Batch Q — Refund reservation and settlement finalisation. Current status: BATCH_Q_READY_FOR_MERGE_DECISION_WITH_PREEXISTING_CI_FAILURES. Technical status: Batch-Q-specific issues resolved. CI status: still red because of unrelated/pre-existing repository failures. Merge decision required: yes. Recommended decision: Option C — merge under documented exception, unless the team has a hard no-red-CI rule. Post-merge requirement: runtime verification of refund reservation, settlement, wording and no double-deduction. Do not mark closed until: merged and runtime verification completed.
+
+### Separate workstream created
+
+Workstream: Repository CI baseline repair. Status: open / separate from Batch Q. Scope: triage and repair the 46 unrelated test failures, the schema drift check failure, the E2E POI issue, and the dependency audit failures. Important note: this must not be mixed into Batch Q PR #22.
+
+### Final note
+
+Batch Q is no longer blocked by Batch-Q-specific code/test issues. It is blocked only by the merge/governance decision around merging into an already-red CI baseline.
+
+Final status: BATCH_Q_CLOSING_TRACKER_SNAPSHOT_RECORDED
