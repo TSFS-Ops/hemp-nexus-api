@@ -68,3 +68,59 @@ CI has not yet run against this branch/PR at the time of writing this evidence f
 - No terminal/CI execution capability in this session — none of the above tests, old or new, have actually been executed by the author of this batch. Correctness has been established by careful static cross-reference against every SQL/TS file this migration touches or that touches the same tables/columns, not by running the suite.
 - PayFast refund settlement remains manual-offline-only; a real PayFast refund-status integration is out of scope for this batch (tracked as future Phase 2K).
 - The reservation mechanism does not implement an explicit "released on decline" path beyond the existing guarantee that decline/blocked/superseded refunds never reach `approve_refund` in the first place (a refund_request can only be approved once from `pending`; declined/blocked/superseded rows never get a reservation). No case was found in the current schema where an *already-reserved* refund needs to be released without being settled, so no separate `release_refund_reservation` RPC was added — flagging this explicitly in case reviewers know of a workflow (e.g. an "undo approval" admin action) that would need it.
+
+
+---
+
+## PR #22 review pass (review/verify only — no code changes made in this pass)
+
+Reviewed by: Claude (browser-only tools, no terminal/CI execution capability).
+PR: https://github.com/TSFS-Ops/hemp-nexus-api/pull/22
+Branch: `batch-q-refund-reservation-settlement` (12 commits, +1,688/-322, 10 files)
+
+### CI status (as of this review)
+
+7 checks ran. 1 passed, 5 failed, 1 skipped.
+
+- **Batch 7 Guards / Prebuild guards · parity · Batch 7 tests** — PASSED.
+- - **CI / Lint → Typecheck → Test → Build** — FAILED. Root cause: a genuine parsing bug introduced by this PR in `src/components/desk/billing/PurchasesList.tsx`. ESLint reports `120:53 error Parsing error: Unexpected token`. Manual inspection confirms every JSX closing tag in the file's `return (...)` block was corrupted during the earlier full-file rewrite: the tag name is duplicated immediately after the closing `>`, e.g. `</CardTitle>CardTitle>`, `</CardDescription>CardDescription>`, `</CardHeader>CardHeader>`, `</p>p>` (confirmed at lines 120, 127, 128, 133, 180, and likely more throughout the file). This is a **real, PR-introduced blocker** — the file cannot compile. Because Lint fails first in this job, Typecheck/Run unit tests/Notification regression suite/Build never executed, so **none of the new or updated tests in this PR have actually been run or confirmed passing by CI yet**.
+  - - **CI / Schema drift check** — FAILED, but pre-existing and unrelated: violations are in `src/pages/Auth.tsx`, `Landing.tsx`, `Trust.tsx`, `products/ComplianceEngine.tsx`, `products/TradeDesk.tsx`, `solutions/Traders.tsx` — none touched by this PR. Confirmed this check also fails identically on `main` (latest run #1958).
+    - - **CI / E2E — POI mint soft-route (422 → 202)** — FAILED, unrelated: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` are not configured as repo secrets. Also fails identically on `main`.
+      - - **CI / Governance rollback proof** — FAILED, unrelated/environmental: `apt-get install postgresql-client` failed on an unsigned/unreachable `packages.microsoft.com` repo (network/infra flake). This job actually **passed** on the latest `main` run, so this looks like transient CI-runner flakiness rather than a systemic or code-related failure.
+        - - **CI / Dependency audit (HIGH/CRITICAL gate)** — FAILED, pre-existing: 13 vulnerabilities (1 critical — `vitest` UI file-read; several high — `glob`, `minimatch`, `picomatch`, `react-router`, `undici`, `ws`) already present in the lockfile. This PR does not touch `package.json`/`package-lock.json`. Also fails identically on `main`.
+          - - **CI / Staging smoke A–D** — skipped (secrets missing), as designed.
+           
+            - **Net CI classification:** 1 blocker directly introduced by this PR (PurchasesList.tsx parse error). 4 failing checks are pre-existing/environmental and reproduce identically (or worse) on `main` — not caused by Batch Q.
+           
+            - ### Migration review (`20260707140000_batch_q_refund_reservation_settlement.sql`)
+           
+            - Re-read in full. `token_refund_reservations` is additive (new table, RLS enabled, `REVOKE ALL ... FROM PUBLIC, anon, authenticated` + `GRANT ALL ... TO service_role` only, unique index on `refund_request_id` for idempotency, `status` check constrained to `active/consumed/released`). `token_balances.reserved_refund_tokens` is additive (`ADD COLUMN IF NOT EXISTS ... DEFAULT 0` + non-negative check constraint). `refund_requests.reservation_id`/`final_ledger_id` are additive, nullable FKs — safe for legacy rows. `refund_hold` is added to `token_ledger_action_type_check` by dropping and recreating the constraint with every previous value preserved plus the one new value — confirmed no existing allowed value was dropped. No destructive statements (no `DROP TABLE`, no column removal, no data-mutating `UPDATE`/`DELETE` outside the four refund RPCs' own runtime logic). Rollback would require a follow-up migration (Postgres migrations here are forward-only); reverting mid-flight would strand any reservations created after this migration ships, which is an inherent (not novel) characteristic of this migration style in this repo.
+           
+            - ### RPC / accounting-model review
+           
+            - Traced `approve_refund`, `atomic_token_burn`, `mark_refund_provider_settled`, and `mark_refund_manually_settled_with_governance` line by line. Approval reserves via `reserved_refund_tokens += v_reserve_amount` and writes a zero-value `refund_hold` ledger marker; it no longer performs `balance = GREATEST(0, balance - ...)`. It tolerates a missing `token_balances` row (`COALESCE(..., 0)`) rather than hard-failing, and is idempotent both via an explicit "already approved with reservation" branch and an `ON CONFLICT (refund_request_id) DO NOTHING` race guard. `atomic_token_burn`'s only change is the WHERE-clause guard `(balance - COALESCE(reserved_refund_tokens,0)) >= p_amount`, so reserved credits are correctly excluded from spendable balance; the billing-hold gate and governance-emission signature are preserved verbatim. Both settlement functions consume the reservation and perform the single final deduction (`balance -= reserved_credits`, `reserved_refund_tokens -= reserved_credits`, both floored with `GREATEST(0, ...)`), mark the reservation `consumed`, and are idempotent (second call short-circuits on `reservation.status = 'consumed'` or matching provider reference) — confirmed this cannot race in practice because both paths take `SELECT ... FOR UPDATE` on the same `refund_requests` row first. Currency mismatches and conflicting provider references open an `admin_risk_items` row and `RETURN` before reaching the deduction code (verified the mismatch-return precedes the deduction statement in file order) — no automatic money movement on mismatch, as required. Legacy (pre-Batch-Q, `reservation_id IS NULL`) refunds are correctly special-cased to skip a second deduction in both settlement functions. Cross-checked against `admin_refund_approve_with_governance` (only reads `ledger_id` from `approve_refund`'s return — unaffected) and the `refund_requests_settlement_status_guard` trigger (only touches columns this migration still sets correctly) — no conflicts found.
+           
+            - ### UI wording review
+           
+            - `src/lib/policy/dec-007-refund-policy.ts` `CUSTOMER_REFUND_LABELS` matches the required customer-facing vocabulary exactly ("Refund requested" / "Refund approved for processing" / "Awaiting provider confirmation" / "Refund completed" / "Refund requires admin review" / "Refund declined" / "Refund superseded"). `customerRefundLabel()` in `refund-settlement.ts` only returns `completed` when `isMoneyReturned(providerSettlementStatus)` is true (i.e. `provider_completed` or `manually_settled_offline`) — "Refund completed" cannot show before settlement evidence exists. `list-org-purchases/index.ts` now selects `provider_settlement_status` so the UI has the data it needs. **However, this cannot currently be visually confirmed in the running app** because `PurchasesList.tsx`, the component that consumes these labels, does not currently compile (see CI blocker above) — the wording logic is verified correct at the source level only.
+           
+            - One pre-existing (not Batch-Q-introduced) inconsistency noted for awareness: `supabase/functions/_shared/dec-007-policy.ts`'s `DEC_007_PAY_009_ADMIN_DISCLAIMER` is shorter than its `src/lib/policy/dec-007-refund-policy.ts` counterpart, despite a file-header comment requiring them to stay "numerically/string identical." Confirmed via `main` branch diff that this drift predates this PR; Batch Q only added new constants to the Deno file additively and did not touch this existing string.
+           
+            - ### Test coverage review
+           
+            - `src/tests/refund-settlement-status-ssot.test.ts` and the new `src/tests/batch-q-refund-reservation-settlement.test.ts` were read in full and cross-checked line-by-line against the actual migration/policy source — every regex assertion matches real corresponding code (reservation schema, idempotency, no-balance-row tolerance, mismatch-before-deduction ordering, PayFast fail-closed constant, no live provider calls). `supabase/tests/refund_provider_settlement_proof.sql` Test C and Test E now correctly assert a three-point balance check (before → mid → after: first call deducts 10, idempotent retry does not double-deduct). All of this is static/logical verification only — **none of it has been executed**, because the CI job that runs Vitest never got past the Lint step due to the PurchasesList.tsx blocker.
+           
+            - ### Blockers
+           
+            - 1. **Must fix before merge:** `src/components/desk/billing/PurchasesList.tsx` — pervasive JSX closing-tag corruption breaks the build. This is the sole reason CI's main test/build job fails, and it also means test results are still unconfirmed.
+             
+              2. ### Caveats (unresolved, unchanged from before this review)
+             
+              3. No terminal/CI execution capability in this session — all migration/RPC/test verification above is static source review, not live execution. CI remains the first real runtime verification pass once the blocker above is fixed and pushed. PayFast settlement remains manual-offline-only by design (no automated status checker exists). No explicit "release reservation on decline" RPC exists; not required by any case found so far, flagged for reviewer awareness.
+             
+              4. ### Recommendation
+             
+              5. **Hold — do not merge.** Fix the PurchasesList.tsx corruption, push, and let the full CI suite run (in particular Typecheck/Run unit tests/Build) before reconsidering merge. The 4 other failing checks are pre-existing/environmental and do not need to block this specific PR, but are worth a separate maintenance pass.
+             
+              6. Final status: **BATCH_Q_PR_NEEDS_FIXES**
+              7. 
