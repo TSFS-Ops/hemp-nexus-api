@@ -1,4 +1,4 @@
--- Refund provider-settlement separation — atomicity & integrity proof.
+—……──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────—-- Refund provider-settlement separation — atomicity & integrity proof.
 --
 -- Live-DB proof, wrapped in BEGIN…ROLLBACK so nothing persists.
 --
@@ -45,6 +45,7 @@ DECLARE
   v_risk_count int;
   v_balance_before int;
   v_balance_after int;
+  v_balance_mid int;
   v_settlement text;
   v_caught boolean;
 BEGIN
@@ -119,7 +120,12 @@ BEGIN
   ASSERT (v_settle_1->>'success')::boolean IS TRUE, 'C: first settle must succeed';
   ASSERT (v_settle_1->>'deduplicated')::boolean IS FALSE, 'C: first call must not be deduped';
 
-  v_settle_2 := public.mark_refund_provider_settled(
+  SELECT balance INTO v_balance_mid FROM public.token_balances WHERE org_id = v_org;
+  ASSERT v_balance_before - v_balance_mid = 10,
+        format('C: first settle must finally deduct exactly the 10 reserved credits, before=%s mid=%s',
+          v_balance_before, v_balance_mid);
+
+v_settle_2 := public.mark_refund_provider_settled(
     p_refund_request_id => v_refund_a,
     p_provider_refund_reference => 'PSTK_REF_001',
     p_amount => 10,
@@ -129,9 +135,9 @@ BEGIN
   ASSERT (v_settle_2->>'deduplicated')::boolean IS TRUE, 'C: second call must be deduped';
 
   SELECT balance INTO v_balance_after FROM public.token_balances WHERE org_id = v_org;
-  ASSERT v_balance_before = v_balance_after,
-    format('C: balance must be unchanged by settle calls, before=%s after=%s',
-           v_balance_before, v_balance_after);
+  ASSERT v_balance_mid = v_balance_after,
+        format('C: deduped retry must NOT double-deduct, mid=%s after=%s',
+          v_balance_mid, v_balance_after);
 
   SELECT count(*) INTO v_event_count
   FROM public.audit_logs
@@ -175,7 +181,12 @@ BEGIN
   ASSERT (v_manual_1->>'success')::boolean IS TRUE, 'E: manual settle must succeed';
   ASSERT (v_manual_1->>'deduplicated')::boolean IS FALSE, 'E: first manual call must not dedupe';
 
-  v_manual_2 := public.mark_refund_manually_settled_with_governance(
+  SELECT balance INTO v_balance_mid FROM public.token_balances WHERE org_id = v_org;
+  ASSERT v_balance_before - v_balance_mid = 10,
+        format('E: manual settle must finally deduct exactly the 10 reserved credits, before=%s mid=%s',
+          v_balance_before, v_balance_mid);
+
+v_manual_2 := public.mark_refund_manually_settled_with_governance(
     p_refund_request_id => v_refund_c,
     p_admin_user_id     => v_actor,
     p_notes             => 'proof E: dashboard receipt id PSTK-DASH-123 issued offline',
@@ -184,9 +195,9 @@ BEGIN
     'E: idempotent retry must dedupe';
 
   SELECT balance INTO v_balance_after FROM public.token_balances WHERE org_id = v_org;
-  ASSERT v_balance_before = v_balance_after,
-    format('E: balance must be unchanged by manual-settle, before=%s after=%s',
-           v_balance_before, v_balance_after);
+  ASSERT v_balance_mid = v_balance_after,
+        format('E: idempotent retry must NOT double-deduct, mid=%s after=%s',
+          v_balance_mid, v_balance_after);
 
   SELECT count(*) INTO v_event_count
   FROM public.event_store

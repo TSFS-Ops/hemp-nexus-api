@@ -95,7 +95,7 @@ describe("PurchasesList — resolved refund visibility", () => {
     // Approved + declined badges visible.
     expect(
       await screen.findByTestId(`refund-resolved-${P_APPROVED}`),
-    ).toHaveTextContent(/Refund approved — provider settlement pending/i);
+    ).toHaveTextContent(/Refund approved for processing/i);
     expect(screen.getByTestId(`refund-resolved-${P_DECLINED}`)).toHaveTextContent(
       /Refund declined/i,
     );

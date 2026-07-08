@@ -226,7 +226,10 @@ describe("Phase 2J: PurchasesList shows the right provider and reference per row
     expect(PURCHASES_LIST_SRC).toContain('"Paystack"');
   });
   it("uses provider_reference for PayFast rows and paystack_reference for Paystack rows", () => {
-    expect(PURCHASES_LIST_SRC).toMatch(
+    // Whitespace-normalised: PurchasesList.tsx's JSX indentation depth is
+    // not semantically meaningful and must not make this guard brittle.
+    const normalizedPurchasesListSrc = PURCHASES_LIST_SRC.replace(/\s+/g, " ");
+    expect(normalizedPurchasesListSrc).toMatch(
       /p\.provider\s*===\s*"payfast"[\s\S]{0,160}provider_reference/,
     );
   });
