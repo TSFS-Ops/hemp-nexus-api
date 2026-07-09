@@ -224,6 +224,29 @@ export async function verifyNowIdv(
     if (contract.report_type) providerBody.reportType = contract.report_type;
     providerBody.mode = mode;
 
+    // 3.5. Fail-closed if the caller did not supply every field this
+    // confirmed contract requires (e.g. a legacy/old caller sending only
+    // free-text `details_text` instead of the structured payload the
+    // confirmed route now expects). Never send an incomplete/malformed
+    // body to VerifyNow -- treat this exactly like an unconfirmed route.
+    const requiredProviderFields = Object.values(contract.field_mapping);
+    const hasAllRequiredFields = requiredProviderFields.every(
+      (providerField) => typeof providerBody[providerField] === "string" && providerBody[providerField].length > 0,
+    );
+    if (!hasAllRequiredFields) {
+      const resolved = resolveVerifyNowOutcome({
+        raw_outcome: "provider_error",
+        route_can_unlock: routeRes.entry.can_unlock_controlled_actions,
+      });
+      return {
+        route_resolution: routeRes,
+        raw_outcome: "provider_error",
+        resolved,
+        provider: "verifynow",
+        error_code: "PROVIDER_MISCONFIGURED",
+      };
+    }
+
   let httpStatus = 0;
     let body: unknown = null;
     try {
