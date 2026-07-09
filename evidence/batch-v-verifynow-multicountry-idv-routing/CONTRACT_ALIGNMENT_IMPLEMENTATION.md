@@ -79,8 +79,6 @@ Recommendation recorded in that note: merge PR #23 under a documented baseline-C
 
 See the PR #23 conversation thread for the full note.
 
-Stop Claude
-
 ## 12. Autonomous completion mode -- Lovable deployment blocker (2026-07-09)
 
 Under an autonomous-completion authorisation, the following additional verification and investigation was performed directly on the branch tip and via GitHub, without merging or deploying anything.
