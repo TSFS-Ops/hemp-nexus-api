@@ -124,6 +124,163 @@ Deno.test("Batch V — blocked/deceased/fraud statuses map to blocked_pending_ad
   assertEquals(classifyProviderResponse(200, { status: "fraud" }), "suspected_fraud");
 });
 
+Deno.test("Batch V -- SA said_basic posts to fixed /verify with reportType + mode (contract alignment)", async () => {
+    let capturedUrl = "";
+    let capturedBody: Record<string, unknown> = {};
+    const fakeFetch = ((url: string, init?: RequestInit) => {
+          capturedUrl = url;
+          capturedBody = JSON.parse(String(init?.body ?? "{}"));
+          return Promise.resolve(
+                  new Response(JSON.stringify({ match: "clear", reference: "REF-SA-1" }), {
+                            status: 200,
+                            headers: { "content-type": "application/json" },
+                  }),
+                );
+    }) as typeof fetch;
+
+    await verifyNowIdv(
+      {
+              route: { document_country: "ZA", document_type: "za_said_basic" },
+              payload: { said_number: "8001015009087", surname: "Test" },
+      },
+      { apiKey: "test", mode: "sandbox", fetchImpl: fakeFetch },
+        );
+
+    assert(capturedUrl.endsWith("/verify"));
+    assert(!capturedUrl.includes("za_said_basic"));
+    assertEquals(capturedBody.reportType, "said_verification");
+    assertEquals(capturedBody.idNumber, "8001015009087");
+    assertEquals(capturedBody.mode, "sandbox");
+});
+
+Deno.test("Batch V -- SA home_affairs_enhanced posts to fixed /verify with home_affairs_id_photo reportType (contract alignment)", async () => {
+    let capturedUrl = "";
+    let capturedBody: Record<string, unknown> = {};
+    const fakeFetch = ((url: string, init?: RequestInit) => {
+          capturedUrl = url;
+          capturedBody = JSON.parse(String(init?.body ?? "{}"));
+          return Promise.resolve(
+                  new Response(JSON.stringify({ match: "clear", reference: "REF-SA-2" }), {
+                            status: 200,
+                            headers: { "content-type": "application/json" },
+                  }),
+                );
+    }) as typeof fetch;
+
+    await verifyNowIdv(
+      {
+              route: { document_country: "ZA", document_type: "za_home_affairs_enhanced" },
+              payload: { said_number: "9111060123086", first_names: "A", surname: "B" },
+      },
+      { apiKey: "test", mode: "sandbox", fetchImpl: fakeFetch },
+        );
+
+    assert(capturedUrl.endsWith("/verify"));
+    assert(!capturedUrl.includes("za_home_affairs_enhanced"));
+    assertEquals(capturedBody.reportType, "home_affairs_id_photo");
+    assertEquals(capturedBody.idNumber, "9111060123086");
+    assertEquals(capturedBody.mode, "sandbox");
+});
+
+Deno.test("Batch V -- Nigeria NIN posts to /africa-verification with country/id_type constants (contract alignment)", async () => {
+    let capturedUrl = "";
+    let capturedBody: Record<string, unknown> = {};
+    const fakeFetch = ((url: string, init?: RequestInit) => {
+          capturedUrl = url;
+          capturedBody = JSON.parse(String(init?.body ?? "{}"));
+          return Promise.resolve(
+                  new Response(JSON.stringify({ match: "clear", reference: "REF-NG-1" }), {
+                            status: 200,
+                            headers: { "content-type": "application/json" },
+                  }),
+                );
+    }) as typeof fetch;
+
+    await verifyNowIdv(
+      {
+              route: { document_country: "NG", document_type: "ng_nin" },
+              payload: { nin: "12345678901" },
+      },
+      { apiKey: "test", mode: "sandbox", fetchImpl: fakeFetch },
+        );
+
+    assert(capturedUrl.endsWith("/africa-verification"));
+    assert(!capturedUrl.includes("ng_nin"));
+    assertEquals(capturedBody.country, "NG");
+    assertEquals(capturedBody.id_type, "NIN_V2");
+    assertEquals(capturedBody.id_number, "12345678901");
+    assertEquals(capturedBody.mode, "sandbox");
+    assertEquals(capturedBody.reportType, undefined);
+});
+
+Deno.test("Batch V -- unconfirmed Nigeria route (ng_bvn) fails closed, never calls fetch", async () => {
+    const out = await verifyNowIdv(
+      {
+              route: { document_country: "NG", document_type: "ng_bvn" },
+              payload: { bvn: "12345678901" },
+      },
+      { apiKey: "test", mode: "sandbox" },
+        );
+    assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+});
+
+Deno.test("Batch V -- unconfirmed Nigeria route (ng_virtual_nin) fails closed, never calls fetch", async () => {
+    const out = await verifyNowIdv(
+      {
+              route: { document_country: "NG", document_type: "ng_virtual_nin" },
+              payload: { virtual_nin: "12345678901" },
+      },
+      { apiKey: "test", mode: "sandbox" },
+        );
+    assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+});
+
+Deno.test("Batch V -- legacy details_text-only payload (old published frontend) fails closed for SA said_basic, never calls fetch", async () => {
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "ZA", document_type: "za_said_basic" },
+      payload: { details_text: "8001015009087" },
+    },
+    { apiKey: "test", mode: "sandbox" },
+    );
+  assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+  assertEquals(out.resolved?.internal_status, "provider_error");
+  assertEquals(out.resolved?.unlocks_controlled_actions, false);
+});
+
+Deno.test("Batch V -- legacy details_text-only payload (old published frontend) fails closed for SA home_affairs_enhanced, never calls fetch", async () => {
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "ZA", document_type: "za_home_affairs_enhanced" },
+      payload: { details_text: "9111060123086" },
+    },
+    { apiKey: "test", mode: "sandbox" },
+    );
+  assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+});
+
+Deno.test("Batch V -- legacy details_text-only payload (old published frontend) fails closed for Nigeria NIN, never calls fetch", async () => {
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "NG", document_type: "ng_nin" },
+      payload: { details_text: "12345678901" },
+    },
+    { apiKey: "test", mode: "sandbox" },
+    );
+  assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+});
+
+Deno.test("Batch V -- partially-structured payload missing a required contract field still fails closed, never calls fetch", async () => {
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "NG", document_type: "ng_nin" },
+      payload: { some_other_field: "x" },
+    },
+    { apiKey: "test", mode: "sandbox" },
+    );
+  assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+});
+
 // Restore fetch — leaves the runtime clean for other test files.
 Deno.test({
   name: "Batch V — restore fetch tripwire",
