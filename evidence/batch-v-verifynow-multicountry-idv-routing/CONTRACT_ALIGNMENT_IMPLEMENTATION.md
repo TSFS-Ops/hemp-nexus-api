@@ -98,3 +98,18 @@ Per the autonomous decision framework's rule for this exact situation (deploymen
 Next human action required: someone with either Lovable project-dashboard access, or the GitHub account owner completing the "sudo mode" email verification to view the lovable.dev app's configuration, needs to confirm the deploy trigger, target environment, and whether it can be paused or run preview-only -- before PR #23 is merged.
 
 Final verdict: BLOCKED_LOVABLE_DEPLOYMENT_TARGET_UNKNOWN (this supersedes the prior VERIFYNOW_CONTRACT_ALIGNMENT_READY_FOR_PR_REVIEW marker at the top of this file pending that clarification).
+
+
+## 13. Re-inspection of Lovable deployment question (2026-07-09, follow-up)
+
+At your request, I re-inspected available GitHub-side deployment configuration for a second time, specifically:
+
+Actions workflow list: confirmed the repository has exactly three workflows (Batch 7 Guards, CI, Dependabot Updates) -- no separate deploy workflow exists anywhere in Actions history (2,377 runs reviewed via the workflow filter).
+
+Repository webhooks (Settings > Webhooks): none configured. This means Lovable is not notified via a classic repo webhook -- consistent with it operating purely through its GitHub App installation rather than through anything visible/editable in Actions or Webhooks.
+
+GitHub Deployments / Environments: unchanged from the prior check -- no GitHub Deployments records, no Environments configured.
+
+lovable.dev GitHub App Configure page: re-attempted, still gated behind GitHub account-owner sudo-mode ("Confirm access" / "trigger a mailer to verify your identity"). I did not trigger that email verification myself, since I have no access to the account's email inbox to retrieve the resulting code, and this is the kind of identity/account-security step that should be completed by the account owner directly, not by me on your behalf.
+
+Conclusion: I still cannot determine the deploy trigger, target environment, pause/manual capability, or rollback availability from this browser session. This finding is unchanged from the previous BLOCKED_LOVABLE_DEPLOYMENT_TARGET_UNKNOWN verdict. PR #23 remains un-merged; nothing has been deployed.
