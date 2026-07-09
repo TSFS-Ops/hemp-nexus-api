@@ -167,3 +167,30 @@ The section 14.3 fix (fail-closed check for missing contract-required fields bef
 Client testing (David/Daniel or any end user) remains paused. It should not resume until an authenticated internal sandbox smoke test against the confirmed fixtures has actually been completed and recorded, in addition to the reachability probe above.
 
 Final verdict: VERIFYNOW_PR_23_MERGED_BACKEND_DEPLOYED_FRONTEND_UNPUBLISHED_PENDING_STAGING_AUTH
+
+
+## 16. Internal smoke test screenshot investigation (2026-07-09)
+
+The user manually exercised the live /desk/idv/start screen on the custom domain www.izenzo.co.za and submitted five test identity checks using only the confirmed sandbox fixtures: South Africa basic ID check with 8001015009087, South Africa Home Affairs check with 8001015009087, South Africa basic ID check with 9111060123086, Nigeria NIN with 12345678901, and Nigeria Virtual NIN (an unconfirmed route) with 12345678901. All five submissions displayed the identical toast reading "Manual review required" with the description "Your submission has been queued for an administrator to review."
+
+### 16.1 Frontend publish status
+
+Logging into www.izenzo.co.za with credentials the user supplied directly confirmed the live custom domain is serving the post-PR-23 structured-field UI, not an older free-text-only version. The frontend has therefore in fact been updated and published on the custom domain, contrary to the earlier standing assumption that this required a manual Publish click in Lovable. Neither the exact timing nor the mechanism of this publish could be confirmed from available tooling, since Lovable's own deployment and publish history is not accessible from this session. This assumption should be treated as corrected going forward.
+
+### 16.2 Code path traced on main for the five submissions
+
+IdvStart.tsx resolves a client-side route for the chosen country and document type. If any route entry resolves at all, including the unconfirmed Nigeria Virtual NIN entry, since the client-side route table is a general document-type catalogue and does not itself encode which routes are contractually confirmed with VerifyNow, the code calls the idv-person-verify edge function with a structured payload. Only if that call returns an error does the code fall back to calling idv-open-manual-review and show the exact toast text observed in all five screenshots. That toast text appears in exactly one place in the file, so all five submissions, confirmed and unconfirmed alike, reached the same error-fallback branch, not a distinct verified or completed success path.
+
+### 16.3 Database check (read-only, using the user's own authenticated session)
+
+Querying the live Supabase project directly, read-only, no writes, using the user's own session token, found the following for this account's organisation: p5scr_subjects has zero rows, p5scr_idv_records has zero rows, p5scr_manual_reviews has zero rows, and audit_logs has exactly one row total, an unrelated persona-selection event from 2026-07-07 that predates the test session, with no idv.person_verify_completed entry. None of the five test submissions produced a persisted backend record of any kind under this account, despite the UI showing a queued-successfully toast for all five.
+
+### 16.4 Interpretation
+
+The p5scr_record_idv RPC runs unconditionally near the end of idv-person-verify's execution whenever that function completes, regardless of whether VerifyNow itself succeeded, timed out, or the route was unconfirmed. A completely empty p5scr_idv_records table therefore means idv-person-verify most likely did not complete execution at all for any of the five attempts, for the confirmed routes and the unconfirmed route alike. It is not possible to tell, from code and database evidence alone, whether the confirmed routes reached VerifyNow's sandbox and failed there, or failed earlier, for example at auth, subject lookup, deployment lag, or an exception thrown before the provider call. It is also notable that idv-open-manual-review's own success is never checked by IdvStart.tsx before showing the queued toast, so the toast text alone is not proof that a manual-review case was actually created, and in this case it demonstrably was not. Determining the precise failure point requires Supabase Edge Function invocation logs, which are not accessible from this session.
+
+### 16.5 Remaining blockers
+
+Confirming whether VerifyNow sandbox was actually reached for the three confirmed routes requires Supabase Edge Function runtime and invocation logs for idv-person-verify and ideally idv-open-manual-review, which are not accessible with the tooling and credentials available in this session. Client testing must remain paused until this is resolved and a real, persisted, passing record is observed in p5scr_idv_records or p5scr_manual_reviews for a confirmed-route submission.
+
+Final verdict: VERIFYNOW_INTERNAL_SMOKE_FAILED_PROVIDER_NOT_CALLED_NO_PERSISTED_BACKEND_RECORD_FOR_ANY_TEST_LOG_ACCESS_REQUIRED
