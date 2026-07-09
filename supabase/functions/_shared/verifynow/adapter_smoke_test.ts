@@ -235,6 +235,52 @@ Deno.test("Batch V -- unconfirmed Nigeria route (ng_virtual_nin) fails closed, n
     assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
 });
 
+Deno.test("Batch V -- legacy details_text-only payload (old published frontend) fails closed for SA said_basic, never calls fetch", async () => {
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "ZA", document_type: "za_said_basic" },
+      payload: { details_text: "8001015009087" },
+    },
+    { apiKey: "test", mode: "sandbox" },
+    );
+  assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+  assertEquals(out.resolved?.internal_status, "provider_error");
+  assertEquals(out.resolved?.unlocks_controlled_actions, false);
+});
+
+Deno.test("Batch V -- legacy details_text-only payload (old published frontend) fails closed for SA home_affairs_enhanced, never calls fetch", async () => {
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "ZA", document_type: "za_home_affairs_enhanced" },
+      payload: { details_text: "9111060123086" },
+    },
+    { apiKey: "test", mode: "sandbox" },
+    );
+  assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+});
+
+Deno.test("Batch V -- legacy details_text-only payload (old published frontend) fails closed for Nigeria NIN, never calls fetch", async () => {
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "NG", document_type: "ng_nin" },
+      payload: { details_text: "12345678901" },
+    },
+    { apiKey: "test", mode: "sandbox" },
+    );
+  assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+});
+
+Deno.test("Batch V -- partially-structured payload missing a required contract field still fails closed, never calls fetch", async () => {
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "NG", document_type: "ng_nin" },
+      payload: { some_other_field: "x" },
+    },
+    { apiKey: "test", mode: "sandbox" },
+    );
+  assertEquals(out.error_code, "PROVIDER_MISCONFIGURED");
+});
+
 // Restore fetch — leaves the runtime clean for other test files.
 Deno.test({
   name: "Batch V — restore fetch tripwire",
