@@ -70,3 +70,11 @@ Live staging submissions to VerifyNow remain paused. Client testing (David/Danie
 No live VerifyNow calls were made. No production mode was used or referenced outside of existing, unchanged config-loading code. No real identity data was used anywhere -- only the confirmed sandbox values and clearly-fake test fixtures. No secrets were changed. No Supabase schema, migration, RLS, RPC or grant was changed. No change to manual-review/admin-review decision policy. No change to WaD gate policy. Legacy idv-verify was not touched. Client testing was not resumed. No claim of staging readiness is made here.
 
 Final verdict: VERIFYNOW_CONTRACT_ALIGNMENT_READY_FOR_PR_REVIEW
+
+## 11. Merge-risk note (documented baseline-CI exception)
+
+Full merge-risk note posted as a PR comment on PR #23 (VerifyNow Contract Alignment: confirmed SA and Nigeria routes) covering: which CI failures are pre-existing and unrelated to this PR's files; confirmation that no failing test touches the VerifyNow adapter, provider-contract-map, IdvStart UI, or the new source guards; confirmation that all 8 new VerifyNow contract-alignment UI test assertions pass in isolation; confirmation that existing IdvStart-related tests still pass; direct confirmation that the current tip of main (commit 59cb5ca, CI run #1970) already fails with the identical pattern (Lint->Typecheck->Test->Build, Schema drift check, E2E, Dependency audit all red; Batch 7 Guards and Governance rollback proof green; identical 46 failed / 444 passed test-file counts modulo this PR's own new passing test file); and confirmation that this PR introduces no new runtime risk beyond the confirmed VerifyNow route changes.
+
+Recommendation recorded in that note: merge PR #23 under a documented baseline-CI exception, since the failing checks are demonstrably pre-existing and identical on main and every VerifyNow-specific check passes. A separate, dedicated CI-baseline repair task (missing Supabase CI secrets, dependency audit findings, schema drift violations, ~30 unrelated failing suites) is recommended as its own follow-up, kept fully separate from this PR.
+
+See the PR #23 conversation thread for the full note.
