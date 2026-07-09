@@ -78,3 +78,23 @@ Full merge-risk note posted as a PR comment on PR #23 (VerifyNow Contract Alignm
 Recommendation recorded in that note: merge PR #23 under a documented baseline-CI exception, since the failing checks are demonstrably pre-existing and identical on main and every VerifyNow-specific check passes. A separate, dedicated CI-baseline repair task (missing Supabase CI secrets, dependency audit findings, schema drift violations, ~30 unrelated failing suites) is recommended as its own follow-up, kept fully separate from this PR.
 
 See the PR #23 conversation thread for the full note.
+
+Stop Claude
+
+## 12. Autonomous completion mode -- Lovable deployment blocker (2026-07-09)
+
+Under an autonomous-completion authorisation, the following additional verification and investigation was performed directly on the branch tip and via GitHub, without merging or deploying anything.
+
+PR quality re-check: provider-contract-map.ts and adapter.ts were re-read in full from the branch. Confirmed: exactly three confirmed entries (za_said_basic, za_home_affairs_enhanced, ng_nin) in CONTRACTS; resolveProviderContract returns null for anything else; the adapter resolves the contract immediately after the API-key check and returns PROVIDER_MISCONFIGURED (no fetch reached) when the contract is null; the outbound URL is built from contract.endpoint_path, never from the internal document_type; mode is always included explicitly in the provider body; SA routes post to /verify, Nigeria NIN posts to /africa-verification. No secrets, schema, RLS, RPC, migration, manual-review, admin-review, WaD-gate or legacy idv-verify changes were found anywhere in the diff.
+
+CI re-check: the fresh CI run triggered by commit ec256e5 (the evidence-file-only commit) completed with the identical pattern already documented above -- Batch 7 Guards and Governance rollback proof green; Lint->Typecheck->Test->Build, Schema drift check, Dependency audit and E2E red; Staging smoke A-D skipped. This confirms the documentation-only commit introduced no new failures.
+
+Lovable deployment investigation: checked the repository's GitHub Deployments page (returns 404 -- GitHub's own Deployments API is not in use), Settings > Environments ("There are no environments for this repository"), and Settings > GitHub Apps, which confirms a "lovable.dev" GitHub App (by GPT-Engineer-App) is installed on this repository -- this is almost certainly the mechanism behind the README's "Deployment: Automatic via Lovable Cloud" line. Opening that app's Configure page required GitHub account-owner "sudo mode" re-authentication via email, which was not attempted, as it requires the account owner directly and falls outside safe autonomous access.
+
+As a result, none of the following could be determined from information available to this session: whether merging to main triggers an automatic deploy, what environment (staging/preview/production/shared) would receive it, whether auto-deploy can be paused or switched to manual, or whether a preview-first deployment path exists. No Lovable dashboard login is available to this session.
+
+Per the autonomous decision framework's rule for this exact situation (deployment target unknown and cannot be paused/controlled from available access): do not merge. PR #23 was NOT merged, nothing was deployed, and no further PRs were opened.
+
+Next human action required: someone with either Lovable project-dashboard access, or the GitHub account owner completing the "sudo mode" email verification to view the lovable.dev app's configuration, needs to confirm the deploy trigger, target environment, and whether it can be paused or run preview-only -- before PR #23 is merged.
+
+Final verdict: BLOCKED_LOVABLE_DEPLOYMENT_TARGET_UNKNOWN (this supersedes the prior VERIFYNOW_CONTRACT_ALIGNMENT_READY_FOR_PR_REVIEW marker at the top of this file pending that clarification).
