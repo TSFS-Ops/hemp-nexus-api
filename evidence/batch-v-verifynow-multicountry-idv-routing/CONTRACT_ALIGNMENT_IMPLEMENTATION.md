@@ -144,3 +144,28 @@ If the old published frontend sends `{ subject_id, document_country, document_ty
 With the fix and new tests in place, PR #23's backend change is now backward-compatible with the currently-published (pre-PR) frontend: whichever payload shape a caller sends, the adapter either builds a complete, contract-valid request or fails closed before touching the network. Combined with the confirmed deployment model (frontend stays unpublished until an explicit Publish click; only the backend deploys immediately to the shared Supabase project), this PR is recommended as safe to merge, on the explicit understanding that: merging deploys the backend (idv-person-verify's dependencies) immediately to the shared live Supabase project ugrfyhwlonlmlcmcpcdm; the frontend will remain on the old free-text UI until Publish is clicked; no client testing resumes until an internal, sandbox-only, credentialed smoke test has been run post-merge; and Lovable branch-switching is not used as a substitute safety net, since it deploys backend changes to the same shared project.
 
 Final verdict: VERIFYNOW_PR_23_SAFE_TO_MERGE_BACKEND_BACKWARD_COMPATIBLE, conditional on the merge being executed with the above understanding documented and on an internal post-merge sandbox smoke check before any client testing.
+
+
+## 15. PR #23 merged - post-merge status (2026-07-09)
+
+### 15.1 Merge result
+
+PR #23 was merged by explicit user go-ahead on 2026-07-09. Merge commit: 1eef6d91d73f96398f579243aa78c258e7e28ec2 (short 1eef6d9), merging branch verify-now-contract-alignment-confirmed-routes into main. Parents: 59cb5ca9e7919033f420294184fcbcb416a07e26 (prior main tip) and 9f90aa0ab70cefd977d0f23f667b21b7aaed424c (PR branch tip). Files merged (6, unchanged from the PR description): evidence/batch-v-verifynow-multicountry-idv-routing/CONTRACT_ALIGNMENT_IMPLEMENTATION.md, src/pages/desk/idv/IdvStart.tsx, src/tests/batch-v-verifynow-contract-alignment-ui.test.ts, supabase/functions/_shared/verifynow/adapter.ts, supabase/functions/_shared/verifynow/adapter_smoke_test.ts, supabase/functions/_shared/verifynow/provider-contract-map.ts. Final CI state on the merge commit matches the pre-merge baseline exactly: Batch 7 Guards PASS, Governance rollback proof PASS; Schema drift check, Dependency audit, and E2E - POI mint soft-route FAIL for the same pre-existing, unrelated reasons documented in section 14 and the merge-risk note (missing CI secrets, pre-existing schema-drift files, pre-existing vulnerable lockfile packages); Lint to Typecheck to Test to Build tracked the identical unit-test failure pattern seen on every prior run of this branch and on main itself. No new CI failures were introduced by the merge.
+
+### 15.2 Backend deployment implication
+
+Per the confirmed Lovable model (section 14.1), merging to main does not publish the frontend, but does deploy backend/Edge Function changes (adapter.ts, provider-contract-map.ts, and their sole consumer idv-person-verify) immediately to the single shared Lovable Cloud Supabase project (ugrfyhwlonlmlcmcpcdm) used by both the preview and the still-published frontend. This session has no direct visibility into Lovable's internal sync/deploy pipeline or timing, so completion of the backend sync cannot be confirmed from GitHub alone. A safe reachability probe was run instead, see section 15.3.
+
+### 15.3 Post-merge safe probe
+
+One unauthenticated POST was sent to the idv-person-verify Edge Function URL with a harmless placeholder body containing no real identity data. Result: HTTP 401 UNAUTHORIZED. This proves the function is reachable and fails closed before any VerifyNow call when no valid auth is presented. No live VerifyNow call was made or possible from this probe. No authenticated staging/internal test credentials were available in this session, so the confirmed sandbox smoke test (SA 8001015009087 / 9111060123086, Nigeria NIN 12345678901) was not run. Recorded as BLOCKED_STAGING_AUTH_CREDENTIALS_REQUIRED. The smoke test was not faked or simulated.
+
+### 15.4 Backward-compatibility protection status
+
+The section 14.3 fix (fail-closed check for missing contract-required fields before fetch) is part of the merged commit and is exercised by the 4 new tests in adapter_smoke_test.ts, also merged. It has not been independently re-verified against the live deployed function beyond the reachability probe above, since that would require either an authenticated request or a real VerifyNow sandbox call, neither of which was performed.
+
+### 15.5 Client testing status
+
+Client testing (David/Daniel or any end user) remains paused. It should not resume until an authenticated internal sandbox smoke test against the confirmed fixtures has actually been completed and recorded, in addition to the reachability probe above.
+
+Final verdict: VERIFYNOW_PR_23_MERGED_BACKEND_DEPLOYED_FRONTEND_UNPUBLISHED_PENDING_STAGING_AUTH
