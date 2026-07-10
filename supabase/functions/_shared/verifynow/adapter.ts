@@ -284,6 +284,8 @@ export async function verifyNowIdv(
                   provider: "verifynow",
                   idempotency_key: input.idempotencyKey ?? null,
                   error_code: null,
+                  raw_http_status: 0,
+                  response_body_shape: null,
           };
     }
 
@@ -299,6 +301,9 @@ export async function verifyNowIdv(
           body && typeof body === "object" && "reference" in body
         ? String((body as { reference: unknown }).reference ?? "")
             : null;
+    // Values-free structural summary for admin diagnostics only. NEVER
+    // returned to the UI, NEVER logged with raw values.
+    const responseBodyShape = summariseResponseShape(body);
     return {
           route_resolution: routeRes,
           raw_outcome: raw,
@@ -307,6 +312,8 @@ export async function verifyNowIdv(
           provider_reference: providerRef,
           idempotency_key: input.idempotencyKey ?? null,
           error_code: raw === "provider_error" ? "PROVIDER_FAILED" : null,
+          raw_http_status: httpStatus,
+          response_body_shape: responseBodyShape,
     };
 }
 
