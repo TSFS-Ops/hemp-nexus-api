@@ -219,3 +219,37 @@ Both commits show the same job-level pattern already established as this repo's 
 This fix has not been exercised against the live sandbox yet. Live smoke testing with the approved fixtures (South Africa 8001015009087 and 9111060123086, Nigeria NIN 12345678901) is required to confirm idv-person-verify now returns a clean result and that a corresponding row actually appears in p5scr_idv_records, checked with platform_admin or service-role access. Client testing remains paused until that live smoke test passes. Whether this migration has already been applied to the live Supabase database automatically, through the existing GitHub-to-Supabase sync used by this project, has not been independently confirmed from this session.
 
 Final verdict: VERIFYNOW_P5SCR_RECORD_IDV_SERVICE_ROLE_FIX_IMPLEMENTED_PENDING_LIVE_SMOKE
+
+## 18. idv-person-verify provider_live_now fix (2026-07-10)
+
+### 18.1 Second live smoke retry after the service-role fix
+
+After the section 17 migration was applied to the live Supabase project (confirmed via Lovable Cloud), the user retried the first approved live smoke test only (South Africa 8001015009087, za_said_basic). Network result: idv-subject-provision 200, idv-person-verify 500, idv-open-manual-review 200. The previous "p5scr: platform_admin required" error was gone. The new idv-person-verify response body was {"error":"RECORD_FAILED","detail":"new row for relation \"p5scr_idv_records\" violates check constraint \"p5scr_idv_live_requires_signoff\""}. This confirmed the service-role fix worked, that idv-person-verify now reaches the record-insert step, and surfaced a second, distinct defect.
+
+### 18.2 Root cause
+
+The p5scr_idv_live_requires_signoff CHECK constraint (supabase/migrations/20260626181220_8304a2ce-cec8-436a-bed4-5185e430dc17.sql) requires provider_live_now = false OR activation_signed_off_at IS NOT NULL. idv-person-verify's call to p5scr_record_idv passed p_provider_live_now: true unconditionally, for every route and every outcome, and never passed p_activation_signed_off_at, which therefore defaulted to NULL. The insert was guaranteed to violate the constraint on every single submission -- this was not specific to za_said_basic or to sandbox mode.
+
+This repo already uses the same "live requires a real sign-off" pattern elsewhere (p5b8_provider_configs.live_now, flipped only by a dedicated action that atomically sets live_now, activation_signed_off_at and activation_signed_off_by together). provider_live_now on p5scr_idv_records is intended to represent that same kind of formally signed-off live-provider activation state, not simply that a provider call was attempted. idv-person-verify, an automated edge function with no signoff authority, should never have asserted this flag.
+
+Separately, unlocks_controlled_actions (returned to the UI and logged to audit_logs) is computed correctly and independently via resolveVerifyNowOutcome/route_can_unlock, which already reflects the shared route table's can_unlock_controlled_actions per document type (false for za_said_basic and other supporting_only routes, true for za_home_affairs_enhanced/ng_nin/ng_virtual_nin/ng_nin_slip). That logic was not touched by this fix and remains correct.
+
+### 18.3 Fix implemented
+
+Commit 695e438f0899d0d7eaacb1d11d78f45f0088a6e2 (fix(idv): stop asserting live provider activation without signoff) changed exactly one line in supabase/functions/idv-person-verify/index.ts: p_provider_live_now: true became p_provider_live_now: false. p_activation_signed_off_at remains omitted (defaults to NULL). Nothing else changed: no edit to p5scr_record_idv, the CHECK constraint, any RLS policy, any GRANT/REVOKE, or the route table (either the shared server copy or the browser copy).
+
+Commit 88f4fdb228874f52a1bef6e03650e3d715887df6 (test(idv): add regression guard for idv-person-verify provider_live_now fix) added src/tests/idv-person-verify-provider-live-false-fix.test.ts, a static source-inspection guard confirming: p_provider_live_now: true is absent from the p5scr_record_idv call; the call passes false or omits the key; no activation_signed_off_at (or fake now() signoff) is set automatically; the CHECK constraint text is unchanged in its historical migration file; idv-person-verify contains no DDL of any kind; za_said_basic remains supporting_only and cannot unlock controlled actions, checked against both the imported route table and the shared server file directly; and the provider_not_available / RECORD_FAILED error-handling paths are unchanged.
+
+### 18.4 CI status
+
+Both commits show the identical pre-existing baseline pattern already documented in section 17.4: Batch 7 Guards and Governance rollback proof pass; Schema drift check, the E2E soft-route job (missing CI secrets), and the Dependency audit gate fail for the same pre-existing, unrelated reasons; and the full unit-test run reports the same baseline of 46 failed files / 26 failed tests out of 493 files / 7123 tests, driven by unrelated suites (an unrelated billing/PendingPurchaseNotice Supabase-mock TypeError was observed this run, consistent with but not identical to the specific unrelated suite named in section 17.4 -- both are part of the same standing, pre-existing failure set). This was independently confirmed to predate both of these commits by checking CI on the immediately prior commit (1feb7ef, "Applied pending migration live") and the commit before that (8f8c8d1), both of which show the identical failing job set. The new test file's own assertions are not among the reported failures.
+
+### 18.5 Infrastructure note
+
+This project runs on Lovable Cloud (Supabase managed through Lovable, not a separate Supabase account or workflow). Backend migrations and edge-function changes are applied and synced through Lovable Cloud's own process, not a standalone Supabase dashboard login or a GitHub Actions deploy workflow (this repository has no such workflow). This edge-function fix is expected to reach the live backend the same way the section 17 migration did; that has not yet been independently confirmed from this session for this specific commit.
+
+### 18.6 What remains
+
+Live smoke testing has not been retried since this fix. The first live smoke retry (South Africa 8001015009087, za_said_basic) should be re-attempted once the fix is confirmed live, to check whether idv-person-verify now completes successfully and a real row appears in p5scr_idv_records. Client testing remains paused until that passes.
+
+Final verdict: VERIFYNOW_IDV_PERSON_VERIFY_PROVIDER_LIVE_FALSE_FIX_IMPLEMENTED_PENDING_FIRST_SMOKE_RETRY
