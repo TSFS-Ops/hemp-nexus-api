@@ -186,6 +186,44 @@ jobs:
             --fail-fast \
             supabase/functions/match/e2e_soft_route_test.ts
 
+  verifynow-classifier-hardening-tests:
+    # Batch V-Hardening — VerifyNow provider classifier unit tests (Deno).
+    #
+    # Runs the full adapter_smoke_test.ts suite for
+    # supabase/functions/_shared/verifynow/adapter.ts, including the
+    # Batch V-Hardening additions: explicit positive verification
+    # signals (top-level and nested one level deep under data/result/
+    # verification/response), explicit negative/review signals,
+    # ambiguous shapes that must remain provider_error, HTTP-status
+    # classification (401/403/4xx/5xx/408) proven unchanged by the new
+    # body-shape signals, and deriveProviderErrorCode's per-status
+    # error_code enrichment.
+    #
+    # Pure unit tests: no network egress (a fetch tripwire fails the
+    # test if any uninjected fetch call is attempted), no secrets, no
+    # database. Runs unconditionally on every push and pull request,
+    # including forks, so this gate can never be silently skipped by a
+    # missing secret.
+    name: VerifyNow classifier hardening tests (Deno)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run VerifyNow adapter/classifier Deno tests
+        run: |
+          deno test \
+            --allow-env \
+            --no-check \
+            supabase/functions/_shared/verifynow/adapter_smoke_test.ts
+
   governance-rollback-proof:
     # Live empirical proof that the atomic SECURITY DEFINER RPC pattern
     # actually rolls back the business mutation when gov_emit_event fails.
@@ -352,5 +390,3 @@ jobs:
             playwright-report/
             evidence-bundle/
           retention-days: 14
-
-
