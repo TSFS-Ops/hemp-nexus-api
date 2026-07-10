@@ -58,3 +58,52 @@ The extension recognises a narrow, fixed set of unambiguous positive signals, at
    
     - Final verdict: VERIFYNOW_PROVIDER_CLASSIFIER_HARDENING_IMPLEMENTED_PENDING_SINGLE_SANDBOX_RETRY
     - 
+
+---
+
+## 13. Update (2026-07-10) — tests wired into CI, no longer dormant
+
+Status marker: VERIFYNOW_CLASSIFIER_HARDENING_TESTS_WIRED_IN_PENDING_LIVE_REDEPLOY_AND_SMOKE
+
+The gap identified after section 12 was real: the 38 new `Deno.test` blocks (plus the pre-existing tests in the same file, 42 total) were committed to `adapter_smoke_test.ts` but were not executed by any CI pipeline. This repo's main `CI` workflow (`.github/workflows/ci.yml`) only ran Bun/Vitest jobs plus one narrowly-scoped Deno job (`e2e-soft-route`, which drives a live deployed function and hard-fails without three repo secrets). Neither covered this file, and there is no `test:deno` script in `package.json`. A repo-wide code search also found 77 other `supabase/functions/**/*_test.ts` Deno files with the same dormant-test problem; fixing all of them is out of scope here, but the fix below follows the same reusable pattern.
+
+### What changed
+
+- `.github/workflows/ci.yml` — added a new, unconditional job, `verifynow-classifier-hardening-tests` ("VerifyNow classifier hardening tests (Deno)"), reusing the same `denoland/setup-deno@v1` action already present in the `e2e-soft-route` job (preference 1 from the task: wire into an existing Deno path rather than inventing a new mechanism). Unlike `e2e-soft-route`, this job needs no secrets and is not gated by `if:` on fork/secret checks, so it always runs on every push to `main` and every pull request. It runs exactly:
+
+  ```
+  deno test --allow-env --no-check supabase/functions/_shared/verifynow/adapter_smoke_test.ts
+  ```
+
+  `--allow-env` is required because `adapter.ts`'s `loadConfig()` reads `Deno.env` (the test overrides config via `cfgOverride`, but the permission check happens regardless). `--allow-net` was deliberately NOT requested: the test file installs a fetch tripwire that throws on any uninjected network call, and every real HTTP call in the tests goes through an injected `fetchImpl`, so no network permission is needed and none is granted — this keeps the job itself proof that these tests cannot reach the real VerifyNow API.
+
+- No production/runtime file was changed in this update. Only `.github/workflows/ci.yml` and this evidence file were touched.
+
+### Test path coverage confirmation
+
+The single `adapter_smoke_test.ts` run now wired into CI covers every category required for this closeout: explicit positive shapes (`verified`/`isVerified`/`identityVerified`/`status`/`verificationStatus`/`match` === `"verified"`); nested positive shapes one level deep under `data`/`result`/`verification`/`response`; negative/review shapes (`verified: false` and nested equivalents, mapping to `possible_mismatch`, never `clear_match`); ambiguous shapes that must remain `provider_error` (`success: true`, `status: "success"`, `status: "completed"`, message-only bodies, unknown nested shapes); HTTP 401/403/4xx/5xx/408 status behaviour proven unchanged by the new body-shape signals; and `deriveProviderErrorCode`'s per-status `error_code` derivation for every bucket (`PROVIDER_AUTH_FAILED`, `PROVIDER_REQUEST_REJECTED`, `PROVIDER_RATE_LIMITED`, `PROVIDER_FAILED`).
+
+### Tests run — this time actually executed, not just committed
+
+Exact command executed by CI: `deno test --allow-env --no-check supabase/functions/_shared/verifynow/adapter_smoke_test.ts` (job "VerifyNow classifier hardening tests (Deno)", step "Run VerifyNow adapter/classifier Deno tests").
+
+Commit: `ee6ee16` ("CI: wire VerifyNow classifier hardening Deno tests into pipeline"), pushed directly to `main`.
+Triggered run: CI #1995, run id `29122836074`, job id `86461682255`.
+Result observed directly in the GitHub Actions log for that job: `running 42 tests from ./supabase/functions/_shared/verifynow/adapter_smoke_test.ts` ... `ok | 42 passed | 0 failed (15ms)`. Job status: succeeded, in 11s.
+
+### CI / baseline status after this change
+
+In the same CI #1995 run: `Lint → Typecheck → Test → Build` (Bun/Vitest) ran unaffected by this change. `Schema drift check`, `E2E — POI mint soft-route (422 → 202)` (fails closed on missing repo secrets, by design), and `Dependency audit (HIGH/CRITICAL gate)` showed pre-existing red failures unrelated to this change (consistent with the baseline failure pattern already documented elsewhere in this repo's evidence trail before this session started). `Governance rollback proof` passed (self-skips cleanly without its optional secret). None of these are new regressions introduced by this commit — this commit touched only the CI workflow file and this evidence file.
+
+### Answers to the required report
+
+Files changed: `.github/workflows/ci.yml` (new CI job only — no other lines touched), this file.
+Commit SHA: `ee6ee16`.
+Exact test command: `deno test --allow-env --no-check supabase/functions/_shared/verifynow/adapter_smoke_test.ts`.
+Was the command actually run: yes, by GitHub Actions itself in CI #1995 (not merely asserted) — this is the first time in this workstream these 42 tests have been confirmed to execute.
+Result: 42 passed, 0 failed.
+CI / baseline status: new job green; pre-existing unrelated baseline failures (schema drift, dependency audit, e2e secret-gated job) unchanged by this commit.
+Production/runtime code changed: no. Only CI workflow + evidence.
+Live redeploy / smoke still pending: yes — this closes the "tests not run" gap only. Section 12's single supervised sandbox retry (za_said_basic, ID 8001015009087, via /desk/idv/start) has not been performed in this session and still requires Lovable Cloud dashboard access this session does not have.
+
+Final verdict: VERIFYNOW_CLASSIFIER_HARDENING_TESTS_WIRED_IN_PENDING_LIVE_REDEPLOY_AND_SMOKE
