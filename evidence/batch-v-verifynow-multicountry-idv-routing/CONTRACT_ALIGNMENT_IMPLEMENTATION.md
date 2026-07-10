@@ -194,3 +194,28 @@ The p5scr_record_idv RPC runs unconditionally near the end of idv-person-verify'
 Confirming whether VerifyNow sandbox was actually reached for the three confirmed routes requires Supabase Edge Function runtime and invocation logs for idv-person-verify and ideally idv-open-manual-review, which are not accessible with the tooling and credentials available in this session. Client testing must remain paused until this is resolved and a real, persisted, passing record is observed in p5scr_idv_records or p5scr_manual_reviews for a confirmed-route submission.
 
 Final verdict: VERIFYNOW_INTERNAL_SMOKE_FAILED_PROVIDER_NOT_CALLED_NO_PERSISTED_BACKEND_RECORD_FOR_ANY_TEST_LOG_ACCESS_REQUIRED
+
+
+## 17. p5scr_record_idv service-role fix (2026-07-10)
+
+### 17.1 Root cause confirmed
+
+Following the section 16 investigation, the user separately ran a controlled sandbox submission with DevTools open and observed the actual network flow: idv-subject-provision returned 200, idv-person-verify returned 500 with body containing error RECORD_FAILED and detail "p5scr: platform_admin required", and idv-open-manual-review returned 200. Reproducing the same submission from an authenticated session and instrumenting fetch confirmed the identical 500 body. Reading supabase/migrations/20260626181548_bf5cf1d4-f4d5-4d22-98fd-7dec3874440f.sql confirmed the p5scr_record_idv function (SECURITY DEFINER) contains an internal check requiring has_role(auth.uid(), 'platform_admin') before it will write a row. idv-person-verify/index.ts builds its Supabase client from SUPABASE_SERVICE_ROLE_KEY with no forwarded user JWT, so auth.uid() resolves to NULL under that call and the check fails unconditionally, for every caller, every route, and every country. This explains why every one of the five original screenshot tests, and the fresh DevTools-verified test, landed on manual review with no persisted p5scr_idv_records row.
+
+### 17.2 Caller safety analysis
+
+A repo-wide search for p5scr_record_idv found exactly two runtime callers. supabase/functions/idv-person-verify/index.ts validates that the target subject's person_external_ref equals the calling user's id before it ever calls the RPC. supabase/functions/idv-manual-review/index.ts independently validates that the calling user holds the platform_admin role, via a separate has_role RPC call, before it calls the RPC. Both use a service-role client for the write itself, but both gate access at the edge-function layer first. No frontend or browser code calls this RPC directly. A browser client cannot forge auth.role() equal to service_role without possessing the secret SUPABASE_SERVICE_ROLE_KEY, which is never exposed to the browser. The existing CI regression guard, scripts/check-p5-screening-phase-3-rpc.mjs and its mirror src/tests/p5-screening-phase-3-rpc.test.ts, only checks for the presence of the has_role(auth.uid(), 'platform_admin') substring inside the historical migration file, so it continues to pass unchanged.
+
+### 17.3 Fix implemented
+
+Migration supabase/migrations/20260710120000_328b66eb-3abb-4ab7-a803-90679878461e.sql (commit cbdbf60) adds a new CREATE OR REPLACE FUNCTION public.p5scr_record_idv with the identical signature and body, changing only the authorization check to also accept auth.role() equal to service_role alongside the existing platform_admin check, combined with OR. The REVOKE/GRANT statements are re-issued unchanged, still limited to authenticated, with no anon or PUBLIC grant added. No RLS policy of any kind was touched; every p5scr_* table remains platform_admin-only for SELECT. The historical migration file was not edited. A companion static regression test, src/tests/p5scr-record-idv-service-role-fix.test.ts (commit 0a7127a), asserts all of the above against the new migration file and confirms the historical migration is untouched. All eight assertions in that file pass in CI.
+
+### 17.4 CI status after the fix
+
+Both commits show the same job-level pattern already established as this repo's baseline: Governance rollback proof passes; Schema drift check fails on pre-existing, unrelated frontend convention violations (BackButton/PageFooter usage in Auth.tsx, Landing.tsx, Trust.tsx, ComplianceEngine.tsx, TradeDesk.tsx, Traders.tsx); the E2E soft-route job fails because SUPABASE_SERVICE_ROLE_KEY, VITE_SUPABASE_PUBLISHABLE_KEY and VITE_SUPABASE_URL are not configured as CI secrets; and the Dependency audit gate fails on pre-existing npm advisories unrelated to this change. At the unit-test level, the full suite reports 46 failed files and 26 failed tests out of 493 files and 7123 tests on both the migration commit and the test commit, matching the standing baseline; the same unrelated failing suite (src/tests/public-api-v1-sandprod-batch2-foundation.test.ts) appears identically in both runs. The new src/tests/p5scr-record-idv-service-role-fix.test.ts file itself reports 8 passed, 0 failed.
+
+### 17.5 What remains
+
+This fix has not been exercised against the live sandbox yet. Live smoke testing with the approved fixtures (South Africa 8001015009087 and 9111060123086, Nigeria NIN 12345678901) is required to confirm idv-person-verify now returns a clean result and that a corresponding row actually appears in p5scr_idv_records, checked with platform_admin or service-role access. Client testing remains paused until that live smoke test passes. Whether this migration has already been applied to the live Supabase database automatically, through the existing GitHub-to-Supabase sync used by this project, has not been independently confirmed from this session.
+
+Final verdict: VERIFYNOW_P5SCR_RECORD_IDV_SERVICE_ROLE_FIX_IMPLEMENTED_PENDING_LIVE_SMOKE
