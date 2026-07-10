@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
       const resolved = outcome.resolved;
                    const workflowStatus = resolved?.internal_status ?? "provider_error";
                    const recordState = mapInternalStatusToRecordState(workflowStatus);
-                   const { error: rpcErr } = await admin.rpc("p5scr_record_idv", {
+      const { error: rpcErr } = await admin.rpc("p5scr_record_idv", {
                            p_subject_id: subjectId,
                            p_state: recordState,
                            p_provider_ref: outcome.provider_reference ?? null,
@@ -146,12 +146,36 @@ Deno.serve(async (req) => {
                                      error_code: outcome.error_code ?? null,
                                      workflow_status: workflowStatus,
                                      record_state: recordState,
+                                     // Batch V instrumentation — values-free structural
+                                     // diagnostics. Admin-only (this column is never
+                                     // returned to end users). Purpose: distinguish
+                                     // auth-rejection vs body-rejection vs unrecognised
+                                     // response-shape without persisting any provider
+                                     // response values.
+                                     diagnostic: {
+                                               raw_http_status: outcome.raw_http_status ?? null,
+                                               response_body_shape: outcome.response_body_shape ?? null,
+                                     },
                            },
                    });
                    if (rpcErr) {
                            console.error("[idv-person-verify] p5scr_record_idv failed", rpcErr.message);
                            return json({ error: "RECORD_FAILED", detail: rpcErr.message }, 500, req);
                    }
+
+      // Admin-only diagnostic log line — VALUES-FREE. Contains only
+      // route identifiers, HTTP status, the structural body shape (keys
+      // + primitive types, no values), the adapter error_code, and the
+      // normalised raw_outcome. No secrets, no ID numbers, no provider
+      // response values.
+      console.info("[idv-person-verify] provider_response", JSON.stringify({
+              document_country: documentCountry,
+              document_type: documentType,
+              raw_http_status: outcome.raw_http_status ?? null,
+              response_body_shape: outcome.response_body_shape ?? null,
+              error_code: outcome.error_code ?? null,
+              raw_outcome: outcome.raw_outcome ?? null,
+      }));
 
       // Best-effort audit; never fail the caller if the audit table is absent.
       try {
