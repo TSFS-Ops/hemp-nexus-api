@@ -38,6 +38,7 @@ import {
     type IdvRouteResolution,
 } from "../idv-route-table.ts";
 import { resolveProviderContract } from "./provider-contract-map.ts";
+import { summariseResponseShape, type ShapeSummary } from "./response-shape.ts";
 
 export interface VerifyNowAdapterConfig {
     apiKey?: string;
@@ -74,6 +75,16 @@ export interface VerifyNowAdapterOutcome {
       | "PROVIDER_NOT_AVAILABLE"
       | "PROVIDER_FAILED"
       | null;
+    /**
+     * Instrumentation-only diagnostics. VALUES-FREE. Never returned to the
+     * end user; the caller (idv-person-verify) persists these into
+     * `raw_provider_payload_admin_only` and logs them behind an
+     * admin-only diagnostic line. `raw_http_status` is 0 if the fetch
+     * threw. `response_body_shape` is null when no HTTP call was made
+     * (route/config/idempotency fail-closed paths).
+     */
+    raw_http_status?: number | null;
+    response_body_shape?: ShapeSummary | null;
 }
 
 const DEFAULT_BASE_URL = "https://www.verifynow.co.za/api/external";
