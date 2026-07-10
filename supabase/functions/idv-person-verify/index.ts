@@ -25,6 +25,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders as buildCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { resolveIdvRoute } from "../_shared/idv-route-table.ts";
 import { verifyNowIdv } from "../_shared/verifynow/adapter.ts";
+import { mapInternalStatusToRecordState } from "../_shared/verifynow/record-state-mapping.ts";
 
 Deno.serve(async (req) => {
     const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS") || "";
@@ -123,17 +124,28 @@ Deno.serve(async (req) => {
 
       // Persist the safe result via the existing RPC -- never a raw insert
       // into p5scr_idv_records.
+      //
+      // IMPORTANT: `resolved.internal_status` is a VerifyNow **workflow**
+      // status (e.g. `idv_completed`, `retry_required`,
+      // `blocked_pending_admin_decision`). The DB column
+      // `p5scr_idv_records.state` accepts a smaller **persistence** enum
+      // guarded by check constraint `p5scr_idv_records_state_check`. We map
+      // one to the other at this boundary. Never pass workflow statuses
+      // directly into `p_state`.
       const resolved = outcome.resolved;
-                   const state = resolved?.internal_status ?? "provider_error";
+                   const workflowStatus = resolved?.internal_status ?? "provider_error";
+                   const recordState = mapInternalStatusToRecordState(workflowStatus);
                    const { error: rpcErr } = await admin.rpc("p5scr_record_idv", {
                            p_subject_id: subjectId,
-                           p_state: state,
+                           p_state: recordState,
                            p_provider_ref: outcome.provider_reference ?? null,
                            p_provider_live_now: false,
                            p_raw_provider_payload_admin_only: {
                                      route: routeInput,
                                      raw_outcome: outcome.raw_outcome,
                                      error_code: outcome.error_code ?? null,
+                                     workflow_status: workflowStatus,
+                                     record_state: recordState,
                            },
                    });
                    if (rpcErr) {
@@ -152,18 +164,22 @@ Deno.serve(async (req) => {
                                     document_country: documentCountry,
                                     document_type: documentType,
                                     provider: outcome.provider,
-                                    internal_status: state,
+                                    internal_status: workflowStatus,
+                                    workflow_status: workflowStatus,
+                                    record_state: recordState,
                                     unlocks_controlled_actions: resolved?.unlocks_controlled_actions ?? false,
                         },
               });
       } catch { /* audit best-effort */ }
 
       // Only safe fields are ever returned to the UI -- no raw provider
-      // payload, no ID numbers, no biometric data.
+      // payload, no ID numbers, no biometric data. UI continues to receive
+      // the **workflow** status (unchanged contract); the DB persists the
+      // mapped **record** state.
       return json({
               ok: true,
               subject_id: subjectId,
-              internal_status: state,
+              internal_status: workflowStatus,
               unlocks_controlled_actions: resolved?.unlocks_controlled_actions ?? false,
       }, 200, req);
              } catch (e) {
