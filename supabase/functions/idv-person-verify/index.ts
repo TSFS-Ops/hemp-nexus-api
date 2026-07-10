@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
                            p_subject_id: subjectId,
                            p_state: state,
                            p_provider_ref: outcome.provider_reference ?? null,
-                           p_provider_live_now: true,
+                           p_provider_live_now: false,
                            p_raw_provider_payload_admin_only: {
                                      route: routeInput,
                                      raw_outcome: outcome.raw_outcome,
