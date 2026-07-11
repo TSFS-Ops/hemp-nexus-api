@@ -36,7 +36,7 @@ describe("Customer (non-admin) Billing view: PayFast only", () => {
     expect(screen.getByTestId("pay-payfast-single")).toBeTruthy();
     expect(screen.queryByTestId("pay-paystack-single")).toBeNull();
     expect(screen.queryByText(/Admin only/i)).toBeNull();
-    expect(screen.queryByText(/Paystack/i)).toBeNull();
+    expect(screen.queryByText(/Paystack/i)).toBeNull(); expect(screen.getByTestId("pay-payfast-single").textContent).toMatch(/\$10/); expect(screen.getByTestId("pay-payfast-single").textContent).not.toMatch(/R\d/); expect(screen.queryByText(/Rate used/i)).toBeNull(); expect(screen.queryByText(/PayFast amount/i)).toBeNull(); expect(screen.queryByTestId("payment-method-fx-note-single")).toBeNull();
     cleanup();
   });
 
@@ -46,7 +46,7 @@ describe("Customer (non-admin) Billing view: PayFast only", () => {
     const paystackBtn = screen.getByTestId("pay-paystack-single");
     expect(paystackBtn).toBeTruthy();
     expect(paystackBtn.getAttribute("data-admin-only")).toBe("true");
-    expect(paystackBtn.textContent).toMatch(/Admin only/i);
+    expect(paystackBtn.textContent).toMatch(/Admin only/i); expect(screen.getByTestId("payment-method-fx-note-single").getAttribute("data-admin-only")).toBe("true");
     cleanup();
   });
 });
