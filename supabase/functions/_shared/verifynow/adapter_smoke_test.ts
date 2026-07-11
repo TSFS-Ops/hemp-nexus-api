@@ -634,8 +634,15 @@ Deno.test("Batch V-Confirmed-Schema — end-to-end: injected 200 said_verificati
     { apiKey: "test", mode: "sandbox", fetchImpl: fakeFetch },
   );
   assertEquals(out.raw_outcome, "clear_match");
-  assertEquals(out.resolved?.internal_status, "idv_completed");
-  assertEquals(out.resolved?.unlocks_controlled_actions, true);
+  // za_said_basic is document_class "supporting_only"
+  // (can_unlock_controlled_actions: false in idv-route-table.ts) -- a
+  // clear_match on this route is correctly downgraded to
+  // manual_review_required / unlocks_controlled_actions: false. This
+  // proves the classifier recognised the confirmed response shape
+  // (raw_outcome) without weakening the separate route-level
+  // controlled-actions gate.
+  assertEquals(out.resolved?.internal_status, "manual_review_required");
+  assertEquals(out.resolved?.unlocks_controlled_actions, false);
 });
 
 // Restore fetch — leaves the runtime clean for other test files.
