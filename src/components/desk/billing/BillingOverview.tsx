@@ -248,7 +248,7 @@ export function BillingOverview() {
             Provisioning
           </h2>
           <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground/70">
-            USD · Native settlement
+                USD pricing       
           </p>
         </div>
 
