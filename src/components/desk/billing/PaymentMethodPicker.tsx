@@ -247,10 +247,10 @@ export function PaymentMethodPicker({
               <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting…</>
             ) : providerUnavailable ? (
               <>PayFast unavailable</>
-            ) : zar !== null ? (
-              <>Pay {formatZar(zar)} via PayFast</>
+            ) : usd !== null ? (
+              <>Pay {usd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })} with PayFast</>
             ) : (
-              <>Pay via PayFast</>
+              <>Pay with PayFast</>
             )}
           </button>
         )}
@@ -277,10 +277,10 @@ export function PaymentMethodPicker({
         )}
       </div>
 
-      {showPayfast && eligible && usd !== null && (
+      {showPayfast && eligible && usd !== null && isAdmin && (
         <p
           className="font-mono text-[11px] tracking-wide text-muted-foreground"
-          data-testid={`payment-method-fx-note-${packageId}`}
+          data-testid={`payment-method-fx-note-${packageId}`} data-admin-only="true"
         >
           {`${usd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })} `}
           {zar !== null && payfast.usdZarRate ? (
@@ -299,9 +299,7 @@ export function PaymentMethodPicker({
           className="text-[11px] text-muted-foreground"
           data-testid={`payment-method-note-${packageId}`}
         >
-          Credits are priced in USD. PayFast charges the ZAR amount shown
-          before payment. The rate is set by Izenzo and locked when
-          checkout starts.
+          Credits are priced in USD. PayFast will show the final payment amount before you confirm payment.
         </p>
       )}
 
