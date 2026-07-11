@@ -20,6 +20,12 @@
  *   status:"success", status:"completed", message-only) still fall
  *   through to provider_error; and the admin-only error_code is now more
  *   specific for 401/403/400/405/422/429 without changing raw_outcome.
+ * - Batch V-Confirmed-Schema: the two confirmed VerifyNow SA
+ *   said_verification response families (nested Status /
+ *   realTimeResults.Status, and the flat OnHANIS/OnNPR/DeadIndicator/
+ *   IDNBlocked/Error result shape) are recognised, gated behind a
+ *   top-level success: true envelope check; unrecognised values in
+ *   either shape still fall through to provider_error.
  */
 
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
@@ -466,6 +472,170 @@ Deno.test("Batch V-Hardening — end-to-end: injected 200 with { verified: true 
     assertEquals(out.raw_outcome, "clear_match");
     assertEquals(out.resolved?.internal_status, "idv_completed");
     assertEquals(out.resolved?.unlocks_controlled_actions, true);
+});
+
+
+
+// ---------------------------------------------------------------------
+// Batch V-Confirmed-Schema: confirmed said_verification (nested) shape.
+// ---------------------------------------------------------------------
+
+Deno.test("Batch V-Confirmed-Schema — said_verification Status verified/clear/pass maps to clear_match", () => {
+  assertEquals(classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "Verified" } } }), "clear_match");
+  assertEquals(classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "Clear" } } }), "clear_match");
+  assertEquals(classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "Pass" } } }), "clear_match");
+});
+
+Deno.test("Batch V-Confirmed-Schema — said_verification realTimeResults.Status verified/clear/pass maps to clear_match", () => {
+  assertEquals(
+    classifyProviderResponse(200, { success: true, results: { said_verification: { realTimeResults: { Status: "verified" } } } }),
+    "clear_match",
+  );
+  assertEquals(
+    classifyProviderResponse(200, { success: true, results: { said_verification: { realTimeResults: { Status: "clear" } } } }),
+    "clear_match",
+  );
+  assertEquals(
+    classifyProviderResponse(200, { success: true, results: { said_verification: { realTimeResults: { Status: "pass" } } } }),
+    "clear_match",
+  );
+});
+
+Deno.test("Batch V-Confirmed-Schema — said_verification Status mismatch/no_match/not_found maps to a safe non-clear outcome", () => {
+  const mismatch = classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "Mismatch" } } });
+  const noMatch = classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "No_Match" } } });
+  const notFound = classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "Not_Found" } } });
+  for (const out of [mismatch, noMatch, notFound]) {
+    assertEquals(out, "possible_mismatch");
+    assert(out !== "clear_match");
+  }
+});
+
+Deno.test("Batch V-Confirmed-Schema — said_verification Status blocked/deceased/fraud maps to a blocked/admin-decision outcome", () => {
+  assertEquals(classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "Blocked" } } }), "blocked_id");
+  assertEquals(classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "Deceased" } } }), "deceased");
+  assertEquals(classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "Fraud" } } }), "suspected_fraud");
+});
+
+Deno.test("Batch V-Confirmed-Schema — said_verification unrecognised Status stays provider_error", () => {
+  assertEquals(
+    classifyProviderResponse(200, { success: true, results: { said_verification: { Status: "something_unexpected" } } }),
+    "provider_error",
+  );
+});
+
+Deno.test("Batch V-Confirmed-Schema — said_verification present with no Status anywhere stays provider_error", () => {
+  assertEquals(
+    classifyProviderResponse(200, { success: true, results: { said_verification: { transaction_id: "abc123" } } }),
+    "provider_error",
+  );
+});
+
+Deno.test("Batch V-Confirmed-Schema — { success: true } alone (no said_verification, no result) stays provider_error", () => {
+  assertEquals(classifyProviderResponse(200, { success: true }), "provider_error");
+});
+
+// ---------------------------------------------------------------------
+// Batch V-Confirmed-Schema: confirmed flat result shape.
+// ---------------------------------------------------------------------
+
+Deno.test("Batch V-Confirmed-Schema — flat result OnHANIS+OnNPR true with DeadIndicator/IDNBlocked false maps to clear_match", () => {
+  assertEquals(
+    classifyProviderResponse(200, { success: true, result: { OnHANIS: true, OnNPR: true, DeadIndicator: false, IDNBlocked: false } }),
+    "clear_match",
+  );
+});
+
+Deno.test("Batch V-Confirmed-Schema — flat result DeadIndicator true maps to a blocked/admin-decision outcome, never clear_match", () => {
+  const out = classifyProviderResponse(200, { success: true, result: { OnHANIS: true, OnNPR: true, DeadIndicator: true } });
+  assertEquals(out, "deceased");
+  assert(out !== "clear_match");
+});
+
+Deno.test("Batch V-Confirmed-Schema — flat result IDNBlocked true maps to a blocked/admin-decision outcome, never clear_match", () => {
+  const out = classifyProviderResponse(200, { success: true, result: { OnHANIS: true, OnNPR: true, IDNBlocked: true } });
+  assertEquals(out, "blocked_id");
+  assert(out !== "clear_match");
+});
+
+Deno.test("Batch V-Confirmed-Schema — flat result OnHANIS false or OnNPR false maps to a safe mismatch/review outcome", () => {
+  assertEquals(classifyProviderResponse(200, { success: true, result: { OnHANIS: false, OnNPR: true } }), "possible_mismatch");
+  assertEquals(classifyProviderResponse(200, { success: true, result: { OnHANIS: true, OnNPR: false } }), "possible_mismatch");
+});
+
+Deno.test("Batch V-Confirmed-Schema — flat result Error populated maps to provider_error", () => {
+  assertEquals(classifyProviderResponse(200, { success: true, result: { Error: "Some provider error text" } }), "provider_error");
+  assertEquals(classifyProviderResponse(200, { success: true, result: { Error: true } }), "provider_error");
+});
+
+Deno.test("Batch V-Confirmed-Schema — flat result unknown/missing fields stays provider_error", () => {
+  assertEquals(classifyProviderResponse(200, { success: true, result: {} }), "provider_error");
+  assertEquals(classifyProviderResponse(200, { success: true, result: { IDN: "8001015009087", Name: "A" } }), "provider_error");
+});
+
+Deno.test("Batch V-Confirmed-Schema — flat result string/casing-defensive booleans are recognised", () => {
+  assertEquals(
+    classifyProviderResponse(200, { success: true, result: { OnHANIS: "true", OnNPR: "Y", DeadIndicator: "no", IDNBlocked: "0" } }),
+    "clear_match",
+  );
+  assertEquals(
+    classifyProviderResponse(200, { success: "true", result: { OnHANIS: "yes", OnNPR: "1", DeadIndicator: "N", IDNBlocked: "false" } }),
+    "clear_match",
+  );
+});
+
+// ---------------------------------------------------------------------
+// Batch V-Confirmed-Schema: regression -- pre-existing behaviour intact.
+// ---------------------------------------------------------------------
+
+Deno.test("Batch V-Confirmed-Schema — pre-existing top-level match/status behaviour is unaffected", () => {
+  assertEquals(classifyProviderResponse(200, { match: "clear" }), "clear_match");
+  assertEquals(classifyProviderResponse(200, { status: "blocked" }), "blocked_id");
+  assertEquals(classifyProviderResponse(200, { verified: true }), "clear_match");
+});
+
+Deno.test("Batch V-Confirmed-Schema — HTTP 401/403/4xx/5xx handling is unchanged by the new body-shape signals", () => {
+  const bodies: Record<string, unknown>[] = [
+    { success: true, results: { said_verification: { Status: "Verified" } } },
+    { success: true, result: { OnHANIS: true, OnNPR: true } },
+  ];
+  for (const body of bodies) {
+    assertEquals(classifyProviderResponse(401, body), "provider_error");
+    assertEquals(classifyProviderResponse(403, body), "provider_error");
+    assertEquals(classifyProviderResponse(400, body), "provider_error");
+    assertEquals(classifyProviderResponse(422, body), "provider_error");
+    assertEquals(classifyProviderResponse(429, body), "provider_error");
+    assertEquals(classifyProviderResponse(408, body), "timeout");
+    assertEquals(classifyProviderResponse(500, body), "source_unavailable");
+  }
+});
+
+Deno.test("Batch V-Confirmed-Schema — end-to-end: injected 200 said_verification Status=Verified resolves as a clear match", async () => {
+  const fakeFetch = (() =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          success: true,
+          requestId: "req-1",
+          results: { said_verification: { Status: "Verified", transaction_id: "txn-1" } },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    )) as typeof fetch;
+
+  const out = await verifyNowIdv(
+    {
+      route: { document_country: "ZA", document_type: "za_said_basic" },
+      payload: { said_number: "8001015009087" },
+    },
+    { apiKey: "test", mode: "sandbox", fetchImpl: fakeFetch },
+  );
+  assertEquals(out.raw_outcome, "clear_match");
+  assertEquals(out.resolved?.internal_status, "idv_completed");
+  assertEquals(out.resolved?.unlocks_controlled_actions, true);
 });
 
 // Restore fetch — leaves the runtime clean for other test files.
