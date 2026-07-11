@@ -159,7 +159,7 @@ export function PurchasesList({ orgId }: PurchasesListProps) {
                       <p className="text-sm font-medium">
                         {p.token_amount} credits
                         {p.provider === "payfast" ? (
-                          <span className="text-muted-foreground"> · ZAR via PayFast</span>
+                          <span className="text-muted-foreground"> · $${Number(p.amount_usd).toFixed(2)} USD via PayFast</span>
                         ) : (
                           <span className="text-muted-foreground"> · ${Number(p.amount_usd).toFixed(2)} USD via Paystack</span>
                         )}
