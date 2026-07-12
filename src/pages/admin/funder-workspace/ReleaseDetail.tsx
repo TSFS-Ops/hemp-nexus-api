@@ -117,6 +117,11 @@ export default function FunderWorkspaceReleaseDetail() {
   };
 
   const [generating, setGenerating] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkMatchId, setLinkMatchId] = useState("");
+  const [linkReason, setLinkReason] = useState("");
+  const [linking, setLinking] = useState(false);
+
   const handleGenerate = async () => {
     if (!release) return;
     setGenerating(true);
@@ -130,6 +135,27 @@ export default function FunderWorkspaceReleaseDetail() {
       setGenerating(false);
     }
   };
+
+  const handleLink = async () => {
+    if (!linkMatchId || !linkReason.trim()) {
+      toast.error("Select a canonical deal and provide a reason");
+      return;
+    }
+    setLinking(true);
+    try {
+      await linkReleaseToMatch({ p_release_id: releaseId, p_match_id: linkMatchId, p_reason: linkReason.trim() });
+      toast.success("Release linked to canonical deal");
+      setLinkOpen(false);
+      setLinkMatchId("");
+      setLinkReason("");
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLinking(false);
+    }
+  };
+
 
   return (
     <div className="p-6 space-y-4" data-testid="fw-admin-release-detail">
