@@ -38,6 +38,9 @@ function walk(dir, out = []) {
 const ALLOWED_BATCH3_FNS = new Set([
   "p5-batch3-funder-summary",
   "p5-batch3-stage6-monitor",
+  // Institutional Funder Evidence Workspace — Batch 4 (V1 sealed-pack pipeline; outside legacy p5-batch3 surface).
+  "funder-pack-generate",
+  "funder-pack-download",
 ]);
 const fnDir = join(ROOT, "supabase/functions");
 if (existsSync(fnDir)) {
