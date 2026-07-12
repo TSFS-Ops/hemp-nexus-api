@@ -38,7 +38,7 @@ import type {
   PackVersionRow,
   ReleaseConsentRow,
   UsageEventRow,
-} from "@/lib/funder-workspace/types";
+} from "@/lib/funder-workspace/types";import { CONSENT_STATUS_LABELS } from "@/lib/funder-workspace/consent-labels";
 import {
   canGenerateSealedPack,
   effectiveReleaseStatus,
@@ -270,7 +270,7 @@ export default function FunderWorkspaceReleaseDetail() {
                   {consents.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="capitalize">{c.party_type}</TableCell>
-                      <TableCell><Badge variant={c.status === "granted" ? "default" : c.status === "overridden" ? "destructive" : "secondary"}>{c.status}</Badge></TableCell>
+                      <TableCell><Badge variant={c.status === "granted" ? "default" : c.status === "overridden" ? "destructive" : "secondary"}>{CONSENT_STATUS_LABELS[c.status] ?? c.status}</Badge></TableCell>
                       <TableCell className="text-xs">{c.captured_at ? new Date(c.captured_at).toLocaleString() : "—"}</TableCell>
                       <TableCell className="text-xs">{c.source ?? "—"}</TableCell>
                       <TableCell className="text-xs">{c.override_reason ?? "—"}</TableCell>
