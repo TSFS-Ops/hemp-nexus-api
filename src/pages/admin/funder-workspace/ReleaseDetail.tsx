@@ -208,10 +208,20 @@ export default function FunderWorkspaceReleaseDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-base">Pack versions</CardTitle></CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-base">Pack versions</CardTitle>
+              <Button
+                size="sm"
+                onClick={handleGenerate}
+                disabled={generating || release.release_status !== "active"}
+                data-testid="fw-admin-generate-pack"
+              >
+                {generating ? "Generating…" : "Generate sealed pack"}
+              </Button>
+            </CardHeader>
             <CardContent>
               {packs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No compiled pack versions have been produced yet. PDF generation is not part of this batch.</p>
+                <p className="text-sm text-muted-foreground">No sealed pack versions yet. Click <span className="font-medium">Generate sealed pack</span> to produce one.</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -220,6 +230,7 @@ export default function FunderWorkspaceReleaseDetail() {
                       <TableHead>Status</TableHead>
                       <TableHead>Generated</TableHead>
                       <TableHead>Sealed</TableHead>
+                      <TableHead>SHA-256</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -229,6 +240,7 @@ export default function FunderWorkspaceReleaseDetail() {
                         <TableCell><Badge>{p.status}</Badge></TableCell>
                         <TableCell className="text-xs">{p.generated_at ? new Date(p.generated_at).toLocaleString() : "—"}</TableCell>
                         <TableCell className="text-xs">{p.sealed_at ? new Date(p.sealed_at).toLocaleString() : "—"}</TableCell>
+                        <TableCell className="font-mono text-xs">{p.file_sha256 ? p.file_sha256.slice(0, 12) + "…" : "—"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
