@@ -214,6 +214,7 @@ const FunderWorkspaceReleases = lazy(() => import("@/pages/admin/funder-workspac
 const FunderWorkspaceNewRelease = lazy(() => import("@/pages/admin/funder-workspace/NewRelease"));
 const FunderWorkspaceReleaseDetail = lazy(() => import("@/pages/admin/funder-workspace/ReleaseDetail"));
 const FunderWorkspaceAudit = lazy(() => import("@/pages/admin/funder-workspace/Audit"));
+const FunderWorkspacePilotConsole = lazy(() => import("@/pages/admin/funder-workspace/PilotConsole"));
 
 // Institutional Funder Evidence Workspace — Batch 3 (funder-facing)
 const FunderWorkspaceFunderIndex = lazy(() => import("@/pages/funder/workspace/Index"));
@@ -430,6 +431,7 @@ function App() {
                   <Route path="/admin/funder-workspace/releases/new" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceNewRelease /></RequireAuth>} />
                   <Route path="/admin/funder-workspace/releases/:releaseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceReleaseDetail /></RequireAuth>} />
                   <Route path="/admin/funder-workspace/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceAudit /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/pilot" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspacePilotConsole /></RequireAuth>} />
 
                   {/* Institutional Funder Evidence Workspace — Batch 3 (funder-facing) */}
                   <Route path="/funder/workspace" element={<RequireAuth><FunderWorkspaceFunderIndex /></RequireAuth>} />

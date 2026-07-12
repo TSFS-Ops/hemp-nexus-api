@@ -17,6 +17,7 @@ const SECTIONS = [
   { title: "Deal releases", to: "/admin/funder-workspace/releases", description: "Evidence packs released to funders, expiry and revocation." },
   { title: "New deal release", to: "/admin/funder-workspace/releases/new", description: "Release a deal / evidence pack to an approved funder organisation." },
   { title: "Audit & usage", to: "/admin/funder-workspace/audit", description: "Read-only audit trail and non-financial usage events." },
+  { title: "Controlled pilot console", to: "/admin/funder-workspace/pilot", description: "Prepare fake pilot logins and step-by-step guide for a non-technical manual test." },
 ] as const;
 
 export default function FunderWorkspaceAdminIndex() {
