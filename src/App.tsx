@@ -414,6 +414,17 @@ function App() {
                   <Route path="/admin/p5-batch3/requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Requests /></RequireAuth>} />
                   <Route path="/admin/p5-batch3/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Audit /></RequireAuth>} />
 
+                  {/* Institutional Funder Evidence Workspace — Batch 2: admin console (platform_admin only) */}
+                  <Route path="/admin/funder-workspace" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceAdminIndex /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/onboarding" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceOnboarding /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/organisations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceOrganisations /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/organisations/:organisationId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceOrganisationDetail /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/releases" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceReleases /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/releases/new" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceNewRelease /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/releases/:releaseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceReleaseDetail /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceAudit /></RequireAuth>} />
+
+
                   {/* P-5 Batch 3 — Stage 5: funder-facing surfaces (authenticated; grant enforced server-side) */}
                   <Route path="/funder/p5-batch3" element={<RequireAuth><P5Batch3FunderIndex /></RequireAuth>} />
                   <Route path="/funder/p5-batch3/opportunities/:grantId" element={<RequireAuth><P5Batch3FunderOpportunity /></RequireAuth>} />
