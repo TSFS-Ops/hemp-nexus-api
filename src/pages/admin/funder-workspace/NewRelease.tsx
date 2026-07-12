@@ -44,12 +44,6 @@ const RAW_KEYS = new Set<string>(RAW_DOCUMENT_PERMISSION_KEYS);
 export default function FunderWorkspaceNewRelease() {
   const navigate = useNavigate();
   const orgsQuery = useQuery({ queryKey: ["fw-orgs"], queryFn: listFunderOrganisations });
-  const packsQuery = useQuery({
-    queryKey: ["fw-eligible-packs", values?.match_id],
-    queryFn: () => listEligibleEvidencePacks(values.match_id),
-    enabled: false,
-  });
-
 
   const [values, setValues] = useState<ReleaseFormValues>({
     funder_organisation_id: "",
@@ -67,6 +61,11 @@ export default function FunderWorkspaceNewRelease() {
 
   const [errors, setErrors] = useState<Partial<Record<keyof ReleaseFormValues, string>>>({});
   const [busy, setBusy] = useState(false);
+  const packsQuery = useQuery({
+    queryKey: ["fw-eligible-packs", values.match_id],
+    queryFn: () => listEligibleEvidencePacks(values.match_id),
+    enabled: false,
+  });
 
   const overrideNeeded = requiresAdminOverride(values.buyer_consent_status, values.seller_consent_status);
   const rawEnabled = values.can_view_raw_documents || values.can_download_raw_documents || values.can_view_unmasked_sensitive_details;
