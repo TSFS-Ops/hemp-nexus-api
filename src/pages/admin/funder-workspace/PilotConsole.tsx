@@ -187,7 +187,7 @@ export default function FunderWorkspacePilotConsole() {
           <div>• Log in at <Link to="/auth" className="underline">/auth</Link> with the funder user credentials above.</div>
           <div>• Land on <Link to="/funder/workspace" className="underline">/funder/workspace</Link> and click into the assigned demo deal.</div>
           <div>• Download the sealed pack. Confirm raw documents are hidden.</div>
-          <div>• Post an RFI as <strong>Reviewer</strong> or <strong>Approver</strong>, answer it as Izenzo Admin, then record the formal decision as <strong>Approver</strong>. (Funder Admin and Viewer cannot post RFIs or record decisions — that is expected.)</div>
+          <div>• Post an RFI as <strong>Funder Admin</strong>, <strong>Reviewer</strong> or <strong>Approver</strong>, answer it as Izenzo Admin, then record the formal decision as <strong>Approver</strong>. (Funder Admin, Reviewer and Approver can create RFIs. Viewer cannot create RFIs. Only Approver can record a formal decision.)</div>
           <div>• Add a funder-internal note. Confirm Izenzo Admin cannot see funder-internal notes; only shared comments.</div>
         </CardContent>
       </Card>
