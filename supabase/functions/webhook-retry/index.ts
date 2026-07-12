@@ -40,27 +40,31 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    // SECURITY: Verify internal cron authentication.
-    // pg_cron's net.http_post sends the anon key as Bearer token.
+    // SECURITY: Internal cron authentication — fail closed.
+    // Only INTERNAL_CRON_KEY (header or bearer) or a genuine service-role
+    // bearer are accepted. The public anon key MUST NOT authenticate this
+    // endpoint (it is shipped to every browser). Mirrors api-key-expiry.
     const authHeader = req.headers.get("authorization") || "";
     const bearer = authHeader.replace("Bearer ", "");
     const cronKey = Deno.env.get("INTERNAL_CRON_KEY");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+    if (!cronKey) {
+      console.error("[webhook-retry] INTERNAL_CRON_KEY not configured; refusing to run.");
+      throw new ApiException("SERVER_MISCONFIGURED", "Internal cron key not configured", 500);
+    }
 
     let isAuthorised = false;
-
-    // Direct key comparison — covers cron (anon), service-role, and explicit cron key
-    if (anonKey && bearer === anonKey) isAuthorised = true;
+    if (bearer && bearer === cronKey) isAuthorised = true;
     if (serviceRoleKey && bearer === serviceRoleKey) isAuthorised = true;
-    if (cronKey && bearer === cronKey) isAuthorised = true;
-    if (cronKey && req.headers.get("x-internal-key") === cronKey) isAuthorised = true;
+    if (req.headers.get("x-internal-key") === cronKey) isAuthorised = true;
     if (serviceRoleKey && req.headers.get("x-internal-key") === serviceRoleKey) isAuthorised = true;
 
     if (!isAuthorised) {
-      console.error("Auth failed. Bearer present:", !!bearer, "Anon key present:", !!anonKey, "Service key present:", !!serviceRoleKey);
+      console.error("Auth failed. Bearer present:", !!bearer, "Service key present:", !!serviceRoleKey);
       throw new ApiException("UNAUTHORIZED", "Internal authentication required", 401);
     }
+
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
