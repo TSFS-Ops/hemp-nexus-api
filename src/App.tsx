@@ -214,6 +214,7 @@ const FunderWorkspaceReleases = lazy(() => import("@/pages/admin/funder-workspac
 const FunderWorkspaceNewRelease = lazy(() => import("@/pages/admin/funder-workspace/NewRelease"));
 const FunderWorkspaceReleaseDetail = lazy(() => import("@/pages/admin/funder-workspace/ReleaseDetail"));
 const FunderWorkspaceAudit = lazy(() => import("@/pages/admin/funder-workspace/Audit"));
+const FunderWorkspacePilotConsole = lazy(() => import("@/pages/admin/funder-workspace/PilotConsole"));
 
 // Institutional Funder Evidence Workspace — Batch 3 (funder-facing)
 const FunderWorkspaceFunderIndex = lazy(() => import("@/pages/funder/workspace/Index"));
