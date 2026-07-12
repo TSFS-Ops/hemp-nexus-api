@@ -30,7 +30,8 @@ export const releaseFormSchema = z
     funder_organisation_id: z
       .string()
       .uuid({ message: "Funder organisation is required" }),
-    deal_reference: nonEmpty("Deal reference", 128),
+    match_id: z.string().uuid({ message: "Canonical deal selection is required" }),
+    deal_reference: z.string().trim().max(128).optional().default(""),
     evidence_pack_id: z.string().uuid({ message: "Evidence pack ID is required" }),
     evidence_pack_version: nonEmpty("Evidence pack version", 64),
     release_reason: nonEmpty("Release reason", 1000),
@@ -65,6 +66,13 @@ export const releaseFormSchema = z
     }
   });
 
+export const linkReleaseToMatchSchema = z.object({
+  release_id: z.string().uuid(),
+  match_id: z.string().uuid({ message: "Canonical deal selection is required" }),
+  reason: nonEmpty("Linkage reason", 1000),
+});
+
 export type ReleaseFormValues = z.infer<typeof releaseFormSchema>;
+
 
 export const funderTypeSchema = z.enum(FUNDER_TYPES);
