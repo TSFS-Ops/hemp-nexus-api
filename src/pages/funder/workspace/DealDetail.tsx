@@ -382,3 +382,72 @@ function PermRow({ label, value }: { label: string; value: boolean }) {
     </div>
   );
 }
+
+function FunderPackDownloadButton({
+  pack,
+  release,
+}: {
+  pack: PackVersionRow;
+  release: DealReleaseRow;
+}) {
+  const [busy, setBusy] = useState(false);
+  const now = Date.now();
+  const releaseUsable =
+    release.release_status === "active" &&
+    (!release.expires_at || new Date(release.expires_at).getTime() > now);
+  const packReady =
+    (pack.status === "sealed" || pack.status === "generated") &&
+    !!pack.storage_path &&
+    !!pack.storage_bucket &&
+    !!pack.file_sha256;
+  const allowed =
+    releaseUsable && packReady && release.can_download_compiled_pack;
+
+  if (!allowed) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled
+        data-testid={`fw-download-disabled-${pack.id}`}
+        title={
+          !release.can_download_compiled_pack
+            ? "Download not permitted for this release"
+            : !releaseUsable
+            ? "Release is not active"
+            : "Pack not ready for download"
+        }
+      >
+        Not available
+      </Button>
+    );
+  }
+
+  const handle = async () => {
+    setBusy(true);
+    try {
+      const res = await requestPackDownload(pack.id);
+      // Open signed URL in a new tab; do NOT persist it.
+      window.open(res.signed_url, "_blank", "noopener,noreferrer");
+      toast.success(
+        `Signed link opened. Expires in ${Math.round(res.expires_in_seconds / 60)} min.`,
+      );
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      onClick={handle}
+      disabled={busy}
+      data-testid={`fw-download-${pack.id}`}
+    >
+      <Download className="h-4 w-4 mr-1" />
+      {busy ? "Preparing…" : "Download sealed pack"}
+    </Button>
+  );
+}
