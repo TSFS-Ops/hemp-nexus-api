@@ -54,7 +54,7 @@ export default function FunderWorkspaceOrganisationDetail() {
 
   return (
     <div className="p-6 space-y-4" data-testid="fw-admin-org-detail">
-      <BackButton to="/admin/funder-workspace/organisations" label="All organisations" />
+      <BackButton fallback="/admin/funder-workspace/organisations" label="All organisations" />
 
       {error && (
         <Card>

@@ -120,7 +120,7 @@ export default function FunderWorkspaceNewRelease() {
 
   return (
     <div className="p-6 space-y-4 max-w-3xl" data-testid="fw-admin-new-release">
-      <BackButton to="/admin/funder-workspace/releases" label="Releases" />
+      <BackButton fallback="/admin/funder-workspace/releases" label="Releases" />
       <div>
         <h1 className="text-2xl font-semibold">Release a deal to a funder</h1>
         <p className="text-sm text-muted-foreground">

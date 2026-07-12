@@ -30,13 +30,14 @@ import {
   listUsageEvents,
   revokeRelease,
 } from "@/lib/funder-workspace/admin-client";
+import type { DealReleaseWithOrg } from "@/lib/funder-workspace/admin-client";
 import type {
   AuditEventRow,
-  DealReleaseWithOrg,
   PackVersionRow,
   ReleaseConsentRow,
   UsageEventRow,
-} from "@/lib/funder-workspace/admin-client";
+} from "@/lib/funder-workspace/types";
+
 
 export default function FunderWorkspaceReleaseDetail() {
   const { releaseId = "" } = useParams();
@@ -95,7 +96,7 @@ export default function FunderWorkspaceReleaseDetail() {
 
   return (
     <div className="p-6 space-y-4" data-testid="fw-admin-release-detail">
-      <BackButton to="/admin/funder-workspace/releases" label="Releases" />
+      <BackButton fallback="/admin/funder-workspace/releases" label="Releases" />
 
       {error && <Card><CardContent className="pt-6 text-sm text-destructive">Failed to load: {error}</CardContent></Card>}
 
