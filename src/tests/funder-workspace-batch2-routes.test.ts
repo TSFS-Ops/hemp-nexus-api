@@ -41,7 +41,11 @@ const APPROVED_RPCS = new Set([
   "fw_admin_reject_funder_org_v1",
   "fw_admin_release_deal_v1",
   "fw_admin_revoke_deal_release_v1",
+  // Batch 6 additive read-only RPCs (counters + safe admin picker):
+  "fw_counters_admin_v1",
+  "fw_admin_assignable_users_v1",
 ]);
+
 
 const FORBIDDEN_RPC_PATTERNS = [
   /p5b3_funder_record_download_v1/,
