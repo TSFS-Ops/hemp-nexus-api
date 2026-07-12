@@ -205,6 +205,16 @@ const P5Batch7FunderDashboard = lazy(() => import("@/pages/funder/p5-batch7/Fund
 const P5Batch8Workbench = lazy(() => import("@/pages/admin/p5-batch8/Workbench"));
 const P5ScreeningWorkbench = lazy(() => import("@/pages/admin/p5-screening/Workbench"));
 
+// Institutional Funder Evidence Workspace — Batch 2 (admin console)
+const FunderWorkspaceAdminIndex = lazy(() => import("@/pages/admin/funder-workspace/Index"));
+const FunderWorkspaceOnboarding = lazy(() => import("@/pages/admin/funder-workspace/OnboardingRequests"));
+const FunderWorkspaceOrganisations = lazy(() => import("@/pages/admin/funder-workspace/Organisations"));
+const FunderWorkspaceOrganisationDetail = lazy(() => import("@/pages/admin/funder-workspace/OrganisationDetail"));
+const FunderWorkspaceReleases = lazy(() => import("@/pages/admin/funder-workspace/Releases"));
+const FunderWorkspaceNewRelease = lazy(() => import("@/pages/admin/funder-workspace/NewRelease"));
+const FunderWorkspaceReleaseDetail = lazy(() => import("@/pages/admin/funder-workspace/ReleaseDetail"));
+const FunderWorkspaceAudit = lazy(() => import("@/pages/admin/funder-workspace/Audit"));
+
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
@@ -403,6 +413,17 @@ function App() {
                   <Route path="/admin/p5-batch3/release" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Release /></RequireAuth>} />
                   <Route path="/admin/p5-batch3/requests" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Requests /></RequireAuth>} />
                   <Route path="/admin/p5-batch3/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><P5Batch3Audit /></RequireAuth>} />
+
+                  {/* Institutional Funder Evidence Workspace — Batch 2: admin console (platform_admin only) */}
+                  <Route path="/admin/funder-workspace" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceAdminIndex /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/onboarding" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceOnboarding /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/organisations" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceOrganisations /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/organisations/:organisationId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceOrganisationDetail /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/releases" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceReleases /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/releases/new" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceNewRelease /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/releases/:releaseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceReleaseDetail /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceAudit /></RequireAuth>} />
+
 
                   {/* P-5 Batch 3 — Stage 5: funder-facing surfaces (authenticated; grant enforced server-side) */}
                   <Route path="/funder/p5-batch3" element={<RequireAuth><P5Batch3FunderIndex /></RequireAuth>} />
