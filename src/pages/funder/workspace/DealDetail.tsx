@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, Download } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { FunderWorkspaceShell } from "./components/FunderWorkspaceShell";
 import {
   ConsentStatusBadge,
@@ -27,11 +28,20 @@ import {
   PermissionBadge,
 } from "./components/FunderBadges";
 import {
+  FunderDecisionPanel,
+  FunderNotesPanel,
+  FunderRfiPanel,
+} from "./components/FunderWorkflowPanels";
+import type { V1Role } from "@/lib/funder-workspace/workflow-client";
+import {
   getMyRelease,
   listMyPackVersions,
   listMyReleaseConsents,
   listMyUsageEvents,
   requestPackDownload,
+} from "@/lib/funder-workspace/funder-client";
+import type {
+  CurrentFunderContext,
 } from "@/lib/funder-workspace/funder-client";
 import type {
   DealReleaseRow,
@@ -43,6 +53,27 @@ import {
   effectiveReleaseStatus,
   packDownloadReadiness,
 } from "@/lib/funder-workspace/release-state";
+
+/**
+ * Map a Batch-1 funder_role enum value to the canonical Batch-5 V1 role
+ * used by workflow RPCs. Server is authoritative; this only gates UI.
+ */
+function mapEnumToV1Role(role: string | null | undefined): V1Role | null {
+  switch (role) {
+    case "funder_org_admin":
+      return "admin";
+    case "funder_approver":
+      return "approver";
+    case "funder_reviewer":
+      return "reviewer";
+    case "funder_viewer":
+      return "viewer";
+    case "external_adviser":
+      return "external_adviser";
+    default:
+      return null;
+  }
+}
 
 const EVIDENCE_SECTIONS: Array<{ title: string; description: string }> = [
   { title: "Buyer summary", description: "Released buyer summary will appear here." },
