@@ -38,6 +38,13 @@ import type {
   ReleaseConsentRow,
   UsageEventRow,
 } from "@/lib/funder-workspace/types";
+import {
+  canGenerateSealedPack,
+  effectiveReleaseStatus,
+  packDownloadReadiness,
+  statusBadgeVariant,
+  statusLabel,
+} from "@/lib/funder-workspace/release-state";
 
 
 export default function FunderWorkspaceReleaseDetail() {
@@ -126,9 +133,12 @@ export default function FunderWorkspaceReleaseDetail() {
               </p>
             </div>
             <div className="space-x-2">
-              <Badge variant={release.release_status === "active" ? "default" : release.release_status === "revoked" ? "destructive" : "secondary"}>
-                {release.release_status}
-              </Badge>
+              {(() => {
+                const eff = effectiveReleaseStatus(release);
+                return (
+                  <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                );
+              })()}
               <Button
                 variant="destructive"
                 disabled={release.release_status === "revoked"}
