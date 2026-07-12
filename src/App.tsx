@@ -431,6 +431,7 @@ function App() {
                   <Route path="/admin/funder-workspace/releases/new" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceNewRelease /></RequireAuth>} />
                   <Route path="/admin/funder-workspace/releases/:releaseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceReleaseDetail /></RequireAuth>} />
                   <Route path="/admin/funder-workspace/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceAudit /></RequireAuth>} />
+                  <Route path="/admin/funder-workspace/pilot" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspacePilotConsole /></RequireAuth>} />
 
                   {/* Institutional Funder Evidence Workspace — Batch 3 (funder-facing) */}
                   <Route path="/funder/workspace" element={<RequireAuth><FunderWorkspaceFunderIndex /></RequireAuth>} />
