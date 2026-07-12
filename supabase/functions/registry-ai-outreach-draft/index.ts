@@ -82,12 +82,27 @@ async function isAuthorisedAdmin(svc: ReturnType<typeof createClient>, uid: stri
 }
 
 async function dncMatch(svc: ReturnType<typeof createClient>, companyRef: string, recipientLabel: string) {
-  const { data } = await svc
+  // Fail-closed: use two parameterised .eq() queries instead of interpolating
+  // untrusted values into a PostgREST .or() filter string (special chars like
+  // `,` `.` `(` `)` can silently break the filter and skip the DNC check).
+  // If either query errors, treat as a match to block outreach.
+  const byCompany = await svc
     .from("registry_outreach_do_not_contact")
-    .select("id, company_reference, contact_email")
+    .select("id")
     .eq("active", true)
-    .or(`company_reference.eq.${companyRef},contact_email.eq.${recipientLabel}`);
-  return (data ?? []).length > 0;
+    .eq("company_reference", companyRef)
+    .limit(1);
+  if (byCompany.error) return true;
+  if ((byCompany.data ?? []).length > 0) return true;
+
+  const byRecipient = await svc
+    .from("registry_outreach_do_not_contact")
+    .select("id")
+    .eq("active", true)
+    .eq("contact_email", recipientLabel)
+    .limit(1);
+  if (byRecipient.error) return true;
+  return (byRecipient.data ?? []).length > 0;
 }
 
 function buildAiDraft(input: {

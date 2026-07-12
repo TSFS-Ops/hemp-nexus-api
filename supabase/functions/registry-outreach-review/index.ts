@@ -143,8 +143,11 @@ Deno.serve(async (req) => {
     if (!draft) return withCors(req, new Response(JSON.stringify({ error: "draft_missing" }), { status: 404, headers: { "Content-Type": "application/json" } }));
 
     if (decision === "approve") {
-      const { data: dnc } = await svc.from("registry_outreach_do_not_contact").select("id").eq("active", true).or(`company_reference.eq.${draft.company_reference},contact_email.eq.${draft.recipient_label}`);
-      if ((dnc ?? []).length > 0) {
+      // Fail-closed DNC check via two .eq() queries (no PostgREST .or()
+      // filter interpolation, so special chars cannot silently skip it).
+      const dncByCompany = await svc.from("registry_outreach_do_not_contact").select("id").eq("active", true).eq("company_reference", draft.company_reference).limit(1);
+      const dncByRecipient = await svc.from("registry_outreach_do_not_contact").select("id").eq("active", true).eq("contact_email", draft.recipient_label).limit(1);
+      if (dncByCompany.error || dncByRecipient.error || (dncByCompany.data ?? []).length > 0 || (dncByRecipient.data ?? []).length > 0) {
         return withCors(req, new Response(JSON.stringify({ error: "do_not_contact" }), { status: 409, headers: { "Content-Type": "application/json" } }));
       }
     }
