@@ -38,11 +38,21 @@ if (existsSync(fnDir)) {
 }
 
 // Rule C: Stage 1 (2) + Stage 3 (1) + Stage 6 (1) = 4 Batch 3 migrations.
+// Allow-list: the approved Institutional Funder Evidence Workspace Batch 1
+// migration is a downstream additive extension of p5_batch3_funder_organisations
+// (nullable approval-workflow columns + V1 helper). It is excluded from the
+// Batch 3 migration count so this narrow, approved extension does not trip
+// the guard. NO other exceptions permitted — any further migration touching
+// p5_batch3_* / p5b3_* must be added here explicitly and reviewed.
+const APPROVED_POST_BATCH3_EXCEPTIONS = new Set([
+  "20260712080217_b4a72cdd-e63c-45d7-a7bf-aebfe1ab715b.sql",
+]);
 const migDir = join(ROOT, "supabase/migrations");
 let batch3Migrations = 0;
 if (existsSync(migDir)) {
   for (const f of readdirSync(migDir)) {
     if (!f.endsWith(".sql")) continue;
+    if (APPROVED_POST_BATCH3_EXCEPTIONS.has(f)) continue;
     const body = readFileSync(join(migDir, f), "utf8");
     if (/(CREATE (TABLE|TYPE|OR REPLACE FUNCTION|FUNCTION)|ALTER (TABLE|TYPE|FUNCTION)|REVOKE [A-Z ]+ON FUNCTION) public\.(p5_batch3_|p5b3_)/.test(body)) batch3Migrations++;
   }
