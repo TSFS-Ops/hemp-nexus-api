@@ -95,6 +95,21 @@ export default function FunderWorkspaceReleaseDetail() {
     }
   };
 
+  const [generating, setGenerating] = useState(false);
+  const handleGenerate = async () => {
+    if (!release) return;
+    setGenerating(true);
+    try {
+      const res = await generateSealedPack(releaseId);
+      toast.success(`Sealed pack v${res.version} generated`);
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-4" data-testid="fw-admin-release-detail">
       <BackButton fallback="/admin/funder-workspace/releases" label="Releases" />
