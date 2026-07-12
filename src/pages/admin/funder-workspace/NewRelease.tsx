@@ -44,6 +44,7 @@ export default function FunderWorkspaceNewRelease() {
 
   const [values, setValues] = useState<ReleaseFormValues>({
     funder_organisation_id: "",
+    match_id: "",
     deal_reference: "",
     evidence_pack_id: "",
     evidence_pack_version: "",
@@ -54,6 +55,7 @@ export default function FunderWorkspaceNewRelease() {
     admin_override_reason: "",
     ...DEFAULT_RELEASE_PERMISSIONS,
   });
+
   const [errors, setErrors] = useState<Partial<Record<keyof ReleaseFormValues, string>>>({});
   const [busy, setBusy] = useState(false);
 
