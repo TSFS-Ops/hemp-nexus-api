@@ -95,9 +95,9 @@ export default function FunderWorkspaceNewRelease() {
     setErrors({});
     setBusy(true);
     try {
-      const releaseId = await createRelease({
+      const releaseId = await createReleaseV2({
         p_funder_organisation_id: parsed.data.funder_organisation_id,
-        p_deal_reference: parsed.data.deal_reference.trim(),
+        p_match_id: parsed.data.match_id,
         p_evidence_pack_id: parsed.data.evidence_pack_id,
         p_evidence_pack_version: parsed.data.evidence_pack_version.trim(),
         p_release_reason: parsed.data.release_reason.trim(),
@@ -110,6 +110,7 @@ export default function FunderWorkspaceNewRelease() {
         p_seller_consent_status: parsed.data.seller_consent_status,
         p_admin_override_reason: parsed.data.admin_override_reason?.trim() || null,
       });
+
       toast.success("Release created");
       if (releaseId) navigate(`/admin/funder-workspace/releases/${releaseId}`);
       else navigate(`/admin/funder-workspace/releases`);
