@@ -9,6 +9,7 @@ import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -17,7 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Download } from "lucide-react";
+import { toast } from "sonner";
 import { FunderWorkspaceShell } from "./components/FunderWorkspaceShell";
 import {
   ConsentStatusBadge,
@@ -29,6 +31,7 @@ import {
   listMyPackVersions,
   listMyReleaseConsents,
   listMyUsageEvents,
+  requestPackDownload,
 } from "@/lib/funder-workspace/funder-client";
 import type {
   DealReleaseRow,
