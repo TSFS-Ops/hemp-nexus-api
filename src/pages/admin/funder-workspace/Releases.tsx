@@ -24,6 +24,12 @@ import {
   statusLabel,
   consentSatisfied,
 } from "@/lib/funder-workspace/release-state";
+import {
+  LINKAGE_STATUS_LABEL,
+  linkageStatusBadgeVariant,
+  linkageStatusOf,
+} from "@/lib/funder-workspace/linkage-labels";
+
 
 function daysUntil(iso: string | null): number | null {
   if (!iso) return null;
