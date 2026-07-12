@@ -77,10 +77,17 @@ describe("Funder Workspace Batch 3 — route registration", () => {
 });
 
 describe("Funder Workspace Batch 3 — funder client scope", () => {
-  it("never calls any RPC (funder surface is read-only via RLS)", () => {
-    const rpcCalls = [...FUNDER_CLIENT.matchAll(/\.rpc\("([^"]+)"/g)];
-    expect(rpcCalls.length, "funder client must not invoke any RPCs").toBe(0);
+  it("only calls approved read-only RPCs (Batch 6 counter helper); no writes from funder client", () => {
+    const rpcCalls = [...FUNDER_CLIENT.matchAll(/\.rpc\("([^"]+)"/g)].map((m) => m[1]);
+    const allowed = new Set(["fw_counters_funder_v1"]);
+    for (const name of rpcCalls) {
+      expect(allowed.has(name), `unexpected funder-side RPC ${name}`).toBe(true);
+    }
+    // No admin/mutation RPCs.
+    expect(FUNDER_CLIENT).not.toMatch(/fw_admin_/);
+    expect(FUNDER_CLIENT).not.toMatch(/fw_funder_(create|edit|delete|withdraw|close|add|record)_/);
   });
+
 
   it("never imports admin-client (no admin mutations from funder surface)", () => {
     expect(FUNDER_CLIENT).not.toMatch(/from\s+["']\.\/admin-client["']/);
