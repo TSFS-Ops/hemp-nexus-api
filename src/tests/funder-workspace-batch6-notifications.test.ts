@@ -50,8 +50,6 @@ describe("Batch 6 — server-side trigger wiring for every required event", () =
     "funder_workspace.rfi_created",
     "funder_workspace.rfi_assigned",
     "funder_workspace.rfi_answered",
-    "funder_workspace.rfi_closed",
-    "funder_workspace.rfi_withdrawn",
     "funder_workspace.shared_comment_created",
     "funder_workspace.decision_recorded",
   ];
@@ -60,7 +58,12 @@ describe("Batch 6 — server-side trigger wiring for every required event", () =
       expect(sql).toContain(ev);
     });
   }
+  it("emits rfi_closed and rfi_withdrawn (computed event type)", () => {
+    expect(sql).toMatch(/'funder_workspace\.rfi_'\s*\|\|\s*NEW\.status/);
+    expect(sql).toMatch(/status IN \('closed','withdrawn'\)/);
+  });
 });
+
 
 describe("Batch 6 — recipient scoping is per funder organisation", () => {
   it("recipient helper filters by funder_organisation_id", () => {
