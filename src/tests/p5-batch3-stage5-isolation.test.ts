@@ -174,7 +174,13 @@ describe("P5 Batch 3 Stage 5 — backend allow-list (Stage 6 surfaces now permit
       ? readdirSync(dir).filter((n: string) => /p5-?batch-?3|funder/i.test(n))
       : [];
     for (const n of names) {
-      expect(["p5-batch3-funder-summary", "p5-batch3-stage6-monitor"]).toContain(n);
+      expect([
+        "p5-batch3-funder-summary",
+        "p5-batch3-stage6-monitor",
+        // Institutional Funder Evidence Workspace — Batch 4 (V1 sealed-pack pipeline).
+        "funder-pack-generate",
+        "funder-pack-download",
+      ]).toContain(n);
     }
   });
 
