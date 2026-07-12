@@ -201,10 +201,44 @@ export async function generateSealedPack(releaseId: string): Promise<GenerateSea
   return data as GenerateSealedPackResult;
 }
 
+// ─── Batch 6: counters + assignment picker ───────────────────
+export interface FunderWorkspaceAdminCounters {
+  pending_onboarding: number;
+  approved_orgs: number;
+  active_releases: number;
+  expiring_soon: number;
+  revoked_releases: number;
+  packs_generated: number;
+  pack_downloads: number;
+  open_rfis: number;
+  decisions_recorded: number;
+}
+
+export async function fetchAdminCounters(): Promise<FunderWorkspaceAdminCounters> {
+  const { data, error } = await (supabase as any).rpc("fw_counters_admin_v1");
+  if (error) throw new Error(error.message);
+  return (data ?? {}) as FunderWorkspaceAdminCounters;
+}
+
+export interface AssignableAdminUser {
+  user_id: string;
+  display_name: string | null;
+  email: string | null;
+}
+
+export async function listAssignableAdminUsers(): Promise<AssignableAdminUser[]> {
+  const { data, error } = await (supabase as any).rpc("fw_admin_assignable_users_v1");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as AssignableAdminUser[];
+}
+
 // Exported RPC names — used by tests to guarantee we only call approved RPCs.
 export const FUNDER_WORKSPACE_ADMIN_RPCS = [
   "fw_admin_approve_funder_org_v1",
   "fw_admin_reject_funder_org_v1",
   "fw_admin_release_deal_v1",
   "fw_admin_revoke_deal_release_v1",
+  "fw_counters_admin_v1",
+  "fw_admin_assignable_users_v1",
 ] as const;
+
