@@ -98,7 +98,14 @@ export default function FunderWorkspaceDealDetail() {
   );
 }
 
-function Body({ releaseId }: { releaseId: string }) {
+function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext }) {
+  const v1Role = mapEnumToV1Role(ctx.role);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
+  }, []);
   const [release, setRelease] = useState<DealReleaseRow | null | undefined>(undefined);
   const [consents, setConsents] = useState<ReleaseConsentRow[]>([]);
   const [packs, setPacks] = useState<PackVersionRow[]>([]);
