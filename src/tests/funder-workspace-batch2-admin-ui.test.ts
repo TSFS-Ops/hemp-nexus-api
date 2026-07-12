@@ -46,6 +46,7 @@ const UUID = "00000000-0000-4000-8000-000000000001";
 
 const baseValues = {
   funder_organisation_id: UUID,
+  match_id: UUID,
   deal_reference: "DEAL-001",
   evidence_pack_id: UUID,
   evidence_pack_version: "1",
@@ -56,6 +57,7 @@ const baseValues = {
   admin_override_reason: "",
   ...DEFAULT_RELEASE_PERMISSIONS,
 };
+
 
 describe("Funder Workspace Batch 2 — permission defaults", () => {
   it("raw-doc/unmasked toggles default false", () => {
