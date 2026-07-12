@@ -20,16 +20,26 @@ Deno.serve(async (req: Request) => {
     const internalKey = Deno.env.get("INTERNAL_CRON_KEY");
     const providedKey = req.headers.get("x-internal-key");
     const authHeader = req.headers.get("authorization") || "";
-    const isServiceRole = authHeader.includes(
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "NEVER_MATCH",
-    );
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const isServiceRole = serviceRoleKey.length > 0 && authHeader.includes(serviceRoleKey);
 
-    if (internalKey && providedKey !== internalKey && !isServiceRole) {
+    // Fail closed: refuse to run when INTERNAL_CRON_KEY is not configured,
+    // unless the caller presents a genuine service-role bearer.
+    if (!internalKey && !isServiceRole) {
+      console.error("[clip-on-subscription-bill] INTERNAL_CRON_KEY not configured; refusing to run.");
+      return new Response(JSON.stringify({ error: "Server misconfigured" }), {
+        status: 500,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isServiceRole && providedKey !== internalKey) {
       return new Response(JSON.stringify({ error: "Unauthorised" }), {
         status: 401,
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
+
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
