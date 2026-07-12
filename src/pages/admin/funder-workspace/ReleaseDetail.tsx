@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import {
   generateSealedPack,
   getRelease,
+  linkReleaseToMatch,
   listAuditEvents,
   listReleaseConsents,
   listReleasePackVersions,
@@ -46,10 +47,18 @@ import {
   statusLabel,
 } from "@/lib/funder-workspace/release-state";
 import {
+  LINKAGE_STATUS_LABEL,
+  linkageStatusBadgeVariant,
+  linkageStatusOf,
+  requiresLegacyLinking,
+} from "@/lib/funder-workspace/linkage-labels";
+import { CanonicalDealSelector } from "./components/CanonicalDealSelector";
+import {
   AdminDecisionHistoryPanel,
   AdminRfiPanel,
   AdminSharedCommentsPanel,
 } from "./components/AdminWorkflowPanels";
+
 
 
 export default function FunderWorkspaceReleaseDetail() {
