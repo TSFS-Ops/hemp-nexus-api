@@ -45,6 +45,11 @@ import {
   statusBadgeVariant,
   statusLabel,
 } from "@/lib/funder-workspace/release-state";
+import {
+  AdminDecisionHistoryPanel,
+  AdminRfiPanel,
+  AdminSharedCommentsPanel,
+} from "./components/AdminWorkflowPanels";
 
 
 export default function FunderWorkspaceReleaseDetail() {
