@@ -404,6 +404,18 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
         </CardContent>
       </Card>
 
+      <FunderRfiPanel
+        release={release}
+        role={v1Role}
+        currentUserId={currentUserId}
+      />
+      <FunderNotesPanel
+        release={release}
+        role={v1Role}
+        currentUserId={currentUserId}
+      />
+      <FunderDecisionPanel release={release} role={v1Role} />
+
       <p className="text-xs text-muted-foreground">
         Information above has been approved for release. Internal admin notes,
         raw documents and provider raw responses are not shown here.
