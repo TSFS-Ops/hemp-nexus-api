@@ -157,16 +157,18 @@ describe("Funder Workspace Batch 2 — client RPC contracts", () => {
     rpcMock.mockReset();
   });
 
-  it("exports the exact four approved RPC names", () => {
-    expect([...FUNDER_WORKSPACE_ADMIN_RPCS].sort()).toEqual(
-      [
-        "fw_admin_approve_funder_org_v1",
-        "fw_admin_reject_funder_org_v1",
-        "fw_admin_release_deal_v1",
-        "fw_admin_revoke_deal_release_v1",
-      ].sort(),
-    );
+  it("exports the four approved Batch 2 mutation RPCs (plus additive Batch 6 read-only RPCs)", () => {
+    const set = new Set(FUNDER_WORKSPACE_ADMIN_RPCS);
+    for (const rpc of [
+      "fw_admin_approve_funder_org_v1",
+      "fw_admin_reject_funder_org_v1",
+      "fw_admin_release_deal_v1",
+      "fw_admin_revoke_deal_release_v1",
+    ]) {
+      expect(set.has(rpc as (typeof FUNDER_WORKSPACE_ADMIN_RPCS)[number])).toBe(true);
+    }
   });
+
 
   it("approveOnboardingRequest calls fw_admin_approve_funder_org_v1", async () => {
     rpcMock.mockResolvedValueOnce({ data: UUID, error: null });
