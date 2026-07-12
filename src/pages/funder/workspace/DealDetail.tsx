@@ -39,6 +39,10 @@ import type {
   ReleaseConsentRow,
   UsageEventRow,
 } from "@/lib/funder-workspace/types";
+import {
+  effectiveReleaseStatus,
+  packDownloadReadiness,
+} from "@/lib/funder-workspace/release-state";
 
 const EVIDENCE_SECTIONS: Array<{ title: string; description: string }> = [
   { title: "Buyer summary", description: "Released buyer summary will appear here." },
@@ -138,19 +142,24 @@ function Body({ releaseId }: { releaseId: string }) {
             {release.evidence_pack_version ?? "—"}
           </p>
         </div>
-        <FunderReleaseStatusBadge status={release.release_status} />
+        <FunderReleaseStatusBadge status={effectiveReleaseStatus(release)} />
       </div>
 
-      {(release.release_status === "revoked" || release.release_status === "expired") && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Access no longer active</AlertTitle>
-          <AlertDescription>
-            This release is {release.release_status}. Historical data is shown for
-            audit purposes only.
-          </AlertDescription>
-        </Alert>
-      )}
+      {(() => {
+        const eff = effectiveReleaseStatus(release);
+        if (eff === "revoked" || eff === "expired") {
+          return (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Access no longer active</AlertTitle>
+              <AlertDescription>
+                This release is {eff}. Historical data is shown for audit purposes only.
+              </AlertDescription>
+            </Alert>
+          );
+        }
+        return null;
+      })()}
 
       <Card>
         <CardHeader>
@@ -391,32 +400,16 @@ function FunderPackDownloadButton({
   release: DealReleaseRow;
 }) {
   const [busy, setBusy] = useState(false);
-  const now = Date.now();
-  const releaseUsable =
-    release.release_status === "active" &&
-    (!release.expires_at || new Date(release.expires_at).getTime() > now);
-  const packReady =
-    (pack.status === "sealed" || pack.status === "generated") &&
-    !!pack.storage_path &&
-    !!pack.storage_bucket &&
-    !!pack.file_sha256;
-  const allowed =
-    releaseUsable && packReady && release.can_download_compiled_pack;
+  const readiness = packDownloadReadiness(release, pack);
 
-  if (!allowed) {
+  if (!readiness.ready) {
     return (
       <Button
         variant="ghost"
         size="sm"
         disabled
         data-testid={`fw-download-disabled-${pack.id}`}
-        title={
-          !release.can_download_compiled_pack
-            ? "Download not permitted for this release"
-            : !releaseUsable
-            ? "Release is not active"
-            : "Pack not ready for download"
-        }
+        title={readiness.reason}
       >
         Not available
       </Button>

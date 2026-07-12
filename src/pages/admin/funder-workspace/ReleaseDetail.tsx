@@ -38,6 +38,13 @@ import type {
   ReleaseConsentRow,
   UsageEventRow,
 } from "@/lib/funder-workspace/types";
+import {
+  canGenerateSealedPack,
+  effectiveReleaseStatus,
+  packDownloadReadiness,
+  statusBadgeVariant,
+  statusLabel,
+} from "@/lib/funder-workspace/release-state";
 
 
 export default function FunderWorkspaceReleaseDetail() {
@@ -126,9 +133,12 @@ export default function FunderWorkspaceReleaseDetail() {
               </p>
             </div>
             <div className="space-x-2">
-              <Badge variant={release.release_status === "active" ? "default" : release.release_status === "revoked" ? "destructive" : "secondary"}>
-                {release.release_status}
-              </Badge>
+              {(() => {
+                const eff = effectiveReleaseStatus(release);
+                return (
+                  <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                );
+              })()}
               <Button
                 variant="destructive"
                 disabled={release.release_status === "revoked"}
@@ -207,47 +217,73 @@ export default function FunderWorkspaceReleaseDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-base">Pack versions</CardTitle>
-              <Button
-                size="sm"
-                onClick={handleGenerate}
-                disabled={generating || release.release_status !== "active"}
-                data-testid="fw-admin-generate-pack"
-              >
-                {generating ? "Generating…" : "Generate sealed pack"}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {packs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No sealed pack versions yet. Click <span className="font-medium">Generate sealed pack</span> to produce one.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Version</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Generated</TableHead>
-                      <TableHead>Sealed</TableHead>
-                      <TableHead>SHA-256</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {packs.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell>v{p.version}</TableCell>
-                        <TableCell><Badge>{p.status}</Badge></TableCell>
-                        <TableCell className="text-xs">{p.generated_at ? new Date(p.generated_at).toLocaleString() : "—"}</TableCell>
-                        <TableCell className="text-xs">{p.sealed_at ? new Date(p.sealed_at).toLocaleString() : "—"}</TableCell>
-                        <TableCell className="font-mono text-xs">{p.file_sha256 ? p.file_sha256.slice(0, 12) + "…" : "—"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          {(() => {
+            const gate = canGenerateSealedPack(release);
+            return (
+              <Card>
+                <CardHeader className="flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Pack versions</CardTitle>
+                    {!gate.ok && (
+                      <p className="text-xs text-muted-foreground mt-1" data-testid="fw-admin-generate-blocked-reason">
+                        {gate.reason}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleGenerate}
+                    disabled={generating || !gate.ok}
+                    title={gate.reason}
+                    data-testid="fw-admin-generate-pack"
+                  >
+                    {generating ? "Generating…" : "Generate sealed pack"}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {packs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No sealed pack versions yet. Click <span className="font-medium">Generate sealed pack</span> to produce one.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Version</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Generated</TableHead>
+                          <TableHead>Sealed</TableHead>
+                          <TableHead>SHA-256</TableHead>
+                          <TableHead>Funder can download</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {packs.map((p) => {
+                          const readiness = packDownloadReadiness(release, p);
+                          return (
+                            <TableRow key={p.id}>
+                              <TableCell>v{p.version}</TableCell>
+                              <TableCell><Badge>{p.status}</Badge></TableCell>
+                              <TableCell className="text-xs">{p.generated_at ? new Date(p.generated_at).toLocaleString() : "—"}</TableCell>
+                              <TableCell className="text-xs">{p.sealed_at ? new Date(p.sealed_at).toLocaleString() : "—"}</TableCell>
+                              <TableCell className="font-mono text-xs">{p.file_sha256 ? p.file_sha256.slice(0, 12) + "…" : "—"}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={readiness.ready ? "default" : "secondary"}
+                                  title={readiness.reason}
+                                  data-testid={`fw-admin-pack-funder-ready-${p.id}`}
+                                >
+                                  {readiness.ready ? "Yes" : "No"}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           <Card>
             <CardHeader><CardTitle className="text-base">Usage events</CardTitle></CardHeader>

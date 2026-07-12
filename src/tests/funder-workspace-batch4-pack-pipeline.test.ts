@@ -218,22 +218,19 @@ describe("Funder Workspace Batch 4 — admin UI", () => {
   it("admin release detail exposes a Generate button that calls generateSealedPack", () => {
     expect(ADMIN_RELEASE_DETAIL).toMatch(/data-testid="fw-admin-generate-pack"/);
     expect(ADMIN_RELEASE_DETAIL).toMatch(/generateSealedPack\(releaseId\)/);
-    // Generate button is disabled unless release is active.
-    expect(ADMIN_RELEASE_DETAIL).toMatch(
-      /release\.release_status\s*!==\s*"active"/,
-    );
+    // Generate button is gated by the shared canGenerateSealedPack helper,
+    // which mirrors the server's fw_admin_seal_pack_v1 checks.
+    expect(ADMIN_RELEASE_DETAIL).toMatch(/canGenerateSealedPack/);
+    expect(ADMIN_RELEASE_DETAIL).toMatch(/disabled=\{generating \|\| !gate\.ok\}/);
   });
 });
 
 describe("Funder Workspace Batch 4 — funder UI download gating", () => {
-  it("only enables download when release active, permission true, pack sealed with hash+path", () => {
+  it("only enables download when the shared packDownloadReadiness helper says ready", () => {
     expect(FUNDER_DEAL_DETAIL).toMatch(/FunderPackDownloadButton/);
-    // Positive-path gates (checked in the component body):
-    expect(FUNDER_DEAL_DETAIL).toMatch(/release\.release_status\s*===\s*"active"/);
-    expect(FUNDER_DEAL_DETAIL).toMatch(/pack\.status\s*===\s*"sealed"/);
-    expect(FUNDER_DEAL_DETAIL).toMatch(/release\.can_download_compiled_pack/);
-    expect(FUNDER_DEAL_DETAIL).toMatch(/pack\.file_sha256/);
-    expect(FUNDER_DEAL_DETAIL).toMatch(/pack\.storage_path/);
+    // Positive-path gate is delegated to the SSOT helper so admin + funder
+    // surfaces cannot disagree.
+    expect(FUNDER_DEAL_DETAIL).toMatch(/packDownloadReadiness\(release, pack\)/);
     // Disabled-state UI when not allowed
     expect(FUNDER_DEAL_DETAIL).toMatch(/Not available/);
     expect(FUNDER_DEAL_DETAIL).toMatch(/fw-download-disabled-/);
