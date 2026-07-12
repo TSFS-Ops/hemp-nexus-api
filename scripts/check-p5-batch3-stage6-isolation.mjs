@@ -80,11 +80,18 @@ if (existsSync(monitor)) {
 }
 
 // 3. Migration count: Stage 1 (2) + Stage 3 (1) + Stage 6 (1) = 4.
+// Allow-list: approved Institutional Funder Evidence Workspace Batch 1
+// migration (additive extension of p5_batch3_funder_organisations). Excluded
+// from the count. NO other exceptions permitted.
+const APPROVED_POST_BATCH3_EXCEPTIONS = new Set([
+  "20260712080217_b4a72cdd-e63c-45d7-a7bf-aebfe1ab715b.sql",
+]);
 let batch3Migrations = 0;
 const migDir = join(ROOT, "supabase/migrations");
 if (existsSync(migDir)) {
   for (const f of readdirSync(migDir)) {
     if (!f.endsWith(".sql")) continue;
+    if (APPROVED_POST_BATCH3_EXCEPTIONS.has(f)) continue;
     const body = readFileSync(join(migDir, f), "utf8");
     if (/(CREATE (TABLE|TYPE|OR REPLACE FUNCTION|FUNCTION)|ALTER (TABLE|TYPE|FUNCTION)|REVOKE [A-Z ]+ON FUNCTION) public\.(p5_batch3_|p5b3_)/.test(body)) batch3Migrations++;
   }
