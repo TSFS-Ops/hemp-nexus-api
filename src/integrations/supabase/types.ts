@@ -6635,6 +6635,272 @@ export type Database = {
           },
         ]
       }
+      funder_workspace_decisions: {
+        Row: {
+          conditions: string | null
+          created_at: string
+          decided_by: string | null
+          decision_status: string
+          decision_version: number
+          funder_organisation_id: string
+          id: string
+          is_current: boolean
+          reason: string | null
+          release_id: string
+          supersedes_decision_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          conditions?: string | null
+          created_at?: string
+          decided_by?: string | null
+          decision_status: string
+          decision_version?: number
+          funder_organisation_id: string
+          id?: string
+          is_current?: boolean
+          reason?: string | null
+          release_id: string
+          supersedes_decision_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conditions?: string | null
+          created_at?: string
+          decided_by?: string | null
+          decision_status?: string
+          decision_version?: number
+          funder_organisation_id?: string
+          id?: string
+          is_current?: boolean
+          reason?: string | null
+          release_id?: string
+          supersedes_decision_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_workspace_decisions_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_workspace_decisions_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "funder_deal_releases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_workspace_decisions_supersedes_decision_id_fkey"
+            columns: ["supersedes_decision_id"]
+            isOneToOne: false
+            referencedRelation: "funder_workspace_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funder_workspace_notes: {
+        Row: {
+          author_user_id: string | null
+          body: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          editable_until: string
+          funder_organisation_id: string
+          id: string
+          note_type: string
+          release_id: string
+          superseded_by: string | null
+          supersedes_note_id: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          author_user_id?: string | null
+          body: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          editable_until?: string
+          funder_organisation_id: string
+          id?: string
+          note_type: string
+          release_id: string
+          superseded_by?: string | null
+          supersedes_note_id?: string | null
+          updated_at?: string
+          visibility: string
+        }
+        Update: {
+          author_user_id?: string | null
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          editable_until?: string
+          funder_organisation_id?: string
+          id?: string
+          note_type?: string
+          release_id?: string
+          superseded_by?: string | null
+          supersedes_note_id?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_workspace_notes_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_workspace_notes_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "funder_deal_releases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_workspace_notes_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "funder_workspace_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_workspace_notes_supersedes_note_id_fkey"
+            columns: ["supersedes_note_id"]
+            isOneToOne: false
+            referencedRelation: "funder_workspace_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funder_workspace_rfi_messages: {
+        Row: {
+          attachments_metadata: Json
+          author_side: string
+          author_user_id: string | null
+          created_at: string
+          id: string
+          message_body: string
+          rfi_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachments_metadata?: Json
+          author_side: string
+          author_user_id?: string | null
+          created_at?: string
+          id?: string
+          message_body: string
+          rfi_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachments_metadata?: Json
+          author_side?: string
+          author_user_id?: string | null
+          created_at?: string
+          id?: string
+          message_body?: string
+          rfi_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_workspace_rfi_messages_rfi_id_fkey"
+            columns: ["rfi_id"]
+            isOneToOne: false
+            referencedRelation: "funder_workspace_rfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funder_workspace_rfis: {
+        Row: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          due_date: string | null
+          funder_organisation_id: string
+          id: string
+          priority: string
+          related_evidence_item: string | null
+          release_id: string
+          request_type: string
+          status: string
+          title: string
+          updated_at: string
+          withdrawn_at: string | null
+          withdrawn_by: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          due_date?: string | null
+          funder_organisation_id: string
+          id?: string
+          priority?: string
+          related_evidence_item?: string | null
+          release_id: string
+          request_type?: string
+          status?: string
+          title: string
+          updated_at?: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          due_date?: string | null
+          funder_organisation_id?: string
+          id?: string
+          priority?: string
+          related_evidence_item?: string | null
+          release_id?: string
+          request_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          withdrawn_at?: string | null
+          withdrawn_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_workspace_rfis_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_workspace_rfis_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "funder_deal_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       governance_doc_registry: {
         Row: {
           active: boolean
@@ -24101,9 +24367,17 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["p5_batch3_funder_role"] }
         Returns: string
       }
+      fw_admin_answer_rfi_v1: {
+        Args: { p_message: string; p_rfi_id: string }
+        Returns: string
+      }
       fw_admin_approve_funder_org_v1: {
         Args: { p_notes_internal: string; p_request_id: string }
         Returns: string
+      }
+      fw_admin_assign_rfi_v1: {
+        Args: { p_assignee: string; p_rfi_id: string }
+        Returns: undefined
       }
       fw_admin_pack_generation_context_v1: {
         Args: { p_release_id: string }
@@ -24167,9 +24441,54 @@ export type Database = {
         Returns: boolean
       }
       fw_current_funder_org_v1: { Args: never; Returns: string }
+      fw_funder_add_rfi_message_v1: {
+        Args: { p_message: string; p_rfi_id: string }
+        Returns: string
+      }
       fw_funder_authorize_pack_download_v1: {
         Args: { p_pack_version_id: string }
         Returns: Json
+      }
+      fw_funder_close_rfi_v1: {
+        Args: { p_reason: string; p_rfi_id: string }
+        Returns: undefined
+      }
+      fw_funder_create_note_v1: {
+        Args: { p_body: string; p_note_type: string; p_release_id: string }
+        Returns: string
+      }
+      fw_funder_create_rfi_v1: {
+        Args: {
+          p_description: string
+          p_due_date: string
+          p_priority: string
+          p_related_evidence_item: string
+          p_release_id: string
+          p_request_type: string
+          p_title: string
+        }
+        Returns: string
+      }
+      fw_funder_delete_note_v1: {
+        Args: { p_note_id: string; p_reason: string }
+        Returns: undefined
+      }
+      fw_funder_edit_note_v1: {
+        Args: { p_new_body: string; p_note_id: string }
+        Returns: string
+      }
+      fw_funder_record_decision_v1: {
+        Args: {
+          p_conditions: string
+          p_decision_status: string
+          p_reason: string
+          p_release_id: string
+        }
+        Returns: string
+      }
+      fw_funder_withdraw_rfi_v1: {
+        Args: { p_reason: string; p_rfi_id: string }
+        Returns: undefined
       }
       fw_has_deal_release_v1: {
         Args: { p_deal_reference: string }
@@ -24203,6 +24522,10 @@ export type Database = {
           p_registration_number: string
           p_website: string
         }
+        Returns: string
+      }
+      fw_v1_role_for_release: {
+        Args: { p_release_id: string }
         Returns: string
       }
       generate_event_hash: {

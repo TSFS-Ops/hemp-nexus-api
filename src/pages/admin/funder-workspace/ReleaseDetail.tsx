@@ -45,6 +45,11 @@ import {
   statusBadgeVariant,
   statusLabel,
 } from "@/lib/funder-workspace/release-state";
+import {
+  AdminDecisionHistoryPanel,
+  AdminRfiPanel,
+  AdminSharedCommentsPanel,
+} from "./components/AdminWorkflowPanels";
 
 
 export default function FunderWorkspaceReleaseDetail() {
@@ -284,6 +289,11 @@ export default function FunderWorkspaceReleaseDetail() {
               </Card>
             );
           })()}
+
+          <AdminRfiPanel releaseId={releaseId} />
+          <AdminSharedCommentsPanel releaseId={releaseId} />
+          <AdminDecisionHistoryPanel releaseId={releaseId} />
+
 
           <Card>
             <CardHeader><CardTitle className="text-base">Usage events</CardTitle></CardHeader>

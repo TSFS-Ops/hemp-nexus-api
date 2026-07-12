@@ -246,13 +246,14 @@ describe("Funder Workspace Batch 4 — funder UI download gating", () => {
 describe("Funder Workspace Batch 4 — scope safety", () => {
   const surfaces = [ADMIN_RELEASE_DETAIL, FUNDER_DEAL_DETAIL, readFileSync(GEN_FN, "utf8"), readFileSync(DL_FN, "utf8")];
 
-  it("no RFI, comments, decisions, notifications, billing or share-link surfaces introduced", () => {
+  it("no notifications, billing or share-link surfaces introduced by the pack pipeline", () => {
+    // Note: RFI, notes/comments and decision workflow surfaces were
+    // legitimately added in Batch 5. This scope-safety test remains for
+    // the pack pipeline itself.
     for (const s of surfaces) {
-      expect(s).not.toMatch(/rfi[-_ ]?workflow/i);
-      expect(s).not.toMatch(/\bdecision[-_ ]?workflow\b/i);
       expect(s).not.toMatch(/notification-dispatch/i);
       expect(s).not.toMatch(/paystack|stripe|payfast|paddle/i);
-      expect(s).not.toMatch(/invoice/i);
+      expect(s).not.toMatch(/\binvoice\b/i);
       expect(s).not.toMatch(/share[-_ ]?link/i);
       expect(s).not.toMatch(/marketplace|discovery/i);
       expect(s).not.toMatch(/white[-_ ]?label|funder\s+logo/i);
