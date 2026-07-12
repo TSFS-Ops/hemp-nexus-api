@@ -146,7 +146,7 @@ describe("P011 — client examples", () => {
       { key: "address", label: "Address", status: "completed", completed_at: FRESH, matched_identifier: "addr" },
     ];
     i.kyb_registry = { key: "kyb", label: "KYB", status: "completed", provider: "live_kyb_v1", is_live_provider: true, completed_at: FRESH };
-    i.sanctions_pep = { key: "sanc", label: "Sanctions", status: "completed", provider: "dilisense", is_live_provider: true, completed_at: FRESH };
+    i.sanctions_pep = { key: "sanc", label: "Sanctions", status: "completed", provider: "live_sanctions_v1", is_live_provider: true, completed_at: FRESH };
     i.ubo_authority = { key: "ubo", label: "UBO", status: "completed", provider: "ubo_live", is_live_provider: true, completed_at: FRESH };
     i.documents = [{ key: "doc", label: "Doc", status: "completed", completed_at: FRESH }];
     const r = computeEvidenceRating(i);

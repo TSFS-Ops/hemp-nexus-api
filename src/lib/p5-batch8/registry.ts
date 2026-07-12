@@ -662,7 +662,7 @@ export const P5_BATCH8_PROVIDER_CATEGORY_DEFINITIONS: Readonly<
   sanctions_pep_adverse_media: {
     code: "sanctions_pep_adverse_media",
     label: "Sanctions / PEP / Adverse Media Screening",
-    preferred_providers: ["Dilisense"],
+    preferred_providers: ["Dow Jones", "Refinitiv", "ComplyAdvantage"],
     fallback: "Dow Jones, Refinitiv or ComplyAdvantage",
     required_result_type:
       "screening result, match status, risk band, list/source reference, date/time and decision state",

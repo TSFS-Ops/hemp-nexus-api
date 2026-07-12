@@ -37,11 +37,6 @@ const PRIMARY_CHOKEPOINTS = [
     "demo-mode-guard",
     "token-purchase must import demo-mode-guard to block live Paystack",
   ],
-  [
-    "supabase/functions/dilisense-screen/index.ts",
-    "simulateInsteadOf",
-    "dilisense-screen must call simulateInsteadOf to block live provider",
-  ],
 ];
 
 const APP_TSX = "src/App.tsx";

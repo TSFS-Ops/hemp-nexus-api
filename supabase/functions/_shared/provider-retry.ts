@@ -9,7 +9,7 @@
  *
  * Callsites:
  *   - idv-verify (gate="idv")
- *   - dilisense-screen (gate="sanctions")
+ *   - future sanctions-screening surfaces (gate="sanctions")
  */
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";

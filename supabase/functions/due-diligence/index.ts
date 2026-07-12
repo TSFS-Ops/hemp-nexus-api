@@ -11,9 +11,9 @@ import { ApiException } from "../_shared/errors.ts";
 const corsHeaders = { "Content-Type": "application/json" } as Record<string, string>;
 
 // ── Sanctions screening placeholder ──
-// Real sanctions screening requires IDV/SAN provider integration (excluded scope: IDV-001, SAN-001/002).
-// When DILISENSE_API_KEY is configured, the dilisense-screen function handles live screening.
-// This empty list ensures no false positives from mock data.
+// Real sanctions screening requires a live provider integration
+// (excluded scope: IDV-001, SAN-001/002). No provider is currently
+// connected. This empty list ensures no false positives from mock data.
 const SANCTIONS_HITS: { name: string; type: string; list: string }[] = [];
 
 // ── Default risk weights ──

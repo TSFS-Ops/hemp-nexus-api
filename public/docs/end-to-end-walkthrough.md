@@ -82,7 +82,7 @@ Run screening against all natural persons linked as UBOs for both organisations.
 
 **Hard-gate enforced**: Screening must be within 30 days for WaD issuance.
 
-**API**: `POST /functions/v1/dilisense-screen`
+**API**: sanctions / PEP screening — no live provider connected in this environment.
 
 ---
 

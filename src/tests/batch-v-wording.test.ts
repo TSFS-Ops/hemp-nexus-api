@@ -92,10 +92,12 @@ describe("Batch V — external wording safety", () => {
   it("provider registry lists only VerifyNow as active for new IDV", () => {
     const c = readFileSync("src/lib/idv/provider-registry.ts", "utf8");
     expect(c).toMatch(/ACTIVE_IDV_PROVIDERS = Object\.freeze\(\["verifynow"/);
-    for (const p of ["dilisense", "onfido", "sumsub", "didit", "complycube"]) {
+    for (const p of ["onfido", "sumsub", "didit", "complycube"]) {
       // decommissioned list must include them
       expect(c).toContain(`"${p}"`);
     }
+    // Dilisense is fully removed — must not appear anywhere in the registry.
+    expect(c.toLowerCase()).not.toContain("dilisense");
   });
 
   it("manual review shape has all seven decisions", () => {

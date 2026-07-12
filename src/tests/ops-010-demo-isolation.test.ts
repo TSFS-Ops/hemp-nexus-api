@@ -124,13 +124,6 @@ describe("OPS-010 payment / compliance provider suppression", () => {
     );
     expect(src).toMatch(/demo-mode-guard|loadDemoContext|simulateInsteadOf/);
   });
-  it("dilisense-screen wires the demo-mode guard", () => {
-    const src = readFileSync(
-      "supabase/functions/dilisense-screen/index.ts",
-      "utf8",
-    );
-    expect(src).toMatch(/demo-mode-guard|simulateInsteadOf/);
-  });
 });
 
 describe("OPS-010 secondary chokepoint wiring", () => {

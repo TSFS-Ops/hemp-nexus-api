@@ -213,7 +213,7 @@ export function cachedResponseToHttp(
  *   • handle-email-suppression, handle-email-unsubscribe, webhook-events
  *     (inbound 3rd-party webhooks — replay-protected by signature + replay-guard)
  *   • search, preflight, liquidity-check, discovery-eligibility,
- *     poi-probability, dilisense-screen, draft-poi, sr-discover,
+ *     poi-probability, draft-poi, sr-discover,
  *     intel-crawl, web-search, due-diligence, audit-logs
  *     (read-shaped POSTs — no state mutation, idempotent by definition)
  */

@@ -10,8 +10,9 @@
  *     to caller (preview-only).
  *   - Demo payments: never call Paystack. Simulate ledger event,
  *     audit as `ops.demo_payment_event_simulated`.
- *   - Demo compliance: never call Dilisense/Onfido/CompaniesHouse/CIPC.
- *     Return deterministic `CLEAR` result, audit as
+ *   - Demo compliance: never call any live sanctions / IDV / KYB
+ *     provider (VerifyNow, CompaniesHouse, CIPC, etc.). Return
+ *     deterministic `CLEAR` result, audit as
  *     `ops.demo_compliance_call_simulated`.
  *   - Demo WaD / execution / finality: SIMULATED (not blocked). All
  *     artefacts must be visibly watermarked DEMO and must NOT be

@@ -241,7 +241,7 @@ For sub-millisecond accuracy, integrate a dedicated NTP service:
 
 ## 9. Deployment Checklist
 
-- [x] Screening provider configured via admin_settings (`screening_provider` = `dilisense`)
+- [ ] Sanctions / PEP screening provider integrated — no live provider connected
 - [x] NTP drift measurement implemented in collapse engine
 - [x] Non-bypassability test (NEG-20) in checkpoint demo
 - [x] Data retention cron job scheduled (daily at 2 AM UTC)

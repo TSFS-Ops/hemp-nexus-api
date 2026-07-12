@@ -57,7 +57,7 @@ describe("P010 stub provider SSOT", () => {
       expect(getStubProvider(p.key)?.key).toBe(p.key);
     }
     expect(isStubProvider("companies_house")).toBe(false);
-    expect(isStubProvider("dilisense")).toBe(false);
+    expect(isStubProvider("verifynow")).toBe(false);
     expect(isStubProvider(null)).toBe(false);
     expect(getStubProvider("companies_house")).toBeNull();
   });

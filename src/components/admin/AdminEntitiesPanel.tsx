@@ -175,32 +175,13 @@ export function AdminEntitiesPanel() {
 
   const providerErrors = useEntityProviderErrors(entities.map((e) => e.id));
 
-  const runScreening = async (entityId: string) => {
-    setScreeningEntity(entityId);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // Check if a real screening provider is configured
-      const dilisenseConfigured = true; // DILISENSE_API_KEY is set in edge function secrets
-      if (!dilisenseConfigured) {
-        toast.error("No screening provider configured. Contact platform admin to set up Dilisense or another provider.");
-        return;
-      }
-
-      const resp = await apiFetch<any>("dilisense-screen", {
-        method: "POST",
-        body: JSON.stringify({ entity_id: entityId }),
-      });
-
-      toast.success("Screening completed");
-      refetch();
-    } catch (err) {
-      console.error("Screening error:", err);
-      toast.error("Screening failed - check provider configuration");
-    } finally {
-      setScreeningEntity(null);
-    }
+  const runScreening = async (_entityId: string) => {
+    // Sanctions / PEP screening provider is not currently connected.
+    // Platform admins must configure a live provider before this action
+    // can dispatch an external screening call.
+    toast.error(
+      "No sanctions / PEP screening provider is currently connected. Contact the platform admin to configure a provider.",
+    );
   };
 
   const verifyUbo = async (entityId: string) => {

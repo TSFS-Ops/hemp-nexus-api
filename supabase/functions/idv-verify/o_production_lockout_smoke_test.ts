@@ -25,8 +25,8 @@
  *     test that touches the network.
  *
  * Explicit non-goals: no real Onfido / CIPC / Dow Jones / Refinitiv /
- * Companies House / Dilisense call, no real entity mutation, no DB
- * write, no email, no notification, no cron tick, no secrets required.
+ * Companies House call, no real entity mutation, no DB write, no
+ * email, no notification, no cron tick, no secrets required.
  */
 import {
   assert,

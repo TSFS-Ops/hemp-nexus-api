@@ -2,8 +2,8 @@
  * Batch V — Active IDV provider registry.
  *
  * Batch V decommissions all other providers for NEW IDV checks. Historical
- * records (Dilisense, Companies House, Onfido, Sumsub, Didit, ComplyCube,
- * Sanctions.io) remain readable in admin/audit surfaces. This registry is
+ * records (Sanctions.io, Sumsub, Didit, ComplyCube, Onfido, Companies
+ * House) remain readable in admin/audit surfaces. This registry is
  * consulted by any code that is about to START a new IDV check.
  */
 
@@ -11,7 +11,6 @@ export const ACTIVE_IDV_PROVIDERS = Object.freeze(["verifynow" as const]);
 export type ActiveIdvProviderId = (typeof ACTIVE_IDV_PROVIDERS)[number];
 
 export const DECOMMISSIONED_FOR_NEW_IDV = Object.freeze([
-  "dilisense",
   "sanctions_io",
   "sumsub",
   "didit",
