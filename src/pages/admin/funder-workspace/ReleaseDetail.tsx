@@ -290,6 +290,11 @@ export default function FunderWorkspaceReleaseDetail() {
             );
           })()}
 
+          <AdminRfiPanel releaseId={releaseId} />
+          <AdminSharedCommentsPanel releaseId={releaseId} />
+          <AdminDecisionHistoryPanel releaseId={releaseId} />
+
+
           <Card>
             <CardHeader><CardTitle className="text-base">Usage events</CardTitle></CardHeader>
             <CardContent>
