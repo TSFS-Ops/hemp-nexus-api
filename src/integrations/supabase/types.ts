@@ -24105,6 +24105,10 @@ export type Database = {
         Args: { p_notes_internal: string; p_request_id: string }
         Returns: string
       }
+      fw_admin_pack_generation_context_v1: {
+        Args: { p_release_id: string }
+        Returns: Json
+      }
       fw_admin_reject_funder_org_v1: {
         Args: { p_reason: string; p_request_id: string }
         Returns: undefined
@@ -24131,6 +24135,17 @@ export type Database = {
         Args: { p_reason: string; p_release_id: string }
         Returns: undefined
       }
+      fw_admin_seal_pack_v1: {
+        Args: {
+          p_file_sha256: string
+          p_manifest_sha256: string
+          p_release_id: string
+          p_storage_bucket: string
+          p_storage_path: string
+          p_watermark_template: string
+        }
+        Returns: string
+      }
       fw_audit: {
         Args: {
           p_action: string
@@ -24152,6 +24167,10 @@ export type Database = {
         Returns: boolean
       }
       fw_current_funder_org_v1: { Args: never; Returns: string }
+      fw_funder_authorize_pack_download_v1: {
+        Args: { p_pack_version_id: string }
+        Returns: Json
+      }
       fw_has_deal_release_v1: {
         Args: { p_deal_reference: string }
         Returns: boolean

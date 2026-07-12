@@ -9,6 +9,7 @@ import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -17,7 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Download } from "lucide-react";
+import { toast } from "sonner";
 import { FunderWorkspaceShell } from "./components/FunderWorkspaceShell";
 import {
   ConsentStatusBadge,
@@ -29,6 +31,7 @@ import {
   listMyPackVersions,
   listMyReleaseConsents,
   listMyUsageEvents,
+  requestPackDownload,
 } from "@/lib/funder-workspace/funder-client";
 import type {
   DealReleaseRow,
@@ -286,6 +289,7 @@ function Body({ releaseId }: { releaseId: string }) {
                   <TableHead>Generated</TableHead>
                   <TableHead>Sealed</TableHead>
                   <TableHead>File hash</TableHead>
+                  <TableHead className="text-right">Download</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -308,14 +312,17 @@ function Body({ releaseId }: { releaseId: string }) {
                     <TableCell className="text-xs">
                       {p.file_sha256 ? "present" : "—"}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <FunderPackDownloadButton pack={p} release={release} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
           <p className="text-xs text-muted-foreground mt-3">
-            PDF generation and sealed-pack download will be introduced in a later
-            build batch.
+            Downloads produce a short-lived signed link. Raw underlying
+            documents are not included in the compiled pack.
           </p>
         </CardContent>
       </Card>
@@ -373,5 +380,74 @@ function PermRow({ label, value }: { label: string; value: boolean }) {
       <span>{label}</span>
       <PermissionBadge value={value} />
     </div>
+  );
+}
+
+function FunderPackDownloadButton({
+  pack,
+  release,
+}: {
+  pack: PackVersionRow;
+  release: DealReleaseRow;
+}) {
+  const [busy, setBusy] = useState(false);
+  const now = Date.now();
+  const releaseUsable =
+    release.release_status === "active" &&
+    (!release.expires_at || new Date(release.expires_at).getTime() > now);
+  const packReady =
+    (pack.status === "sealed" || pack.status === "generated") &&
+    !!pack.storage_path &&
+    !!pack.storage_bucket &&
+    !!pack.file_sha256;
+  const allowed =
+    releaseUsable && packReady && release.can_download_compiled_pack;
+
+  if (!allowed) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled
+        data-testid={`fw-download-disabled-${pack.id}`}
+        title={
+          !release.can_download_compiled_pack
+            ? "Download not permitted for this release"
+            : !releaseUsable
+            ? "Release is not active"
+            : "Pack not ready for download"
+        }
+      >
+        Not available
+      </Button>
+    );
+  }
+
+  const handle = async () => {
+    setBusy(true);
+    try {
+      const res = await requestPackDownload(pack.id);
+      // Open signed URL in a new tab; do NOT persist it.
+      window.open(res.signed_url, "_blank", "noopener,noreferrer");
+      toast.success(
+        `Signed link opened. Expires in ${Math.round(res.expires_in_seconds / 60)} min.`,
+      );
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      onClick={handle}
+      disabled={busy}
+      data-testid={`fw-download-${pack.id}`}
+    >
+      <Download className="h-4 w-4 mr-1" />
+      {busy ? "Preparing…" : "Download sealed pack"}
+    </Button>
   );
 }

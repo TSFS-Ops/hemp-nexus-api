@@ -148,6 +148,28 @@ export async function listMyAuditEvents(opts?: {
   return (data ?? []) as AuditEventRow[];
 }
 
+// ─── Batch 4: sealed pack download ───────────────────────────
+export interface RequestPackDownloadResult {
+  ok: true;
+  signed_url: string;
+  expires_in_seconds: number;
+  expires_at: string;
+  version: number;
+  file_sha256: string;
+}
+
+export async function requestPackDownload(
+  packVersionId: string,
+): Promise<RequestPackDownloadResult> {
+  const { data, error } = await (supabase as any).functions.invoke(
+    "funder-pack-download",
+    { body: { pack_version_id: packVersionId } },
+  );
+  if (error) throw new Error(error.message ?? "download not available");
+  if (!data?.ok) throw new Error(data?.error ?? "download not available");
+  return data as RequestPackDownloadResult;
+}
+
 /** Explicit list of funder-facing table reads — enforced by tests. */
 export const FUNDER_WORKSPACE_FUNDER_TABLES = [
   "p5_batch3_funder_organisations",

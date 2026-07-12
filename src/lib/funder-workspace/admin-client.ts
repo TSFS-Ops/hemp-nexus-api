@@ -181,6 +181,26 @@ export async function listAuditEvents(opts?: {
   return must(data as AuditEventRow[] | null, error, "listAuditEvents");
 }
 
+// ─── Batch 4: sealed pack generation ─────────────────────────
+export interface GenerateSealedPackResult {
+  ok: true;
+  pack_version_id: string;
+  pack_id: string;
+  version: number;
+  file_sha256: string;
+  storage_bucket: string;
+  storage_path: string;
+}
+
+export async function generateSealedPack(releaseId: string): Promise<GenerateSealedPackResult> {
+  const { data, error } = await (supabase as any).functions.invoke("funder-pack-generate", {
+    body: { release_id: releaseId },
+  });
+  if (error) throw new Error(error.message ?? "generation failed");
+  if (!data?.ok) throw new Error(data?.detail ?? data?.error ?? "generation failed");
+  return data as GenerateSealedPackResult;
+}
+
 // Exported RPC names — used by tests to guarantee we only call approved RPCs.
 export const FUNDER_WORKSPACE_ADMIN_RPCS = [
   "fw_admin_approve_funder_org_v1",
