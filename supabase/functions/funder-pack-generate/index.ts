@@ -509,9 +509,23 @@ Deno.serve(async (req) => {
                            content = null;
                    }
 
+      // Batch 8 — canonical linkage gate. If the projection reports the
+      // release has no canonical or resolvable legacy link, block generation
+      // so we never silently seal a mostly-empty misleading pack.
+      const linkageMode = (content as unknown as { linkage_mode?: string } | null)?.linkage_mode;
+      if (linkageMode === "unresolved" || linkageMode === "invalid") {
+              return json({
+                      error: "linkage_required",
+                      detail:
+                              "This release has no canonical deal linked. Link a canonical deal before generating a sealed pack.",
+                      linkage_mode: linkageMode,
+              }, 409);
+      }
+
       // Pre-mint a pack id so it appears in the cover + storage path.
       const packId = crypto.randomUUID();
                    const generatedAt = new Date();
+
 
       const pdfBytes = await buildPdf(ctx, packId, generatedByEmail, generatedAt, content);
                    const fileSha256 = await sha256Hex(pdfBytes);
