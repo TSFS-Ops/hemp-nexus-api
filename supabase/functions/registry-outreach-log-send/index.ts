@@ -52,8 +52,12 @@ Deno.serve(async (req) => {
     const { data: approval } = await svc.from("registry_outreach_approvals").select("id, status").eq("draft_id", draft.id).eq("status", "approved").maybeSingle();
     if (!approval) return withCors(req, new Response(JSON.stringify({ error: "no_approval_record" }), { status: 409, headers: { "Content-Type": "application/json" } }));
 
-    const { data: dnc } = await svc.from("registry_outreach_do_not_contact").select("id").eq("active", true).or(`company_reference.eq.${draft.company_reference},contact_email.eq.${draft.recipient_label}`);
-    if ((dnc ?? []).length > 0) {
+    // Fail-closed DNC check: two separate .eq() queries so special chars
+    // in company_reference / recipient_label cannot break a PostgREST .or()
+    // filter and silently skip the block. Treat any query error as a match.
+    const dncByCompany = await svc.from("registry_outreach_do_not_contact").select("id").eq("active", true).eq("company_reference", draft.company_reference).limit(1);
+    const dncByRecipient = await svc.from("registry_outreach_do_not_contact").select("id").eq("active", true).eq("contact_email", draft.recipient_label).limit(1);
+    if (dncByCompany.error || dncByRecipient.error || (dncByCompany.data ?? []).length > 0 || (dncByRecipient.data ?? []).length > 0) {
       return withCors(req, new Response(JSON.stringify({ error: "do_not_contact" }), { status: 409, headers: { "Content-Type": "application/json" } }));
     }
 
