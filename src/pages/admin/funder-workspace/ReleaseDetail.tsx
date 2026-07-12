@@ -426,9 +426,45 @@ export default function FunderWorkspaceReleaseDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Link canonical deal to release</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm">
+              Search the platform for the real deal this release corresponds to. Only a validated selection can be
+              linked — free-text references are not accepted. This action is audited.
+            </p>
+            <CanonicalDealSelector
+              value={linkMatchId}
+              onChange={(mid) => setLinkMatchId(mid)}
+              testIdPrefix="fw-link-selector"
+            />
+            <Label htmlFor="fw-link-reason">Linkage reason (required)</Label>
+            <Textarea
+              id="fw-link-reason"
+              value={linkReason}
+              onChange={(e) => setLinkReason(e.target.value)}
+              maxLength={1000}
+              data-testid="fw-link-reason"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+            <Button
+              onClick={handleLink}
+              disabled={linking || !linkMatchId || linkReason.trim() === ""}
+              data-testid="fw-link-confirm"
+            >
+              Link deal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function Perm({ label, v, elevated }: { label: string; v: boolean; elevated?: boolean }) {
   return (
