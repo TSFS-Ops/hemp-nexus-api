@@ -22,6 +22,7 @@ import {
 } from "./components/FunderBadges";
 import { listMyReleases } from "@/lib/funder-workspace/funder-client";
 import type { DealReleaseRow } from "@/lib/funder-workspace/types";
+import { effectiveReleaseStatus } from "@/lib/funder-workspace/release-state";
 
 type FilterKey =
   | "all"
@@ -41,8 +42,6 @@ const FILTERS: Array<{ key: FilterKey; label: string }> = [
   { key: "raw_access", label: "Raw access enabled" },
   { key: "pack_download", label: "Pack download enabled" },
 ];
-
-const EXPIRING_SOON_MS = 14 * 24 * 60 * 60 * 1000;
 
 export default function FunderWorkspaceDeals() {
   return (
@@ -66,19 +65,16 @@ function DealsBody() {
   const filtered = useMemo(() => {
     const now = Date.now();
     return rows.filter((r) => {
+      const eff = effectiveReleaseStatus(r, now);
       switch (filter) {
         case "active":
-          return r.release_status === "active";
+          return eff === "active" || eff === "expiring_soon";
         case "expired":
-          return r.release_status === "expired";
+          return eff === "expired";
         case "revoked":
-          return r.release_status === "revoked";
+          return eff === "revoked";
         case "expiring_soon":
-          return (
-            r.release_status === "active" &&
-            r.expires_at &&
-            new Date(r.expires_at).getTime() - now < EXPIRING_SOON_MS
-          );
+          return eff === "expiring_soon";
         case "raw_access":
           return r.can_view_raw_documents || r.can_download_raw_documents;
         case "pack_download":
@@ -146,7 +142,7 @@ function DealsBody() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <FunderReleaseStatusBadge status={r.release_status} />
+                      <FunderReleaseStatusBadge status={effectiveReleaseStatus(r)} />
                     </TableCell>
                     <TableCell>
                       <ConsentStatusBadge status={r.buyer_consent_status} />
