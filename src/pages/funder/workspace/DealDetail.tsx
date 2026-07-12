@@ -62,7 +62,7 @@ export default function FunderWorkspaceDealDetail() {
   const { releaseId = "" } = useParams();
   return (
     <FunderWorkspaceShell title="Deal detail" description="Read-only evidence room.">
-      {() => <Body releaseId={releaseId} />}
+      {(ctx) => <Body releaseId={releaseId} ctx={ctx} />}
     </FunderWorkspaceShell>
   );
 }
