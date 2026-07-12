@@ -80,7 +80,7 @@ import { toast } from "sonner";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface PurchaseEnriched {
+export interface PurchaseEnriched {
   id: string;                    // synthetic: prefer audit_log id, fallback ledger id
   org_id: string | null;
   org_name: string;
@@ -117,7 +117,7 @@ interface PendingSettlement {
   initiated_at: string;
 }
 
-interface AuditLogRow {
+export interface AuditLogRow {
   id: string;
   org_id: string | null;
   entity_id: string | null;
@@ -127,7 +127,7 @@ interface AuditLogRow {
   created_at: string;
 }
 
-interface LedgerRow {
+export interface LedgerRow {
   id: string;
   org_id: string | null;
   endpoint: string | null;
@@ -203,7 +203,7 @@ function resolveOrgName(id: string | null, orgNameById: Map<string, string>): st
  * rows - `amount_usd` is left at 0 in that case to avoid double-counting
  * against the new native-USD totals.
  */
-function purchaseFromAuditLog(
+export function purchaseFromAuditLog(
   row: AuditLogRow,
   orgNameById: Map<string, string>,
 ): PurchaseEnriched | null {
@@ -242,7 +242,7 @@ function purchaseFromAuditLog(
  * a safety-net for manual reconciliations that bypass the webhook + audit
  * log path (e.g. endpoint = 'payment:paystack:manual').
  */
-function purchaseFromLedger(
+export function purchaseFromLedger(
   row: LedgerRow,
   orgNameById: Map<string, string>,
 ): PurchaseEnriched | null {
