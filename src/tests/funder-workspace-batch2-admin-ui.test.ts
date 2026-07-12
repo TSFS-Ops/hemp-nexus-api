@@ -89,11 +89,11 @@ describe("Funder Workspace Batch 2 — release form validation", () => {
     expect(parsed.success).toBe(true);
   });
 
-  it("requires the funder organisation, deal reference, pack id/version and reason", () => {
+  it("requires the funder organisation, canonical deal, pack id/version and reason", () => {
     const parsed = releaseFormSchema.safeParse({
       ...baseValues,
       funder_organisation_id: "",
-      deal_reference: "",
+      match_id: "",
       evidence_pack_id: "",
       evidence_pack_version: "",
       release_reason: "",
@@ -103,7 +103,7 @@ describe("Funder Workspace Batch 2 — release form validation", () => {
     const paths = parsed.error.issues.map((i) => i.path.join("."));
     for (const k of [
       "funder_organisation_id",
-      "deal_reference",
+      "match_id",
       "evidence_pack_id",
       "evidence_pack_version",
       "release_reason",
@@ -111,6 +111,7 @@ describe("Funder Workspace Batch 2 — release form validation", () => {
       expect(paths, k).toContain(k);
     }
   });
+
 
   it("rejects an expiry in the past", () => {
     const parsed = releaseFormSchema.safeParse({ ...baseValues, expires_at: PAST });
