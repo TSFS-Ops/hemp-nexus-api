@@ -42,6 +42,11 @@ const base: DealReleaseRow = {
   buyer_consent_status: "granted",
   seller_consent_status: "granted",
   admin_override_reason: null,
+  match_id: null,
+  deal_linkage_status: null,
+  deal_linked_at: null,
+  deal_linked_by: null,
+  deal_linkage_reason: null,
   created_at: "",
   updated_at: "",
 };
