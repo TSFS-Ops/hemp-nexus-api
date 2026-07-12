@@ -282,7 +282,12 @@ export default function FunderWorkspaceReleaseDetail() {
           </Card>
 
           {(() => {
-            const gate = canGenerateSealedPack(release);
+            const baseGate = canGenerateSealedPack(release);
+            const linkage = linkageStatusOf(release);
+            const linkageBlocks = requiresLegacyLinking(linkage);
+            const gate = linkageBlocks
+              ? { ok: false as const, reason: "Pack generation is blocked: this release has no canonical deal linked. Link a canonical deal first to avoid sealing a misleading pack." }
+              : baseGate;
             return (
               <Card>
                 <CardHeader className="flex-row items-center justify-between">
@@ -304,6 +309,7 @@ export default function FunderWorkspaceReleaseDetail() {
                     {generating ? "Generating…" : "Generate sealed pack"}
                   </Button>
                 </CardHeader>
+
                 <CardContent>
                   {packs.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No sealed pack versions yet. Click <span className="font-medium">Generate sealed pack</span> to produce one.</p>
