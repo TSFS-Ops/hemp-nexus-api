@@ -47,18 +47,28 @@ Deno.serve(async (req: Request) => {
     const corsResponse = handleCors(req, allowedOrigins);
     if (corsResponse) return corsResponse;
 
-    // ── Auth: require internal cron key OR service_role JWT ──
+    // ── Auth: require internal cron key OR service_role JWT (fail closed) ──
     const internalKey = Deno.env.get("INTERNAL_CRON_KEY");
     const providedKey = req.headers.get("x-internal-key");
     const authHeader = req.headers.get("authorization") || "";
-    const isServiceRole = authHeader.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "NEVER_MATCH");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const isServiceRole = serviceRoleKey.length > 0 && authHeader.includes(serviceRoleKey);
 
-    if (internalKey && providedKey !== internalKey && !isServiceRole) {
+    if (!internalKey && !isServiceRole) {
+      console.error("[lifecycle-scheduler] INTERNAL_CRON_KEY not configured; refusing to run.");
+      return new Response(JSON.stringify({ error: "Server misconfigured" }), {
+        status: 500,
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isServiceRole && providedKey !== internalKey) {
       return new Response(JSON.stringify({ error: "Unauthorised" }), {
         status: 401,
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
+
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
