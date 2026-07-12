@@ -286,6 +286,7 @@ function Body({ releaseId }: { releaseId: string }) {
                   <TableHead>Generated</TableHead>
                   <TableHead>Sealed</TableHead>
                   <TableHead>File hash</TableHead>
+                  <TableHead className="text-right">Download</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -308,14 +309,17 @@ function Body({ releaseId }: { releaseId: string }) {
                     <TableCell className="text-xs">
                       {p.file_sha256 ? "present" : "—"}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <FunderPackDownloadButton pack={p} release={release} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
           <p className="text-xs text-muted-foreground mt-3">
-            PDF generation and sealed-pack download will be introduced in a later
-            build batch.
+            Downloads produce a short-lived signed link. Raw underlying
+            documents are not included in the compiled pack.
           </p>
         </CardContent>
       </Card>
