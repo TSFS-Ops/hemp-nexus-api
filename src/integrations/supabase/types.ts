@@ -24379,6 +24379,14 @@ export type Database = {
         Args: { p_assignee: string; p_rfi_id: string }
         Returns: undefined
       }
+      fw_admin_assignable_users_v1: {
+        Args: never
+        Returns: {
+          display_name: string
+          email: string
+          user_id: string
+        }[]
+      }
       fw_admin_pack_generation_context_v1: {
         Args: { p_release_id: string }
         Returns: Json
@@ -24440,6 +24448,8 @@ export type Database = {
         Args: { p_release_id: string }
         Returns: boolean
       }
+      fw_counters_admin_v1: { Args: never; Returns: Json }
+      fw_counters_funder_v1: { Args: never; Returns: Json }
       fw_current_funder_org_v1: { Args: never; Returns: string }
       fw_funder_add_rfi_message_v1: {
         Args: { p_message: string; p_rfi_id: string }
@@ -24497,6 +24507,26 @@ export type Database = {
       fw_is_funder_org_approved_v1: {
         Args: { p_funder_organisation_id: string }
         Returns: boolean
+      }
+      fw_notification_recipients_v1: {
+        Args: { p_funder_org: string; p_roles?: string[] }
+        Returns: string[]
+      }
+      fw_notify_event_v1: {
+        Args: {
+          p_body: string
+          p_entity_id: string
+          p_entity_type: string
+          p_event_type: string
+          p_funder_org: string
+          p_link: string
+          p_notify_admins?: boolean
+          p_release_id: string
+          p_roles?: string[]
+          p_security_critical?: boolean
+          p_title: string
+        }
+        Returns: number
       }
       fw_record_usage: {
         Args: {
