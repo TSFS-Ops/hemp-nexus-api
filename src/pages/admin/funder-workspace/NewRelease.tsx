@@ -1,10 +1,8 @@
 /**
- * Institutional Funder Evidence Workspace — Batch 2
- * Admin: New Deal Release form. Calls fw_admin_release_deal_v1.
- *
- * Consent gate + non-empty admin override reason are enforced client-side
- * (zod schema) and server-side by the RPC. Raw document toggles default
- * OFF and require an explicit warning before enabling.
+ * Institutional Funder Evidence Workspace — Batch 2 + Batch 8
+ * Admin: New Deal Release form. Calls fw_admin_release_deal_v2 (canonical
+ * match_id required). The unrestricted free-text deal-reference field has
+ * been replaced with a server-backed canonical deal selector.
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +25,8 @@ import {
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { createRelease, listFunderOrganisations } from "@/lib/funder-workspace/admin-client";
+import { createReleaseV2, listFunderOrganisations } from "@/lib/funder-workspace/admin-client";
+import { CanonicalDealSelector } from "./components/CanonicalDealSelector";
 import {
   DEFAULT_RELEASE_PERMISSIONS,
   RAW_DOCUMENT_PERMISSION_KEYS,
@@ -41,6 +40,7 @@ const RAW_KEYS = new Set<string>(RAW_DOCUMENT_PERMISSION_KEYS);
 export default function FunderWorkspaceNewRelease() {
   const navigate = useNavigate();
   const orgsQuery = useQuery({ queryKey: ["fw-orgs"], queryFn: listFunderOrganisations });
+
 
   const [values, setValues] = useState<ReleaseFormValues>({
     funder_organisation_id: "",
