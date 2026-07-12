@@ -167,12 +167,10 @@ describe("Batch I Fix 6 — Provider retry cooldown", () => {
     expect(src).toMatch(/idv\.provider_retry_cooldown_blocked/);
   });
 
-  it("dilisense-screen checks cooldown before provider call and bumps on error", () => {
-    const src = readFn("dilisense-screen/index.ts");
-    expect(src).toMatch(/checkProviderCooldown/);
-    expect(src).toMatch(/recordProviderFailure/);
-    expect(src).toMatch(/screening\.provider_retry_cooldown_blocked/);
-  });
+  // dilisense-screen cooldown test removed: edge function fully
+  // decommissioned. Re-instate when a replacement sanctions/PEP
+  // provider is wired in.
+
 });
 
 describe("Batch I Fix 7 — bypass callsite drift guard", () => {
@@ -201,8 +199,7 @@ describe("Batch I — POI mint gates still fail-closed (regression guard)", () =
     expect(src).toMatch(/tryBypass/);
   });
 
-  it("dilisense-screen treats provider_error as non-clear (status='provider_error')", () => {
-    const src = readFn("dilisense-screen/index.ts");
-    expect(src).toMatch(/status:\s*"provider_error"/);
-  });
+  // dilisense-screen provider_error regression test removed: edge
+  // function fully decommissioned.
+
 });
