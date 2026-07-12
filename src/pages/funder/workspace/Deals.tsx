@@ -123,8 +123,8 @@ function DealsBody() {
                 <TableRow>
                   <TableHead>Deal</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Buyer</TableHead>
-                  <TableHead>Seller</TableHead>
+                  <TableHead>Buyer consent</TableHead>
+                  <TableHead>Seller consent</TableHead>
                   <TableHead>Pack download</TableHead>
                   <TableHead>Raw</TableHead>
                   <TableHead>Expires</TableHead>

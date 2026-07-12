@@ -37,7 +37,15 @@ import {
   requiresAdminOverride,
 } from "@/lib/funder-workspace/permissions";
 import { releaseFormSchema, type ReleaseFormValues } from "@/lib/funder-workspace/validation";
-import { CONSENT_STATUSES } from "@/lib/funder-workspace/types";
+import { CONSENT_STATUSES, type ConsentStatus } from "@/lib/funder-workspace/types";
+
+const CONSENT_STATUS_LABELS: Record<ConsentStatus, string> = {
+  not_required: "Not required",
+  pending: "Pending",
+  granted: "Granted",
+  declined: "Declined",
+  overridden: "Overridden (admin)",
+};
 
 const RAW_KEYS = new Set<string>(RAW_DOCUMENT_PERMISSION_KEYS);
 
@@ -196,7 +204,9 @@ export default function FunderWorkspaceNewRelease() {
                 <SelectTrigger data-testid="fw-release-org"><SelectValue placeholder="Select an approved funder" /></SelectTrigger>
                 <SelectContent>
                   {approvedOrgs.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>{o.name} ({o.jurisdiction ?? "—"})</SelectItem>
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.jurisdiction ? `${o.name} (${o.jurisdiction})` : o.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -284,7 +294,7 @@ export default function FunderWorkspaceNewRelease() {
               <Select value={values.buyer_consent_status} onValueChange={(v) => set("buyer_consent_status", v as never)}>
                 <SelectTrigger data-testid="fw-release-buyer-consent"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CONSENT_STATUSES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                  {CONSENT_STATUSES.map((s) => (<SelectItem key={s} value={s}>{CONSENT_STATUS_LABELS[s]}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
@@ -293,7 +303,7 @@ export default function FunderWorkspaceNewRelease() {
               <Select value={values.seller_consent_status} onValueChange={(v) => set("seller_consent_status", v as never)}>
                 <SelectTrigger data-testid="fw-release-seller-consent"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CONSENT_STATUSES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                  {CONSENT_STATUSES.map((s) => (<SelectItem key={s} value={s}>{CONSENT_STATUS_LABELS[s]}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
