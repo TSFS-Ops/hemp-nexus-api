@@ -24424,6 +24424,17 @@ export type Database = {
         Args: { p_match_id: string; p_reason: string; p_release_id: string }
         Returns: undefined
       }
+      fw_admin_list_eligible_evidence_packs_v1: {
+        Args: { p_match_id: string }
+        Returns: {
+          created_at: string
+          evidence_pack_id: string
+          evidence_pack_version: string
+          item_count: number
+          label: string
+          pack_status: string
+        }[]
+      }
       fw_admin_pack_generation_context_v1: {
         Args: { p_release_id: string }
         Returns: Json
