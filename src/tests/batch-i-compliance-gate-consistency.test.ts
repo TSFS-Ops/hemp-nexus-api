@@ -15,8 +15,9 @@
  *          creates idempotent admin_risk_items on drift.
  *  Fix 5 — p3-wad creates a dd_approval_requests follow-up when UBO_COMPLETENESS
  *          fails at WaD time.
- *  Fix 6 — Provider retry cooldown helper exists and is wired into idv-verify
- *          and dilisense-screen; returns typed PROVIDER_RETRY_COOLDOWN.
+ *  Fix 6 — Provider retry cooldown helper exists and is wired into idv-verify;
+ *          returns typed PROVIDER_RETRY_COOLDOWN. (Sanctions-screening
+ *          callsite was `dilisense-screen`, now fully decommissioned.)
  *  Fix 7 — Build-time guard forbids `isBypassEnabled` without
  *          `recordBypassUsage`/`tryBypass`.
  */
@@ -43,13 +44,11 @@ function findMigration(pattern: RegExp): string {
 }
 
 describe("Batch I Fix 1 — bypassed rows stamped at data layer", () => {
-  it("dilisense-screen stamps screening_results.metadata on bypass", () => {
-    const src = readFn("dilisense-screen/index.ts");
-    expect(src).toMatch(/bypass_gate:\s*"sanctions"/);
-    expect(src).toMatch(/test_mode:\s*true/);
-    expect(src).toMatch(/bypass_used_at/);
-    expect(src).toMatch(/bypass_actor/);
-  });
+  // dilisense-screen bypass-stamp test removed: edge function fully
+  // decommissioned. Re-instate the equivalent assertion when a live
+  // sanctions/PEP screening provider is wired in.
+
+
 
   it("idv-verify stamps entities.metadata on bypass with bypass_gates includes idv", () => {
     const src = readFn("idv-verify/index.ts");

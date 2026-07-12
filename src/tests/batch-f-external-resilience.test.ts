@@ -27,20 +27,11 @@ describe("Batch F — external dependency resilience", () => {
     expect(s).toMatch(/if \(result\.status === "verified"\)\s*{[\s\S]*entities[\s\S]*verified/);
     expect(s).toMatch(/IdvProviderError/);
   });
-  it("4. Dilisense uses fetchWithTimeout", () => {
-    const s = read("supabase/functions/dilisense-screen/index.ts");
-    expect(s).toMatch(/fetchWithTimeout\(/);
-  });
-  it("5. Dilisense malformed response writes provider_error", () => {
-    const s = read("supabase/functions/dilisense-screen/index.ts");
-    expect(s).toMatch(/ScreeningProviderError|provider_error/);
-    expect(s).toMatch(/DilisenseResponseSchema/);
-  });
-  it("6. Dilisense provider_error persists to screening_results", () => {
-    const s = read("supabase/functions/dilisense-screen/index.ts");
-    expect(s).toMatch(/screening_results/);
-    expect(s).toMatch(/provider_error/);
-  });
+  // ── Dilisense tests removed: `dilisense-screen` edge function fully
+  // decommissioned. No sanctions / PEP screening provider is currently
+  // connected; re-instate resilience assertions when a replacement
+  // provider is wired in.
+
 
   // ── AI guard wiring
   it("7. counterparty-intel-auto uses guardedAiCall", () => {
