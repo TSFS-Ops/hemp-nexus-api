@@ -128,6 +128,9 @@ function AdminRfiDialog({
   const [answer, setAnswer] = useState("");
   const [assignee, setAssignee] = useState(rfi.assigned_to ?? "");
   const [busy, setBusy] = useState(false);
+  const [pickerOptions, setPickerOptions] = useState<
+    { user_id: string; display_name: string | null; email: string | null }[] | null
+  >(null);
   const terminal = ["closed", "withdrawn"].includes(rfi.status);
 
   const refresh = useCallback(async () => {
@@ -136,7 +139,13 @@ function AdminRfiDialog({
 
   useEffect(() => {
     void refresh();
+    // Try to load the safe admin picker; fall back to raw id input if RPC fails.
+    import("@/lib/funder-workspace/admin-client")
+      .then((m) => m.listAssignableAdminUsers())
+      .then(setPickerOptions)
+      .catch(() => setPickerOptions(null));
   }, [refresh]);
+
 
   const doAssign = async () => {
     setBusy(true);
