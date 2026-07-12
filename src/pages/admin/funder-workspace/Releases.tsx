@@ -18,6 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listReleases, type DealReleaseWithOrg } from "@/lib/funder-workspace/admin-client";
+import {
+  effectiveReleaseStatus,
+  statusBadgeVariant,
+  statusLabel,
+  consentSatisfied,
+} from "@/lib/funder-workspace/release-state";
 
 function daysUntil(iso: string | null): number | null {
   if (!iso) return null;
@@ -48,8 +54,10 @@ export default function FunderWorkspaceReleases() {
   const filtered = useMemo(() => {
     const list = rows ?? [];
     const needle = q.trim().toLowerCase();
+    const now = Date.now();
     return list.filter((r) => {
-      if (statusFilter !== "all" && r.release_status !== statusFilter) return false;
+      const eff = effectiveReleaseStatus(r, now);
+      if (statusFilter !== "all" && eff !== statusFilter) return false;
       if (overrideOnly && !r.admin_override_reason) return false;
       if (rawOnly && !r.can_view_raw_documents && !r.can_download_raw_documents) return false;
       if (expiringOnly) {
@@ -123,6 +131,7 @@ export default function FunderWorkspaceReleases() {
                 <TableHead>Status</TableHead>
                 <TableHead>Consent (B/S)</TableHead>
                 <TableHead>Override</TableHead>
+                <TableHead>Funder-ready</TableHead>
                 <TableHead>Raw / Compiled</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead>Released</TableHead>
@@ -130,31 +139,39 @@ export default function FunderWorkspaceReleases() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-mono text-xs">{r.deal_reference}</TableCell>
-                  <TableCell>{r.funder_organisation?.name ?? "—"}</TableCell>
-                  <TableCell className="text-xs">
-                    <div className="font-mono">{r.evidence_pack_id ?? "—"}</div>
-                    <div className="text-muted-foreground">v{r.evidence_pack_version ?? "—"}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={r.release_status === "active" ? "default" : r.release_status === "revoked" ? "destructive" : "secondary"}>
-                      {r.release_status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs">{r.buyer_consent_status} / {r.seller_consent_status}</TableCell>
-                  <TableCell>{r.admin_override_reason ? <Badge variant="destructive">Yes</Badge> : "—"}</TableCell>
-                  <TableCell className="text-xs">
-                    Raw: {r.can_view_raw_documents ? "Y" : "N"} · Compiled: {r.can_download_compiled_pack ? "Y" : "N"}
-                  </TableCell>
-                  <TableCell className="text-xs">{r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—"}</TableCell>
-                  <TableCell className="text-xs">{r.released_at ? new Date(r.released_at).toLocaleDateString() : "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <Link to={`/admin/funder-workspace/releases/${r.id}`} className="text-sm underline">Open</Link>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((r) => {
+                const eff = effectiveReleaseStatus(r);
+                const funderReady =
+                  (eff === "active" || eff === "expiring_soon") && consentSatisfied(r);
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs">{r.deal_reference}</TableCell>
+                    <TableCell>{r.funder_organisation?.name ?? "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      <div className="font-mono">{r.evidence_pack_id ?? "—"}</div>
+                      <div className="text-muted-foreground">v{r.evidence_pack_version ?? "—"}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{r.buyer_consent_status} / {r.seller_consent_status}</TableCell>
+                    <TableCell>{r.admin_override_reason ? <Badge variant="destructive">Yes</Badge> : "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={funderReady ? "default" : "secondary"} data-testid={`fw-funder-ready-${r.id}`}>
+                        {funderReady ? "Yes" : "No"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      Raw: {r.can_view_raw_documents ? "Y" : "N"} · Compiled: {r.can_download_compiled_pack ? "Y" : "N"}
+                    </TableCell>
+                    <TableCell className="text-xs">{r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell className="text-xs">{r.released_at ? new Date(r.released_at).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <Link to={`/admin/funder-workspace/releases/${r.id}`} className="text-sm underline">Open</Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {rows !== null && filtered.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
