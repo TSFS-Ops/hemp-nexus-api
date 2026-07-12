@@ -19,7 +19,11 @@ import {
   FunderReleaseStatusBadge,
   PermissionBadge,
 } from "./components/FunderBadges";
-import { listMyReleases } from "@/lib/funder-workspace/funder-client";
+import {
+  fetchFunderCounters,
+  listMyReleases,
+  type FunderWorkspaceFunderCounters,
+} from "@/lib/funder-workspace/funder-client";
 import type { DealReleaseRow } from "@/lib/funder-workspace/types";
 
 const EXPIRING_SOON_MS = 14 * 24 * 60 * 60 * 1000;
@@ -37,23 +41,33 @@ export default function FunderWorkspaceIndex() {
 
 function DashboardBody() {
   const [rows, setRows] = useState<DealReleaseRow[]>([]);
+  const [counters, setCounters] = useState<FunderWorkspaceFunderCounters | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    listMyReleases()
-      .then(setRows)
-      .catch((e) => setErr((e as Error).message))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    Promise.all([listMyReleases(), fetchFunderCounters().catch(() => null)])
+      .then(([r, c]) => {
+        if (cancelled) return;
+        setRows(r);
+        setCounters(c);
+      })
+      .catch((e) => {
+        if (!cancelled) setErr((e as Error).message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const now = Date.now();
   const active = rows.filter((r) => r.release_status === "active");
   const expiringSoon = active.filter(
     (r) => r.expires_at && new Date(r.expires_at).getTime() - now < EXPIRING_SOON_MS,
-  );
-  const revokedOrExpired = rows.filter(
-    (r) => r.release_status === "expired" || r.release_status === "revoked",
   );
 
   if (err) {
@@ -68,12 +82,15 @@ function DashboardBody() {
 
   return (
     <div className="space-y-4" data-testid="fw-funder-dashboard">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Active assigned deals" value={active.length} />
-        <StatCard label="Expiring within 14 days" value={expiringSoon.length} />
-        <StatCard label="Revoked / expired" value={revokedOrExpired.length} />
-        <StatCard label="Total assigned" value={rows.length} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Active assigned deals" value={counters?.active_deals ?? active.length} />
+        <StatCard label="Expiring within 14 days" value={counters?.expiring_soon ?? expiringSoon.length} />
+        <StatCard label="Sealed packs available" value={counters?.packs_available ?? 0} />
+        <StatCard label="Open RFIs" value={counters?.open_rfis ?? 0} />
+        <StatCard label="Answered RFIs" value={counters?.answered_rfis ?? 0} />
+        <StatCard label="Decisions recorded" value={counters?.decisions_recorded ?? 0} />
       </div>
+
 
       <Card>
         <CardHeader>

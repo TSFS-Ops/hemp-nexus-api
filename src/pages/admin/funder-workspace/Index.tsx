@@ -7,10 +7,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  listFunderOrganisations,
-  listOnboardingRequests,
-  listReleases,
-  listUsageEvents,
+  fetchAdminCounters,
+  type FunderWorkspaceAdminCounters,
 } from "@/lib/funder-workspace/admin-client";
 
 const SECTIONS = [
@@ -21,61 +19,36 @@ const SECTIONS = [
   { title: "Audit & usage", to: "/admin/funder-workspace/audit", description: "Read-only audit trail and non-financial usage events." },
 ] as const;
 
-function within(days: number, iso: string | null): boolean {
-  if (!iso) return false;
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return false;
-  const now = Date.now();
-  return t > now && t - now < days * 24 * 60 * 60 * 1000;
-}
-
 export default function FunderWorkspaceAdminIndex() {
-  const [counts, setCounts] = useState<{
-    pending: number | null;
-    approvedOrgs: number | null;
-    activeReleases: number | null;
-    expiringSoon: number | null;
-    revoked: number | null;
-    recentUsage: number | null;
-  }>({ pending: null, approvedOrgs: null, activeReleases: null, expiringSoon: null, revoked: null, recentUsage: null });
+  const [counts, setCounts] = useState<FunderWorkspaceAdminCounters | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const [ob, orgs, rels, usage] = await Promise.all([
-          listOnboardingRequests(),
-          listFunderOrganisations(),
-          listReleases(),
-          listUsageEvents({ limit: 100 }),
-        ]);
-        if (cancelled) return;
-        setCounts({
-          pending: ob.filter((r) => r.status === "submitted" || r.status === "under_review").length,
-          approvedOrgs: orgs.filter((o) => o.approval_status === "approved" || o.approval_status === "admin_created" || o.approval_status === null).filter((o) => o.status === "active").length,
-          activeReleases: rels.filter((r) => r.release_status === "active").length,
-          expiringSoon: rels.filter((r) => r.release_status === "active" && within(14, r.expires_at)).length,
-          revoked: rels.filter((r) => r.release_status === "revoked").length,
-          recentUsage: usage.length,
-        });
-      } catch (e) {
+    fetchAdminCounters()
+      .then((c) => {
+        if (!cancelled) setCounts(c);
+      })
+      .catch((e) => {
         if (!cancelled) setError((e as Error).message);
-      }
-    })();
+      });
     return () => {
       cancelled = true;
     };
   }, []);
 
   const cards = [
-    { label: "Pending onboarding", value: counts.pending },
-    { label: "Approved organisations", value: counts.approvedOrgs },
-    { label: "Active releases", value: counts.activeReleases },
-    { label: "Expiring within 14 days", value: counts.expiringSoon },
-    { label: "Revoked releases", value: counts.revoked },
-    { label: "Recent usage events", value: counts.recentUsage },
+    { label: "Pending onboarding", value: counts?.pending_onboarding },
+    { label: "Approved organisations", value: counts?.approved_orgs },
+    { label: "Active releases", value: counts?.active_releases },
+    { label: "Expiring within 14 days", value: counts?.expiring_soon },
+    { label: "Revoked releases", value: counts?.revoked_releases },
+    { label: "Sealed packs generated", value: counts?.packs_generated },
+    { label: "Pack downloads", value: counts?.pack_downloads },
+    { label: "Open RFIs", value: counts?.open_rfis },
+    { label: "Decisions recorded", value: counts?.decisions_recorded },
   ];
+
 
   return (
     <div className="p-6 space-y-6" data-testid="fw-admin-index">

@@ -128,6 +128,9 @@ function AdminRfiDialog({
   const [answer, setAnswer] = useState("");
   const [assignee, setAssignee] = useState(rfi.assigned_to ?? "");
   const [busy, setBusy] = useState(false);
+  const [pickerOptions, setPickerOptions] = useState<
+    { user_id: string; display_name: string | null; email: string | null }[] | null
+  >(null);
   const terminal = ["closed", "withdrawn"].includes(rfi.status);
 
   const refresh = useCallback(async () => {
@@ -136,7 +139,13 @@ function AdminRfiDialog({
 
   useEffect(() => {
     void refresh();
+    // Try to load the safe admin picker; fall back to raw id input if RPC fails.
+    import("@/lib/funder-workspace/admin-client")
+      .then((m) => m.listAssignableAdminUsers())
+      .then(setPickerOptions)
+      .catch(() => setPickerOptions(null));
   }, [refresh]);
+
 
   const doAssign = async () => {
     setBusy(true);
@@ -200,13 +209,30 @@ function AdminRfiDialog({
           </div>
           <div className="grid grid-cols-3 gap-2 items-end">
             <div className="col-span-2">
-              <Label htmlFor="rfi-assignee">Assignee (auth user id)</Label>
-              <Input
-                id="rfi-assignee"
-                value={assignee}
-                onChange={(e) => setAssignee(e.target.value)}
-                placeholder="Optional — leave blank to unassign"
-              />
+              <Label htmlFor="rfi-assignee">Assignee</Label>
+              {pickerOptions && pickerOptions.length > 0 ? (
+                <select
+                  id="rfi-assignee"
+                  data-testid="fw-admin-rfi-assignee-picker"
+                  value={assignee}
+                  onChange={(e) => setAssignee(e.target.value)}
+                  className="w-full border rounded h-9 px-2 text-sm bg-background"
+                >
+                  <option value="">— Unassigned —</option>
+                  {pickerOptions.map((u) => (
+                    <option key={u.user_id} value={u.user_id}>
+                      {u.display_name || u.email || u.user_id}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  id="rfi-assignee"
+                  value={assignee}
+                  onChange={(e) => setAssignee(e.target.value)}
+                  placeholder="Auth user id (fallback — safe picker unavailable)"
+                />
+              )}
             </div>
             <Button
               onClick={doAssign}
@@ -215,6 +241,7 @@ function AdminRfiDialog({
             >
               Update assignee
             </Button>
+
           </div>
           {!terminal && (
             <div className="space-y-2">

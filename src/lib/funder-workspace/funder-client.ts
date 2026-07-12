@@ -170,6 +170,23 @@ export async function requestPackDownload(
   return data as RequestPackDownloadResult;
 }
 
+
+// ─── Batch 6: funder-side counters ───────────────────────────
+export interface FunderWorkspaceFunderCounters {
+  active_deals: number;
+  expiring_soon: number;
+  packs_available: number;
+  open_rfis: number;
+  answered_rfis: number;
+  decisions_recorded: number;
+}
+
+export async function fetchFunderCounters(): Promise<FunderWorkspaceFunderCounters> {
+  const { data, error } = await (supabase as any).rpc("fw_counters_funder_v1");
+  if (error) throw new Error(error.message);
+  return (data ?? {}) as FunderWorkspaceFunderCounters;
+}
+
 /** Explicit list of funder-facing table reads — enforced by tests. */
 export const FUNDER_WORKSPACE_FUNDER_TABLES = [
   "p5_batch3_funder_organisations",
@@ -180,3 +197,4 @@ export const FUNDER_WORKSPACE_FUNDER_TABLES = [
   "funder_usage_events",
   "p5_batch3_funder_audit_events",
 ] as const;
+
