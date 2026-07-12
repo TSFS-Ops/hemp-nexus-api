@@ -6293,6 +6293,348 @@ export type Database = {
           },
         ]
       }
+      funder_deal_releases: {
+        Row: {
+          admin_override_reason: string | null
+          buyer_consent_status: string
+          can_download_compiled_pack: boolean
+          can_download_raw_documents: boolean
+          can_view_evidence_room: boolean
+          can_view_evidence_summary: boolean
+          can_view_raw_documents: boolean
+          can_view_unmasked_sensitive_details: boolean
+          created_at: string
+          deal_reference: string
+          evidence_pack_id: string | null
+          evidence_pack_version: string | null
+          expires_at: string | null
+          funder_organisation_id: string
+          id: string
+          release_reason: string | null
+          release_status: string
+          released_at: string | null
+          released_by: string | null
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          seller_consent_status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_override_reason?: string | null
+          buyer_consent_status?: string
+          can_download_compiled_pack?: boolean
+          can_download_raw_documents?: boolean
+          can_view_evidence_room?: boolean
+          can_view_evidence_summary?: boolean
+          can_view_raw_documents?: boolean
+          can_view_unmasked_sensitive_details?: boolean
+          created_at?: string
+          deal_reference: string
+          evidence_pack_id?: string | null
+          evidence_pack_version?: string | null
+          expires_at?: string | null
+          funder_organisation_id: string
+          id?: string
+          release_reason?: string | null
+          release_status?: string
+          released_at?: string | null
+          released_by?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          seller_consent_status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_override_reason?: string | null
+          buyer_consent_status?: string
+          can_download_compiled_pack?: boolean
+          can_download_raw_documents?: boolean
+          can_view_evidence_room?: boolean
+          can_view_evidence_summary?: boolean
+          can_view_raw_documents?: boolean
+          can_view_unmasked_sensitive_details?: boolean
+          created_at?: string
+          deal_reference?: string
+          evidence_pack_id?: string | null
+          evidence_pack_version?: string | null
+          expires_at?: string | null
+          funder_organisation_id?: string
+          id?: string
+          release_reason?: string | null
+          release_status?: string
+          released_at?: string | null
+          released_by?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          seller_consent_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_deal_releases_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funder_org_onboarding_requests: {
+        Row: {
+          approval_funder_organisation_id: string | null
+          approved_email_domain: string | null
+          created_at: string
+          funder_type: string
+          id: string
+          jurisdiction: string | null
+          organisation_name: string
+          primary_contact_email: string
+          primary_contact_name: string
+          primary_contact_phone: string | null
+          reason_for_access: string | null
+          registration_number: string | null
+          rejection_reason: string | null
+          requested_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          approval_funder_organisation_id?: string | null
+          approved_email_domain?: string | null
+          created_at?: string
+          funder_type: string
+          id?: string
+          jurisdiction?: string | null
+          organisation_name: string
+          primary_contact_email: string
+          primary_contact_name: string
+          primary_contact_phone?: string | null
+          reason_for_access?: string | null
+          registration_number?: string | null
+          rejection_reason?: string | null
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          approval_funder_organisation_id?: string | null
+          approved_email_domain?: string | null
+          created_at?: string
+          funder_type?: string
+          id?: string
+          jurisdiction?: string | null
+          organisation_name?: string
+          primary_contact_email?: string
+          primary_contact_name?: string
+          primary_contact_phone?: string | null
+          reason_for_access?: string | null
+          registration_number?: string | null
+          rejection_reason?: string | null
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_org_onboarding_request_approval_funder_organisation_fkey"
+            columns: ["approval_funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funder_pack_versions: {
+        Row: {
+          created_at: string
+          download_expires_at: string | null
+          file_sha256: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          manifest_sha256: string | null
+          pack_id: string
+          release_id: string
+          sealed_at: string | null
+          status: string
+          storage_bucket: string | null
+          storage_path: string | null
+          updated_at: string
+          version: number
+          watermark_template: string | null
+        }
+        Insert: {
+          created_at?: string
+          download_expires_at?: string | null
+          file_sha256?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          manifest_sha256?: string | null
+          pack_id?: string
+          release_id: string
+          sealed_at?: string | null
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          version: number
+          watermark_template?: string | null
+        }
+        Update: {
+          created_at?: string
+          download_expires_at?: string | null
+          file_sha256?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          manifest_sha256?: string | null
+          pack_id?: string
+          release_id?: string
+          sealed_at?: string | null
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          version?: number
+          watermark_template?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_pack_versions_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "funder_deal_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funder_release_consents: {
+        Row: {
+          captured_at: string | null
+          captured_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          override_reason: string | null
+          party_id: string | null
+          party_type: string
+          release_id: string
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          captured_at?: string | null
+          captured_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          override_reason?: string | null
+          party_id?: string | null
+          party_type: string
+          release_id: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          captured_at?: string | null
+          captured_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          override_reason?: string | null
+          party_id?: string | null
+          party_type?: string
+          release_id?: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_release_consents_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "funder_deal_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funder_usage_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          deal_reference: string | null
+          event_metadata: Json
+          event_type: string
+          funder_organisation_id: string | null
+          id: string
+          occurred_at: string
+          pack_version_id: string | null
+          release_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          deal_reference?: string | null
+          event_metadata?: Json
+          event_type: string
+          funder_organisation_id?: string | null
+          id?: string
+          occurred_at?: string
+          pack_version_id?: string | null
+          release_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          deal_reference?: string | null
+          event_metadata?: Json
+          event_type?: string
+          funder_organisation_id?: string | null
+          id?: string
+          occurred_at?: string
+          pack_version_id?: string | null
+          release_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funder_usage_events_funder_organisation_id_fkey"
+            columns: ["funder_organisation_id"]
+            isOneToOne: false
+            referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_usage_events_pack_version_id_fkey"
+            columns: ["pack_version_id"]
+            isOneToOne: false
+            referencedRelation: "funder_pack_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_usage_events_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "funder_deal_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       governance_doc_registry: {
         Row: {
           active: boolean
@@ -10140,7 +10482,12 @@ export type Database = {
       p5_batch3_funder_organisations: {
         Row: {
           api_enabled: boolean
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           contact_email: string | null
+          contact_person_name: string | null
+          contact_phone: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -10148,12 +10495,24 @@ export type Database = {
           name: string
           notes_internal: string | null
           registration_number: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          requested_at: string | null
           status: Database["public"]["Enums"]["p5_batch3_funder_org_status"]
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
           updated_at: string
         }
         Insert: {
           api_enabled?: boolean
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           contact_email?: string | null
+          contact_person_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -10161,12 +10520,24 @@ export type Database = {
           name: string
           notes_internal?: string | null
           registration_number?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          requested_at?: string | null
           status?: Database["public"]["Enums"]["p5_batch3_funder_org_status"]
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Update: {
           api_enabled?: boolean
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           contact_email?: string | null
+          contact_person_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -10174,7 +10545,14 @@ export type Database = {
           name?: string
           notes_internal?: string | null
           registration_number?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          requested_at?: string | null
           status?: Database["public"]["Enums"]["p5_batch3_funder_org_status"]
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -23718,6 +24096,95 @@ export type Database = {
       facilitation_case_visible: {
         Args: { _case: string; _user: string }
         Returns: boolean
+      }
+      funder_role_for_v1: {
+        Args: { p_role: Database["public"]["Enums"]["p5_batch3_funder_role"] }
+        Returns: string
+      }
+      fw_admin_approve_funder_org_v1: {
+        Args: { p_notes_internal: string; p_request_id: string }
+        Returns: string
+      }
+      fw_admin_reject_funder_org_v1: {
+        Args: { p_reason: string; p_request_id: string }
+        Returns: undefined
+      }
+      fw_admin_release_deal_v1: {
+        Args: {
+          p_admin_override_reason: string
+          p_buyer_consent_status: string
+          p_can_download_compiled_pack: boolean
+          p_can_download_raw_documents: boolean
+          p_can_view_raw_documents: boolean
+          p_can_view_unmasked_sensitive_details: boolean
+          p_deal_reference: string
+          p_evidence_pack_id: string
+          p_evidence_pack_version: string
+          p_expires_at: string
+          p_funder_organisation_id: string
+          p_release_reason: string
+          p_seller_consent_status: string
+        }
+        Returns: string
+      }
+      fw_admin_revoke_deal_release_v1: {
+        Args: { p_reason: string; p_release_id: string }
+        Returns: undefined
+      }
+      fw_audit: {
+        Args: {
+          p_action: string
+          p_funder_org: string
+          p_new: Json
+          p_object_id: string
+          p_object_type: string
+          p_prior: Json
+          p_reason: string
+        }
+        Returns: undefined
+      }
+      fw_can_download_compiled_pack_v1: {
+        Args: { p_release_id: string }
+        Returns: boolean
+      }
+      fw_can_view_raw_documents_v1: {
+        Args: { p_release_id: string }
+        Returns: boolean
+      }
+      fw_current_funder_org_v1: { Args: never; Returns: string }
+      fw_has_deal_release_v1: {
+        Args: { p_deal_reference: string }
+        Returns: boolean
+      }
+      fw_is_funder_org_approved_v1: {
+        Args: { p_funder_organisation_id: string }
+        Returns: boolean
+      }
+      fw_record_usage: {
+        Args: {
+          p_deal_reference: string
+          p_event_type: string
+          p_funder_org: string
+          p_metadata: Json
+          p_pack_version_id: string
+          p_release_id: string
+        }
+        Returns: undefined
+      }
+      fw_request_funder_onboarding_v1: {
+        Args: {
+          p_approved_email_domain: string
+          p_funder_type: string
+          p_jurisdiction: string
+          p_organisation_name: string
+          p_primary_contact_email: string
+          p_primary_contact_name: string
+          p_primary_contact_phone: string
+          p_reason_for_access: string
+          p_registration_number: string
+          p_website: string
+        }
+        Returns: string
       }
       generate_event_hash: {
         Args: { event_data: Json; event_type: string; previous_hash: string }
