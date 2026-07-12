@@ -46,6 +46,7 @@ const UUID = "00000000-0000-4000-8000-000000000001";
 
 const baseValues = {
   funder_organisation_id: UUID,
+  match_id: UUID,
   deal_reference: "DEAL-001",
   evidence_pack_id: UUID,
   evidence_pack_version: "1",
@@ -56,6 +57,7 @@ const baseValues = {
   admin_override_reason: "",
   ...DEFAULT_RELEASE_PERMISSIONS,
 };
+
 
 describe("Funder Workspace Batch 2 — permission defaults", () => {
   it("raw-doc/unmasked toggles default false", () => {
@@ -87,11 +89,11 @@ describe("Funder Workspace Batch 2 — release form validation", () => {
     expect(parsed.success).toBe(true);
   });
 
-  it("requires the funder organisation, deal reference, pack id/version and reason", () => {
+  it("requires the funder organisation, canonical deal, pack id/version and reason", () => {
     const parsed = releaseFormSchema.safeParse({
       ...baseValues,
       funder_organisation_id: "",
-      deal_reference: "",
+      match_id: "",
       evidence_pack_id: "",
       evidence_pack_version: "",
       release_reason: "",
@@ -101,7 +103,7 @@ describe("Funder Workspace Batch 2 — release form validation", () => {
     const paths = parsed.error.issues.map((i) => i.path.join("."));
     for (const k of [
       "funder_organisation_id",
-      "deal_reference",
+      "match_id",
       "evidence_pack_id",
       "evidence_pack_version",
       "release_reason",
@@ -109,6 +111,7 @@ describe("Funder Workspace Batch 2 — release form validation", () => {
       expect(paths, k).toContain(k);
     }
   });
+
 
   it("rejects an expiry in the past", () => {
     const parsed = releaseFormSchema.safeParse({ ...baseValues, expires_at: PAST });

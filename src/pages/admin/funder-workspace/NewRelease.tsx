@@ -1,10 +1,8 @@
 /**
- * Institutional Funder Evidence Workspace — Batch 2
- * Admin: New Deal Release form. Calls fw_admin_release_deal_v1.
- *
- * Consent gate + non-empty admin override reason are enforced client-side
- * (zod schema) and server-side by the RPC. Raw document toggles default
- * OFF and require an explicit warning before enabling.
+ * Institutional Funder Evidence Workspace — Batch 2 + Batch 8
+ * Admin: New Deal Release form. Calls fw_admin_release_deal_v2 (canonical
+ * match_id required). The unrestricted free-text deal-reference field has
+ * been replaced with a server-backed canonical deal selector.
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +25,8 @@ import {
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { createRelease, listFunderOrganisations } from "@/lib/funder-workspace/admin-client";
+import { createReleaseV2, listFunderOrganisations } from "@/lib/funder-workspace/admin-client";
+import { CanonicalDealSelector } from "./components/CanonicalDealSelector";
 import {
   DEFAULT_RELEASE_PERMISSIONS,
   RAW_DOCUMENT_PERMISSION_KEYS,
@@ -42,8 +41,10 @@ export default function FunderWorkspaceNewRelease() {
   const navigate = useNavigate();
   const orgsQuery = useQuery({ queryKey: ["fw-orgs"], queryFn: listFunderOrganisations });
 
+
   const [values, setValues] = useState<ReleaseFormValues>({
     funder_organisation_id: "",
+    match_id: "",
     deal_reference: "",
     evidence_pack_id: "",
     evidence_pack_version: "",
@@ -54,6 +55,7 @@ export default function FunderWorkspaceNewRelease() {
     admin_override_reason: "",
     ...DEFAULT_RELEASE_PERMISSIONS,
   });
+
   const [errors, setErrors] = useState<Partial<Record<keyof ReleaseFormValues, string>>>({});
   const [busy, setBusy] = useState(false);
 
@@ -93,9 +95,9 @@ export default function FunderWorkspaceNewRelease() {
     setErrors({});
     setBusy(true);
     try {
-      const releaseId = await createRelease({
+      const releaseId = await createReleaseV2({
         p_funder_organisation_id: parsed.data.funder_organisation_id,
-        p_deal_reference: parsed.data.deal_reference.trim(),
+        p_match_id: parsed.data.match_id,
         p_evidence_pack_id: parsed.data.evidence_pack_id,
         p_evidence_pack_version: parsed.data.evidence_pack_version.trim(),
         p_release_reason: parsed.data.release_reason.trim(),
@@ -108,6 +110,7 @@ export default function FunderWorkspaceNewRelease() {
         p_seller_consent_status: parsed.data.seller_consent_status,
         p_admin_override_reason: parsed.data.admin_override_reason?.trim() || null,
       });
+
       toast.success("Release created");
       if (releaseId) navigate(`/admin/funder-workspace/releases/${releaseId}`);
       else navigate(`/admin/funder-workspace/releases`);
@@ -144,11 +147,18 @@ export default function FunderWorkspaceNewRelease() {
               </Select>
               {errors.funder_organisation_id && <p className="text-xs text-destructive mt-1">{errors.funder_organisation_id}</p>}
             </div>
-            <div>
-              <Label htmlFor="deal-ref">Deal reference *</Label>
-              <Input id="deal-ref" value={values.deal_reference} onChange={(e) => set("deal_reference", e.target.value)} data-testid="fw-release-deal-ref" />
-              {errors.deal_reference && <p className="text-xs text-destructive mt-1">{errors.deal_reference}</p>}
+            <div className="md:col-span-2">
+              <Label>Canonical deal *</Label>
+              <CanonicalDealSelector
+                value={values.match_id}
+                onChange={(matchId) => set("match_id", matchId)}
+              />
+              {errors.match_id && <p className="text-xs text-destructive mt-1">{errors.match_id}</p>}
+              <p className="text-xs text-muted-foreground mt-1">
+                Select a real deal from the platform. Free-text references are not accepted for new releases.
+              </p>
             </div>
+
             <div>
               <Label htmlFor="pack-id">Evidence pack ID (UUID) *</Label>
               <Input id="pack-id" value={values.evidence_pack_id} onChange={(e) => set("evidence_pack_id", e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" />

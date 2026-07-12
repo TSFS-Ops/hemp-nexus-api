@@ -131,6 +131,14 @@ export interface FunderOrganisationRow {
   updated_at: string;
 }
 
+export const DEAL_LINKAGE_STATUSES = [
+  "canonical",
+  "legacy_fallback",
+  "legacy_unresolved",
+  "invalid",
+] as const;
+export type DealLinkageStatus = (typeof DEAL_LINKAGE_STATUSES)[number];
+
 export interface DealReleaseRow {
   id: string;
   funder_organisation_id: string;
@@ -154,9 +162,15 @@ export interface DealReleaseRow {
   buyer_consent_status: ConsentStatus;
   seller_consent_status: ConsentStatus;
   admin_override_reason: string | null;
+  match_id: string | null;
+  deal_linkage_status: DealLinkageStatus | null;
+  deal_linked_at: string | null;
+  deal_linked_by: string | null;
+  deal_linkage_reason: string | null;
   created_at: string;
   updated_at: string;
 }
+
 
 export interface ReleaseConsentRow {
   id: string;

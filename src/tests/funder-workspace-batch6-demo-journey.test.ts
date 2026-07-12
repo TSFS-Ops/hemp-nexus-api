@@ -21,7 +21,7 @@ describe("Batch 6 — demo V1 journey surfaces", () => {
 
   it("2. admin releases a deal with consent or explicit override", () => {
     const s = read("src/pages/admin/funder-workspace/NewRelease.tsx");
-    expect(s).toMatch(/fw_admin_release_deal_v1|releaseDeal/);
+    expect(s).toMatch(/fw_admin_release_deal_v1|fw_admin_release_deal_v2|createReleaseV2|releaseDeal/);
     expect(s).toMatch(/consent|override/i);
   });
 

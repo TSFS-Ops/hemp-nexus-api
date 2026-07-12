@@ -232,13 +232,70 @@ export async function listAssignableAdminUsers(): Promise<AssignableAdminUser[]>
   return (data ?? []) as AssignableAdminUser[];
 }
 
+// ─── Batch 8: canonical deal linkage ─────────────────────────
+export interface ReleasableDealRow {
+  match_id: string;
+  display_reference: string | null;
+  buyer_org_name: string | null;
+  seller_org_name: string | null;
+  deal_status: string | null;
+  created_at: string;
+  evidence_document_count: number;
+}
+
+export async function searchReleasableDeals(query: string, limit = 25): Promise<ReleasableDealRow[]> {
+  const { data, error } = await (supabase as any).rpc("fw_admin_search_releasable_deals_v1", {
+    p_query: query ?? "",
+    p_limit: limit,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ReleasableDealRow[];
+}
+
+export interface ReleaseDealV2Input {
+  p_funder_organisation_id: string;
+  p_match_id: string;
+  p_evidence_pack_id: string | null;
+  p_evidence_pack_version: string | null;
+  p_release_reason: string;
+  p_expires_at: string;
+  p_can_download_compiled_pack: boolean;
+  p_can_view_raw_documents: boolean;
+  p_can_download_raw_documents: boolean;
+  p_can_view_unmasked_sensitive_details: boolean;
+  p_buyer_consent_status: string;
+  p_seller_consent_status: string;
+  p_admin_override_reason: string | null;
+}
+
+export async function createReleaseV2(input: ReleaseDealV2Input): Promise<string> {
+  const { data, error } = await (supabase as any).rpc("fw_admin_release_deal_v2", input);
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
+export async function linkReleaseToMatch(input: { p_release_id: string; p_match_id: string; p_reason: string }): Promise<void> {
+  const reason = (input.p_reason ?? "").trim();
+  if (!reason) throw new Error("Linkage reason is required");
+  const { error } = await (supabase as any).rpc("fw_admin_link_release_to_match_v1", {
+    p_release_id: input.p_release_id,
+    p_match_id: input.p_match_id,
+    p_reason: reason,
+  });
+  if (error) throw new Error(error.message);
+}
+
 // Exported RPC names — used by tests to guarantee we only call approved RPCs.
 export const FUNDER_WORKSPACE_ADMIN_RPCS = [
   "fw_admin_approve_funder_org_v1",
   "fw_admin_reject_funder_org_v1",
   "fw_admin_release_deal_v1",
+  "fw_admin_release_deal_v2",
   "fw_admin_revoke_deal_release_v1",
+  "fw_admin_search_releasable_deals_v1",
+  "fw_admin_link_release_to_match_v1",
   "fw_counters_admin_v1",
   "fw_admin_assignable_users_v1",
 ] as const;
+
 

@@ -24,6 +24,12 @@ import {
   statusLabel,
   consentSatisfied,
 } from "@/lib/funder-workspace/release-state";
+import {
+  LINKAGE_STATUS_LABEL,
+  linkageStatusBadgeVariant,
+  linkageStatusOf,
+} from "@/lib/funder-workspace/linkage-labels";
+
 
 function daysUntil(iso: string | null): number | null {
   if (!iso) return null;
@@ -129,6 +135,7 @@ export default function FunderWorkspaceReleases() {
                 <TableHead>Funder</TableHead>
                 <TableHead>Pack</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Linkage</TableHead>
                 <TableHead>Consent (B/S)</TableHead>
                 <TableHead>Override</TableHead>
                 <TableHead>Funder-ready</TableHead>
@@ -137,6 +144,7 @@ export default function FunderWorkspaceReleases() {
                 <TableHead>Released</TableHead>
                 <TableHead />
               </TableRow>
+
             </TableHeader>
             <TableBody>
               {filtered.map((r) => {
@@ -153,6 +161,16 @@ export default function FunderWorkspaceReleases() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const l = linkageStatusOf(r);
+                        return (
+                          <Badge variant={linkageStatusBadgeVariant(l)} data-testid={`fw-linkage-${r.id}`}>
+                            {LINKAGE_STATUS_LABEL[l]}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell className="text-xs">{r.buyer_consent_status} / {r.seller_consent_status}</TableCell>
                     <TableCell>{r.admin_override_reason ? <Badge variant="destructive">Yes</Badge> : "—"}</TableCell>
@@ -174,7 +192,8 @@ export default function FunderWorkspaceReleases() {
               })}
               {rows !== null && filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell colSpan={12} className="text-center text-sm text-muted-foreground py-8">
+
                     No releases match the filters.
                   </TableCell>
                 </TableRow>

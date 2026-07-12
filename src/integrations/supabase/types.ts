@@ -6304,12 +6304,17 @@ export type Database = {
           can_view_raw_documents: boolean
           can_view_unmasked_sensitive_details: boolean
           created_at: string
+          deal_linkage_reason: string | null
+          deal_linkage_status: string | null
+          deal_linked_at: string | null
+          deal_linked_by: string | null
           deal_reference: string
           evidence_pack_id: string | null
           evidence_pack_version: string | null
           expires_at: string | null
           funder_organisation_id: string
           id: string
+          match_id: string | null
           release_reason: string | null
           release_status: string
           released_at: string | null
@@ -6330,12 +6335,17 @@ export type Database = {
           can_view_raw_documents?: boolean
           can_view_unmasked_sensitive_details?: boolean
           created_at?: string
+          deal_linkage_reason?: string | null
+          deal_linkage_status?: string | null
+          deal_linked_at?: string | null
+          deal_linked_by?: string | null
           deal_reference: string
           evidence_pack_id?: string | null
           evidence_pack_version?: string | null
           expires_at?: string | null
           funder_organisation_id: string
           id?: string
+          match_id?: string | null
           release_reason?: string | null
           release_status?: string
           released_at?: string | null
@@ -6356,12 +6366,17 @@ export type Database = {
           can_view_raw_documents?: boolean
           can_view_unmasked_sensitive_details?: boolean
           created_at?: string
+          deal_linkage_reason?: string | null
+          deal_linkage_status?: string | null
+          deal_linked_at?: string | null
+          deal_linked_by?: string | null
           deal_reference?: string
           evidence_pack_id?: string | null
           evidence_pack_version?: string | null
           expires_at?: string | null
           funder_organisation_id?: string
           id?: string
+          match_id?: string | null
           release_reason?: string | null
           release_status?: string
           released_at?: string | null
@@ -6378,6 +6393,20 @@ export type Database = {
             columns: ["funder_organisation_id"]
             isOneToOne: false
             referencedRelation: "p5_batch3_funder_organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funder_deal_releases_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_evidence"
+            referencedColumns: ["match_id"]
+          },
+          {
+            foreignKeyName: "funder_deal_releases_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
             referencedColumns: ["id"]
           },
         ]
@@ -24387,6 +24416,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      fw_admin_funder_pack_content_v1: {
+        Args: { p_release_id: string }
+        Returns: Json
+      }
+      fw_admin_link_release_to_match_v1: {
+        Args: { p_match_id: string; p_reason: string; p_release_id: string }
+        Returns: undefined
+      }
       fw_admin_pack_generation_context_v1: {
         Args: { p_release_id: string }
         Returns: Json
@@ -24413,6 +24450,24 @@ export type Database = {
         }
         Returns: string
       }
+      fw_admin_release_deal_v2: {
+        Args: {
+          p_admin_override_reason: string
+          p_buyer_consent_status: string
+          p_can_download_compiled_pack: boolean
+          p_can_download_raw_documents: boolean
+          p_can_view_raw_documents: boolean
+          p_can_view_unmasked_sensitive_details: boolean
+          p_evidence_pack_id: string
+          p_evidence_pack_version: string
+          p_expires_at: string
+          p_funder_organisation_id: string
+          p_match_id: string
+          p_release_reason: string
+          p_seller_consent_status: string
+        }
+        Returns: string
+      }
       fw_admin_revoke_deal_release_v1: {
         Args: { p_reason: string; p_release_id: string }
         Returns: undefined
@@ -24427,6 +24482,18 @@ export type Database = {
           p_watermark_template: string
         }
         Returns: string
+      }
+      fw_admin_search_releasable_deals_v1: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          buyer_org_name: string
+          created_at: string
+          deal_status: string
+          display_reference: string
+          evidence_document_count: number
+          match_id: string
+          seller_org_name: string
+        }[]
       }
       fw_audit: {
         Args: {

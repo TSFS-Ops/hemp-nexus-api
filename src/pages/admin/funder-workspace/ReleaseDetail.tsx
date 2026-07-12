@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import {
   generateSealedPack,
   getRelease,
+  linkReleaseToMatch,
   listAuditEvents,
   listReleaseConsents,
   listReleasePackVersions,
@@ -46,10 +47,18 @@ import {
   statusLabel,
 } from "@/lib/funder-workspace/release-state";
 import {
+  LINKAGE_STATUS_LABEL,
+  linkageStatusBadgeVariant,
+  linkageStatusOf,
+  requiresLegacyLinking,
+} from "@/lib/funder-workspace/linkage-labels";
+import { CanonicalDealSelector } from "./components/CanonicalDealSelector";
+import {
   AdminDecisionHistoryPanel,
   AdminRfiPanel,
   AdminSharedCommentsPanel,
 } from "./components/AdminWorkflowPanels";
+
 
 
 export default function FunderWorkspaceReleaseDetail() {
@@ -108,6 +117,11 @@ export default function FunderWorkspaceReleaseDetail() {
   };
 
   const [generating, setGenerating] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkMatchId, setLinkMatchId] = useState("");
+  const [linkReason, setLinkReason] = useState("");
+  const [linking, setLinking] = useState(false);
+
   const handleGenerate = async () => {
     if (!release) return;
     setGenerating(true);
@@ -121,6 +135,27 @@ export default function FunderWorkspaceReleaseDetail() {
       setGenerating(false);
     }
   };
+
+  const handleLink = async () => {
+    if (!linkMatchId || !linkReason.trim()) {
+      toast.error("Select a canonical deal and provide a reason");
+      return;
+    }
+    setLinking(true);
+    try {
+      await linkReleaseToMatch({ p_release_id: releaseId, p_match_id: linkMatchId, p_reason: linkReason.trim() });
+      toast.success("Release linked to canonical deal");
+      setLinkOpen(false);
+      setLinkMatchId("");
+      setLinkReason("");
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLinking(false);
+    }
+  };
+
 
   return (
     <div className="p-6 space-y-4" data-testid="fw-admin-release-detail">
@@ -140,10 +175,21 @@ export default function FunderWorkspaceReleaseDetail() {
             <div className="space-x-2">
               {(() => {
                 const eff = effectiveReleaseStatus(release);
+                const linkage = linkageStatusOf(release);
                 return (
-                  <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                  <>
+                    <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                    <Badge variant={linkageStatusBadgeVariant(linkage)} data-testid="fw-admin-release-linkage">
+                      {LINKAGE_STATUS_LABEL[linkage]}
+                    </Badge>
+                  </>
                 );
               })()}
+              {requiresLegacyLinking(linkageStatusOf(release)) && (
+                <Button variant="outline" onClick={() => setLinkOpen(true)} data-testid="fw-admin-link-canonical">
+                  Link canonical deal
+                </Button>
+              )}
               <Button
                 variant="destructive"
                 disabled={release.release_status === "revoked"}
@@ -155,6 +201,18 @@ export default function FunderWorkspaceReleaseDetail() {
             </div>
           </div>
 
+          {requiresLegacyLinking(linkageStatusOf(release)) && (
+            <Alert variant="destructive" data-testid="fw-admin-linkage-warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Canonical deal not linked</AlertTitle>
+              <AlertDescription>
+                This release does not have a canonical deal linked. Pack generation is blocked until a canonical
+                deal is linked, so no misleading evidence pack is sealed. Use "Link canonical deal" above to link
+                this release to a real deal on the platform.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {release.admin_override_reason && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
@@ -162,6 +220,7 @@ export default function FunderWorkspaceReleaseDetail() {
               <AlertDescription>{release.admin_override_reason}</AlertDescription>
             </Alert>
           )}
+
 
           <Card>
             <CardHeader><CardTitle className="text-base">Release details</CardTitle></CardHeader>
@@ -223,7 +282,12 @@ export default function FunderWorkspaceReleaseDetail() {
           </Card>
 
           {(() => {
-            const gate = canGenerateSealedPack(release);
+            const baseGate = canGenerateSealedPack(release);
+            const linkage = linkageStatusOf(release);
+            const linkageBlocks = requiresLegacyLinking(linkage);
+            const gate = linkageBlocks
+              ? { ok: false as const, reason: "Pack generation is blocked: this release has no canonical deal linked. Link a canonical deal first to avoid sealing a misleading pack." }
+              : baseGate;
             return (
               <Card>
                 <CardHeader className="flex-row items-center justify-between">
@@ -245,6 +309,7 @@ export default function FunderWorkspaceReleaseDetail() {
                     {generating ? "Generating…" : "Generate sealed pack"}
                   </Button>
                 </CardHeader>
+
                 <CardContent>
                   {packs.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No sealed pack versions yet. Click <span className="font-medium">Generate sealed pack</span> to produce one.</p>
@@ -361,9 +426,45 @@ export default function FunderWorkspaceReleaseDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Link canonical deal to release</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm">
+              Search the platform for the real deal this release corresponds to. Only a validated selection can be
+              linked — free-text references are not accepted. This action is audited.
+            </p>
+            <CanonicalDealSelector
+              value={linkMatchId}
+              onChange={(mid) => setLinkMatchId(mid)}
+              testIdPrefix="fw-link-selector"
+            />
+            <Label htmlFor="fw-link-reason">Linkage reason (required)</Label>
+            <Textarea
+              id="fw-link-reason"
+              value={linkReason}
+              onChange={(e) => setLinkReason(e.target.value)}
+              maxLength={1000}
+              data-testid="fw-link-reason"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+            <Button
+              onClick={handleLink}
+              disabled={linking || !linkMatchId || linkReason.trim() === ""}
+              data-testid="fw-link-confirm"
+            >
+              Link deal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function Perm({ label, v, elevated }: { label: string; v: boolean; elevated?: boolean }) {
   return (
