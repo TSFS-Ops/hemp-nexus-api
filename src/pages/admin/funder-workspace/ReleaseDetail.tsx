@@ -175,10 +175,21 @@ export default function FunderWorkspaceReleaseDetail() {
             <div className="space-x-2">
               {(() => {
                 const eff = effectiveReleaseStatus(release);
+                const linkage = linkageStatusOf(release);
                 return (
-                  <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                  <>
+                    <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                    <Badge variant={linkageStatusBadgeVariant(linkage)} data-testid="fw-admin-release-linkage">
+                      {LINKAGE_STATUS_LABEL[linkage]}
+                    </Badge>
+                  </>
                 );
               })()}
+              {requiresLegacyLinking(linkageStatusOf(release)) && (
+                <Button variant="outline" onClick={() => setLinkOpen(true)} data-testid="fw-admin-link-canonical">
+                  Link canonical deal
+                </Button>
+              )}
               <Button
                 variant="destructive"
                 disabled={release.release_status === "revoked"}
@@ -190,6 +201,18 @@ export default function FunderWorkspaceReleaseDetail() {
             </div>
           </div>
 
+          {requiresLegacyLinking(linkageStatusOf(release)) && (
+            <Alert variant="destructive" data-testid="fw-admin-linkage-warning">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Canonical deal not linked</AlertTitle>
+              <AlertDescription>
+                This release does not have a canonical deal linked. Pack generation is blocked until a canonical
+                deal is linked, so no misleading evidence pack is sealed. Use "Link canonical deal" above to link
+                this release to a real deal on the platform.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {release.admin_override_reason && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
@@ -197,6 +220,7 @@ export default function FunderWorkspaceReleaseDetail() {
               <AlertDescription>{release.admin_override_reason}</AlertDescription>
             </Alert>
           )}
+
 
           <Card>
             <CardHeader><CardTitle className="text-base">Release details</CardTitle></CardHeader>
