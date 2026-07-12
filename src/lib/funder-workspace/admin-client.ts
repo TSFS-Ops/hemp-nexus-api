@@ -1,0 +1,190 @@
+/**
+ * Institutional Funder Evidence Workspace — Batch 2
+ * Admin-only client. Every mutation goes through a fw_admin_* RPC.
+ * NO direct table writes from UI.
+ *
+ * Read paths use the tenant-scoped RLS policies already declared in
+ * Batch 1 (fw_*_admin_all vs fw_*_funder_select). Platform admins pass
+ * the admin_all policy and can read every row.
+ */
+import { supabase } from "@/integrations/supabase/client";
+import type {
+  ApproveOnboardingInput,
+  AuditEventRow,
+  DealReleaseRow,
+  FunderOrganisationRow,
+  OnboardingRequestRow,
+  PackVersionRow,
+  ReleaseConsentRow,
+  ReleaseDealInput,
+  RejectOnboardingInput,
+  RevokeReleaseInput,
+  UsageEventRow,
+} from "./types";
+
+// Table names used only for typed READS. All writes must go through RPCs.
+const T = {
+  onboarding: "funder_org_onboarding_requests",
+  organisations: "p5_batch3_funder_organisations",
+  releases: "funder_deal_releases",
+  consents: "funder_release_consents",
+  packs: "funder_pack_versions",
+  usage: "funder_usage_events",
+  audit: "p5_batch3_funder_audit_events",
+} as const;
+
+function must<T>(data: T | null, error: unknown, label: string): T {
+  if (error) throw new Error(`${label}: ${(error as { message?: string })?.message ?? String(error)}`);
+  if (data === null || data === undefined) throw new Error(`${label}: empty response`);
+  return data;
+}
+
+// ─── Onboarding requests ─────────────────────────────────────
+
+export async function listOnboardingRequests(): Promise<OnboardingRequestRow[]> {
+  const { data, error } = await (supabase as any)
+    .from(T.onboarding)
+    .select("*")
+    .order("created_at", { ascending: false });
+  return must(data as OnboardingRequestRow[] | null, error, "listOnboardingRequests");
+}
+
+export async function approveOnboardingRequest(input: ApproveOnboardingInput): Promise<string> {
+  const { data, error } = await (supabase as any).rpc("fw_admin_approve_funder_org_v1", {
+    p_request_id: input.p_request_id,
+    p_notes_internal: input.p_notes_internal,
+  });
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
+export async function rejectOnboardingRequest(input: RejectOnboardingInput): Promise<void> {
+  const reason = (input.p_reason ?? "").trim();
+  if (!reason) throw new Error("Rejection reason is required");
+  const { error } = await (supabase as any).rpc("fw_admin_reject_funder_org_v1", {
+    p_request_id: input.p_request_id,
+    p_reason: reason,
+  });
+  if (error) throw new Error(error.message);
+}
+
+// ─── Funder organisations ────────────────────────────────────
+
+export async function listFunderOrganisations(): Promise<FunderOrganisationRow[]> {
+  const { data, error } = await (supabase as any)
+    .from(T.organisations)
+    .select("*")
+    .order("created_at", { ascending: false });
+  return must(data as FunderOrganisationRow[] | null, error, "listFunderOrganisations");
+}
+
+export async function getFunderOrganisation(id: string): Promise<FunderOrganisationRow> {
+  const { data, error } = await (supabase as any)
+    .from(T.organisations)
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  return must(data as FunderOrganisationRow | null, error, "getFunderOrganisation");
+}
+
+// ─── Deal releases ───────────────────────────────────────────
+
+export interface DealReleaseWithOrg extends DealReleaseRow {
+  funder_organisation?: Pick<FunderOrganisationRow, "id" | "name"> | null;
+}
+
+export async function listReleases(): Promise<DealReleaseWithOrg[]> {
+  const { data, error } = await (supabase as any)
+    .from(T.releases)
+    .select(`*, funder_organisation:${T.organisations}(id,name)`)
+    .order("created_at", { ascending: false });
+  return must(data as DealReleaseWithOrg[] | null, error, "listReleases");
+}
+
+export async function listReleasesForOrg(organisationId: string): Promise<DealReleaseRow[]> {
+  const { data, error } = await (supabase as any)
+    .from(T.releases)
+    .select("*")
+    .eq("funder_organisation_id", organisationId)
+    .order("created_at", { ascending: false });
+  return must(data as DealReleaseRow[] | null, error, "listReleasesForOrg");
+}
+
+export async function getRelease(id: string): Promise<DealReleaseWithOrg> {
+  const { data, error } = await (supabase as any)
+    .from(T.releases)
+    .select(`*, funder_organisation:${T.organisations}(id,name)`)
+    .eq("id", id)
+    .maybeSingle();
+  return must(data as DealReleaseWithOrg | null, error, "getRelease");
+}
+
+export async function listReleaseConsents(releaseId: string): Promise<ReleaseConsentRow[]> {
+  const { data, error } = await (supabase as any)
+    .from(T.consents)
+    .select("*")
+    .eq("release_id", releaseId)
+    .order("created_at", { ascending: true });
+  return must(data as ReleaseConsentRow[] | null, error, "listReleaseConsents");
+}
+
+export async function listReleasePackVersions(releaseId: string): Promise<PackVersionRow[]> {
+  const { data, error } = await (supabase as any)
+    .from(T.packs)
+    .select("*")
+    .eq("release_id", releaseId)
+    .order("version", { ascending: false });
+  return must(data as PackVersionRow[] | null, error, "listReleasePackVersions");
+}
+
+export async function createRelease(input: ReleaseDealInput): Promise<string> {
+  const { data, error } = await (supabase as any).rpc("fw_admin_release_deal_v1", input);
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
+export async function revokeRelease(input: RevokeReleaseInput): Promise<void> {
+  const reason = (input.p_reason ?? "").trim();
+  if (!reason) throw new Error("Revocation reason is required");
+  const { error } = await (supabase as any).rpc("fw_admin_revoke_deal_release_v1", {
+    p_release_id: input.p_release_id,
+    p_reason: reason,
+  });
+  if (error) throw new Error(error.message);
+}
+
+// ─── Audit + usage ───────────────────────────────────────────
+
+export async function listUsageEvents(opts?: {
+  releaseId?: string;
+  organisationId?: string;
+  limit?: number;
+}): Promise<UsageEventRow[]> {
+  let q = (supabase as any).from(T.usage).select("*").order("occurred_at", { ascending: false });
+  if (opts?.releaseId) q = q.eq("release_id", opts.releaseId);
+  if (opts?.organisationId) q = q.eq("funder_organisation_id", opts.organisationId);
+  q = q.limit(opts?.limit ?? 200);
+  const { data, error } = await q;
+  return must(data as UsageEventRow[] | null, error, "listUsageEvents");
+}
+
+export async function listAuditEvents(opts?: {
+  organisationId?: string;
+  objectId?: string;
+  limit?: number;
+}): Promise<AuditEventRow[]> {
+  let q = (supabase as any).from(T.audit).select("*").order("created_at", { ascending: false });
+  if (opts?.organisationId) q = q.eq("funder_organisation_id", opts.organisationId);
+  if (opts?.objectId) q = q.eq("object_id", opts.objectId);
+  q = q.limit(opts?.limit ?? 200);
+  const { data, error } = await q;
+  return must(data as AuditEventRow[] | null, error, "listAuditEvents");
+}
+
+// Exported RPC names — used by tests to guarantee we only call approved RPCs.
+export const FUNDER_WORKSPACE_ADMIN_RPCS = [
+  "fw_admin_approve_funder_org_v1",
+  "fw_admin_reject_funder_org_v1",
+  "fw_admin_release_deal_v1",
+  "fw_admin_revoke_deal_release_v1",
+] as const;
