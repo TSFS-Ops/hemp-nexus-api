@@ -402,7 +402,7 @@ function FunderPackDownloadButton({
   const [busy, setBusy] = useState(false);
   const readiness = packDownloadReadiness(release, pack);
 
-  if (readiness.ready !== true) {
+  if (!readiness.ready) {
     return (
       <Button
         variant="ghost"

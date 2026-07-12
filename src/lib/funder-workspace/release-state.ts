@@ -97,9 +97,10 @@ export function canGenerateSealedPack(
   return { ok: true };
 }
 
-export type PackReadiness =
-  | { ready: true }
-  | { ready: false; reason: string };
+export interface PackReadiness {
+  ready: boolean;
+  reason?: string;
+}
 
 /**
  * Is a specific pack version downloadable by the funder right now? This is
