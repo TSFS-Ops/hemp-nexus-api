@@ -32,8 +32,12 @@ export const releaseFormSchema = z
       .uuid({ message: "Funder organisation is required" }),
     match_id: z.string().uuid({ message: "Canonical deal selection is required" }),
     deal_reference: z.string().trim().max(128).optional().default(""),
-    evidence_pack_id: z.string().uuid({ message: "Evidence pack ID is required" }),
-    evidence_pack_version: nonEmpty("Evidence pack version", 64),
+    evidence_pack_id: z.string().uuid({ message: "Evidence pack selection is required" }),
+    evidence_pack_version: z
+      .string()
+      .trim()
+      .min(1, { message: "Evidence pack selection is required" })
+      .max(64),
     release_reason: nonEmpty("Release reason", 1000),
     expires_at: z
       .string()
