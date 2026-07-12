@@ -23,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {
+  generateSealedPack,
   getRelease,
   listAuditEvents,
   listReleaseConsents,
