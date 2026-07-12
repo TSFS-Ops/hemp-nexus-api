@@ -215,6 +215,13 @@ const FunderWorkspaceNewRelease = lazy(() => import("@/pages/admin/funder-worksp
 const FunderWorkspaceReleaseDetail = lazy(() => import("@/pages/admin/funder-workspace/ReleaseDetail"));
 const FunderWorkspaceAudit = lazy(() => import("@/pages/admin/funder-workspace/Audit"));
 
+// Institutional Funder Evidence Workspace — Batch 3 (funder-facing)
+const FunderWorkspaceFunderIndex = lazy(() => import("@/pages/funder/workspace/Index"));
+const FunderWorkspaceFunderDeals = lazy(() => import("@/pages/funder/workspace/Deals"));
+const FunderWorkspaceFunderDealDetail = lazy(() => import("@/pages/funder/workspace/DealDetail"));
+const FunderWorkspaceFunderProfile = lazy(() => import("@/pages/funder/workspace/Profile"));
+const FunderWorkspaceFunderActivity = lazy(() => import("@/pages/funder/workspace/Activity"));
+
 // P-5 Batch 1 Stage 5 — non-admin subject surfaces
 const MyCompanyReadiness = lazy(() => import("@/pages/registry/MyCompanyReadiness"));
 const FunderEvidencePack = lazy(() => import("@/pages/funder/FunderEvidencePack"));
