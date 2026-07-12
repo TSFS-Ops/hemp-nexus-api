@@ -135,6 +135,7 @@ export default function FunderWorkspaceReleases() {
                 <TableHead>Funder</TableHead>
                 <TableHead>Pack</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Linkage</TableHead>
                 <TableHead>Consent (B/S)</TableHead>
                 <TableHead>Override</TableHead>
                 <TableHead>Funder-ready</TableHead>
@@ -143,6 +144,7 @@ export default function FunderWorkspaceReleases() {
                 <TableHead>Released</TableHead>
                 <TableHead />
               </TableRow>
+
             </TableHeader>
             <TableBody>
               {filtered.map((r) => {
