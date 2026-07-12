@@ -982,6 +982,13 @@ export async function processPayfastItn(
       .in("status", ["pending"]);
   } catch { /* never throw */ }
 
+  const checkoutMeta = (purchase.metadata ?? {}) as Record<string, unknown>;
+  const settlementPriceUsd = typeof checkoutMeta.price_usd === "number" ? checkoutMeta.price_usd : (typeof checkoutMeta.amount_usd === "number" ? checkoutMeta.amount_usd : null);
+  const settlementAmountUsd = typeof checkoutMeta.amount_usd === "number" ? checkoutMeta.amount_usd : settlementPriceUsd;
+  const settlementUsdZarRate = typeof checkoutMeta.usd_zar_rate === "number" ? checkoutMeta.usd_zar_rate : null;
+  const settlementFxRateLockedAt = typeof checkoutMeta.fx_rate_locked_at === "string" ? checkoutMeta.fx_rate_locked_at : null;
+  const settlementAmountZar = typeof checkoutMeta.amount_zar === "number" ? checkoutMeta.amount_zar : null;
+  
   // 12. Audit success.
   try {
     await deps.supabase.from("audit_logs").insert({
@@ -997,6 +1004,16 @@ export async function processPayfastItn(
         new_balance: creditResult?.new_balance ?? null,
         already_credited: alreadyCredited,
         package_id: purchase.package_id,
+        status: "completed",
+        token_amount: purchaseCredits,
+        payment_reference: creditReference,
+        reference: creditReference,
+        amount_usd: settlementAmountUsd,
+        price_usd: settlementPriceUsd,
+        usd_zar_rate: settlementUsdZarRate,
+        fx_rate: settlementUsdZarRate,
+        fx_rate_locked_at: settlementFxRateLockedAt,
+        amount_zar: settlementAmountZar,
         price_zar: Number.isFinite(expectedZar) ? expectedZar : amountNum,
         amount_gross_zar: amountNum,
         mode: deps.mode,
