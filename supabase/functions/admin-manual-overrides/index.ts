@@ -10,10 +10,9 @@
  *
  * For `force_status` / `void_match` the wrapper performs
  * `safe_transition_match_state` internally.
- * For `rerun_screening` / `regenerate_evidence` the external edge
- * function (dilisense-screen / evidence-pack) is invoked first to
- * trigger the side-effect; the wrapper then atomically commits the
- * audit row and governance event together.
+ * For `regenerate_evidence` the external edge function (`evidence-pack`)
+ * is invoked first to trigger the side-effect; the wrapper then
+ * atomically commits the audit row and governance event together.
  *
  * Pre-F7 the endpoint did:
  *   safe_transition_match_state | invoke()
@@ -46,11 +45,6 @@ const BodySchema = z.discriminatedUnion("operation", [
   z.object({
     operation: z.literal("void_match"),
     match_id: z.string().uuid(),
-    reason: z.string().trim().min(10).max(2000),
-  }).strict(),
-  z.object({
-    operation: z.literal("rerun_screening"),
-    entity_id: z.string().uuid(),
     reason: z.string().trim().min(10).max(2000),
   }).strict(),
   z.object({
@@ -147,39 +141,14 @@ Deno.serve(async (req) => {
     const actorIp = readActorIp(req);
     const userAgent = req.headers.get("user-agent") ?? null;
 
-    // For the two external-side-effect operations, invoke the external
-    // edge function BEFORE the atomic wrapper. If the invocation fails,
+    // For the external-side-effect operation, invoke the external edge
+    // function BEFORE the atomic wrapper. If the invocation fails,
     // no audit row and no governance event are written.
     let operationResult: unknown = null;
     let externalBefore: unknown = null;
     let externalAfter: unknown = null;
 
-    if (parsed.operation === "rerun_screening") {
-      const { data: entityBefore } = await admin
-        .from("entities")
-        .select("id, name, org_id, verification_status, jurisdiction, updated_at")
-        .eq("id", parsed.entity_id)
-        .maybeSingle();
-      externalBefore = entityBefore;
-      const { data, error: invokeErr } = await admin.functions.invoke("dilisense-screen", {
-        body: { entity_id: parsed.entity_id, force: true },
-      });
-      if (invokeErr) {
-        console.error(`[admin-manual-overrides][${requestId}] dilisense`, invokeErr);
-        return jsonResponse(req, {
-          error: "SCREENING_INVOKE_FAILED",
-          message: invokeErr.message,
-          requestId,
-        }, 502);
-      }
-      operationResult = data;
-      const { data: entityAfter } = await admin
-        .from("entities")
-        .select("id, name, verification_status, jurisdiction, updated_at")
-        .eq("id", parsed.entity_id)
-        .maybeSingle();
-      externalAfter = entityAfter;
-    } else if (parsed.operation === "regenerate_evidence") {
+    if (parsed.operation === "regenerate_evidence") {
       const { data: matchBefore } = await admin
         .from("matches")
         .select("id, state, status, org_id, updated_at")
@@ -208,8 +177,6 @@ Deno.serve(async (req) => {
       params.new_status = parsed.new_status;
     } else if (parsed.operation === "void_match") {
       params.match_id = parsed.match_id;
-    } else if (parsed.operation === "rerun_screening") {
-      params.entity_id = parsed.entity_id;
     } else {
       params.match_id = parsed.match_id;
     }
