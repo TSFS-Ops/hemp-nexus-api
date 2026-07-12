@@ -243,6 +243,15 @@ export interface ReleasableDealRow {
   evidence_document_count: number;
 }
 
+export interface EligibleEvidencePackRow {
+  evidence_pack_id: string;
+  evidence_pack_version: string;
+  label: string;
+  created_at: string;
+  item_count: number;
+  pack_status: string;
+}
+
 export async function searchReleasableDeals(query: string, limit = 25): Promise<ReleasableDealRow[]> {
   const { data, error } = await (supabase as any).rpc("fw_admin_search_releasable_deals_v1", {
     p_query: query ?? "",
@@ -250,6 +259,15 @@ export async function searchReleasableDeals(query: string, limit = 25): Promise<
   });
   if (error) throw new Error(error.message);
   return (data ?? []) as ReleasableDealRow[];
+}
+
+export async function listEligibleEvidencePacks(matchId: string): Promise<EligibleEvidencePackRow[]> {
+  if (!matchId) return [];
+  const { data, error } = await (supabase as any).rpc("fw_admin_list_eligible_evidence_packs_v1", {
+    p_match_id: matchId,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EligibleEvidencePackRow[];
 }
 
 export interface ReleaseDealV2Input {
@@ -293,6 +311,7 @@ export const FUNDER_WORKSPACE_ADMIN_RPCS = [
   "fw_admin_release_deal_v2",
   "fw_admin_revoke_deal_release_v1",
   "fw_admin_search_releasable_deals_v1",
+  "fw_admin_list_eligible_evidence_packs_v1",
   "fw_admin_link_release_to_match_v1",
   "fw_counters_admin_v1",
   "fw_admin_assignable_users_v1",

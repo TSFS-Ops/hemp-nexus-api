@@ -96,6 +96,7 @@ export default function FunderWorkspacePilotConsole() {
           <div>• Seller trader — <strong>DEMO — Blue River Exports Test Pty Ltd</strong></div>
           <div>• Canonical demo match — <strong>DEMO — Acacia–Blue River Pilot Trade</strong> (selectable in the deal picker)</div>
           <div>• Two synthetic evidence documents (one per side) attached to the demo match</div>
+          <div>• Eligible synthetic evidence pack — <strong>Evidence Pack — Version 1</strong> for the demo match</div>
           <div className="text-muted-foreground pt-2">
             No release has been created. The platform admin releases the deal
             manually as part of the pilot test itself.
@@ -169,7 +170,7 @@ export default function FunderWorkspacePilotConsole() {
         <CardContent className="text-sm space-y-2">
           <div>1. Log in at <Link to="/auth" className="underline">/auth</Link> using the Izenzo Platform Admin credentials above.</div>
           <div>2. Open <Link to="/admin/funder-workspace/releases/new" className="underline">New deal release</Link>.</div>
-          <div>3. In the deal selector, pick <strong>DEMO — Acacia–Blue River Pilot Trade</strong>. Do not paste any UUID.</div>
+          <div>3. In the deal selector, pick <strong>DEMO — Acacia–Blue River Pilot Trade</strong>. The evidence pack is selected automatically; do not paste any UUID.</div>
           <div>4. Select the funder organisation <strong>Pilot Funder Bank</strong>. Do <em>not</em> pick Isolation Test Fund.</div>
           <div>5. Record buyer consent = granted, seller consent = granted.</div>
           <div>6. Leave raw-document access <strong>disabled</strong> and unmasked sensitive details <strong>disabled</strong>. Enable sealed-pack download.</div>

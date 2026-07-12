@@ -51,6 +51,12 @@ describe("Batch 8 — canonical deal linkage migration", () => {
     expect(sql).toMatch(/fw.consent_required/);
   });
 
+  it("does not expose raw pack UUID entry in the release form", () => {
+    const src = readFileSync("src/pages/admin/funder-workspace/NewRelease.tsx", "utf8");
+    expect(src).not.toMatch(/Evidence pack ID \(UUID\)/);
+    expect(src).not.toMatch(/htmlFor="pack-id"/);
+  });
+
   it("defines admin-only searchable deal selector with bounded results and safe fields", () => {
     expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.fw_admin_search_releasable_deals_v1/);
     expect(sql).toMatch(/least\(greatest\(coalesce\(p_limit,25\), 1\), 100\)/);

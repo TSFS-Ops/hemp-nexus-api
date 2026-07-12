@@ -4,7 +4,7 @@
  * match_id required). The unrestricted free-text deal-reference field has
  * been replaced with a server-backed canonical deal selector.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { BackButton } from "@/components/BackButton";
@@ -25,7 +25,11 @@ import {
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { createReleaseV2, listFunderOrganisations } from "@/lib/funder-workspace/admin-client";
+import {
+  createReleaseV2,
+  listEligibleEvidencePacks,
+  listFunderOrganisations,
+} from "@/lib/funder-workspace/admin-client";
 import { CanonicalDealSelector } from "./components/CanonicalDealSelector";
 import {
   DEFAULT_RELEASE_PERMISSIONS,
@@ -40,7 +44,6 @@ const RAW_KEYS = new Set<string>(RAW_DOCUMENT_PERMISSION_KEYS);
 export default function FunderWorkspaceNewRelease() {
   const navigate = useNavigate();
   const orgsQuery = useQuery({ queryKey: ["fw-orgs"], queryFn: listFunderOrganisations });
-
 
   const [values, setValues] = useState<ReleaseFormValues>({
     funder_organisation_id: "",
@@ -58,9 +61,15 @@ export default function FunderWorkspaceNewRelease() {
 
   const [errors, setErrors] = useState<Partial<Record<keyof ReleaseFormValues, string>>>({});
   const [busy, setBusy] = useState(false);
+  const packsQuery = useQuery({
+    queryKey: ["fw-eligible-packs", values.match_id],
+    queryFn: () => listEligibleEvidencePacks(values.match_id),
+    enabled: false,
+  });
 
   const overrideNeeded = requiresAdminOverride(values.buyer_consent_status, values.seller_consent_status);
   const rawEnabled = values.can_view_raw_documents || values.can_download_raw_documents || values.can_view_unmasked_sensitive_details;
+  const packs = packsQuery.data ?? [];
 
   const approvedOrgs = useMemo(() => {
     return (orgsQuery.data ?? []).filter((o) => o.status === "active" && (o.approval_status === "approved" || o.approval_status === "admin_created" || o.approval_status === null));
@@ -68,6 +77,52 @@ export default function FunderWorkspaceNewRelease() {
 
   const set = <K extends keyof ReleaseFormValues>(k: K, v: ReleaseFormValues[K]) => {
     setValues((prev) => ({ ...prev, [k]: v }));
+  };
+
+  useEffect(() => {
+    if (!values.match_id) return;
+    void packsQuery.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.match_id]);
+
+  useEffect(() => {
+    if (!values.match_id || packsQuery.isFetching) return;
+    const current = packs.find(
+      (p) =>
+        p.evidence_pack_id === values.evidence_pack_id &&
+        p.evidence_pack_version === values.evidence_pack_version,
+    );
+    if (current) return;
+    if (packs.length === 1) {
+      setValues((prev) => ({
+        ...prev,
+        evidence_pack_id: packs[0].evidence_pack_id,
+        evidence_pack_version: packs[0].evidence_pack_version,
+      }));
+      return;
+    }
+    if (values.evidence_pack_id || values.evidence_pack_version) {
+      setValues((prev) => ({ ...prev, evidence_pack_id: "", evidence_pack_version: "" }));
+    }
+  }, [packs, packsQuery.isFetching, values.evidence_pack_id, values.evidence_pack_version, values.match_id]);
+
+  const choosePack = (compound: string) => {
+    const pack = packs.find((p) => `${p.evidence_pack_id}::${p.evidence_pack_version}` === compound);
+    if (!pack) return;
+    setValues((prev) => ({
+      ...prev,
+      evidence_pack_id: pack.evidence_pack_id,
+      evidence_pack_version: pack.evidence_pack_version,
+    }));
+  };
+
+  const onDealChange = (matchId: string) => {
+    setValues((prev) => ({
+      ...prev,
+      match_id: matchId,
+      evidence_pack_id: "",
+      evidence_pack_version: "",
+    }));
   };
 
   const toggleRaw = (k: keyof ReleaseFormValues, v: boolean) => {
@@ -151,7 +206,7 @@ export default function FunderWorkspaceNewRelease() {
               <Label>Canonical deal *</Label>
               <CanonicalDealSelector
                 value={values.match_id}
-                onChange={(matchId) => set("match_id", matchId)}
+                onChange={(matchId) => onDealChange(matchId)}
               />
               {errors.match_id && <p className="text-xs text-destructive mt-1">{errors.match_id}</p>}
               <p className="text-xs text-muted-foreground mt-1">
@@ -159,15 +214,52 @@ export default function FunderWorkspaceNewRelease() {
               </p>
             </div>
 
-            <div>
-              <Label htmlFor="pack-id">Evidence pack ID (UUID) *</Label>
-              <Input id="pack-id" value={values.evidence_pack_id} onChange={(e) => set("evidence_pack_id", e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" />
-              {errors.evidence_pack_id && <p className="text-xs text-destructive mt-1">{errors.evidence_pack_id}</p>}
-            </div>
-            <div>
-              <Label htmlFor="pack-ver">Evidence pack version *</Label>
-              <Input id="pack-ver" value={values.evidence_pack_version} onChange={(e) => set("evidence_pack_version", e.target.value)} placeholder="e.g. 1" />
-              {errors.evidence_pack_version && <p className="text-xs text-destructive mt-1">{errors.evidence_pack_version}</p>}
+            <div className="md:col-span-2" data-testid="fw-release-evidence-pack-section">
+              <Label>Evidence pack *</Label>
+              {!values.match_id && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Select a canonical deal first.
+                </p>
+              )}
+              {values.match_id && packsQuery.isFetching && (
+                <p className="text-sm text-muted-foreground mt-1">Finding available evidence packs…</p>
+              )}
+              {values.match_id && !packsQuery.isFetching && packs.length === 0 && (
+                <Alert className="mt-2" data-testid="fw-release-no-pack">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>No evidence pack available</AlertTitle>
+                  <AlertDescription>
+                    No evidence pack is available for this deal yet. Create or prepare the evidence pack before releasing the deal.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {packs.length === 1 && values.evidence_pack_id && (
+                <div className="mt-2 rounded-md border bg-muted/40 px-3 py-2 text-sm" data-testid="fw-release-auto-pack">
+                  {packs[0].label}
+                </div>
+              )}
+              {packs.length > 1 && (
+                <Select
+                  value={values.evidence_pack_id ? `${values.evidence_pack_id}::${values.evidence_pack_version}` : ""}
+                  onValueChange={choosePack}
+                >
+                  <SelectTrigger className="mt-2" data-testid="fw-release-pack-selector">
+                    <SelectValue placeholder="Select an evidence pack" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {packs.map((p) => (
+                      <SelectItem key={`${p.evidence_pack_id}::${p.evidence_pack_version}`} value={`${p.evidence_pack_id}::${p.evidence_pack_version}`}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {(errors.evidence_pack_id || errors.evidence_pack_version) && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.evidence_pack_id ?? errors.evidence_pack_version}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="expires-at">Expiry date *</Label>

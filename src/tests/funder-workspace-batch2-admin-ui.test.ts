@@ -89,7 +89,7 @@ describe("Funder Workspace Batch 2 — release form validation", () => {
     expect(parsed.success).toBe(true);
   });
 
-  it("requires the funder organisation, canonical deal, pack id/version and reason", () => {
+  it("requires the funder organisation, canonical deal, evidence pack selection and reason", () => {
     const parsed = releaseFormSchema.safeParse({
       ...baseValues,
       funder_organisation_id: "",
@@ -110,6 +110,7 @@ describe("Funder Workspace Batch 2 — release form validation", () => {
     ]) {
       expect(paths, k).toContain(k);
     }
+    expect(parsed.error.issues.map((i) => i.message).join(" ")).toMatch(/Evidence pack selection is required/);
   });
 
 
