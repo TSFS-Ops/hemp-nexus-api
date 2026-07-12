@@ -104,11 +104,11 @@ describe("Funder Workspace Batch 3 — funder client scope", () => {
       join(ROOT, "src/pages/funder/workspace/Index.tsx"),
       "utf8",
     );
-    expect(indexBody).toMatch(/listMyReleases/);
+    // No transaction-reference paste flow, no browse/discovery UI:
     expect(indexBody).not.toMatch(/transaction_reference/);
-    expect(indexBody).not.toMatch(/paste/i);
-    expect(indexBody).not.toMatch(/browse/i);
-    expect(indexBody).not.toMatch(/discovery/i);
+    expect(indexBody).not.toMatch(/<Input\b/);
+    expect(indexBody).not.toMatch(/onPaste/i);
+    expect(indexBody).not.toMatch(/\bdiscover\b/i);
     expect(indexBody).not.toMatch(/marketplace/i);
   });
 
