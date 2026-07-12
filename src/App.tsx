@@ -431,6 +431,13 @@ function App() {
                   <Route path="/admin/funder-workspace/releases/:releaseId" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceReleaseDetail /></RequireAuth>} />
                   <Route path="/admin/funder-workspace/audit" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><FunderWorkspaceAudit /></RequireAuth>} />
 
+                  {/* Institutional Funder Evidence Workspace — Batch 3 (funder-facing) */}
+                  <Route path="/funder/workspace" element={<RequireAuth><FunderWorkspaceFunderIndex /></RequireAuth>} />
+                  <Route path="/funder/workspace/deals" element={<RequireAuth><FunderWorkspaceFunderDeals /></RequireAuth>} />
+                  <Route path="/funder/workspace/deals/:releaseId" element={<RequireAuth><FunderWorkspaceFunderDealDetail /></RequireAuth>} />
+                  <Route path="/funder/workspace/activity" element={<RequireAuth><FunderWorkspaceFunderActivity /></RequireAuth>} />
+                  <Route path="/funder/workspace/profile" element={<RequireAuth><FunderWorkspaceFunderProfile /></RequireAuth>} />
+
 
                   {/* P-5 Batch 3 — Stage 5: funder-facing surfaces (authenticated; grant enforced server-side) */}
                   <Route path="/funder/p5-batch3" element={<RequireAuth><P5Batch3FunderIndex /></RequireAuth>} />
