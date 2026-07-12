@@ -147,11 +147,18 @@ export default function FunderWorkspaceNewRelease() {
               </Select>
               {errors.funder_organisation_id && <p className="text-xs text-destructive mt-1">{errors.funder_organisation_id}</p>}
             </div>
-            <div>
-              <Label htmlFor="deal-ref">Deal reference *</Label>
-              <Input id="deal-ref" value={values.deal_reference} onChange={(e) => set("deal_reference", e.target.value)} data-testid="fw-release-deal-ref" />
-              {errors.deal_reference && <p className="text-xs text-destructive mt-1">{errors.deal_reference}</p>}
+            <div className="md:col-span-2">
+              <Label>Canonical deal *</Label>
+              <CanonicalDealSelector
+                value={values.match_id}
+                onChange={(matchId) => set("match_id", matchId)}
+              />
+              {errors.match_id && <p className="text-xs text-destructive mt-1">{errors.match_id}</p>}
+              <p className="text-xs text-muted-foreground mt-1">
+                Select a real deal from the platform. Free-text references are not accepted for new releases.
+              </p>
             </div>
+
             <div>
               <Label htmlFor="pack-id">Evidence pack ID (UUID) *</Label>
               <Input id="pack-id" value={values.evidence_pack_id} onChange={(e) => set("evidence_pack_id", e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" />
