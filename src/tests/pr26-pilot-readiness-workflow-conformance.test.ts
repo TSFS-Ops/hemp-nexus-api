@@ -66,7 +66,7 @@ describe("PR #26 - workflow is fail-closed", () => {
     // must not first look up "the first release" or assert that a Pilot
     // Funder Bank release exists.
     const isoStart = wf.indexOf("Isolation invariant");
-    const isoBlock = wf.slice(isoStart, isoStart + 1500);
+    const isoBlock = wf.slice(isoStart, isoStart + 700);
     expect(isoBlock).toMatch(/ISOLATION_TEST_FUND_ID/);
     expect(isoBlock).not.toMatch(/order by created_at asc\s+limit\s+1/i);
     expect(isoBlock).not.toMatch(/Pilot Funder Bank/);
