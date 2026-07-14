@@ -25,17 +25,17 @@
 
 DO $do$
 DECLARE
-  c_funder_bank_id       uuid := '00000000-0000-4000-a000-000000000001';
-  c_funder_isolation_id  uuid := '00000000-0000-4000-a000-000000000002';
-  c_buyer_org_id         uuid := '00000000-0000-4000-a000-000000000003';
-  c_seller_org_id        uuid := '00000000-0000-4000-a000-000000000004';
-  c_match_id             uuid := '00000000-0000-4000-a000-000000000005';
-  c_doc_invoice_id       uuid := '00000000-0000-4000-a000-000000000006';
-  c_doc_bol_id           uuid := '00000000-0000-4000-a000-000000000007';
-  c_kyc_record_id        uuid := '00000000-0000-4000-a000-000000000008';
-  c_evidence_item_id     uuid := '00000000-0000-4000-a000-000000000009';
-  c_evidence_version_id  uuid := '00000000-0000-4000-a000-00000000000a';
-  c_evidence_pack_id     uuid := '00000000-0000-4000-a000-00000000000b';
+  c_funder_bank_id uuid := '00000000-0000-4000-a000-000000000001';
+  c_funder_isolation_id uuid := '00000000-0000-4000-a000-000000000002';
+  c_buyer_org_id uuid := '00000000-0000-4000-a000-000000000003';
+  c_seller_org_id uuid := '00000000-0000-4000-a000-000000000004';
+  c_match_id uuid := '00000000-0000-4000-a000-000000000005';
+  c_doc_invoice_id uuid := '00000000-0000-4000-a000-000000000006';
+  c_doc_bol_id uuid := '00000000-0000-4000-a000-000000000007';
+  c_kyc_record_id uuid := '00000000-0000-4000-a000-000000000008';
+  c_evidence_item_id uuid := '00000000-0000-4000-a000-000000000009';
+  c_evidence_version_id uuid := '00000000-0000-4000-a000-00000000000a';
+  c_evidence_pack_id uuid := '00000000-0000-4000-a000-00000000000b';
   c_evidence_pack_item_id uuid := '00000000-0000-4000-a000-00000000000c';
 BEGIN
 
@@ -170,23 +170,36 @@ END $do$;
 -- Reuses fw_admin_list_eligible_evidence_packs_v1 as the single source of
 -- truth for evidence-pack eligibility instead of re-implementing its rules.
 -- Returns exactly one of: 'Ready', 'Missing', 'Incorrectly linked'.
+--
+-- Check 9 (isolation_no_release) proves Isolation Test Fund has zero
+-- funder_deal_releases rows linking it to the fixed demo match. This is
+-- independent of whether the manual release has been created yet: with
+-- no funder_deal_releases row at all this reads Ready, because the
+-- absence of any link is exactly what isolation requires. It only reads
+-- Missing if the Isolation Test Fund fixture or the demo match itself do
+-- not exist yet (see checks 2 and 5). It never selects an arbitrary
+-- "first" release and never infers the demo match from release data —
+-- it always uses the fixed c_funder_isolation_id / c_match_id constants
+-- and reads directly from public.funder_deal_releases, which links to
+-- public.p5_batch3_funder_organisations via funder_organisation_id (NOT
+-- public.organizations, which has no row for Isolation Test Fund).
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.fw_admin_check_pilot_fixtures_v1()
 RETURNS TABLE(check_key text, label text, status text, detail text)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  c_funder_bank_id      uuid := '00000000-0000-4000-a000-000000000001';
+  c_funder_bank_id uuid := '00000000-0000-4000-a000-000000000001';
   c_funder_isolation_id uuid := '00000000-0000-4000-a000-000000000002';
-  c_buyer_org_id        uuid := '00000000-0000-4000-a000-000000000003';
-  c_seller_org_id       uuid := '00000000-0000-4000-a000-000000000004';
-  c_match_id            uuid := '00000000-0000-4000-a000-000000000005';
-  c_doc_invoice_id      uuid := '00000000-0000-4000-a000-000000000006';
-  c_doc_bol_id          uuid := '00000000-0000-4000-a000-000000000007';
-  c_evidence_item_id    uuid := '00000000-0000-4000-a000-000000000009';
+  c_buyer_org_id uuid := '00000000-0000-4000-a000-000000000003';
+  c_seller_org_id uuid := '00000000-0000-4000-a000-000000000004';
+  c_match_id uuid := '00000000-0000-4000-a000-000000000005';
+  c_doc_invoice_id uuid := '00000000-0000-4000-a000-000000000006';
+  c_doc_bol_id uuid := '00000000-0000-4000-a000-000000000007';
+  c_evidence_item_id uuid := '00000000-0000-4000-a000-000000000009';
   c_evidence_version_id uuid := '00000000-0000-4000-a000-00000000000a';
-  c_evidence_pack_id    uuid := '00000000-0000-4000-a000-00000000000b';
-  c_pack_item_id        uuid := '00000000-0000-4000-a000-00000000000c';
+  c_evidence_pack_id uuid := '00000000-0000-4000-a000-00000000000b';
+  c_pack_item_id uuid := '00000000-0000-4000-a000-00000000000c';
 
   r_bank record; r_iso record; r_buyer record; r_seller record;
   r_match record; r_inv record; r_bol record; r_item record;
@@ -194,6 +207,8 @@ DECLARE
 
   s1 text; d1 text; s2 text; d2 text; s3 text; d3 text; s4 text; d4 text;
   s5 text; d5 text; s6 text; d6 text; s7 text; d7 text; s8 text; d8 text;
+  s9 text; d9 text;
+  v_isolation_release_count int;
 BEGIN
   IF NOT public.p5b3_is_platform_admin() THEN
     RAISE EXCEPTION 'fw.forbidden: platform_admin required';
@@ -304,6 +319,24 @@ BEGIN
     END IF;
   END IF;
 
+  -- 9. Isolation proof — Isolation Test Fund must have zero releases
+  -- linking it to the demo match. Absence of any release is Ready; this
+  -- never requires a release to already exist.
+  IF r_iso.id IS NULL OR r_match.id IS NULL THEN
+    s9 := 'Missing'; d9 := 'Cannot check isolation until the Isolation Test Fund and the demo match both exist (see checks above).';
+  ELSE
+    SELECT count(*) INTO v_isolation_release_count
+    FROM public.funder_deal_releases
+    WHERE match_id = c_match_id
+      AND funder_organisation_id = c_funder_isolation_id;
+    IF v_isolation_release_count > 0 THEN
+      s9 := 'Incorrectly linked';
+      d9 := v_isolation_release_count || ' release(s) incorrectly link the demo match to Isolation Test Fund. Investigate before the pilot proceeds.';
+    ELSE
+      s9 := 'Ready'; d9 := 'Isolation Test Fund has zero releases linked to the demo match.';
+    END IF;
+  END IF;
+
   RETURN QUERY VALUES
     ('funder_org_bank', 'Funder organisation — Pilot Funder Bank', s1, d1),
     ('funder_org_isolation', 'Funder organisation — Isolation Test Fund', s2, d2),
@@ -312,7 +345,8 @@ BEGIN
     ('demo_match', 'Canonical demo match — DEMO — Acacia–Blue River Pilot Trade', s5, d5),
     ('doc_invoice', 'DEMO pro-forma invoice', s6, d6),
     ('doc_bol', 'DEMO bill of lading', s7, d7),
-    ('evidence_pack', 'Eligible synthetic evidence pack — Evidence Pack — Version 1', s8, d8);
+    ('evidence_pack', 'Eligible synthetic evidence pack — Evidence Pack — Version 1', s8, d8),
+    ('isolation_no_release', 'Isolation Test Fund — no release linked to the demo match', s9, d9);
 END; $$;
 
 REVOKE EXECUTE ON FUNCTION public.fw_admin_check_pilot_fixtures_v1() FROM PUBLIC, anon;
