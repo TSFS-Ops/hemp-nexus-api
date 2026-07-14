@@ -55,6 +55,7 @@ const FIXTURE_CHECK_LABELS: Record<string, string> = {
   doc_invoice: "DEMO pro-forma invoice",
   doc_bol: "DEMO bill of lading",
   evidence_pack: "Eligible synthetic evidence pack — Evidence Pack — Version 1",
+  isolation_no_release: "Isolation Test Fund — no release linked to the demo match",
 };
 
 function statusBadgeVariant(status: FixtureCheckRow["status"]) {
