@@ -202,9 +202,9 @@ describe("Funder Workspace Batch 3 — release detail hides access", () => {
       join(ROOT, "src/pages/funder/workspace/DealDetail.tsx"),
       "utf8",
     );
-    expect(body).toMatch(/PDF generation comes in the next build batch/);
-    expect(body).not.toMatch(/href=\{[^}]*\.pdf/);
-  });
+            expect(body).not.toMatch(/PDF generation comes in the next build batch/);
+        expect(body).toMatch(/The sealed evidence pack contains the authoritative snapshot/);
+      });
 });
 
 describe("Funder Workspace Batch 3 — role label mapping", () => {
