@@ -1,9 +1,9 @@
 /**
- * Batch 3 — Funder workspace: read-only release detail.
- * RLS-scoped: getMyRelease returns null for releases not linked to the
- * caller's funder organisation. We render an opaque access-denied state
- * that does not confirm the release's existence.
- */
+* Batch 3 — Funder workspace: read-only release detail.
+* RLS-scoped: getMyRelease returns null for releases not linked to the
+* caller's funder organisation. We render an opaque access-denied state
+* that does not confirm the release's existence.
+*/
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -311,7 +311,7 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
               <div className="text-sm font-medium">{s.title}</div>
               <div className="text-xs text-muted-foreground">{s.description}</div>
               <Badge variant="secondary" className="mt-2">
-                Not yet connected
+                No linked record is available for this item.
               </Badge>
             </div>
           ))}
@@ -325,7 +325,7 @@ function Body({ releaseId, ctx }: { releaseId: string; ctx: CurrentFunderContext
         <CardContent>
           {packs.length === 0 ? (
             <p className="text-sm text-muted-foreground" data-testid="fw-pack-empty">
-              PDF generation comes in the next build batch.
+              The sealed evidence pack contains the authoritative snapshot available for this release. Some web-page sections may show limited summary information.
             </p>
           ) : (
             <Table>
