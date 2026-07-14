@@ -38,14 +38,7 @@ import {
 } from "@/lib/funder-workspace/permissions";
 import { releaseFormSchema, type ReleaseFormValues } from "@/lib/funder-workspace/validation";
 import { CONSENT_STATUSES, type ConsentStatus } from "@/lib/funder-workspace/types";
-
-const CONSENT_STATUS_LABELS: Record<ConsentStatus, string> = {
-  not_required: "Not required",
-  pending: "Pending",
-  granted: "Granted",
-  declined: "Declined",
-  overridden: "Overridden (admin)",
-};
+import { CONSENT_STATUS_LABELS } from "@/lib/funder-workspace/consent-labels";
 
 const RAW_KEYS = new Set<string>(RAW_DOCUMENT_PERMISSION_KEYS);
 
