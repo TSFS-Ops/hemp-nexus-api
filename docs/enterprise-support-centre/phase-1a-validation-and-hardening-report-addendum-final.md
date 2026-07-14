@@ -137,21 +137,113 @@ coverage.
 The dedicated CI script `scripts/phase-1a-behavioural-ci.sh` is the only
 place that fails loudly when the behavioural environment is missing — the
 correct place for that signal.
-
 ## Part 5 — Remaining risks
 
 - `has_support_capability` uses the empty grants table today; the pgTAP
-  proof verifies it returns false, but non-empty scaffolding coverage will
-  be added when Phase 1B introduces triage.
-- `linked-record` permission checks in Phase 1A only validate the record's
-  owner reference is present (no per-record ACL yet). Phase 1B must add
-  per-kind ACL verification before enabling more `record_kind` values.
+  proof verifies it returns false. Non-empty scaffolding coverage will be
+  added when Phase 1B introduces triage.
+- Linked-record source-record ACLs are still Phase 1B work. Phase 1A now
+  disables every sensitive kind at the RPC boundary (see Part 7) so no
+  weak path is left enabled while the full ACL layer is designed.
 
 ## Part 6 — Verdict
 
-**DO NOT AUTHORISE PHASE 1B until the CI job that runs
-`scripts/phase-1a-behavioural-ci.sh` is wired to a disposable Postgres and
-reports a green run.** The customer-safe projection repair is complete and
-verified structurally; the multi-role matrix is now portable and executes
-end-to-end via the SQL proof but has not yet been observed running green in
-CI from this environment.
+**DO NOT AUTHORISE PHASE 1B until the new CI job
+`phase-1a-support-behavioural-security` reports a green run against the
+disposable Supabase stack it provisions.** The customer-safe projection
+repair is complete, the linked-record kind hardening is applied, and the
+SQL proof is portable and self-contained — but observing that CI job
+green (from a merge to `main` or an approved workflow_dispatch run) is
+the remaining gate.
+
+## Part 7 — CI behavioural gate (added 2026-07-14)
+
+### 7.1 CI architecture
+
+- **Workflow:** `.github/workflows/phase-1a-support-behavioural-security.yml`
+- **Required-check name (recommended):** `phase-1a-support-behavioural-security`
+- **Trigger paths:** `supabase/migrations/**`,
+  `supabase/tests/phase_1a_support_behavioural_proof.sql`,
+  `scripts/phase-1a-behavioural-ci.sh`, `src/tests/phase-1a-support-*.ts`,
+  and the workflow file; also `workflow_dispatch`.
+- **No production secrets required**; no production/customer DB is contacted.
+
+### 7.2 Disposable database method
+
+Supabase CLI local stack (`supabase/setup-cli@v1` → `supabase start`) —
+ephemeral Postgres on `postgresql://postgres:postgres@127.0.0.1:54322/postgres`,
+applying every `supabase/migrations/*.sql` in timestamp order. Auxiliary
+services (studio, storage, realtime, edge-runtime, imgproxy, inbucket,
+logflare, vector, pgadmin-schema-diff) are excluded. Cleanup
+(`supabase stop --no-backup`) runs in an `if: always()` step.
+
+### 7.3 Guards enforced by the job
+
+1. Proof file and CI script present and non-empty.
+2. `DATABASE_URL` present and restricted to `127.0.0.1|localhost`.
+3. `DATABASE_URL` rejected if it matches `prod|live|customer|izenzo.co.za`.
+4. `public.support_tickets` exists after the migration chain runs.
+5. `scripts/phase-1a-behavioural-ci.sh` returns 0 **and** its stdout
+   contains the literal `Phase 1A behavioural proof: PASSED` banner —
+   otherwise the job fails with "Proof did not report PASSED — treating
+   as skipped".
+6. All three Phase 1A vitest suites run in the same job.
+7. Proof log uploaded as artefact `phase-1a-behavioural-proof-log`.
+
+### 7.4 Behavioural coverage exercised by the proof
+
+Single-transaction `ROLLBACK`-guarded proof drives transaction-local JWT
+claims via `pg_temp.act_as()` and covers:
+
+- server-derived actor/org/ticket_number/creator/priority/rule-version/
+  restriction-class;
+- forged security-significant fields on `create_support_ticket`;
+- ordinary-org visibility matrix (creator, other member, org admin,
+  other-org member, other-org admin, platform admin, anon);
+- restricted-ticket isolation (org admin denied; creator + platform
+  admin allowed);
+- auditor read-only via `get_support_ticket_internal`;
+- funder denial; anonymous denial on every RPC;
+- customer-message vs internal-note segregation;
+- helper-function denial (`_support_record_access` from authenticated);
+- hostile `safe_context` inputs;
+- priority defaults and rule-version stamping;
+- 100-ticket uniqueness burst;
+- empty-capability scaffolding (`has_support_capability` false).
+
+### 7.5 Linked-record kind assessment
+
+| record_kind    | Enabled in Phase 1A? | Source ACL check | Safe label origin | Corrective action |
+| -------------- | -------------------- | ---------------- | ----------------- | ----------------- |
+| `other`        | **Yes** (inert generic reference) | N/A — no source table implied | Client-supplied, bounded ≤200 chars, non-empty | Retained |
+| `match`        | **Disabled**         | None in Phase 1A | Was client-supplied | Blocked with `42501` |
+| `poi`          | **Disabled**         | None in Phase 1A | Was client-supplied | Blocked with `42501` |
+| `wad`          | **Disabled**         | None in Phase 1A | Was client-supplied | Blocked with `42501` |
+| `document`     | **Disabled**         | None in Phase 1A | Was client-supplied | Blocked with `42501` |
+| `payment`      | **Disabled**         | None in Phase 1A | Was client-supplied | Blocked with `42501` |
+| `funder_grant` | **Disabled**         | None in Phase 1A | Was client-supplied | Blocked with `42501` |
+| `api_client`   | **Disabled**         | None in Phase 1A | Was client-supplied | Blocked with `42501` |
+| `organisation` | **Disabled**         | None in Phase 1A | Was client-supplied | Blocked with `42501` |
+
+**Corrective migration:**
+`supabase/migrations/20260714…_phase1a_linked_record_kind_hardening.sql`
+(generated by the migration tool). It replaces
+`add_support_ticket_linked_record` with a guard that raises
+`SQLSTATE 42501` naming the offending kind for every value other than
+`'other'`. Ticket-level authorisation is unchanged. Enum values remain in
+place so Phase 1B can enable individual kinds one at a time, each paired
+with a per-kind source-record ACL and a server-derived safe label.
+
+### 7.6 Branch-protection recommendation
+
+- **Required check:** `phase-1a-support-behavioural-security` — required
+  for any PR touching migrations or support-centre files. The workflow's
+  `paths:` filter already scopes it.
+- Do **not** allow overrides for the "proof did not report PASSED"
+  failure — it exists to prevent silent skipping.
+- No production secrets. The check does not depend on
+  `SUPABASE_SERVICE_ROLE_KEY` or any deploy credentials.
+
+Branch-protection settings themselves must be applied in the GitHub
+repository UI/API by an authorised operator — this environment cannot
+modify branch-protection rules.
