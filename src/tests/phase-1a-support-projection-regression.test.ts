@@ -99,4 +99,16 @@ describe('Phase 1A — customer-safe projection regression', () => {
     // Must NOT contain a grant to authenticated for this helper.
     expect(combined).not.toMatch(/GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+public\._support_rpc_result_signature\([^)]*\)\s+TO\s+authenticated/i);
   });
+
+  it('add_support_ticket_linked_record last definition disables every non-inert kind', () => {
+    // Phase 1A CI hardening: only record_kind = 'other' may be inserted.
+    // The last definition of the RPC must contain a guard that raises
+    // 42501 for any other kind, or a Phase 1B change has re-opened the
+    // weak linked-record path before per-kind ACLs are in place.
+    const def = lastDefinitionOf('add_support_ticket_linked_record');
+    expect(def, 'add_support_ticket_linked_record not found').toBeTruthy();
+    expect(def!).toMatch(/_record_kind\s*<>\s*'other'::public\.support_linked_record_kind/i);
+    expect(def!).toMatch(/ERRCODE\s*=\s*'42501'/i);
+    expect(def!).toMatch(/not permitted in Phase 1A/i);
+  });
 });
