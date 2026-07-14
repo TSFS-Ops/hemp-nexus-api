@@ -1,23 +1,26 @@
 /**
- * Institutional Funder Evidence Workspace — Controlled-Pilot Seed Console
- *
- * Platform-admin only. One-click seeder that creates six fake pilot users
- * (with email pre-confirmed and a temporary password) and links them to the
- * two pre-seeded funder organisations (Pilot Funder Bank, Isolation Test Fund).
- *
- * The demo trading orgs (Acacia buyer, Blue River seller), the canonical
- * demo match, and the synthetic evidence documents are seeded once via
- * migration/insert. This page focuses on getting non-technical testers
- * logged in without SQL or UUIDs, and gives them a plain-English pilot guide.
- *
- * We deliberately do NOT create the funder release here. The pilot admin
- * performs the release manually via /admin/funder-workspace/releases/new —
- * that is part of what the pilot is meant to test.
- */
-import { useState } from "react";
+* Institutional Funder Evidence Workspace — Controlled-Pilot Seed Console
+*
+* Platform-admin only. One-click seeder that creates six fake pilot users
+* (with email pre-confirmed and a temporary password) and links them to the
+* two pre-seeded funder organisations (Pilot Funder Bank, Isolation Test Fund).
+*
+* The demo trading orgs (Acacia buyer, Blue River seller), the canonical
+* demo match, the synthetic evidence documents and the eligible evidence
+* pack are created by a fixture migration (see supabase/migrations). This
+* page independently verifies that those fixtures actually exist and are
+* correctly linked by calling fw_admin_check_pilot_fixtures_v1() — it does
+* NOT assume the fixtures are present just because a migration exists.
+*
+* We deliberately do NOT create the funder release here. The pilot admin
+* performs the release manually via /admin/funder-workspace/releases/new —
+* that is part of what the pilot is meant to test.
+*/
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
@@ -32,11 +35,64 @@ interface SeededUser {
   created: boolean;
 }
 
+interface FixtureCheckRow {
+  check_key: string;
+  label: string;
+  status: "Ready" | "Missing" | "Incorrectly linked";
+  detail: string;
+}
+
+// Canonical, human-readable labels for every fixture check. Kept as a
+// static map (rather than relying solely on the live RPC's label text) so
+// the pilot guide always names the exact records testers should expect,
+// even before the readiness check has ever been run.
+const FIXTURE_CHECK_LABELS: Record<string, string> = {
+  funder_org_bank: "Funder organisation — Pilot Funder Bank",
+  funder_org_isolation: "Funder organisation — Isolation Test Fund",
+  buyer_org: "Buyer trader — DEMO — Acacia Trading Test Pty Ltd",
+  seller_org: "Seller trader — DEMO — Blue River Exports Test Pty Ltd",
+  demo_match: "Canonical demo match — DEMO — Acacia–Blue River Pilot Trade",
+  doc_invoice: "DEMO pro-forma invoice",
+  doc_bol: "DEMO bill of lading",
+  evidence_pack: "Eligible synthetic evidence pack — Evidence Pack — Version 1",
+};
+
+function statusBadgeVariant(status: FixtureCheckRow["status"]) {
+  if (status === "Ready") return "default" as const;
+  if (status === "Missing") return "secondary" as const;
+  return "destructive" as const;
+}
+
 export default function FunderWorkspacePilotConsole() {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<SeededUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [seededAt, setSeededAt] = useState<string | null>(null);
+
+  const [checks, setChecks] = useState<FixtureCheckRow[] | null>(null);
+  const [checksLoading, setChecksLoading] = useState(false);
+  const [checksError, setChecksError] = useState<string | null>(null);
+
+  async function runReadinessCheck() {
+    setChecksLoading(true);
+    setChecksError(null);
+    try {
+      const { data, error } = await supabase.rpc("fw_admin_check_pilot_fixtures_v1");
+      if (error) throw error;
+      setChecks((data ?? []) as FixtureCheckRow[]);
+    } catch (e) {
+      setChecksError((e as Error).message);
+      toast({ title: "Fixture check failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setChecksLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void runReadinessCheck();
+  }, []);
+
+  const allFixturesReady = checks !== null && checks.length > 0 && checks.every((c) => c.status === "Ready");
 
   async function runSeed() {
     setLoading(true);
@@ -64,7 +120,7 @@ export default function FunderWorkspacePilotConsole() {
       `Seeded at: ${seededAt}`,
       "Login page: /auth (email + password)",
       "",
-      ...users.map((u) => `${u.organisation} — ${u.role}\n  email:    ${u.email}\n  password: ${u.password}\n`),
+      ...users.map((u) => `${u.organisation} — ${u.role}\n  email: ${u.email}\n  password: ${u.password}\n`),
     ];
     await navigator.clipboard.writeText(lines.join("\n"));
     toast({ title: "Copied", description: "Full credential list copied to clipboard." });
@@ -75,38 +131,72 @@ export default function FunderWorkspacePilotConsole() {
       <div>
         <h1 className="text-2xl font-semibold">Funder Workspace — Controlled Pilot</h1>
         <p className="text-sm text-muted-foreground">
-          One-click preparation of a non-technical manual test environment.
-          Demo data is already seeded. Click <em>Prepare pilot logins</em> to
+          Non-technical preparation of a manual test environment. Run the
+          fixture check below first, then click <em>Prepare pilot logins</em> to
           create (or rotate the passwords for) the six test users.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pre-seeded fixtures</CardTitle>
+          <CardTitle className="text-base">Step 1 — Pilot fixture readiness</CardTitle>
           <CardDescription>
-            The following DEMO records were created by the pilot seed migration
-            and are already in place. Nothing here touches real client data.
+            This checks the live database for every record the pilot needs and
+            verifies each one is correctly linked — not just that a row with
+            the right name exists. You should not need to know any database
+            record names or UUIDs to read this checklist.
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-sm space-y-1">
-          <div>• Funder organisation — <strong>Pilot Funder Bank</strong> (commercial bank)</div>
-          <div>• Funder organisation — <strong>Isolation Test Fund</strong> (private debt fund, MUST NOT receive the pilot deal)</div>
-          <div>• Buyer trader — <strong>DEMO — Acacia Trading Test Pty Ltd</strong></div>
-          <div>• Seller trader — <strong>DEMO — Blue River Exports Test Pty Ltd</strong></div>
-          <div>• Canonical demo match — <strong>DEMO — Acacia–Blue River Pilot Trade</strong> (selectable in the deal picker)</div>
-          <div>• Two synthetic evidence documents (one per side) attached to the demo match</div>
-          <div>• Eligible synthetic evidence pack — <strong>Evidence Pack — Version 1</strong> for the demo match</div>
-          <div className="text-muted-foreground pt-2">
-            No release has been created. The platform admin releases the deal
-            manually as part of the pilot test itself.
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={runReadinessCheck}
+              disabled={checksLoading}
+              variant="outline"
+              data-testid="fw-pilot-check-fixtures-btn"
+            >
+              {checksLoading ? "Checking…" : "Re-check fixtures"}
+            </Button>
+            {checks !== null && !checksLoading && (
+              allFixturesReady ? (
+                <Badge data-testid="fw-pilot-fixtures-ready">All fixtures ready</Badge>
+              ) : (
+                <Badge variant="destructive" data-testid="fw-pilot-fixtures-not-ready">
+                  Not ready — resolve the items below
+                </Badge>
+              )
+            )}
           </div>
+          {checksError && (
+            <p className="text-sm text-destructive">Could not run the fixture check: {checksError}</p>
+          )}
+          {checks && checks.length > 0 && (
+            <div className="rounded-md border divide-y" data-testid="fw-pilot-fixture-checklist">
+              {checks.map((c) => (
+                <div key={c.check_key} className="p-3 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium">{FIXTURE_CHECK_LABELS[c.check_key] ?? c.label}</div>
+                    <div className="text-xs text-muted-foreground">{c.detail}</div>
+                  </div>
+                  <Badge variant={statusBadgeVariant(c.status)} data-testid={`fw-pilot-check-${c.check_key}`}>
+                    {c.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            The pilot is only ready once every item above reads <strong>Ready</strong>.
+            If anything reads Missing or Incorrectly linked, apply the fixture
+            migration (or ask an engineer to) and re-check — do not proceed with
+            the manual pilot until this list is fully green.
+          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Step 1 — Prepare pilot logins</CardTitle>
+          <CardTitle className="text-base">Step 2 — Prepare pilot logins</CardTitle>
           <CardDescription>
             Creates the six pilot users on first run, or rotates their
             temporary passwords on subsequent runs. Test emails end in
@@ -114,8 +204,20 @@ export default function FunderWorkspacePilotConsole() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {checks !== null && !allFixturesReady && (
+            <p className="text-sm text-destructive" data-testid="fw-pilot-logins-fixture-warning">
+              Fixture readiness (Step 1) is not fully green yet. You can still
+              prepare logins, but the manual pilot itself should not begin
+              until every fixture check above reads Ready.
+            </p>
+          )}
           <div className="flex gap-2">
-            <Button onClick={runSeed} disabled={loading} data-testid="fw-pilot-seed-btn">
+            <Button
+              onClick={runSeed}
+              disabled={loading || checks === null}
+              data-testid="fw-pilot-seed-btn"
+              title={checks === null ? "Run the Step 1 fixture check first" : undefined}
+            >
               {loading ? "Preparing…" : users ? "Rotate passwords" : "Prepare pilot logins"}
             </Button>
             {users && (
@@ -161,7 +263,7 @@ export default function FunderWorkspacePilotConsole() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Step 2 — Release the demo deal (Izenzo Platform Admin)</CardTitle>
+          <CardTitle className="text-base">Step 3 — Release the demo deal (Izenzo Platform Admin)</CardTitle>
           <CardDescription>
             Log in as the Izenzo Platform Admin and release the demo deal to
             Pilot Funder Bank so the funder testers can see it.
@@ -181,7 +283,7 @@ export default function FunderWorkspacePilotConsole() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Step 3 — Funder journey (each Pilot Funder Bank user)</CardTitle>
+          <CardTitle className="text-base">Step 4 — Funder journey (each Pilot Funder Bank user)</CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2">
           <div>• Log in at <Link to="/auth" className="underline">/auth</Link> with the funder user credentials above.</div>
@@ -194,7 +296,7 @@ export default function FunderWorkspacePilotConsole() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Step 4 — Isolation check</CardTitle>
+          <CardTitle className="text-base">Step 5 — Isolation check</CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2">
           <div>• Log in as <strong>Isolation Test Fund — Viewer</strong>.</div>
