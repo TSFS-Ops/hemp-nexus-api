@@ -13,7 +13,7 @@
 #   - the two pilot funder-organisation fixtures on the fixed IDs
 #     11111111-1111-1111-1111-111111111111 (Pilot Funder Bank) and
 #     22222222-2222-2222-2222-222222222222 (Isolation Test Fund)
-#     end up with the corrected jurisdiction + registration_number;
+#     end up correctly linked, as proven by fw_admin_check_pilot_fixtures_v1() reporting Ready for all nine checks;
 #   - no funder_deal_releases row links any deal to the Isolation Test
 #     Fund fixed ID (isolation invariant);
 #   - the focused Funder Workspace test files and the full Vitest suite
@@ -131,6 +131,7 @@ jobs:
       # Fixed IDs from supabase/migrations/20260712174259_*.sql
       PILOT_FUNDER_BANK_ID: "11111111-1111-1111-1111-111111111111"
       ISOLATION_TEST_FUND_ID: "22222222-2222-2222-2222-222222222222"
+      DEMO_MATCH_ID: "00000000-0000-4000-a000-000000000005"
 
     steps:
       - name: Checkout
@@ -217,43 +218,57 @@ jobs:
           done
           echo "FIRST_PASS=ok" | tee -a validation-artifact/21-migrate-first.txt
 
-      - name: Fixture verification (fail-closed, uses fixed IDs)
+      - name: Validate pilot fixture migration source defines readiness RPC (fail-closed)
         run: |
           set -e
-          psql -v ON_ERROR_STOP=1 <<SQL 2>&1 | tee validation-artifact/22-fixtures.txt
-          -- Fail unless both pilot funder-org fixtures exist with the
-          -- corrected jurisdiction and registration_number set by the
-          -- pilot-readiness migration.
-          DO \$\$
-          DECLARE
-            v_pfb_ok int;
-            v_itf_ok int;
-          BEGIN
-            SELECT count(*) INTO v_pfb_ok
-              FROM public.p5_batch3_funder_organisations
-             WHERE id = '${PILOT_FUNDER_BANK_ID}'
-               AND jurisdiction IS NOT NULL
-               AND registration_number IS NOT NULL;
-            IF v_pfb_ok <> 1 THEN
-              RAISE EXCEPTION 'FIXTURE_FAIL: Pilot Funder Bank (%) missing or lacks jurisdiction/registration_number',
-                '${PILOT_FUNDER_BANK_ID}';
-            END IF;
+          MIGRATION_FILE="supabase/migrations/20260713090000_pilot_fixture_and_readiness_rpc.sql"
+          if [ ! -f "$MIGRATION_FILE" ]; then
+          echo "MIGRATION_FAIL: $MIGRATION_FILE not found" >&2
+          exit 1
+          fi
+          if ! grep -q "CREATE OR REPLACE FUNCTION public.fw_admin_check_pilot_fixtures_v1" "$MIGRATION_FILE"; then
+          echo "MIGRATION_FAIL: fw_admin_check_pilot_fixtures_v1 not defined in $MIGRATION_FILE" >&2
+          exit 1
+          fi
+          echo "MIGRATION_FILE_PRESENT_AND_DEFINES_RPC" | tee validation-artifact/19-migration-source-check.txt
+      - name: Seed CI-only synthetic platform-admin for readiness RPC (fail-closed, disposable DB only)
+        run: |
+          set -e
+          set -o pipefail
+          CI_ADMIN_ID="dddddddd-dddd-4ddd-addd-dddddddddddd"
+          psql -v ON_ERROR_STOP=1 -c "CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS \$fn\$ SELECT '${CI_ADMIN_ID}'::uuid \$fn\$;" 2>&1 | tee validation-artifact/22a-seed-ci-admin.txt
+          psql -v ON_ERROR_STOP=1 -c "CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS \$fn\$ SELECT jsonb_build_object('sub','${CI_ADMIN_ID}','role','authenticated') \$fn\$;" 2>&1 | tee -a validation-artifact/22a-seed-ci-admin.txt
+          psql -v ON_ERROR_STOP=1 -c "INSERT INTO auth.users (id, email) VALUES ('${CI_ADMIN_ID}', 'ci-synthetic-admin@example.invalid') ON CONFLICT (id) DO NOTHING;" 2>&1 | tee -a validation-artifact/22a-seed-ci-admin.txt
+          psql -v ON_ERROR_STOP=1 -c "INSERT INTO public.user_roles (user_id, role) VALUES ('${CI_ADMIN_ID}', 'platform_admin'::public.app_role) ON CONFLICT DO NOTHING;" 2>&1 | tee -a validation-artifact/22a-seed-ci-admin.txt
+          ADMIN_OK=$(psql -v ON_ERROR_STOP=1 -t -A -c "SELECT public.p5b3_is_platform_admin();" | tr -d '[:space:]')
+          echo "ADMIN_CHECK_RESULT=${ADMIN_OK}" | tee -a validation-artifact/22a-seed-ci-admin.txt
+          if [ "$ADMIN_OK" != "t" ]; then
+          echo "CI_ADMIN_FAIL: p5b3_is_platform_admin did not return true (got ${ADMIN_OK})" >&2
+          exit 1
+          fi
+          echo "CI_SYNTHETIC_ADMIN_VERIFIED" | tee -a validation-artifact/22a-seed-ci-admin.txt
+      - name: Fixture and readiness verification via fw_admin_check_pilot_fixtures_v1 (fail-closed)
+        run: |
+          set -e
+          set -o pipefail
+          RPC_OUT=$(psql -v ON_ERROR_STOP=1 -t -A -F',' -c "SELECT check_key, status FROM public.fw_admin_check_pilot_fixtures_v1() ORDER BY check_key;")
+          echo "$RPC_OUT" | tee validation-artifact/22-fixtures.txt
+          EXPECTED_KEYS="buyer_org demo_match doc_bol doc_invoice evidence_pack funder_org_bank funder_org_isolation isolation_no_release seller_org"
+          for key in $EXPECTED_KEYS; do
+          row=$(echo "$RPC_OUT" | grep "^${key},")
+          if [ -z "$row" ]; then
+          echo "FIXTURE_FAIL: missing check_key ${key} in RPC output" >&2
+          exit 1
+          fi
+          status=$(echo "$row" | cut -d',' -f2)
+          if [ "$status" != "Ready" ]; then
+          echo "FIXTURE_FAIL: check_key ${key} has status ${status}, expected Ready" >&2
+          exit 1
+          fi
+          done
+          echo "FIXTURES_READY_ALL_NINE" | tee -a validation-artifact/22-fixtures.txt
 
-            SELECT count(*) INTO v_itf_ok
-              FROM public.p5_batch3_funder_organisations
-             WHERE id = '${ISOLATION_TEST_FUND_ID}'
-               AND jurisdiction IS NOT NULL
-               AND registration_number IS NOT NULL;
-            IF v_itf_ok <> 1 THEN
-              RAISE EXCEPTION 'FIXTURE_FAIL: Isolation Test Fund (%) missing or lacks jurisdiction/registration_number',
-                '${ISOLATION_TEST_FUND_ID}';
-            END IF;
-
-            RAISE NOTICE 'FIXTURES_OK';
-          END \$\$;
-          SQL
-
-      - name: Isolation invariant (fail-closed)
+- name: Isolation invariant (fail-closed)
         run: |
           set -e
           psql -v ON_ERROR_STOP=1 <<SQL 2>&1 | tee validation-artifact/23-isolation.txt
@@ -312,7 +327,9 @@ jobs:
             echo "## Mandatory checks"
             pass_or_fail "bootstrap"        validation-artifact/20-bootstrap.txt      "CREATE"
             pass_or_fail "migrate_first"    validation-artifact/21-migrate-first.txt  "FIRST_PASS=ok"
-            pass_or_fail "fixtures"         validation-artifact/22-fixtures.txt       "FIXTURES_OK"
+                    pass_or_fail "migration_source"  validation-artifact/19-migration-source-check.txt  "MIGRATION_FILE_PRESENT_AND_DEFINES_RPC"
+                    pass_or_fail "ci_admin_seed"  validation-artifact/22a-seed-ci-admin.txt  "CI_SYNTHETIC_ADMIN_VERIFIED"
+                    pass_or_fail "fixtures"  validation-artifact/22-fixtures.txt  "FIXTURES_READY_ALL_NINE"
             pass_or_fail "isolation"        validation-artifact/23-isolation.txt      "ISOLATION_OK"
             pass_or_fail "migrate_second"   validation-artifact/25-migrate-second.txt "SECOND_PASS=ok"
             echo
