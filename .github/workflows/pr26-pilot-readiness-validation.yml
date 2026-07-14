@@ -268,11 +268,11 @@ jobs:
           done
           echo "FIXTURES_READY_ALL_NINE" | tee -a validation-artifact/22-fixtures.txt
 
-- name: Isolation invariant (fail-closed)
+      - name: Isolation invariant (fail-closed)
         run: |
           set -e
           psql -v ON_ERROR_STOP=1 <<SQL 2>&1 | tee validation-artifact/23-isolation.txt
-          -- Isolation Test Fund must never appear on any release row.
+                -- Isolation Test Fund must never appear on any release row.
           -- This check does NOT require any release to exist for the
           -- other pilot funder fixture; it only forbids releases pointing
           -- at the isolation fixture.
