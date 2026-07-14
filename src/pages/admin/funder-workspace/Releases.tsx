@@ -86,70 +86,70 @@ export default function FunderWorkspaceReleases() {
         <div className="p-6 space-y-4" data-testid="fw-admin-releases">
               <div className="flex items-start justify-between">
                       <div>
-                                <h1 className="text-2xl font-semibold">Deal Releases</h1>h1>
-                                <p className="text-sm text-muted-foreground">Evidence packs released to funders. Status, consent and permissions.</p>p>
-                      </div>div>
+                                <h1 className="text-2xl font-semibold">Deal Releases</h1>
+                                <p className="text-sm text-muted-foreground">Evidence packs released to funders. Status, consent and permissions.</p>
+                      </div>
                       <Link to="/admin/funder-workspace/releases/new">
-                                <Button data-testid="fw-releases-new">New release</Button>Button>
-                      </Link>Link>
-              </div>div>
+                                <Button data-testid="fw-releases-new">New release</Button>
+                      </Link>
+              </div>
         
               <div className="flex flex-wrap gap-3 items-end">
                       <div className="flex-1 min-w-[240px]">
-                                <label className="text-xs text-muted-foreground">Search</label>label>
+                                <label className="text-xs text-muted-foreground">Search</label>
                                 <Input placeholder="Deal reference or funder" value={q} onChange={(e) => setQ(e.target.value)} />
-                      </div>div>
+                      </div>
                       <div>
-                                <label className="text-xs text-muted-foreground">Status</label>label>
+                                <label className="text-xs text-muted-foreground">Status</label>
                                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>SelectTrigger>
+                                            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
                                             <SelectContent>
-                                                          <SelectItem value="all">All</SelectItem>SelectItem>
-                                                          <SelectItem value="draft">Draft</SelectItem>SelectItem>
-                                                          <SelectItem value="active">Active</SelectItem>SelectItem>
-                                                          <SelectItem value="expired">Expired</SelectItem>SelectItem>
-                                                          <SelectItem value="revoked">Revoked</SelectItem>SelectItem>
-                                            </SelectContent>SelectContent>
-                                </Select>Select>
-                      </div>div>
+                                                          <SelectItem value="all">All</SelectItem>
+                                                          <SelectItem value="draft">Draft</SelectItem>
+                                                          <SelectItem value="active">Active</SelectItem>
+                                                          <SelectItem value="expired">Expired</SelectItem>
+                                                          <SelectItem value="revoked">Revoked</SelectItem>
+                                            </SelectContent>
+                                </Select>
+                      </div>
                       <label className="flex items-center gap-2 text-sm">
                                 <Checkbox checked={expiringOnly} onCheckedChange={(v) => setExpiringOnly(!!v)} /> Expiring ≤14d
-                      </label>label>
+                      </label>
                       <label className="flex items-center gap-2 text-sm">
                                 <Checkbox checked={overrideOnly} onCheckedChange={(v) => setOverrideOnly(!!v)} /> Override used
-                      </label>label>
+                      </label>
                       <label className="flex items-center gap-2 text-sm">
                                 <Checkbox checked={rawOnly} onCheckedChange={(v) => setRawOnly(!!v)} /> Raw docs enabled
-                      </label>label>
-              </div>div>
+                      </label>
+              </div>
         
           {error && (
-                  <Card><CardContent className="pt-6 text-sm text-destructive">Failed to load: {error}</CardContent>CardContent></Card>Card>
+                  <Card><CardContent className="pt-6 text-sm text-destructive">Failed to load: {error}</CardContent></Card>
               )}
         
               <Card>
                       <CardHeader>
-                                <CardTitle className="text-base">{filtered.length} release(s)</CardTitle>CardTitle>
-                      </CardHeader>CardHeader>
+                                <CardTitle className="text-base">{filtered.length} release(s)</CardTitle>
+                      </CardHeader>
                       <CardContent>
                                 <Table>
                                             <TableHeader>
                                                           <TableRow>
-                                                                          <TableHead>Deal</TableHead>TableHead>
-                                                                          <TableHead>Funder</TableHead>TableHead>
-                                                                          <TableHead>Pack</TableHead>TableHead>
-                                                                          <TableHead>Status</TableHead>TableHead>
-                                                                          <TableHead>Linkage</TableHead>TableHead>
-                                                                          <TableHead>Consent (B/S)</TableHead>TableHead>
-                                                                          <TableHead>Override</TableHead>TableHead>
-                                                                          <TableHead>Funder-ready</TableHead>TableHead>
-                                                                          <TableHead>Raw / Compiled</TableHead>TableHead>
-                                                                          <TableHead>Expires</TableHead>TableHead>
-                                                                          <TableHead>Released</TableHead>TableHead>
+                                                                          <TableHead>Deal</TableHead>
+                                                                          <TableHead>Funder</TableHead>
+                                                                          <TableHead>Pack</TableHead>
+                                                                          <TableHead>Status</TableHead>
+                                                                          <TableHead>Linkage</TableHead>
+                                                                          <TableHead>Consent (B/S)</TableHead>
+                                                                          <TableHead>Override</TableHead>
+                                                                          <TableHead>Funder-ready</TableHead>
+                                                                          <TableHead>Raw / Compiled</TableHead>
+                                                                          <TableHead>Expires</TableHead>
+                                                                          <TableHead>Released</TableHead>
                                                                           <TableHead />
-                                                          </TableRow>TableRow>
+                                                          </TableRow>
                                             
-                                            </TableHeader>TableHeader>
+                                            </TableHeader>
                                             <TableBody>
                                               {filtered.map((r) => {
                           const eff = effectiveReleaseStatus(r);
@@ -157,43 +157,43 @@ export default function FunderWorkspaceReleases() {
                                               (eff === "active" || eff === "expiring_soon") && consentSatisfied(r);
                           return (
                                               <TableRow key={r.id}>
-                                                                  <TableCell className="font-mono text-xs">{r.deal_reference}</TableCell>TableCell>
-                                                                  <TableCell>{r.funder_organisation?.name ?? "—"}</TableCell>TableCell>
+                                                                  <TableCell className="font-mono text-xs">{r.deal_reference}</TableCell>
+                                                                  <TableCell>{r.funder_organisation?.name ?? "—"}</TableCell>
                                                                   <TableCell className="text-xs">
-                                                                                        <div className="font-mono">{r.evidence_pack_id ?? "—"}</div>div>
-                                                                                        <div className="text-muted-foreground">v{r.evidence_pack_version ?? "—"}</div>div>
-                                                                  </TableCell>TableCell>
+                                                                                        <div className="font-mono">{r.evidence_pack_id ?? "—"}</div>
+                                                                                        <div className="text-muted-foreground">v{r.evidence_pack_version ?? "—"}</div>
+                                                                  </TableCell>
                                                                   <TableCell>
-                                                                                        <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>Badge>
-                                                                  </TableCell>TableCell>
+                                                                                        <Badge variant={statusBadgeVariant(eff)}>{statusLabel(eff)}</Badge>
+                                                                  </TableCell>
                                                                   <TableCell>
                                                                     {(() => {
                                                                         const l = linkageStatusOf(r);
                                                                         return (
                                                                                                     <Badge variant={linkageStatusBadgeVariant(l)} data-testid={`fw-linkage-${r.id}`}>
                                                                                                       {LINKAGE_STATUS_LABEL[l]}
-                                                                                                      </Badge>Badge>
+                                                                                                      </Badge>
                                                                                                   );
                                               })()}
-                                                                  </TableCell>TableCell>
+                                                                  </TableCell>
                                                                   <TableCell className="text-xs">
                                                                     {CONSENT_STATUS_LABELS[r.buyer_consent_status] ?? r.buyer_consent_status} / {CONSENT_STATUS_LABELS[r.seller_consent_status] ?? r.seller_consent_status}
-                                                                  </TableCell>TableCell>
-                                                                  <TableCell>{r.admin_override_reason ? <Badge variant="destructive">Yes</Badge>Badge> : "—"}</TableCell>TableCell>
+                                                                  </TableCell>
+                                                                  <TableCell>{r.admin_override_reason ? <Badge variant="destructive">Yes</Badge> : "—"}</TableCell>
                                                                   <TableCell>
                                                                                         <Badge variant={funderReady ? "default" : "secondary"} data-testid={`fw-funder-ready-${r.id}`}>
                                                                                           {funderReady ? "Yes" : "No"}
-                                                                                          </Badge>Badge>
-                                                                  </TableCell>TableCell>
+                                                                                          </Badge>
+                                                                  </TableCell>
                                                                   <TableCell className="text-xs">
                                                                                         Raw: {r.can_view_raw_documents ? "Y" : "N"} · Compiled: {r.can_download_compiled_pack ? "Y" : "N"}
-                                                                  </TableCell>TableCell>
-                                                                  <TableCell className="text-xs">{r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—"}</TableCell>TableCell>
-                                                                  <TableCell className="text-xs">{r.released_at ? new Date(r.released_at).toLocaleDateString() : "—"}</TableCell>TableCell>
+                                                                  </TableCell>
+                                                                  <TableCell className="text-xs">{r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—"}</TableCell>
+                                                                  <TableCell className="text-xs">{r.released_at ? new Date(r.released_at).toLocaleDateString() : "—"}</TableCell>
                                                                   <TableCell className="text-right">
-                                                                                        <Link to={`/admin/funder-workspace/releases/${r.id}`} className="text-sm underline">Open</Link>Link>
-                                                                  </TableCell>TableCell>
-                                              </TableRow>TableRow>
+                                                                                        <Link to={`/admin/funder-workspace/releases/${r.id}`} className="text-sm underline">Open</Link>
+                                                                  </TableCell>
+                                              </TableRow>
                                             );
         })}
                                               {rows !== null && filtered.length === 0 && (
@@ -201,14 +201,14 @@ export default function FunderWorkspaceReleases() {
                                             <TableCell colSpan={12} className="text-center text-sm text-muted-foreground py-8">
                                             
                                                                 No releases match the filters.
-                                            </TableCell>TableCell>
-                          </TableRow>TableRow>
+                                            </TableCell>
+                          </TableRow>
                                                           )}
-                                            </TableBody>TableBody>
-                                </Table>Table>
-                      </CardContent>CardContent>
-              </Card>Card>
-        </div>div>
+                                            </TableBody>
+                                </Table>
+                      </CardContent>
+              </Card>
+        </div>
       );
 }
-</div>
+
