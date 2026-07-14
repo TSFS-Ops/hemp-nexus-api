@@ -238,7 +238,7 @@ jobs:
           CI_ADMIN_ID="dddddddd-dddd-4ddd-addd-dddddddddddd"
           psql -v ON_ERROR_STOP=1 -c "CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS \$fn\$ SELECT '${CI_ADMIN_ID}'::uuid \$fn\$;" 2>&1 | tee validation-artifact/22a-seed-ci-admin.txt
           psql -v ON_ERROR_STOP=1 -c "CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS \$fn\$ SELECT jsonb_build_object('sub','${CI_ADMIN_ID}','role','authenticated') \$fn\$;" 2>&1 | tee -a validation-artifact/22a-seed-ci-admin.txt
-          psql -v ON_ERROR_STOP=1 -c "INSERT INTO auth.users (id, email) VALUES ('${CI_ADMIN_ID}', 'ci-synthetic-admin@example.invalid') ON CONFLICT (id) DO NOTHING;" 2>&1 | tee -a validation-artifact/22a-seed-ci-admin.txt
+          psql -v ON_ERROR_STOP=1 -c "ALTER TABLE auth.users DISABLE TRIGGER ALL; INSERT INTO auth.users (id, email) VALUES ('${CI_ADMIN_ID}', 'ci-synthetic-admin@example.invalid') ON CONFLICT (id) DO NOTHING; ALTER TABLE auth.users ENABLE TRIGGER ALL;" 2>&1 | tee -a validation-artifact/22a-seed-ci-admin.txt
           psql -v ON_ERROR_STOP=1 -c "INSERT INTO public.user_roles (user_id, role) VALUES ('${CI_ADMIN_ID}', 'platform_admin'::public.app_role) ON CONFLICT DO NOTHING;" 2>&1 | tee -a validation-artifact/22a-seed-ci-admin.txt
           ADMIN_OK=$(psql -v ON_ERROR_STOP=1 -t -A -c "SELECT public.p5b3_is_platform_admin();" | tr -d '[:space:]')
           echo "ADMIN_CHECK_RESULT=${ADMIN_OK}" | tee -a validation-artifact/22a-seed-ci-admin.txt
