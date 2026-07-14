@@ -7,9 +7,28 @@
 -- (Lovable) before this pull request may be merged. See PR description
 -- for the exact verification commands required.
 --
+-- IMPORTANT - funder organisation ids corrected during review:
+-- Pilot Funder Bank and Isolation Test Fund are NOT new fixtures. They
+-- already exist in public.p5_batch3_funder_organisations at
+-- 11111111-1111-1111-1111-111111111111 and
+-- 22222222-2222-2222-2222-222222222222 respectively (see migration
+-- 20260712174259_967e2a8d-4a39-4e2d-9b1a-c892a1a4425a.sql, which patches
+-- their jurisdiction/registration_number), and supabase/functions/
+-- fw-pilot-seed/index.ts already links all seeded pilot test users to
+-- exactly those two ids. An earlier draft of this migration minted new
+-- 00000000-0000-4000-a000-000000000001 / ...002 ids for these two
+-- organisations; that would have silently created two DUPLICATE
+-- "Pilot Funder Bank" / "Isolation Test Fund" rows alongside the real
+-- ones, so the readiness RPC would report Ready against fixture rows
+-- the pilot users are never actually members of. This migration now
+-- reuses the real, pre-existing ids for both organisations instead of
+-- minting new ones. Only the buyer/seller trading organisations, match,
+-- documents, and evidence chain below are genuinely new.
+--
 -- Creates, using fixed synthetic identifiers, the demo fixtures required
 -- for the manual pilot walkthrough:
---   * Pilot Funder Bank / Isolation Test Fund (p5_batch3_funder_organisations)
+--   * Pilot Funder Bank / Isolation Test Fund (p5_batch3_funder_organisations,
+--     pre-existing ids -- see note above)
 --   * DEMO — Acacia Trading Test Pty Ltd / DEMO — Blue River Exports Test
 --     Pty Ltd (organizations, buyer/seller)
 --   * DEMO — Acacia–Blue River Pilot Trade (matches, canonical demo match)
@@ -25,8 +44,8 @@
 
 DO $do$
 DECLARE
-  c_funder_bank_id uuid := '00000000-0000-4000-a000-000000000001';
-  c_funder_isolation_id uuid := '00000000-0000-4000-a000-000000000002';
+  c_funder_bank_id uuid := '11111111-1111-1111-1111-111111111111';
+  c_funder_isolation_id uuid := '22222222-2222-2222-2222-222222222222';
   c_buyer_org_id uuid := '00000000-0000-4000-a000-000000000003';
   c_seller_org_id uuid := '00000000-0000-4000-a000-000000000004';
   c_match_id uuid := '00000000-0000-4000-a000-000000000005';
@@ -40,6 +59,8 @@ DECLARE
 BEGIN
 
   -- 1. Funder organisations ---------------------------------------------
+  -- Both already exist (see note above); ON CONFLICT (id) DO NOTHING means
+  -- this is a no-op against the real rows and never creates duplicates.
   INSERT INTO public.p5_batch3_funder_organisations
     (id, name, jurisdiction, contact_email, status, approval_status, api_enabled, notes_internal)
   VALUES
@@ -178,7 +199,7 @@ END $do$;
 -- absence of any link is exactly what isolation requires. It only reads
 -- Missing if the Isolation Test Fund fixture or the demo match itself do
 -- not exist yet (see checks 2 and 5). It never selects an arbitrary
--- "first" release and never infers the demo match from release data —
+-- "first" release and never infers the demo match from release data --
 -- it always uses the fixed c_funder_isolation_id / c_match_id constants
 -- and reads directly from public.funder_deal_releases, which links to
 -- public.p5_batch3_funder_organisations via funder_organisation_id (NOT
@@ -189,8 +210,8 @@ CREATE OR REPLACE FUNCTION public.fw_admin_check_pilot_fixtures_v1()
 RETURNS TABLE(check_key text, label text, status text, detail text)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  c_funder_bank_id uuid := '00000000-0000-4000-a000-000000000001';
-  c_funder_isolation_id uuid := '00000000-0000-4000-a000-000000000002';
+  c_funder_bank_id uuid := '11111111-1111-1111-1111-111111111111';
+  c_funder_isolation_id uuid := '22222222-2222-2222-2222-222222222222';
   c_buyer_org_id uuid := '00000000-0000-4000-a000-000000000003';
   c_seller_org_id uuid := '00000000-0000-4000-a000-000000000004';
   c_match_id uuid := '00000000-0000-4000-a000-000000000005';
