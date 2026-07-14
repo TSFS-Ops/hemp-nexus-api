@@ -127,7 +127,7 @@ The pilot-readiness migration (`supabase/migrations/20260712174259_*.sql`) updat
 | Pilot Funder Bank   | `11111111-1111-1111-1111-111111111111`       | `public.p5_batch3_funder_organisations`     |
 | Isolation Test Fund | `22222222-2222-2222-2222-222222222222`       | `public.p5_batch3_funder_organisations`     |
 
-There is **no** funder-org row on `public.organizations` for these fixtures, and there is **no** `fw_admin_check_pilot_fixtures_v1()` RPC in the current workspace migrations. Any earlier draft of this document that referenced them was incorrect and has been removed.
+There is **no** funder-org row on `public.organizations` for these fixtures, and there is **no** dedicated readiness RPC for the pilot fixtures in the current workspace migrations. Any earlier draft of this document that assumed such an RPC was incorrect; the checks below are inline SQL against the tables above.
 
 Run:
 
