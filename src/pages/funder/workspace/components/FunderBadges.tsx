@@ -23,7 +23,7 @@ export function FunderReleaseStatusBadge({
 }: {
     status: EffectiveReleaseStatus;
 }) {
-    return <Badge variant={statusBadgeVariant(status)}>{statusLabel(status)}</Badge>Badge>;
+    return <Badge variant={statusBadgeVariant(status)}>{statusLabel(status)}</Badge>;
 }
 
 export function ConsentStatusBadge({ status }: { status: ConsentStatus }) {
@@ -33,11 +33,11 @@ export function ConsentStatusBadge({ status }: { status: ConsentStatus }) {
             : status === "overridden" || status === "declined"
         ? "destructive"
             : "secondary";
-    return <Badge variant={variant}>{CONSENT_STATUS_LABELS[status] ?? status}</Badge>Badge>;
+    return <Badge variant={variant}>{CONSENT_STATUS_LABELS[status] ?? status}</Badge>;
 }
 
 export function PermissionBadge({ value }: { value: boolean }) {
     return (
-          <Badge variant={value ? "default" : "secondary"}>{value ? "Yes" : "No"}</Badge>Badge>
+          <Badge variant={value ? "default" : "secondary"}>{value ? "Yes" : "No"}</Badge>
         );
 }
