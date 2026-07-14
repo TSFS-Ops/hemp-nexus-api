@@ -259,8 +259,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 <<SQL 2>&1 | tee validation-artifact/23-isolation.txt
           -- Isolation Test Fund must never appear on any release row.
           -- This check does NOT require any release to exist for the
-          -- Pilot Funder Bank; it only forbids releases pointing at the
-          -- isolation fixture.
+          -- other pilot funder fixture; it only forbids releases pointing
+          -- at the isolation fixture.
           DO \$\$
           DECLARE v_bad int;
           BEGIN
