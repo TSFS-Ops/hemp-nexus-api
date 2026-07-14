@@ -62,10 +62,12 @@ describe("PR #26 - workflow is fail-closed", () => {
 
   it("isolation check does not require a Pilot Funder Bank release to exist", () => {
     // The isolation SQL must only forbid rows pointing at the isolation
-    // fixture; it must not first look up "the first release" or assert
-    // that a Pilot Funder Bank release exists.
-    const isoBlock = wf.match(/Isolation invariant[\s\S]*?SQL\s*$/m)?.[0] ?? "";
-    expect(isoBlock).toContain(ISOLATION_TEST_FUND_ID);
+    // fixture (referenced via the ISOLATION_TEST_FUND_ID env var); it
+    // must not first look up "the first release" or assert that a Pilot
+    // Funder Bank release exists.
+    const isoStart = wf.indexOf("Isolation invariant");
+    const isoBlock = wf.slice(isoStart, isoStart + 1500);
+    expect(isoBlock).toMatch(/ISOLATION_TEST_FUND_ID/);
     expect(isoBlock).not.toMatch(/order by created_at asc\s+limit\s+1/i);
     expect(isoBlock).not.toMatch(/Pilot Funder Bank/);
   });
