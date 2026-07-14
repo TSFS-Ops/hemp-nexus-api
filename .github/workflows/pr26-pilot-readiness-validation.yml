@@ -1,0 +1,332 @@
+# PR #26 - Pilot Readiness Validation (structural, fail-closed)
+#
+# Runs entirely on GitHub-hosted runners against a disposable Postgres
+# service container. Never connects to the live Lovable Cloud database
+# and never merges the PR.
+#
+# What this workflow proves when it goes green:
+#   - the migration set applies against a disposable Postgres 15 that has
+#     a minimal Supabase compatibility surface (auth/storage schemas,
+#     anon/authenticated/service_role roles, auth.uid()/jwt()/role()
+#     stubs, pgcrypto/uuid-ossp);
+#   - the migration set is idempotent (drop + reapply succeeds);
+#   - the two pilot funder-organisation fixtures on the fixed IDs
+#     11111111-1111-1111-1111-111111111111 (Pilot Funder Bank) and
+#     22222222-2222-2222-2222-222222222222 (Isolation Test Fund)
+#     end up with the corrected jurisdiction + registration_number;
+#   - no funder_deal_releases row links any deal to the Isolation Test
+#     Fund fixed ID (isolation invariant);
+#   - the focused Funder Workspace test files and the full Vitest suite
+#     pass;
+#   - the TypeScript project typechecks.
+#
+# What this workflow does NOT prove:
+#   - live Supabase Auth, Storage, signed URLs, or RLS as executed by
+#     PostgREST/GoTrue;
+#   - browser sessions / authenticated preview journeys;
+#   - production data behaviour.
+#
+# The workflow's final gate step fails the job if any mandatory result
+# is not PASS. A green job status is a genuine pass, not a "look at the
+# artifact" pass.
+
+name: PR26 Pilot Readiness Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "src/pages/admin/funder-workspace/**"
+      - "src/pages/funder/workspace/**"
+      - "src/lib/funder-workspace/**"
+      - "src/tests/funder-workspace-*.test.ts"
+      - "docs/pr-26-validation-package.md"
+      - ".github/workflows/pr26-pilot-readiness-validation.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pr26-pilot-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-validation:
+    name: Source - focused tests - full Vitest - typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Record commit SHA
+        run: |
+          mkdir -p validation-artifact
+          echo "commit_sha=$GITHUB_SHA" | tee validation-artifact/00-sha.txt
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies (fail-closed)
+        run: bun install --frozen-lockfile 2>&1 | tee validation-artifact/01-install.txt
+
+      - name: Focused Funder Workspace tests (fail-closed)
+        run: |
+          set -o pipefail
+          bunx vitest run --reporter=verbose \
+            src/tests/funder-workspace-batch6-demo-journey.test.ts \
+            src/tests/funder-workspace-pilot-readiness-fixes.test.ts \
+            src/tests/funder-workspace-pilot-pack-resolution.test.ts \
+            src/tests/funder-workspace-release-state-consistency.test.ts \
+            src/tests/pr26-pilot-readiness-workflow-conformance.test.ts \
+            2>&1 | tee validation-artifact/10-focused-tests.txt
+
+      - name: Full Vitest suite (fail-closed)
+        env:
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_PUBLISHABLE_KEY: dummy-anon-key-for-vitest
+        run: |
+          set -o pipefail
+          bunx vitest run --reporter=verbose 2>&1 | tee validation-artifact/11-full-vitest.txt
+
+      - name: Typecheck (fail-closed)
+        run: |
+          set -o pipefail
+          bunx tsgo --noEmit -p tsconfig.app.json 2>&1 | tee validation-artifact/12-typecheck.txt
+
+      - name: Upload source validation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr26-source-validation
+          path: validation-artifact/
+
+  database-validation:
+    name: Disposable DB - migrations - idempotency - fixtures - isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+      # Fixed IDs from supabase/migrations/20260712174259_*.sql
+      PILOT_FUNDER_BANK_ID: "11111111-1111-1111-1111-111111111111"
+      ISOLATION_TEST_FUND_ID: "22222222-2222-2222-2222-222222222222"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Prepare artifact dir
+        run: mkdir -p validation-artifact
+
+      - name: Bootstrap Supabase-compatible schemas & roles
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL' 2>&1 | tee validation-artifact/20-bootstrap.txt
+          -- Deterministic compatibility surface only. Does not prove
+          -- real Supabase Auth/Storage/RLS behaviour.
+          CREATE SCHEMA IF NOT EXISTS auth;
+          CREATE SCHEMA IF NOT EXISTS storage;
+          CREATE SCHEMA IF NOT EXISTS extensions;
+          CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+          DO $$ BEGIN CREATE ROLE anon NOLOGIN;
+            EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE ROLE authenticated NOLOGIN;
+            EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE ROLE service_role NOLOGIN BYPASSRLS;
+            EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE ROLE authenticator NOINHERIT LOGIN PASSWORD 'postgres';
+            EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          GRANT anon, authenticated, service_role TO authenticator;
+
+          CREATE TABLE IF NOT EXISTS auth.users (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            email text,
+            raw_user_meta_data jsonb DEFAULT '{}'::jsonb,
+            created_at timestamptz DEFAULT now()
+          );
+          CREATE TABLE IF NOT EXISTS storage.buckets (
+            id text PRIMARY KEY,
+            name text,
+            public boolean DEFAULT false,
+            created_at timestamptz DEFAULT now()
+          );
+          CREATE TABLE IF NOT EXISTS storage.objects (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            bucket_id text REFERENCES storage.buckets(id),
+            name text,
+            owner uuid,
+            metadata jsonb DEFAULT '{}'::jsonb,
+            created_at timestamptz DEFAULT now()
+          );
+
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
+            LANGUAGE sql STABLE AS $fn$ SELECT NULL::uuid $fn$;
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS text
+            LANGUAGE sql STABLE AS $fn$ SELECT NULL::text $fn$;
+          CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb
+            LANGUAGE sql STABLE AS $fn$ SELECT '{}'::jsonb $fn$;
+
+          CREATE OR REPLACE FUNCTION storage.foldername(name text) RETURNS text[]
+            LANGUAGE sql IMMUTABLE AS $fn$
+              SELECT string_to_array(name, '/')
+            $fn$;
+          CREATE OR REPLACE FUNCTION storage.filename(name text) RETURNS text
+            LANGUAGE sql IMMUTABLE AS $fn$
+              SELECT split_part(name, '/', array_length(string_to_array(name,'/'),1))
+            $fn$;
+          CREATE OR REPLACE FUNCTION storage.extension(name text) RETURNS text
+            LANGUAGE sql IMMUTABLE AS $fn$
+              SELECT split_part(name, '.', array_length(string_to_array(name,'.'),1))
+            $fn$;
+          SQL
+
+      - name: Apply migrations (first pass, clean DB) [fail-closed]
+        run: |
+          set -e
+          shopt -s nullglob
+          : > validation-artifact/21-migrate-first.txt
+          for f in supabase/migrations/*.sql; do
+            echo "-- Applying: $f" | tee -a validation-artifact/21-migrate-first.txt
+            psql -v ON_ERROR_STOP=1 -f "$f" 2>&1 | tee -a validation-artifact/21-migrate-first.txt
+          done
+          echo "FIRST_PASS=ok" | tee -a validation-artifact/21-migrate-first.txt
+
+      - name: Fixture verification (fail-closed, uses fixed IDs)
+        run: |
+          set -e
+          psql -v ON_ERROR_STOP=1 <<SQL 2>&1 | tee validation-artifact/22-fixtures.txt
+          -- Fail unless both pilot funder-org fixtures exist with the
+          -- corrected jurisdiction and registration_number set by the
+          -- pilot-readiness migration.
+          DO \$\$
+          DECLARE
+            v_pfb_ok int;
+            v_itf_ok int;
+          BEGIN
+            SELECT count(*) INTO v_pfb_ok
+              FROM public.p5_batch3_funder_organisations
+             WHERE id = '${PILOT_FUNDER_BANK_ID}'
+               AND jurisdiction IS NOT NULL
+               AND registration_number IS NOT NULL;
+            IF v_pfb_ok <> 1 THEN
+              RAISE EXCEPTION 'FIXTURE_FAIL: Pilot Funder Bank (%) missing or lacks jurisdiction/registration_number',
+                '${PILOT_FUNDER_BANK_ID}';
+            END IF;
+
+            SELECT count(*) INTO v_itf_ok
+              FROM public.p5_batch3_funder_organisations
+             WHERE id = '${ISOLATION_TEST_FUND_ID}'
+               AND jurisdiction IS NOT NULL
+               AND registration_number IS NOT NULL;
+            IF v_itf_ok <> 1 THEN
+              RAISE EXCEPTION 'FIXTURE_FAIL: Isolation Test Fund (%) missing or lacks jurisdiction/registration_number',
+                '${ISOLATION_TEST_FUND_ID}';
+            END IF;
+
+            RAISE NOTICE 'FIXTURES_OK';
+          END \$\$;
+          SQL
+
+      - name: Isolation invariant (fail-closed)
+        run: |
+          set -e
+          psql -v ON_ERROR_STOP=1 <<SQL 2>&1 | tee validation-artifact/23-isolation.txt
+          -- Isolation Test Fund must never appear on any release row.
+          -- This check does NOT require any release to exist for the
+          -- other pilot funder fixture; it only forbids releases pointing
+          -- at the isolation fixture.
+          DO \$\$
+          DECLARE v_bad int;
+          BEGIN
+            SELECT count(*) INTO v_bad
+              FROM public.funder_deal_releases
+             WHERE funder_organisation_id = '${ISOLATION_TEST_FUND_ID}';
+            IF v_bad <> 0 THEN
+              RAISE EXCEPTION 'ISOLATION_FAIL: % release row(s) point at Isolation Test Fund', v_bad;
+            END IF;
+            RAISE NOTICE 'ISOLATION_OK';
+          END \$\$;
+          SQL
+
+      - name: Reset DB and re-apply migrations (idempotency) [fail-closed]
+        run: |
+          set -e
+          psql -v ON_ERROR_STOP=1 <<'SQL' 2>&1 | tee validation-artifact/24-reset.txt
+          DROP SCHEMA IF EXISTS public CASCADE;
+          CREATE SCHEMA public;
+          GRANT ALL ON SCHEMA public TO postgres, anon, authenticated, service_role;
+          SQL
+          shopt -s nullglob
+          : > validation-artifact/25-migrate-second.txt
+          for f in supabase/migrations/*.sql; do
+            echo "-- Re-applying: $f" | tee -a validation-artifact/25-migrate-second.txt
+            psql -v ON_ERROR_STOP=1 -f "$f" 2>&1 | tee -a validation-artifact/25-migrate-second.txt
+          done
+          echo "SECOND_PASS=ok" | tee -a validation-artifact/25-migrate-second.txt
+
+      - name: Final gate - all mandatory checks must be PASS
+        if: always()
+        run: |
+          set -e
+          fail=0
+          pass_or_fail() {
+            local label="$1"; local file="$2"; local needle="$3"
+            if [ -f "$file" ] && grep -q "$needle" "$file"; then
+              echo "PASS  $label"
+            else
+              echo "FAIL  $label"
+              fail=1
+            fi
+          }
+          {
+            echo "# PR #26 Pilot Readiness - DB validation summary"
+            echo
+            echo "Commit: $GITHUB_SHA"
+            echo
+            echo "## Mandatory checks"
+            pass_or_fail "bootstrap"        validation-artifact/20-bootstrap.txt      "CREATE"
+            pass_or_fail "migrate_first"    validation-artifact/21-migrate-first.txt  "FIRST_PASS=ok"
+            pass_or_fail "fixtures"         validation-artifact/22-fixtures.txt       "FIXTURES_OK"
+            pass_or_fail "isolation"        validation-artifact/23-isolation.txt      "ISOLATION_OK"
+            pass_or_fail "migrate_second"   validation-artifact/25-migrate-second.txt "SECOND_PASS=ok"
+            echo
+            if [ "$fail" -eq 0 ]; then
+              echo "RESULT: PASS"
+            else
+              echo "RESULT: FAIL"
+            fi
+          } | tee validation-artifact/99-verdict.md
+          exit $fail
+
+      - name: Upload database validation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr26-database-validation
+          path: validation-artifact/
