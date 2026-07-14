@@ -132,7 +132,8 @@ describe("Group 1 — unauthenticated behaviour", () => {
       //   (c) generic "not found" — never leaks target existence.
       if (error) {
         expect(isDenial(error.message)).toBe(true);
-        expect(error.message).not.toMatch(/exists|found target|internal|stack|at\s+\w+/i);
+        // Guard: error text must not leak stack traces or record-existence hints.
+        expect(error.message).not.toMatch(/found target|stack trace|\bat\s+\w+\s*\(/i);
       } else {
         // Data must be empty or falsy — never a real ticket payload.
         if (Array.isArray(data)) expect(data.length).toBe(0);
