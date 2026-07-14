@@ -63,10 +63,8 @@ describe('Phase 1A — schema invariants', () => {
 });
 
 describe('Phase 1A — least-privilege grants', () => {
-  it('grants only SELECT to authenticated on ticket lifecycle tables', () => {
+  it('never grants direct INSERT/UPDATE/DELETE to authenticated on ticket lifecycle tables', () => {
     for (const t of ['support_tickets','support_ticket_events','support_ticket_messages','support_ticket_linked_records']) {
-      expect(sql).toMatch(new RegExp(`GRANT SELECT ON public\\.${t} TO authenticated`));
-      // Assert no direct write grants to authenticated
       expect(sql).not.toMatch(new RegExp(`GRANT[^;]*\\b(INSERT|UPDATE|DELETE)\\b[^;]*ON public\\.${t}[^;]*TO authenticated`));
     }
   });
@@ -74,6 +72,31 @@ describe('Phase 1A — least-privilege grants', () => {
   it('never grants any privilege on the access-audit table to authenticated', () => {
     expect(sql).not.toMatch(/GRANT[^;]*ON public\.support_ticket_access_audit[^;]*TO authenticated/);
     expect(sql).toMatch(/GRANT ALL ON public\.support_ticket_access_audit TO service_role/);
+  });
+});
+
+describe('Phase 1A hardening — direct SELECT revoked', () => {
+  it('hardening migration revokes direct SELECT on core support tables from authenticated', () => {
+    const files = readdirSync(MIGRATIONS_DIR).sort();
+    let hardening = '';
+    for (const f of files) {
+      if (!f.endsWith('.sql')) continue;
+      const body = readFileSync(join(MIGRATIONS_DIR, f), 'utf8');
+      if (body.includes('Phase 1A hardening')) { hardening = body; break; }
+    }
+    expect(hardening, 'Phase 1A hardening migration present').not.toEqual('');
+    for (const t of ['support_tickets','support_ticket_events','support_ticket_messages','support_ticket_linked_records']) {
+      expect(hardening).toMatch(new RegExp(`REVOKE SELECT ON public\\.${t}\\s+FROM authenticated`));
+    }
+    for (const fn of [
+      '_support_record_access',
+      '_support_next_ticket_number',
+      '_support_resolve_restriction',
+      '_support_calculate_priority',
+      '_support_caller_org_id',
+    ]) {
+      expect(hardening).toMatch(new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}[^;]*FROM authenticated`));
+    }
   });
 });
 
@@ -147,12 +170,14 @@ describe('Phase 1A — restricted-ticket isolation', () => {
 
 describe('Phase 1A — no changes to legacy api_support_tickets or its RPCs', () => {
   it('migration does not touch api_support_tickets or its four legacy RPCs', () => {
-    expect(sql).not.toMatch(/\bapi_support_tickets\b/);
+    // Strip SQL line comments so a documentation reference does not trip the check.
+    const code = sql.split('\n').filter(l => !l.trim().startsWith('--')).join('\n');
+    expect(code).not.toMatch(/\bapi_support_tickets\b/);
     for (const rpc of [
       'create_api_support_ticket','list_api_support_tickets_for_client',
       'list_api_support_tickets_internal','update_api_support_ticket_internal',
     ]) {
-      expect(sql).not.toContain(rpc);
+      expect(code).not.toContain(rpc);
     }
   });
 });
