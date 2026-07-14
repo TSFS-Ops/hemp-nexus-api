@@ -23809,6 +23809,7 @@ export type Database = {
           restriction_class: Database["public"]["Enums"]["support_restriction_class"]
         }[]
       }
+      _support_rpc_result_signature: { Args: { _fn: string }; Returns: string }
       acknowledge_acceptance_receipt: {
         Args: {
           p_ip_address?: string
@@ -25392,45 +25393,37 @@ export type Database = {
       get_support_ticket_internal: {
         Args: { _reason?: string; _ticket_id: string }
         Returns: {
-          actual_result: string | null
-          affected_users_count: number | null
+          actual_result: string
+          affected_users_count: number
           category_key: string
-          closed_at: string | null
-          contact_email: string | null
-          contact_name: string | null
+          closed_at: string
+          contact_email: string
+          contact_name: string
           created_at: string
           created_by: string
           customer_impact: Database["public"]["Enums"]["support_customer_impact"]
-          funder_org_id: string | null
+          funder_org_id: string
           id: string
-          intended_action: string | null
+          intended_action: string
           is_restricted: boolean
-          occurred_at: string | null
-          on_behalf_of_reason: string | null
-          on_behalf_of_user_id: string | null
+          occurred_at: string
+          on_behalf_of_reason: string
+          on_behalf_of_user_id: string
           org_id: string
           priority: Database["public"]["Enums"]["support_ticket_priority"]
           priority_rules_version: number
           priority_source: Database["public"]["Enums"]["support_priority_source"]
-          resolved_at: string | null
-          restriction_class:
-            | Database["public"]["Enums"]["support_restriction_class"]
-            | null
+          resolved_at: string
+          restriction_class: Database["public"]["Enums"]["support_restriction_class"]
           safe_context: Json
           source: Database["public"]["Enums"]["support_ticket_source"]
           status: Database["public"]["Enums"]["support_ticket_status"]
-          subcategory_key: string | null
+          subcategory_key: string
           subject: string
           ticket_number: string
           updated_at: string
-          workaround_available: boolean | null
+          workaround_available: boolean
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "support_tickets"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_test_mode_bypass_state: { Args: never; Returns: Json }
       get_test_mode_lockout_state: { Args: never; Returns: Json }
@@ -25538,105 +25531,60 @@ export type Database = {
       list_org_support_tickets: {
         Args: never
         Returns: {
-          actual_result: string | null
-          affected_users_count: number | null
+          actual_result: string
+          affected_users_count: number
           category_key: string
-          closed_at: string | null
-          contact_email: string | null
-          contact_name: string | null
+          closed_at: string
           created_at: string
-          created_by: string
           customer_impact: Database["public"]["Enums"]["support_customer_impact"]
-          funder_org_id: string | null
           id: string
-          intended_action: string | null
+          intended_action: string
           is_restricted: boolean
-          occurred_at: string | null
-          on_behalf_of_reason: string | null
-          on_behalf_of_user_id: string | null
+          occurred_at: string
           org_id: string
           priority: Database["public"]["Enums"]["support_ticket_priority"]
-          priority_rules_version: number
-          priority_source: Database["public"]["Enums"]["support_priority_source"]
-          resolved_at: string | null
-          restriction_class:
-            | Database["public"]["Enums"]["support_restriction_class"]
-            | null
-          safe_context: Json
-          source: Database["public"]["Enums"]["support_ticket_source"]
+          resolved_at: string
           status: Database["public"]["Enums"]["support_ticket_status"]
-          subcategory_key: string | null
+          subcategory_key: string
           subject: string
           ticket_number: string
           updated_at: string
-          workaround_available: boolean | null
+          workaround_available: boolean
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "support_tickets"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       list_own_support_tickets: {
         Args: never
         Returns: {
-          actual_result: string | null
-          affected_users_count: number | null
+          actual_result: string
+          affected_users_count: number
           category_key: string
-          closed_at: string | null
-          contact_email: string | null
-          contact_name: string | null
+          closed_at: string
           created_at: string
-          created_by: string
           customer_impact: Database["public"]["Enums"]["support_customer_impact"]
-          funder_org_id: string | null
           id: string
-          intended_action: string | null
+          intended_action: string
           is_restricted: boolean
-          occurred_at: string | null
-          on_behalf_of_reason: string | null
-          on_behalf_of_user_id: string | null
+          occurred_at: string
           org_id: string
           priority: Database["public"]["Enums"]["support_ticket_priority"]
-          priority_rules_version: number
-          priority_source: Database["public"]["Enums"]["support_priority_source"]
-          resolved_at: string | null
-          restriction_class:
-            | Database["public"]["Enums"]["support_restriction_class"]
-            | null
-          safe_context: Json
-          source: Database["public"]["Enums"]["support_ticket_source"]
+          resolved_at: string
           status: Database["public"]["Enums"]["support_ticket_status"]
-          subcategory_key: string | null
+          subcategory_key: string
           subject: string
           ticket_number: string
           updated_at: string
-          workaround_available: boolean | null
+          workaround_available: boolean
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "support_tickets"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       list_support_ticket_customer_messages: {
         Args: { _ticket_id: string }
         Returns: {
-          author_user_id: string
+          author_is_self: boolean
           body: string
           created_at: string
           id: string
-          kind: Database["public"]["Enums"]["support_message_kind"]
           ticket_id: string
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "support_ticket_messages"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       list_support_ticket_internal_notes: {
         Args: { _ticket_id: string }
@@ -25645,15 +25593,8 @@ export type Database = {
           body: string
           created_at: string
           id: string
-          kind: Database["public"]["Enums"]["support_message_kind"]
           ticket_id: string
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "support_ticket_messages"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       log_api_client_usage_csv_export: {
         Args: {
