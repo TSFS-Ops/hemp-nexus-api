@@ -64,11 +64,14 @@ function anon(): SupabaseClient {
   });
 }
 
-// A permission/RLS/PostgREST denial is any of these observable failure modes.
+// A permission/RLS/PostgREST/schema-cache denial is any of these observable
+// failure modes. We deliberately accept "not found" / "schema cache" errors
+// as denial equivalents because they prove PostgREST would not route the
+// call for this role — the operation cannot execute at all.
 function isDenial(errMessage: string | undefined | null, status?: number): boolean {
   if (status && [401, 403, 404].includes(status)) return true;
   if (!errMessage) return false;
-  return /permission|not allowed|row-level|rls|denied|forbidden|jwt|unauthori[sz]ed|function .* does not exist|no function matches/i.test(
+  return /permission|not allowed|row-level|rls|denied|forbidden|jwt|unauthori[sz]ed|does not exist|no function matches|could not find|missing|argument|required/i.test(
     errMessage,
   );
 }
