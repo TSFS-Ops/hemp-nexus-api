@@ -278,3 +278,98 @@ Full Phase 1A rollback is unchanged from the original report (§14 of `phase-1a-
 ## 18. Final recommendation
 
 **DO NOT AUTHORISE Phase 1B yet.** Phase 1A is now internally consistent, minimal, least-privilege and immutable-by-construction, but the behavioural multi-role RLS/RPC integration harness (§5) has not been executed. Add and pass that harness, then Phase 1B (historical read-only adapter over `api_support_tickets`) is safe to begin with no other Phase 1A carry-overs.
+
+---
+
+## 19. Behavioural security verification — addendum (2026-07-14)
+
+### 19.1 Harness
+
+Added `src/tests/phase-1a-support-behavioural.test.ts` — a two-tier vitest suite that runs directly against the live migrated database via `@supabase/supabase-js` (PostgREST), not against SQL text.
+
+- **Tier A (anon-only, unconditional):** executes every unauthenticated behaviour (Group 1), the anon slice of internal-helper direct execution (Group 14), and the anon slice of empty-capability scaffolding (Group 15). No mocks; every assertion is derived from real PostgREST responses.
+- **Tier B (multi-role, gated on `SUPABASE_SERVICE_ROLE_KEY`):** covers Groups 2–13 (creation with forged fields, ordinary/restricted visibility matrices, auditor & platform-admin behaviour, on-behalf-of safety, message privacy, event atomicity, hostile inputs, priority boundaries, ticket-number concurrency, linked-record kinds). Per the Behavioural Security Verification directive, when the service-role key is not present the suite emits **one hard failure per group** with an actionable message rather than silently skipping — this is by design.
+
+### 19.2 Fixture identities (Tier B contract)
+
+The Tier B fixture provisioner must create, before each run and clean up after:
+
+| Actor | Purpose |
+|---|---|
+| Org A: member A1 | Creator; own-ticket visibility. |
+| Org A: member A2 | Same-org negative visibility. |
+| Org A: org admin | Non-restricted org visibility; restricted-ticket denial. |
+| Org B: member B1 | Cross-tenant negative visibility. |
+| Org B: org admin | Cross-tenant negative visibility. |
+| Platform admin | Internal-safe projection; append-only enforcement holds. |
+| Auditor | Read-only projection; mutation denial. |
+| Funder (no grant) | Must not read general support tickets. |
+| Funder (grant, if implemented) | Confirms no premature broadening. |
+| Authenticated w/ no capability | Least-privilege baseline. |
+| Unauthenticated | Group 1. |
+
+### 19.3 JWT method
+
+Tier A uses the project’s publishable/anon key (no session). Tier B, when authorised, obtains a session per identity via `supabase.auth.admin.createUser` (service role) followed by `signInWithPassword`, ensuring `auth.uid()` resolves to the intended user and neither the caller nor PostgREST is short-circuited by the service-role bypass.
+
+### 19.4 Environment gap in the current sandbox
+
+Lovable Cloud does not expose the service-role key to the build sandbox that runs this repository. Tier B therefore cannot execute here. The suite fails loudly (12 hard failures, one per gated group) instead of being marked green, satisfying the directive:
+
+> The test must fail clearly when the database or authentication environment required for integration testing is unavailable. Do not silently skip the entire suite and describe it as passed.
+
+To execute Tier B, run from a CI environment that stores the service-role key as a secret:
+
+```
+SUPABASE_SERVICE_ROLE_KEY=... bunx vitest run \
+  src/tests/phase-1a-support-behavioural.test.ts
+```
+
+### 19.5 Tier A results — 27/27 passed against live database
+
+| # | Assertion | Outcome |
+|---|---|---|
+| 1 | Preconditions (anon env present) | PASS |
+| 2 | Unauth cannot RPC-create ticket | PASS — permission denied |
+| 3 | Unauth cannot RPC-list own tickets | PASS |
+| 4 | Unauth cannot RPC-list org tickets | PASS |
+| 5 | Unauth cannot RPC get_support_ticket | PASS |
+| 6 | Unauth cannot RPC get_support_ticket_internal | PASS — permission denied, no target-existence leak |
+| 7 | Unauth cannot post customer message | PASS |
+| 8 | Unauth cannot post internal note | PASS |
+| 9 | Unauth cannot add linked record | PASS |
+| 10 | Unauth cannot update status | PASS |
+| 11 | Unauth cannot list customer messages | PASS |
+| 12 | Unauth cannot list internal notes | PASS |
+| 13 | Unauth direct SELECT support_tickets denied | PASS |
+| 14 | Unauth direct SELECT support_ticket_events denied | PASS |
+| 15 | Unauth direct SELECT support_ticket_messages denied | PASS |
+| 16 | Unauth direct SELECT support_ticket_linked_records denied | PASS |
+| 17 | Unauth direct SELECT support_ticket_access_audit denied | PASS |
+| 18 | Unauth direct INSERT support_tickets denied | PASS |
+| 19–24 | Underscore helpers not callable by anon (`_support_record_access`, `_support_next_ticket_number`, `_support_resolve_restriction`, `_support_calculate_priority`, `_support_caller_org_id`, `_support_reject_mutation`) | PASS — six denials |
+| 25 | Anon cannot SELECT `support_capabilities_grants` | PASS |
+| 26 | Anon cannot SELECT `support_role_assignments` | PASS |
+| 27 | Anon cannot INSERT `support_capabilities_grants` | PASS |
+
+**Tier B (Groups 2–13):** 12 hard failures with actionable "requires SUPABASE_SERVICE_ROLE_KEY" messages, as designed.
+
+### 19.6 Structural suite — remains green
+
+`bunx vitest run src/tests/phase-1a-support-schema-conformance.test.ts` → 13/13 PASS.
+
+### 19.7 Corrective migrations required by Tier A run
+
+**None.** No behavioural defect surfaced at the anon layer. All Tier A boundaries hold: unauthenticated callers cannot read or mutate any core support surface, error text does not leak record existence, and internal helpers are unreachable through PostgREST for anon.
+
+### 19.8 Remaining risks
+
+1. Groups 2–13 have not been executed. Restricted-ticket isolation, on-behalf-of safety, auditor read-only, platform-admin append-only respect, concurrency uniqueness under load and linked-record kind validation are all covered by the harness *code* but not yet by an *execution* in this environment. Phase 1B remains blocked on running them.
+2. Existing potential concern (flagged but not yet reproducible without Tier B): `list_own_support_tickets` and `list_org_support_tickets` return `SETOF public.support_tickets`, i.e. the full row shape. Any future column added to `support_tickets` that carries internal state will be exposed to customers unless the RPCs are re-projected to explicit columns. Recommend converting both to `RETURNS TABLE(...)` with an explicit customer-safe column list in Phase 1B prep.
+3. Auditor scope remains broad by decision — re-review at Phase 2.
+
+### 19.9 Final verdict
+
+**DO NOT AUTHORISE PHASE 1B.**
+
+Phase 1A is structurally sound and Tier A behavioural coverage is green, but the multi-role Tier B harness has not been executed in this environment. Per the Behavioural Security Verification authorisation rule, Phase 1B cannot begin until Tier B runs green against a real migrated database using genuine authenticated JWTs for every listed actor.
