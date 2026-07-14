@@ -170,12 +170,14 @@ describe('Phase 1A — restricted-ticket isolation', () => {
 
 describe('Phase 1A — no changes to legacy api_support_tickets or its RPCs', () => {
   it('migration does not touch api_support_tickets or its four legacy RPCs', () => {
-    expect(sql).not.toMatch(/\bapi_support_tickets\b/);
+    // Strip SQL line comments so a documentation reference does not trip the check.
+    const code = sql.split('\n').filter(l => !l.trim().startsWith('--')).join('\n');
+    expect(code).not.toMatch(/\bapi_support_tickets\b/);
     for (const rpc of [
       'create_api_support_ticket','list_api_support_tickets_for_client',
       'list_api_support_tickets_internal','update_api_support_ticket_internal',
     ]) {
-      expect(sql).not.toContain(rpc);
+      expect(code).not.toContain(rpc);
     }
   });
 });
