@@ -1,157 +1,152 @@
 /**
- * P-5 Batch 3 — Stage 4 audit & download admin view (read-only).
+ * P-5 Batch 3 — Stage 4 audit view (read-only).
+ *
+ * Reads live rows from `p5_batch3_funder_audit_events` (RLS enforces
+ * platform-admin visibility on the server).
  */
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ScrollText } from "lucide-react";
+import {
+  EmptyState,
+  LoadingState,
+  SectionHeading,
+  formatDateTime,
+  humanize,
+  shortId,
+} from "@/lib/funder-workspace/ui";
 
 interface AuditRow {
-  event_id: string;
-  occurred_at: string;
-  actor: string;
-  funder_org: string;
-  role: string;
+  id: string;
+  created_at: string;
+  actor_user_id: string | null;
+  funder_organisation_id: string | null;
   action: string;
-  transaction_ref: string;
-  object_type: string;
-  prior_state: string | null;
-  new_state: string | null;
-  source: string;
-  outcome: "success" | "failure";
-  correlation_id: string;
+  object_type: string | null;
+  object_id: string | null;
+  prior_state: Record<string, unknown> | null;
+  new_state: Record<string, unknown> | null;
+  reason_code: string | null;
+  source_channel: string | null;
 }
 
-interface DownloadRow {
-  download_id: string;
-  file_name: string;
-  file_type: string;
-  pack_version: string;
-  watermark: string;
-  expires_at: string;
-  state: "active" | "expired" | "revoked";
-}
-
-const AUDIT_PLACEHOLDER: AuditRow[] = [
-  {
-    event_id: "evt-1",
-    occurred_at: "2026-06-25T08:11:00Z",
-    actor: "admin@izenzo",
-    funder_org: "Example Funder A",
-    role: "platform_admin",
-    action: "grant.created",
-    transaction_ref: "TXN-2026-0011",
-    object_type: "access_grant",
-    prior_state: null,
-    new_state: "active",
-    source: "admin_ui",
-    outcome: "success",
-    correlation_id: "cor-1",
-  },
-];
-
-const DOWNLOADS_PLACEHOLDER: DownloadRow[] = [
-  {
-    download_id: "dl-1",
-    file_name: "evidence-pack-v3.pdf",
-    file_type: "pdf",
-    pack_version: "v3",
-    watermark: "Funder A · approver@example.com · 2026-06-25",
-    expires_at: "2026-07-02T08:11:00Z",
-    state: "active",
-  },
-];
+const T = "p5_batch3_funder_audit_events";
 
 export default function P5Batch3Audit() {
+  const [rows, setRows] = useState<AuditRow[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from(T)
+        .select(
+          "id, created_at, actor_user_id, funder_organisation_id, action, object_type, object_id, prior_state, new_state, reason_code, source_channel",
+        )
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) {
+        setErr(error.message);
+        setRows([]);
+        return;
+      }
+      setRows((data ?? []) as AuditRow[]);
+    })();
+  }, []);
+
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-4 max-w-6xl mx-auto">
       <div>
-        <Link to="/admin/p5-batch3" className="text-sm text-muted-foreground underline">← Funder Workflow</Link>
-        <h1 className="text-2xl font-semibold mt-1">Audit & Downloads</h1>
-        <p className="text-sm text-muted-foreground">Read-only. Events and downloads are immutable.</p>
+        <Link to="/admin/p5-batch3" className="text-sm text-muted-foreground underline">
+          ← Funder workflow
+        </Link>
+        <h1 className="text-2xl font-semibold mt-1">Audit</h1>
+        <p className="text-sm text-muted-foreground">
+          Read-only. Every material funder-workflow action is recorded
+          server-side and is immutable.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Audit events</CardTitle>
-          <CardDescription>All material funder-workflow actions are recorded server-side.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Event ID</TableHead>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Funder org</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Transaction</TableHead>
-                <TableHead>Object</TableHead>
-                <TableHead>Prior → New</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Outcome</TableHead>
-                <TableHead>Correlation</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {AUDIT_PLACEHOLDER.map((e) => (
-                <TableRow key={e.event_id}>
-                  <TableCell className="font-mono text-xs">{e.event_id}</TableCell>
-                  <TableCell className="text-xs">{e.occurred_at}</TableCell>
-                  <TableCell>{e.actor}</TableCell>
-                  <TableCell>{e.funder_org}</TableCell>
-                  <TableCell>{e.role}</TableCell>
-                  <TableCell>{e.action}</TableCell>
-                  <TableCell className="font-mono text-xs">{e.transaction_ref}</TableCell>
-                  <TableCell>{e.object_type}</TableCell>
-                  <TableCell className="text-xs">{e.prior_state ?? "—"} → {e.new_state ?? "—"}</TableCell>
-                  <TableCell>{e.source}</TableCell>
-                  <TableCell>
-                    <Badge variant={e.outcome === "success" ? "default" : "destructive"}>{e.outcome}</Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{e.correlation_id}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {err && (
+        <Card>
+          <CardContent className="pt-6 text-sm text-destructive" role="alert">
+            {err}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Document downloads</CardTitle>
-          <CardDescription>Watermarked, expiring PDFs only. No raw document API.</CardDescription>
+          <SectionHeading
+            title="Audit events"
+            description="Most recent 200 events across all funder organisations."
+          />
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Download ID</TableHead>
-                <TableHead>File</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Pack version</TableHead>
-                <TableHead>Watermark</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead>State</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {DOWNLOADS_PLACEHOLDER.map((d) => (
-                <TableRow key={d.download_id}>
-                  <TableCell className="font-mono text-xs">{d.download_id}</TableCell>
-                  <TableCell>{d.file_name}</TableCell>
-                  <TableCell>{d.file_type}</TableCell>
-                  <TableCell>{d.pack_version}</TableCell>
-                  <TableCell className="text-xs">{d.watermark}</TableCell>
-                  <TableCell className="text-xs">{d.expires_at}</TableCell>
-                  <TableCell>
-                    <Badge variant={d.state === "active" ? "default" : "secondary"}>{d.state}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {rows === null ? (
+            <LoadingState label="Loading audit events…" />
+          ) : rows.length === 0 ? (
+            <EmptyState
+              title="No audit events recorded yet"
+              description="Invitations, role changes and deactivations will appear here."
+              icon={<ScrollText className="h-8 w-8" />}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Object</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Source</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((e) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDateTime(e.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{humanize(e.action)}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <div>{humanize(e.object_type ?? "")}</div>
+                        {e.object_id && (
+                          <code className="text-[11px] text-muted-foreground">
+                            {shortId(e.object_id)}
+                          </code>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">{e.reason_code ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {humanize(e.source_channel ?? "")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

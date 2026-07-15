@@ -15,6 +15,7 @@ import P5B5ReasonedActionDialog from "@/components/p5-batch5/ReasonedActionDialo
 import { canExportP5B5, canPerformFinalityAction, type P5B5Role } from "@/lib/p5-batch5/permissions";
 import { P5B5_APPROVED_PHRASES } from "@/lib/p5-batch5/wording";
 import type { P5B5ProjectionInput } from "@/lib/p5-batch5/api-safe";
+import { LegacyBanner } from "@/lib/funder-workspace/ui";
 
 const FUNDER_ROLE: P5B5Role = "funder";
 
@@ -32,6 +33,7 @@ export default function FunderFinality() {
 
   return (
     <div className="space-y-4 p-6">
+      <LegacyBanner surface="P-5 Batch 5 finality" />
       <div>
         <h1 className="text-2xl font-semibold">Finality — Funder lane</h1>
         <p className="text-sm text-muted-foreground">

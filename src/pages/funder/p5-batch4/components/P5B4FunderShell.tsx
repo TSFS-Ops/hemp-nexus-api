@@ -7,6 +7,7 @@
  */
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { LegacyBanner } from "@/lib/funder-workspace/ui";
 
 export function P5B4FunderShell({
   title,
@@ -19,8 +20,9 @@ export function P5B4FunderShell({
 }) {
   return (
     <div className="p-6 space-y-4 max-w-5xl" data-testid="p5b4-funder-shell">
-      <Link to="/funder/p5-batch4" className="text-sm text-muted-foreground underline">
-        ← Funder workspace
+      <LegacyBanner surface="P-5 Batch 4 execution" />
+      <Link to="/funder/workspace" className="text-sm text-muted-foreground underline">
+        ← Funder Workspace
       </Link>
       <div>
         <h1 className="text-2xl font-semibold">{title}</h1>
@@ -37,3 +39,4 @@ export function P5B4FunderShell({
     </div>
   );
 }
+
