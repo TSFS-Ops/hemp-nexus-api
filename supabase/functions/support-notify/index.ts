@@ -156,12 +156,55 @@ async function dispatchTicketEvent(admin: any, eventId: string) {
       break;
     }
     case "auto_escalated": {
-      results.push(...(await notifyStaff(admin, t, {
-        alertKind: "auto-escalated",
-        detail: `SLA ${String(ev.payload?.gate ?? "").replace(/_/g, " ")} breached; priority raised from ${ev.payload?.from_priority} to ${ev.payload?.to_priority}.`,
-        slaGate: (ev.payload?.gate as string) ?? null,
-        ctaUrl: adminUrl,
-      })));
+      const gate = String(ev.payload?.gate ?? "").replace(/_/g, " ");
+      const fromP = ev.payload?.from_priority;
+      const toP = ev.payload?.to_priority;
+      const staffDetail = `SLA ${gate} breached; priority raised from ${fromP} to ${toP}.`;
+
+      // Staff email
+      results.push(
+        ...(await notifyStaff(admin, t, {
+          alertKind: "auto-escalated",
+          detail: staffDetail,
+          slaGate: (ev.payload?.gate as string) ?? null,
+          ctaUrl: adminUrl,
+        }))
+      );
+
+      // Customer email — reassures the requester that we've prioritised
+      // their ticket. Independent idempotency key so it never collides
+      // with staff sends.
+      if (customerEmail) {
+        results.push(
+          await enqueue(admin, {
+            templateName: "support-ticket-customer-update",
+            recipientEmail: customerEmail,
+            idempotencyKey: `support-cust-escalated-${ev.id}`,
+            templateData: {
+              ticketNumber: t.ticket_number,
+              subject: t.subject,
+              headline: "We've escalated your ticket",
+              bodyText: `Your ticket has been auto-escalated to ${toP} priority because our ${gate} target was missed. A senior team member will pick it up shortly.`,
+              status: t.status,
+              priority: toP ?? t.priority,
+              ctaUrl: customerUrl,
+            },
+          })
+        );
+      }
+
+      // In-app notifications — one per staff recipient user + customer.
+      results.push(
+        ...(await createInAppNotifications(admin, t, {
+          type: "support_ticket_auto_escalated",
+          staffTitle: `Ticket ${t.ticket_number} auto-escalated`,
+          staffBody: staffDetail,
+          staffLink: `/admin/support/tickets/${t.id}`,
+          customerTitle: "Your support ticket was escalated",
+          customerBody: `We've raised ${t.ticket_number} to ${toP} priority so a senior team member can respond faster.`,
+          customerLink: `/support/tickets/${t.id}`,
+        }))
+      );
       break;
     }
     default:
@@ -208,11 +251,10 @@ async function notifyStaff(
   return out;
 }
 
-async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]> {
+async function resolveStaffUserIds(admin: any, ticket: any): Promise<string[]> {
   const userIds = new Set<string>();
   if (ticket.current_assignee_user_id) userIds.add(ticket.current_assignee_user_id);
 
-  // Team members
   if (ticket.current_team_key) {
     const { data: tm } = await admin
       .from("support_team_members")
@@ -221,7 +263,6 @@ async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]
     (tm ?? []).forEach((r: any) => r.user_id && userIds.add(r.user_id));
   }
 
-  // platform admins as fallback if no team routed
   if (userIds.size === 0) {
     const { data: admins } = await admin
       .from("user_roles")
@@ -230,6 +271,11 @@ async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]
       .limit(20);
     (admins ?? []).forEach((r: any) => r.user_id && userIds.add(r.user_id));
   }
+  return Array.from(userIds);
+}
+
+async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]> {
+  const userIds = await resolveStaffUserIds(admin, ticket);
 
   const emails: string[] = [];
   for (const uid of userIds) {
@@ -237,6 +283,52 @@ async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]
     if (data?.user?.email) emails.push(data.user.email);
   }
   return Array.from(new Set(emails));
+}
+
+async function createInAppNotifications(
+  admin: any,
+  ticket: any,
+  opts: {
+    type: string;
+    staffTitle: string;
+    staffBody: string;
+    staffLink: string;
+    customerTitle: string;
+    customerBody: string;
+    customerLink: string;
+  }
+) {
+  const rows: Array<Record<string, unknown>> = [];
+  const staffIds = await resolveStaffUserIds(admin, ticket);
+  for (const uid of staffIds) {
+    rows.push({
+      user_id: uid,
+      type: opts.type,
+      title: opts.staffTitle,
+      body: opts.staffBody,
+      link: opts.staffLink,
+      entity_type: "support_ticket",
+      entity_id: ticket.id,
+    });
+  }
+  if (ticket.created_by) {
+    rows.push({
+      user_id: ticket.created_by,
+      type: opts.type,
+      title: opts.customerTitle,
+      body: opts.customerBody,
+      link: opts.customerLink,
+      entity_type: "support_ticket",
+      entity_id: ticket.id,
+    });
+  }
+  if (rows.length === 0) return [];
+  const { error } = await admin.from("notifications").insert(rows);
+  if (error) {
+    console.error("in-app notification insert failed", error);
+    return [{ inapp_error: error.message }];
+  }
+  return [{ inapp_inserted: rows.length }];
 }
 
 // ---- Incident updates ------------------------------------------------
