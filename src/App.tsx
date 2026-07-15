@@ -72,6 +72,22 @@ const DocsCounterpartyRatingMethodology = lazy(() => import("@/pages/docs/Counte
 const Status = lazy(() => import("@/pages/Status"));
 const Trust = lazy(() => import("@/pages/Trust"));
 
+// Enterprise Support Centre — Batch 1
+const SupportPortal = lazy(() => import("@/pages/support/Portal"));
+const SupportNewTicket = lazy(() => import("@/pages/support/NewTicket"));
+const SupportTicketDetail = lazy(() => import("@/pages/support/TicketDetail"));
+const SupportIncidents = lazy(() => import("@/pages/support/Incidents"));
+const SupportKbIndex = lazy(() =>
+  import("@/pages/support/KnowledgeBase").then((m) => ({ default: m.KbIndex }))
+);
+const SupportKbArticle = lazy(() =>
+  import("@/pages/support/KnowledgeBase").then((m) => ({ default: m.KbArticle }))
+);
+const AdminSupportQueue = lazy(() => import("@/pages/admin/support/Queue"));
+const AdminSupportTicketDetail = lazy(
+  () => import("@/pages/admin/support/TicketDetail")
+);
+
 // Batch V-UI — IDV client-facing screens (person-only IDV)
 const IdvStart = lazy(() => import("@/pages/desk/idv/IdvStart"));
 const IdvReviewQueue = lazy(() => import("@/pages/admin/idv/IdvReviewQueue"));
