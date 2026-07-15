@@ -26168,6 +26168,18 @@ export type Database = {
           ticket_id: string
         }[]
       }
+      list_support_ticket_events_internal: {
+        Args: { _ticket_id: string }
+        Returns: {
+          actor_user_id: string
+          created_at: string
+          event_kind: Database["public"]["Enums"]["support_event_kind"]
+          id: string
+          payload: Json
+          represented_user_id: string
+          ticket_id: string
+        }[]
+      }
       list_support_ticket_internal_notes: {
         Args: { _ticket_id: string }
         Returns: {

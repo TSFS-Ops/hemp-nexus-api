@@ -42,13 +42,16 @@ import {
   listTeams,
   listAttachments,
   attachmentDownloadUrl,
+  listTicketEvents,
   type SupportTicketDetail,
   type SupportMessage,
   type SupportAttachment,
   type SupportStatus,
   type SupportPriority,
+  type SupportTicketEvent,
 } from "@/lib/support/client";
 import { formatDistanceToNow, format } from "date-fns";
+import { AlertTriangle, ArrowUpRight, Clock } from "lucide-react";
 
 const STATUSES: SupportStatus[] = [
   "new",
@@ -71,6 +74,7 @@ export default function AdminTicketDetail() {
   const [notes, setNotes] = useState<SupportMessage[]>([]);
   const [atts, setAtts] = useState<SupportAttachment[]>([]);
   const [teams, setTeams] = useState<Array<{ key: string; label: string }>>([]);
+  const [events, setEvents] = useState<SupportTicketEvent[]>([]);
   const [reply, setReply] = useState("");
   const [note, setNote] = useState("");
   const [assigneeInput, setAssigneeInput] = useState("");
@@ -83,18 +87,20 @@ export default function AdminTicketDetail() {
 
   const load = useCallback(async () => {
     try {
-      const [ticket, m, n, a, tm] = await Promise.all([
+      const [ticket, m, n, a, tm, ev] = await Promise.all([
         getTicketInternal(id, "admin ticket detail view"),
         listCustomerMessages(id),
         listInternalNotes(id),
         listAttachments(id),
         listTeams(),
+        listTicketEvents(id).catch(() => [] as SupportTicketEvent[]),
       ]);
       setT(ticket);
       setMsgs(m);
       setNotes(n);
       setAtts(a);
       setTeams(tm);
+      setEvents(ev);
       setStatusSel(ticket.status);
       setPrioritySel(ticket.priority);
       setTeamSel(ticket.current_team_key ?? "");
@@ -196,6 +202,9 @@ export default function AdminTicketDetail() {
                 <TabsTrigger value="attachments">
                   Attachments ({atts.length})
                 </TabsTrigger>
+                <TabsTrigger value="timeline">
+                  Timeline ({events.length})
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="customer" className="space-y-3">
@@ -293,8 +302,13 @@ export default function AdminTicketDetail() {
                   </div>
                 ))}
               </TabsContent>
+
+              <TabsContent value="timeline" className="space-y-2">
+                <TimelineList events={events} ticket={t} />
+              </TabsContent>
             </Tabs>
           </div>
+
 
           <div className="space-y-4">
             <Card>
@@ -448,3 +462,125 @@ function MessageBubble({
     </div>
   );
 }
+
+// -----------------------------------------------------------------------------
+// Timeline / audit trail
+// -----------------------------------------------------------------------------
+
+const EVENT_LABEL: Record<string, string> = {
+  created: "Ticket created",
+  status_changed: "Status changed",
+  priority_changed: "Priority changed",
+  assigned: "Assignment changed",
+  customer_message_posted: "Customer message posted",
+  internal_note_posted: "Internal note added",
+  attachment_added: "Attachment added",
+  auto_escalated: "Auto-escalated (SLA breach)",
+};
+
+function fmtGate(g: unknown): string {
+  if (g === "first_response") return "first-response deadline";
+  if (g === "resolution") return "resolution deadline";
+  return String(g ?? "");
+}
+
+function TimelineList({
+  events,
+  ticket,
+}: {
+  events: SupportTicketEvent[];
+  ticket: SupportTicketDetail;
+}) {
+  if (events.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground border rounded-md p-3">
+        No timeline entries recorded for this ticket yet.
+      </div>
+    );
+  }
+  return (
+    <ol className="relative border-l border-border ml-2 space-y-3">
+      {events.map((e) => {
+        const isEsc = e.event_kind === "auto_escalated";
+        const gate = isEsc ? fmtGate(e.payload.gate) : null;
+        const from = isEsc ? String(e.payload.from_priority ?? "") : "";
+        const to = isEsc ? String(e.payload.to_priority ?? "") : "";
+        const dueAt =
+          isEsc && typeof e.payload.sla_due_at === "string"
+            ? new Date(e.payload.sla_due_at)
+            : isEsc && e.payload.gate === "first_response" && ticket.sla_first_response_due_at
+              ? new Date(ticket.sla_first_response_due_at)
+              : isEsc && e.payload.gate === "resolution" && (ticket as any).sla_resolution_due_at
+                ? new Date((ticket as any).sla_resolution_due_at)
+                : null;
+        const at = new Date(e.created_at);
+        const overdueBy = dueAt
+          ? Math.max(0, Math.round((at.getTime() - dueAt.getTime()) / 60000))
+          : null;
+        return (
+          <li key={e.id} className="ml-4">
+            <span
+              className={
+                "absolute -left-1.5 mt-1 h-3 w-3 rounded-full border-2 border-background " +
+                (isEsc ? "bg-amber-500" : "bg-muted-foreground")
+              }
+            />
+            <div
+              className={
+                "rounded-md border p-3 text-sm " +
+                (isEsc ? "bg-amber-50 border-amber-200" : "bg-muted/20")
+              }
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                {isEsc ? (
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                ) : (
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="font-medium">
+                  {EVENT_LABEL[e.event_kind] ?? e.event_kind.replace(/_/g, " ")}
+                </span>
+                {isEsc && (
+                  <Badge variant="outline" className="ml-1">
+                    {gate}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {format(at, "PPpp")} · {formatDistanceToNow(at, { addSuffix: true })}
+                </span>
+              </div>
+              {isEsc && (
+                <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span>Priority</span>
+                    <Badge variant="secondary">{from}</Badge>
+                    <ArrowUpRight className="h-3 w-3" />
+                    <Badge>{to}</Badge>
+                  </div>
+                  {dueAt ? (
+                    <div>
+                      Triggered by the <strong>{gate}</strong> ({format(dueAt, "PPpp")}),
+                      breached by{" "}
+                      <span className="font-mono">
+                        {overdueBy != null ? `${overdueBy} min` : "—"}
+                      </span>{" "}
+                      before this run.
+                    </div>
+                  ) : (
+                    <div>Triggered by the {gate}.</div>
+                  )}
+                </div>
+              )}
+              {!isEsc && Object.keys(e.payload ?? {}).length > 0 && (
+                <pre className="mt-2 text-[11px] font-mono whitespace-pre-wrap text-muted-foreground">
+                  {JSON.stringify(e.payload, null, 2)}
+                </pre>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
