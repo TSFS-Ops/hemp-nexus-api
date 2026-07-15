@@ -285,6 +285,52 @@ async function resolveStaffRecipients(admin: any, ticket: any): Promise<string[]
   return Array.from(new Set(emails));
 }
 
+async function createInAppNotifications(
+  admin: any,
+  ticket: any,
+  opts: {
+    type: string;
+    staffTitle: string;
+    staffBody: string;
+    staffLink: string;
+    customerTitle: string;
+    customerBody: string;
+    customerLink: string;
+  }
+) {
+  const rows: Array<Record<string, unknown>> = [];
+  const staffIds = await resolveStaffUserIds(admin, ticket);
+  for (const uid of staffIds) {
+    rows.push({
+      user_id: uid,
+      type: opts.type,
+      title: opts.staffTitle,
+      body: opts.staffBody,
+      link: opts.staffLink,
+      entity_type: "support_ticket",
+      entity_id: ticket.id,
+    });
+  }
+  if (ticket.created_by) {
+    rows.push({
+      user_id: ticket.created_by,
+      type: opts.type,
+      title: opts.customerTitle,
+      body: opts.customerBody,
+      link: opts.customerLink,
+      entity_type: "support_ticket",
+      entity_id: ticket.id,
+    });
+  }
+  if (rows.length === 0) return [];
+  const { error } = await admin.from("notifications").insert(rows);
+  if (error) {
+    console.error("in-app notification insert failed", error);
+    return [{ inapp_error: error.message }];
+  }
+  return [{ inapp_inserted: rows.length }];
+}
+
 // ---- Incident updates ------------------------------------------------
 
 async function dispatchIncidentUpdate(admin: any, updateId: string) {
