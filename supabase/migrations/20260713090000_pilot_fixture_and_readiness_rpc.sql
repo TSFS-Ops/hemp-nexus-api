@@ -112,7 +112,7 @@ BEGIN
     (id, match_id, org_id, doc_type, filename, storage_path, sha256_hash, status,
          title, visibility, version, uploader_org_id, notes)
   VALUES
-    (c_doc_invoice_id, c_match_id, c_seller_org_id, 'pro_forma_invoice',
+    (c_doc_invoice_id, c_match_id, c_seller_org_id, 'invoice',
          'demo-acacia-blueriver-proforma-invoice.pdf',
          'pilot-fixtures/demo-acacia-blueriver-proforma-invoice.pdf',
          'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
