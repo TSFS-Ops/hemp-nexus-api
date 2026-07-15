@@ -91,6 +91,12 @@ Deno.serve(async (req) => {
       ? `${callerOrgId}/${matchId}/poi/<doc_id>/<filename>`
       : null;
 
+    // Do NOT leak counterparty identity to non-participants. Only echo the
+    // match's org slots when the caller is a participant on the match or a
+    // platform admin. Non-participant callers get null/redacted org fields
+    // and a `reason` explaining the denial.
+    const canSeeMatchOrgs = isParticipant || isPlatformAdmin;
+
     return new Response(
       JSON.stringify({
         request_id: requestId,
@@ -105,10 +111,10 @@ Deno.serve(async (req) => {
           is_platform_admin: isPlatformAdmin,
         },
         match: {
-          org_id: matchOrgId,
-          buyer_org_id: buyerOrgId,
-          seller_org_id: sellerOrgId,
-          status: match?.status ?? null,
+          org_id: canSeeMatchOrgs ? matchOrgId : null,
+          buyer_org_id: canSeeMatchOrgs ? buyerOrgId : null,
+          seller_org_id: canSeeMatchOrgs ? sellerOrgId : null,
+          status: canSeeMatchOrgs ? (match?.status ?? null) : null,
         },
         decision: {
           participant_roles: roles,
@@ -121,7 +127,7 @@ Deno.serve(async (req) => {
           path_prefix: storagePathPrefix,
         },
       }),
-      { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
+      { status: canSeeMatchOrgs ? 200 : 403, headers: { ...headers, "Content-Type": "application/json" } }
     );
   } catch (err) {
     return errorResponse(err as Error, requestId, headers);
