@@ -635,6 +635,7 @@ function App() {
                   <Route path="/admin/support/incidents" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportIncidents /></RequireAuth>} />
                   <Route path="/admin/support/kb" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportKnowledgeBase /></RequireAuth>} />
                   <Route path="/admin/support/sla" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportSla /></RequireAuth>} />
+                  <Route path="/admin/support/escalation-runs" element={<RequireAuth role="platform_admin" fallbackRoute="/desk"><AdminSupportEscalationRuns /></RequireAuth>} />
 
                   {/* 404 for unknown routes */}
                   <Route path="*" element={<NotFound />} />
