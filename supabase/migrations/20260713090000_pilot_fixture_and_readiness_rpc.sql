@@ -94,11 +94,11 @@ BEGIN
 
   -- 3. Canonical demo match ------------------------------------------------
   INSERT INTO public.matches
-    (id, status, hash, buyer_id, buyer_name, seller_id, seller_name, commodity,
+    (id, org_id, status, hash, buyer_id, buyer_name, seller_id, seller_name, commodity,
          quantity_amount, quantity_unit, price_amount, price_currency, terms,
          buyer_org_id, seller_org_id, metadata)
   VALUES
-    (c_match_id, 'matched', 'DEMO-ACACIA-BLUERIVER-PILOT-TRADE',
+    (c_match_id, c_seller_org_id, 'matched', 'DEMO-ACACIA-BLUERIVER-PILOT-TRADE',
          c_buyer_org_id::text, 'DEMO — Acacia Trading Test Pty Ltd',
          c_seller_org_id::text, 'DEMO — Blue River Exports Test Pty Ltd',
          'Industrial hemp fibre (controlled-pilot demo)',
