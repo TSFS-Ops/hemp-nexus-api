@@ -340,3 +340,26 @@ export default function AdminSupportQueue() {
     </div>
   );
 }
+
+function MetricTile({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: number | string;
+  tone?: "default" | "danger";
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-4 pb-3">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div
+          className={`text-2xl font-semibold mt-1 ${tone === "danger" ? "text-destructive" : ""}`}
+        >
+          {value}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
