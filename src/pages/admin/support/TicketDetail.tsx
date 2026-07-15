@@ -42,13 +42,16 @@ import {
   listTeams,
   listAttachments,
   attachmentDownloadUrl,
+  listTicketEvents,
   type SupportTicketDetail,
   type SupportMessage,
   type SupportAttachment,
   type SupportStatus,
   type SupportPriority,
+  type SupportTicketEvent,
 } from "@/lib/support/client";
 import { formatDistanceToNow, format } from "date-fns";
+import { AlertTriangle, ArrowUpRight, Clock } from "lucide-react";
 
 const STATUSES: SupportStatus[] = [
   "new",
