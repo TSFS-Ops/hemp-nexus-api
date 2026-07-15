@@ -91,6 +91,7 @@ const AdminSupportIncidents = lazy(() => import("@/pages/admin/support/Incidents
 const AdminSupportKnowledgeBase = lazy(
   () => import("@/pages/admin/support/KnowledgeBase")
 );
+const AdminSupportSla = lazy(() => import("@/pages/admin/support/Sla"));
 
 // Batch V-UI — IDV client-facing screens (person-only IDV)
 const IdvStart = lazy(() => import("@/pages/desk/idv/IdvStart"));
