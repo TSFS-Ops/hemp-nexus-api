@@ -89,6 +89,22 @@ const EVIDENCE_SECTIONS: Array<{ title: string; description: string }> = [
   { title: "Audit summary", description: "Audit trail summary." },
 ];
 
+const PACK_STATUS_LABELS: Record<PackVersionRow["status"], string> = {
+  pending: "Preparing",
+  generated: "Generated",
+  sealed: "Sealed",
+  superseded: "Superseded",
+  revoked: "Revoked",
+  failed: "Failed",
+};
+
+const RELEASE_STATUS_LABELS: Record<DealReleaseRow["release_status"], string> = {
+  draft: "Draft",
+  active: "Active",
+  expired: "Expired",
+  revoked: "Revoked",
+};
+
 export default function FunderWorkspaceDealDetail() {
   const { releaseId = "" } = useParams();
   return (
