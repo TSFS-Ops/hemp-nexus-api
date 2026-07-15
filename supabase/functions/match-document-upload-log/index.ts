@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, server_request_id: serverRequestId, evaluated }),
+      JSON.stringify({ ok: true, server_request_id: serverRequestId, evaluated: evaluatedForCaller }),
       { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
     );
   } catch (err) {
