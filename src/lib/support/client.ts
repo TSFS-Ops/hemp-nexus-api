@@ -410,3 +410,187 @@ export async function adminListTickets(filter: {
   if (r.error) throw new Error(r.error.message);
   return r.data ?? [];
 }
+
+// --- Admin: incidents CRUD --------------------------------------------
+export interface AdminIncidentRow extends SupportIncident {
+  is_public: boolean;
+  identified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export async function adminListIncidents(): Promise<AdminIncidentRow[]> {
+  const r = await from("support_incidents")
+    .select(
+      "id,incident_number,title,summary,status,severity,is_public,affected_components,started_at,identified_at,resolved_at,scheduled_start,scheduled_end,created_at,updated_at"
+    )
+    .order("started_at", { ascending: false })
+    .limit(200);
+  if (r.error) throw new Error(r.error.message);
+  return r.data ?? [];
+}
+export async function adminCreateIncident(input: {
+  title: string;
+  summary?: string | null;
+  status: SupportIncident["status"];
+  severity: SupportIncident["severity"];
+  is_public: boolean;
+  affected_components: string[];
+  started_at?: string;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+}): Promise<string> {
+  const d = new Date();
+  const num = `INC-${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCDate()).padStart(2, "0")}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const r = await from("support_incidents")
+    .insert({ ...input, incident_number: num, started_at: input.started_at ?? new Date().toISOString() })
+    .select("id")
+    .single();
+  if (r.error) throw new Error(r.error.message);
+  return r.data.id;
+}
+export async function adminUpdateIncident(
+  id: string,
+  patch: Partial<{
+    title: string;
+    summary: string | null;
+    status: SupportIncident["status"];
+    severity: SupportIncident["severity"];
+    is_public: boolean;
+    affected_components: string[];
+    identified_at: string | null;
+    resolved_at: string | null;
+    scheduled_start: string | null;
+    scheduled_end: string | null;
+  }>
+): Promise<void> {
+  const r = await from("support_incidents")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (r.error) throw new Error(r.error.message);
+}
+export async function adminDeleteIncident(id: string): Promise<void> {
+  const r = await from("support_incidents").delete().eq("id", id);
+  if (r.error) throw new Error(r.error.message);
+}
+export interface AdminIncidentUpdate extends SupportIncidentUpdate {
+  is_public: boolean;
+}
+export async function adminListIncidentUpdates(
+  incidentId: string
+): Promise<AdminIncidentUpdate[]> {
+  const r = await from("support_incident_updates")
+    .select("id,status,body,is_public,created_at")
+    .eq("incident_id", incidentId)
+    .order("created_at", { ascending: false });
+  if (r.error) throw new Error(r.error.message);
+  return r.data ?? [];
+}
+export async function adminPostIncidentUpdate(input: {
+  incident_id: string;
+  status: SupportIncident["status"];
+  body: string;
+  is_public: boolean;
+}): Promise<string> {
+  const { data: auth } = await supabase.auth.getUser();
+  const r = await from("support_incident_updates")
+    .insert({ ...input, author_user_id: auth.user?.id ?? null })
+    .select("id")
+    .single();
+  if (r.error) throw new Error(r.error.message);
+  // Roll incident status forward
+  await adminUpdateIncident(input.incident_id, {
+    status: input.status,
+    resolved_at:
+      input.status === "resolved" || input.status === "completed"
+        ? new Date().toISOString()
+        : null,
+  });
+  return r.data.id;
+}
+
+// --- Admin: knowledge base CRUD ---------------------------------------
+export interface AdminKbRow {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  body_md: string;
+  category_key: string | null;
+  audience: "public" | "authenticated" | "internal";
+  is_published: boolean;
+  published_at: string | null;
+  view_count: number;
+  created_at: string;
+  updated_at: string;
+}
+export async function adminListKb(): Promise<AdminKbRow[]> {
+  const r = await from("support_knowledge_articles")
+    .select(
+      "id,slug,title,summary,body_md,category_key,audience,is_published,published_at,view_count,created_at,updated_at"
+    )
+    .order("updated_at", { ascending: false })
+    .limit(500);
+  if (r.error) throw new Error(r.error.message);
+  return r.data ?? [];
+}
+export async function adminGetKb(id: string): Promise<AdminKbRow> {
+  const r = await from("support_knowledge_articles")
+    .select(
+      "id,slug,title,summary,body_md,category_key,audience,is_published,published_at,view_count,created_at,updated_at"
+    )
+    .eq("id", id)
+    .single();
+  if (r.error) throw new Error(r.error.message);
+  return r.data;
+}
+export function slugify(v: string): string {
+  return v
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+export async function adminCreateKb(input: {
+  title: string;
+  slug?: string;
+  summary?: string | null;
+  body_md: string;
+  category_key?: string | null;
+  audience: AdminKbRow["audience"];
+  is_published: boolean;
+}): Promise<string> {
+  const { data: auth } = await supabase.auth.getUser();
+  const slug = input.slug?.trim() || slugify(input.title);
+  const r = await from("support_knowledge_articles")
+    .insert({
+      title: input.title,
+      slug,
+      summary: input.summary ?? null,
+      body_md: input.body_md,
+      category_key: input.category_key ?? null,
+      audience: input.audience,
+      is_published: input.is_published,
+      published_at: input.is_published ? new Date().toISOString() : null,
+      author_user_id: auth.user?.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (r.error) throw new Error(r.error.message);
+  return r.data.id;
+}
+export async function adminUpdateKb(
+  id: string,
+  patch: Partial<Omit<AdminKbRow, "id" | "view_count" | "created_at" | "updated_at">>
+): Promise<void> {
+  const next: Record<string, unknown> = { ...patch, updated_at: new Date().toISOString() };
+  if (typeof patch.is_published === "boolean") {
+    next.published_at = patch.is_published ? new Date().toISOString() : null;
+  }
+  const r = await from("support_knowledge_articles").update(next).eq("id", id);
+  if (r.error) throw new Error(r.error.message);
+}
+export async function adminDeleteKb(id: string): Promise<void> {
+  const r = await from("support_knowledge_articles").delete().eq("id", id);
+  if (r.error) throw new Error(r.error.message);
+}
